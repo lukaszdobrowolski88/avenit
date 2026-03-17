@@ -75,7 +75,7 @@ export default function PhoneSearchScreen({
 
       {/* Loading/Status */}
       {(searching || loading) && (
-        <div className="mt-6 flex items-center gap-3 text-pink-600 dark:text-pink-400">
+        <div className="mt-6 flex items-center gap-3 text-accent-primary dark:text-accent-primary-light">
           <Loader2 size={24} className="animate-spin" />
           <span className="text-base font-medium">Szukam rodziny...</span>
         </div>
@@ -97,7 +97,7 @@ export default function PhoneSearchScreen({
             </button>
             <button
               onClick={handleGuestClick}
-              className="flex items-center gap-2 px-5 py-2.5 text-base font-semibold bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition"
+              className="flex items-center gap-2 px-5 py-2.5 text-base font-semibold bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
             >
               <UserPlus size={18} />
               Dodaj jako gościa
@@ -110,9 +110,9 @@ export default function PhoneSearchScreen({
       <div className="mt-10">
         <button
           onClick={handleGuestClick}
-          className="flex items-center gap-3 px-6 py-4 text-base font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 hover:border-pink-300 dark:hover:border-pink-600 transition"
+          className="flex items-center gap-3 px-6 py-4 text-base font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary transition"
         >
-          <UserPlus size={20} className="text-pink-600 dark:text-pink-400" />
+          <UserPlus size={20} className="text-accent-primary dark:text-accent-primary-light" />
           Gość / Nowe dziecko
         </button>
       </div>

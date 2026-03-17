@@ -63,14 +63,14 @@ export default function CheckinSuccess({
       </h1>
 
       {/* Security codes */}
-      <div className="bg-pink-50 dark:bg-pink-900/30 px-6 sm:px-10 py-5 rounded-2xl mb-6">
+      <div className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-6 sm:px-10 py-5 rounded-2xl mb-6">
         <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
           {displayCodes.length > 1 ? 'Kody bezpieczeństwa (ostatnie 4 cyfry telefonu)' : 'Kod bezpieczeństwa'}
         </div>
         <div className="flex flex-wrap justify-center gap-3">
           {displayCodes.map((codeInfo, index) => (
             <div key={index} className="flex flex-col items-center">
-              <div className="text-4xl sm:text-5xl font-bold text-pink-600 dark:text-pink-400 tracking-widest">
+              <div className="text-4xl sm:text-5xl font-bold text-accent-primary dark:text-accent-primary-light tracking-widest">
                 {codeInfo.code}
               </div>
               {codeInfo.name && (
@@ -120,7 +120,7 @@ export default function CheckinSuccess({
         </button>
         <button
           onClick={handleDoneNow}
-          className="flex items-center gap-2 px-5 py-3 text-base font-medium bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition"
+          className="flex items-center gap-2 px-5 py-3 text-base font-medium bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
         >
           <Check size={18} />
           Gotowe

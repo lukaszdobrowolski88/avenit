@@ -84,7 +84,7 @@ export default function CustomModule() {
   if (loading) {
     return (
       <div className="p-10 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 dark:border-pink-400 mx-auto"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary dark:border-accent-primary-light mx-auto"></div>
       </div>
     );
   }
@@ -105,7 +105,7 @@ export default function CustomModule() {
     <div className="space-y-8">
       {/* Nagłówek modułu - identyczny styl jak MediaTeamModule */}
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
           {module.label}
         </h1>
       </div>
@@ -203,7 +203,7 @@ function TabContent({ tab, moduleKey, moduleName }) {
       return (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
               {tab.label}
             </h2>
           </div>

@@ -105,7 +105,7 @@ export default function PersonalDashboard({ user }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-12 h-12 border-4 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-500 dark:text-gray-400">Ładowanie pulpitu...</p>
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function PersonalDashboard({ user }) {
               className="w-14 h-14 rounded-full object-cover ring-2 ring-white dark:ring-gray-700 shadow-lg"
             />
           ) : (
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-xl font-bold shadow-lg">
               {firstName.charAt(0).toUpperCase()}
             </div>
           )}
@@ -184,7 +184,7 @@ export default function PersonalDashboard({ user }) {
       {/* Saving indicator */}
       {saving && (
         <div className="fixed bottom-4 right-4 flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-          <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
           <span className="text-sm text-gray-600 dark:text-gray-300">Zapisywanie...</span>
         </div>
       )}
@@ -230,7 +230,7 @@ export default function PersonalDashboard({ user }) {
           </p>
           <button
             onClick={() => setShowCustomizer(true)}
-            className="px-6 py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg transition-all"
+            className="px-6 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg transition-all"
           >
             Dostosuj pulpit
           </button>

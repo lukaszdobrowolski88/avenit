@@ -68,14 +68,14 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
     <div className="relative w-full">
       <div
         ref={triggerRef}
-        className="w-full min-h-[32px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs cursor-pointer flex flex-wrap gap-1 items-center hover:border-pink-300 dark:hover:border-pink-500 transition"
+        className="w-full min-h-[32px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs cursor-pointer flex flex-wrap gap-1 items-center hover:border-accent-primary-light dark:hover:border-accent-primary-light transition"
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
           <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span>
         ) : (
           selectedItems.map((item, idx) => (
-            <span key={idx} className="bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 px-1.5 py-0.5 rounded text-[10px] border border-pink-100 dark:border-pink-800 whitespace-nowrap">
+            <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-1.5 py-0.5 rounded text-[10px] border border-accent-primary-lighter dark:border-accent-primary-dark whitespace-nowrap">
               {item}
             </span>
           ))
@@ -99,8 +99,8 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
               <div
                 key={person.id}
                 className={`px-3 py-1.5 text-xs cursor-pointer flex items-center justify-between transition
-                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-pink-50 dark:hover:bg-pink-900/20 text-gray-700 dark:text-gray-300'}
-                  ${isSelected ? 'bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 font-medium' : ''}
+                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 text-gray-700 dark:text-gray-300'}
+                  ${isSelected ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light font-medium' : ''}
                 `}
                 onClick={() => toggleSelection(person.full_name, isAbsent)}
               >
@@ -294,7 +294,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   if (loading) {
     return (
       <div className="p-10 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600 mx-auto"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary mx-auto"></div>
       </div>
     );
   }
@@ -302,7 +302,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
           Grafik
         </h2>
       </div>
@@ -366,7 +366,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                               ))}
                               <td className="p-2">
                                 <input
-                                  className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-pink-500 dark:focus:border-pink-400 text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
+                                  className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light dark:focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
                                   placeholder="Wpisz..."
                                   defaultValue={prog[scheduleFieldKey]?.notatki || ''}
                                   onBlur={(e) => updateNotes(prog.id, e.target.value)}

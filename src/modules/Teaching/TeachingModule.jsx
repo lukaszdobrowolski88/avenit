@@ -77,8 +77,8 @@ const TableSelect = ({ options, value, onChange, placeholder = 'Wybierz...' }) =
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full min-h-[32px] px-2 py-1 bg-white dark:bg-gray-800 border rounded-lg text-xs cursor-pointer flex items-center justify-between transition
           ${isOpen
-            ? 'border-pink-500 ring-1 ring-pink-500/20'
-            : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-500'
+            ? 'border-accent-primary-light ring-1 ring-accent-primary-light/20'
+            : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary-light'
           }
         `}
       >
@@ -110,7 +110,7 @@ const TableSelect = ({ options, value, onChange, placeholder = 'Wybierz...' }) =
                 }}
                 className={`px-3 py-1.5 text-xs cursor-pointer transition flex items-center justify-between
                   ${isActive
-                    ? 'bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-300 font-medium'
+                    ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light font-medium'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }
                 `}
@@ -244,7 +244,7 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
                                 />
                               ) : (
                                 <input
-                                  className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-pink-500 text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
+                                  className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
                                   placeholder="Wpisz..."
                                   defaultValue={prog.teaching?.[col.key] || ''}
                                   onBlur={(e) => updateTeachingField(prog.id, col.key, e.target.value)}
@@ -336,7 +336,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Mówcy</h2>
         <button
           onClick={openAdd}
-          className="bg-gradient-to-r from-pink-600 to-orange-600 text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
+          className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
         >
           <Plus size={18} /> Dodaj mówcę
         </button>
@@ -356,14 +356,14 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
                   className="w-16 h-16 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white text-xl font-bold">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-xl font-bold">
                   {speaker.name.charAt(0)}
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-gray-800 dark:text-gray-100 truncate">{speaker.name}</h3>
                 {speaker.email && (
-                  <a href={`mailto:${speaker.email}`} className="text-sm text-pink-500 hover:text-pink-600 flex items-center gap-1 truncate">
+                  <a href={`mailto:${speaker.email}`} className="text-sm text-accent-primary-light hover:text-accent-primary flex items-center gap-1 truncate">
                     <Mail size={12} />
                     {speaker.email}
                   </a>
@@ -420,14 +420,14 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
                       className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg"
                     />
                   ) : (
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white text-3xl font-bold border-4 border-white dark:border-gray-700 shadow-lg">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-3xl font-bold border-4 border-white dark:border-gray-700 shadow-lg">
                       {form.name ? form.name.charAt(0).toUpperCase() : '?'}
                     </div>
                   )}
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="absolute bottom-0 right-0 bg-pink-500 text-white p-2 rounded-full shadow-lg hover:bg-pink-600 transition"
+                    className="absolute bottom-0 right-0 bg-accent-primary-light text-white p-2 rounded-full shadow-lg hover:bg-accent-primary transition"
                   >
                     {uploading ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
                   </button>
@@ -491,7 +491,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl font-medium"
+                className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium"
               >
                 {editingSpeaker ? 'Zapisz' : 'Dodaj'}
               </button>
@@ -595,7 +595,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
     return (
       <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {/* Header with cover image */}
-        <div className="relative h-48 bg-gradient-to-br from-purple-600 to-pink-600">
+        <div className="relative h-48 bg-gradient-to-br from-purple-600 to-accent-primary">
           {selectedSeries.graphics?.[0] && (
             <img
               src={selectedSeries.graphics[0].url}
@@ -613,7 +613,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
           <div className="absolute bottom-4 left-6 right-6">
             <h2 className="text-3xl font-bold text-white mb-1">{selectedSeries.name}</h2>
             {selectedSeries.scripture && (
-              <p className="text-pink-200 font-medium">{selectedSeries.scripture}</p>
+              <p className="text-accent-primary-lighter font-medium">{selectedSeries.scripture}</p>
             )}
           </div>
           <div className="absolute top-4 right-4 flex gap-2">
@@ -669,10 +669,10 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                   return (
                     <div
                       key={sermon.id}
-                      className="group bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg hover:border-pink-300 dark:hover:border-pink-600 transition-all duration-300"
+                      className="group bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg hover:border-accent-primary-light dark:hover:border-accent-primary transition-all duration-300"
                     >
                       {/* Card header with number */}
-                      <div className="bg-gradient-to-r from-pink-500 to-orange-500 px-4 py-3 flex items-center justify-between">
+                      <div className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light px-4 py-3 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-sm">
                             {idx + 1}
@@ -704,7 +704,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                                 className="w-8 h-8 rounded-full object-cover"
                               />
                             ) : (
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-orange-400 flex items-center justify-center text-white text-xs font-bold">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-xs font-bold">
                                 {speaker.name.charAt(0)}
                               </div>
                             )}
@@ -717,8 +717,8 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                         {/* Scripture */}
                         {sermon.teaching?.scripture && (
                           <div className="flex items-center gap-2 mb-3">
-                            <BookOpen size={14} className="text-pink-500 shrink-0" />
-                            <span className="text-sm text-pink-600 dark:text-pink-400 font-medium">
+                            <BookOpen size={14} className="text-accent-primary-light shrink-0" />
+                            <span className="text-sm text-accent-primary dark:text-accent-primary-light font-medium">
                               {sermon.teaching.scripture}
                             </span>
                           </div>
@@ -763,7 +763,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Serie</h2>
         <button
           onClick={openAdd}
-          className="bg-gradient-to-r from-pink-600 to-orange-600 text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
+          className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
         >
           <Plus size={18} /> Dodaj serię
         </button>
@@ -777,10 +777,10 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
             <div
               key={s.id}
               onClick={() => setSelectedSeries(s)}
-              className="group cursor-pointer bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:border-pink-300 dark:hover:border-pink-600 transition-all duration-300"
+              className="group cursor-pointer bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:border-accent-primary-light dark:hover:border-accent-primary transition-all duration-300"
             >
               {/* Cover image */}
-              <div className="h-40 bg-gradient-to-br from-purple-500 to-pink-500 relative overflow-hidden">
+              <div className="h-40 bg-gradient-to-br from-purple-500 to-accent-primary-light relative overflow-hidden">
                 {s.graphics && s.graphics[0] ? (
                   <img
                     src={s.graphics[0].url}
@@ -796,7 +796,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                 <div className="absolute bottom-3 left-3 right-3">
                   <h3 className="font-bold text-white text-lg truncate">{s.name}</h3>
                   {s.scripture && (
-                    <p className="text-pink-200 text-sm truncate">{s.scripture}</p>
+                    <p className="text-accent-primary-lighter text-sm truncate">{s.scripture}</p>
                   )}
                 </div>
                 {/* Action buttons */}
@@ -828,7 +828,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                       {s.end_date && ` - ${new Date(s.end_date).toLocaleDateString('pl-PL', { month: 'short', year: 'numeric' })}`}
                     </span>
                   )}
-                  <span className="bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded-full font-medium">
+                  <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-full font-medium">
                     {sermonsCount} {sermonsCount === 1 ? 'kazanie' : sermonsCount < 5 ? 'kazania' : 'kazań'}
                   </span>
                 </div>
@@ -926,7 +926,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                     </div>
                   ))}
                 </div>
-                <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-pink-500 transition">
+                <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-accent-primary-light transition">
                   <ImageIcon size={20} className="text-gray-400" />
                   <span className="text-sm text-gray-500">{uploading ? 'Przesyłanie...' : 'Dodaj grafiki'}</span>
                   <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
@@ -943,7 +943,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl font-medium"
+                className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium"
               >
                 {editingSeries ? 'Zapisz' : 'Dodaj'}
               </button>
@@ -1065,7 +1065,7 @@ export default function TeachingModule() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 dark:border-pink-400"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary dark:border-accent-primary-light"></div>
       </div>
     );
   }
@@ -1073,7 +1073,7 @@ export default function TeachingModule() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
           Nauczanie
         </h1>
       </div>

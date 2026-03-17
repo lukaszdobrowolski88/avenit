@@ -107,7 +107,7 @@ export default function SessionManager({ onSessionChange }) {
     }
   };
 
-  const inputClasses = "w-full px-4 py-3 text-base border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-pink-500 dark:focus:border-pink-400 focus:outline-none transition";
+  const inputClasses = "w-full px-4 py-3 text-base border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition";
 
   return (
     <div>
@@ -115,7 +115,7 @@ export default function SessionManager({ onSessionChange }) {
         <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Sesje Check-in</h3>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition"
+          className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
         >
           <Plus size={18} />
           Nowa sesja

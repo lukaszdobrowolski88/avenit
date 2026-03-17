@@ -106,7 +106,7 @@ export default function AudioPlayer({ url, duration, isOwn = false }) {
         className={`w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 flex-shrink-0 ${
           isOwn
             ? 'bg-white/20 hover:bg-white/30 text-white'
-            : 'bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white shadow-md'
+            : 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white shadow-md'
         } disabled:opacity-50`}
       >
         {isLoading ? (
@@ -140,7 +140,7 @@ export default function AudioPlayer({ url, duration, isOwn = false }) {
                         ? 'bg-white'
                         : 'bg-white/30'
                       : isActive
-                        ? 'bg-gradient-to-t from-pink-500 to-orange-500'
+                        ? 'bg-gradient-to-t from-accent-primary-light to-accent-secondary-light'
                         : 'bg-gray-300 dark:bg-gray-600'
                   }`}
                   style={{ height: `${height}px` }}

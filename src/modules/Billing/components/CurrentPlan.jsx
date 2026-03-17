@@ -123,7 +123,7 @@ export default function CurrentPlan({ onUpgrade }) {
         </p>
         <button
           onClick={onUpgrade}
-          className="px-6 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl font-medium hover:shadow-lg transition"
+          className="px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium hover:shadow-lg transition"
         >
           Wybierz plan
         </button>
@@ -142,7 +142,7 @@ export default function CurrentPlan({ onUpgrade }) {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <Package size={24} className="text-pink-600" />
+              <Package size={24} className="text-accent-primary" />
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 {subscription.plan_name}
               </h2>
@@ -224,7 +224,7 @@ export default function CurrentPlan({ onUpgrade }) {
       <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex flex-wrap gap-3">
         <button
           onClick={onUpgrade}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-lg font-medium hover:shadow-lg transition"
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:shadow-lg transition"
         >
           <Zap size={16} />
           {subscription.plan_slug === 'enterprise' ? 'Zarządzaj planem' : 'Ulepsz plan'}

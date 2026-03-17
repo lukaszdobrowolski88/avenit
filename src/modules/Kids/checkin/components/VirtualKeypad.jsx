@@ -35,7 +35,7 @@ export default function VirtualKeypad({ value, onChange, maxLength = 4, disabled
             key={index}
             className={`w-14 h-16 sm:w-16 sm:h-[70px] border-2 rounded-xl flex items-center justify-center text-3xl sm:text-4xl font-bold transition-all
               ${value[index]
-                ? 'border-pink-500 dark:border-pink-400 bg-pink-50 dark:bg-pink-900/30 text-gray-900 dark:text-white'
+                ? 'border-accent-primary-light dark:border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-gray-900 dark:text-white'
                 : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400 dark:text-gray-600'
               }`}
           >
@@ -92,7 +92,7 @@ export default function VirtualKeypad({ value, onChange, maxLength = 4, disabled
                   className={`w-16 h-16 sm:w-20 sm:h-20 text-2xl sm:text-3xl font-bold rounded-xl border-2 flex items-center justify-center select-none transition-all
                     ${disabled || value.length >= maxLength
                       ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                      : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-pink-300 dark:hover:border-pink-600 cursor-pointer'
+                      : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-accent-primary-light dark:hover:border-accent-primary cursor-pointer'
                     }`}
                 >
                   {key}

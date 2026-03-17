@@ -16,7 +16,7 @@ export default function WelcomeWidget({ userProfile, userEmail, stats }) {
     <div className="flex flex-col md:flex-row items-center gap-6">
       {/* Avatar */}
       <div className="relative">
-        <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-pink-500 to-orange-500 p-1 shadow-lg">
+        <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light p-1 shadow-lg">
           {userProfile?.avatar_url ? (
             <img
               src={userProfile.avatar_url}
@@ -25,7 +25,7 @@ export default function WelcomeWidget({ userProfile, userEmail, stats }) {
             />
           ) : (
             <div className="w-full h-full rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center">
-              <span className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-orange-600 uppercase">
+              <span className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary uppercase">
                 {firstName.charAt(0)}
               </span>
             </div>
@@ -58,9 +58,9 @@ export default function WelcomeWidget({ userProfile, userEmail, stats }) {
               {stats.upcomingServicesCount} {stats.upcomingServicesCount === 1 ? 'służba' : 'służb'}
             </span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-pink-50 dark:bg-pink-900/20 rounded-lg">
-            <Heart size={16} className="text-pink-500" />
-            <span className="text-sm font-medium text-pink-700 dark:text-pink-300">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 rounded-lg">
+            <Heart size={16} className="text-accent-primary-light" />
+            <span className="text-sm font-medium text-accent-primary dark:text-accent-primary-light">
               {stats.prayersCount} {stats.prayersCount === 1 ? 'modlitwa' : 'modlitw'}
             </span>
           </div>

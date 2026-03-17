@@ -681,7 +681,7 @@ export default function HomeGroupsModule() {
   if (loading) {
     return (
       <div className="p-10 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mx-auto"></div>
       </div>
     );
   }
@@ -690,7 +690,7 @@ export default function HomeGroupsModule() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
           Grupy Domowe
         </h1>
       </div>
@@ -715,7 +715,7 @@ export default function HomeGroupsModule() {
       {activeTab === 'groups' && (
         <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 transition-colors">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
               Grupy Domowe ({filteredGroups.length})
             </h2>
             <div className="flex gap-3">
@@ -726,12 +726,12 @@ export default function HomeGroupsModule() {
                   placeholder="Szukaj..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-pink-500 outline-none"
+                  className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light outline-none"
                 />
               </div>
               <button
                 onClick={() => openModal('group')}
-                className="bg-gradient-to-r from-pink-600 to-orange-600 text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
+                className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
                 Dodaj Grupę
@@ -751,7 +751,7 @@ export default function HomeGroupsModule() {
                     <div className="flex gap-1">
                       <button
                         onClick={() => openModal('group', group)}
-                        className="p-1.5 text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-gray-800 rounded-lg"
+                        className="p-1.5 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-800 rounded-lg"
                       >
                         <FileText size={16}/>
                       </button>
@@ -792,13 +792,13 @@ export default function HomeGroupsModule() {
                   <div className="flex gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 mt-2">
                     <button
                       onClick={() => { setCurrentGroup(group); setShowGroupMembersModal(true); }}
-                      className="flex-1 bg-pink-50 dark:bg-gray-800 text-pink-700 dark:text-pink-300 text-xs font-bold py-2 rounded-xl hover:bg-pink-100 dark:hover:bg-gray-700 transition flex items-center justify-center gap-1"
+                      className="flex-1 bg-accent-primary-lightest dark:bg-gray-800 text-accent-primary dark:text-accent-primary-light text-xs font-bold py-2 rounded-xl hover:bg-accent-primary-lighter dark:hover:bg-gray-700 transition flex items-center justify-center gap-1"
                     >
                       <Users size={14}/> Członkowie ({memberCount})
                     </button>
                     <button
                       onClick={() => { setCurrentGroup(group); setShowMaterialsModal(true); }}
-                      className="flex-1 bg-orange-50 dark:bg-gray-800 text-orange-700 dark:text-orange-300 text-xs font-bold py-2 rounded-xl hover:bg-orange-100 dark:hover:bg-gray-700 transition flex items-center justify-center gap-1"
+                      className="flex-1 bg-accent-secondary-lightest dark:bg-gray-800 text-accent-secondary dark:text-accent-secondary-light text-xs font-bold py-2 rounded-xl hover:bg-accent-secondary-lighter dark:hover:bg-gray-700 transition flex items-center justify-center gap-1"
                     >
                       <BookOpen size={14}/> Materiały ({group.materials?.length || 0})
                     </button>
@@ -817,11 +817,11 @@ export default function HomeGroupsModule() {
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
             {/* Row 1: Title + Add button (mobile) / Title (desktop) */}
             <div className="flex justify-between items-center">
-              <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+              <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
                 Zadania ({filteredTasks.length})
               </h2>
               {/* Mobile only: Add button */}
-              <button onClick={() => openTaskModal(null)} className="lg:hidden bg-gradient-to-r from-orange-600 to-pink-600 text-white p-2.5 rounded-xl font-medium hover:shadow-lg transition"><Plus size={20}/></button>
+              <button onClick={() => openTaskModal(null)} className="lg:hidden bg-gradient-to-r from-accent-secondary to-accent-primary text-white p-2.5 rounded-xl font-medium hover:shadow-lg transition"><Plus size={20}/></button>
             </div>
 
             {/* Row 2: Filters (mobile) / Filters + Add button (desktop) */}
@@ -829,13 +829,13 @@ export default function HomeGroupsModule() {
               <div className="flex bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm p-1 rounded-xl border border-gray-200/50 dark:border-gray-700/50 gap-1 lg:gap-2 items-center flex-1 lg:flex-none">
                 <button
                   onClick={() => setViewMode('kanban')}
-                  className={`p-2 rounded-lg transition ${viewMode === 'kanban' ? 'bg-white dark:bg-gray-700 shadow text-pink-600 dark:text-pink-300' : 'text-gray-500 dark:text-gray-400'}`}
+                  className={`p-2 rounded-lg transition ${viewMode === 'kanban' ? 'bg-white dark:bg-gray-700 shadow text-accent-primary dark:text-accent-primary-light' : 'text-gray-500 dark:text-gray-400'}`}
                 >
                   <LayoutGrid size={18} />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow text-pink-600 dark:text-pink-300' : 'text-gray-500 dark:text-gray-400'}`}
+                  className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow text-accent-primary dark:text-accent-primary-light' : 'text-gray-500 dark:text-gray-400'}`}
                 >
                   <List size={18} />
                 </button>
@@ -870,7 +870,7 @@ export default function HomeGroupsModule() {
               {/* Desktop only: Add button with text */}
               <button
                 onClick={() => openTaskModal(null)}
-                className="hidden lg:flex bg-gradient-to-r from-orange-600 to-pink-600 text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition items-center gap-2 whitespace-nowrap"
+                className="hidden lg:flex bg-gradient-to-r from-accent-secondary to-accent-primary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition items-center gap-2 whitespace-nowrap"
               >
                 <Plus size={18}/> Dodaj zadanie
               </button>
@@ -882,14 +882,14 @@ export default function HomeGroupsModule() {
               {STATUSES.map(status => (
                 <div
                   key={status}
-                  className={`bg-gradient-to-br from-gray-50/80 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-sm rounded-2xl border-2 p-4 transition-all ${dragOverColumn === status ? 'border-pink-400 dark:border-pink-500 bg-pink-50/50 dark:bg-pink-900/20 shadow-lg' : 'border-gray-200/50 dark:border-gray-700/50'}`}
+                  className={`bg-gradient-to-br from-gray-50/80 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-sm rounded-2xl border-2 p-4 transition-all ${dragOverColumn === status ? 'border-accent-primary-light dark:border-accent-primary-light bg-accent-primary-lightest/50 dark:bg-accent-primary-darkest/20 shadow-lg' : 'border-gray-200/50 dark:border-gray-700/50'}`}
                   onDragOver={(e) => handleDragOver(e, status)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, status)}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">{status}</h3>
-                    <span className="bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 px-3 py-1 rounded-full text-xs font-bold">
+                    <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-3 py-1 rounded-full text-xs font-bold">
                       {filteredTasks.filter(t => t.status === status).length}
                     </span>
                   </div>
@@ -907,7 +907,7 @@ export default function HomeGroupsModule() {
                               type="checkbox"
                               checked={task.status === 'Gotowe'}
                               onChange={() => toggleTaskCompletion(task)}
-                              className="w-5 h-5 rounded border-gray-300 text-pink-600 dark:text-pink-500 cursor-pointer"
+                              className="w-5 h-5 rounded border-gray-300 text-accent-primary dark:text-accent-primary-light cursor-pointer"
                             />
                           </div>
                           <div className="flex-1">
@@ -931,7 +931,7 @@ export default function HomeGroupsModule() {
                             <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                               <button
                                 onClick={() => openTaskModal(task)}
-                                className="text-pink-600 dark:text-pink-400 text-xs font-medium"
+                                className="text-accent-primary dark:text-accent-primary-light text-xs font-medium"
                               >
                                 Szczegóły
                               </button>
@@ -950,7 +950,7 @@ export default function HomeGroupsModule() {
             <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
               <div className="overflow-x-auto">
               <table className="w-full text-left text-sm min-w-[700px]">
-                <thead className="bg-gradient-to-r from-pink-50/80 to-orange-50/80 dark:from-pink-900/20 dark:to-orange-900/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
+                <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
                   <tr>
                     <th className="p-4 w-10"></th>
                     <th className="p-4">Zadanie</th>
@@ -962,13 +962,13 @@ export default function HomeGroupsModule() {
                 </thead>
                 <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
                   {filteredTasks.map(task => (
-                    <tr key={task.id} className="hover:bg-pink-50/30 dark:hover:bg-pink-900/10 transition">
+                    <tr key={task.id} className="hover:bg-accent-primary-lightest/30 dark:hover:bg-accent-primary-darkest/10 transition">
                       <td className="p-4">
                         <input
                           type="checkbox"
                           checked={task.status === 'Gotowe'}
                           onChange={() => toggleTaskCompletion(task)}
-                          className="w-5 h-5 rounded border-gray-300 text-pink-600 dark:text-pink-500 cursor-pointer"
+                          className="w-5 h-5 rounded border-gray-300 text-accent-primary dark:text-accent-primary-light cursor-pointer"
                         />
                       </td>
                       <td className="p-4 font-bold text-gray-800 dark:text-gray-200">{task.title}</td>
@@ -986,7 +986,7 @@ export default function HomeGroupsModule() {
                       <td className="p-4 text-right">
                         <button
                           onClick={() => openTaskModal(task)}
-                          className="text-pink-600 dark:text-pink-400 font-medium"
+                          className="text-accent-primary dark:text-accent-primary-light font-medium"
                         >
                           Szczegóły
                         </button>
@@ -1016,12 +1016,12 @@ export default function HomeGroupsModule() {
                   placeholder="Szukaj..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-pink-500 outline-none"
+                  className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light outline-none"
                 />
               </div>
               <button
                 onClick={() => openModal('leader')}
-                className="bg-gradient-to-r from-pink-600 to-orange-600 text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
+                className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
                 Dodaj Lidera
@@ -1049,7 +1049,7 @@ export default function HomeGroupsModule() {
                     <td className="p-4 text-right flex justify-end gap-2">
                       <button
                         onClick={() => openModal('leader', leader)}
-                        className="text-pink-600 dark:text-pink-400 font-medium hover:underline"
+                        className="text-accent-primary dark:text-accent-primary-light font-medium hover:underline"
                       >
                         Edytuj
                       </button>
@@ -1091,12 +1091,12 @@ export default function HomeGroupsModule() {
                   placeholder="Szukaj..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-pink-500 outline-none"
+                  className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light outline-none"
                 />
               </div>
               <button
                 onClick={() => openModal('member')}
-                className="bg-gradient-to-r from-pink-600 to-orange-600 text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
+                className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
                 Dodaj Członka
@@ -1123,14 +1123,14 @@ export default function HomeGroupsModule() {
                     <td className="p-4 text-gray-600 dark:text-gray-400">{member.email || '-'}</td>
                     <td className="p-4 text-gray-600 dark:text-gray-400">{member.phone || '-'}</td>
                     <td className="p-4">
-                      <span className={`px-2 py-1 rounded-lg text-xs font-bold ${member.group_id ? 'bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
+                      <span className={`px-2 py-1 rounded-lg text-xs font-bold ${member.group_id ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
                         {groups.find(g => g.id === member.group_id)?.name || '-'}
                       </span>
                     </td>
                     <td className="p-4 text-right flex justify-end gap-2">
                       <button
                         onClick={() => openModal('member', member)}
-                        className="text-pink-600 dark:text-pink-400 font-medium hover:underline"
+                        className="text-accent-primary dark:text-accent-primary-light font-medium hover:underline"
                       >
                         Edytuj
                       </button>
@@ -1196,7 +1196,7 @@ export default function HomeGroupsModule() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl border border-white/20 dark:border-gray-700 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="font-bold text-2xl bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+              <h3 className="font-bold text-2xl bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
                 {editingItem ? 'Edytuj' : 'Dodaj'} {modalType === 'group' ? 'Grupę' : modalType === 'leader' ? 'Lidera' : 'Członka'}
               </h3>
               <button onClick={closeModal} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
@@ -1210,7 +1210,7 @@ export default function HomeGroupsModule() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Nazwa grupy</label>
                     <input
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={groupForm.name}
                       onChange={(e) => setGroupForm({...groupForm, name: e.target.value})}
                     />
@@ -1218,7 +1218,7 @@ export default function HomeGroupsModule() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
                     <textarea
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none resize-none"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none resize-none"
                       rows={3}
                       value={groupForm.description}
                       onChange={(e) => setGroupForm({...groupForm, description: e.target.value})}
@@ -1240,7 +1240,7 @@ export default function HomeGroupsModule() {
                     <div>
                       <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Dzień spotkania</label>
                       <input
-                        className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                        className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                         value={groupForm.meeting_day}
                         onChange={(e) => setGroupForm({...groupForm, meeting_day: e.target.value})}
                         placeholder="np. Poniedziałek"
@@ -1250,7 +1250,7 @@ export default function HomeGroupsModule() {
                       <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Godzina</label>
                       <input
                         type="time"
-                        className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                        className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                         value={groupForm.meeting_time}
                         onChange={(e) => setGroupForm({...groupForm, meeting_time: e.target.value})}
                       />
@@ -1259,7 +1259,7 @@ export default function HomeGroupsModule() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Lokalizacja</label>
                     <input
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={groupForm.location}
                       onChange={(e) => setGroupForm({...groupForm, location: e.target.value})}
                     />
@@ -1267,7 +1267,7 @@ export default function HomeGroupsModule() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Adres</label>
                     <input
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={groupForm.address}
                       onChange={(e) => setGroupForm({...groupForm, address: e.target.value})}
                     />
@@ -1276,7 +1276,7 @@ export default function HomeGroupsModule() {
                     <div>
                       <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Telefon</label>
                       <input
-                        className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                        className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                         value={groupForm.phone}
                         onChange={(e) => setGroupForm({...groupForm, phone: e.target.value})}
                       />
@@ -1285,7 +1285,7 @@ export default function HomeGroupsModule() {
                       <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Email</label>
                       <input
                         type="email"
-                        className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                        className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                         value={groupForm.email}
                         onChange={(e) => setGroupForm({...groupForm, email: e.target.value})}
                       />
@@ -1297,7 +1297,7 @@ export default function HomeGroupsModule() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Imię i nazwisko</label>
                     <input
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={personForm.full_name}
                       onChange={(e) => setPersonForm({...personForm, full_name: e.target.value})}
                     />
@@ -1306,7 +1306,7 @@ export default function HomeGroupsModule() {
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Email</label>
                     <input
                       type="email"
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={personForm.email}
                       onChange={(e) => setPersonForm({...personForm, email: e.target.value})}
                     />
@@ -1314,7 +1314,7 @@ export default function HomeGroupsModule() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Telefon</label>
                     <input
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={personForm.phone}
                       onChange={(e) => setPersonForm({...personForm, phone: e.target.value})}
                     />
@@ -1346,7 +1346,7 @@ export default function HomeGroupsModule() {
               </button>
               <button
                 onClick={() => modalType === 'group' ? handleSaveGroup() : handleSavePerson(modalType)}
-                className="px-6 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white font-bold rounded-xl hover:shadow-lg transition"
+                className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg transition"
               >
                 Zapisz
               </button>
@@ -1369,7 +1369,7 @@ export default function HomeGroupsModule() {
             </div>
 
             <div className="p-6">
-              <div className="bg-pink-50 dark:bg-gray-800 p-4 rounded-xl mb-4 flex gap-3 items-end">
+              <div className="bg-accent-primary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 flex gap-3 items-end">
                 <div className="flex-1">
                   <CustomSelect
                     label="Dodaj członka"
@@ -1384,7 +1384,7 @@ export default function HomeGroupsModule() {
                 </div>
                 <button
                   onClick={attachMemberToGroup}
-                  className="bg-pink-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-pink-700 h-[46px]"
+                  className="bg-accent-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-accent-primary h-[46px]"
                 >
                   Dodaj
                 </button>
@@ -1443,7 +1443,7 @@ export default function HomeGroupsModule() {
             </div>
 
             <div className="p-6">
-              <div className="bg-orange-50 dark:bg-gray-800 p-4 rounded-xl mb-4 space-y-2">
+              <div className="bg-accent-secondary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 space-y-2">
                 <input
                   className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white"
                   placeholder="Nazwa"
@@ -1466,14 +1466,14 @@ export default function HomeGroupsModule() {
                   />
                   <button
                     onClick={() => document.getElementById('file-upload').click()}
-                    className={`border px-4 rounded-xl flex items-center gap-2 h-[46px] transition ${materialForm.attachment ? 'bg-orange-100 border-orange-300 text-orange-700' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-500 text-gray-600 dark:text-gray-300'}`}
+                    className={`border px-4 rounded-xl flex items-center gap-2 h-[46px] transition ${materialForm.attachment ? 'bg-accent-secondary-lighter border-accent-secondary-light text-accent-secondary' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-500 text-gray-600 dark:text-gray-300'}`}
                   >
                     <Upload size={16}/> {materialForm.attachment ? 'Plik wybrany' : 'Plik'}
                   </button>
                   <button
                     onClick={addMaterial}
                     disabled={uploading}
-                    className="bg-orange-600 text-white px-6 rounded-xl font-bold hover:bg-orange-700 h-[46px] disabled:opacity-50"
+                    className="bg-accent-secondary text-white px-6 rounded-xl font-bold hover:bg-accent-secondary h-[46px] disabled:opacity-50"
                   >
                     {uploading ? '...' : 'Dodaj'}
                   </button>
@@ -1484,7 +1484,7 @@ export default function HomeGroupsModule() {
                 {(currentGroup.materials || []).map(m => (
                   <div key={m.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-xl">
                     <div className="flex items-center gap-3">
-                      <div className="bg-orange-100 dark:bg-orange-900/40 p-2 rounded-lg text-orange-600 dark:text-orange-300">
+                      <div className="bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/40 p-2 rounded-lg text-accent-secondary dark:text-accent-secondary-light">
                         <BookOpen size={18}/>
                       </div>
                       <div>
@@ -1498,7 +1498,7 @@ export default function HomeGroupsModule() {
                           href={m.attachmentUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-orange-600 hover:bg-orange-50 p-2 rounded-lg"
+                          className="text-accent-secondary hover:bg-accent-secondary-lightest p-2 rounded-lg"
                         >
                           <LinkIcon size={18}/>
                         </a>
@@ -1530,7 +1530,7 @@ export default function HomeGroupsModule() {
 
             <div className="w-3/5 p-8 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">
               <div className="flex justify-between mb-6">
-                <h3 className="font-bold text-2xl bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+                <h3 className="font-bold text-2xl bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
                   {taskForm.id ? 'Edycja zadania' : 'Nowe zadanie'}
                 </h3>
               </div>
@@ -1538,7 +1538,7 @@ export default function HomeGroupsModule() {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tytuł zadania</label>
                   <input
-                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-900 dark:text-gray-100"
+                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={taskForm.title}
                     onChange={(e) => setTaskForm({...taskForm, title: e.target.value})}
                   />
@@ -1546,7 +1546,7 @@ export default function HomeGroupsModule() {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
                   <textarea
-                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-900 dark:text-gray-100"
+                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={taskForm.description}
                     onChange={(e) => setTaskForm({...taskForm, description: e.target.value})}
                   />
@@ -1603,7 +1603,7 @@ export default function HomeGroupsModule() {
                   )}
                   <button
                     onClick={saveTask}
-                    className="px-6 py-3 bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-500 dark:to-orange-500 text-white font-bold rounded-xl hover:shadow-lg transition"
+                    className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white font-bold rounded-xl hover:shadow-lg transition"
                   >
                     Zapisz zmiany
                   </button>
@@ -1634,7 +1634,7 @@ export default function HomeGroupsModule() {
                 ) : comments.map(comment => (
                   <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div className="flex justify-between items-start mb-1">
-                      <span className="font-bold text-xs text-pink-700 dark:text-pink-300">{comment.author_name}</span>
+                      <span className="font-bold text-xs text-accent-primary dark:text-accent-primary-light">{comment.author_name}</span>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500">
                         {new Date(comment.created_at).toLocaleString('pl-PL')}
                       </span>
@@ -1647,7 +1647,7 @@ export default function HomeGroupsModule() {
                 <div className="mt-auto">
                   <div className="relative">
                     <textarea
-                      className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-pink-500/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200"
+                      className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200"
                       placeholder="Napisz komentarz..."
                       rows={2}
                       value={newComment}
@@ -1657,7 +1657,7 @@ export default function HomeGroupsModule() {
                     <button
                       onClick={addComment}
                       disabled={!newComment.trim()}
-                      className="absolute right-2 bottom-2 p-2 bg-pink-600 dark:bg-pink-500 text-white rounded-lg hover:bg-pink-700 dark:hover:bg-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="absolute right-2 bottom-2 p-2 bg-accent-primary dark:bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary dark:hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send size={16} />
                     </button>
@@ -1752,7 +1752,7 @@ export default function HomeGroupsModule() {
               </button>
               <button
                 onClick={saveExpense}
-                className="px-6 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition"
+                className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
               >
                 Zapisz wydatek
               </button>

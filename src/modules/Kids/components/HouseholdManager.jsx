@@ -301,7 +301,7 @@ export default function HouseholdManager() {
   const unassignedStudents = students.filter(s => !s.household_id);
   const unassignedMembers = members.filter(m => !m.household_id);
 
-  const inputClasses = "w-full px-4 py-3 text-base border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-pink-500 dark:focus:border-pink-400 focus:outline-none transition";
+  const inputClasses = "w-full px-4 py-3 text-base border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition";
 
   return (
     <div className="p-6">
@@ -318,7 +318,7 @@ export default function HouseholdManager() {
             resetForm();
             setShowForm(true);
           }}
-          className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition"
+          className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
         >
           <Plus size={18} />
           Dodaj rodzinę
@@ -334,7 +334,7 @@ export default function HouseholdManager() {
             placeholder="Szukaj po nazwie, telefonie, rodzicu lub dziecku..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-pink-500 dark:focus:border-pink-400 focus:outline-none transition"
+            className="w-full pl-10 pr-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition"
           />
         </div>
         <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
@@ -420,7 +420,7 @@ export default function HouseholdManager() {
                   <button
                     type="button"
                     onClick={handleAddContact}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-lg transition"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition"
                   >
                     <Plus size={16} />
                     Dodaj kontakt
@@ -443,7 +443,7 @@ export default function HouseholdManager() {
                               type="checkbox"
                               checked={contact.is_primary}
                               onChange={(e) => handleContactChange(index, 'is_primary', e.target.checked)}
-                              className="rounded border-gray-300 dark:border-gray-600 text-pink-600 focus:ring-pink-500"
+                              className="rounded border-gray-300 dark:border-gray-600 text-accent-primary focus:ring-accent-primary-light"
                             />
                             Główny
                           </label>
@@ -536,13 +536,13 @@ export default function HouseholdManager() {
                             </div>
                             {contact.phone && (
                               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                <Phone size={14} className="text-pink-500" />
+                                <Phone size={14} className="text-accent-primary-light" />
                                 {contact.phone}
                               </div>
                             )}
                             {contact.email && (
                               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                <Mail size={14} className="text-pink-500" />
+                                <Mail size={14} className="text-accent-primary-light" />
                                 {contact.email}
                               </div>
                             )}
@@ -556,7 +556,7 @@ export default function HouseholdManager() {
                             type="checkbox"
                             checked={contact.can_pickup}
                             onChange={(e) => handleContactChange(index, 'can_pickup', e.target.checked)}
-                            className="rounded border-gray-300 dark:border-gray-600 text-pink-600 focus:ring-pink-500"
+                            className="rounded border-gray-300 dark:border-gray-600 text-accent-primary focus:ring-accent-primary-light"
                           />
                           Może odbierać dzieci
                         </label>
@@ -626,7 +626,7 @@ export default function HouseholdManager() {
                     <button
                       key={student.id}
                       onClick={() => handleAssignStudent(student.id, assignStudentModal)}
-                      className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-xl transition text-left"
+                      className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-xl transition text-left"
                     >
                       <div>
                         <span className="text-base font-medium text-gray-900 dark:text-white">
@@ -638,7 +638,7 @@ export default function HouseholdManager() {
                           </span>
                         )}
                       </div>
-                      <Plus size={18} className="text-pink-600 dark:text-pink-400" />
+                      <Plus size={18} className="text-accent-primary dark:text-accent-primary-light" />
                     </button>
                   ))}
                 </div>
@@ -668,14 +668,14 @@ export default function HouseholdManager() {
             return (
               <div
                 key={household.id}
-                className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden transition hover:border-pink-300 dark:hover:border-pink-600"
+                className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden transition hover:border-accent-primary-light dark:hover:border-accent-primary"
               >
                 {/* Header */}
                 <div
                   className="p-4 flex items-center gap-4 cursor-pointer"
                   onClick={() => setExpandedHousehold(isExpanded ? null : household.id)}
                 >
-                  <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-orange-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                  <div className="w-12 h-12 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-xl flex items-center justify-center text-white font-bold text-lg">
                     {household.family_name.charAt(0)}
                   </div>
 
@@ -685,7 +685,7 @@ export default function HouseholdManager() {
                         {household.family_name}
                       </h3>
                       {household.phone_last_four && (
-                        <span className="bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 px-2 py-0.5 rounded text-xs font-mono">
+                        <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded text-xs font-mono">
                           ****{household.phone_last_four}
                         </span>
                       )}
@@ -710,7 +710,7 @@ export default function HouseholdManager() {
                         e.stopPropagation();
                         handleEdit(household);
                       }}
-                      className="p-2 text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                      className="p-2 text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
                     >
                       <Edit2 size={18} />
                     </button>
@@ -795,7 +795,7 @@ export default function HouseholdManager() {
                         </h4>
                         <button
                           onClick={() => setAssignStudentModal(household.id)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-lg transition"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition"
                         >
                           <Plus size={16} />
                           Przypisz ucznia
@@ -810,8 +810,8 @@ export default function HouseholdManager() {
                               className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-xl"
                             >
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-pink-100 dark:bg-pink-900/40 rounded-full flex items-center justify-center">
-                                  <Users size={14} className="text-pink-600 dark:text-pink-400" />
+                                <div className="w-8 h-8 bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 rounded-full flex items-center justify-center">
+                                  <Users size={14} className="text-accent-primary dark:text-accent-primary-light" />
                                 </div>
                                 <div>
                                   <span className="font-medium text-gray-900 dark:text-white">

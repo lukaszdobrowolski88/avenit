@@ -107,7 +107,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
   if (loading) {
     return (
       <div className="p-8 text-center">
-        <Loader2 size={32} className="animate-spin mx-auto text-pink-500 mb-4" />
+        <Loader2 size={32} className="animate-spin mx-auto text-accent-primary-light mb-4" />
         <p className="text-gray-600 dark:text-gray-400">Ładowanie planów...</p>
       </div>
     );
@@ -167,14 +167,14 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
               key={plan.id}
               className={`relative bg-white dark:bg-gray-800 rounded-2xl border-2 transition-all ${
                 isPopular
-                  ? 'border-pink-500 shadow-lg shadow-pink-500/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600'
+                  ? 'border-accent-primary-light shadow-lg shadow-accent-primary-light/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
               }`}
             >
               {/* Popular badge */}
               {isPopular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1 bg-gradient-to-r from-pink-600 to-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+                  <span className="inline-flex items-center gap-1 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-xs font-bold px-3 py-1 rounded-full">
                     <Sparkles size={12} />
                     NAJPOPULARNIEJSZY
                   </span>
@@ -248,7 +248,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
                     isCurrentPlan
                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
                       : isPopular
-                        ? 'bg-gradient-to-r from-pink-600 to-orange-600 text-white hover:shadow-lg'
+                        ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:shadow-lg'
                         : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
                   }`}
                 >
@@ -276,7 +276,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
                 setCouponResult(null);
               }}
               placeholder="Wpisz kod"
-              className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500"
+              className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light"
             />
             <button
               onClick={handleValidateCoupon}

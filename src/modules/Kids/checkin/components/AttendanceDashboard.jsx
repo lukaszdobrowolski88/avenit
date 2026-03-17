@@ -77,7 +77,7 @@ export default function AttendanceDashboard({ session, locations }) {
             Lista obecności
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Aktualnie obecnych: <strong className="text-pink-600 dark:text-pink-400">{activeCheckins.length}</strong>
+            Aktualnie obecnych: <strong className="text-accent-primary dark:text-accent-primary-light">{activeCheckins.length}</strong>
           </p>
         </div>
 
@@ -87,7 +87,7 @@ export default function AttendanceDashboard({ session, locations }) {
             onClick={() => setView('list')}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition
               ${view === 'list'
-                ? 'bg-gradient-to-r from-pink-600 to-orange-600 text-white'
+                ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
           >
@@ -98,7 +98,7 @@ export default function AttendanceDashboard({ session, locations }) {
             onClick={() => setView('rooms')}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition
               ${view === 'rooms'
-                ? 'bg-gradient-to-r from-pink-600 to-orange-600 text-white'
+                ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
           >
@@ -121,7 +121,7 @@ export default function AttendanceDashboard({ session, locations }) {
           {locationStats.map((loc) => (
             <div
               key={loc.id}
-              className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-5 transition hover:border-pink-300 dark:hover:border-pink-600"
+              className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-5 transition hover:border-accent-primary-light dark:hover:border-accent-primary"
             >
               {/* Room header */}
               <div className="flex justify-between items-start mb-3">
@@ -169,7 +169,7 @@ export default function AttendanceDashboard({ session, locations }) {
                           </span>
                         )}
                       </span>
-                      <span className="text-pink-600 dark:text-pink-400 font-semibold">
+                      <span className="text-accent-primary dark:text-accent-primary-light font-semibold">
                         {child.securityCode}
                       </span>
                     </div>
@@ -193,7 +193,7 @@ export default function AttendanceDashboard({ session, locations }) {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-pink-500 dark:focus:border-pink-400 focus:outline-none transition"
+              className="px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition"
             >
               <option value="active">Obecni ({activeCheckins.length})</option>
               <option value="checkedout">Odebrani ({checkedOutCheckins.length})</option>
@@ -203,7 +203,7 @@ export default function AttendanceDashboard({ session, locations }) {
             <select
               value={selectedLocation}
               onChange={(e) => setSelectedLocation(e.target.value)}
-              className="px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-pink-500 dark:focus:border-pink-400 focus:outline-none transition"
+              className="px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition"
             >
               <option value="all">Wszystkie sale</option>
               {locations?.map((loc) => (
@@ -220,7 +220,7 @@ export default function AttendanceDashboard({ session, locations }) {
                 placeholder="Szukaj po imieniu lub kodzie..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-pink-500 dark:focus:border-pink-400 focus:outline-none transition"
+                className="w-full pl-10 pr-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition"
               />
             </div>
           </div>
@@ -276,7 +276,7 @@ export default function AttendanceDashboard({ session, locations }) {
                             )}
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-pink-600 dark:text-pink-400 font-semibold text-base">
+                            <span className="text-accent-primary dark:text-accent-primary-light font-semibold text-base">
                               {checkin.security_code}
                             </span>
                           </td>
@@ -313,7 +313,7 @@ export default function AttendanceDashboard({ session, locations }) {
       )}
 
       {loading && (
-        <div className="fixed bottom-5 right-5 bg-pink-600 text-white px-5 py-3 rounded-xl flex items-center gap-2 shadow-lg">
+        <div className="fixed bottom-5 right-5 bg-accent-primary text-white px-5 py-3 rounded-xl flex items-center gap-2 shadow-lg">
           <Loader2 size={18} className="animate-spin" />
           Odświeżanie...
         </div>

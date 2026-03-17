@@ -22,8 +22,8 @@ const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-white/20 dark:border-gray-700">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertTriangle size={24} className="text-orange-600 dark:text-orange-400" />
+          <div className="w-12 h-12 bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 rounded-full flex items-center justify-center flex-shrink-0">
+            <AlertTriangle size={24} className="text-accent-secondary dark:text-accent-secondary-light" />
           </div>
           <div>
             <h3 className="text-lg font-bold text-gray-800 dark:text-white">Niezapisane zmiany</h3>
@@ -41,7 +41,7 @@ const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
           </button>
           <button
             onClick={onSave}
-            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/30 transition flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center justify-center gap-2"
           >
             <Save size={16} /> Zapisz
           </button>
@@ -218,9 +218,9 @@ const CustomDatePicker = ({ value, onChange }) => {
     <div className="relative" ref={wrapperRef}>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-gray-200/50 dark:border-gray-700/50 cursor-pointer hover:border-pink-400 transition"
+        className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-gray-200/50 dark:border-gray-700/50 cursor-pointer hover:border-accent-primary-light transition"
       >
-        <Calendar size={16} className="text-pink-600 dark:text-pink-400" />
+        <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
           {value ? new Date(value).toLocaleDateString('pl-PL') : 'Wybierz datę'}
         </span>
@@ -253,7 +253,7 @@ const CustomDatePicker = ({ value, onChange }) => {
                     key={d}
                     onClick={(e) => { e.stopPropagation(); handleDayClick(d); }}
                     className={`h-8 w-8 rounded-lg text-xs font-medium transition
-                      ${isSelected ? 'bg-pink-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}
+                      ${isSelected ? 'bg-accent-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}
                     `}
                  >
                    {d}
@@ -290,7 +290,7 @@ const ElementSelector = ({ value, onChange, options }) => {
     <div className="relative w-full" ref={wrapperRef}>
       <div className="relative">
         <input
-          className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-pink-500/20 outline-none placeholder:text-gray-400 dark:placeholder-gray-600"
+          className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-accent-primary-light/20 outline-none placeholder:text-gray-400 dark:placeholder-gray-600"
           placeholder="Wybierz lub wpisz..."
           value={value}
           onChange={(e) => {
@@ -320,7 +320,7 @@ const ElementSelector = ({ value, onChange, options }) => {
           {options.map((opt) => (
             <div
               key={opt}
-              className="px-4 py-2 hover:bg-pink-50 dark:hover:bg-pink-900/20 cursor-pointer text-sm text-gray-700 dark:text-gray-300 border-b border-gray-50 dark:border-gray-800 last:border-0"
+              className="px-4 py-2 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 cursor-pointer text-sm text-gray-700 dark:text-gray-300 border-b border-gray-50 dark:border-gray-800 last:border-0"
               onClick={() => {
                 onChange(opt);
                 setIsOpen(false);
@@ -368,18 +368,18 @@ const MultiSelect = ({ label, options, value, onChange, absentMembers = [] }) =>
     <div ref={wrapperRef} className="relative group">
       <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{label}</label>
       <div
-        className="w-full min-h-[42px] px-4 py-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus-within:ring-2 focus-within:ring-pink-500/20 cursor-pointer flex flex-wrap gap-2 items-center"
+        className="w-full min-h-[42px] px-4 py-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus-within:ring-2 focus-within:ring-accent-primary-light/20 cursor-pointer flex flex-wrap gap-2 items-center"
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
           <span className="text-gray-400 dark:text-gray-500 text-sm">Wybierz osoby...</span>
         ) : (
           selectedItems.map((item, idx) => (
-            <span key={idx} className="bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 px-2 py-0.5 rounded-lg text-xs font-medium border border-pink-200 dark:border-pink-800 flex items-center gap-1">
+            <span key={idx} className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-lg text-xs font-medium border border-accent-primary-lighter dark:border-accent-primary-dark flex items-center gap-1">
               {item}
               <span
                 onClick={(e) => { e.stopPropagation(); toggleSelection(item); }}
-                className="hover:bg-pink-200 dark:hover:bg-pink-800 rounded-full p-0.5 cursor-pointer"
+                className="hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-dark rounded-full p-0.5 cursor-pointer"
               >
                 <X size={10} />
               </span>
@@ -410,8 +410,8 @@ const MultiSelect = ({ label, options, value, onChange, absentMembers = [] }) =>
               <div
                 key={person.id}
                 className={`px-4 py-2 text-sm cursor-pointer flex items-center justify-between transition
-                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-pink-50 dark:hover:bg-pink-900/20 text-gray-700 dark:text-gray-300'}
-                  ${isSelected && !isAbsent ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 font-medium' : ''}
+                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 text-gray-700 dark:text-gray-300'}
+                  ${isSelected && !isAbsent ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light font-medium' : ''}
                 `}
                 onClick={() => toggleSelection(person.full_name, isAbsent)}
               >
@@ -453,11 +453,11 @@ const SongSelector = ({ songs, onSelect }) => {
   return (
     <div className="relative w-full" ref={wrapperRef}>
       <div
-        className="w-full px-3 py-2 bg-pink-50 dark:bg-pink-900/20 border border-pink-100 dark:border-pink-800 rounded-lg text-sm text-pink-800 dark:text-pink-300 font-medium flex items-center justify-between cursor-pointer hover:bg-pink-100 dark:hover:bg-pink-900/30 transition"
+        className="w-full px-3 py-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border border-accent-primary-lighter dark:border-accent-primary-dark rounded-lg text-sm text-accent-primary-dark dark:text-accent-primary-light font-medium flex items-center justify-between cursor-pointer hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 transition"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span>+ Wybierz pieśń...</span>
-        <ChevronDown size={16} className="text-pink-400" />
+        <ChevronDown size={16} className="text-accent-primary-light" />
       </div>
 
       {isOpen && coords.width > 0 && document.body && createPortal(
@@ -490,7 +490,7 @@ const SongSelector = ({ songs, onSelect }) => {
               filteredSongs.map(s => (
                 <div
                   key={s.id}
-                  className="px-4 py-2 hover:bg-pink-50 dark:hover:bg-pink-900/20 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex justify-between items-center border-b border-gray-50 dark:border-gray-800 last:border-0"
+                  className="px-4 py-2 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex justify-between items-center border-b border-gray-50 dark:border-gray-800 last:border-0"
                   onClick={() => {
                     onSelect(s);
                     setIsOpen(false);
@@ -521,13 +521,13 @@ const SortableSongItem = ({ item, idx, songDef, onRemove, onChangeKey }) => {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center justify-between gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 border border-pink-100 dark:border-pink-900/30 rounded-lg shadow-sm group">
-      <div {...attributes} {...listeners} className="cursor-grab text-gray-300 dark:text-gray-600 hover:text-pink-600 active:cursor-grabbing">
+    <div ref={setNodeRef} style={style} className="flex items-center justify-between gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 border border-accent-primary-lighter dark:border-accent-primary-darkest/30 rounded-lg shadow-sm group">
+      <div {...attributes} {...listeners} className="cursor-grab text-gray-300 dark:text-gray-600 hover:text-accent-primary active:cursor-grabbing">
         <GripVertical size={14} />
       </div>
 
       <div className="flex items-center gap-2 flex-1">
-        <span className="text-pink-700 dark:text-pink-400 font-medium text-xs">{idx + 1}.</span>
+        <span className="text-accent-primary dark:text-accent-primary-light font-medium text-xs">{idx + 1}.</span>
         <span className="text-gray-700 dark:text-gray-200 text-sm truncate">{songDef.title}</span>
       </div>
 
@@ -597,10 +597,10 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="p-3 hover:bg-pink-50/30 dark:hover:bg-pink-900/10 transition duration-150 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 last:border-0">
+    <div ref={setNodeRef} style={style} className="p-3 hover:bg-accent-primary-lightest/30 dark:hover:bg-accent-primary-darkest/10 transition duration-150 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 last:border-0">
       {/* Desktop: grid layout */}
       <div className="hidden lg:grid grid-cols-12 gap-4 items-start">
-        <div className="col-span-1 flex items-center justify-center pt-2 cursor-grab text-gray-300 dark:text-gray-600 hover:text-pink-500 active:cursor-grabbing" {...attributes} {...listeners}>
+        <div className="col-span-1 flex items-center justify-center pt-2 cursor-grab text-gray-300 dark:text-gray-600 hover:text-accent-primary-light active:cursor-grabbing" {...attributes} {...listeners}>
           <GripVertical size={20} />
         </div>
 
@@ -618,7 +618,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
 
         <div className="col-span-3">
           <input
-            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             placeholder="Jan Kowalski"
             value={row.person || ''}
             onChange={e => {
@@ -667,7 +667,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
             </div>
           ) : (
             <input
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
               value={row.details || ''}
               onChange={e => {
                 const newSchedule = [...program.schedule];
@@ -694,7 +694,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
       {/* Mobile: stacked layout */}
       <div className="lg:hidden space-y-3">
         <div className="flex items-center gap-2">
-          <div className="cursor-grab text-gray-300 dark:text-gray-600 hover:text-pink-500 active:cursor-grabbing" {...attributes} {...listeners}>
+          <div className="cursor-grab text-gray-300 dark:text-gray-600 hover:text-accent-primary-light active:cursor-grabbing" {...attributes} {...listeners}>
             <GripVertical size={18} />
           </div>
           <div className="flex-1">
@@ -721,7 +721,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
 
         <div className="pl-6">
           <input
-            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             placeholder="Osoba"
             value={row.person || ''}
             onChange={e => {
@@ -770,7 +770,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
             </div>
           ) : (
             <input
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
               placeholder="Szczegóły / Notatki"
               value={row.details || ''}
               onChange={e => {
@@ -821,7 +821,7 @@ const DynamicTeamSection = ({ title, dataKey, program, setProgram, roles, teamMe
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-pink-700 to-orange-700 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">{title}</h3>
+        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{title}</h3>
       </div>
       <div className="space-y-4">
         {teamMembers.length > 0 ? (
@@ -840,7 +840,7 @@ const DynamicTeamSection = ({ title, dataKey, program, setProgram, roles, teamMe
             <div key={field.key}>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{field.label}</label>
               <input
-                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
+                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program[dataKey]?.[field.key] || ''}
                 onChange={e => handleChange(field.key, e.target.value)}
               />
@@ -967,13 +967,13 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-pink-700 to-orange-700 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Szkółka Niedzielna</h3>
+        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Szkółka Niedzielna</h3>
       </div>
       <div className="space-y-4">
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Temat lekcji</label>
           <input
-            className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+            className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             value={program.szkolka?.temat || ''}
             onChange={e => handleFieldChange('temat', e.target.value)}
             placeholder="Temat lekcji..."
@@ -996,7 +996,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Młodsza</label>
               <input
-                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
+                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.mlodsza || ''}
                 onChange={e => handleFieldChange('mlodsza', e.target.value)}
               />
@@ -1004,7 +1004,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Średnia</label>
               <input
-                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
+                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.srednia || ''}
                 onChange={e => handleFieldChange('srednia', e.target.value)}
               />
@@ -1012,7 +1012,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Starsza</label>
               <input
-                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
+                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.starsza || ''}
                 onChange={e => handleFieldChange('starsza', e.target.value)}
               />
@@ -1032,7 +1032,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki</label>
           <input
-            className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+            className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             value={program.szkolka?.notatki || ''}
             onChange={e => handleFieldChange('notatki', e.target.value)}
             placeholder="Notatki..."
@@ -1144,7 +1144,7 @@ const DynamicScenaSection = ({
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-pink-700 to-orange-700 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Scena</h3>
+        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Scena</h3>
       </div>
       <div className="space-y-4">
         {allFields.map(field => {
@@ -1164,7 +1164,7 @@ const DynamicScenaSection = ({
               <div key={field.key}>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{field.label}</label>
                 <input
-                  className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
+                  className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                   value={displayValue}
                   onChange={e => handleChange(field.key, e.target.value, 'teaching')}
                 />
@@ -1188,7 +1188,7 @@ const DynamicScenaSection = ({
             <div key={field.key}>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{field.label}</label>
               <input
-                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
+                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={displayValue}
                 onChange={e => handleChange(field.key, e.target.value, 'mc')}
               />
@@ -1433,11 +1433,11 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
         {/* HEADER */}
         <div className="p-4 lg:p-6 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shrink-0 z-10">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-pink-500 to-orange-500 rounded-xl text-white shadow-lg shadow-pink-500/30">
+            <div className="p-3 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-xl text-white shadow-lg shadow-accent-primary-light/30">
               <Music size={24} />
             </div>
             <div>
-              <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Edycja Nabożeństwa</h2>
+              <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Edycja Nabożeństwa</h2>
               <div className="mt-1 w-48">
                 <CustomDatePicker value={program.date} onChange={v => setProgram({...program, date: v})} />
               </div>
@@ -1447,7 +1447,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
             <button
               onClick={handleSaveAndUploadPDF}
               disabled={isLoading}
-              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-pink-600 bg-pink-50 hover:bg-pink-100 rounded-lg transition-colors border border-pink-200 font-medium text-sm disabled:opacity-50"
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-accent-primary bg-accent-primary-lightest hover:bg-accent-primary-lighter rounded-lg transition-colors border border-accent-primary-lighter font-medium text-sm disabled:opacity-50"
               title="Zapisz PDF"
             >
               {isLoading ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
@@ -1455,7 +1455,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
             </button>
             <button
               onClick={handleGeneratePPT}
-              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors border border-orange-200 font-medium text-sm"
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-accent-secondary bg-accent-secondary-lightest hover:bg-accent-secondary-lighter rounded-lg transition-colors border border-accent-secondary-lighter font-medium text-sm"
             >
               <Presentation size={18} />
               <span className="hidden sm:inline">PPT</span>
@@ -1476,7 +1476,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
             </button>
             <button
               onClick={handleSave}
-              className="flex-1 lg:flex-none px-4 lg:px-6 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/30 flex items-center justify-center gap-2 transition transform hover:-translate-y-0.5"
+              className="flex-1 lg:flex-none px-4 lg:px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 flex items-center justify-center gap-2 transition transform hover:-translate-y-0.5"
             >
               <Save size={18} /> Zapisz
             </button>
@@ -1484,18 +1484,18 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
         </div>
 
         {/* CONTENT */}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8 space-y-6 lg:space-y-8 custom-scrollbar bg-gradient-to-br from-pink-50/50 via-white to-orange-50/50 dark:from-gray-900 dark:to-gray-800">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-8 space-y-6 lg:space-y-8 custom-scrollbar bg-gradient-to-br from-accent-primary-lightest/50 via-white to-accent-secondary-lightest/50 dark:from-gray-900 dark:to-gray-800">
 
           {/* Plan szczegółowy */}
           <div className="bg-white/70 dark:bg-gray-800/40 backdrop-blur-xl rounded-2xl shadow-lg border border-white/60 dark:border-gray-700/50 p-4 lg:p-6 min-h-[300px] lg:min-h-[500px]">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
               <h3 className="font-bold text-lg lg:text-xl text-gray-800 dark:text-white flex items-center gap-2">
-                <div className="w-1.5 h-5 lg:h-6 bg-pink-600 dark:bg-pink-500 rounded-full"></div>
+                <div className="w-1.5 h-5 lg:h-6 bg-accent-primary dark:bg-accent-primary-light rounded-full"></div>
                 Plan szczegółowy
               </h3>
               <button
                 onClick={() => setProgram({...program, schedule: [...program.schedule, { id: Date.now(), element: '', person: '', details: '', songIds: [], selectedSongs: [] }]})}
-                className="hidden sm:block bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-500 dark:to-orange-500 text-white text-sm px-4 py-2.5 rounded-xl font-bold hover:shadow-lg transition"
+                className="hidden sm:block bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-4 py-2.5 rounded-xl font-bold hover:shadow-lg transition"
               >
                 + Dodaj Element
               </button>
@@ -1527,7 +1527,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
             </div>
             <button
               onClick={() => setProgram({...program, schedule: [...program.schedule, { id: Date.now(), element: '', person: '', details: '', songIds: [], selectedSongs: [] }]})}
-              className="sm:hidden w-full mt-4 bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-500 dark:to-orange-500 text-white text-sm px-4 py-3 rounded-xl font-bold hover:shadow-lg transition"
+              className="sm:hidden w-full mt-4 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-4 py-3 rounded-xl font-bold hover:shadow-lg transition"
             >
               + Dodaj Element
             </button>
@@ -1536,7 +1536,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
           {/* Zespół Uwielbienia */}
           <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-4 lg:p-6 hover:shadow-xl transition relative z-50">
             <div className="flex justify-between items-center mb-4 lg:mb-6">
-              <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-pink-700 to-orange-700 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Zespół Uwielbienia</h3>
+              <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Zespół Uwielbienia</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
               {(worshipRoles.length > 0

@@ -70,7 +70,7 @@ const MemberMultiSelect = ({ members, selectedIds, onChange, roleId }) => {
     <div ref={triggerRef} className="relative">
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full min-h-[42px] px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer flex flex-wrap gap-1.5 items-center hover:border-pink-300 dark:hover:border-pink-600 transition"
+        className="w-full min-h-[42px] px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer flex flex-wrap gap-1.5 items-center hover:border-accent-primary-light dark:hover:border-accent-primary transition"
       >
         {selectedMembers.length === 0 ? (
           <span className="text-gray-400 dark:text-gray-500 text-sm">Przypisz osoby...</span>
@@ -78,12 +78,12 @@ const MemberMultiSelect = ({ members, selectedIds, onChange, roleId }) => {
           selectedMembers.map(member => (
             <span
               key={member.id}
-              className="bg-pink-50 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 px-2 py-0.5 rounded-lg text-xs font-medium border border-pink-100 dark:border-pink-800 flex items-center gap-1"
+              className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-lg text-xs font-medium border border-accent-primary-lighter dark:border-accent-primary-dark flex items-center gap-1"
             >
               {member.full_name}
               <span
                 onClick={(e) => { e.stopPropagation(); toggleMember(member.id); }}
-                className="hover:bg-pink-200 dark:hover:bg-pink-800 rounded-full p-0.5 cursor-pointer"
+                className="hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-dark rounded-full p-0.5 cursor-pointer"
               >
                 <X size={10} />
               </span>
@@ -112,13 +112,13 @@ const MemberMultiSelect = ({ members, selectedIds, onChange, roleId }) => {
               <div
                 key={member.id}
                 className={`px-4 py-2 text-sm cursor-pointer flex items-center justify-between transition
-                  hover:bg-pink-50 dark:hover:bg-pink-900/20 text-gray-700 dark:text-gray-300
-                  ${isSelected ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 font-medium' : ''}
+                  hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 text-gray-700 dark:text-gray-300
+                  ${isSelected ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light font-medium' : ''}
                 `}
                 onClick={() => toggleMember(member.id)}
               >
                 <span>{member.full_name}</span>
-                {isSelected && <Check size={16} className="text-pink-600" />}
+                {isSelected && <Check size={16} className="text-accent-primary" />}
               </div>
             );
           })}
@@ -296,7 +296,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
   if (loading) {
     return (
       <div className="p-10 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600 mx-auto"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary mx-auto"></div>
       </div>
     );
   }
@@ -305,7 +305,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
             Służby
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -317,7 +317,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
             setRoleForm({ id: null, name: '', field_key: '', description: '' });
             setShowRoleModal(true);
           }}
-          className="bg-gradient-to-r from-pink-600 to-orange-600 text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-pink-500/50 transition flex items-center gap-2"
+          className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
         >
           <Plus size={18} /> Dodaj służbę
         </button>
@@ -345,13 +345,13 @@ export default function DutyTab({ moduleKey, moduleName }) {
             return (
               <div
                 key={role.id}
-                className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg hover:border-pink-300 dark:hover:border-pink-600 transition-all duration-200 overflow-hidden group"
+                className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg hover:border-accent-primary-light dark:hover:border-accent-primary transition-all duration-200 overflow-hidden group"
               >
                 {/* Header karty */}
-                <div className="bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                <div className="bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white shadow-md shadow-pink-500/20">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white shadow-md shadow-accent-primary-light/20">
                         <Users size={18} />
                       </div>
                       <div>
@@ -362,7 +362,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-pink-600 dark:text-pink-400 bg-pink-100 dark:bg-pink-900/40 px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-bold text-accent-primary dark:text-accent-primary-light bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 px-2 py-0.5 rounded-full">
                         {assignedMembers.length}
                       </span>
                       <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -376,7 +376,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
                             });
                             setShowRoleModal(true);
                           }}
-                          className="p-1.5 text-gray-400 hover:text-pink-600 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition"
+                          className="p-1.5 text-gray-400 hover:text-accent-primary hover:bg-white dark:hover:bg-gray-700 rounded-lg transition"
                         >
                           <Edit2 size={14} />
                         </button>
@@ -468,7 +468,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
                 </button>
                 <button
                   onClick={saveRole}
-                  className="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg hover:shadow-pink-500/50 transition font-medium"
+                  className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium"
                 >
                   Zapisz
                 </button>

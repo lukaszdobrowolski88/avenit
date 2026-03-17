@@ -70,7 +70,7 @@ export default function ForwardMessageModal({
 
     if (conv.type === 'ministry') {
       return (
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
+        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-accent-primary-light flex items-center justify-center text-white">
           <Music size={14} />
         </div>
       );
@@ -89,12 +89,12 @@ export default function ForwardMessageModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-2xl w-full max-w-md mx-4 shadow-2xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-pink-50/50 to-orange-50/50 dark:from-gray-800/50 dark:to-gray-800/50">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-accent-primary-lightest/50 to-accent-secondary-lightest/50 dark:from-gray-800/50 dark:to-gray-800/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center shadow-lg shadow-pink-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center shadow-lg shadow-accent-primary-light/20">
               <Forward size={18} className="text-white" />
             </div>
-            <h2 className="text-lg font-bold bg-gradient-to-r from-pink-600 to-orange-500 bg-clip-text text-transparent">
+            <h2 className="text-lg font-bold bg-gradient-to-r from-accent-primary to-accent-secondary-light bg-clip-text text-transparent">
               Przekaż wiadomość
             </h2>
           </div>
@@ -113,8 +113,8 @@ export default function ForwardMessageModal({
               Przekazujesz:
             </p>
             <div className="flex items-start gap-3 p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-100/50 dark:border-gray-700/50">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-100 to-orange-100 dark:from-pink-900/30 dark:to-orange-900/30 flex items-center justify-center flex-shrink-0">
-                <MessageSquare size={14} className="text-pink-500" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center flex-shrink-0">
+                <MessageSquare size={14} className="text-accent-primary-light" />
               </div>
               <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
                 {message.content || (message.attachments?.length > 0 ? `${message.attachments.length} załącznik(ów)` : '')}
@@ -132,7 +132,7 @@ export default function ForwardMessageModal({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Szukaj konwersacji..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 transition-all duration-200"
+              className="w-full pl-10 pr-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 transition-all duration-200"
             />
           </div>
         </div>
@@ -159,7 +159,7 @@ export default function ForwardMessageModal({
                   onClick={() => toggleConversation(conv.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-left mb-1 ${
                     isSelected
-                      ? 'bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/30 dark:to-orange-900/30 ring-2 ring-pink-400/50 shadow-sm'
+                      ? 'bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 ring-2 ring-accent-primary-light/50 shadow-sm'
                       : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
                   }`}
                 >
@@ -169,7 +169,7 @@ export default function ForwardMessageModal({
                   </span>
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
                     isSelected
-                      ? 'border-pink-500 bg-gradient-to-r from-pink-500 to-orange-500 shadow-sm shadow-pink-500/30'
+                      ? 'border-accent-primary-light bg-gradient-to-r from-accent-primary-light to-accent-secondary-light shadow-sm shadow-accent-primary-light/30'
                       : 'border-gray-300 dark:border-gray-600'
                   }`}>
                     {isSelected && (
@@ -195,7 +195,7 @@ export default function ForwardMessageModal({
           <button
             onClick={handleForward}
             disabled={selectedConversations.length === 0 || sending}
-            className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-pink-500/30 hover:shadow-pink-500/40"
+            className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-accent-primary-light/30 hover:shadow-accent-primary-light/40"
           >
             {sending ? (
               <>

@@ -85,7 +85,7 @@ export default function GuestCheckinForm({
   const inputClasses = (hasError) => `
     w-full px-4 py-3.5 text-base border-2 rounded-xl bg-white dark:bg-gray-800
     text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500
-    focus:outline-none focus:border-pink-500 dark:focus:border-pink-400 transition
+    focus:outline-none focus:border-accent-primary-light dark:focus:border-accent-primary-light transition
     ${hasError ? 'border-red-500 dark:border-red-400' : 'border-gray-200 dark:border-gray-700'}
   `;
 

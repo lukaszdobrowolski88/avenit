@@ -121,13 +121,13 @@ export default function TenantsList({ onSelectTenant }) {
             placeholder="Szukaj po nazwie lub emailu..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500"
+          className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light"
         >
           <option value="">Wszystkie statusy</option>
           <option value="trial">Trial</option>
@@ -170,8 +170,8 @@ export default function TenantsList({ onSelectTenant }) {
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
-                            <Building2 size={18} className="text-pink-600 dark:text-pink-400" />
+                          <div className="w-10 h-10 rounded-lg bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 flex items-center justify-center">
+                            <Building2 size={18} className="text-accent-primary dark:text-accent-primary-light" />
                           </div>
                           <div>
                             <div className="font-medium text-gray-900 dark:text-white">

@@ -473,15 +473,15 @@ const TagMultiSelect = ({ label, options, value = [], onChange }) => {
       {label && <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{label}</label>}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer min-h-[50px] flex flex-wrap gap-2 hover:border-pink-400 dark:hover:border-pink-500 transition"
+        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer min-h-[50px] flex flex-wrap gap-2 hover:border-accent-primary-light dark:hover:border-accent-primary-light transition"
       >
         {value.length === 0 && <span className="text-gray-400 dark:text-gray-500 pt-0.5">Wybierz tagi...</span>}
         {value.map(tag => (
-          <span key={tag} className="bg-orange-50 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border border-orange-100 dark:border-orange-800">
+          <span key={tag} className="bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/40 text-accent-secondary dark:text-accent-secondary-light px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border border-accent-secondary-lighter dark:border-accent-secondary-dark">
             {tag}
             <div
               onMouseDown={(e) => { e.stopPropagation(); toggleTag(tag); }}
-              className="cursor-pointer hover:text-orange-900 dark:hover:text-white"
+              className="cursor-pointer hover:text-accent-secondary-darkest dark:hover:text-white"
             >
               <X size={12} />
             </div>
@@ -501,11 +501,11 @@ const TagMultiSelect = ({ label, options, value = [], onChange }) => {
                 onKeyDown={handleKeyDown}
                 onClick={(e) => e.stopPropagation()}
                 placeholder="Dodaj własny tag..."
-                className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:border-pink-500"
+                className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:border-accent-primary-light"
               />
               <button
                 onClick={(e) => { e.stopPropagation(); addCustomTag(); }}
-                className="px-3 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition text-sm font-bold"
+                className="px-3 py-2 bg-accent-primary text-white rounded-lg hover:bg-accent-primary transition text-sm font-bold"
               >
                 <PlusCircle size={16} />
               </button>
@@ -518,7 +518,7 @@ const TagMultiSelect = ({ label, options, value = [], onChange }) => {
                 key={tag}
                 onClick={() => toggleTag(tag)}
                 className={`px-4 py-2.5 text-sm cursor-pointer flex items-center justify-between transition
-                  ${isSelected ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}
+                  ${isSelected ? 'bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/30 text-accent-secondary dark:text-accent-secondary-light font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}
                 `}
               >
                 {tag}
@@ -1103,22 +1103,22 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
           <div className="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
             <button
               onClick={() => setActiveTab('basic')}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition ${activeTab === 'basic' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition ${activeTab === 'basic' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
             >
               Informacje Podstawowe
             </button>
             <button
               onClick={() => setActiveTab('lyrics')}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition ${activeTab === 'lyrics' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition ${activeTab === 'lyrics' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
             >
               Tekst i Chwyty
             </button>
             <button
               onClick={() => setActiveTab('attachments')}
-              className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${activeTab === 'attachments' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${activeTab === 'attachments' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
             >
               <FileText size={14} />
-              Załączniki {(formData.attachments || []).length > 0 && <span className="bg-pink-100 dark:bg-pink-900 text-pink-600 dark:text-pink-300 px-1.5 py-0.5 rounded text-xs">{formData.attachments.length}</span>}
+              Załączniki {(formData.attachments || []).length > 0 && <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light px-1.5 py-0.5 rounded text-xs">{formData.attachments.length}</span>}
             </button>
           </div>
 
@@ -1129,7 +1129,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
                   <input 
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-500/20 outline-none transition"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
                     placeholder="Np. Jak wielki jest Bóg"
                     value={formData.title}
                     onChange={e => setFormData({...formData, title: e.target.value})}
@@ -1138,7 +1138,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Autor</label>
                   <input 
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-500/20 outline-none transition"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
                     placeholder="Np. Chris Tomlin"
                     value={formData.author}
                     onChange={e => setFormData({...formData, author: e.target.value})}
@@ -1161,7 +1161,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                   <div className="relative">
                     <Hash size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-500/20 outline-none transition"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
                       placeholder="4/4"
                       value={formData.meter}
                       onChange={e => setFormData({...formData, meter: e.target.value})}
@@ -1175,7 +1175,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                     step="0.1"
                     min="1"
                     max="300"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-500/20 outline-none transition"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
                     placeholder="120"
                     value={formData.tempo}
                     onChange={e => setFormData({...formData, tempo: e.target.value})}
@@ -1200,7 +1200,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                  <div className="flex flex-col h-full">
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tekst Pieśni (Lyrics)</label>
                     <textarea
-                      className="flex-1 w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-500/20 outline-none transition resize-none font-mono text-sm leading-relaxed"
+                      className="flex-1 w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition resize-none font-mono text-sm leading-relaxed"
                       placeholder="Wpisz tekst tutaj..."
                       value={formData.lyrics}
                       onChange={e => setFormData({...formData, lyrics: e.target.value})}
@@ -1237,11 +1237,11 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
 
                         {/* System stopni - wybór tonacji i akordy */}
                         <div className="flex items-center gap-2">
-                          <Music size={14} className="text-orange-500" />
+                          <Music size={14} className="text-accent-secondary-light" />
                           <select
                             value={editorKey}
                             onChange={(e) => setEditorKey(e.target.value)}
-                            className="h-6 px-2 text-[11px] font-bold bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded text-orange-700 dark:text-orange-300 cursor-pointer focus:outline-none focus:ring-1 focus:ring-orange-400"
+                            className="h-6 px-2 text-[11px] font-bold bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/30 border border-accent-secondary-lighter dark:border-accent-secondary-dark rounded text-accent-secondary dark:text-accent-secondary-light cursor-pointer focus:outline-none focus:ring-1 focus:ring-accent-secondary-light"
                             title="Wybierz tonację"
                           >
                             <option value="">Tonacja</option>
@@ -1264,7 +1264,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                                 className={`px-1.5 h-6 flex items-center justify-center border rounded transition text-[10px] font-bold ${
                                   defaultType === 'm' || defaultType === 'dim'
                                     ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50'
-                                    : 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50'
+                                    : 'bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/30 border-accent-secondary-lighter dark:border-accent-secondary-dark text-accent-secondary dark:text-accent-secondary-light hover:bg-accent-secondary-lighter dark:hover:bg-accent-secondary-darkest/50'
                                 }`}
                                 title={`${label} stopień: ${fullChord}`}
                               >
@@ -1283,14 +1283,14 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         <div className="flex items-center gap-1">
                           <button
                             onMouseDown={(e) => { e.preventDefault(); execFormat('bold'); }}
-                            className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-600 hover:text-pink-600 transition"
+                            className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 hover:text-accent-primary transition"
                             title="Pogrubienie (Ctrl+B)"
                           >
                             <Bold size={14} />
                           </button>
                           <button
                             onMouseDown={(e) => { e.preventDefault(); execFormat('italic'); }}
-                            className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-600 hover:text-pink-600 transition"
+                            className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 hover:text-accent-primary transition"
                             title="Kursywa (Ctrl+I)"
                           >
                             <Italic size={14} />
@@ -1307,7 +1307,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                             <button
                               key={size}
                               onMouseDown={(e) => { e.preventDefault(); execFontSizeFormat(size); }}
-                              className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-600 hover:text-pink-600 transition text-[10px] font-bold"
+                              className="w-6 h-6 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 hover:text-accent-primary transition text-[10px] font-bold"
                               title={`Rozmiar ${size}`}
                             >
                               {size}
@@ -1364,9 +1364,9 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                           <button
                             key={section.label}
                             onMouseDown={(e) => { e.preventDefault(); insertSection(section); }}
-                            className="px-2.5 py-1 bg-white dark:bg-gray-700 hover:bg-pink-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-[11px] font-bold rounded-md border border-gray-200 dark:border-gray-600 transition flex items-center gap-1"
+                            className="px-2.5 py-1 bg-white dark:bg-gray-700 hover:bg-accent-primary-lightest dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-[11px] font-bold rounded-md border border-gray-200 dark:border-gray-600 transition flex items-center gap-1"
                           >
-                            <PlusCircle size={10} className="text-pink-500 dark:text-pink-400"/>
+                            <PlusCircle size={10} className="text-accent-primary-light dark:text-accent-primary-light"/>
                             {section.label}
                           </button>
                         ))}
@@ -1376,7 +1376,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         {/* Szybkie znaki */}
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertBarAtCursor(); }}
-                          className="px-2.5 py-1 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 text-orange-700 dark:text-orange-300 text-[11px] font-bold rounded-md border border-orange-200 dark:border-orange-800 transition font-mono"
+                          className="px-2.5 py-1 bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/30 hover:bg-accent-secondary-lighter dark:hover:bg-accent-secondary-darkest/50 text-accent-secondary dark:text-accent-secondary-light text-[11px] font-bold rounded-md border border-accent-secondary-lighter dark:border-accent-secondary-dark transition font-mono"
                           title="Takt ze stałą szerokością (jeśli w takcie - dodaje po nim)"
                         >
                           |takt|
@@ -1432,7 +1432,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                       contentEditable
                       onInput={handleEditorInput}
                       onKeyDown={handleKeyDown}
-                      className="flex-1 w-full px-4 py-3 border-x border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:ring-inset min-h-[300px] overflow-auto font-mono"
+                      className="flex-1 w-full px-4 py-3 border-x border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:ring-inset min-h-[300px] overflow-auto font-mono"
                       style={{ lineHeight: chordsLineHeight, fontSize: `${chordsFontSize}px`, whiteSpace: 'pre-wrap' }}
                       suppressContentEditableWarning
                       data-placeholder="Wpisz chwyty tutaj... | = takt ze stałą szerokością, Tab = spacja"
@@ -1494,7 +1494,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
               {/* DODAWANIE PLIKU */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-4 flex items-center gap-2">
-                  <Upload size={16} className="text-pink-500" /> Prześlij plik
+                  <Upload size={16} className="text-accent-primary-light" /> Prześlij plik
                 </h3>
                 <div
                   onDragOver={handleDragOver}
@@ -1504,11 +1504,11 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                   onClick={() => document.getElementById('file-upload-input')?.click()}
                   className={`w-full px-6 py-8 border-2 border-dashed rounded-xl cursor-pointer transition flex flex-col items-center justify-center gap-2 ${
                     isDragOver
-                      ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20'
-                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-pink-400 dark:hover:border-pink-500'
+                      ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20'
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-accent-primary-light dark:hover:border-accent-primary-light'
                   }`}
                 >
-                  <Upload size={32} className={isDragOver ? 'text-pink-500' : 'text-gray-400'} />
+                  <Upload size={32} className={isDragOver ? 'text-accent-primary-light' : 'text-gray-400'} />
                   <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                     {uploadingFile ? 'Przesyłanie...' : isDragOver ? 'Upuść plik tutaj' : 'Kliknij lub przeciągnij plik'}
                   </span>
@@ -1528,17 +1528,17 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
               {/* DODAWANIE LINKU */}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-4 flex items-center gap-2">
-                  <LinkIcon size={16} className="text-orange-500" /> Dodaj link
+                  <LinkIcon size={16} className="text-accent-secondary-light" /> Dodaj link
                 </h3>
                 <div className="space-y-3">
                   <input
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm outline-none focus:border-pink-500 transition"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm outline-none focus:border-accent-primary-light transition"
                     placeholder="https://youtube.com/watch?v=..."
                     value={newLink}
                     onChange={e => setNewLink(e.target.value)}
                   />
                   <input
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm outline-none focus:border-pink-500 transition"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm outline-none focus:border-accent-primary-light transition"
                     placeholder="Opis linku (np. Tutorial na YouTube)"
                     value={newLinkDescription}
                     onChange={e => setNewLinkDescription(e.target.value)}
@@ -1546,7 +1546,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                   <button
                     onClick={handleAddLink}
                     disabled={!newLink}
-                    className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-xl font-bold text-sm hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2.5 bg-gradient-to-r from-accent-secondary-light to-accent-primary-light text-white rounded-xl font-bold text-sm hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Dodaj Link
                   </button>
@@ -1570,17 +1570,17 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                     {formData.attachments.map((att, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-pink-300 dark:hover:border-pink-600 transition group"
+                        className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-accent-primary-light dark:hover:border-accent-primary transition group"
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${att.type === 'link' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' : 'bg-pink-100 dark:bg-pink-900/30 text-pink-600'}`}>
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${att.type === 'link' ? 'bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 text-accent-secondary' : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary'}`}>
                             {att.type === 'link' ? <LinkIcon size={20} /> : <FileText size={20} />}
                           </div>
                           <div className="min-w-0 flex-1">
                             {editingAttachmentIdx === idx ? (
                               <div className="flex gap-2">
                                 <input
-                                  className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white outline-none focus:border-pink-500"
+                                  className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-white outline-none focus:border-accent-primary-light"
                                   value={editingDescription}
                                   onChange={e => setEditingDescription(e.target.value)}
                                   placeholder="Wpisz opis..."
@@ -1588,7 +1588,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                                 />
                                 <button
                                   onClick={() => updateAttachmentDescription(idx, editingDescription)}
-                                  className="px-3 py-1.5 bg-pink-600 text-white rounded-lg text-sm font-bold hover:bg-pink-700"
+                                  className="px-3 py-1.5 bg-accent-primary text-white rounded-lg text-sm font-bold hover:bg-accent-primary"
                                 >
                                   OK
                                 </button>
@@ -1616,7 +1616,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                           <div className="flex gap-2 shrink-0 ml-3">
                             <button
                               onClick={() => startEditingDescription(idx)}
-                              className="p-2 text-gray-400 hover:text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/30 rounded-lg transition"
+                              className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"
                               title="Edytuj opis"
                             >
                               <Edit3 size={16} />
@@ -1650,7 +1650,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
           </button>
           <button 
             onClick={handleSubmit}
-            className="px-8 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-pink-600 to-orange-600 hover:shadow-lg hover:shadow-pink-500/30 transition transform hover:-translate-y-0.5"
+            className="px-8 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-accent-primary to-accent-secondary hover:shadow-lg hover:shadow-accent-primary-light/30 transition transform hover:-translate-y-0.5"
           >
             Zapisz Pieśń
           </button>

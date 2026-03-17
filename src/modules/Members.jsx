@@ -409,7 +409,7 @@ export default function Members() {
   if (loading) {
     return (
       <div className="p-10 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 dark:border-pink-400 mx-auto"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary dark:border-accent-primary-light mx-auto"></div>
         <div className="mt-4 text-gray-600 dark:text-gray-400">Ładowanie bazy członków...</div>
       </div>
     );
@@ -418,7 +418,7 @@ export default function Members() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
           Baza Członków
         </h1>
       </div>
@@ -443,7 +443,7 @@ export default function Members() {
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
               <input
-                className="w-full pl-10 pr-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
                 placeholder="Szukaj..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -451,7 +451,7 @@ export default function Members() {
             </div>
 
             <div className="flex bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm p-1 rounded-xl border border-gray-200/50 dark:border-gray-700/50 gap-1">
-              <button onClick={() => setStatusFilter('all')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'all' ? 'bg-white dark:bg-gray-700 shadow text-pink-600 dark:text-pink-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Wszyscy</button>
+              <button onClick={() => setStatusFilter('all')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'all' ? 'bg-white dark:bg-gray-700 shadow text-accent-primary dark:text-accent-primary-light' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Wszyscy</button>
               <button onClick={() => setStatusFilter('Członek')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'Członek' ? 'bg-white dark:bg-gray-700 shadow text-green-600 dark:text-green-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Członkowie</button>
               <button onClick={() => setStatusFilter('Sympatyk')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'Sympatyk' ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Sympatycy</button>
               <button onClick={() => setStatusFilter('Gość')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'Gość' ? 'bg-white dark:bg-gray-700 shadow text-gray-600 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Goście</button>
@@ -460,7 +460,7 @@ export default function Members() {
 
           <button
             onClick={() => openModal()}
-            className="bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-500 dark:to-orange-500 text-white text-sm px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-pink-500/30 transition flex items-center gap-2 whitespace-nowrap"
+            className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center gap-2 whitespace-nowrap"
           >
             <Plus size={18} /> Dodaj osobę
           </button>
@@ -469,7 +469,7 @@ export default function Members() {
         <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[800px]">
-            <thead className="bg-gradient-to-r from-pink-50/80 to-orange-50/80 dark:from-pink-900/20 dark:to-orange-900/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
+            <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
               <tr>
                 <th className="p-4 pl-6">Osoba</th>
                 <th className="p-4">Kontakt & Adres</th>
@@ -482,10 +482,10 @@ export default function Members() {
             </thead>
             <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
               {filteredMembers.map((member) => (
-                <tr key={member.id} className="hover:bg-pink-50/30 dark:hover:bg-pink-900/10 transition duration-200">
+                <tr key={member.id} className="hover:bg-accent-primary-lightest/30 dark:hover:bg-accent-primary-darkest/10 transition duration-200">
                   <td className="p-4 pl-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-100 to-orange-100 dark:from-pink-900 dark:to-orange-900 flex items-center justify-center text-pink-700 dark:text-pink-300 font-bold shadow-sm border border-white dark:border-gray-700">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest dark:to-accent-secondary-darkest flex items-center justify-center text-accent-primary dark:text-accent-primary-light font-bold shadow-sm border border-white dark:border-gray-700">
                         {member.first_name?.[0]}{member.last_name?.[0]}
                       </div>
                       <div>
@@ -502,8 +502,8 @@ export default function Members() {
 
                   <td className="p-4">
                     <div className="space-y-1">
-                      {member.email && <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-xs"><Mail size={14} className="text-pink-400" /> {member.email}</div>}
-                      {member.phone && <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-xs"><Phone size={14} className="text-orange-400" /> {member.phone}</div>}
+                      {member.email && <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-xs"><Mail size={14} className="text-accent-primary-light" /> {member.email}</div>}
+                      {member.phone && <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-xs"><Phone size={14} className="text-accent-secondary-light" /> {member.phone}</div>}
                       {member.address && <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-xs"><MapPin size={14} className="text-green-500" /> {member.address}</div>}
                     </div>
                   </td>
@@ -524,7 +524,7 @@ export default function Members() {
 
                   <td className="p-4">
                     {member.home_group_id ? (
-                      <span className="inline-flex items-center gap-1.5 bg-pink-50 dark:bg-pink-900/20 border border-pink-100 dark:border-pink-800/30 text-pink-700 dark:text-pink-300 px-2.5 py-1 rounded-md text-xs font-medium">
+                      <span className="inline-flex items-center gap-1.5 bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border border-accent-primary-lighter dark:border-accent-primary-dark/30 text-accent-primary dark:text-accent-primary-light px-2.5 py-1 rounded-md text-xs font-medium">
                         <Home size={12} /> {getHomeGroupName(member.home_group_id)}
                       </span>
                     ) : (
@@ -537,7 +537,7 @@ export default function Members() {
                       {member.ministries && member.ministries.length > 0 ? (
                         getMinistryLabels(member.ministries).map((label, idx) => (
                           <span key={idx} className="inline-flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-md text-xs font-medium">
-                            <User size={12} className="text-pink-500" /> {label}
+                            <User size={12} className="text-accent-primary-light" /> {label}
                           </span>
                         ))
                       ) : (
@@ -557,7 +557,7 @@ export default function Members() {
                           href={member.membership_declaration_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-pink-600 dark:text-pink-400 hover:underline"
+                          className="inline-flex items-center gap-1 text-xs text-accent-primary dark:text-accent-primary-light hover:underline"
                         >
                           <FileText size={12} /> Deklaracja
                         </a>
@@ -567,7 +567,7 @@ export default function Members() {
 
                   <td className="p-4 pr-6 text-right">
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => openModal(member)} className="p-2 text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/30 rounded-lg transition"><Edit2 size={18} /></button>
+                      <button onClick={() => openModal(member)} className="p-2 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"><Edit2 size={18} /></button>
                       <button onClick={() => handleDelete(member.id)} className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"><Trash2 size={18} /></button>
                     </div>
                   </td>
@@ -606,7 +606,7 @@ export default function Members() {
           <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-2xl p-8 border border-white/20 dark:border-gray-700/50 relative animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
 
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
                 {formData.id ? 'Edytuj dane' : 'Nowa osoba'}
               </h3>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-full transition">
@@ -620,7 +620,7 @@ export default function Members() {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię *</label>
                   <input
-                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-900 dark:text-gray-100"
+                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={formData.first_name}
                     onChange={e => setFormData({ ...formData, first_name: e.target.value })}
                   />
@@ -628,7 +628,7 @@ export default function Members() {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwisko *</label>
                   <input
-                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-900 dark:text-gray-100"
+                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={formData.last_name}
                     onChange={e => setFormData({ ...formData, last_name: e.target.value })}
                   />
@@ -639,7 +639,7 @@ export default function Members() {
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Email</label>
                 <input
-                  className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-900 dark:text-gray-100"
+                  className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                   type="email"
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
@@ -650,7 +650,7 @@ export default function Members() {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Telefon</label>
                   <input
-                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-900 dark:text-gray-100"
+                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={formData.phone}
                     onChange={e => setFormData({ ...formData, phone: e.target.value })}
                   />
@@ -684,14 +684,14 @@ export default function Members() {
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Deklaracja członkostwa (PDF)</label>
                     {formData.membership_declaration_url ? (
                       <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                        <FileText size={24} className="text-pink-500" />
+                        <FileText size={24} className="text-accent-primary-light" />
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Deklaracja załączona</p>
                           <a
                             href={formData.membership_declaration_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-pink-600 dark:text-pink-400 hover:underline flex items-center gap-1"
+                            className="text-xs text-accent-primary dark:text-accent-primary-light hover:underline flex items-center gap-1"
                           >
                             <Eye size={12} /> Podgląd
                           </a>
@@ -704,10 +704,10 @@ export default function Members() {
                         </button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-pink-400 dark:hover:border-pink-500 transition bg-white/50 dark:bg-gray-800/50">
+                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary-light transition bg-white/50 dark:bg-gray-800/50">
                         <div className="flex flex-col items-center justify-center">
                           {uploading ? (
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-600"></div>
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-primary"></div>
                           ) : (
                             <>
                               <Upload size={24} className="text-gray-400 mb-2" />
@@ -734,7 +734,7 @@ export default function Members() {
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                   <input
-                    className="w-full pl-10 pr-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-900 dark:text-gray-100"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     placeholder="Ulica, numer domu, miasto"
                     value={formData.address}
                     onChange={e => setFormData({ ...formData, address: e.target.value })}
@@ -780,7 +780,7 @@ export default function Members() {
                           onClick={() => toggleMinistry(ministry.key)}
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
                             isSelected
-                              ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
+                              ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                         >
@@ -801,7 +801,7 @@ export default function Members() {
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-8 py-3 bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-500 dark:to-orange-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/30 transition disabled:opacity-50"
+                  className="px-8 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition disabled:opacity-50"
                 >
                   {saving ? 'Zapisywanie...' : 'Zapisz'}
                 </button>

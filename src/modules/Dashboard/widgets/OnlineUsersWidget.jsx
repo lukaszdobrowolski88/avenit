@@ -201,7 +201,7 @@ export default function OnlineUsersWidget({ userEmail }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -287,7 +287,7 @@ export default function OnlineUsersWidget({ userEmail }) {
 
                 {/* Action icon */}
                 <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="p-1.5 rounded-lg bg-gradient-to-r from-pink-500 to-orange-500 text-white">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white">
                     <MessageCircle size={14} />
                   </div>
                 </div>

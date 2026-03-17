@@ -126,7 +126,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader className="w-8 h-8 text-pink-500 animate-spin" />
+        <Loader className="w-8 h-8 text-accent-primary-light animate-spin" />
       </div>
     );
   }
@@ -143,7 +143,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Szukaj szablonów..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 transition-all"
           />
           {searchQuery && (
             <button
@@ -211,9 +211,9 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
         {onCreateTemplate && (
           <button
             onClick={onCreateTemplate}
-            className="group relative bg-gradient-to-br from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 rounded-xl border-2 border-dashed border-pink-300 dark:border-pink-700 hover:border-pink-500 dark:hover:border-pink-500 p-6 transition-all duration-200 flex flex-col items-center justify-center min-h-[200px]"
+            className="group relative bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl border-2 border-dashed border-accent-primary-light dark:border-accent-primary hover:border-accent-primary-light dark:hover:border-accent-primary-light p-6 transition-all duration-200 flex flex-col items-center justify-center min-h-[200px]"
           >
-            <div className="w-14 h-14 bg-gradient-to-br from-pink-500 to-orange-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-pink-500/30">
+            <div className="w-14 h-14 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg shadow-accent-primary-light/30">
               <FileText className="w-7 h-7 text-white" />
             </div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Nowy szablon</h3>
@@ -229,7 +229,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
           return (
             <div
               key={template.id}
-              className="group relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-pink-300 dark:hover:border-pink-700 transition-all duration-200"
+              className="group relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-accent-primary-light dark:hover:border-accent-primary transition-all duration-200"
             >
               {/* Podgląd HTML */}
               <div
@@ -254,7 +254,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onSelectTemplate(template.id); }}
-                      className="p-2 bg-pink-500 rounded-lg shadow-lg hover:scale-110 transition-transform"
+                      className="p-2 bg-accent-primary-light rounded-lg shadow-lg hover:scale-110 transition-transform"
                       title="Użyj szablonu"
                     >
                       <Edit size={18} className="text-white" />
@@ -381,7 +381,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                 {/* Przycisk użyj */}
                 <button
                   onClick={() => onSelectTemplate(template.id)}
-                  className="w-full mt-3 py-2 text-sm font-medium text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/20 hover:bg-pink-100 dark:hover:bg-pink-900/30 rounded-lg transition-colors"
+                  className="w-full mt-3 py-2 text-sm font-medium text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 rounded-lg transition-colors"
                 >
                   Użyj szablonu
                 </button>
@@ -402,7 +402,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="text-sm text-pink-500 hover:text-pink-600"
+              className="text-sm text-accent-primary-light hover:text-accent-primary"
             >
               Wyczyść wyszukiwanie
             </button>
@@ -445,7 +445,7 @@ function TemplatePreviewModal({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-pink-500 to-orange-500 p-5">
+        <div className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl">
@@ -476,7 +476,7 @@ function TemplatePreviewModal({
                   onClick={() => onDeviceChange('desktop')}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
                     device === 'desktop'
-                      ? 'bg-white text-pink-600 shadow-lg'
+                      ? 'bg-white text-accent-primary shadow-lg'
                       : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                   title="Widok desktop"
@@ -488,7 +488,7 @@ function TemplatePreviewModal({
                   onClick={() => onDeviceChange('mobile')}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
                     device === 'mobile'
-                      ? 'bg-white text-pink-600 shadow-lg'
+                      ? 'bg-white text-accent-primary shadow-lg'
                       : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                   title="Widok mobile"
@@ -569,7 +569,7 @@ function TemplatePreviewModal({
             </button>
             <button
               onClick={onUseTemplate}
-              className="group px-6 py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white font-medium rounded-xl transition-all shadow-lg shadow-pink-500/30 hover:shadow-xl flex items-center gap-2"
+              className="group px-6 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-medium rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl flex items-center gap-2"
             >
               <Edit size={16} className="group-hover:scale-110 transition-transform" />
               Użyj szablonu
@@ -587,17 +587,17 @@ function CategoryButton({ active, onClick, icon: Icon, count, children }) {
       onClick={onClick}
       className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-300 ${
         active
-          ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-lg shadow-pink-500/30 scale-[1.02]'
-          : 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 hover:border-pink-200 dark:hover:border-pink-800/50 hover:shadow-md'
+          ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg shadow-accent-primary-light/30 scale-[1.02]'
+          : 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark/50 hover:shadow-md'
       }`}
     >
-      <Icon size={16} className={active ? '' : 'group-hover:text-pink-500 transition-colors'} />
+      <Icon size={16} className={active ? '' : 'group-hover:text-accent-primary-light transition-colors'} />
       {children}
       {count !== undefined && count > 0 && (
         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold transition-colors ${
           active
             ? 'bg-white/20'
-            : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-pink-100 dark:group-hover:bg-pink-900/30 group-hover:text-pink-600 dark:group-hover:text-pink-400'
+            : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-accent-primary-lighter dark:group-hover:bg-accent-primary-darkest/30 group-hover:text-accent-primary dark:group-hover:text-accent-primary-light'
         }`}>
           {count}
         </span>

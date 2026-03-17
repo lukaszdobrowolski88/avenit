@@ -127,8 +127,8 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full px-4 py-3 border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all
           ${isOpen 
-            ? 'border-pink-500 ring-2 ring-pink-500/20 dark:border-pink-400' 
-            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-pink-300 dark:hover:border-pink-600'
+            ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light' 
+            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'
           }
         `}
       >
@@ -176,9 +176,9 @@ const CustomDatePicker = ({ label, value, onChange }) => {
                   onClick={() => handleDayClick(day)}
                   className={`h-8 w-8 rounded-lg text-xs font-medium transition flex items-center justify-center
                     ${isSelected 
-                      ? 'bg-pink-600 text-white shadow-md shadow-pink-500/30' 
+                      ? 'bg-accent-primary text-white shadow-md shadow-accent-primary-light/30' 
                       : isToday 
-                        ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 border border-pink-100 dark:border-pink-800'
+                        ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light border border-accent-primary-lighter dark:border-accent-primary-dark'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }
                   `}
@@ -232,14 +232,14 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
     <div className="relative w-full">
       <div 
         ref={triggerRef}
-        className="w-full min-h-[32px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs cursor-pointer flex flex-wrap gap-1 items-center hover:border-pink-300 dark:hover:border-pink-500 transition"
+        className="w-full min-h-[32px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs cursor-pointer flex flex-wrap gap-1 items-center hover:border-accent-primary-light dark:hover:border-accent-primary-light transition"
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
           <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span>
         ) : (
           selectedItems.map((item, idx) => (
-            <span key={idx} className="bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 px-1.5 py-0.5 rounded text-[10px] border border-pink-100 dark:border-pink-800 whitespace-nowrap">
+            <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-1.5 py-0.5 rounded text-[10px] border border-accent-primary-lighter dark:border-accent-primary-dark whitespace-nowrap">
               {item}
             </span>
           ))
@@ -264,8 +264,8 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
               <div 
                 key={person.id}
                 className={`px-3 py-1.5 text-xs cursor-pointer flex items-center justify-between transition 
-                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-pink-50 dark:hover:bg-pink-900/20 text-gray-700 dark:text-gray-300'}
-                  ${isSelected ? 'bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 font-medium' : ''}
+                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 text-gray-700 dark:text-gray-300'}
+                  ${isSelected ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light font-medium' : ''}
                 `}
                 onClick={() => toggleSelection(person.full_name, isAbsent)}
               >
@@ -513,7 +513,7 @@ const ScheduleTable = ({ programs, mediaTeam, onUpdateProgram, roles, memberRole
                             </td>
                             <td className="p-2">
                               <input 
-                                className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-pink-500 dark:focus:border-pink-400 text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
+                                className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light dark:focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
                                 placeholder="Wpisz..."
                                 defaultValue={prog.produkcja?.notatki || ''}
                                 onBlur={(e) => updateNotes(prog.id, e.target.value)}
@@ -1071,13 +1071,13 @@ export default function MediaTeamModule() {
     }
   };
 
-  if (loading) return <div className="p-10 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 dark:border-pink-400 mx-auto"></div></div>;
+  if (loading) return <div className="p-10 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary dark:border-accent-primary-light mx-auto"></div></div>;
   if (error) return <div className="p-10 text-red-600 dark:text-red-400">Błąd: {error}</div>;
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Zespół Medialny</h1>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Zespół Medialny</h1>
       </div>
 
       {/* TAB NAVIGATION */}
@@ -1107,7 +1107,7 @@ export default function MediaTeamModule() {
       {activeTab === 'schedule' && (
       <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 relative z-[50] transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Grafik Media Team</h2>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Grafik Media Team</h2>
         </div>
         <ScheduleTable
           programs={programs}
@@ -1126,16 +1126,16 @@ export default function MediaTeamModule() {
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
           {/* Row 1: Title + Add button (mobile) / Title (desktop) */}
           <div className="flex justify-between items-center">
-            <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Zadania ({filteredTasks.length})</h2>
+            <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Zadania ({filteredTasks.length})</h2>
             {/* Mobile only: Add button */}
-            <button onClick={() => openTaskModal(null)} className="lg:hidden bg-gradient-to-r from-orange-600 to-pink-600 text-white p-2.5 rounded-xl font-medium hover:shadow-lg transition"><Plus size={20}/></button>
+            <button onClick={() => openTaskModal(null)} className="lg:hidden bg-gradient-to-r from-accent-secondary to-accent-primary text-white p-2.5 rounded-xl font-medium hover:shadow-lg transition"><Plus size={20}/></button>
           </div>
 
           {/* Row 2: Filters (mobile) / Filters + Add button (desktop) */}
           <div className="flex items-center gap-2 lg:gap-3">
             <div className="flex bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm p-1 rounded-xl border border-gray-200/50 dark:border-gray-700/50 gap-1 lg:gap-2 items-center flex-1 lg:flex-none">
-              <button onClick={() => setViewMode('kanban')} className={`p-2 rounded-lg transition ${viewMode === 'kanban' ? 'bg-white dark:bg-gray-700 shadow text-pink-600 dark:text-pink-300' : 'text-gray-500 dark:text-gray-400'}`}><LayoutGrid size={18} /></button>
-              <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow text-pink-600 dark:text-pink-300' : 'text-gray-500 dark:text-gray-400'}`}><List size={18} /></button>
+              <button onClick={() => setViewMode('kanban')} className={`p-2 rounded-lg transition ${viewMode === 'kanban' ? 'bg-white dark:bg-gray-700 shadow text-accent-primary dark:text-accent-primary-light' : 'text-gray-500 dark:text-gray-400'}`}><LayoutGrid size={18} /></button>
+              <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow text-accent-primary dark:text-accent-primary-light' : 'text-gray-500 dark:text-gray-400'}`}><List size={18} /></button>
               <div className="w-px h-4 bg-gray-300 dark:bg-gray-600 mx-1 hidden lg:block"></div>
 
               {/* CUSTOM DROPDOWN: SCOPE */}
@@ -1166,24 +1166,24 @@ export default function MediaTeamModule() {
               </div>
             </div>
             {/* Desktop only: Add button with text */}
-            <button onClick={() => openTaskModal(null)} className="hidden lg:flex bg-gradient-to-r from-orange-600 to-pink-600 text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition items-center gap-2 whitespace-nowrap"><Plus size={18}/> Dodaj zadanie</button>
+            <button onClick={() => openTaskModal(null)} className="hidden lg:flex bg-gradient-to-r from-accent-secondary to-accent-primary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition items-center gap-2 whitespace-nowrap"><Plus size={18}/> Dodaj zadanie</button>
           </div>
         </div>
 
         {viewMode === 'kanban' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {STATUSES.map(status => (
-              <div key={status} className={`bg-gradient-to-br from-gray-50/80 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-sm rounded-2xl border-2 p-4 transition-all ${dragOverColumn === status ? 'border-pink-400 dark:border-pink-500 bg-pink-50/50 dark:bg-pink-900/20 shadow-lg' : 'border-gray-200/50 dark:border-gray-700/50'}`}
+              <div key={status} className={`bg-gradient-to-br from-gray-50/80 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-sm rounded-2xl border-2 p-4 transition-all ${dragOverColumn === status ? 'border-accent-primary-light dark:border-accent-primary-light bg-accent-primary-lightest/50 dark:bg-accent-primary-darkest/20 shadow-lg' : 'border-gray-200/50 dark:border-gray-700/50'}`}
                 onDragOver={(e) => handleDragOver(e, status)} onDragLeave={handleDragLeave} onDrop={(e) => handleDrop(e, status)}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">{status}</h3>
-                  <span className="bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 px-3 py-1 rounded-full text-xs font-bold">{filteredTasks.filter(t => t.status === status).length}</span>
+                  <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-3 py-1 rounded-full text-xs font-bold">{filteredTasks.filter(t => t.status === status).length}</span>
                 </div>
                 <div className="space-y-3">
                   {filteredTasks.filter(t => t.status === status).map(task => (
                     <div key={task.id} draggable onDragStart={() => handleDragStart(task)} className={`bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 shadow-sm hover:shadow-md transition cursor-move group ${task.status === 'Gotowe' ? 'opacity-60' : ''}`}>
                       <div className="flex items-start gap-3">
-                        <div className="mt-1"><input type="checkbox" checked={task.status === 'Gotowe'} onChange={() => toggleTaskCompletion(task)} className="w-5 h-5 rounded border-gray-300 text-pink-600 dark:text-pink-500 cursor-pointer" /></div>
+                        <div className="mt-1"><input type="checkbox" checked={task.status === 'Gotowe'} onChange={() => toggleTaskCompletion(task)} className="w-5 h-5 rounded border-gray-300 text-accent-primary dark:text-accent-primary-light cursor-pointer" /></div>
                         <div className="flex-1">
                           <h4 className={`font-bold text-gray-800 dark:text-gray-100 mb-2 ${task.status === 'Gotowe' ? 'line-through text-gray-500 dark:text-gray-500' : ''}`}>{task.title}</h4>
                           <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
@@ -1191,7 +1191,7 @@ export default function MediaTeamModule() {
                             {task.assigned_to && <div className="flex items-center gap-1"><User size={14} />{team.find(m => m.id === task.assigned_to)?.full_name}</div>}
                           </div>
                           <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                            <button onClick={() => openTaskModal(task)} className="text-pink-600 dark:text-pink-400 text-xs font-medium">Szczegóły</button>
+                            <button onClick={() => openTaskModal(task)} className="text-accent-primary dark:text-accent-primary-light text-xs font-medium">Szczegóły</button>
                           </div>
                         </div>
                       </div>
@@ -1206,18 +1206,18 @@ export default function MediaTeamModule() {
         {viewMode === 'list' && (
           <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
             <table className="w-full text-left text-sm">
-              <thead className="bg-gradient-to-r from-pink-50/80 to-orange-50/80 dark:from-pink-900/20 dark:to-orange-900/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
+              <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
                 <tr><th className="p-4 w-10"></th><th className="p-4">Zadanie</th><th className="p-4">Termin</th><th className="p-4">Przypisane</th><th className="p-4">Status</th><th className="p-4 text-right">Akcje</th></tr>
               </thead>
               <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
                 {filteredTasks.map(task => (
-                  <tr key={task.id} className="hover:bg-pink-50/30 dark:hover:bg-pink-900/10 transition">
-                    <td className="p-4"><input type="checkbox" checked={task.status === 'Gotowe'} onChange={() => toggleTaskCompletion(task)} className="w-5 h-5 rounded border-gray-300 text-pink-600 dark:text-pink-500 cursor-pointer" /></td>
+                  <tr key={task.id} className="hover:bg-accent-primary-lightest/30 dark:hover:bg-accent-primary-darkest/10 transition">
+                    <td className="p-4"><input type="checkbox" checked={task.status === 'Gotowe'} onChange={() => toggleTaskCompletion(task)} className="w-5 h-5 rounded border-gray-300 text-accent-primary dark:text-accent-primary-light cursor-pointer" /></td>
                     <td className="p-4 font-bold text-gray-800 dark:text-gray-200">{task.title}</td>
                     <td className="p-4 text-gray-600 dark:text-gray-400">{task.due_date ? new Date(task.due_date).toLocaleDateString('pl-PL') : '-'}</td>
                     <td className="p-4 text-gray-600 dark:text-gray-400">{team.find(m => m.id === task.assigned_to)?.full_name || '-'}</td>
                     <td className="p-4"><span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">{task.status}</span></td>
-                    <td className="p-4 text-right"><button onClick={() => openTaskModal(task)} className="text-pink-600 dark:text-pink-400 font-medium">Szczegóły</button></td>
+                    <td className="p-4 text-right"><button onClick={() => openTaskModal(task)} className="text-accent-primary dark:text-accent-primary-light font-medium">Szczegóły</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -1231,26 +1231,26 @@ export default function MediaTeamModule() {
       {activeTab === 'members' && (
       <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 relative z-[30] transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Członkowie ({team.length})</h2>
-          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-500 dark:to-orange-500 text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj członka</button>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Członkowie ({team.length})</h2>
+          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj członka</button>
         </div>
         <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[700px]">
-            <thead className="bg-gradient-to-r from-pink-50/80 to-orange-50/80 dark:from-pink-900/20 dark:to-orange-900/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
+            <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
               <tr><th className="p-4">Imię i nazwisko</th><th className="p-4">Służby</th><th className="p-4">Email</th><th className="p-4">Telefon</th><th className="p-4 text-right">Akcje</th></tr>
             </thead>
             <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
               {team.map(m => {
                 const roleNames = getMemberRoleNames(m.id);
                 return (
-                  <tr key={m.id} className="hover:bg-pink-50/30 dark:hover:bg-pink-900/10 transition text-gray-700 dark:text-gray-300">
+                  <tr key={m.id} className="hover:bg-accent-primary-lightest/30 dark:hover:bg-accent-primary-darkest/10 transition text-gray-700 dark:text-gray-300">
                     <td className="p-4 font-medium">{m.full_name}</td>
                     <td className="p-4">
                       <div className="flex flex-wrap gap-1">
                         {roleNames.length > 0 ? (
                           roleNames.map((name, idx) => (
-                            <span key={idx} className="bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 px-2 py-0.5 rounded-lg text-xs font-medium border border-pink-100 dark:border-pink-800">
+                            <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-lg text-xs font-medium border border-accent-primary-lighter dark:border-accent-primary-dark">
                               {name}
                             </span>
                           ))
@@ -1262,7 +1262,7 @@ export default function MediaTeamModule() {
                     <td className="p-4">{m.email}</td>
                     <td className="p-4">{m.phone}</td>
                     <td className="p-4 text-right flex justify-end gap-2">
-                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-pink-600 dark:text-pink-400 font-medium">Edytuj</button>
+                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light font-medium">Edytuj</button>
                       <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 font-medium">Usuń</button>
                     </td>
                   </tr>
@@ -1319,16 +1319,16 @@ export default function MediaTeamModule() {
             
             <div className="w-3/5 p-8 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">
               <div className="flex justify-between mb-6">
-                <h3 className="font-bold text-2xl bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">{taskForm.id ? 'Edycja zadania' : 'Nowe zadanie'}</h3>
+                <h3 className="font-bold text-2xl bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{taskForm.id ? 'Edycja zadania' : 'Nowe zadanie'}</h3>
               </div>
               <div className="space-y-5">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tytuł zadania</label>
-                  <input className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-900 dark:text-gray-100" value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
+                  <input className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100" value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
-                  <textarea className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-900 dark:text-gray-100" value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})} />
+                  <textarea className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100" value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -1361,12 +1361,12 @@ export default function MediaTeamModule() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załącznik</label>
-                  <input type="file" className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-pink-50 dark:file:bg-pink-900/30 file:text-pink-700 dark:file:text-pink-300 hover:file:bg-pink-100 dark:hover:file:bg-pink-900/50" onChange={handleFileUpload} />
+                  <input type="file" className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-accent-primary-lightest dark:file:bg-accent-primary-darkest/30 file:text-accent-primary dark:file:text-accent-primary-light hover:file:bg-accent-primary-lighter dark:hover:file:bg-accent-primary-darkest/50" onChange={handleFileUpload} />
                   {taskForm.attachment && <div className="mt-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded-lg"><Paperclip size={14} />{taskForm.attachment.name}</div>}
                 </div>
                 <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
                   {taskForm.id && <button onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }} className="px-4 py-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">Usuń zadanie</button>}
-                  <button onClick={saveTask} className="px-6 py-3 bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-500 dark:to-orange-500 text-white font-bold rounded-xl hover:shadow-lg transition">Zapisz zmiany</button>
+                  <button onClick={saveTask} className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white font-bold rounded-xl hover:shadow-lg transition">Zapisz zmiany</button>
                 </div>
               </div>
             </div>
@@ -1380,14 +1380,14 @@ export default function MediaTeamModule() {
                 {!taskForm.id ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">Zapisz zadanie, aby dodawać komentarze.</div> : loadingComments ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm">Ładowanie...</div> : comments.length === 0 ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">Brak komentarzy. Bądź pierwszy!</div> : comments.map(comment => (
                   <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div className="flex justify-between items-start mb-1">
-                      <span className="font-bold text-xs text-pink-700 dark:text-pink-300">{comment.author_name}</span>
+                      <span className="font-bold text-xs text-accent-primary dark:text-accent-primary-light">{comment.author_name}</span>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(comment.created_at).toLocaleString('pl-PL')}</span>
                     </div>
                     <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
                   </div>
                 ))}
               </div>
-              {taskForm.id && <div className="mt-auto"><div className="relative"><textarea className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-pink-500/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200" placeholder="Napisz komentarz..." rows={2} value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); }}} /><button onClick={addComment} disabled={!newComment.trim()} className="absolute right-2 bottom-2 p-2 bg-pink-600 dark:bg-pink-500 text-white rounded-lg hover:bg-pink-700 dark:hover:bg-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed"><Send size={16} /></button></div></div>}
+              {taskForm.id && <div className="mt-auto"><div className="relative"><textarea className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200" placeholder="Napisz komentarz..." rows={2} value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); }}} /><button onClick={addComment} disabled={!newComment.trim()} className="absolute right-2 bottom-2 p-2 bg-accent-primary dark:bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary dark:hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed"><Send size={16} /></button></div></div>}
             </div>
           </div>
         </div>,
@@ -1427,7 +1427,7 @@ export default function MediaTeamModule() {
                           }}
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
                             isSelected
-                              ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
+                              ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                         >
@@ -1456,7 +1456,7 @@ export default function MediaTeamModule() {
 
               <div className="flex justify-end gap-3 mt-6">
                 <button onClick={() => setShowMemberModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Anuluj</button>
-                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg hover:shadow-pink-500/50 transition font-medium">Zapisz</button>
+                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">Zapisz</button>
               </div>
             </div>
           </div>
@@ -1547,7 +1547,7 @@ export default function MediaTeamModule() {
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załączniki (opcjonalnie)</label>
                 <div className="space-y-2">
-                  <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-pink-300 dark:hover:border-pink-600 transition flex items-center gap-2">
+                  <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                     <Upload size={18} className="text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {uploadingFile ? 'Przesyłanie...' : 'Dodaj plik(i)'}
@@ -1602,7 +1602,7 @@ export default function MediaTeamModule() {
                   {expenseForm.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300 rounded-lg text-xs flex items-center gap-1"
+                      className="px-2 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light rounded-lg text-xs flex items-center gap-1"
                     >
                       <Tag size={12} />
                       {tag}
@@ -1622,7 +1622,7 @@ export default function MediaTeamModule() {
                 </button>
                 <button
                   onClick={saveExpense}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-medium"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
                 >
                   Zapisz
                 </button>

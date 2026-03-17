@@ -227,7 +227,7 @@ export default function GroupSettingsModal({
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             {isMinistryChannel ? (
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-accent-primary-light flex items-center justify-center text-white">
                 {(() => {
                   const IconComponent = ministryIcons[conversation?.ministry_key] || Users;
                   return <IconComponent size={28} />;
@@ -246,13 +246,13 @@ export default function GroupSettingsModal({
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder={isMinistryChannel ? getMinistryName(conversation?.ministry_key) : 'Nazwa grupy'}
-                    className="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="flex-1 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light"
                     autoFocus
                   />
                   <button
                     onClick={handleSaveName}
                     disabled={saving}
-                    className="p-1.5 bg-pink-600 hover:bg-pink-700 text-white rounded-full"
+                    className="p-1.5 bg-accent-primary hover:bg-accent-primary text-white rounded-full"
                   >
                     <Check size={16} />
                   </button>
@@ -300,7 +300,7 @@ export default function GroupSettingsModal({
             onClick={() => setActiveTab('members')}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
               ${activeTab === 'members'
-                ? 'text-pink-600 border-b-2 border-pink-600'
+                ? 'text-accent-primary border-b-2 border-accent-primary'
                 : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
               }
             `}
@@ -313,7 +313,7 @@ export default function GroupSettingsModal({
               onClick={() => setActiveTab('add')}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
                 ${activeTab === 'add'
-                  ? 'text-pink-600 border-b-2 border-pink-600'
+                  ? 'text-accent-primary border-b-2 border-accent-primary'
                   : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }
               `}
@@ -333,7 +333,7 @@ export default function GroupSettingsModal({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={activeTab === 'members' ? 'Szukaj członków...' : 'Szukaj użytkowników...'}
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-gray-900 dark:text-gray-100 placeholder-gray-500"
+              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
             />
           </div>
         </div>
@@ -409,7 +409,7 @@ export default function GroupSettingsModal({
             // Lista użytkowników do dodania
             loading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader size={24} className="animate-spin text-pink-600" />
+                <Loader size={24} className="animate-spin text-accent-primary" />
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -433,7 +433,7 @@ export default function GroupSettingsModal({
                         {user.email}
                       </p>
                     </div>
-                    <UserPlus size={18} className="text-pink-600 flex-shrink-0" />
+                    <UserPlus size={18} className="text-accent-primary flex-shrink-0" />
                   </button>
                 ))}
               </div>

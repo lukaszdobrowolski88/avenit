@@ -179,7 +179,7 @@ export default function FormList({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary-light"></div>
       </div>
     );
   }
@@ -501,7 +501,7 @@ export default function FormList({
                   <>
                     <button
                       onClick={() => onEdit(form)}
-                      className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-accent-primary dark:hover:text-accent-primary-light transition-colors"
                     >
                       <Edit size={16} />
                       Edytuj
@@ -509,7 +509,7 @@ export default function FormList({
                     <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
                     <button
                       onClick={() => onViewResponses(form)}
-                      className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-accent-primary dark:hover:text-accent-primary-light transition-colors"
                     >
                       <BarChart3 size={16} />
                       Odpowiedzi
@@ -527,7 +527,7 @@ export default function FormList({
                     <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
                     <button
                       onClick={() => onViewResponses(form)}
-                      className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-pink-600 dark:hover:text-pink-400 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-accent-primary dark:hover:text-accent-primary-light transition-colors"
                     >
                       <BarChart3 size={16} />
                       Odpowiedzi

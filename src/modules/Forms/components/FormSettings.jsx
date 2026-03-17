@@ -114,7 +114,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
 
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-lg hover:shadow-lg hover:shadow-pink-500/25 transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
           >
             <Save size={16} />
             Zapisz
@@ -139,7 +139,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                   value={localSettings.submitButtonText || ''}
                   onChange={(e) => handleChange('submitButtonText', e.target.value)}
                   placeholder="Wyślij"
-                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                 />
               </div>
 
@@ -152,7 +152,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                   onChange={(e) => handleChange('successMessage', e.target.value)}
                   placeholder="Dziękujemy za wypełnienie formularza!"
                   rows={3}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 resize-none"
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light resize-none"
                 />
               </div>
 
@@ -165,7 +165,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                   value={localSettings.redirectUrl || ''}
                   onChange={(e) => handleChange('redirectUrl', e.target.value)}
                   placeholder="https://example.com/dziekujemy"
-                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                 />
               </div>
             </div>
@@ -193,7 +193,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                     onChange={(e) => handleChange('showProgressBar', e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-pink-500"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary-light dark:peer-focus:ring-accent-primary-dark rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-accent-primary-light"></div>
                 </label>
               </div>
 
@@ -207,7 +207,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                   value={localSettings.limitResponses || ''}
                   onChange={(e) => handleChange('limitResponses', e.target.value ? parseInt(e.target.value) : null)}
                   placeholder="Bez limitu"
-                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Maksymalna liczba odpowiedzi, po której formularz zostanie zamknięty
@@ -237,7 +237,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                     type="text"
                     value={localSettings.theme?.primaryColor || '#ec4899'}
                     onChange={(e) => handleThemeChange('primaryColor', e.target.value)}
-                    className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                    className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                     placeholder="#ec4899"
                   />
                 </div>
@@ -263,7 +263,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
           {/* Sekcja grafiki i obrazów */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              <Image size={20} className="text-pink-500" />
+              <Image size={20} className="text-accent-primary-light" />
               Grafika i obrazy
             </h2>
 
@@ -298,10 +298,10 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                   <button
                     onClick={() => logoImageRef.current?.click()}
                     disabled={uploadingImage === 'logo'}
-                    className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-pink-500 hover:text-pink-500 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary-light transition-colors"
                   >
                     {uploadingImage === 'logo' ? (
-                      <div className="w-5 h-5 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <Upload size={18} />
                     )}
@@ -315,7 +315,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                       onClick={() => handleBrandingChange('logoPosition', pos)}
                       className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
                         (localSettings.branding?.logoPosition || 'left') === pos
-                          ? 'bg-pink-500 text-white'
+                          ? 'bg-accent-primary-light text-white'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                       }`}
                     >
@@ -355,10 +355,10 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                   <button
                     onClick={() => headerImageRef.current?.click()}
                     disabled={uploadingImage === 'header'}
-                    className="w-full h-32 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-pink-500 hover:text-pink-500 transition-colors"
+                    className="w-full h-32 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary-light transition-colors"
                   >
                     {uploadingImage === 'header' ? (
-                      <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
                         <Upload size={24} />
@@ -412,10 +412,10 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                   <button
                     onClick={() => backgroundImageRef.current?.click()}
                     disabled={uploadingImage === 'background'}
-                    className="w-full h-32 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-pink-500 hover:text-pink-500 transition-colors"
+                    className="w-full h-32 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary-light transition-colors"
                   >
                     {uploadingImage === 'background' ? (
-                      <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
                         <Upload size={24} />
@@ -467,7 +467,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                     onChange={(e) => handlePricingChange('enabled', e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary-light dark:peer-focus:ring-accent-primary-dark rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
                 </label>
               </div>
 
@@ -480,7 +480,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                     <select
                       value={localSettings.pricing?.currency || 'PLN'}
                       onChange={(e) => handlePricingChange('currency', e.target.value)}
-                      className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                     >
                       <option value="PLN">PLN (zł)</option>
                       <option value="EUR">EUR (€)</option>
@@ -504,7 +504,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                         onChange={(e) => handlePricingChange('paymentRequired', e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary-light dark:peer-focus:ring-accent-primary-dark rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
                     </label>
                   </div>
 
@@ -554,7 +554,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                         value={localSettings.pricing?.bankAccount || ''}
                         onChange={(e) => handlePricingChange('bankAccount', e.target.value)}
                         placeholder="00 0000 0000 0000 0000 0000 0000"
-                        className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 font-mono"
+                        className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light font-mono"
                       />
                     </div>
                   )}
@@ -758,7 +758,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                       onChange={(e) => handlePricingChange('paymentInstructions', e.target.value)}
                       placeholder="Dodatkowe informacje dotyczące płatności..."
                       rows={3}
-                      className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 resize-none"
+                      className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light resize-none"
                     />
                   </div>
                 </>
@@ -1263,7 +1263,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                     setEditingTemplate(null);
                     setEditorMode('visual');
                   }}
-                  className="px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-lg text-sm font-medium hover:shadow-lg hover:shadow-pink-500/25 transition-all"
+                  className="px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg text-sm font-medium hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
                 >
                   Zapisz i zamknij
                 </button>
@@ -1325,7 +1325,7 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                   <textarea
                     value={localSettings.emails?.[editingTemplate.type]?.customHtml || editingTemplate.template.html_content}
                     onChange={(e) => handleEmailTypeChange(editingTemplate.type, 'customHtml', e.target.value)}
-                    className="w-full h-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg font-mono text-sm text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+                    className="w-full h-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg font-mono text-sm text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                     placeholder="Wprowadź kod HTML szablonu..."
                   />
                 </div>

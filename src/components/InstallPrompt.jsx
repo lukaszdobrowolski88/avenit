@@ -70,7 +70,7 @@ export default function InstallPrompt() {
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-in slide-in-from-bottom duration-300">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-start gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-xl flex items-center justify-center flex-shrink-0">
             <Smartphone className="text-white" size={24} />
           </div>
 
@@ -106,7 +106,7 @@ export default function InstallPrompt() {
         {!isIOS && deferredPrompt && (
           <button
             onClick={handleInstall}
-            className="w-full mt-3 px-4 py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:opacity-90 transition"
+            className="w-full mt-3 px-4 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:opacity-90 transition"
           >
             <Download size={16} />
             Zainstaluj teraz

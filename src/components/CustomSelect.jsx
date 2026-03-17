@@ -105,8 +105,8 @@ export default function CustomSelect({
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full ${compact ? 'px-2 py-1 text-xs h-[26px]' : 'px-4 py-3'} border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all
           ${isOpen
-            ? 'border-pink-500 ring-2 ring-pink-500/20 dark:border-pink-400'
-            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-pink-300 dark:hover:border-pink-600'
+            ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light'
+            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'
           }
         `}
       >
@@ -146,7 +146,7 @@ export default function CustomSelect({
                 }}
                 className={`px-4 py-2.5 text-sm cursor-pointer transition flex items-center justify-between
                   ${isActive
-                    ? 'bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-300 font-medium'
+                    ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light font-medium'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }
                 `}

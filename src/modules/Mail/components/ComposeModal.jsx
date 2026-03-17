@@ -231,7 +231,7 @@ export default function ComposeModal({
         `}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-pink-500 to-rose-500">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary-light to-rose-500">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl">
               <Edit3 size={20} className="text-white" />
@@ -269,10 +269,10 @@ export default function ComposeModal({
               {draft.to?.map(email => (
                 <span
                   key={email}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 text-sm rounded-full"
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light text-sm rounded-full"
                 >
                   {email}
-                  <button onClick={() => removeEmail('to', email)} className="hover:text-pink-900 ml-1">
+                  <button onClick={() => removeEmail('to', email)} className="hover:text-accent-primary-darkest ml-1">
                     <X size={14} />
                   </button>
                 </span>
@@ -289,10 +289,10 @@ export default function ComposeModal({
             </div>
             <div className="flex gap-3 text-sm">
               {!showCc && (
-                <button onClick={() => setShowCc(true)} className="text-gray-500 hover:text-pink-500 font-medium">CC</button>
+                <button onClick={() => setShowCc(true)} className="text-gray-500 hover:text-accent-primary-light font-medium">CC</button>
               )}
               {!showBcc && (
-                <button onClick={() => setShowBcc(true)} className="text-gray-500 hover:text-pink-500 font-medium">BCC</button>
+                <button onClick={() => setShowBcc(true)} className="text-gray-500 hover:text-accent-primary-light font-medium">BCC</button>
               )}
             </div>
           </div>
@@ -378,7 +378,7 @@ export default function ComposeModal({
               onClick={() => setViewMode('edit')}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 viewMode === 'edit'
-                  ? 'bg-white dark:bg-gray-700 text-pink-600 shadow-sm'
+                  ? 'bg-white dark:bg-gray-700 text-accent-primary shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -388,7 +388,7 @@ export default function ComposeModal({
               onClick={() => setViewMode('preview')}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 viewMode === 'preview'
-                  ? 'bg-white dark:bg-gray-700 text-pink-600 shadow-sm'
+                  ? 'bg-white dark:bg-gray-700 text-accent-primary shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -398,7 +398,7 @@ export default function ComposeModal({
               onClick={() => setViewMode('html')}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 viewMode === 'html'
-                  ? 'bg-white dark:bg-gray-700 text-pink-600 shadow-sm'
+                  ? 'bg-white dark:bg-gray-700 text-accent-primary shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -673,7 +673,7 @@ export default function ComposeModal({
           <button
             onClick={handleSend}
             disabled={sending || !draft.to?.length}
-            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-pink-500/25"
+            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-accent-primary-light to-rose-500 hover:from-accent-primary hover:to-rose-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-accent-primary-light/25"
           >
             {sending ? (
               <Loader2 size={18} className="animate-spin" />

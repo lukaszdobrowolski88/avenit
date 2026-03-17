@@ -186,10 +186,10 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
     <form onSubmit={handleSubmit} className="border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
       {/* Pasek odpowiedzi */}
       {replyingTo && (
-        <div className="flex items-center gap-3 mb-3 p-3 bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 rounded-xl border-l-4 border-pink-500">
-          <Reply size={18} className="text-pink-500 flex-shrink-0" />
+        <div className="flex items-center gap-3 mb-3 p-3 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl border-l-4 border-accent-primary-light">
+          <Reply size={18} className="text-accent-primary-light flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-pink-600 dark:text-pink-400">
+            <p className="text-xs font-semibold text-accent-primary dark:text-accent-primary-light">
               Odpowiadasz na wiadomość od {replyingTo.sender?.full_name || replyingTo.sender_email}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
@@ -217,8 +217,8 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
               {isImageFile(att.type) ? (
                 <img src={att.url} alt={att.name} className="w-10 h-10 object-cover rounded-lg" />
               ) : (
-                <div className="w-10 h-10 bg-gradient-to-br from-pink-100 to-orange-100 dark:from-pink-900/30 dark:to-orange-900/30 rounded-lg flex items-center justify-center">
-                  <FileText size={18} className="text-pink-500" />
+                <div className="w-10 h-10 bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 rounded-lg flex items-center justify-center">
+                  <FileText size={18} className="text-accent-primary-light" />
                 </div>
               )}
               <div className="max-w-[120px]">
@@ -241,12 +241,12 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
       {uploading && (
         <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-            <Loader size={16} className="animate-spin text-pink-500" />
+            <Loader size={16} className="animate-spin text-accent-primary-light" />
             <span>Przesyłanie... {uploadProgress}%</span>
           </div>
           <div className="mt-2 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-pink-500 to-orange-500 transition-all duration-300 rounded-full"
+              className="h-full bg-gradient-to-r from-accent-primary-light to-accent-secondary-light transition-all duration-300 rounded-full"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
@@ -275,7 +275,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading || disabled}
-            className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center text-gray-500 hover:text-pink-600 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
+            className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center text-gray-500 hover:text-accent-primary bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
           >
             <Paperclip size={18} className="sm:w-5 sm:h-5" />
           </button>
@@ -285,7 +285,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
             type="button"
             onClick={() => setIsRecordingVoice(true)}
             disabled={uploading || disabled}
-            className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center text-gray-500 hover:text-pink-600 bg-gray-100 dark:bg-gray-800 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
+            className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center text-gray-500 hover:text-accent-primary bg-gray-100 dark:bg-gray-800 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
             title="Nagraj wiadomość głosową"
           >
             <Mic size={18} className="sm:w-5 sm:h-5" />
@@ -301,7 +301,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
               placeholder={placeholder}
               disabled={disabled || uploading}
               rows={1}
-              className="w-full px-3 sm:px-4 py-2 h-9 sm:h-11 bg-gray-100 dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/50 text-gray-900 dark:text-gray-100 placeholder-gray-500 disabled:opacity-50 transition-all duration-200 leading-5 sm:leading-6 text-sm sm:text-base"
+              className="w-full px-3 sm:px-4 py-2 h-9 sm:h-11 bg-gray-100 dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light/50 text-gray-900 dark:text-gray-100 placeholder-gray-500 disabled:opacity-50 transition-all duration-200 leading-5 sm:leading-6 text-sm sm:text-base"
               style={{ maxHeight: '150px' }}
             />
           </div>
@@ -310,7 +310,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
           <button
             type="submit"
             disabled={(!content.trim() && attachments.length === 0) || disabled || uploading}
-            className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-pink-500/30 hover:shadow-pink-500/40 flex-shrink-0"
+            className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-accent-primary-light/30 hover:shadow-accent-primary-light/40 flex-shrink-0"
           >
             <Send size={16} className="sm:w-[18px] sm:h-[18px]" />
           </button>

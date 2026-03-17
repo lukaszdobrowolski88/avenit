@@ -345,7 +345,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
           >
             <X size={20} className="text-gray-500" />
           </button>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
             {campaign ? 'Edytuj mail' : 'Nowy mail'}
           </h1>
         </div>
@@ -390,7 +390,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 onClick={() => setCurrentStep(index)}
                 className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                   isActive
-                    ? 'bg-gradient-to-r from-pink-600 to-orange-600 text-white shadow-md'
+                    ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md'
                     : isCompleted
                       ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
@@ -426,18 +426,18 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               {/* Campaign name */}
               <div className="group">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  <div className="p-1.5 bg-gradient-to-br from-pink-500 to-orange-500 rounded-lg">
+                  <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <FileText size={12} className="text-white" />
                   </div>
                   Nazwa maila
-                  <span className="text-pink-500">*</span>
+                  <span className="text-accent-primary-light">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="np. Newsletter grudniowy"
-                  className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-900 dark:text-white placeholder-gray-400"
+                  className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all text-gray-900 dark:text-white placeholder-gray-400"
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
@@ -448,18 +448,18 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               {/* Subject line */}
               <div className="group">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  <div className="p-1.5 bg-gradient-to-br from-pink-500 to-orange-500 rounded-lg">
+                  <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Mail size={12} className="text-white" />
                   </div>
                   Temat wiadomości
-                  <span className="text-pink-500">*</span>
+                  <span className="text-accent-primary-light">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
                   placeholder="np. Zaproszenie na spotkanie wigilijne"
-                  className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-900 dark:text-white placeholder-gray-400"
+                  className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all text-gray-900 dark:text-white placeholder-gray-400"
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
@@ -470,7 +470,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               {/* Editor mode selection */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                  <div className="p-1.5 bg-gradient-to-br from-pink-500 to-orange-500 rounded-lg">
+                  <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Edit3 size={12} className="text-white" />
                   </div>
                   Wybierz sposób tworzenia treści
@@ -486,13 +486,13 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                         onClick={() => setEditorMode(mode.id)}
                         className={`group relative p-5 rounded-2xl border-2 transition-all duration-300 text-left ${
                           isSelected
-                            ? 'border-pink-500 bg-gradient-to-br from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 shadow-lg shadow-pink-500/20'
-                            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-pink-300 dark:hover:border-pink-700 bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800'
+                            ? 'border-accent-primary-light bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 shadow-lg shadow-accent-primary-light/20'
+                            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800'
                         }`}
                       >
                         {isSelected && (
                           <div className="absolute top-3 right-3">
-                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center">
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center">
                               <Check size={12} className="text-white" />
                             </div>
                           </div>
@@ -500,14 +500,14 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                         <div className="flex items-center gap-3 mb-3">
                           <div className={`p-3 rounded-xl transition-all ${
                             isSelected
-                              ? 'bg-gradient-to-br from-pink-500 to-orange-500 shadow-lg shadow-pink-500/30'
-                              : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-pink-100 dark:group-hover:bg-pink-900/30'
+                              ? 'bg-gradient-to-br from-accent-primary-light to-accent-secondary-light shadow-lg shadow-accent-primary-light/30'
+                              : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-accent-primary-lighter dark:group-hover:bg-accent-primary-darkest/30'
                           }`}>
-                            <Icon size={20} className={isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-pink-500'} />
+                            <Icon size={20} className={isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-accent-primary-light'} />
                           </div>
                         </div>
                         <h4 className={`font-semibold mb-1 transition-colors ${
-                          isSelected ? 'text-pink-600 dark:text-pink-400' : 'text-gray-900 dark:text-white'
+                          isSelected ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-900 dark:text-white'
                         }`}>
                           {mode.label}
                         </h4>
@@ -554,7 +554,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   value={formData.html_content}
                   onChange={(e) => setFormData(prev => ({ ...prev, html_content: e.target.value }))}
                   rows={20}
-                  className="w-full px-4 py-3 font-mono text-sm bg-gray-900 text-green-400 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                  className="w-full px-4 py-3 font-mono text-sm bg-gray-900 text-green-400 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50"
                   placeholder="<!DOCTYPE html>..."
                 />
               </div>
@@ -579,7 +579,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl shadow-gray-200/50 dark:shadow-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 p-8">
             <div className="space-y-8">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-pink-500 to-orange-500 rounded-xl shadow-lg">
+                <div className="p-2.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-xl shadow-lg">
                   <CheckCircle size={20} className="text-white" />
                 </div>
                 <div>
@@ -606,7 +606,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               {/* Preview */}
               <div>
                 <h4 className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  <div className="p-1.5 bg-gradient-to-br from-pink-500 to-orange-500 rounded-lg">
+                  <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Eye size={12} className="text-white" />
                   </div>
                   Podgląd wiadomości
@@ -626,13 +626,13 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   disabled={saving}
                   className="group flex items-center justify-center gap-2 px-6 py-3.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all disabled:opacity-50"
                 >
-                  <Save size={18} className="group-hover:text-pink-500 transition-colors" />
+                  <Save size={18} className="group-hover:text-accent-primary-light transition-colors" />
                   Zapisz jako szkic
                 </button>
                 <button
                   onClick={() => setShowSchedule(true)}
                   disabled={saving || totalRecipients === 0}
-                  className="group flex items-center justify-center gap-2 px-6 py-3.5 border-2 border-pink-500 text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-xl transition-all disabled:opacity-50"
+                  className="group flex items-center justify-center gap-2 px-6 py-3.5 border-2 border-accent-primary-light text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-xl transition-all disabled:opacity-50"
                 >
                   <Calendar size={18} />
                   Zaplanuj wysyłkę
@@ -640,7 +640,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 <button
                   onClick={handleSend}
                   disabled={saving || totalRecipients === 0}
-                  className="group flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white rounded-xl transition-all shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+                  className="group flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl hover:shadow-accent-primary-light/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {saving ? <Loader size={18} className="animate-spin" /> : <Send size={18} className="group-hover:translate-x-0.5 transition-transform" />}
                   Wyślij teraz ({totalRecipients})
@@ -664,7 +664,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
             <button
               onClick={() => setCurrentStep(prev => Math.min(STEPS.length - 1, prev + 1))}
               disabled={!canProceed()}
-              className="group flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white font-medium rounded-xl transition-all shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+              className="group flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-medium rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl hover:shadow-accent-primary-light/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
             >
               Dalej
               <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
@@ -687,7 +687,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
             {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-pink-500 to-orange-500 p-6">
+            <div className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl">
@@ -724,7 +724,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 value={testEmail}
                 onChange={(e) => setTestEmail(e.target.value)}
                 placeholder="twoj@email.pl"
-                className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all mb-6"
+                className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all mb-6"
               />
 
               <div className="flex gap-3">
@@ -737,7 +737,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 <button
                   onClick={handleTestSend}
                   disabled={saving || !testEmail}
-                  className="group flex-1 px-5 py-3.5 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 font-medium shadow-lg shadow-pink-500/30 hover:shadow-xl transition-all"
+                  className="group flex-1 px-5 py-3.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 font-medium shadow-lg shadow-accent-primary-light/30 hover:shadow-xl transition-all"
                 >
                   {saving ? <Loader size={16} className="animate-spin" /> : <Mail size={16} className="group-hover:scale-110 transition-transform" />}
                   Wyślij test
@@ -753,7 +753,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
             {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6">
+            <div className="bg-gradient-to-r from-amber-500 to-accent-secondary-light p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl">
@@ -812,7 +812,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 <button
                   onClick={handleSchedule}
                   disabled={saving || !formData.scheduled_at}
-                  className="group flex-1 px-5 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 font-medium shadow-lg shadow-amber-500/30 hover:shadow-xl transition-all"
+                  className="group flex-1 px-5 py-3.5 bg-gradient-to-r from-amber-500 to-accent-secondary-light hover:from-amber-600 hover:to-accent-secondary text-white rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 font-medium shadow-lg shadow-amber-500/30 hover:shadow-xl transition-all"
                 >
                   {saving ? <Loader size={16} className="animate-spin" /> : <Clock size={16} className="group-hover:scale-110 transition-transform" />}
                   Zaplanuj
@@ -830,14 +830,14 @@ function SummaryCard({ label, value, icon: Icon, highlight }) {
   return (
     <div className={`p-5 rounded-2xl transition-all ${
       highlight
-        ? 'bg-gradient-to-br from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 border border-pink-200/50 dark:border-pink-800/50'
+        ? 'bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border border-accent-primary-lighter/50 dark:border-accent-primary-dark/50'
         : 'bg-gray-50/80 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-700/50'
     }`}>
       <div className="flex items-start gap-3">
         {Icon && (
           <div className={`p-2 rounded-lg ${
             highlight
-              ? 'bg-gradient-to-br from-pink-500 to-orange-500'
+              ? 'bg-gradient-to-br from-accent-primary-light to-accent-secondary-light'
               : 'bg-gray-200 dark:bg-gray-700'
           }`}>
             <Icon size={14} className={highlight ? 'text-white' : 'text-gray-500 dark:text-gray-400'} />
@@ -846,7 +846,7 @@ function SummaryCard({ label, value, icon: Icon, highlight }) {
         <div className="flex-1 min-w-0">
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>
           <p className={`font-semibold truncate ${
-            highlight ? 'text-pink-600 dark:text-pink-400' : 'text-gray-900 dark:text-white'
+            highlight ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-900 dark:text-white'
           }`}>{value}</p>
         </div>
       </div>

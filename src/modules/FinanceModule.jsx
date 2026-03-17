@@ -108,8 +108,8 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full px-4 py-3 border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all
           ${isOpen
-            ? 'border-pink-500 ring-2 ring-pink-500/20 dark:border-pink-400'
-            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-pink-300 dark:hover:border-pink-600'
+            ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light'
+            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'
           }
         `}
       >
@@ -157,9 +157,9 @@ const CustomDatePicker = ({ label, value, onChange }) => {
                   onClick={() => handleDayClick(day)}
                   className={`h-8 w-8 rounded-lg text-xs font-medium transition flex items-center justify-center
                     ${isSelected
-                      ? 'bg-pink-600 text-white shadow-md shadow-pink-500/30'
+                      ? 'bg-accent-primary text-white shadow-md shadow-accent-primary-light/30'
                       : isToday
-                        ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 border border-pink-100 dark:border-pink-800'
+                        ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light border border-accent-primary-lighter dark:border-accent-primary-dark'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }
                   `}
@@ -724,7 +724,7 @@ const FinanceModule = () => {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent mb-2">
             Finanse
           </h1>
           <p className="text-gray-600 dark:text-gray-400">Zarządzanie budżetem i finansami kościoła</p>
@@ -758,7 +758,7 @@ const FinanceModule = () => {
             </h2>
             <button
               onClick={() => setShowBudgetModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
             >
               <Plus size={18} />
               Dodaj pozycję budżetową
@@ -842,7 +842,7 @@ const FinanceModule = () => {
                               {item.planned_amount.toLocaleString('pl-PL')} zł
                             </td>
                             <td
-                              className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium cursor-pointer hover:text-pink-600 dark:hover:text-pink-400 transition"
+                              className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium cursor-pointer hover:text-accent-primary dark:hover:text-accent-primary-light transition"
                               onClick={() => {
                                 const key = `${item.id}`;
                                 setExpandedBudgetItems(prev => ({
@@ -969,7 +969,7 @@ const FinanceModule = () => {
 
                       // Subtotal row for this category
                       rows.push(
-                        <tr key={`subtotal-${category}`} className="bg-pink-100 dark:bg-pink-900/40 border-b-2 border-pink-300 dark:border-pink-700 font-bold">
+                        <tr key={`subtotal-${category}`} className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 border-b-2 border-accent-primary-light dark:border-accent-primary font-bold">
                           <td className="py-3 px-4 text-gray-900 dark:text-white" colSpan={2}>
                             Podsumowanie: {category}
                           </td>
@@ -994,7 +994,7 @@ const FinanceModule = () => {
 
                     // Grand total row
                     rows.push(
-                      <tr key="grand-total" className="bg-gradient-to-r from-pink-200 to-orange-200 dark:from-pink-900/60 dark:to-orange-900/60 border-t-4 border-pink-500 dark:border-pink-400 font-bold text-lg">
+                      <tr key="grand-total" className="bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/60 dark:to-accent-secondary-darkest/60 border-t-4 border-accent-primary-light dark:border-accent-primary-light font-bold text-lg">
                         <td className="py-4 px-4 text-gray-900 dark:text-white" colSpan={2}>
                           SUMA CAŁKOWITA
                         </td>
@@ -1031,7 +1031,7 @@ const FinanceModule = () => {
             </h2>
             <button
               onClick={() => setShowIncomeModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
             >
               <Plus size={18} />
               Dodaj wpływ
@@ -1088,7 +1088,7 @@ const FinanceModule = () => {
             {(incomeFilters.type || incomeFilters.source || incomeFilters.tag || incomeFilters.dateFrom || incomeFilters.dateTo) && (
               <button
                 onClick={() => setIncomeFilters({ type: '', source: '', tag: '', dateFrom: '', dateTo: '' })}
-                className="mt-3 text-sm text-pink-600 dark:text-pink-400 hover:underline"
+                className="mt-3 text-sm text-accent-primary dark:text-accent-primary-light hover:underline"
               >
                 Wyczyść filtry
               </button>
@@ -1195,7 +1195,7 @@ const FinanceModule = () => {
             </h2>
             <button
               onClick={() => setShowExpenseModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
             >
               <Plus size={18} />
               Dodaj wydatek
@@ -1262,7 +1262,7 @@ const FinanceModule = () => {
             {(expenseFilters.category || expenseFilters.contractor || expenseFilters.responsible || expenseFilters.tag || expenseFilters.dateFrom || expenseFilters.dateTo) && (
               <button
                 onClick={() => setExpenseFilters({ category: '', contractor: '', responsible: '', tag: '', dateFrom: '', dateTo: '' })}
-                className="mt-3 text-sm text-pink-600 dark:text-pink-400 hover:underline"
+                className="mt-3 text-sm text-accent-primary dark:text-accent-primary-light hover:underline"
               >
                 Wyczyść filtry
               </button>
@@ -1385,10 +1385,10 @@ const FinanceModule = () => {
             return (
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 {/* Header z aktualnym saldem */}
-                <div className="bg-gradient-to-r from-pink-600 to-orange-600 p-6 text-white">
+                <div className="bg-gradient-to-r from-accent-primary to-accent-secondary p-6 text-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-pink-100 text-sm font-medium mb-1">Aktualny stan finansów • {selectedYear}</p>
+                      <p className="text-accent-primary-lighter text-sm font-medium mb-1">Aktualny stan finansów • {selectedYear}</p>
                       <p className="text-4xl font-bold">{totalPln.toLocaleString('pl-PL')} zł</p>
                     </div>
                     <button
@@ -1489,7 +1489,7 @@ const FinanceModule = () => {
           {/* Monthly Chart - Wpływy vs Wydatki */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <BarChart3 size={20} className="text-pink-600" />
+              <BarChart3 size={20} className="text-accent-primary" />
               Wpływy vs Wydatki - miesięcznie
             </h3>
             <div className="space-y-3">
@@ -1556,7 +1556,7 @@ const FinanceModule = () => {
             {/* Expenses by Category */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <PieChart size={20} className="text-pink-600" />
+                <PieChart size={20} className="text-accent-primary" />
                 Wydatki wg kategorii
               </h3>
               {(() => {
@@ -1570,10 +1570,10 @@ const FinanceModule = () => {
 
                 const total = sortedCategories.reduce((sum, [,val]) => sum + val, 0);
                 const colors = [
-                  'from-pink-500 to-rose-500',
+                  'from-accent-primary-light to-rose-500',
                   'from-blue-500 to-indigo-500',
                   'from-green-500 to-emerald-500',
-                  'from-yellow-500 to-orange-500',
+                  'from-yellow-500 to-accent-secondary-light',
                   'from-purple-500 to-violet-500',
                   'from-cyan-500 to-teal-500'
                 ];
@@ -1610,7 +1610,7 @@ const FinanceModule = () => {
             {/* Top Contractors */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Building2 size={20} className="text-pink-600" />
+                <Building2 size={20} className="text-accent-primary" />
                 Top kontrahenci
               </h3>
               {(() => {
@@ -1631,7 +1631,7 @@ const FinanceModule = () => {
                       const percentage = total > 0 ? (amount / total) * 100 : 0;
                       return (
                         <div key={contractor} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white text-sm font-bold">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-sm font-bold">
                             {idx + 1}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -1653,7 +1653,7 @@ const FinanceModule = () => {
           {/* Budget Execution Table */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <DollarSign size={20} className="text-pink-600" />
+              <DollarSign size={20} className="text-accent-primary" />
               Realizacja budżetu wg służb
             </h3>
             {budgetItems.length > 0 ? (
@@ -1722,7 +1722,7 @@ const FinanceModule = () => {
           {/* Income by Type */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <Users size={20} className="text-pink-600" />
+              <Users size={20} className="text-accent-primary" />
               Wpływy wg typu
             </h3>
             {(() => {
@@ -1818,7 +1818,7 @@ const FinanceModule = () => {
                 </button>
                 <button
                   onClick={saveBudgetItem}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-medium"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
                 >
                   Zapisz
                 </button>
@@ -1905,7 +1905,7 @@ const FinanceModule = () => {
                   {incomeForm.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300 rounded-lg text-xs flex items-center gap-1"
+                      className="px-2 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light rounded-lg text-xs flex items-center gap-1"
                     >
                       <Tag size={12} />
                       {tag}
@@ -1925,7 +1925,7 @@ const FinanceModule = () => {
                 </button>
                 <button
                   onClick={saveIncome}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-medium"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
                 >
                   Zapisz
                 </button>
@@ -2024,7 +2024,7 @@ const FinanceModule = () => {
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załączniki (opcjonalnie)</label>
                 <div className="space-y-2">
-                  <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-pink-300 dark:hover:border-pink-600 transition flex items-center gap-2">
+                  <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                     <Upload size={18} className="text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {uploadingFile ? 'Przesyłanie...' : 'Dodaj plik(i)'}
@@ -2079,7 +2079,7 @@ const FinanceModule = () => {
                   {expenseForm.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300 rounded-lg text-xs flex items-center gap-1"
+                      className="px-2 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light rounded-lg text-xs flex items-center gap-1"
                     >
                       <Tag size={12} />
                       {tag}
@@ -2099,7 +2099,7 @@ const FinanceModule = () => {
                 </button>
                 <button
                   onClick={saveExpense}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-medium"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
                 >
                   Zapisz
                 </button>
@@ -2224,7 +2224,7 @@ const FinanceModule = () => {
                 </button>
                 <button
                   onClick={saveAccountBalances}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-medium"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
                 >
                   Zapisz
                 </button>

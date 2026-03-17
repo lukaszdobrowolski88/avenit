@@ -168,7 +168,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 mb-8">
-            <Church size={32} className="text-pink-600" />
+            <Church size={32} className="text-accent-primary" />
             <span className="text-2xl font-bold text-gray-900 dark:text-white">
               AppSchtomy
             </span>
@@ -178,7 +178,7 @@ export default function RegisterPage() {
           <div className="flex items-center gap-4 mb-8">
             <div className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= 1 ? 'bg-pink-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                step >= 1 ? 'bg-accent-primary text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
               }`}>
                 {step > 1 ? <Check size={16} /> : '1'}
               </div>
@@ -187,7 +187,7 @@ export default function RegisterPage() {
             <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
             <div className="flex items-center gap-2">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                step >= 2 ? 'bg-pink-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                step >= 2 ? 'bg-accent-primary text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
               }`}>
                 2
               </div>
@@ -218,7 +218,7 @@ export default function RegisterPage() {
                         value={formData.fullName}
                         onChange={(e) => updateField('fullName', e.target.value)}
                         placeholder="Jan Kowalski"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                       />
                     </div>
@@ -235,7 +235,7 @@ export default function RegisterPage() {
                         value={formData.email}
                         onChange={(e) => updateField('email', e.target.value)}
                         placeholder="jan@kosciol.pl"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                       />
                     </div>
@@ -252,7 +252,7 @@ export default function RegisterPage() {
                         value={formData.password}
                         onChange={(e) => updateField('password', e.target.value)}
                         placeholder="Minimum 8 znaków"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                         minLength={8}
                       />
@@ -270,7 +270,7 @@ export default function RegisterPage() {
                         value={formData.confirmPassword}
                         onChange={(e) => updateField('confirmPassword', e.target.value)}
                         placeholder="Powtórz hasło"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                       />
                     </div>
@@ -298,7 +298,7 @@ export default function RegisterPage() {
                         value={formData.churchName}
                         onChange={(e) => updateField('churchName', e.target.value)}
                         placeholder="Kościół Łaski"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                       />
                     </div>
@@ -317,7 +317,7 @@ export default function RegisterPage() {
                         value={formData.churchSlug}
                         onChange={(e) => updateField('churchSlug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                         placeholder="kosciol-laski"
-                        className="flex-1 px-4 py-3 rounded-r-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        className="flex-1 px-4 py-3 rounded-r-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                       />
                     </div>
@@ -333,7 +333,7 @@ export default function RegisterPage() {
                         value={formData.taxId}
                         onChange={(e) => updateField('taxId', e.target.value)}
                         placeholder="1234567890"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                       />
                     </div>
 
@@ -348,7 +348,7 @@ export default function RegisterPage() {
                           value={formData.phone}
                           onChange={(e) => updateField('phone', e.target.value)}
                           placeholder="+48 123 456 789"
-                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -363,7 +363,7 @@ export default function RegisterPage() {
                       value={formData.city}
                       onChange={(e) => updateField('city', e.target.value)}
                       placeholder="Warszawa"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -392,7 +392,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50"
               >
                 {loading ? (
                   <>
@@ -416,16 +416,16 @@ export default function RegisterPage() {
             {/* Terms */}
             <p className="mt-4 text-xs text-gray-500 dark:text-gray-500 text-center">
               Rejestrując się, akceptujesz{' '}
-              <a href="#" className="text-pink-600 hover:underline">Regulamin</a>
+              <a href="#" className="text-accent-primary hover:underline">Regulamin</a>
               {' '}oraz{' '}
-              <a href="#" className="text-pink-600 hover:underline">Politykę prywatności</a>
+              <a href="#" className="text-accent-primary hover:underline">Politykę prywatności</a>
             </p>
           </form>
 
           {/* Login link */}
           <p className="mt-8 text-center text-gray-600 dark:text-gray-400">
             Masz już konto?{' '}
-            <Link to="/login" className="text-pink-600 hover:underline font-medium">
+            <Link to="/login" className="text-accent-primary hover:underline font-medium">
               Zaloguj się
             </Link>
           </p>
@@ -433,7 +433,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Right side - Image/Info */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-pink-600 to-orange-600 items-center justify-center p-12">
+      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-accent-primary to-accent-secondary items-center justify-center p-12">
         <div className="max-w-md text-white">
           <h2 className="text-3xl font-bold mb-4">
             Dołącz do społeczności AppSchtomy

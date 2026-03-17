@@ -69,7 +69,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700">
         {/* Header */}
-        <div className="bg-gradient-to-r from-pink-600 to-orange-600 p-5 rounded-t-2xl flex-shrink-0">
+        <div className="bg-gradient-to-r from-accent-primary to-accent-secondary p-5 rounded-t-2xl flex-shrink-0">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Heart className="w-6 h-6" />
@@ -98,7 +98,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                 value={requesterName}
                 onChange={(e) => setRequesterName(e.target.value)}
                 placeholder="Imię osoby, za którą się modlimy..."
-                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500/50 dark:text-white"
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white"
               />
             </div>
             <p className="text-xs text-gray-400 mt-1">Zostaw puste, jeśli modlisz się za siebie</p>
@@ -114,7 +114,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               onChange={(e) => setContent(e.target.value)}
               placeholder="Podziel się swoją prośbą modlitewną..."
               rows={4}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500/50 dark:text-white resize-none"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white resize-none"
               required
             />
           </div>
@@ -133,7 +133,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                   className={`
                     px-3 py-2 rounded-xl text-sm font-medium transition-all
                     ${category === key
-                      ? `${color} ring-2 ring-offset-2 ring-pink-500`
+                      ? `${color} ring-2 ring-offset-2 ring-accent-primary-light`
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }
                   `}
@@ -153,7 +153,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               <label className={`
                 flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
                 ${visibility === 'public'
-                  ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/30'
+                  ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30'
                   : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
                 }
               `}>
@@ -165,7 +165,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                   onChange={(e) => setVisibility(e.target.value)}
                   className="sr-only"
                 />
-                <User className={`w-5 h-5 ${visibility === 'public' ? 'text-pink-500' : 'text-gray-400'}`} />
+                <User className={`w-5 h-5 ${visibility === 'public' ? 'text-accent-primary-light' : 'text-gray-400'}`} />
                 <div>
                   <p className="font-medium text-gray-800 dark:text-gray-200">Publiczna</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Widoczna dla wszystkich</p>
@@ -202,7 +202,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               type="checkbox"
               checked={isAnonymous}
               onChange={(e) => setIsAnonymous(e.target.checked)}
-              className="w-5 h-5 rounded border-gray-300 text-pink-500 focus:ring-pink-500"
+              className="w-5 h-5 rounded border-gray-300 text-accent-primary-light focus:ring-accent-primary-light"
             />
             <Ghost className="w-5 h-5 text-gray-500" />
             <div>
@@ -308,7 +308,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
             <button
               type="submit"
               disabled={isLoading || !content.trim()}
-              className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-pink-600 to-orange-600 text-white font-medium hover:from-pink-700 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium hover:from-accent-primary hover:to-accent-secondary transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -362,7 +362,7 @@ function PrayerCard({ prayer, onClick }) {
         border-2 transition-all duration-300 hover:shadow-lg cursor-pointer
         ${isAnswered
           ? 'border-amber-300 dark:border-amber-500/50 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20 dark:to-yellow-900/20'
-          : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-500/30'
+          : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary-light/30'
         }
       `}
     >
@@ -393,7 +393,7 @@ function PrayerCard({ prayer, onClick }) {
       {/* Requester */}
       {prayer.requester_name && (
         <div className="mb-2 flex items-center gap-1 text-xs">
-          <UserPlus className="w-3 h-3 text-pink-500" />
+          <UserPlus className="w-3 h-3 text-accent-primary-light" />
           <span className="text-gray-600 dark:text-gray-400">Za:</span>
           <span className="font-medium text-gray-800 dark:text-gray-200">{prayer.requester_name}</span>
         </div>
@@ -430,7 +430,7 @@ function PrayerCard({ prayer, onClick }) {
       {/* Footer */}
       <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-          <HeartHandshake size={14} className="text-pink-500" />
+          <HeartHandshake size={14} className="text-accent-primary-light" />
           <span>{prayer.prayer_count || 0} osób się modli</span>
         </div>
         {isAnswered && (
@@ -570,7 +570,7 @@ export default function MyPrayersWidget({ prayers, userEmail, onRefresh, size = 
         </p>
         <a
           href="/prayer"
-          className="mt-4 px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl text-sm font-medium hover:shadow-lg transition-all"
+          className="mt-4 px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl text-sm font-medium hover:shadow-lg transition-all"
         >
           Przejdź do Centrum Modlitwy
         </a>
@@ -601,7 +601,7 @@ export default function MyPrayersWidget({ prayers, userEmail, onRefresh, size = 
 
       <a
         href="/prayer"
-        className="block text-center text-sm text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-300 font-medium py-2"
+        className="block text-center text-sm text-accent-primary-light hover:text-accent-primary dark:text-accent-primary-light dark:hover:text-accent-primary-light font-medium py-2"
       >
         Zobacz wszystkie intencje →
       </a>

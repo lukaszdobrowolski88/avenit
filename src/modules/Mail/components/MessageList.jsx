@@ -144,7 +144,7 @@ export default function MessageList({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Szukaj wiadomości..."
-            className="w-full pl-11 pr-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none placeholder:text-gray-400"
+            className="w-full pl-11 pr-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-accent-primary-light focus:border-transparent outline-none placeholder:text-gray-400"
           />
         </form>
       </div>
@@ -259,7 +259,7 @@ export default function MessageList({
       >
         {loading && messages.length === 0 ? (
           <div className="flex items-center justify-center h-32">
-            <RefreshCw size={24} className="animate-spin text-pink-500" />
+            <RefreshCw size={24} className="animate-spin text-accent-primary-light" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-gray-500 dark:text-gray-400">
@@ -277,7 +277,7 @@ export default function MessageList({
                 onClick={() => onSelectMessage(message.id)}
                 className={`
                   flex items-start gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition-colors
-                  ${isSelected ? 'bg-pink-50 dark:bg-pink-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}
+                  ${isSelected ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}
                   ${!message.is_read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}
                 `}
               >
@@ -287,7 +287,7 @@ export default function MessageList({
                   className="flex-shrink-0 p-0.5 mt-1"
                 >
                   {isChecked ? (
-                    <CheckSquare size={18} className="text-pink-500" />
+                    <CheckSquare size={18} className="text-accent-primary-light" />
                   ) : (
                     <Square size={18} className="text-gray-400" />
                   )}
@@ -355,7 +355,7 @@ export default function MessageList({
         {/* Loading more */}
         {loading && messages.length > 0 && (
           <div className="flex items-center justify-center py-4">
-            <RefreshCw size={20} className="animate-spin text-pink-500" />
+            <RefreshCw size={20} className="animate-spin text-accent-primary-light" />
           </div>
         )}
       </div>

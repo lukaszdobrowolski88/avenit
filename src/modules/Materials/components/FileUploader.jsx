@@ -109,8 +109,8 @@ export default function FileUploader({
         onClick={() => fileInputRef.current?.click()}
         className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200
           ${isDragging
-            ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20'
-            : 'border-gray-300 dark:border-gray-600 hover:border-pink-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+            ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20'
+            : 'border-gray-300 dark:border-gray-600 hover:border-accent-primary-light hover:bg-gray-50 dark:hover:bg-gray-800/50'
           }
           ${uploading ? 'pointer-events-none opacity-50' : ''}
         `}
@@ -127,11 +127,11 @@ export default function FileUploader({
         <div className="flex flex-col items-center gap-3">
           <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-200
             ${isDragging
-              ? 'bg-pink-100 dark:bg-pink-900/40'
+              ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/40'
               : 'bg-gray-100 dark:bg-gray-800'
             }`}
           >
-            <Upload size={24} className={isDragging ? 'text-pink-500' : 'text-gray-500'} />
+            <Upload size={24} className={isDragging ? 'text-accent-primary-light' : 'text-gray-500'} />
           </div>
 
           <div>
@@ -197,7 +197,7 @@ export default function FileUploader({
           <button
             onClick={handleUpload}
             disabled={uploading}
-            className="w-full py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-pink-500/30"
+            className="w-full py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-accent-primary-light/30"
           >
             {uploading ? (
               <>
@@ -219,7 +219,7 @@ export default function FileUploader({
         <div className="space-y-2">
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-pink-500 to-orange-500 transition-all duration-300"
+              className="h-full bg-gradient-to-r from-accent-primary-light to-accent-secondary-light transition-all duration-300"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>

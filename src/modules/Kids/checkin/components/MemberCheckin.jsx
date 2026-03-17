@@ -88,7 +88,7 @@ export default function MemberCheckin({
                 key={child.id}
                 className={`flex flex-col p-5 rounded-2xl border-2 transition-all
                   ${isSelected
-                    ? 'bg-pink-50 dark:bg-pink-900/20 border-pink-500 dark:border-pink-400'
+                    ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border-accent-primary-light dark:border-accent-primary-light'
                     : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                   }`}
               >
@@ -101,7 +101,7 @@ export default function MemberCheckin({
                   <div
                     className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all
                       ${isSelected
-                        ? 'bg-pink-600 border-pink-600'
+                        ? 'bg-accent-primary border-accent-primary'
                         : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600'
                       }`}
                   >
@@ -134,7 +134,7 @@ export default function MemberCheckin({
                     <select
                       value={memberLocations[child.id] || ''}
                       onChange={(e) => handleLocationChange(child.id, e.target.value)}
-                      className="w-full px-4 py-3 text-base border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white cursor-pointer focus:border-pink-500 dark:focus:border-pink-400 focus:outline-none transition"
+                      className="w-full px-4 py-3 text-base border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white cursor-pointer focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition"
                     >
                       <option value="">Wybierz salę...</option>
                       {locations.map((loc) => (

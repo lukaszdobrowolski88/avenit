@@ -106,7 +106,7 @@ export default function MailSidebar({
         className={`
           flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all
           ${isSelected
-            ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+            ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
           }
         `}
@@ -120,7 +120,7 @@ export default function MailSidebar({
           <span className={`
             text-xs font-bold px-2 py-0.5 rounded-full
             ${isSelected
-              ? 'bg-pink-200 dark:bg-pink-800 text-pink-700 dark:text-pink-300'
+              ? 'bg-accent-primary-lighter dark:bg-accent-primary-dark text-accent-primary dark:text-accent-primary-light'
               : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
             }
           `}>
@@ -146,7 +146,7 @@ export default function MailSidebar({
         className={`
           flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all
           ${isSelected
-            ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+            ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
           }
         `}
@@ -170,7 +170,7 @@ export default function MailSidebar({
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                 activeAccount?.account_type === 'external'
                   ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                  : 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+                  : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
               }`}>
                 {activeAccount?.account_type === 'external' ? <Globe size={16} /> : <User size={16} />}
               </div>
@@ -198,13 +198,13 @@ export default function MailSidebar({
                         setShowAccountPicker(false);
                       }}
                       className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                        account.id === activeAccountId ? 'bg-pink-50 dark:bg-pink-900/20' : ''
+                        account.id === activeAccountId ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20' : ''
                       }`}
                     >
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                         account.account_type === 'external'
                           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                          : 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+                          : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                       }`}>
                         {account.account_type === 'external' ? <Globe size={16} /> : <User size={16} />}
                       </div>
@@ -217,7 +217,7 @@ export default function MailSidebar({
                         </p>
                       </div>
                       {account.id === activeAccountId && (
-                        <div className="w-2 h-2 bg-pink-500 rounded-full" />
+                        <div className="w-2 h-2 bg-accent-primary-light rounded-full" />
                       )}
                     </button>
                   ))}
@@ -232,7 +232,7 @@ export default function MailSidebar({
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={onCompose}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold rounded-xl shadow-lg shadow-pink-500/25 transition-all"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-accent-primary-light to-rose-500 hover:from-accent-primary hover:to-rose-600 text-white font-semibold rounded-xl shadow-lg shadow-accent-primary-light/25 transition-all"
         >
           <Mail size={20} />
           <span>Nowa wiadomość</span>
@@ -273,12 +273,12 @@ export default function MailSidebar({
               }}
               placeholder="Nazwa folderu..."
               autoFocus
-              className="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-accent-primary-light focus:border-transparent outline-none"
             />
             <div className="flex gap-2 mt-2">
               <button
                 onClick={handleCreateFolder}
-                className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-pink-500 hover:bg-pink-600 rounded-lg"
+                className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-accent-primary-light hover:bg-accent-primary rounded-lg"
               >
                 Utwórz
               </button>
@@ -293,7 +293,7 @@ export default function MailSidebar({
         ) : (
           <button
             onClick={() => setShowNewFolder(true)}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary-light dark:hover:text-accent-primary-light transition-colors"
           >
             <Plus size={16} />
             <span>Nowy folder</span>
@@ -327,14 +327,14 @@ export default function MailSidebar({
                     }}
                     placeholder="Nazwa etykiety..."
                     autoFocus
-                    className="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none"
+                    className="w-full px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-accent-primary-light focus:border-transparent outline-none"
                   />
                   <div className="flex flex-wrap gap-1 mt-2">
                     {LABEL_COLORS.map(color => (
                       <button
                         key={color}
                         onClick={() => setNewLabelColor(color)}
-                        className={`w-5 h-5 rounded-full transition-transform ${newLabelColor === color ? 'ring-2 ring-offset-2 ring-pink-500 scale-110' : ''}`}
+                        className={`w-5 h-5 rounded-full transition-transform ${newLabelColor === color ? 'ring-2 ring-offset-2 ring-accent-primary-light scale-110' : ''}`}
                         style={{ backgroundColor: color }}
                       />
                     ))}
@@ -342,7 +342,7 @@ export default function MailSidebar({
                   <div className="flex gap-2 mt-3">
                     <button
                       onClick={handleCreateLabel}
-                      className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-pink-500 hover:bg-pink-600 rounded-lg"
+                      className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-accent-primary-light hover:bg-accent-primary rounded-lg"
                     >
                       Utwórz
                     </button>
@@ -357,7 +357,7 @@ export default function MailSidebar({
               ) : (
                 <button
                   onClick={() => setShowNewLabel(true)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary-light dark:hover:text-accent-primary-light transition-colors"
                 >
                   <Plus size={16} />
                   <span>Nowa etykieta</span>
@@ -429,7 +429,7 @@ export default function MailSidebar({
                           onUpdateLabelColor(contextMenu.item.id, color);
                           setContextMenu(null);
                         }}
-                        className={`w-5 h-5 rounded-full ${contextMenu.item.color === color ? 'ring-2 ring-offset-1 ring-pink-500' : ''}`}
+                        className={`w-5 h-5 rounded-full ${contextMenu.item.color === color ? 'ring-2 ring-offset-1 ring-accent-primary-light' : ''}`}
                         style={{ backgroundColor: color }}
                       />
                     ))}

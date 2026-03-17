@@ -44,8 +44,8 @@ export default function ResponsiveTabs({ tabs, activeTab, onChange, className = 
                 onClick={() => onChange(tab.id)}
                 className={`flex-shrink-0 px-4 py-2.5 rounded-full font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
                   isActive
-                    ? 'bg-gradient-to-r from-pink-600 to-orange-600 text-white shadow-lg shadow-pink-500/30'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600 hover:text-pink-600 dark:hover:text-pink-400'
+                    ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary-light/30'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary dark:hover:text-accent-primary-light'
                 }`}
               >
                 {TabIcon && <TabIcon size={16} className={isActive ? 'text-white' : ''} />}
@@ -70,7 +70,7 @@ export default function ResponsiveTabs({ tabs, activeTab, onChange, className = 
                 onClick={() => onChange(tab.id)}
                 className={`px-4 xl:px-6 py-2.5 rounded-xl font-medium transition text-sm flex items-center gap-2 ${
                   isActive
-                    ? 'bg-gradient-to-r from-pink-600 to-orange-600 text-white shadow-md'
+                    ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }`}
               >

@@ -71,9 +71,9 @@ export default function FolderModal({
         onKeyDown={handleKeyDown}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-pink-50/50 to-orange-50/50 dark:from-gray-800/50 dark:to-gray-800/50">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-accent-primary-lightest/50 to-accent-secondary-lightest/50 dark:from-gray-800/50 dark:to-gray-800/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-accent-secondary-light flex items-center justify-center shadow-lg shadow-accent-secondary-light/20">
               {mode === 'create' ? (
                 <FolderPlus size={18} className="text-white" />
               ) : (
@@ -111,7 +111,7 @@ export default function FolderModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Wpisz nazwę folderu..."
-              className="w-full px-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all duration-200"
+              className="w-full px-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 transition-all duration-200"
               disabled={loading}
             />
             {error && (
@@ -132,7 +132,7 @@ export default function FolderModal({
             <button
               type="submit"
               disabled={loading || !name.trim()}
-              className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-pink-500/30"
+              className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all duration-200 flex items-center gap-2 shadow-lg shadow-accent-primary-light/30"
             >
               {loading ? (
                 <>

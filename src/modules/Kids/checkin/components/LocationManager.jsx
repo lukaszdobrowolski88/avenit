@@ -142,7 +142,7 @@ export default function LocationManager({ onLocationsChange }) {
     }
   };
 
-  const inputClasses = "w-full px-4 py-3 text-base border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-pink-500 dark:focus:border-pink-400 focus:outline-none transition";
+  const inputClasses = "w-full px-4 py-3 text-base border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition";
 
   return (
     <div>
@@ -153,7 +153,7 @@ export default function LocationManager({ onLocationsChange }) {
             resetForm();
             setShowForm(true);
           }}
-          className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition"
+          className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
         >
           <Plus size={18} />
           Nowa sala
@@ -320,7 +320,7 @@ export default function LocationManager({ onLocationsChange }) {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEdit(location)}
-                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                  className="p-2 text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
                 >
                   <Pencil size={18} />
                 </button>

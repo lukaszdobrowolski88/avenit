@@ -115,7 +115,7 @@ export default function NotificationCenter() {
                   return (
                     <div
                       key={notification.id}
-                      className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition cursor-pointer bg-pink-50/50 dark:bg-pink-900/10"
+                      className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition cursor-pointer bg-accent-primary-lightest/50 dark:bg-accent-primary-darkest/10"
                       onClick={() => handleNotificationClick(notification)}
                     >
                       {/* Ikona */}
@@ -129,7 +129,7 @@ export default function NotificationCenter() {
                           <p className="text-sm font-medium text-gray-900 dark:text-white">
                             {notification.title}
                           </p>
-                          <span className="w-2 h-2 bg-pink-500 rounded-full flex-shrink-0 mt-1.5" />
+                          <span className="w-2 h-2 bg-accent-primary-light rounded-full flex-shrink-0 mt-1.5" />
                         </div>
                         {notification.body && (
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">

@@ -81,7 +81,7 @@ export default function FieldRenderer({
   };
 
   const baseInputClass = `w-full px-4 py-3 bg-white dark:bg-gray-800 border rounded-xl text-gray-900 dark:text-white
-    focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500
+    focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light
     disabled:opacity-50 disabled:cursor-not-allowed
     ${error ? 'border-red-500' : 'border-gray-200 dark:border-gray-700'}`;
 
@@ -153,8 +153,8 @@ export default function FieldRenderer({
               key={opt.id}
               className={`flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border rounded-xl cursor-pointer transition-all
                 ${value === opt.value
-                  ? 'border-pink-500 ring-2 ring-pink-500/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600'
+                  ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
                 }
                 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
@@ -165,7 +165,7 @@ export default function FieldRenderer({
                 checked={value === opt.value}
                 onChange={(e) => onChange(e.target.value)}
                 disabled={disabled}
-                className="w-4 h-4 text-pink-500 focus:ring-pink-500"
+                className="w-4 h-4 text-accent-primary-light focus:ring-accent-primary-light"
               />
               <span className="text-gray-900 dark:text-white">{opt.label}</span>
             </label>
@@ -182,8 +182,8 @@ export default function FieldRenderer({
               key={opt.id}
               className={`flex items-center gap-3 p-3 bg-white dark:bg-gray-800 border rounded-xl cursor-pointer transition-all
                 ${selectedValues.includes(opt.value)
-                  ? 'border-pink-500 ring-2 ring-pink-500/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600'
+                  ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
                 }
                 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
@@ -199,7 +199,7 @@ export default function FieldRenderer({
                   }
                 }}
                 disabled={disabled}
-                className="w-4 h-4 rounded text-pink-500 focus:ring-pink-500"
+                className="w-4 h-4 rounded text-accent-primary-light focus:ring-accent-primary-light"
               />
               <span className="text-gray-900 dark:text-white">{opt.label}</span>
             </label>
@@ -384,7 +384,7 @@ export default function FieldRenderer({
             <div
               onClick={() => fileInputRef.current?.click()}
               className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors
-                ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600 hover:border-pink-500'}`}
+                ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600 hover:border-accent-primary-light'}`}
             >
               <input
                 ref={fileInputRef}
@@ -405,7 +405,7 @@ export default function FieldRenderer({
               {uploadProgress !== null && (
                 <div className="absolute inset-0 bg-white/90 dark:bg-gray-800/90 rounded-xl flex items-center justify-center">
                   <div className="text-center">
-                    <div className="w-16 h-16 rounded-full border-4 border-pink-200 border-t-pink-500 animate-spin mx-auto mb-2"></div>
+                    <div className="w-16 h-16 rounded-full border-4 border-accent-primary-lighter border-t-accent-primary-light animate-spin mx-auto mb-2"></div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Przesyłanie... {uploadProgress}%
                     </p>
@@ -522,7 +522,7 @@ export default function FieldRenderer({
             <div
               onClick={() => fileInputRef.current?.click()}
               className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors
-                ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600 hover:border-pink-500'}`}
+                ${error ? 'border-red-500' : 'border-gray-300 dark:border-gray-600 hover:border-accent-primary-light'}`}
             >
               <input
                 ref={fileInputRef}
@@ -532,8 +532,8 @@ export default function FieldRenderer({
                 className="hidden"
                 accept={imageConfig.allowedTypes?.join(',') || 'image/*'}
               />
-              <div className="w-16 h-16 bg-gradient-to-br from-pink-50 to-orange-50 dark:from-pink-900/30 dark:to-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                <ImageIcon size={28} className="text-pink-500" />
+              <div className="w-16 h-16 bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                <ImageIcon size={28} className="text-accent-primary-light" />
               </div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Kliknij, aby dodać {multipleImages ? 'zdjęcia' : 'zdjęcie'}
@@ -545,7 +545,7 @@ export default function FieldRenderer({
               {uploadProgress !== null && (
                 <div className="absolute inset-0 bg-white/90 dark:bg-gray-800/90 rounded-xl flex items-center justify-center">
                   <div className="text-center">
-                    <div className="w-16 h-16 rounded-full border-4 border-pink-200 border-t-pink-500 animate-spin mx-auto mb-2"></div>
+                    <div className="w-16 h-16 rounded-full border-4 border-accent-primary-lighter border-t-accent-primary-light animate-spin mx-auto mb-2"></div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Przesyłanie... {uploadProgress}%
                     </p>

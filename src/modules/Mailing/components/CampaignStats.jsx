@@ -93,8 +93,8 @@ export default function CampaignStats({ campaigns }) {
     return (
       <div className="text-center py-16 px-4">
         <div className="relative inline-block mb-6">
-          <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-orange-500 rounded-3xl blur-xl opacity-30 animate-pulse" />
-          <div className="relative w-20 h-20 bg-gradient-to-br from-pink-500 to-orange-500 rounded-3xl flex items-center justify-center shadow-xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-3xl blur-xl opacity-30 animate-pulse" />
+          <div className="relative w-20 h-20 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-3xl flex items-center justify-center shadow-xl">
             <BarChart3 className="w-10 h-10 text-white" />
           </div>
         </div>
@@ -104,7 +104,7 @@ export default function CampaignStats({ campaigns }) {
         <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
           Wyślij swój pierwszy mail, aby zobaczyć szczegółowe statystyki
         </p>
-        <div className="flex items-center justify-center gap-2 text-sm text-pink-500 dark:text-pink-400">
+        <div className="flex items-center justify-center gap-2 text-sm text-accent-primary-light dark:text-accent-primary-light">
           <Sparkles size={14} />
           <span>Statystyki pojawią się po pierwszej wysyłce</span>
         </div>
@@ -118,8 +118,8 @@ export default function CampaignStats({ campaigns }) {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-orange-500 rounded-xl blur-lg opacity-40" />
-            <div className="relative p-2.5 bg-gradient-to-br from-pink-500 to-orange-500 rounded-xl shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-xl blur-lg opacity-40" />
+            <div className="relative p-2.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-xl shadow-lg">
               <BarChart3 size={20} className="text-white" />
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function CampaignStats({ campaigns }) {
                 onClick={() => setTimeRange(option.value)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   timeRange === option.value
-                    ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-lg shadow-pink-500/30'
+                    ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg shadow-accent-primary-light/30'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
@@ -157,9 +157,9 @@ export default function CampaignStats({ campaigns }) {
 
           <button
             onClick={exportToCSV}
-            className="group flex items-center gap-2 px-4 py-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 rounded-xl transition-all border border-gray-200/50 dark:border-gray-700/50 hover:border-pink-200 dark:hover:border-pink-800/50 hover:shadow-md"
+            className="group flex items-center gap-2 px-4 py-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 rounded-xl transition-all border border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark/50 hover:shadow-md"
           >
-            <Download size={16} className="group-hover:text-pink-500 transition-colors" />
+            <Download size={16} className="group-hover:text-accent-primary-light transition-colors" />
             <span className="hidden sm:inline font-medium">Eksport CSV</span>
           </button>
         </div>
@@ -212,7 +212,7 @@ export default function CampaignStats({ campaigns }) {
       <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden shadow-sm">
         <div className="px-5 py-4 bg-gradient-to-r from-gray-50/80 to-gray-100/50 dark:from-gray-900/50 dark:to-gray-800/30 border-b border-gray-200/50 dark:border-gray-700/50">
           <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Mail size={16} className="text-pink-500" />
+            <Mail size={16} className="text-accent-primary-light" />
             Szczegóły maili
           </h3>
         </div>
@@ -231,7 +231,7 @@ export default function CampaignStats({ campaigns }) {
               <div
                 key={campaign.id}
                 className={`p-5 transition-all duration-200 ${
-                  isExpanded ? 'bg-gradient-to-br from-pink-50/50 to-orange-50/30 dark:from-pink-900/10 dark:to-orange-900/10' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/30'
+                  isExpanded ? 'bg-gradient-to-br from-accent-primary-lightest/50 to-accent-secondary-lightest/30 dark:from-accent-primary-darkest/10 dark:to-accent-secondary-darkest/10' : 'hover:bg-gray-50/80 dark:hover:bg-gray-700/30'
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -266,7 +266,7 @@ export default function CampaignStats({ campaigns }) {
                       onClick={() => setSelectedCampaignId(isExpanded ? null : campaign.id)}
                       className={`p-2.5 rounded-xl transition-all duration-200 ${
                         isExpanded
-                          ? 'bg-gradient-to-br from-pink-500 to-orange-500 text-white shadow-lg shadow-pink-500/30'
+                          ? 'bg-gradient-to-br from-accent-primary-light to-accent-secondary-light text-white shadow-lg shadow-accent-primary-light/30'
                           : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600'
                       }`}
                     >
@@ -305,7 +305,7 @@ export default function CampaignStats({ campaigns }) {
                           title="Dostarczone (nie otwarte)"
                         />
                         <div
-                          className="bg-gradient-to-r from-amber-400 to-orange-500 transition-all duration-500"
+                          className="bg-gradient-to-r from-amber-400 to-accent-secondary-light transition-all duration-500"
                           style={{ width: `${(campaign.bounced_count || 0) / (campaign.total_recipients || 1) * 100}%` }}
                           title="Odbite"
                         />
@@ -318,7 +318,7 @@ export default function CampaignStats({ campaigns }) {
                           <span className="w-2.5 h-2.5 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full shadow-sm" /> Dostarczone
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full shadow-sm" /> Odbite
+                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-amber-400 to-accent-secondary-light rounded-full shadow-sm" /> Odbite
                         </span>
                       </div>
                     </div>
@@ -351,12 +351,12 @@ function StatCard({ icon: Icon, label, value, subValue, color }) {
       text: 'text-purple-600 dark:text-purple-400'
     },
     pink: {
-      gradient: 'from-pink-500 to-rose-500',
-      bg: 'bg-pink-50 dark:bg-pink-900/20',
-      text: 'text-pink-600 dark:text-pink-400'
+      gradient: 'from-accent-primary-light to-rose-500',
+      bg: 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20',
+      text: 'text-accent-primary dark:text-accent-primary-light'
     },
     amber: {
-      gradient: 'from-amber-500 to-orange-500',
+      gradient: 'from-amber-500 to-accent-secondary-light',
       bg: 'bg-amber-50 dark:bg-amber-900/20',
       text: 'text-amber-600 dark:text-amber-400'
     },
@@ -395,7 +395,7 @@ function MiniStat({ label, value, color = 'gray' }) {
     blue: 'from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-900/10 text-blue-600 dark:text-blue-400',
     emerald: 'from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-900/10 text-emerald-600 dark:text-emerald-400',
     purple: 'from-purple-50 to-purple-100/50 dark:from-purple-900/20 dark:to-purple-900/10 text-purple-600 dark:text-purple-400',
-    pink: 'from-pink-50 to-pink-100/50 dark:from-pink-900/20 dark:to-pink-900/10 text-pink-600 dark:text-pink-400',
+    pink: 'from-accent-primary-lightest to-accent-primary-lighter/50 dark:from-accent-primary-darkest/20 dark:to-accent-primary-darkest/10 text-accent-primary dark:text-accent-primary-light',
     amber: 'from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-900/10 text-amber-600 dark:text-amber-400',
     red: 'from-red-50 to-red-100/50 dark:from-red-900/20 dark:to-red-900/10 text-red-600 dark:text-red-400',
     gray: 'from-gray-50 to-gray-100/50 dark:from-gray-900/30 dark:to-gray-800/20 text-gray-600 dark:text-gray-400'

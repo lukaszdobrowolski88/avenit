@@ -20,7 +20,7 @@ export default function FieldCanvas({
         ref={setNodeRef}
         className={`flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-2xl transition-colors
           ${isOver
-            ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20'
+            ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20'
             : 'border-gray-300 dark:border-gray-600'
           }`}
       >
@@ -41,7 +41,7 @@ export default function FieldCanvas({
     <div ref={setNodeRef} className="flex-1">
       <SortableContext items={fields.map(f => f.id)} strategy={verticalListSortingStrategy}>
         <div className={`space-y-3 min-h-[200px] p-2 rounded-xl transition-colors ${
-          isOver ? 'bg-pink-50 dark:bg-pink-900/20' : ''
+          isOver ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20' : ''
         }`}>
           {fields.map((field) => (
             <FieldItem

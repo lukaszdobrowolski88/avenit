@@ -174,8 +174,8 @@ export default function MailSettingsModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-xl">
-              <Settings size={20} className="text-pink-500" />
+            <div className="p-2 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 rounded-xl">
+              <Settings size={20} className="text-accent-primary-light" />
             </div>
             <h2 className="text-lg font-bold text-gray-800 dark:text-white">
               Ustawienia poczty
@@ -200,7 +200,7 @@ export default function MailSettingsModal({
                 className={`
                   flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors
                   ${activeTab === tab.id
-                    ? 'border-pink-500 text-pink-500'
+                    ? 'border-accent-primary-light text-accent-primary-light'
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                   }
                 `}
@@ -359,7 +359,7 @@ export default function MailSettingsModal({
                       onChange={(e) => handleEmailChange(e.target.value)}
                       placeholder="twoj.email@gmail.com"
                       disabled={!!editingAccountId}
-                      className={`w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-pink-500 ${editingAccountId ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      className={`w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent-primary-light ${editingAccountId ? 'opacity-60 cursor-not-allowed' : ''}`}
                     />
                     {editingAccountId && (
                       <p className="text-xs text-gray-500 mt-1">
@@ -378,7 +378,7 @@ export default function MailSettingsModal({
                         value={accountForm.imap_host}
                         onChange={(e) => setAccountForm(prev => ({ ...prev, imap_host: e.target.value }))}
                         placeholder="imap.gmail.com"
-                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-pink-500"
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent-primary-light"
                       />
                     </div>
                     <div>
@@ -389,7 +389,7 @@ export default function MailSettingsModal({
                         type="number"
                         value={accountForm.imap_port}
                         onChange={(e) => setAccountForm(prev => ({ ...prev, imap_port: parseInt(e.target.value) }))}
-                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-pink-500"
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent-primary-light"
                       />
                     </div>
                   </div>
@@ -404,7 +404,7 @@ export default function MailSettingsModal({
                         value={accountForm.smtp_host}
                         onChange={(e) => setAccountForm(prev => ({ ...prev, smtp_host: e.target.value }))}
                         placeholder="smtp.gmail.com"
-                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-pink-500"
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent-primary-light"
                       />
                     </div>
                     <div>
@@ -415,7 +415,7 @@ export default function MailSettingsModal({
                         type="number"
                         value={accountForm.smtp_port}
                         onChange={(e) => setAccountForm(prev => ({ ...prev, smtp_port: parseInt(e.target.value) }))}
-                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-pink-500"
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent-primary-light"
                       />
                     </div>
                   </div>
@@ -430,7 +430,7 @@ export default function MailSettingsModal({
                         value={accountForm.password}
                         onChange={(e) => setAccountForm(prev => ({ ...prev, password: e.target.value }))}
                         placeholder={editingAccountId ? 'Wpisz nowe hasło lub pozostaw puste' : 'Hasło lub hasło aplikacji'}
-                        className="w-full px-3 py-2 pr-10 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-pink-500"
+                        className="w-full px-3 py-2 pr-10 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent-primary-light"
                       />
                       <button
                         type="button"
@@ -458,7 +458,7 @@ export default function MailSettingsModal({
                     <button
                       onClick={handleSaveAccount}
                       disabled={saving || !accountForm.external_email || !accountForm.imap_host || (!editingAccountId && !accountForm.password)}
-                      className="flex items-center gap-2 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white font-medium rounded-lg disabled:opacity-50 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 bg-accent-primary-light hover:bg-accent-primary text-white font-medium rounded-lg disabled:opacity-50 transition-colors"
                     >
                       {saving ? (
                         <Loader2 size={16} className="animate-spin" />
@@ -474,7 +474,7 @@ export default function MailSettingsModal({
               ) : (
                 <button
                   onClick={() => setShowAccountForm(true)}
-                  className="flex items-center gap-2 px-4 py-3 w-full border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-pink-500 hover:text-pink-500 rounded-xl transition-colors"
+                  className="flex items-center gap-2 px-4 py-3 w-full border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary-light rounded-xl transition-colors"
                 >
                   <Plus size={18} />
                   Dodaj konto zewnętrzne
@@ -499,7 +499,7 @@ export default function MailSettingsModal({
                   <p className="text-gray-500 dark:text-gray-400 mb-4">
                     Brak skonfigurowanych filtrów
                   </p>
-                  <button className="flex items-center gap-2 mx-auto px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white font-medium rounded-lg transition-colors">
+                  <button className="flex items-center gap-2 mx-auto px-4 py-2 bg-accent-primary-light hover:bg-accent-primary text-white font-medium rounded-lg transition-colors">
                     <Plus size={16} />
                     Utwórz filtr
                   </button>

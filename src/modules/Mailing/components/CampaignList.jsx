@@ -21,7 +21,7 @@ const STATUS_CONFIG = {
     bg: 'bg-amber-100 dark:bg-amber-900/30',
     textColor: 'text-amber-700 dark:text-amber-400',
     iconColor: 'text-amber-500',
-    gradient: 'from-amber-400 to-orange-500'
+    gradient: 'from-amber-400 to-accent-secondary-light'
   },
   sending: {
     label: 'Wysyłanie...',
@@ -102,8 +102,8 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
     return (
       <div className="text-center py-16 px-4">
         <div className="relative inline-block mb-6">
-          <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-orange-500 rounded-3xl blur-xl opacity-30 animate-pulse" />
-          <div className="relative w-20 h-20 bg-gradient-to-br from-pink-500 to-orange-500 rounded-3xl flex items-center justify-center shadow-xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-3xl blur-xl opacity-30 animate-pulse" />
+          <div className="relative w-20 h-20 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-3xl flex items-center justify-center shadow-xl">
             <Mail className="w-10 h-10 text-white" />
           </div>
         </div>
@@ -113,7 +113,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
         <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
           Stwórz swój pierwszy mail i dotrzyj do swojej społeczności
         </p>
-        <div className="flex items-center justify-center gap-2 text-sm text-pink-500 dark:text-pink-400">
+        <div className="flex items-center justify-center gap-2 text-sm text-accent-primary-light dark:text-accent-primary-light">
           <span>Kliknij "Nowy mail" aby rozpocząć</span>
           <ArrowRight size={14} className="animate-bounce-x" />
         </div>
@@ -170,7 +170,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
           return (
             <div
               key={campaign.id}
-              className="group relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-pink-300 dark:hover:border-pink-700 transition-all duration-200"
+              className="group relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-accent-primary-light dark:hover:border-accent-primary transition-all duration-200"
             >
               {/* Podgląd HTML / Gradient header */}
               <div
@@ -194,7 +194,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                   <div className="flex gap-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); onEdit(campaign); }}
-                      className="p-2 bg-pink-500 rounded-lg shadow-lg hover:scale-110 transition-transform"
+                      className="p-2 bg-accent-primary-light rounded-lg shadow-lg hover:scale-110 transition-transform"
                       title="Edytuj"
                     >
                       <Edit size={18} className="text-white" />
@@ -328,7 +328,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                 {/* Przycisk edytuj */}
                 <button
                   onClick={() => onEdit(campaign)}
-                  className="w-full mt-3 py-2 text-sm font-medium text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/20 hover:bg-pink-100 dark:hover:bg-pink-900/30 rounded-lg transition-colors"
+                  className="w-full mt-3 py-2 text-sm font-medium text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 rounded-lg transition-colors"
                 >
                   Edytuj mail
                 </button>
@@ -347,8 +347,8 @@ function FilterButton({ active, onClick, count, children }) {
       onClick={onClick}
       className={`group relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
         active
-          ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-lg shadow-pink-500/25'
-          : 'bg-white/80 dark:bg-gray-800/80 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 hover:border-pink-200 dark:hover:border-pink-800/50'
+          ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg shadow-accent-primary-light/25'
+          : 'bg-white/80 dark:bg-gray-800/80 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark/50'
       }`}
     >
       {children}

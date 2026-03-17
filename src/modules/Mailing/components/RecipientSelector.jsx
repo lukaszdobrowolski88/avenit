@@ -104,10 +104,10 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
   return (
     <div className="space-y-6">
       {/* Podsumowanie */}
-      <div className="bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 rounded-xl p-4 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white dark:bg-gray-800 rounded-lg">
-            <Users className="w-5 h-5 text-pink-500" />
+            <Users className="w-5 h-5 text-accent-primary-light" />
           </div>
           <div>
             <p className="font-semibold text-gray-900 dark:text-white">
@@ -197,7 +197,7 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
                 }}
                 onFocus={() => setShowSearch(true)}
                 placeholder="Szukaj po nazwisku lub email..."
-                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50"
               />
 
               {/* Wyniki wyszukiwania */}
@@ -210,7 +210,7 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
                       className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                        <div className="w-8 h-8 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-full flex items-center justify-center text-white text-sm font-medium">
                           {user.full_name?.[0] || user.email[0].toUpperCase()}
                         </div>
                         <div className="text-left">
@@ -235,12 +235,12 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
                 {selectedEmails.map(user => (
                   <span
                     key={user.email}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-full text-sm"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded-full text-sm"
                   >
                     {user.full_name || user.email}
                     <button
                       onClick={() => toggleEmail(user)}
-                      className="hover:bg-pink-200 dark:hover:bg-pink-800 rounded-full p-0.5"
+                      className="hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-dark rounded-full p-0.5"
                     >
                       <X size={14} />
                     </button>
@@ -280,12 +280,12 @@ function SegmentCheckbox({ checked, onChange, icon: Icon, label, count, descript
       onClick={handleClick}
       className={`flex items-center gap-3 rounded-xl border cursor-pointer transition-all duration-200 select-none ${
         checked
-          ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20'
-          : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-700'
+          ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20'
+          : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
       } ${small ? 'p-2.5' : 'p-3'}`}
     >
       <div className={`flex-shrink-0 rounded-lg flex items-center justify-center ${
-        checked ? 'bg-pink-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'
+        checked ? 'bg-accent-primary-light text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'
       } ${small ? 'w-5 h-5' : 'w-6 h-6'}`}>
         {checked ? <Check size={small ? 12 : 14} /> : (Icon && <Icon size={small ? 12 : 14} />)}
       </div>

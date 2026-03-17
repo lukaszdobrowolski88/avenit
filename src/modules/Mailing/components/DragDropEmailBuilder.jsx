@@ -524,7 +524,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
 
     // Dodaj wizualny feedback
     const ghost = document.createElement('div');
-    ghost.className = 'bg-pink-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm';
+    ghost.className = 'bg-accent-primary-light text-white px-3 py-2 rounded-lg shadow-lg text-sm';
     ghost.textContent = BLOCK_TYPES[blockType]?.name || blockType;
     ghost.style.position = 'absolute';
     ghost.style.top = '-1000px';
@@ -614,9 +614,9 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
     <div className="flex h-[calc(100vh-200px)] min-h-[600px] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm overflow-hidden">
       {/* Lewy panel - Bloki */}
       <div className="w-72 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-r border-gray-200/50 dark:border-gray-700/50 flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-pink-500/5 to-orange-500/5">
+        <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-accent-primary-light/5 to-accent-secondary-light/5">
           <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <div className="p-1.5 bg-gradient-to-br from-pink-500 to-orange-500 rounded-lg">
+            <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
               <Layers size={14} className="text-white" />
             </div>
             Elementy
@@ -634,15 +634,15 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
               <div key={catKey} className="border-b border-gray-100/50 dark:border-gray-700/50">
                 <button
                   onClick={() => setExpandedCategory(isExpanded ? null : catKey)}
-                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-gradient-to-r hover:from-pink-50/50 hover:to-orange-50/50 dark:hover:from-pink-900/10 dark:hover:to-orange-900/10 transition-all duration-200"
+                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-gradient-to-r hover:from-accent-primary-lightest/50 hover:to-accent-secondary-lightest/50 dark:hover:from-accent-primary-darkest/10 dark:hover:to-accent-secondary-darkest/10 transition-all duration-200"
                 >
                   <span className="flex items-center gap-2.5 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    <div className={`p-1 rounded-md ${isExpanded ? 'bg-pink-100 dark:bg-pink-900/30' : 'bg-gray-100 dark:bg-gray-700'} transition-colors`}>
-                      <CatIcon size={14} className={isExpanded ? 'text-pink-500' : 'text-gray-500'} />
+                    <div className={`p-1 rounded-md ${isExpanded ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30' : 'bg-gray-100 dark:bg-gray-700'} transition-colors`}>
+                      <CatIcon size={14} className={isExpanded ? 'text-accent-primary-light' : 'text-gray-500'} />
                     </div>
                     {category.name}
                   </span>
-                  <ChevronRight size={16} className={`text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-pink-500' : ''}`} />
+                  <ChevronRight size={16} className={`text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-90 text-accent-primary-light' : ''}`} />
                 </button>
 
                 {isExpanded && (
@@ -657,12 +657,12 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                           onDragStart={(e) => handlePaletteDragStart(e, blockKey)}
                           onDragEnd={handleDragEnd}
                           onClick={() => addBlock(blockKey)}
-                          className={`group flex flex-col items-center gap-1.5 p-3 bg-white dark:bg-gray-700/50 rounded-xl cursor-grab hover:bg-gradient-to-br hover:from-pink-50 hover:to-orange-50 dark:hover:from-pink-900/20 dark:hover:to-orange-900/20 border border-gray-100 dark:border-gray-600/50 hover:border-pink-200 dark:hover:border-pink-700/50 transition-all duration-200 active:scale-95 hover:shadow-md ${
+                          className={`group flex flex-col items-center gap-1.5 p-3 bg-white dark:bg-gray-700/50 rounded-xl cursor-grab hover:bg-gradient-to-br hover:from-accent-primary-lightest hover:to-accent-secondary-lightest dark:hover:from-accent-primary-darkest/20 dark:hover:to-accent-secondary-darkest/20 border border-gray-100 dark:border-gray-600/50 hover:border-accent-primary-lighter dark:hover:border-accent-primary/50 transition-all duration-200 active:scale-95 hover:shadow-md ${
                             dragState.draggedType === blockKey ? 'opacity-50 scale-95' : ''
                           }`}
                         >
-                          <div className="p-2 bg-gray-50 dark:bg-gray-600/50 rounded-lg group-hover:bg-pink-100 dark:group-hover:bg-pink-900/30 transition-colors">
-                            <Icon size={18} className="text-gray-500 dark:text-gray-400 group-hover:text-pink-500 transition-colors" />
+                          <div className="p-2 bg-gray-50 dark:bg-gray-600/50 rounded-lg group-hover:bg-accent-primary-lighter dark:group-hover:bg-accent-primary-darkest/30 transition-colors">
+                            <Icon size={18} className="text-gray-500 dark:text-gray-400 group-hover:text-accent-primary-light transition-colors" />
                           </div>
                           <span className="text-xs text-gray-600 dark:text-gray-400 text-center leading-tight font-medium">
                             {block.name}
@@ -679,7 +679,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
           {/* Gotowe szablony */}
           <div className="p-4 bg-gradient-to-b from-transparent to-gray-50/50 dark:to-gray-800/50">
             <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <div className="p-1 bg-gradient-to-br from-amber-400 to-orange-500 rounded-md">
+              <div className="p-1 bg-gradient-to-br from-amber-400 to-accent-secondary-light rounded-md">
                 <Wand2 size={10} className="text-white" />
               </div>
               Gotowe sekcje
@@ -688,15 +688,15 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
               {Object.entries(BLOCK_PRESETS).map(([key, preset]) => {
                 const Icon = preset.icon;
                 const colorClasses = {
-                  pink: 'from-pink-50 to-pink-100/80 dark:from-pink-900/20 dark:to-pink-900/30 hover:from-pink-100 hover:to-pink-200/80 border-pink-200/50 hover:border-pink-300',
+                  pink: 'from-accent-primary-lightest to-accent-primary-lighter/80 dark:from-accent-primary-darkest/20 dark:to-accent-primary-darkest/30 hover:from-accent-primary-lighter hover:to-accent-primary-lighter/80 border-accent-primary-lighter/50 hover:border-accent-primary-light',
                   amber: 'from-amber-50 to-amber-100/80 dark:from-amber-900/20 dark:to-amber-900/30 hover:from-amber-100 hover:to-amber-200/80 border-amber-200/50 hover:border-amber-300',
                   green: 'from-green-50 to-green-100/80 dark:from-green-900/20 dark:to-green-900/30 hover:from-green-100 hover:to-green-200/80 border-green-200/50 hover:border-green-300',
                   blue: 'from-blue-50 to-blue-100/80 dark:from-blue-900/20 dark:to-blue-900/30 hover:from-blue-100 hover:to-blue-200/80 border-blue-200/50 hover:border-blue-300',
                   purple: 'from-purple-50 to-purple-100/80 dark:from-purple-900/20 dark:to-purple-900/30 hover:from-purple-100 hover:to-purple-200/80 border-purple-200/50 hover:border-purple-300'
                 };
                 const iconBg = {
-                  pink: 'from-pink-400 to-pink-600',
-                  amber: 'from-amber-400 to-orange-500',
+                  pink: 'from-accent-primary-light to-accent-primary',
+                  amber: 'from-amber-400 to-accent-secondary-light',
                   green: 'from-green-400 to-emerald-500',
                   blue: 'from-blue-400 to-indigo-500',
                   purple: 'from-purple-400 to-violet-500'
@@ -765,14 +765,14 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
           <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl p-1 shadow-inner">
             <button
               onClick={() => setViewMode('desktop')}
-              className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'desktop' ? 'bg-white dark:bg-gray-600 shadow-md text-pink-500' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'desktop' ? 'bg-white dark:bg-gray-600 shadow-md text-accent-primary-light' : 'text-gray-500 hover:text-gray-700'}`}
               title="Widok desktop"
             >
               <Monitor size={16} />
             </button>
             <button
               onClick={() => setViewMode('mobile')}
-              className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'mobile' ? 'bg-white dark:bg-gray-600 shadow-md text-pink-500' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'mobile' ? 'bg-white dark:bg-gray-600 shadow-md text-accent-primary-light' : 'text-gray-500 hover:text-gray-700'}`}
               title="Widok mobile"
             >
               <Smartphone size={16} />
@@ -782,7 +782,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowHtml(!showHtml)}
-              className={`p-2 rounded-lg transition-all duration-200 ${showHtml ? 'bg-gradient-to-r from-pink-100 to-orange-100 dark:from-pink-900/30 dark:to-orange-900/30 text-pink-600' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500'}`}
+              className={`p-2 rounded-lg transition-all duration-200 ${showHtml ? 'bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 text-accent-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500'}`}
               title="Pokaż HTML"
             >
               <Code size={16} />
@@ -790,7 +790,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
             {onSave && (
               <button
                 onClick={onSave}
-                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-pink-500/25 transition-all duration-200 flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                className="px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl text-sm font-medium hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all duration-200 flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Save size={14} />
                 Zapisz
@@ -832,7 +832,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                   <div
                     className={`h-full min-h-[400px] flex flex-col items-center justify-center text-gray-400 border-2 border-dashed rounded-xl m-4 transition-all duration-300 ${
                       dragState.isDragging
-                        ? 'border-pink-400 bg-gradient-to-br from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20'
+                        ? 'border-accent-primary-light bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
                     onDragOver={(e) => handleDragOver(e, 0)}
@@ -840,12 +840,12 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                   >
                     <div className={`p-4 rounded-2xl mb-4 transition-all duration-300 ${
                       dragState.isDragging
-                        ? 'bg-gradient-to-br from-pink-500 to-orange-500 shadow-lg shadow-pink-500/30'
+                        ? 'bg-gradient-to-br from-accent-primary-light to-accent-secondary-light shadow-lg shadow-accent-primary-light/30'
                         : 'bg-gray-100 dark:bg-gray-800'
                     }`}>
                       <Plus size={32} strokeWidth={1.5} className={dragState.isDragging ? 'text-white' : 'text-gray-400'} />
                     </div>
-                    <p className={`font-semibold text-base mb-1 transition-colors ${dragState.isDragging ? 'text-pink-600 dark:text-pink-400' : ''}`}>
+                    <p className={`font-semibold text-base mb-1 transition-colors ${dragState.isDragging ? 'text-accent-primary dark:text-accent-primary-light' : ''}`}>
                       {dragState.isDragging ? 'Upuść tutaj!' : 'Przeciągnij elementy tutaj'}
                     </p>
                     <p className="text-sm text-gray-400">lub wybierz gotową sekcję z panelu po lewej</p>
@@ -912,7 +912,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
         {/* Liczba bloków */}
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50 px-4 py-2.5 flex items-center justify-between">
           <span className="text-xs font-medium text-gray-500 flex items-center gap-2">
-            <span className="px-2 py-0.5 bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 rounded-full">
+            <span className="px-2 py-0.5 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded-full">
               {blocks.length}
             </span>
             {blocks.length === 1 ? 'blok' : blocks.length < 5 ? 'bloki' : 'bloków'}
@@ -927,16 +927,16 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
 
       {/* Prawy panel - Właściwości */}
       <div className="w-80 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-l border-gray-200/50 dark:border-gray-700/50 flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-pink-500/5 to-orange-500/5">
+        <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-accent-primary-light/5 to-accent-secondary-light/5">
           <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <div className="p-1.5 bg-gradient-to-br from-pink-500 to-orange-500 rounded-lg">
+            <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
               <Settings size={14} className="text-white" />
             </div>
             {selectedBlock ? 'Właściwości bloku' : 'Ustawienia emaila'}
           </h3>
           {selectedBlock && (
             <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-              Edytujesz: <span className="font-medium text-pink-600 dark:text-pink-400">{BLOCK_TYPES[selectedBlock.type]?.name || selectedBlock.type}</span>
+              Edytujesz: <span className="font-medium text-accent-primary dark:text-accent-primary-light">{BLOCK_TYPES[selectedBlock.type]?.name || selectedBlock.type}</span>
             </p>
           )}
         </div>
@@ -959,7 +959,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
         {/* Zmienne personalizacji */}
         <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-gradient-to-t from-gray-50/50 to-transparent dark:from-gray-800/50">
           <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <div className="p-1 bg-gradient-to-br from-purple-400 to-pink-500 rounded-md">
+            <div className="p-1 bg-gradient-to-br from-purple-400 to-accent-primary-light rounded-md">
               <Sparkles size={10} className="text-white" />
             </div>
             Zmienne personalizacji
@@ -971,7 +971,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                 onClick={() => {
                   navigator.clipboard.writeText(v.key);
                 }}
-                className="px-2.5 py-1 text-xs font-medium bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 text-pink-600 dark:text-pink-400 rounded-lg hover:from-pink-100 hover:to-orange-100 dark:hover:from-pink-900/30 dark:hover:to-orange-900/30 transition-all duration-200 border border-pink-200/50 dark:border-pink-700/30 hover:shadow-sm hover:scale-105 active:scale-95"
+                className="px-2.5 py-1 text-xs font-medium bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-accent-primary dark:text-accent-primary-light rounded-lg hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/30 dark:hover:to-accent-secondary-darkest/30 transition-all duration-200 border border-accent-primary-lighter/50 dark:border-accent-primary/30 hover:shadow-sm hover:scale-105 active:scale-95"
                 title={`${v.description} - kliknij aby skopiować`}
               >
                 {v.key}
@@ -997,14 +997,14 @@ function DropZone({ index, isActive, isDragging, onDragOver, onDrop }) {
         isDragging ? 'min-h-[80px] my-2' : 'h-0'
       } ${
         isActive
-          ? 'min-h-[120px] my-3 bg-gradient-to-r from-pink-100/80 to-orange-100/80 dark:from-pink-900/30 dark:to-orange-900/30 border-2 border-dashed border-pink-400 dark:border-pink-500 rounded-xl mx-3 flex items-center justify-center shadow-inner backdrop-blur-sm scale-[1.02]'
+          ? 'min-h-[120px] my-3 bg-gradient-to-r from-accent-primary-lighter/80 to-accent-secondary-lighter/80 dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 border-2 border-dashed border-accent-primary-light dark:border-accent-primary-light rounded-xl mx-3 flex items-center justify-center shadow-inner backdrop-blur-sm scale-[1.02]'
           : 'mx-3 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 flex items-center justify-center'
       }`}
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
       {isActive ? (
-        <span className="text-pink-500 text-base font-semibold flex items-center gap-2">
+        <span className="text-accent-primary-light text-base font-semibold flex items-center gap-2">
           <Plus size={20} />
           Upuść tutaj
         </span>
@@ -1079,8 +1079,8 @@ function BlockRenderer({
         isDragging ? 'opacity-50 scale-[0.98]' : ''
       } ${
         isSelected
-          ? 'ring-2 ring-pink-500 ring-offset-2 dark:ring-offset-gray-900 z-10 shadow-lg shadow-pink-500/10'
-          : 'hover:ring-2 hover:ring-pink-300/50 hover:ring-offset-1 dark:hover:ring-offset-gray-900'
+          ? 'ring-2 ring-accent-primary-light ring-offset-2 dark:ring-offset-gray-900 z-10 shadow-lg shadow-accent-primary-light/10'
+          : 'hover:ring-2 hover:ring-accent-primary-light/50 hover:ring-offset-1 dark:hover:ring-offset-gray-900'
       }`}
     >
       {/* Kontrolki bloku - lewa strona */}
@@ -1138,7 +1138,7 @@ function BlockRenderer({
       {isSelected && (() => {
         const BlockIcon = BLOCK_TYPES[block.type]?.icon;
         return (
-          <div className="absolute -top-7 left-0 px-3 py-1 bg-gradient-to-r from-pink-500 to-orange-500 text-white text-xs rounded-t-xl font-semibold flex items-center gap-1.5 shadow-lg shadow-pink-500/30">
+          <div className="absolute -top-7 left-0 px-3 py-1 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-xs rounded-t-xl font-semibold flex items-center gap-1.5 shadow-lg shadow-accent-primary-light/30">
             {BlockIcon && <BlockIcon size={12} />}
             {BLOCK_TYPES[block.type]?.name || block.type}
           </div>
@@ -1303,7 +1303,7 @@ function EmailSettingsEditor({ settings, onChange }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-700">
-        <Palette size={16} className="text-pink-500" />
+        <Palette size={16} className="text-accent-primary-light" />
         <span className="font-medium text-gray-900 dark:text-white">Ogólne ustawienia</span>
       </div>
 
@@ -1354,7 +1354,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-700">
-        {blockType && <blockType.icon size={16} className="text-pink-500" />}
+        {blockType && <blockType.icon size={16} className="text-accent-primary-light" />}
         <span className="font-medium text-gray-900 dark:text-white">
           {blockType?.name || block.type}
         </span>
@@ -1812,7 +1812,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
           onClick={() => setActiveTab('color')}
           className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
             activeTab === 'color'
-              ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
+              ? 'bg-white dark:bg-gray-600 text-accent-primary dark:text-accent-primary-light shadow-sm'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
           }`}
         >
@@ -1824,7 +1824,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
           onClick={() => setActiveTab('gradient')}
           className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
             activeTab === 'gradient'
-              ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
+              ? 'bg-white dark:bg-gray-600 text-accent-primary dark:text-accent-primary-light shadow-sm'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
           }`}
         >
@@ -1836,7 +1836,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
           onClick={() => setActiveTab('image')}
           className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-all ${
             activeTab === 'image'
-              ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
+              ? 'bg-white dark:bg-gray-600 text-accent-primary dark:text-accent-primary-light shadow-sm'
               : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
           }`}
         >
@@ -1862,7 +1862,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
               onChange={(e) => handleColorChange(e.target.value)}
               onBlur={onBlur}
               placeholder="transparent"
-              className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50 font-mono"
+              className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 font-mono"
             />
           </div>
           <button
@@ -1884,7 +1884,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
                 key={idx}
                 type="button"
                 onClick={() => applyPresetGradient(preset)}
-                className="h-8 rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden hover:ring-2 hover:ring-pink-500 transition-all"
+                className="h-8 rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden hover:ring-2 hover:ring-accent-primary-light transition-all"
                 style={{ background: `linear-gradient(135deg, ${preset.color1}, ${preset.color2})` }}
                 title={preset.name}
               />
@@ -1898,7 +1898,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
               onClick={() => { setGradientType('linear'); handleGradientChange({ type: 'linear' }); }}
               className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 gradientType === 'linear'
-                  ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 border border-pink-300 dark:border-pink-700'
+                  ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light border border-accent-primary-light dark:border-accent-primary'
                   : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600'
               }`}
             >
@@ -1909,7 +1909,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
               onClick={() => { setGradientType('radial'); handleGradientChange({ type: 'radial' }); }}
               className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                 gradientType === 'radial'
-                  ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 border border-pink-300 dark:border-pink-700'
+                  ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light border border-accent-primary-light dark:border-accent-primary'
                   : 'bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-600'
               }`}
             >
@@ -1956,7 +1956,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
                 value={gradientAngle}
                 onChange={(e) => { setGradientAngle(parseInt(e.target.value)); }}
                 onMouseUp={(e) => handleGradientChange({ angle: parseInt(e.target.value) })}
-                className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-accent-primary-light"
               />
             </div>
           )}
@@ -1984,7 +1984,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
             <button
               type="button"
               onClick={handleImageUpload}
-              className="w-full px-4 py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-pink-400 dark:hover:border-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/10 transition-all text-center"
+              className="w-full px-4 py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-accent-primary-light dark:hover:border-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/10 transition-all text-center"
             >
               <Upload size={20} className="mx-auto mb-2 text-gray-400" />
               <span className="text-xs text-gray-500 dark:text-gray-400">Kliknij aby wybrać obraz</span>
@@ -2012,7 +2012,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
           value={backgroundOpacity}
           onChange={(e) => handleOpacityChange(parseInt(e.target.value))}
           onMouseUp={onBlur}
-          className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-pink-500"
+          className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-accent-primary-light"
         />
       </div>
     </div>
@@ -2072,7 +2072,7 @@ function SpacingEditor({ label, icon: Icon, value, onChange, onBlur, max = 60 })
           onClick={() => setIsAdvanced(!isAdvanced)}
           className={`text-[10px] px-2 py-0.5 rounded-md transition-all ${
             isAdvanced
-              ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+              ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
@@ -2095,7 +2095,7 @@ function SpacingEditor({ label, icon: Icon, value, onChange, onBlur, max = 60 })
             value={allEqual ? localValues.top : 0}
             onChange={(e) => handleUnifiedChange(parseInt(e.target.value))}
             onMouseUp={onBlur}
-            className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-pink-500"
+            className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-accent-primary-light"
           />
         </div>
       ) : (
@@ -2116,7 +2116,7 @@ function SpacingEditor({ label, icon: Icon, value, onChange, onBlur, max = 60 })
                 value={localValues[key]}
                 onChange={(e) => handleSideChange(key, parseInt(e.target.value) || 0)}
                 onBlur={onBlur}
-                className="w-full px-1.5 py-1 text-xs text-center bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-pink-500/50"
+                className="w-full px-1.5 py-1 text-xs text-center bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-accent-primary-light/50"
               />
             </div>
           ))}
@@ -2161,7 +2161,7 @@ function BorderEditor({ value, onChange, onBlur }) {
           onClick={() => setIsAdvanced(!isAdvanced)}
           className={`text-[10px] px-2 py-0.5 rounded-md transition-all ${
             isAdvanced
-              ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+              ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
@@ -2182,7 +2182,7 @@ function BorderEditor({ value, onChange, onBlur }) {
           value={border.width}
           onChange={(e) => handleChange('width', parseInt(e.target.value))}
           onMouseUp={onBlur}
-          className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-pink-500"
+          className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-accent-primary-light"
         />
       </div>
 
@@ -2203,7 +2203,7 @@ function BorderEditor({ value, onChange, onBlur }) {
                   onClick={() => { handleChange('style', style.value); onBlur?.(); }}
                   className={`px-2 py-1.5 text-[10px] rounded-md transition-all ${
                     border.style === style.value
-                      ? 'bg-pink-500 text-white'
+                      ? 'bg-accent-primary-light text-white'
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
@@ -2249,7 +2249,7 @@ function BorderEditor({ value, onChange, onBlur }) {
                     onClick={() => { handleSideToggle(key); onBlur?.(); }}
                     className={`px-1.5 py-1 text-[9px] rounded-md transition-all ${
                       border.sides[key]
-                        ? 'bg-pink-500 text-white'
+                        ? 'bg-accent-primary-light text-white'
                         : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                     }`}
                   >
@@ -2319,11 +2319,11 @@ function ShadowEditor({ value, onChange, onBlur }) {
             onClick={() => { onChange({ ...shadow, ...preset.shadow }); onBlur?.(); }}
             className={`px-1.5 py-1.5 text-[9px] rounded-md transition-all ${
               !shadow.enabled && !preset.shadow.enabled
-                ? 'bg-pink-500 text-white'
+                ? 'bg-accent-primary-light text-white'
                 : shadow.enabled && preset.shadow.enabled &&
                   shadow.offsetY === preset.shadow.offsetY &&
                   shadow.blur === preset.shadow.blur
-                  ? 'bg-pink-500 text-white'
+                  ? 'bg-accent-primary-light text-white'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
@@ -2345,7 +2345,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
                   onClick={() => { handleChange('direction', opt.value); onBlur?.(); }}
                   className={`px-1.5 py-1.5 text-[9px] rounded-md transition-all flex flex-col items-center gap-0.5 ${
                     shadow.direction === opt.value
-                      ? 'bg-pink-500 text-white'
+                      ? 'bg-accent-primary-light text-white'
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
@@ -2362,7 +2362,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
                   onClick={() => { handleChange('direction', opt.value); onBlur?.(); }}
                   className={`px-1.5 py-1.5 text-[9px] rounded-md transition-all flex flex-col items-center gap-0.5 ${
                     shadow.direction === opt.value
-                      ? 'bg-pink-500 text-white'
+                      ? 'bg-accent-primary-light text-white'
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
@@ -2379,7 +2379,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
             onClick={() => setShowAdvanced(!showAdvanced)}
             className={`w-full text-[10px] px-2 py-1 rounded-md transition-all ${
               showAdvanced
-                ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+                ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
@@ -2401,7 +2401,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
                   value={shadow.offsetX}
                   onChange={(e) => handleChange('offsetX', parseInt(e.target.value))}
                   onMouseUp={onBlur}
-                  className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                  className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-accent-primary-light"
                 />
               </div>
 
@@ -2418,7 +2418,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
                   value={shadow.offsetY}
                   onChange={(e) => handleChange('offsetY', parseInt(e.target.value))}
                   onMouseUp={onBlur}
-                  className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                  className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-accent-primary-light"
                 />
               </div>
             </>
@@ -2437,7 +2437,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
               value={shadow.blur}
               onChange={(e) => handleChange('blur', parseInt(e.target.value))}
               onMouseUp={onBlur}
-              className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-pink-500"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-accent-primary-light"
             />
           </div>
 
@@ -2454,7 +2454,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
               value={shadow.spread}
               onChange={(e) => handleChange('spread', parseInt(e.target.value))}
               onMouseUp={onBlur}
-              className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-pink-500"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-accent-primary-light"
             />
           </div>
 
@@ -2484,7 +2484,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
               type="checkbox"
               checked={shadow.inset}
               onChange={(e) => { handleChange('inset', e.target.checked); onBlur?.(); }}
-              className="w-4 h-4 rounded text-pink-500 focus:ring-pink-500 border-gray-300 dark:border-gray-600"
+              className="w-4 h-4 rounded text-accent-primary-light focus:ring-accent-primary-light border-gray-300 dark:border-gray-600"
             />
             <span className="text-[10px] text-gray-500 dark:text-gray-400">Cień wewnętrzny (inset)</span>
           </label>
@@ -2550,7 +2550,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
           onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
           onBlur={onBlur}
           placeholder={placeholder}
-          className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all"
+          className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 transition-all"
         />
       )}
 
@@ -2560,7 +2560,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
           onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
           onBlur={onBlur}
           rows={4}
-          className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50 font-mono transition-all"
+          className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 font-mono transition-all"
         />
       )}
 
@@ -2578,7 +2578,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
             value={localValue || ''}
             onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
             onBlur={onBlur}
-            className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50 font-mono"
+            className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 font-mono"
           />
         </div>
       )}
@@ -2598,7 +2598,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
             }}
             onMouseUp={onBlur}
             onTouchEnd={onBlur}
-            className="flex-1 accent-pink-500"
+            className="flex-1 accent-accent-primary-light"
           />
           <span className="text-sm text-gray-500 w-10 text-right font-mono">
             {typeof localValue === 'number' ? (step ? localValue.toFixed(1) : localValue) : min}
@@ -2612,7 +2612,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
             <button
               key={align}
               onClick={() => { onChange(align); onBlur?.(); }}
-              className={`flex-1 p-2 rounded-lg transition-all ${localValue === align ? 'bg-white dark:bg-gray-600 shadow text-pink-500' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex-1 p-2 rounded-lg transition-all ${localValue === align ? 'bg-white dark:bg-gray-600 shadow text-accent-primary-light' : 'text-gray-500 hover:text-gray-700'}`}
             >
               {align === 'left' && <AlignLeft size={16} className="mx-auto" />}
               {align === 'center' && <AlignCenter size={16} className="mx-auto" />}
@@ -2626,7 +2626,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
         <select
           value={localValue || ''}
           onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); onBlur?.(); }}
-          className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+          className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50"
         >
           {options?.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -2640,7 +2640,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
             type="checkbox"
             checked={localValue || false}
             onChange={(e) => { setLocalValue(e.target.checked); onChange(e.target.checked); onBlur?.(); }}
-            className="w-4 h-4 accent-pink-500 rounded"
+            className="w-4 h-4 accent-accent-primary-light rounded"
           />
           <span className="text-sm text-gray-600 dark:text-gray-400">Włączone</span>
         </label>
@@ -2655,11 +2655,11 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
               onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
               onBlur={onBlur}
               placeholder="https://... lub prześlij"
-              className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+              className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50"
             />
             <button
               onClick={handleImageUpload}
-              className="px-3 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
+              className="px-3 py-2 bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary transition-colors"
               title="Prześlij obraz"
             >
               <Upload size={16} />
@@ -2685,7 +2685,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
                   onChange(newItems);
                 }}
                 onBlur={onBlur}
-                className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/50"
+                className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50"
               />
               <button
                 onClick={() => {
@@ -2706,7 +2706,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
               setLocalValue(newItems);
               onChange(newItems);
             }}
-            className="w-full py-2 text-sm text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-lg flex items-center justify-center gap-1"
+            className="w-full py-2 text-sm text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg flex items-center justify-center gap-1"
           >
             <Plus size={14} />
             Dodaj element

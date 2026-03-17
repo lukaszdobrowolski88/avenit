@@ -104,7 +104,7 @@ export default function ConversationList({
       if (conv.type === 'ministry') {
         const IconComponent = ministryIcons[conv.ministry_key] || Users;
         return (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-accent-primary-light flex items-center justify-center text-white">
             <IconComponent size={20} />
           </div>
         );
@@ -128,20 +128,20 @@ export default function ConversationList({
         onClick={() => onSelect(conv)}
         className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 text-left cursor-pointer group relative
           ${isSelected
-            ? 'bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/30 dark:to-orange-900/20 shadow-sm border border-pink-200/50 dark:border-pink-800/30'
+            ? 'bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/20 shadow-sm border border-accent-primary-lighter/50 dark:border-accent-primary-dark/30'
             : 'hover:bg-white/80 dark:hover:bg-gray-800/60 hover:shadow-sm border border-transparent'
           }
         `}
       >
         {/* Wskaźnik zaznaczenia */}
         {isSelected && (
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-pink-500 to-orange-500 rounded-r-full" />
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-accent-primary-light to-accent-secondary-light rounded-r-full" />
         )}
 
         <div className="relative flex-shrink-0">
           {getIcon()}
           {hasUnread && (
-            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-pink-500 to-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md shadow-pink-500/30 animate-pulse">
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md shadow-accent-primary-light/30 animate-pulse">
               {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
             </span>
           )}
@@ -221,19 +221,19 @@ export default function ConversationList({
   return (
     <div className="h-full flex flex-col bg-white/80 dark:bg-gray-900/90 backdrop-blur-sm border-r border-gray-200/50 dark:border-gray-700/50">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-pink-50/50 to-orange-50/50 dark:from-gray-800/50 dark:to-gray-800/50">
+      <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-accent-primary-lightest/50 to-accent-secondary-lightest/50 dark:from-gray-800/50 dark:to-gray-800/50">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center shadow-lg shadow-pink-500/20">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center shadow-lg shadow-accent-primary-light/20">
               <MessageSquare size={16} className="text-white" />
             </div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-pink-600 to-orange-500 bg-clip-text text-transparent">
+            <h1 className="text-lg font-bold bg-gradient-to-r from-accent-primary to-accent-secondary-light bg-clip-text text-transparent">
               Komunikator
             </h1>
           </div>
           <button
             onClick={onNewConversation}
-            className="p-2.5 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white rounded-xl transition-all duration-200 shadow-lg shadow-pink-500/30 hover:shadow-pink-500/40 hover:scale-105"
+            className="p-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all duration-200 shadow-lg shadow-accent-primary-light/30 hover:shadow-accent-primary-light/40 hover:scale-105"
             title="Nowa rozmowa"
           >
             <Plus size={18} />
@@ -248,7 +248,7 @@ export default function ConversationList({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Szukaj rozmów..."
-            className="w-full pl-10 pr-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 backdrop-blur-sm transition-all duration-200"
+            className="w-full pl-10 pr-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 backdrop-blur-sm transition-all duration-200"
           />
         </div>
 
@@ -258,7 +258,7 @@ export default function ConversationList({
             onClick={() => setActiveFilter('all')}
             className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 ${
               activeFilter === 'all'
-                ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md shadow-pink-500/30'
+                ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md shadow-accent-primary-light/30'
                 : 'bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50'
             }`}
           >
@@ -268,7 +268,7 @@ export default function ConversationList({
             onClick={() => setActiveFilter('starred')}
             className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${
               activeFilter === 'starred'
-                ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white shadow-md shadow-yellow-500/30'
+                ? 'bg-gradient-to-r from-yellow-400 to-accent-secondary-light text-white shadow-md shadow-yellow-500/30'
                 : 'bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50'
             }`}
           >
@@ -293,12 +293,12 @@ export default function ConversationList({
       <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-10 h-10 border-3 border-pink-200 dark:border-pink-900 border-t-pink-500 rounded-full animate-spin" />
+            <div className="w-10 h-10 border-3 border-accent-primary-lighter dark:border-accent-primary-darkest border-t-accent-primary-light rounded-full animate-spin" />
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-3">Ładowanie rozmów...</p>
           </div>
         ) : filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-100 to-orange-100 dark:from-pink-900/30 dark:to-orange-900/30 flex items-center justify-center mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center mb-4">
               {activeFilter === 'starred' ? (
                 <Star size={28} className="text-yellow-500" />
               ) : activeFilter === 'archived' ? (
@@ -306,7 +306,7 @@ export default function ConversationList({
               ) : searchQuery ? (
                 <Search size={28} className="text-gray-400" />
               ) : (
-                <MessageSquare size={28} className="text-pink-500" />
+                <MessageSquare size={28} className="text-accent-primary-light" />
               )}
             </div>
             <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
@@ -325,7 +325,7 @@ export default function ConversationList({
             {!searchQuery && activeFilter === 'all' && (
               <button
                 onClick={onNewConversation}
-                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-pink-500/30 hover:shadow-pink-500/40 hover:scale-105 transition-all duration-200"
+                className="px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm font-medium rounded-xl shadow-lg shadow-accent-primary-light/30 hover:shadow-accent-primary-light/40 hover:scale-105 transition-all duration-200"
               >
                 Rozpocznij nową rozmowę
               </button>

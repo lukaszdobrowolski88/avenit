@@ -20,7 +20,7 @@ const ROLE_COLORS = {
   'Produkcja': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
   'Atmosfera': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
   'Szkółka': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
-  'Scena': 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300',
+  'Scena': 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light',
 };
 
 const ROLE_LABELS = {
@@ -63,7 +63,7 @@ const CustomSelect = ({ value, onChange, options, compact = false }) => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:border-pink-400 transition ${compact ? 'px-2 py-1' : 'px-3 py-2'}`}
+        className={`w-full flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:border-accent-primary-light transition ${compact ? 'px-2 py-1' : 'px-3 py-2'}`}
       >
         <span className="truncate">{options.find(o => o.value === value)?.label || value || 'Wybierz...'}</span>
         <ChevronDown size={14} className="text-gray-400 ml-1" />
@@ -77,7 +77,7 @@ const CustomSelect = ({ value, onChange, options, compact = false }) => {
                 key={opt.value}
                 type="button"
                 onClick={() => { onChange(opt.value); setIsOpen(false); }}
-                className={`w-full px-3 py-2 text-left text-sm hover:bg-pink-50 dark:hover:bg-pink-900/20 ${value === opt.value ? 'bg-pink-50 dark:bg-pink-900/30 text-pink-600' : 'text-gray-700 dark:text-gray-300'}`}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 ${value === opt.value ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary' : 'text-gray-700 dark:text-gray-300'}`}
               >
                 {opt.label}
               </button>
@@ -118,7 +118,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden">
         {/* Header */}
-        <div className="p-5 bg-gradient-to-r from-pink-600 to-orange-600 flex justify-between items-center shrink-0">
+        <div className="p-5 bg-gradient-to-r from-accent-primary to-accent-secondary flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl">
               <Music size={24} className="text-white" />
@@ -141,7 +141,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-4 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
             </div>
           ) : program ? (
             <div className="space-y-6">
@@ -149,13 +149,13 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
               {program.schedule && program.schedule.length > 0 && (
                 <div>
                   <h3 className="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
-                    <div className="w-1 h-5 bg-pink-500 rounded-full" />
+                    <div className="w-1 h-5 bg-accent-primary-light rounded-full" />
                     Plan nabożeństwa
                   </h3>
                   <div className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden">
                     {program.schedule.map((item, idx) => (
                       <div key={idx} className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                        <span className="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 flex items-center justify-center text-sm font-bold">
+                        <span className="w-8 h-8 rounded-lg bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light flex items-center justify-center text-sm font-bold">
                           {idx + 1}
                         </span>
                         <div className="flex-1">
@@ -238,8 +238,8 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
 
                 {/* Scena */}
                 {program.scena && Object.keys(program.scena).some(k => program.scena[k]) && (
-                  <div className="bg-pink-50 dark:bg-pink-900/20 rounded-xl p-4">
-                    <h4 className="font-bold text-pink-700 dark:text-pink-400 mb-3 flex items-center gap-2">
+                  <div className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 rounded-xl p-4">
+                    <h4 className="font-bold text-accent-primary dark:text-accent-primary-light mb-3 flex items-center gap-2">
                       <Mic size={18} />
                       Scena
                     </h4>
@@ -434,15 +434,15 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
             onClick={() => handleProgramClick(ministry.id)}
             className={`p-4 rounded-xl border transition-all hover:shadow-md cursor-pointer ${
               !isPast && isToday(ministry.date)
-                ? 'bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 border-pink-200 dark:border-pink-800'
-                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600'
+                ? 'bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border-accent-primary-lighter dark:border-accent-primary-dark'
+                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
             }`}
           >
             {/* Event header */}
             <div className="flex items-center gap-3 mb-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                 !isPast && isToday(ministry.date)
-                  ? 'bg-gradient-to-br from-pink-500 to-orange-500'
+                  ? 'bg-gradient-to-br from-accent-primary-light to-accent-secondary-light'
                   : isPast
                     ? 'bg-gray-200 dark:bg-gray-600'
                     : 'bg-gray-200 dark:bg-gray-600'
@@ -452,7 +452,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
               <div className="min-w-0 flex-1">
                 <p className={`font-bold truncate ${
                   !isPast && isToday(ministry.date)
-                    ? 'text-pink-600 dark:text-pink-400'
+                    ? 'text-accent-primary dark:text-accent-primary-light'
                     : 'text-gray-800 dark:text-white'
                 }`}>
                   {ministry.title}
@@ -460,10 +460,10 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {formatDate(ministry.date)}
                   {!isPast && isToday(ministry.date) && (
-                    <span className="ml-2 text-pink-500 font-medium">• Dzisiaj</span>
+                    <span className="ml-2 text-accent-primary-light font-medium">• Dzisiaj</span>
                   )}
                   {!isPast && isTomorrow(ministry.date) && (
-                    <span className="ml-2 text-orange-500 font-medium">• Jutro</span>
+                    <span className="ml-2 text-accent-secondary-light font-medium">• Jutro</span>
                   )}
                 </p>
               </div>
@@ -510,7 +510,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
     if (loadingAssignments) {
       return (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-pink-500" />
+          <Loader2 className="w-6 h-6 animate-spin text-accent-primary-light" />
         </div>
       );
     }
@@ -574,7 +574,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
               <button
                 onClick={() => handleReject(assignment)}
                 disabled={processingId === assignment.id}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-accent-secondary-light hover:bg-accent-secondary text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
               >
                 {processingId === assignment.id ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -606,7 +606,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
           <span className="hidden sm:inline">Nadchodzące</span>
           <span className="sm:hidden">Nowe</span>
           {upcomingMinistry?.length > 0 && (
-            <span className="px-1.5 py-0.5 text-xs rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400">
+            <span className="px-1.5 py-0.5 text-xs rounded-full bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">
               {upcomingMinistry.length}
             </span>
           )}

@@ -58,7 +58,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header with gradient */}
-        <div className="bg-gradient-to-r from-pink-500 to-orange-500 p-5">
+        <div className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl">
@@ -81,7 +81,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
                   onClick={() => setViewMode('desktop')}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
                     viewMode === 'desktop'
-                      ? 'bg-white text-pink-600 shadow-lg'
+                      ? 'bg-white text-accent-primary shadow-lg'
                       : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
@@ -92,7 +92,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
                   onClick={() => setViewMode('mobile')}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
                     viewMode === 'mobile'
-                      ? 'bg-white text-pink-600 shadow-lg'
+                      ? 'bg-white text-accent-primary shadow-lg'
                       : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
@@ -105,7 +105,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
                 onClick={() => setShowTestForm(!showTestForm)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all ${
                   showTestForm
-                    ? 'bg-white text-pink-600'
+                    ? 'bg-white text-accent-primary'
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
               >
@@ -125,7 +125,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
 
         {/* Test email form */}
         {showTestForm && (
-          <div className="px-6 py-4 bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 border-b border-pink-200/50 dark:border-pink-800/50">
+          <div className="px-6 py-4 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border-b border-accent-primary-lighter/50 dark:border-accent-primary-dark/50">
             <div className="flex items-center gap-3">
               <div className="flex-1 relative">
                 <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -134,13 +134,13 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
                   value={testEmail}
                   onChange={(e) => setTestEmail(e.target.value)}
                   placeholder="Wpisz adres email do testu..."
-                  className="w-full pl-11 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all"
+                  className="w-full pl-11 pr-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all"
                 />
               </div>
               <button
                 onClick={handleSendTest}
                 disabled={sending}
-                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white rounded-xl transition-all shadow-lg shadow-pink-500/30 disabled:opacity-50 font-medium"
+                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 disabled:opacity-50 font-medium"
               >
                 {sending ? <Loader size={16} className="animate-spin" /> : <Send size={16} />}
                 Wyślij
@@ -197,7 +197,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-200/50 dark:border-gray-700/50 bg-gray-50/80 dark:bg-gray-800/50">
           <p className="text-xs text-gray-500 dark:text-gray-400 text-center flex items-center justify-center gap-2">
-            <Sparkles size={12} className="text-pink-500" />
+            <Sparkles size={12} className="text-accent-primary-light" />
             Podgląd z przykładowymi danymi. Zmienne jak {'{{imie}}'} będą zastąpione podczas wysyłki.
           </p>
         </div>

@@ -148,7 +148,7 @@ export default function AssignmentResponsePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-pink-600 mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 animate-spin text-accent-primary mx-auto mb-4" />
           <p className="text-gray-600 font-medium">Przetwarzanie...</p>
         </div>
       </div>
@@ -174,11 +174,11 @@ export default function AssignmentResponsePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isAccepted ? 'bg-emerald-100' : 'bg-orange-100'}`}>
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isAccepted ? 'bg-emerald-100' : 'bg-accent-secondary-lighter'}`}>
             {isAccepted ? (
               <CheckCircle className="w-8 h-8 text-emerald-600" />
             ) : (
-              <XCircle className="w-8 h-8 text-orange-600" />
+              <XCircle className="w-8 h-8 text-accent-secondary" />
             )}
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
@@ -199,11 +199,11 @@ export default function AssignmentResponsePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isAccepted ? 'bg-emerald-100' : 'bg-orange-100'}`}>
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isAccepted ? 'bg-emerald-100' : 'bg-accent-secondary-lighter'}`}>
             {isAccepted ? (
               <CheckCircle className="w-8 h-8 text-emerald-600" />
             ) : (
-              <XCircle className="w-8 h-8 text-orange-600" />
+              <XCircle className="w-8 h-8 text-accent-secondary" />
             )}
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
@@ -239,7 +239,7 @@ export default function AssignmentResponsePage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white">
+          <div className="w-16 h-16 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-2xl flex items-center justify-center mx-auto mb-4 text-white">
             <Music size={32} />
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
@@ -252,14 +252,14 @@ export default function AssignmentResponsePage() {
 
         <div className="bg-gray-50 rounded-xl p-4 mb-6">
           <div className="flex items-center gap-3 mb-3">
-            <Calendar className="text-pink-600" size={20} />
+            <Calendar className="text-accent-primary" size={20} />
             <div>
               <p className="text-sm text-gray-500">Data</p>
               <p className="font-medium text-gray-800">{formatDate(program?.date)}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 mb-3">
-            <Music className="text-pink-600" size={20} />
+            <Music className="text-accent-primary" size={20} />
             <div>
               <p className="text-sm text-gray-500">Służba</p>
               <p className="font-medium text-gray-800">{roleNames[assignment?.role_key] || assignment?.role_key}</p>
@@ -267,7 +267,7 @@ export default function AssignmentResponsePage() {
           </div>
           {program?.title && (
             <div className="flex items-center gap-3">
-              <User className="text-pink-600" size={20} />
+              <User className="text-accent-primary" size={20} />
               <div>
                 <p className="text-sm text-gray-500">Program</p>
                 <p className="font-medium text-gray-800">{program.title}</p>
@@ -286,7 +286,7 @@ export default function AssignmentResponsePage() {
           </button>
           <button
             onClick={() => handleAction('reject', token, assignment)}
-            className="w-full py-3 px-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-xl shadow-lg hover:shadow-red-500/30 transition flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-gradient-to-r from-accent-secondary-light to-red-500 hover:from-accent-secondary hover:to-red-600 text-white font-bold rounded-xl shadow-lg hover:shadow-red-500/30 transition flex items-center justify-center gap-2"
           >
             <XCircle size={20} />
             Odrzucam

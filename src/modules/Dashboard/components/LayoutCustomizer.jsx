@@ -71,7 +71,7 @@ export default function LayoutCustomizer({
                   <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                       item.visible
-                        ? 'bg-gradient-to-br from-pink-500 to-orange-500'
+                        ? 'bg-gradient-to-br from-accent-primary-light to-accent-secondary-light'
                         : 'bg-gray-300 dark:bg-gray-600'
                     }`}>
                       <IconComponent size={20} className="text-white" />
@@ -93,7 +93,7 @@ export default function LayoutCustomizer({
                       <select
                         value={item.size}
                         onChange={(e) => onSizeChange(item.widgetId, e.target.value)}
-                        className="flex-1 sm:flex-none px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                        className="flex-1 sm:flex-none px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-accent-primary-light"
                       >
                         {Object.entries(WIDGET_SIZES).map(([key, size]) => (
                           <option key={key} value={key}>
@@ -133,7 +133,7 @@ export default function LayoutCustomizer({
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg transition-all"
+            className="px-6 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg transition-all"
           >
             Gotowe
           </button>

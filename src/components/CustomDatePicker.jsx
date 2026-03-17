@@ -102,8 +102,8 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full ${compact ? 'px-2 py-1 text-xs h-[26px]' : 'px-4 py-3'} border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all
           ${isOpen
-            ? 'border-pink-500 ring-2 ring-pink-500/20 dark:border-pink-400'
-            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-pink-300 dark:hover:border-pink-600'
+            ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light'
+            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'
           }
         `}
       >
@@ -151,9 +151,9 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
                   onClick={() => handleDayClick(day)}
                   className={`h-8 w-8 rounded-lg text-xs font-medium transition flex items-center justify-center
                     ${isSelected
-                      ? 'bg-pink-600 text-white shadow-md shadow-pink-500/30'
+                      ? 'bg-accent-primary text-white shadow-md shadow-accent-primary-light/30'
                       : isToday
-                        ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 border border-pink-100 dark:border-pink-800'
+                        ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light border border-accent-primary-lighter dark:border-accent-primary-dark'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }
                   `}

@@ -282,14 +282,14 @@ export default function PlansManager() {
                   key={key}
                   className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition ${
                     formData.features[key]
-                      ? 'bg-pink-50 dark:bg-pink-900/20 border-pink-300 dark:border-pink-600'
+                      ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border-accent-primary-light dark:border-accent-primary'
                       : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-gray-300'
                   }`}
                   onClick={() => toggleFeature(key)}
                 >
                   <div className={`w-5 h-5 rounded flex items-center justify-center ${
                     formData.features[key]
-                      ? 'bg-pink-600 text-white'
+                      ? 'bg-accent-primary text-white'
                       : 'bg-gray-200 dark:bg-gray-700'
                   }`}>
                     {formData.features[key] && <Check size={14} />}
@@ -311,7 +311,7 @@ export default function PlansManager() {
             <button
               onClick={handleSave}
               disabled={loading}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-accent-primary text-white rounded-lg font-medium hover:shadow-lg transition disabled:opacity-50"
             >
               {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
               Zapisz
@@ -335,7 +335,7 @@ export default function PlansManager() {
         </div>
         <button
           onClick={handleNew}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:shadow-lg transition"
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-accent-primary text-white rounded-xl font-medium hover:shadow-lg transition"
         >
           <Plus size={18} />
           Nowy plan

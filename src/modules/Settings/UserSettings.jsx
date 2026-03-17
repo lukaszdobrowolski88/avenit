@@ -477,12 +477,12 @@ export default function UserSettings() {
     setSaving(false);
   };
 
-  if (loading) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin text-pink-600 dark:text-pink-400"/></div>;
+  if (loading) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin text-accent-primary dark:text-accent-primary-light"/></div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Mój Profil</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Mój Profil</h1>
       </div>
 
       {message && (
@@ -496,7 +496,7 @@ export default function UserSettings() {
         {/* LEWA KOLUMNA: Karta Profilu i Avatar */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 flex flex-col items-center text-center relative overflow-hidden transition-colors duration-300">
-            <div className="w-full h-24 bg-gradient-to-r from-pink-500 to-orange-500 absolute top-0 left-0 opacity-10"></div>
+            <div className="w-full h-24 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light absolute top-0 left-0 opacity-10"></div>
             
             <div className="relative mt-4 mb-4 group">
               <div className="w-32 h-32 rounded-full border-4 border-white dark:border-gray-700 shadow-xl overflow-hidden bg-gray-100 dark:bg-gray-900 flex items-center justify-center transition-colors duration-300">
@@ -506,7 +506,7 @@ export default function UserSettings() {
                   <User size={48} className="text-gray-300 dark:text-gray-600" />
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 bg-pink-600 text-white p-2.5 rounded-full cursor-pointer hover:bg-pink-700 dark:hover:bg-pink-500 shadow-lg transition-transform hover:scale-110">
+              <label className="absolute bottom-0 right-0 bg-accent-primary text-white p-2.5 rounded-full cursor-pointer hover:bg-accent-primary dark:hover:bg-accent-primary-light shadow-lg transition-transform hover:scale-110">
                 <Camera size={18} />
                 <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={saving}/>
               </label>
@@ -523,7 +523,7 @@ export default function UserSettings() {
           {/* DANE OSOBOWE */}
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
-              <div className="p-2 bg-pink-50 dark:bg-pink-900/30 rounded-xl text-pink-600 dark:text-pink-400"><User size={24} /></div>
+              <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-xl text-accent-primary dark:text-accent-primary-light"><User size={24} /></div>
               <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Dane Osobowe</h3>
             </div>
             
@@ -531,7 +531,7 @@ export default function UserSettings() {
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię i Nazwisko</label>
                 <input 
-                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-pink-500 dark:focus:border-pink-400 outline-none transition"
+                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-accent-primary-light dark:focus:border-accent-primary-light outline-none transition"
                   value={formData.full_name}
                   onChange={e => setFormData({...formData, full_name: e.target.value})}
                   placeholder="Np. Jan Kowalski"
@@ -552,7 +552,7 @@ export default function UserSettings() {
             </div>
 
             <div className="mt-6 flex justify-end">
-              <button onClick={handleSaveProfile} disabled={saving} className="bg-pink-600 dark:bg-pink-500 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:bg-pink-700 dark:hover:bg-pink-600 transition flex items-center gap-2">
+              <button onClick={handleSaveProfile} disabled={saving} className="bg-accent-primary dark:bg-accent-primary-light text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:bg-accent-primary dark:hover:bg-accent-primary transition flex items-center gap-2">
                 {saving ? <Loader2 size={18} className="animate-spin"/> : <Save size={18}/>} Zapisz zmiany
               </button>
             </div>
@@ -834,7 +834,7 @@ export default function UserSettings() {
           {/* SUBSKRYPCJA KALENDARZA iCAL */}
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
-              <div className="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-xl text-orange-600 dark:text-orange-400">
+              <div className="p-2 bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/30 rounded-xl text-accent-secondary dark:text-accent-secondary-light">
                 <Calendar size={24} />
               </div>
               <div>
@@ -867,7 +867,7 @@ export default function UserSettings() {
                     key={item.key}
                     className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer transition ${
                       icalPreferences[item.key]
-                        ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700'
+                        ? 'bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/20 border-accent-secondary-light dark:border-accent-secondary'
                         : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700'
                     }`}
                   >
@@ -883,13 +883,13 @@ export default function UserSettings() {
                     <span className="text-lg">{item.icon}</span>
                     <span className={`text-sm font-medium ${
                       icalPreferences[item.key]
-                        ? 'text-orange-800 dark:text-orange-300'
+                        ? 'text-accent-secondary-dark dark:text-accent-secondary-light'
                         : 'text-gray-600 dark:text-gray-400'
                     }`}>
                       {item.label}
                     </span>
                     {icalPreferences[item.key] && (
-                      <CheckCircle size={16} className="ml-auto text-orange-600 dark:text-orange-400" />
+                      <CheckCircle size={16} className="ml-auto text-accent-secondary dark:text-accent-secondary-light" />
                     )}
                   </label>
                 ))}
@@ -926,7 +926,7 @@ export default function UserSettings() {
                     </button>
                     <button
                       onClick={downloadIcs}
-                      className="px-3 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-900/50 transition"
+                      className="px-3 py-2 bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 text-accent-secondary dark:text-accent-secondary-light rounded-lg hover:bg-accent-secondary-lighter dark:hover:bg-accent-secondary-darkest/50 transition"
                       title="Pobierz plik .ics"
                     >
                       <Download size={18} />
@@ -949,7 +949,7 @@ export default function UserSettings() {
                   <button
                     onClick={handleUpdateIcalPreferences}
                     disabled={icalLoading}
-                    className="flex-1 px-4 py-2.5 bg-orange-600 text-white font-medium rounded-xl hover:bg-orange-700 transition flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 bg-accent-secondary text-white font-medium rounded-xl hover:bg-accent-secondary transition flex items-center justify-center gap-2"
                   >
                     {icalLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                     Zapisz preferencje
@@ -969,7 +969,7 @@ export default function UserSettings() {
               <button
                 onClick={handleCreateOrResetIcal}
                 disabled={icalLoading}
-                className="w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-orange-500/30 transition flex items-center justify-center gap-2"
+                className="w-full px-4 py-3 bg-gradient-to-r from-accent-secondary-light to-accent-primary-light text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-secondary-light/30 transition flex items-center justify-center gap-2"
               >
                 {icalLoading ? <Loader2 size={18} className="animate-spin" /> : <Calendar size={18} />}
                 Utwórz subskrypcję kalendarza
@@ -982,7 +982,7 @@ export default function UserSettings() {
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                      <QrCode size={20} className="text-orange-600 dark:text-orange-400" />
+                      <QrCode size={20} className="text-accent-secondary dark:text-accent-secondary-light" />
                       Kod QR kalendarza
                     </h4>
                     <button
@@ -1017,7 +1017,7 @@ export default function UserSettings() {
                     </button>
                     <button
                       onClick={() => setShowIcalQrCode(false)}
-                      className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition"
+                      className="flex-1 px-4 py-2 bg-accent-secondary text-white rounded-xl hover:bg-accent-secondary transition"
                     >
                       Zamknij
                     </button>

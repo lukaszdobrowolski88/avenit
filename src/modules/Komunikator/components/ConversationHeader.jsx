@@ -40,7 +40,7 @@ export default function ConversationHeader({
     if (conversation.type === 'ministry') {
       const IconComponent = ministryIcons[conversation.ministry_key] || Users;
       return (
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-accent-primary-light flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
           <IconComponent size={20} />
         </div>
       );
@@ -103,7 +103,7 @@ export default function ConversationHeader({
             className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 group"
             title="Szukaj w rozmowie"
           >
-            <Search size={18} className="text-gray-500 group-hover:text-pink-500 transition-colors" />
+            <Search size={18} className="text-gray-500 group-hover:text-accent-primary-light transition-colors" />
           </button>
         )}
 
@@ -113,7 +113,7 @@ export default function ConversationHeader({
             className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 group"
             title="Galeria mediów"
           >
-            <Image size={18} className="text-gray-500 group-hover:text-pink-500 transition-colors" />
+            <Image size={18} className="text-gray-500 group-hover:text-accent-primary-light transition-colors" />
           </button>
         )}
 
@@ -124,9 +124,9 @@ export default function ConversationHeader({
             title={conversation.muted ? 'Włącz powiadomienia' : 'Wycisz powiadomienia'}
           >
             {conversation.muted ? (
-              <BellOff size={18} className="text-orange-500" />
+              <BellOff size={18} className="text-accent-secondary-light" />
             ) : (
-              <Bell size={18} className="text-gray-500 group-hover:text-pink-500 transition-colors" />
+              <Bell size={18} className="text-gray-500 group-hover:text-accent-primary-light transition-colors" />
             )}
           </button>
         )}
@@ -137,7 +137,7 @@ export default function ConversationHeader({
             className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 group"
             title="Ustawienia grupy"
           >
-            <Settings size={18} className="text-gray-500 group-hover:text-pink-500 transition-colors" />
+            <Settings size={18} className="text-gray-500 group-hover:text-accent-primary-light transition-colors" />
           </button>
         )}
 

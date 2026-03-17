@@ -135,7 +135,7 @@ export default function NewConversationModal({
             onClick={() => setMode('direct')}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
               ${mode === 'direct'
-                ? 'text-pink-600 border-b-2 border-pink-600'
+                ? 'text-accent-primary border-b-2 border-accent-primary'
                 : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
               }
             `}
@@ -147,7 +147,7 @@ export default function NewConversationModal({
             onClick={() => setMode('group')}
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
               ${mode === 'group'
-                ? 'text-pink-600 border-b-2 border-pink-600'
+                ? 'text-accent-primary border-b-2 border-accent-primary'
                 : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
               }
             `}
@@ -165,7 +165,7 @@ export default function NewConversationModal({
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               placeholder="Nazwa grupy..."
-              className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-gray-900 dark:text-gray-100 placeholder-gray-500"
+              className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
             />
 
             {/* Wybrani użytkownicy */}
@@ -174,12 +174,12 @@ export default function NewConversationModal({
                 {selectedUsers.map(user => (
                   <div
                     key={user.email}
-                    className="flex items-center gap-1 px-2 py-1 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded-full text-xs"
+                    className="flex items-center gap-1 px-2 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded-full text-xs"
                   >
                     <span>{user.full_name || user.email}</span>
                     <button
                       onClick={() => handleUserSelect(user)}
-                      className="p-0.5 hover:bg-pink-200 dark:hover:bg-pink-800 rounded-full"
+                      className="p-0.5 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-dark rounded-full"
                     >
                       <X size={12} />
                     </button>
@@ -199,7 +199,7 @@ export default function NewConversationModal({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Szukaj użytkowników..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-gray-900 dark:text-gray-100 placeholder-gray-500"
+              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
             />
           </div>
         </div>
@@ -208,7 +208,7 @@ export default function NewConversationModal({
         <div className="flex-1 overflow-y-auto px-2 pb-2 custom-scrollbar">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader size={24} className="animate-spin text-pink-600" />
+              <Loader size={24} className="animate-spin text-accent-primary" />
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -225,7 +225,7 @@ export default function NewConversationModal({
                     disabled={creating}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-left
                       ${isSelected
-                        ? 'bg-pink-50 dark:bg-pink-900/30'
+                        ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
                       }
                       disabled:opacity-50
@@ -241,7 +241,7 @@ export default function NewConversationModal({
                       </p>
                     </div>
                     {mode === 'group' && isSelected && (
-                      <div className="w-5 h-5 bg-pink-600 rounded-full flex items-center justify-center">
+                      <div className="w-5 h-5 bg-accent-primary rounded-full flex items-center justify-center">
                         <Check size={14} className="text-white" />
                       </div>
                     )}
@@ -258,7 +258,7 @@ export default function NewConversationModal({
             <button
               onClick={handleCreateGroup}
               disabled={!groupName.trim() || selectedUsers.length === 0 || creating}
-              className="w-full py-2.5 bg-pink-600 hover:bg-pink-700 text-white font-medium rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-2.5 bg-accent-primary hover:bg-accent-primary text-white font-medium rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {creating ? (
                 <>

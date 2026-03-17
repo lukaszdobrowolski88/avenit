@@ -236,7 +236,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
   // Tryb nagrywania
   if (isRecording) {
     return (
-      <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 rounded-xl border border-pink-200/50 dark:border-pink-700/50">
+      <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl border border-accent-primary-lighter/50 dark:border-accent-primary/50">
         {/* Przycisk anuluj */}
         <button
           onClick={handleCancel}
@@ -250,14 +250,14 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
           {visualizerData.slice(0, 15).map((height, idx) => (
             <div
               key={idx}
-              className="w-0.5 sm:w-1 bg-gradient-to-t from-pink-500 to-orange-500 rounded-full transition-all duration-75"
+              className="w-0.5 sm:w-1 bg-gradient-to-t from-accent-primary-light to-accent-secondary-light rounded-full transition-all duration-75"
               style={{ height: `${Math.min(height, 32)}px` }}
             />
           ))}
         </div>
 
         {/* Czas nagrywania */}
-        <div className="flex items-center gap-1.5 sm:gap-2 text-pink-600 dark:text-pink-400 font-mono text-xs sm:text-sm min-w-[50px] sm:min-w-[60px] flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 text-accent-primary dark:text-accent-primary-light font-mono text-xs sm:text-sm min-w-[50px] sm:min-w-[60px] flex-shrink-0">
           <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-red-500 animate-pulse'}`} />
           {formatTime(recordingTime)}
         </div>
@@ -273,7 +273,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
         {/* Przycisk stop */}
         <button
           onClick={stopRecording}
-          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white rounded-xl transition-all duration-200 shadow-lg shadow-pink-500/30 flex-shrink-0"
+          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all duration-200 shadow-lg shadow-accent-primary-light/30 flex-shrink-0"
         >
           <Square size={14} className="sm:w-4 sm:h-4" fill="currentColor" />
         </button>
@@ -284,7 +284,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
   // Tryb podglądu nagrania
   if (audioBlob && audioUrl) {
     return (
-      <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 rounded-xl border border-pink-200/50 dark:border-pink-700/50">
+      <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl border border-accent-primary-lighter/50 dark:border-accent-primary/50">
         {/* Hidden audio element */}
         <audio ref={audioPlayerRef} src={audioUrl} />
 
@@ -301,7 +301,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
         <button
           onClick={togglePlayback}
           disabled={isSending}
-          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-pink-500 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
+          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-accent-primary-light rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
         >
           {isPlaying ? <Pause size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Play size={16} className="sm:w-[18px] sm:h-[18px]" />}
         </button>
@@ -309,7 +309,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
         {/* Info o nagraniu */}
         <div className="flex-1 flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/80 dark:bg-gray-800/80 rounded-lg">
-            <Mic size={14} className="sm:w-4 sm:h-4 text-pink-500 flex-shrink-0" />
+            <Mic size={14} className="sm:w-4 sm:h-4 text-accent-primary-light flex-shrink-0" />
             <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
               <span className="hidden sm:inline">Wiadomość głosowa</span>
               <span className="sm:hidden">Głosowa</span>
@@ -324,7 +324,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
         <button
           onClick={handleSend}
           disabled={isSending || disabled}
-          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white rounded-xl transition-all duration-200 shadow-lg shadow-pink-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+          className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all duration-200 shadow-lg shadow-accent-primary-light/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
         >
           {isSending ? (
             <Loader size={16} className="sm:w-[18px] sm:h-[18px] animate-spin" />

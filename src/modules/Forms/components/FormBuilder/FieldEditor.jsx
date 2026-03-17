@@ -67,8 +67,8 @@ export default function FieldEditor({ field, onUpdate }) {
       <div>
         <div className="flex items-center gap-2 mb-4">
           {fieldType?.icon && (
-            <div className="w-8 h-8 bg-pink-50 dark:bg-pink-900/30 rounded-lg flex items-center justify-center">
-              <fieldType.icon size={18} className="text-pink-600 dark:text-pink-400" />
+            <div className="w-8 h-8 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-lg flex items-center justify-center">
+              <fieldType.icon size={18} className="text-accent-primary dark:text-accent-primary-light" />
             </div>
           )}
           <div>
@@ -91,7 +91,7 @@ export default function FieldEditor({ field, onUpdate }) {
             type="text"
             value={field.label || ''}
             onChange={(e) => handleChange('label', e.target.value)}
-            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
             placeholder="Np. Imię i nazwisko"
           />
         </div>
@@ -105,7 +105,7 @@ export default function FieldEditor({ field, onUpdate }) {
               type="text"
               value={field.placeholder || ''}
               onChange={(e) => handleChange('placeholder', e.target.value)}
-              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
               placeholder="Np. Wpisz swoje imię..."
             />
           </div>
@@ -119,7 +119,7 @@ export default function FieldEditor({ field, onUpdate }) {
             type="text"
             value={field.description || ''}
             onChange={(e) => handleChange('description', e.target.value)}
-            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
             placeholder="Dodatkowe informacje dla użytkownika"
           />
         </div>
@@ -140,7 +140,7 @@ export default function FieldEditor({ field, onUpdate }) {
               onChange={(e) => handleChange('required', e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-pink-500"></div>
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary-light dark:peer-focus:ring-accent-primary-dark rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-accent-primary-light"></div>
           </label>
         </div>
       </div>
@@ -159,7 +159,7 @@ export default function FieldEditor({ field, onUpdate }) {
                   type="text"
                   value={option.label}
                   onChange={(e) => handleUpdateOption(option.id, e.target.value)}
-                  className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+                  className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
                 />
                 <button
                   onClick={() => handleRemoveOption(option.id)}
@@ -178,12 +178,12 @@ export default function FieldEditor({ field, onUpdate }) {
               onChange={(e) => setNewOption(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddOption()}
               placeholder="Dodaj opcję..."
-              className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+              className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
             />
             <button
               onClick={handleAddOption}
               disabled={!newOption.trim()}
-              className="p-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-2 bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Plus size={18} />
             </button>
@@ -207,7 +207,7 @@ export default function FieldEditor({ field, onUpdate }) {
                 min="0"
                 value={field.validation?.minLength || ''}
                 onChange={(e) => handleValidationChange('minLength', e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
                 placeholder="0"
               />
             </div>
@@ -220,7 +220,7 @@ export default function FieldEditor({ field, onUpdate }) {
                 min="0"
                 value={field.validation?.maxLength || ''}
                 onChange={(e) => handleValidationChange('maxLength', e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
                 placeholder="255"
               />
             </div>
@@ -243,7 +243,7 @@ export default function FieldEditor({ field, onUpdate }) {
                 type="number"
                 value={field.validation?.min ?? ''}
                 onChange={(e) => handleValidationChange('min', e.target.value ? parseFloat(e.target.value) : null)}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
                 placeholder="0"
               />
             </div>
@@ -255,7 +255,7 @@ export default function FieldEditor({ field, onUpdate }) {
                 type="number"
                 value={field.validation?.max ?? ''}
                 onChange={(e) => handleValidationChange('max', e.target.value ? parseFloat(e.target.value) : null)}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
                 placeholder="100"
               />
             </div>
@@ -284,7 +284,7 @@ export default function FieldEditor({ field, onUpdate }) {
                   maxSize: parseInt(e.target.value) || 10
                 }
               })}
-              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
             />
           </div>
 
@@ -309,7 +309,7 @@ export default function FieldEditor({ field, onUpdate }) {
                 })}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-pink-500"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary-light dark:peer-focus:ring-accent-primary-dark rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-accent-primary-light"></div>
             </label>
           </div>
         </div>
@@ -336,7 +336,7 @@ export default function FieldEditor({ field, onUpdate }) {
                   maxSize: parseInt(e.target.value) || 5
                 }
               })}
-              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
             />
           </div>
 
@@ -356,7 +356,7 @@ export default function FieldEditor({ field, onUpdate }) {
                     maxWidth: parseInt(e.target.value) || 1920
                   }
                 })}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
               />
             </div>
             <div>
@@ -374,7 +374,7 @@ export default function FieldEditor({ field, onUpdate }) {
                     maxHeight: parseInt(e.target.value) || 1080
                   }
                 })}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
               />
             </div>
           </div>
@@ -400,7 +400,7 @@ export default function FieldEditor({ field, onUpdate }) {
                 })}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-pink-500"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary-light dark:peer-focus:ring-accent-primary-dark rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-accent-primary-light"></div>
             </label>
           </div>
 
@@ -425,7 +425,7 @@ export default function FieldEditor({ field, onUpdate }) {
                 })}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-pink-500"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary-light dark:peer-focus:ring-accent-primary-dark rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-accent-primary-light"></div>
             </label>
           </div>
 
@@ -450,7 +450,7 @@ export default function FieldEditor({ field, onUpdate }) {
                 })}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-pink-500"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary-light dark:peer-focus:ring-accent-primary-dark rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-accent-primary-light"></div>
             </label>
           </div>
         </div>
@@ -644,7 +644,7 @@ export default function FieldEditor({ field, onUpdate }) {
                 min="1"
                 value={field.validation?.min || 1}
                 onChange={(e) => handleValidationChange('min', parseInt(e.target.value) || 1)}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
               />
             </div>
             <div>
@@ -656,7 +656,7 @@ export default function FieldEditor({ field, onUpdate }) {
                 min="1"
                 value={field.validation?.max || 10}
                 onChange={(e) => handleValidationChange('max', parseInt(e.target.value) || 10)}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
               />
             </div>
           </div>
@@ -675,7 +675,7 @@ export default function FieldEditor({ field, onUpdate }) {
                   defaultValue: parseInt(e.target.value) || 1
                 }
               })}
-              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
             />
           </div>
 
@@ -700,7 +700,7 @@ export default function FieldEditor({ field, onUpdate }) {
                 })}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-pink-500"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary-light dark:peer-focus:ring-accent-primary-dark rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-accent-primary-light"></div>
             </label>
           </div>
         </div>

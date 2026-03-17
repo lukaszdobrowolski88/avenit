@@ -90,7 +90,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full px-4 py-3 border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all
-          ${isOpen ? 'border-pink-500 ring-2 ring-pink-500/20 dark:border-pink-400' : 'border-gray-200/50 dark:border-gray-700/50 hover:border-pink-300 dark:hover:border-pink-600'}
+          ${isOpen ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light' : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'}
         `}
       >
         <div className="flex items-center gap-2 text-sm">
@@ -129,7 +129,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
                 <button
                   key={day}
                   onClick={(e) => { e.stopPropagation(); handleDayClick(day); }}
-                  className={`h-8 w-8 rounded-lg text-xs font-medium transition ${isSelected ? 'bg-pink-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                  className={`h-8 w-8 rounded-lg text-xs font-medium transition ${isSelected ? 'bg-accent-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                 >
                   {day}
                 </button>
@@ -172,14 +172,14 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
     <div className="relative w-full">
       <div 
         ref={triggerRef}
-        className="w-full min-h-[32px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs cursor-pointer flex flex-wrap gap-1 items-center hover:border-pink-300 dark:hover:border-pink-500 transition"
+        className="w-full min-h-[32px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs cursor-pointer flex flex-wrap gap-1 items-center hover:border-accent-primary-light dark:hover:border-accent-primary-light transition"
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
           <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span>
         ) : (
           selectedItems.map((item, idx) => (
-            <span key={idx} className="bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 px-1.5 py-0.5 rounded text-[10px] border border-pink-100 dark:border-pink-800 whitespace-nowrap">
+            <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-1.5 py-0.5 rounded text-[10px] border border-accent-primary-lighter dark:border-accent-primary-dark whitespace-nowrap">
               {item}
             </span>
           ))
@@ -203,8 +203,8 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
               <div 
                 key={person.id}
                 className={`px-3 py-1.5 text-xs cursor-pointer flex items-center justify-between transition 
-                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-pink-50 dark:hover:bg-pink-900/20 text-gray-700 dark:text-gray-300'}
-                  ${isSelected ? 'bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 font-medium' : ''}
+                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 text-gray-700 dark:text-gray-300'}
+                  ${isSelected ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light font-medium' : ''}
                 `}
                 onClick={() => toggleSelection(person.full_name, isAbsent)}
               >
@@ -343,7 +343,7 @@ const ScheduleTable = ({ programs, team, onUpdateProgram, roles, memberRoles = [
                           ))}
                           <td className="p-2">
                             <input
-                              className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-pink-500 dark:focus:border-pink-400 text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
+                              className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light dark:focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
                               placeholder="Wpisz..."
                               defaultValue={prog.atmosfera_team?.notatki || ''}
                               onBlur={(e) => updateNotes(prog.id, e.target.value)}
@@ -695,13 +695,13 @@ export default function AtmosferaTeamModule() {
     }
   };
 
-  if (loading) return <div className="p-10 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 dark:border-pink-400 mx-auto"></div></div>;
+  if (loading) return <div className="p-10 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary dark:border-accent-primary-light mx-auto"></div></div>;
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent flex items-center gap-3">
-          <HeartHandshake size={40} className="text-pink-600 dark:text-pink-400" />
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent flex items-center gap-3">
+          <HeartHandshake size={40} className="text-accent-primary dark:text-accent-primary-light" />
           Atmosfera Team
         </h1>
       </div>
@@ -732,7 +732,7 @@ export default function AtmosferaTeamModule() {
       {activeTab === 'schedule' && (
       <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 relative z-[50] transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Grafik</h2>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Grafik</h2>
         </div>
         <ScheduleTable
           programs={programs}
@@ -748,26 +748,26 @@ export default function AtmosferaTeamModule() {
       {activeTab === 'members' && (
       <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 relative z-[30] transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Członkowie ({team.length})</h2>
-          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: 'Atmosfera', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-pink-600 to-orange-600 text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj</button>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Członkowie ({team.length})</h2>
+          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: 'Atmosfera', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj</button>
         </div>
         <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[700px]">
-            <thead className="bg-gradient-to-r from-pink-50/80 to-orange-50/80 dark:from-pink-900/20 dark:to-orange-900/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
+            <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
               <tr><th className="p-4">Imię i nazwisko</th><th className="p-4">Służby</th><th className="p-4">Email</th><th className="p-4">Telefon</th><th className="p-4 text-right">Akcje</th></tr>
             </thead>
             <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
               {team.map(m => {
                 const roleNames = getMemberRoleNames(m.id);
                 return (
-                  <tr key={m.id} className="hover:bg-pink-50/30 dark:hover:bg-pink-900/10 transition text-gray-700 dark:text-gray-300">
+                  <tr key={m.id} className="hover:bg-accent-primary-lightest/30 dark:hover:bg-accent-primary-darkest/10 transition text-gray-700 dark:text-gray-300">
                     <td className="p-4 font-medium">{m.full_name}</td>
                     <td className="p-4">
                       <div className="flex flex-wrap gap-1">
                         {roleNames.length > 0 ? (
                           roleNames.map((name, idx) => (
-                            <span key={idx} className="bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 px-2 py-0.5 rounded-lg text-xs font-medium border border-pink-100 dark:border-pink-800">
+                            <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-lg text-xs font-medium border border-accent-primary-lighter dark:border-accent-primary-dark">
                               {name}
                             </span>
                           ))
@@ -779,7 +779,7 @@ export default function AtmosferaTeamModule() {
                     <td className="p-4">{m.email}</td>
                     <td className="p-4">{m.phone}</td>
                     <td className="p-4 text-right flex justify-end gap-2">
-                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-pink-600 dark:text-pink-400 font-medium">Edytuj</button>
+                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light font-medium">Edytuj</button>
                       <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 font-medium">Usuń</button>
                     </td>
                   </tr>
@@ -862,7 +862,7 @@ export default function AtmosferaTeamModule() {
                           }}
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
                             isSelected
-                              ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
+                              ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                         >
@@ -891,7 +891,7 @@ export default function AtmosferaTeamModule() {
 
               <div className="flex justify-end gap-3 mt-6">
                 <button onClick={() => setShowMemberModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Anuluj</button>
-                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg hover:shadow-pink-500/50 transition font-medium">Zapisz</button>
+                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">Zapisz</button>
               </div>
             </div>
           </div>
@@ -982,7 +982,7 @@ export default function AtmosferaTeamModule() {
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załączniki (opcjonalnie)</label>
                 <div className="space-y-2">
-                  <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-pink-300 dark:hover:border-pink-600 transition flex items-center gap-2">
+                  <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                     <Upload size={18} className="text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {uploadingFile ? 'Przesyłanie...' : 'Dodaj plik(i)'}
@@ -1037,7 +1037,7 @@ export default function AtmosferaTeamModule() {
                   {expenseForm.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300 rounded-lg text-xs flex items-center gap-1"
+                      className="px-2 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light rounded-lg text-xs flex items-center gap-1"
                     >
                       <Tag size={12} />
                       {tag}
@@ -1057,7 +1057,7 @@ export default function AtmosferaTeamModule() {
                 </button>
                 <button
                   onClick={saveExpense}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-medium"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
                 >
                   Zapisz
                 </button>

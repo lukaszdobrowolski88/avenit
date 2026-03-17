@@ -166,7 +166,7 @@ export default function BillingModule() {
             <button
               onClick={handleProceedToPayment}
               disabled={processing}
-              className="w-full flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl font-semibold text-lg hover:shadow-lg transition disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-semibold text-lg hover:shadow-lg transition disabled:opacity-50"
             >
               {processing ? (
                 <>
@@ -205,7 +205,7 @@ export default function BillingModule() {
       {view === VIEWS.OVERVIEW && (
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <CreditCard size={24} className="text-pink-600" />
+            <CreditCard size={24} className="text-accent-primary" />
             Subskrypcja i płatności
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">

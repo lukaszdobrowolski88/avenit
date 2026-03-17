@@ -158,8 +158,8 @@ export default function CheckinTab() {
             onClick={() => setMode(item.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all
               ${isActive
-                ? 'bg-gradient-to-r from-pink-600 to-orange-600 text-white shadow-lg shadow-pink-500/25'
-                : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600 hover:text-pink-600 dark:hover:text-pink-400'
+                ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary-light/25'
+                : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary dark:hover:text-accent-primary-light'
               }`}
           >
             <Icon size={18} />
@@ -198,8 +198,8 @@ export default function CheckinTab() {
               onClick={() => setSettingsTab('sessions')}
               className={`px-6 py-3 text-base font-medium rounded-xl transition-all
                 ${settingsTab === 'sessions'
-                  ? 'bg-gradient-to-r from-pink-600 to-orange-600 text-white shadow-lg'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600'
+                  ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
                 }`}
             >
               Sesje
@@ -208,8 +208,8 @@ export default function CheckinTab() {
               onClick={() => setSettingsTab('locations')}
               className={`px-6 py-3 text-base font-medium rounded-xl transition-all
                 ${settingsTab === 'locations'
-                  ? 'bg-gradient-to-r from-pink-600 to-orange-600 text-white shadow-lg'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600'
+                  ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
                 }`}
             >
               Sale
@@ -296,7 +296,7 @@ export default function CheckinTab() {
         <p className="mb-4">{error}</p>
         <button
           onClick={() => window.location.reload()}
-          className="px-6 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl font-medium hover:shadow-lg transition"
+          className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium hover:shadow-lg transition"
         >
           Odśwież stronę
         </button>

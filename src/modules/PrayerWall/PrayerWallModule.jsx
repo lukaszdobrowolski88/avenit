@@ -117,7 +117,7 @@ function PrayerRequestCard({
         border-2 transition-all duration-300 hover:shadow-lg
         ${isAnswered
           ? 'border-amber-300 dark:border-amber-500/50 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20 dark:to-yellow-900/20'
-          : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-500/30'
+          : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary-light/30'
         }
       `}
     >
@@ -142,7 +142,7 @@ function PrayerRequestCard({
             className="w-10 h-10 rounded-full object-cover ring-2 ring-white dark:ring-gray-700"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-orange-400 flex items-center justify-center text-white font-semibold">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white font-semibold">
             {authorName.charAt(0).toUpperCase()}
           </div>
         )}
@@ -166,7 +166,7 @@ function PrayerRequestCard({
       {/* Kto zgłasza */}
       {request.requester_name && (
         <div className="mb-3 flex items-center gap-2 text-sm">
-          <UserPlus className="w-4 h-4 text-pink-500" />
+          <UserPlus className="w-4 h-4 text-accent-primary-light" />
           <span className="text-gray-600 dark:text-gray-400">Modlitwa za:</span>
           <span className="font-medium text-gray-800 dark:text-gray-200">{request.requester_name}</span>
         </div>
@@ -219,8 +219,8 @@ function PrayerRequestCard({
             flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
             transition-all duration-300 transform
             ${hasPrayed
-              ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-md hover:shadow-lg hover:scale-105'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-pink-100 dark:hover:bg-pink-900/30 hover:text-pink-600 dark:hover:text-pink-400'
+              ? 'bg-gradient-to-r from-accent-primary-light to-rose-500 text-white shadow-md hover:shadow-lg hover:scale-105'
+              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 hover:text-accent-primary dark:hover:text-accent-primary-light'
             }
             ${isPraying ? 'opacity-70 cursor-not-allowed' : ''}
           `}
@@ -334,7 +334,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700">
         {/* Nagłówek */}
-        <div className="bg-gradient-to-r from-pink-600 to-orange-600 p-5 rounded-t-2xl flex-shrink-0">
+        <div className="bg-gradient-to-r from-accent-primary to-accent-secondary p-5 rounded-t-2xl flex-shrink-0">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Heart className="w-6 h-6" />
@@ -363,7 +363,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                 value={requesterName}
                 onChange={(e) => setRequesterName(e.target.value)}
                 placeholder="Imię osoby, za którą się modlimy..."
-                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500/50 dark:text-white"
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white"
               />
             </div>
             <p className="text-xs text-gray-400 mt-1">Zostaw puste, jeśli modlisz się za siebie</p>
@@ -379,7 +379,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               onChange={(e) => setContent(e.target.value)}
               placeholder="Podziel się swoją prośbą modlitewną..."
               rows={4}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500/50 dark:text-white resize-none"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white resize-none"
               required
             />
           </div>
@@ -398,7 +398,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                   className={`
                     px-3 py-2 rounded-xl text-sm font-medium transition-all
                     ${category === key
-                      ? `${color} ring-2 ring-offset-2 ring-pink-500`
+                      ? `${color} ring-2 ring-offset-2 ring-accent-primary-light`
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }
                   `}
@@ -418,7 +418,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               <label className={`
                 flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
                 ${visibility === 'public'
-                  ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/30'
+                  ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30'
                   : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
                 }
               `}>
@@ -430,7 +430,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                   onChange={(e) => setVisibility(e.target.value)}
                   className="sr-only"
                 />
-                <User className={`w-5 h-5 ${visibility === 'public' ? 'text-pink-500' : 'text-gray-400'}`} />
+                <User className={`w-5 h-5 ${visibility === 'public' ? 'text-accent-primary-light' : 'text-gray-400'}`} />
                 <div>
                   <p className="font-medium text-gray-800 dark:text-gray-200">Publiczna</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Widoczna dla wszystkich</p>
@@ -467,7 +467,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               type="checkbox"
               checked={isAnonymous}
               onChange={(e) => setIsAnonymous(e.target.checked)}
-              className="w-5 h-5 rounded border-gray-300 text-pink-500 focus:ring-pink-500"
+              className="w-5 h-5 rounded border-gray-300 text-accent-primary-light focus:ring-accent-primary-light"
             />
             <Ghost className="w-5 h-5 text-gray-500" />
             <div>
@@ -574,7 +574,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
             <button
               type="submit"
               disabled={isLoading || !content.trim()}
-              className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-pink-600 to-orange-600 text-white font-medium hover:from-pink-700 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium hover:from-accent-primary hover:to-accent-secondary transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
@@ -1002,7 +1002,7 @@ export default function PrayerWallModule() {
   if (roleLoading || loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 dark:border-pink-400"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary dark:border-accent-primary-light"></div>
       </div>
     );
   }
@@ -1011,7 +1011,7 @@ export default function PrayerWallModule() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
           Centrum Modlitwy
         </h1>
         <button
@@ -1019,7 +1019,7 @@ export default function PrayerWallModule() {
             setEditingRequest(null);
             setIsModalOpen(true);
           }}
-          className="bg-gradient-to-r from-pink-600 to-orange-600 text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
+          className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
         >
           <Plus size={18} /> Dodaj intencję
         </button>
@@ -1041,7 +1041,7 @@ export default function PrayerWallModule() {
                 onClick={() => { setFilter('all'); setCategoryFilter('all'); setActiveFilter('all'); }}
                 className={`w-full text-left px-4 py-2.5 rounded-xl transition-all flex items-center gap-3 ${
                   filter === 'all'
-                    ? 'bg-gradient-to-r from-pink-600 to-orange-600 text-white shadow-md'
+                    ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
                 }`}
               >
@@ -1052,7 +1052,7 @@ export default function PrayerWallModule() {
                 onClick={() => { setFilter('mine'); setCategoryFilter('all'); setActiveFilter('all'); }}
                 className={`w-full text-left px-4 py-2.5 rounded-xl transition-all flex items-center gap-3 ${
                   filter === 'mine'
-                    ? 'bg-gradient-to-r from-pink-600 to-orange-600 text-white shadow-md'
+                    ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300'
                 }`}
               >
@@ -1081,7 +1081,7 @@ export default function PrayerWallModule() {
                 onClick={() => setActiveFilter('all')}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
                   activeFilter === 'all'
-                    ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400'
+                    ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                 }`}
               >
@@ -1120,7 +1120,7 @@ export default function PrayerWallModule() {
                 onClick={() => setCategoryFilter('all')}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
                   categoryFilter === 'all'
-                    ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400'
+                    ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                 }`}
               >
@@ -1132,7 +1132,7 @@ export default function PrayerWallModule() {
                   onClick={() => setCategoryFilter(key)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
                     categoryFilter === key
-                      ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400'
+                      ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                       : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400'
                   }`}
                 >
@@ -1154,7 +1154,7 @@ export default function PrayerWallModule() {
                   placeholder="Szukaj intencji..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500/50 dark:text-white"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white"
                 />
               </div>
 
@@ -1176,7 +1176,7 @@ export default function PrayerWallModule() {
                         onClick={() => { setFilter('all'); setCategoryFilter('all'); setActiveFilter('all'); }}
                         className={`px-3 py-1.5 rounded-full text-sm ${
                           filter === 'all'
-                            ? 'bg-pink-500 text-white'
+                            ? 'bg-accent-primary-light text-white'
                             : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                         }`}
                       >
@@ -1186,7 +1186,7 @@ export default function PrayerWallModule() {
                         onClick={() => { setFilter('mine'); setCategoryFilter('all'); setActiveFilter('all'); }}
                         className={`px-3 py-1.5 rounded-full text-sm ${
                           filter === 'mine'
-                            ? 'bg-pink-500 text-white'
+                            ? 'bg-accent-primary-light text-white'
                             : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                         }`}
                       >
@@ -1262,7 +1262,7 @@ export default function PrayerWallModule() {
                     setEditingRequest(null);
                     setIsModalOpen(true);
                   }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white font-medium rounded-xl hover:from-pink-700 hover:to-orange-700 transition-all"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium rounded-xl hover:from-accent-primary hover:to-accent-secondary transition-all"
                 >
                   <Plus className="w-5 h-5" />
                   Dodaj intencję

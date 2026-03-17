@@ -112,7 +112,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
       <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg border border-white/20 dark:border-gray-700 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
-          <h3 className="font-bold text-xl bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent">
+          <h3 className="font-bold text-xl bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
             {isEditing ? 'Edytuj zakładkę' : 'Nowa zakładka'}
           </h3>
           <button
@@ -148,13 +148,13 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
                     onClick={() => setForm({ ...form, component_type: comp.key })}
                     className={`p-3 rounded-xl border-2 text-left transition-all ${
                       isSelected
-                        ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-700'
+                        ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
-                      <CompIcon size={18} className={isSelected ? 'text-pink-600' : 'text-gray-400'} />
-                      <span className={`font-medium text-sm ${isSelected ? 'text-pink-700 dark:text-pink-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                      <CompIcon size={18} className={isSelected ? 'text-accent-primary' : 'text-gray-400'} />
+                      <span className={`font-medium text-sm ${isSelected ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-700 dark:text-gray-300'}`}>
                         {comp.label}
                       </span>
                     </div>
@@ -178,7 +178,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
               className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
                 ${errors.label
                   ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-gray-200 dark:border-gray-700 focus:border-pink-500 focus:ring-pink-500/20'
+                  : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
                 } focus:outline-none focus:ring-2`}
             />
             {errors.label && (
@@ -201,7 +201,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
                 ${isEditing && tab?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
                 ${errors.key
                   ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-gray-200 dark:border-gray-700 focus:border-pink-500 focus:ring-pink-500/20'
+                  : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
                 } focus:outline-none focus:ring-2`}
             />
             {errors.key && (
@@ -238,7 +238,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg hover:shadow-pink-500/30 transition font-medium flex items-center gap-2 disabled:opacity-50"
+            className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition font-medium flex items-center gap-2 disabled:opacity-50"
           >
             <Save size={16} />
             {saving ? 'Zapisuję...' : 'Zapisz'}

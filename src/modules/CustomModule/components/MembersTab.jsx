@@ -212,7 +212,7 @@ export default function MembersTab({ moduleKey, moduleName }) {
   if (loading) {
     return (
       <div className="p-10 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600 mx-auto"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary mx-auto"></div>
       </div>
     );
   }
@@ -269,7 +269,7 @@ GRANT ALL ON ${tableName} TO anon;`;
           </button>
           <button
             onClick={fetchMembers}
-            className="mt-4 ml-2 px-4 py-2 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition"
+            className="mt-4 ml-2 px-4 py-2 bg-accent-primary text-white rounded-xl hover:bg-accent-primary transition"
           >
             Odśwież
           </button>
@@ -282,7 +282,7 @@ GRANT ALL ON ${tableName} TO anon;`;
     <div>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
           Członkowie ({filteredMembers.length})
         </h2>
         <div className="flex items-center gap-3">
@@ -293,12 +293,12 @@ GRANT ALL ON ${tableName} TO anon;`;
               placeholder="Szukaj..."
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-sm focus:border-pink-500 outline-none"
+              className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-sm focus:border-accent-primary-light outline-none"
             />
           </div>
           <button
             onClick={openAddModal}
-            className="px-4 py-2 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl font-medium flex items-center gap-2 hover:shadow-lg hover:shadow-pink-500/30 transition"
+            className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium flex items-center gap-2 hover:shadow-lg hover:shadow-accent-primary-light/30 transition"
           >
             <Plus size={18} />
             Dodaj członka
@@ -318,7 +318,7 @@ GRANT ALL ON ${tableName} TO anon;`;
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white font-bold">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white font-bold">
                       {member.full_name?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <div>
@@ -328,7 +328,7 @@ GRANT ALL ON ${tableName} TO anon;`;
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
                     <button
                       onClick={() => openEditModal(member)}
-                      className="p-1.5 text-gray-400 hover:text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-lg transition"
+                      className="p-1.5 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition"
                     >
                       <Edit2 size={16} />
                     </button>
@@ -347,7 +347,7 @@ GRANT ALL ON ${tableName} TO anon;`;
                     {roleNames.map((roleName, idx) => (
                       <span
                         key={idx}
-                        className="text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 px-2 py-0.5 rounded-full"
+                        className="text-xs bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-full"
                       >
                         {roleName}
                       </span>
@@ -437,7 +437,7 @@ GRANT ALL ON ${tableName} TO anon;`;
                           }}
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
                             isSelected
-                              ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
+                              ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                         >
@@ -493,7 +493,7 @@ GRANT ALL ON ${tableName} TO anon;`;
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg hover:shadow-pink-500/50 transition font-medium"
+                  className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium"
                 >
                   Zapisz
                 </button>

@@ -76,8 +76,8 @@ export default function SearchModal({
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-20 bg-black/50 backdrop-blur-sm">
       <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-2xl w-full max-w-lg mx-4 shadow-2xl overflow-hidden border border-gray-200/50 dark:border-gray-700/50">
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-pink-50/50 to-orange-50/50 dark:from-gray-800/50 dark:to-gray-800/50">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center shadow-lg shadow-pink-500/20 flex-shrink-0">
+        <div className="flex items-center gap-3 p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-accent-primary-lightest/50 to-accent-secondary-lightest/50 dark:from-gray-800/50 dark:to-gray-800/50">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center shadow-lg shadow-accent-primary-light/20 flex-shrink-0">
             <Search size={18} className="text-white" />
           </div>
           <input
@@ -100,15 +100,15 @@ export default function SearchModal({
         <div className="max-h-96 overflow-y-auto custom-scrollbar">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-100 to-orange-100 dark:from-pink-900/30 dark:to-orange-900/30 flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-pink-600 border-t-transparent rounded-full animate-spin" />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
               </div>
               <p className="text-sm text-gray-500">Wyszukiwanie...</p>
             </div>
           ) : searchQuery.length < 2 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-100 to-orange-100 dark:from-pink-900/30 dark:to-orange-900/30 flex items-center justify-center mb-4">
-                <Search size={28} className="text-pink-500" />
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center mb-4">
+                <Search size={28} className="text-accent-primary-light" />
               </div>
               <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Wyszukaj wiadomości</p>
               <p className="text-gray-500 dark:text-gray-400 text-sm">Wpisz co najmniej 2 znaki, aby rozpocząć wyszukiwanie</p>
@@ -132,7 +132,7 @@ export default function SearchModal({
                 <button
                   key={msg.id}
                   onClick={() => handleResultClick(msg.id)}
-                  className="w-full flex items-start gap-3 p-3 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 dark:hover:from-pink-900/20 dark:hover:to-orange-900/20 rounded-xl transition-all duration-200 text-left mb-1"
+                  className="w-full flex items-start gap-3 p-3 hover:bg-gradient-to-r hover:from-accent-primary-lightest hover:to-accent-secondary-lightest dark:hover:from-accent-primary-darkest/20 dark:hover:to-accent-secondary-darkest/20 rounded-xl transition-all duration-200 text-left mb-1"
                 >
                   <UserAvatar user={msg.sender} size="sm" className="flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">

@@ -44,7 +44,7 @@ function SortableTabItem({ tab, onEdit, onDelete }) {
       ref={setNodeRef}
       style={style}
       className={`flex items-center gap-3 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl group transition-shadow
-        ${isDragging ? 'shadow-xl ring-2 ring-pink-500/30' : 'hover:shadow-md'}`}
+        ${isDragging ? 'shadow-xl ring-2 ring-accent-primary-light/30' : 'hover:shadow-md'}`}
     >
       {/* Drag Handle */}
       <button
@@ -56,7 +56,7 @@ function SortableTabItem({ tab, onEdit, onDelete }) {
       </button>
 
       {/* Icon */}
-      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white flex-shrink-0">
+      <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white flex-shrink-0">
         <IconComponent size={18} />
       </div>
 
@@ -80,7 +80,7 @@ function SortableTabItem({ tab, onEdit, onDelete }) {
           <>
             <button
               onClick={() => onEdit(tab)}
-              className="p-2 text-gray-400 hover:text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-lg transition opacity-0 group-hover:opacity-100"
+              className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
               title="Edytuj"
             >
               <Pencil size={16} />
@@ -175,7 +175,7 @@ export default function TabManager({
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white">
               <ModuleIcon size={20} />
             </div>
             <div>
@@ -200,7 +200,7 @@ export default function TabManager({
           {/* Add Button */}
           <button
             onClick={handleAddTab}
-            className="w-full mb-4 p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-pink-500 hover:text-pink-500 dark:hover:border-pink-500 dark:hover:text-pink-400 transition flex items-center justify-center gap-2"
+            className="w-full mb-4 p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary-light dark:hover:border-accent-primary-light dark:hover:text-accent-primary-light transition flex items-center justify-center gap-2"
           >
             <Plus size={20} />
             Dodaj zakładkę
@@ -241,7 +241,7 @@ export default function TabManager({
         <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end flex-shrink-0">
           <button
             onClick={onClose}
-            className="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg hover:shadow-pink-500/30 transition font-medium"
+            className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition font-medium"
           >
             Gotowe
           </button>

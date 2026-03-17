@@ -27,7 +27,7 @@ function CustomSelect({ value, onChange, options, placeholder }) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-primary-light transition-colors"
       >
         <span className={selectedOption ? '' : 'text-gray-400 dark:text-gray-500'}>
           {selectedOption ? selectedOption.label : placeholder}
@@ -51,7 +51,7 @@ function CustomSelect({ value, onChange, options, placeholder }) {
               onClick={() => { onChange(option.value); setIsOpen(false); }}
               className={`w-full px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 text-sm ${
                 value === option.value
-                  ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400'
+                  ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light'
                   : 'text-gray-700 dark:text-gray-300'
               }`}
             >
@@ -261,7 +261,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
       {!isAdding && (
         <button
           onClick={() => setIsAdding(true)}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-pink-300 dark:hover:border-pink-600 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary-light dark:hover:text-accent-primary-light transition-colors"
         >
           <Plus size={18} />
           <span className="font-medium">Zgłoś nieobecność</span>
@@ -308,14 +308,14 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
               onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
               placeholder="Powód nieobecności..."
               rows={2}
-              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-primary-light resize-none"
             />
           </div>
 
           <button
             type="submit"
             disabled={saving || !formData.program_id}
-            className="w-full py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? 'Zapisywanie...' : 'Zgłoś nieobecność'}
           </button>

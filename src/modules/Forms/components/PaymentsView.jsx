@@ -384,7 +384,7 @@ export default function PaymentsView({ forms }) {
       paypal: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
       przelewy24: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
       cash: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-      card: 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400'
+      card: 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
     };
 
     return (
@@ -398,7 +398,7 @@ export default function PaymentsView({ forms }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-pink-200 border-t-pink-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent-primary-lighter border-t-accent-primary-light"></div>
       </div>
     );
   }
@@ -459,8 +459,8 @@ export default function PaymentsView({ forms }) {
 
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <AlertCircle size={20} className="text-orange-600 dark:text-orange-400" />
+            <div className="p-2 bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 rounded-lg">
+              <AlertCircle size={20} className="text-accent-secondary dark:text-accent-secondary-light" />
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -473,8 +473,8 @@ export default function PaymentsView({ forms }) {
 
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
-              <TrendingUp size={20} className="text-pink-600 dark:text-pink-400" />
+            <div className="p-2 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 rounded-lg">
+              <TrendingUp size={20} className="text-accent-primary dark:text-accent-primary-light" />
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -497,7 +497,7 @@ export default function PaymentsView({ forms }) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Szukaj (uczestnik, email, formularz, referencja)..."
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
             />
           </div>
 
@@ -507,14 +507,14 @@ export default function PaymentsView({ forms }) {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-colors ${
                 showFilters
-                  ? 'bg-pink-50 dark:bg-pink-900/20 border-pink-300 dark:border-pink-700 text-pink-600 dark:text-pink-400'
+                  ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border-accent-primary-light dark:border-accent-primary text-accent-primary dark:text-accent-primary-light'
                   : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
               }`}
             >
               <Filter size={18} />
               Filtry
               {(selectedForm !== 'all' || statusFilter !== 'all' || methodFilter !== 'all' || dateRange.from || dateRange.to) && (
-                <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+                <span className="w-2 h-2 bg-accent-primary-light rounded-full"></span>
               )}
             </button>
 
@@ -528,7 +528,7 @@ export default function PaymentsView({ forms }) {
 
             <button
               onClick={exportToCSV}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-pink-500/25 transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
             >
               <Download size={18} />
               Eksportuj
@@ -645,7 +645,7 @@ export default function PaymentsView({ forms }) {
                     setMethodFilter('all');
                     setDateRange({ from: '', to: '' });
                   }}
-                  className="px-3 py-2 text-sm text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-lg transition-colors"
+                  className="px-3 py-2 text-sm text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition-colors"
                 >
                   Wyczyść filtry
                 </button>
@@ -702,7 +702,7 @@ export default function PaymentsView({ forms }) {
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-orange-400 rounded-full flex items-center justify-center text-white font-semibold">
+                        <div className="w-10 h-10 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-full flex items-center justify-center text-white font-semibold">
                           {payment.participantName.charAt(0).toUpperCase()}
                         </div>
                         <div>
@@ -797,7 +797,7 @@ export default function PaymentsView({ forms }) {
             <div className="p-6 overflow-auto max-h-[calc(90vh-140px)] space-y-6">
               {/* Uczestnik */}
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-pink-400 to-orange-400 rounded-xl flex items-center justify-center text-white text-xl font-bold">
+                <div className="w-14 h-14 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-xl flex items-center justify-center text-white text-xl font-bold">
                   {selectedPayment.participantName.charAt(0).toUpperCase()}
                 </div>
                 <div>

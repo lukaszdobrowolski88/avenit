@@ -24,8 +24,8 @@ const STATUS_CONFIG = {
 const SOURCE_CONFIG = {
   personal: {
     icon: User,
-    color: 'text-pink-500',
-    bgColor: 'bg-pink-100 dark:bg-pink-900/30',
+    color: 'text-accent-primary-light',
+    bgColor: 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30',
   },
   home_group: {
     icon: Users,
@@ -110,8 +110,8 @@ const CustomDatePicker = ({ value, onChange }) => {
 
   return (
     <div className="relative w-full">
-      <div ref={triggerRef} onClick={() => setIsOpen(!isOpen)} className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center gap-2 cursor-pointer hover:border-pink-400 dark:hover:border-pink-500 transition">
-        <Calendar size={16} className="text-pink-600 dark:text-pink-400" />
+      <div ref={triggerRef} onClick={() => setIsOpen(!isOpen)} className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center gap-2 cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary-light transition">
+        <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
           {value ? new Date(value).toLocaleDateString('pl-PL') : 'Wybierz datę'}
         </span>
@@ -129,7 +129,7 @@ const CustomDatePicker = ({ value, onChange }) => {
              {daysArray.map(d => {
                const dateStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                return (
-                 <button type="button" key={d} onClick={(e) => { e.stopPropagation(); handleDayClick(d); }} className={`h-8 w-8 rounded-lg text-xs font-medium transition ${value === dateStr ? 'bg-pink-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
+                 <button type="button" key={d} onClick={(e) => { e.stopPropagation(); handleDayClick(d); }} className={`h-8 w-8 rounded-lg text-xs font-medium transition ${value === dateStr ? 'bg-accent-primary text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
                    {d}
                  </button>
                )
@@ -310,7 +310,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
         <div className="p-6">
           <div className="mb-6">
             <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-              {isNewTask ? <Plus size={24} className="text-pink-600" /> : <CheckCircle size={24} className="text-pink-600" />}
+              {isNewTask ? <Plus size={24} className="text-accent-primary" /> : <CheckCircle size={24} className="text-accent-primary" />}
               {isNewTask ? 'Nowe zadanie' : 'Edytuj zadanie'}
             </h2>
             {!isNewTask && (
@@ -326,7 +326,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tytuł</label>
               <input
                 autoFocus
-                className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-pink-500/20 outline-none"
+                className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
                 value={task.title}
                 onChange={e => setTask({...task, title: e.target.value})}
                 placeholder="Co jest do zrobienia?"
@@ -351,7 +351,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
                       onClick={() => setTask({...task, status: key})}
                       className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                         task.status === key
-                          ? `${config.color} ring-2 ring-offset-2 ring-pink-500`
+                          ? `${config.color} ring-2 ring-offset-2 ring-accent-primary-light`
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
@@ -366,7 +366,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
               <textarea
-                className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white text-sm h-24 resize-none focus:ring-2 focus:ring-pink-500/20 outline-none"
+                className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white text-sm h-24 resize-none focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
                 value={task.description || ''}
                 onChange={e => setTask({...task, description: e.target.value})}
                 placeholder="Szczegóły zadania..."
@@ -377,12 +377,12 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
             {task.source === 'personal' && (
               <div>
                 <label
-                  className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-pink-300 dark:hover:border-pink-600 transition"
+                  className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:border-accent-primary-light dark:hover:border-accent-primary transition"
                   onClick={() => setTask({...task, is_private: !task.is_private})}
                 >
                   <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
                     task.is_private
-                      ? 'bg-pink-600 border-pink-600'
+                      ? 'bg-accent-primary border-accent-primary'
                       : 'border-gray-300 dark:border-gray-600'
                   }`}>
                     {task.is_private && <Lock size={12} className="text-white" />}
@@ -391,7 +391,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Prywatne</span>
                     <p className="text-xs text-gray-400 dark:text-gray-500">Tylko Ty widzisz to zadanie</p>
                   </div>
-                  <Lock size={18} className={task.is_private ? 'text-pink-600' : 'text-gray-400 dark:text-gray-500'} />
+                  <Lock size={18} className={task.is_private ? 'text-accent-primary' : 'text-gray-400 dark:text-gray-500'} />
                 </label>
               </div>
             )}
@@ -418,7 +418,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
                 <button
                   type="submit"
                   disabled={saving || !task.title.trim()}
-                  className="px-4 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white font-bold rounded-xl hover:shadow-lg shadow-pink-500/30 flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg shadow-accent-primary-light/30 flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Save size={16} /> {saving ? 'Zapisywanie...' : 'Zapisz'}
                 </button>
@@ -477,7 +477,7 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
         {/* Add button */}
         <button
           onClick={handleAddClick}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-pink-300 dark:hover:border-pink-600 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary-light dark:hover:text-accent-primary-light transition-colors"
         >
           <Plus size={18} />
           <span className="font-medium">Dodaj zadanie</span>
@@ -515,7 +515,7 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
         <div className="flex items-center gap-2">
           <button
             onClick={handleAddClick}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-pink-900/20 hover:text-pink-600 dark:hover:text-pink-400"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 hover:text-accent-primary dark:hover:text-accent-primary-light"
           >
             <Plus size={16} />
             Dodaj
@@ -574,7 +574,7 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
                       className={task.status === 'done' ? 'text-green-500' : 'text-gray-400 dark:text-gray-500'}
                     />
                     {task.is_private && (
-                      <Lock size={14} className="text-pink-500" />
+                      <Lock size={14} className="text-accent-primary-light" />
                     )}
                   </div>
                   {task.due_date && (
@@ -628,7 +628,7 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
                     className={task.status === 'done' ? 'text-green-500' : 'text-gray-400 dark:text-gray-500'}
                   />
                   {task.is_private && (
-                    <Lock size={14} className="text-pink-500" />
+                    <Lock size={14} className="text-accent-primary-light" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

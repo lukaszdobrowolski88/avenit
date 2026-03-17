@@ -45,7 +45,7 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
       ref={setNodeRef}
       style={style}
       className={`flex items-center gap-3 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl group transition-all
-        ${isDragging ? 'shadow-xl ring-2 ring-pink-500/30' : 'hover:shadow-md'}
+        ${isDragging ? 'shadow-xl ring-2 ring-accent-primary-light/30' : 'hover:shadow-md'}
         ${!module.is_enabled ? 'opacity-60' : ''}`}
     >
       {/* Drag Handle */}
@@ -60,7 +60,7 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
       {/* Icon */}
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0
         ${module.is_enabled
-          ? 'bg-gradient-to-br from-pink-500 to-orange-500'
+          ? 'bg-gradient-to-br from-accent-primary-light to-accent-secondary-light'
           : 'bg-gray-400 dark:bg-gray-600'}`}
       >
         <IconComponent size={20} />
@@ -79,12 +79,12 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
       {/* Tabs Button */}
       <button
         onClick={() => onManageTabs(module)}
-        className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-pink-100 dark:hover:bg-pink-900/30 hover:text-pink-600 dark:hover:text-pink-400 rounded-lg transition flex items-center gap-1.5"
+        className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 hover:text-accent-primary dark:hover:text-accent-primary-light rounded-lg transition flex items-center gap-1.5"
       >
         <Layers size={14} />
         Zakładki
         {tabCount > 0 && (
-          <span className="bg-pink-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+          <span className="bg-accent-primary-light text-white text-[10px] px-1.5 py-0.5 rounded-full">
             {tabCount}
           </span>
         )}
@@ -113,7 +113,7 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
           <>
             <button
               onClick={() => onEdit(module)}
-              className="p-2 text-gray-400 hover:text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-lg transition opacity-0 group-hover:opacity-100"
+              className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
               title="Edytuj"
             >
               <Pencil size={16} />
@@ -229,7 +229,7 @@ export default function ModuleManager() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 size={32} className="animate-spin text-pink-500" />
+        <Loader2 size={32} className="animate-spin text-accent-primary-light" />
       </div>
     );
   }
@@ -257,7 +257,7 @@ export default function ModuleManager() {
         </div>
         <button
           onClick={handleAddModule}
-          className="px-4 py-2 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg hover:shadow-pink-500/30 transition font-medium flex items-center gap-2"
+          className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition font-medium flex items-center gap-2"
         >
           <Plus size={18} />
           Dodaj moduł

@@ -124,7 +124,7 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
 
           {/* Kontener grupy musi być relative */}
           <div className="relative group">
-            <button className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-full bg-gradient-to-tr from-pink-500 to-orange-600 p-[2px] cursor-pointer shadow-md hover:shadow-lg transition-all block">
+            <button className="relative w-9 h-9 lg:w-10 lg:h-10 rounded-full bg-gradient-to-tr from-accent-primary-light to-accent-secondary p-[2px] cursor-pointer shadow-md hover:shadow-lg transition-all block">
               {userProfile?.avatar_url ? (
                 <img
                   src={userProfile.avatar_url}
@@ -133,7 +133,7 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
                 />
               ) : (
                 <div className="w-full h-full rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-                  <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-orange-600 uppercase">
+                  <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary uppercase">
                     {displayName?.charAt(0) || 'U'}
                   </span>
                 </div>
@@ -154,7 +154,7 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
                 <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
                   <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Konto</p>
                 </div>
-                <a href="/profile" className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-700 hover:text-pink-600 transition-colors cursor-pointer">
+                <a href="/profile" className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary transition-colors cursor-pointer">
                   <UserIcon size={16}/> Mój Profil
                 </a>
                 <button

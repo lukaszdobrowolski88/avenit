@@ -82,7 +82,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full px-4 py-3 border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all
-          ${isOpen ? 'border-pink-500 ring-2 ring-pink-500/20 dark:border-pink-400' : 'border-gray-200/50 dark:border-gray-700/50 hover:border-pink-300 dark:hover:border-pink-600'}
+          ${isOpen ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light' : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'}
         `}
       >
         <div className="flex items-center gap-2 text-sm">
@@ -121,8 +121,8 @@ const CustomDatePicker = ({ label, value, onChange }) => {
                   key={day}
                   onClick={(e) => { e.stopPropagation(); handleDayClick(day); }}
                   className={`h-8 w-8 rounded-lg text-xs font-medium transition flex items-center justify-center
-                    ${isSelected ? 'bg-pink-600 text-white shadow-md shadow-pink-500/30' :
-                      isToday ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 border border-pink-100 dark:border-pink-800' :
+                    ${isSelected ? 'bg-accent-primary text-white shadow-md shadow-accent-primary-light/30' :
+                      isToday ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light border border-accent-primary-lighter dark:border-accent-primary-dark' :
                       'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}
                   `}
                 >
@@ -412,7 +412,7 @@ export default function TasksTab({ moduleKey, moduleName, currentUserEmail }) {
   if (loading) {
     return (
       <div className="p-10 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600 mx-auto"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary mx-auto"></div>
       </div>
     );
   }
@@ -487,7 +487,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
           </button>
           <button
             onClick={fetchTasks}
-            className="mt-4 ml-2 px-4 py-2 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition"
+            className="mt-4 ml-2 px-4 py-2 bg-accent-primary text-white rounded-xl hover:bg-accent-primary transition"
           >
             Odśwież
           </button>
@@ -500,20 +500,20 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
     <div>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
           Zadania ({filteredTasks.length})
         </h2>
         <div className="flex items-center gap-3">
           <div className="flex bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm p-1 rounded-xl border border-gray-200/50 dark:border-gray-700/50 gap-2 items-center">
             <button
               onClick={() => setViewMode('kanban')}
-              className={`p-2 rounded-lg transition ${viewMode === 'kanban' ? 'bg-white dark:bg-gray-700 shadow text-pink-600 dark:text-pink-300' : 'text-gray-500 dark:text-gray-400'}`}
+              className={`p-2 rounded-lg transition ${viewMode === 'kanban' ? 'bg-white dark:bg-gray-700 shadow text-accent-primary dark:text-accent-primary-light' : 'text-gray-500 dark:text-gray-400'}`}
             >
               <LayoutGrid size={18} />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow text-pink-600 dark:text-pink-300' : 'text-gray-500 dark:text-gray-400'}`}
+              className={`p-2 rounded-lg transition ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 shadow text-accent-primary dark:text-accent-primary-light' : 'text-gray-500 dark:text-gray-400'}`}
             >
               <List size={18} />
             </button>
@@ -542,7 +542,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
           </div>
           <button
             onClick={() => openTaskModal(null)}
-            className="px-4 py-2 bg-gradient-to-r from-orange-600 to-pink-600 text-white rounded-xl font-medium flex items-center gap-2 hover:shadow-lg transition whitespace-nowrap"
+            className="px-4 py-2 bg-gradient-to-r from-accent-secondary to-accent-primary text-white rounded-xl font-medium flex items-center gap-2 hover:shadow-lg transition whitespace-nowrap"
           >
             <Plus size={18} />
             Dodaj zadanie
@@ -556,14 +556,14 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
           {STATUSES.map(status => (
             <div
               key={status}
-              className={`bg-gradient-to-br from-gray-50/80 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-sm rounded-2xl border-2 p-4 transition-all ${dragOverColumn === status ? 'border-pink-400 dark:border-pink-500 bg-pink-50/50 dark:bg-pink-900/20 shadow-lg' : 'border-gray-200/50 dark:border-gray-700/50'}`}
+              className={`bg-gradient-to-br from-gray-50/80 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-sm rounded-2xl border-2 p-4 transition-all ${dragOverColumn === status ? 'border-accent-primary-light dark:border-accent-primary-light bg-accent-primary-lightest/50 dark:bg-accent-primary-darkest/20 shadow-lg' : 'border-gray-200/50 dark:border-gray-700/50'}`}
               onDragOver={(e) => handleDragOver(e, status)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, status)}
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">{status}</h3>
-                <span className="bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 px-3 py-1 rounded-full text-xs font-bold">
+                <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-3 py-1 rounded-full text-xs font-bold">
                   {tasksByStatus[status].length}
                 </span>
               </div>
@@ -581,7 +581,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                           type="checkbox"
                           checked={task.status === 'Gotowe'}
                           onChange={() => toggleTaskCompletion(task)}
-                          className="w-5 h-5 rounded border-gray-300 text-pink-600 dark:text-pink-500 cursor-pointer"
+                          className="w-5 h-5 rounded border-gray-300 text-accent-primary dark:text-accent-primary-light cursor-pointer"
                         />
                       </div>
                       <div className="flex-1">
@@ -605,7 +605,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                         <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                           <button
                             onClick={() => openTaskModal(task)}
-                            className="text-pink-600 dark:text-pink-400 text-xs font-medium"
+                            className="text-accent-primary dark:text-accent-primary-light text-xs font-medium"
                           >
                             Szczegóły
                           </button>
@@ -629,7 +629,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
       {viewMode === 'list' && (
         <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
           <table className="w-full text-left text-sm">
-            <thead className="bg-gradient-to-r from-pink-50/80 to-orange-50/80 dark:from-pink-900/20 dark:to-orange-900/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
+            <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
               <tr>
                 <th className="p-4 w-10"></th>
                 <th className="p-4">Zadanie</th>
@@ -641,13 +641,13 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
             </thead>
             <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
               {filteredTasks.length > 0 ? filteredTasks.map(task => (
-                <tr key={task.id} className="hover:bg-pink-50/30 dark:hover:bg-pink-900/10 transition">
+                <tr key={task.id} className="hover:bg-accent-primary-lightest/30 dark:hover:bg-accent-primary-darkest/10 transition">
                   <td className="p-4">
                     <input
                       type="checkbox"
                       checked={task.status === 'Gotowe'}
                       onChange={() => toggleTaskCompletion(task)}
-                      className="w-5 h-5 rounded border-gray-300 text-pink-600 dark:text-pink-500 cursor-pointer"
+                      className="w-5 h-5 rounded border-gray-300 text-accent-primary dark:text-accent-primary-light cursor-pointer"
                     />
                   </td>
                   <td className="p-4 font-bold text-gray-800 dark:text-gray-200">{task.title}</td>
@@ -663,7 +663,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                     </span>
                   </td>
                   <td className="p-4 text-right">
-                    <button onClick={() => openTaskModal(task)} className="text-pink-600 dark:text-pink-400 font-medium">
+                    <button onClick={() => openTaskModal(task)} className="text-accent-primary dark:text-accent-primary-light font-medium">
                       Szczegóły
                     </button>
                   </td>
@@ -686,7 +686,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
             {/* Lewa kolumna - formularz */}
             <div className="w-3/5 p-8 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">
               <div className="flex justify-between mb-6">
-                <h3 className="font-bold text-2xl bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+                <h3 className="font-bold text-2xl bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
                   {editingTask?.id ? 'Edycja zadania' : 'Nowe zadanie'}
                 </h3>
               </div>
@@ -694,7 +694,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tytuł zadania</label>
                   <input
-                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-900 dark:text-gray-100"
+                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={form.title}
                     onChange={e => setForm({...form, title: e.target.value})}
                   />
@@ -702,7 +702,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
                   <textarea
-                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-900 dark:text-gray-100"
+                    className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={form.description}
                     onChange={e => setForm({...form, description: e.target.value})}
                   />
@@ -746,7 +746,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załącznik</label>
                   <input
                     type="file"
-                    className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-pink-50 dark:file:bg-pink-900/30 file:text-pink-700 dark:file:text-pink-300 hover:file:bg-pink-100 dark:hover:file:bg-pink-900/50"
+                    className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-accent-primary-lightest dark:file:bg-accent-primary-darkest/30 file:text-accent-primary dark:file:text-accent-primary-light hover:file:bg-accent-primary-lighter dark:hover:file:bg-accent-primary-darkest/50"
                     onChange={handleFileUpload}
                   />
                   {form.attachment && (
@@ -766,7 +766,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                   )}
                   <button
                     onClick={handleSave}
-                    className="px-6 py-3 bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-500 dark:to-orange-500 text-white font-bold rounded-xl hover:shadow-lg transition"
+                    className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white font-bold rounded-xl hover:shadow-lg transition"
                   >
                     Zapisz zmiany
                   </button>
@@ -798,7 +798,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                 ) : comments.map(comment => (
                   <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div className="flex justify-between items-start mb-1">
-                      <span className="font-bold text-xs text-pink-700 dark:text-pink-300">{comment.author_name}</span>
+                      <span className="font-bold text-xs text-accent-primary dark:text-accent-primary-light">{comment.author_name}</span>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500">
                         {new Date(comment.created_at).toLocaleString('pl-PL')}
                       </span>
@@ -811,7 +811,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                 <div className="mt-auto">
                   <div className="relative">
                     <textarea
-                      className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-pink-500/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200"
+                      className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200"
                       placeholder="Napisz komentarz..."
                       rows={2}
                       value={newComment}
@@ -826,7 +826,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                     <button
                       onClick={addComment}
                       disabled={!newComment.trim()}
-                      className="absolute right-2 bottom-2 p-2 bg-pink-600 dark:bg-pink-500 text-white rounded-lg hover:bg-pink-700 dark:hover:bg-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="absolute right-2 bottom-2 p-2 bg-accent-primary dark:bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary dark:hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send size={16} />
                     </button>

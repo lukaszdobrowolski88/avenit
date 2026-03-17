@@ -268,6 +268,6 @@ export const notificationColors = {
   message: 'text-blue-500 bg-blue-100 dark:bg-blue-900/30',
   mention: 'text-purple-500 bg-purple-100 dark:bg-purple-900/30',
   task: 'text-green-500 bg-green-100 dark:bg-green-900/30',
-  event: 'text-orange-500 bg-orange-100 dark:bg-orange-900/30',
+  event: 'text-accent-secondary-light bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30',
   system: 'text-gray-500 bg-gray-100 dark:bg-gray-900/30'
 };

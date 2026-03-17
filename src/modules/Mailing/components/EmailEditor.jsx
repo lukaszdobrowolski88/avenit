@@ -36,7 +36,7 @@ export default function EmailEditor({ content, onChange, placeholder = 'Napisz t
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: 'text-pink-500 underline'
+          class: 'text-accent-primary-light underline'
         }
       }),
       TextAlign.configure({
@@ -267,7 +267,7 @@ export default function EmailEditor({ content, onChange, placeholder = 'Napisz t
                 className="w-full flex items-center justify-between px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <span>{variable.label}</span>
-                <code className="text-xs text-pink-500 bg-pink-50 dark:bg-pink-900/30 px-2 py-0.5 rounded">
+                <code className="text-xs text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-2 py-0.5 rounded">
                   {variable.key}
                 </code>
               </button>
@@ -294,7 +294,7 @@ function ToolbarButton({ onClick, active, title, children }) {
       title={title}
       className={`p-2 rounded-lg transition-all duration-200 flex items-center ${
         active
-          ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+          ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
           : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
       }`}
     >

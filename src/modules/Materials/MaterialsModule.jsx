@@ -131,7 +131,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-accent-secondary rounded-xl flex items-center justify-center shadow-lg">
             <FolderOpen className="text-white" size={20} />
           </div>
           <div>

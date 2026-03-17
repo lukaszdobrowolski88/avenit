@@ -123,15 +123,15 @@ export default function PublicFormPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50/50 via-white to-orange-50/50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-pink-200 border-t-pink-500"></div>
+      <div className="min-h-screen bg-gradient-to-br from-accent-primary-lightest/50 via-white to-accent-secondary-lightest/50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent-primary-lighter border-t-accent-primary-light"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50/50 via-white to-orange-50/50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-accent-primary-lightest/50 via-white to-accent-secondary-lightest/50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
             {error === 'form_closed' || error === 'limit_reached' ? (

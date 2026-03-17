@@ -122,7 +122,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
           >
             <ArrowLeft size={20} className="text-gray-500" />
           </button>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
             {template?.id ? (isSystemTemplate ? 'Podgląd szablonu' : 'Edytuj szablon') : 'Nowy szablon'}
           </h1>
         </div>
@@ -142,7 +142,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white rounded-xl transition-all shadow-lg shadow-pink-500/30 disabled:opacity-50 font-medium"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 disabled:opacity-50 font-medium"
             >
               {saving ? <Loader size={18} className="animate-spin" /> : <Save size={18} />}
               Zapisz szablon
@@ -171,7 +171,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
             <React.Fragment key={step.id}>
               {index > 0 && (
                 <div className={`h-0.5 w-16 rounded-full transition-colors ${
-                  isCompleted ? 'bg-pink-500' : 'bg-gray-200 dark:bg-gray-700'
+                  isCompleted ? 'bg-accent-primary-light' : 'bg-gray-200 dark:bg-gray-700'
                 }`} />
               )}
               <button
@@ -179,17 +179,17 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                 disabled={isReadOnly && index > currentStep}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all ${
                   isActive
-                    ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-lg shadow-pink-500/30'
+                    ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg shadow-accent-primary-light/30'
                     : isCompleted
-                      ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+                      ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
                 }`}
               >
                 <div className={`p-1.5 rounded-lg ${
-                  isActive ? 'bg-white/20' : isCompleted ? 'bg-pink-200 dark:bg-pink-800' : 'bg-gray-200 dark:bg-gray-700'
+                  isActive ? 'bg-white/20' : isCompleted ? 'bg-accent-primary-lighter dark:bg-accent-primary-dark' : 'bg-gray-200 dark:bg-gray-700'
                 }`}>
                   {isCompleted ? (
-                    <Check size={14} className={isActive ? 'text-white' : 'text-pink-600 dark:text-pink-400'} />
+                    <Check size={14} className={isActive ? 'text-white' : 'text-accent-primary dark:text-accent-primary-light'} />
                   ) : (
                     <StepIcon size={14} className={isActive ? 'text-white' : ''} />
                   )}
@@ -210,11 +210,11 @@ export default function TemplateEditor({ template, onClose, onSave }) {
               {/* Nazwa szablonu */}
               <div className="group">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  <div className="p-1.5 bg-gradient-to-br from-pink-500 to-orange-500 rounded-lg">
+                  <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <FileText size={12} className="text-white" />
                   </div>
                   Nazwa szablonu
-                  <span className="text-pink-500">*</span>
+                  <span className="text-accent-primary-light">*</span>
                 </label>
                 <input
                   type="text"
@@ -222,7 +222,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="np. Newsletter miesięczny"
                   disabled={isReadOnly}
-                  className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-900 dark:text-white placeholder-gray-400 disabled:opacity-50"
+                  className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all text-gray-900 dark:text-white placeholder-gray-400 disabled:opacity-50"
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
@@ -233,7 +233,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
               {/* Temat */}
               <div className="group">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  <div className="p-1.5 bg-gradient-to-br from-pink-500 to-orange-500 rounded-lg">
+                  <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Edit3 size={12} className="text-white" />
                   </div>
                   Domyślny temat wiadomości
@@ -244,7 +244,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                   onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
                   placeholder="np. Aktualności z kościoła"
                   disabled={isReadOnly}
-                  className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500 transition-all text-gray-900 dark:text-white placeholder-gray-400 disabled:opacity-50"
+                  className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all text-gray-900 dark:text-white placeholder-gray-400 disabled:opacity-50"
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
@@ -255,7 +255,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
               {/* Kategoria */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                  <div className="p-1.5 bg-gradient-to-br from-pink-500 to-orange-500 rounded-lg">
+                  <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Sparkles size={12} className="text-white" />
                   </div>
                   Kategoria szablonu
@@ -273,11 +273,11 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                         disabled={isReadOnly}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                           isSelected
-                            ? 'bg-gradient-to-r from-pink-500/10 to-orange-500/10 border-2 border-pink-400 dark:border-pink-600 text-pink-600 dark:text-pink-400'
-                            : 'bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-2 border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-700'
+                            ? 'bg-gradient-to-r from-accent-primary-light/10 to-accent-secondary-light/10 border-2 border-accent-primary-light dark:border-accent-primary text-accent-primary dark:text-accent-primary-light'
+                            : 'bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-2 border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
                         } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        <Icon size={18} className={isSelected ? 'text-pink-500' : ''} />
+                        <Icon size={18} className={isSelected ? 'text-accent-primary-light' : ''} />
                         <span className="font-medium">{label}</span>
                       </button>
                     );
@@ -289,7 +289,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
               {!isReadOnly && (
                 <div>
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                    <div className="p-1.5 bg-gradient-to-br from-pink-500 to-orange-500 rounded-lg">
+                    <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                       <MousePointer size={12} className="text-white" />
                     </div>
                     Wybierz sposób tworzenia treści
@@ -306,13 +306,13 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                           onClick={() => setEditorMode(mode.id)}
                           className={`group relative p-5 rounded-2xl border-2 transition-all duration-300 text-left ${
                             isSelected
-                              ? 'border-pink-500 bg-gradient-to-br from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 shadow-lg shadow-pink-500/20'
-                              : 'border-gray-200/50 dark:border-gray-700/50 hover:border-pink-300 dark:hover:border-pink-700 bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800'
+                              ? 'border-accent-primary-light bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 shadow-lg shadow-accent-primary-light/20'
+                              : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800'
                           }`}
                         >
                           {isSelected && (
                             <div className="absolute top-3 right-3">
-                              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center">
+                              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center">
                                 <Check size={12} className="text-white" />
                               </div>
                             </div>
@@ -320,14 +320,14 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                           <div className="flex items-center gap-3 mb-3">
                             <div className={`p-3 rounded-xl transition-all ${
                               isSelected
-                                ? 'bg-gradient-to-br from-pink-500 to-orange-500 shadow-lg shadow-pink-500/30'
-                                : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-pink-100 dark:group-hover:bg-pink-900/30'
+                                ? 'bg-gradient-to-br from-accent-primary-light to-accent-secondary-light shadow-lg shadow-accent-primary-light/30'
+                                : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-accent-primary-lighter dark:group-hover:bg-accent-primary-darkest/30'
                             }`}>
-                              <Icon size={20} className={isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-pink-500'} />
+                              <Icon size={20} className={isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-accent-primary-light'} />
                             </div>
                           </div>
                           <h4 className={`font-semibold mb-1 transition-colors ${
-                            isSelected ? 'text-pink-600 dark:text-pink-400' : 'text-gray-900 dark:text-white'
+                            isSelected ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-900 dark:text-white'
                           }`}>
                             {mode.label}
                           </h4>
@@ -347,7 +347,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
               <button
                 onClick={() => setCurrentStep(1)}
                 disabled={!canProceed()}
-                className="group flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white font-medium rounded-xl transition-all shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-pink-500/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+                className="group flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-medium rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl hover:shadow-accent-primary-light/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
               >
                 Dalej
                 <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
@@ -371,7 +371,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                         onClick={() => setEditorMode(mode.id)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                           isSelected
-                            ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
+                            ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                         }`}
                       >
@@ -419,7 +419,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                     onChange={(e) => !isReadOnly && setFormData(prev => ({ ...prev, html_content: e.target.value }))}
                     placeholder="<html>...</html>"
                     disabled={isReadOnly}
-                    className="w-full h-[500px] px-4 py-3 bg-gray-900 text-green-400 font-mono text-sm border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500/50 resize-none disabled:opacity-50"
+                    className="w-full h-[500px] px-4 py-3 bg-gray-900 text-green-400 font-mono text-sm border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 resize-none disabled:opacity-50"
                   />
                 </div>
               )}

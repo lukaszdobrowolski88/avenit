@@ -77,7 +77,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full px-4 py-3 border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all
-          ${isOpen ? 'border-pink-500 ring-2 ring-pink-500/20 dark:border-pink-400' : 'border-gray-200/50 dark:border-gray-700/50 hover:border-pink-300 dark:hover:border-pink-600'}
+          ${isOpen ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light' : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'}
         `}
       >
         <div className="flex items-center gap-2 text-sm">
@@ -116,8 +116,8 @@ const CustomDatePicker = ({ label, value, onChange }) => {
                   key={day}
                   onClick={(e) => { e.stopPropagation(); handleDayClick(day); }}
                   className={`h-8 w-8 rounded-lg text-xs font-medium transition flex items-center justify-center
-                    ${isSelected ? 'bg-pink-600 text-white shadow-md shadow-pink-500/30' :
-                      isToday ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 border border-pink-100 dark:border-pink-800' :
+                    ${isSelected ? 'bg-accent-primary text-white shadow-md shadow-accent-primary-light/30' :
+                      isToday ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light border border-accent-primary-lighter dark:border-accent-primary-dark' :
                       'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}
                   `}
                 >
@@ -327,7 +327,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
             ) : <div></div>}
             <div className="flex gap-3">
               <button onClick={onClose} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Anuluj</button>
-              <button onClick={handleSubmit} className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl hover:shadow-lg hover:shadow-pink-500/50 transition font-medium flex items-center gap-2">
+              <button onClick={handleSubmit} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium flex items-center gap-2">
                 <Save size={16} /> Zapisz
               </button>
             </div>
@@ -471,7 +471,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
 
   const colorClasses = {
     purple: 'from-purple-500 to-indigo-500',
-    orange: 'from-orange-500 to-red-500',
+    orange: 'from-accent-secondary-light to-red-500',
     teal: 'from-teal-500 to-green-500',
     yellow: 'from-yellow-500 to-amber-500',
     blue: 'from-blue-500 to-cyan-500'
@@ -484,7 +484,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
 
   // Dodaj kolor pink do colorClasses jeśli go brakuje
   if (!colorClasses[config.color]) {
-    colorClasses[config.color] = 'from-pink-500 to-orange-500';
+    colorClasses[config.color] = 'from-accent-primary-light to-accent-secondary-light';
   }
 
   // Jeśli tabela nie istnieje, pokaż instrukcję
@@ -539,7 +539,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
           </button>
           <button
             onClick={fetchEvents}
-            className="mt-4 ml-2 px-4 py-2 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition"
+            className="mt-4 ml-2 px-4 py-2 bg-accent-primary text-white rounded-xl hover:bg-accent-primary transition"
           >
             Odśwież
           </button>
@@ -558,7 +558,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
         </div>
         <button
           onClick={() => setShowModal({ id: null })}
-          className="bg-gradient-to-r from-pink-600 to-orange-600 text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-pink-500/50 transition flex items-center gap-2"
+          className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
         >
           <Plus size={18}/> Dodaj wydarzenie
         </button>
@@ -593,7 +593,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
       {/* Lista wydarzeń */}
       {loading ? (
         <div className="flex justify-center items-center py-20">
-          <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-10 h-10 border-4 border-accent-primary-light border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : filteredEvents.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
@@ -619,11 +619,11 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                       <div
                         key={ev.id}
                         onClick={() => setShowModal(ev)}
-                        className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg hover:border-pink-200 dark:hover:border-pink-800 transition cursor-pointer group"
+                        className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark transition cursor-pointer group"
                       >
                         <div className="flex items-start gap-4">
                           {/* Data */}
-                          <div className={`bg-gradient-to-br ${colorClasses[config.color] || 'from-pink-500 to-orange-500'} text-white rounded-xl p-3 text-center min-w-[70px]`}>
+                          <div className={`bg-gradient-to-br ${colorClasses[config.color] || 'from-accent-primary-light to-accent-secondary-light'} text-white rounded-xl p-3 text-center min-w-[70px]`}>
                             <div className="text-2xl font-bold">{date.getDate()}</div>
                             <div className="text-xs uppercase opacity-90">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
                           </div>
@@ -632,7 +632,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <h4 className="font-bold text-gray-800 dark:text-gray-200 text-lg">{ev.title}</h4>
-                              <span className={`px-2 py-1 text-xs rounded-full font-medium bg-gradient-to-r ${colorClasses[config.color] || 'from-pink-500 to-orange-500'} text-white`}>
+                              <span className={`px-2 py-1 text-xs rounded-full font-medium bg-gradient-to-r ${colorClasses[config.color] || 'from-accent-primary-light to-accent-secondary-light'} text-white`}>
                                 {getTypeLabel(ev.event_type)}
                               </span>
                             </div>

@@ -134,7 +134,7 @@ export default function CheckoutScreen({ session }) {
           disabled={searchValue.length !== 4 || searching}
           className={`w-full mt-4 flex items-center justify-center gap-2 px-6 py-3.5 text-base font-semibold rounded-xl transition
             ${searchValue.length === 4
-              ? 'bg-gradient-to-r from-pink-600 to-orange-600 text-white hover:shadow-lg cursor-pointer'
+              ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:shadow-lg cursor-pointer'
               : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
             }`}
         >
@@ -183,15 +183,15 @@ export default function CheckoutScreen({ session }) {
                   onClick={() => handleToggleSelect(checkin.id)}
                   className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition
                     ${isSelected
-                      ? 'bg-pink-50 dark:bg-pink-900/20 border-pink-500 dark:border-pink-400'
-                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600'
+                      ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border-accent-primary-light dark:border-accent-primary-light'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
                     }`}
                 >
                   {/* Checkbox */}
                   <div
                     className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition
                       ${isSelected
-                        ? 'bg-pink-600 border-pink-600'
+                        ? 'bg-accent-primary border-accent-primary'
                         : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600'
                       }`}
                   >

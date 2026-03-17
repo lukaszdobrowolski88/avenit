@@ -253,7 +253,7 @@ export function hasTabAccess(module, tab, userRole) {
                                     allAccess
                                       ? 'bg-gray-100 dark:bg-gray-700 text-gray-300 cursor-not-allowed'
                                       : hasRoleAccess
-                                      ? 'bg-pink-500 text-white'
+                                      ? 'bg-accent-primary-light text-white'
                                       : 'bg-gray-200 dark:bg-gray-600 text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-500'
                                   }`}
                                 >
@@ -282,7 +282,7 @@ export function hasTabAccess(module, tab, userRole) {
         </button>
         <button
           onClick={savePermissions}
-          className="px-6 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-bold"
+          className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-bold"
         >
           Zapisz uprawnienia
         </button>

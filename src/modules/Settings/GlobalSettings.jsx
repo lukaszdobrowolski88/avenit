@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import ModuleManager from './components/ModuleManager';
+import ColorPresetPicker from './components/ColorPresetPicker';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 
 // --- MODULE TABS DEFINITION ---
@@ -131,19 +132,19 @@ const DictionaryEditor = ({ category, title, items, onAdd, onDelete }) => {
   const [newItem, setNewItem] = useState('');
   return (
     <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-2xl p-6 mb-6 shadow-sm transition-colors">
-      <h3 className="font-bold text-lg text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2"><List size={20} className="text-pink-500"/> {title}</h3>
+      <h3 className="font-bold text-lg text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2"><List size={20} className="text-accent-primary-light"/> {title}</h3>
       <div className="flex gap-2 mb-4">
         <input 
-          className="flex-1 p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm outline-none focus:border-pink-500 transition" 
+          className="flex-1 p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm outline-none focus:border-accent-primary-light transition" 
           placeholder="Nowa opcja..." 
           value={newItem} 
           onChange={e => setNewItem(e.target.value)} 
         />
-        <button onClick={() => { if(newItem) { onAdd(category, newItem); setNewItem(''); } }} className="bg-pink-600 text-white px-4 rounded-xl font-bold hover:bg-pink-700"><Plus size={18}/></button>
+        <button onClick={() => { if(newItem) { onAdd(category, newItem); setNewItem(''); } }} className="bg-accent-primary text-white px-4 rounded-xl font-bold hover:bg-accent-primary"><Plus size={18}/></button>
       </div>
       <div className="flex flex-wrap gap-2">
         {items.filter(i => i.category === category).map(item => (
-          <div key={item.id} className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 group hover:border-pink-300 transition">
+          <div key={item.id} className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 group hover:border-accent-primary-light transition">
             <span className="font-medium text-gray-700 dark:text-gray-200">{item.label}</span>
             <button onClick={() => onDelete(item.id)} className="text-gray-400 hover:text-red-500 transition"><Trash2 size={14}/></button>
           </div>
@@ -906,7 +907,7 @@ export default function GlobalSettings() {
             <SectionHeader title="Identyfikacja" description="Logo i nazwa wyświetlana w aplikacji." />
             <div className="flex gap-8 items-start">
               <div className="w-48 text-center">
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl aspect-square flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-700 relative overflow-hidden group hover:border-pink-400 transition mb-2">
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl aspect-square flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-700 relative overflow-hidden group hover:border-accent-primary-light transition mb-2">
                   {logoUrl ? <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-4"/> : <ImageIcon size={40} className="text-gray-300 dark:text-gray-500"/>}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                     <button onClick={() => document.getElementById('logo-u').click()} className="bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg"><Upload size={16}/> Zmień</button>
@@ -917,8 +918,12 @@ export default function GlobalSettings() {
               </div>
               <div className="flex-1">
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Nazwa Organizacji</label>
-                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-pink-500 outline-none transition" defaultValue={appSettings.find(s=>s.key==='org_name')?.value} onBlur={async (e) => { await supabase.from('app_settings').update({value: e.target.value}).eq('key', 'org_name'); setMessage({type:'success', text:'Zapisano'}); }} />
+                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-accent-primary-light outline-none transition" defaultValue={appSettings.find(s=>s.key==='org_name')?.value} onBlur={async (e) => { await supabase.from('app_settings').update({value: e.target.value}).eq('key', 'org_name'); setMessage({type:'success', text:'Zapisano'}); }} />
               </div>
+            </div>
+
+            <div className="mt-8">
+              <ColorPresetPicker currentPreset={appSettings.find(s => s.key === 'color_preset')?.value || 'pink-orange'} />
             </div>
           </div>
         )}
@@ -982,8 +987,8 @@ export default function GlobalSettings() {
             <div className="flex justify-between items-center mb-6">
               <SectionHeader title="Użytkownicy Systemu" description="Zarządzanie dostępem, rolami i statusem kont." />
               <div className="flex items-center gap-2">
-                <button onClick={mergeDuplicateMembers} className="bg-orange-500 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition text-sm" title="Scal zduplikowanych członków w służbach"><Layers size={16}/> Scal duplikaty</button>
-                <button onClick={() => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setShowUserModal(true); }} className="bg-pink-600 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition"><Plus size={18}/> Dodaj Użytkownika</button>
+                <button onClick={mergeDuplicateMembers} className="bg-accent-secondary-light text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition text-sm" title="Scal zduplikowanych członków w służbach"><Layers size={16}/> Scal duplikaty</button>
+                <button onClick={() => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setShowUserModal(true); }} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition"><Plus size={18}/> Dodaj Użytkownika</button>
               </div>
             </div>
             <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
@@ -994,23 +999,23 @@ export default function GlobalSettings() {
                     const roleLabel = definedRoles.find(r => r.key === user.role)?.label || user.role;
                     const isSuperAdmin = user.email === 'lukasz@schwro.pl';
                     return (
-                      <tr key={user.id} className={`hover:bg-pink-50/30 dark:hover:bg-gray-600 transition text-gray-800 dark:text-gray-200 ${isSuperAdmin ? 'bg-yellow-50/30 dark:bg-yellow-900/10' : ''}`}>
+                      <tr key={user.id} className={`hover:bg-accent-primary-lightest/30 dark:hover:bg-gray-600 transition text-gray-800 dark:text-gray-200 ${isSuperAdmin ? 'bg-yellow-50/30 dark:bg-yellow-900/10' : ''}`}>
                         <td className="p-4 font-medium flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold uppercase ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold uppercase ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary dark:text-accent-primary-light'}`}>
                             {(user.full_name || user.email || '?').charAt(0)}
                           </div>
                           {user.full_name || 'Brak imienia'}
                           {isSuperAdmin && <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-0.5 rounded font-bold">SUPERADMIN</span>}
                         </td>
                         <td className="p-4 text-gray-600 dark:text-gray-400">{user.email}</td>
-                        <td className="p-4"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'}`}>{roleLabel}</span></td>
+                        <td className="p-4"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : 'bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 text-accent-secondary dark:text-accent-secondary-light'}`}>{roleLabel}</span></td>
                         <td className="p-4">
                           <button onClick={() => toggleUserStatus(user)} disabled={isSuperAdmin} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border ${user.is_active ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'} ${isSuperAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}>
                             {user.is_active ? <UserCheck size={12}/> : <UserX size={12}/>} {user.is_active ? 'Aktywny' : 'Zablokowany'}
                           </button>
                         </td>
                         <td className="p-4 text-right flex justify-end gap-2">
-                          <button onClick={() => { setUserForm({...user, password: ''}); setShowUserModal(true); }} className="text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
+                          <button onClick={() => { setUserForm({...user, password: ''}); setShowUserModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
                           <button onClick={() => deleteUser(user.id)} disabled={isSuperAdmin} className={`text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 p-2 rounded-lg ${isSuperAdmin ? 'opacity-30 cursor-not-allowed' : ''}`}><Trash2 size={16}/></button>
                         </td>
                       </tr>
@@ -1031,13 +1036,13 @@ export default function GlobalSettings() {
             <div className="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
               <button
                 onClick={() => setSelectedUserId(null)}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition ${!selectedUserId ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition ${!selectedUserId ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
               >
                 Uprawnienia Ról
               </button>
               <button
                 onClick={() => setSelectedUserId(users[0]?.id || null)}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition ${selectedUserId ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition ${selectedUserId ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
               >
                 Uprawnienia Użytkowników
               </button>
@@ -1089,7 +1094,7 @@ export default function GlobalSettings() {
                         <div className="flex items-center gap-3 flex-1">
                           <button
                             onClick={() => selectedUserId ? setExpandedUserModule(isExpanded ? null : moduleKey) : setExpandedModule(isExpanded ? null : moduleKey)}
-                            className="text-gray-400 hover:text-pink-600 dark:hover:text-pink-400 transition"
+                            className="text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light transition"
                           >
                             {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                           </button>
@@ -1109,10 +1114,10 @@ export default function GlobalSettings() {
                                   <div className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">{role.label}</div>
                                   <div className="flex gap-3">
                                     <label className="flex flex-col items-center gap-1 cursor-pointer group">
-                                      <Eye size={12} className="text-gray-400 group-hover:text-pink-500" />
+                                      <Eye size={12} className="text-gray-400 group-hover:text-accent-primary-light" />
                                       <input
                                         type="checkbox"
-                                        className="w-4 h-4 accent-pink-600 cursor-pointer"
+                                        className="w-4 h-4 accent-accent-primary cursor-pointer"
                                         checked={perm.can_read}
                                         onChange={() => togglePermission(role.key, moduleData.resourceKey, 'can_read', !perm.can_read)}
                                       />
@@ -1137,7 +1142,7 @@ export default function GlobalSettings() {
                               <span className="text-xs font-bold text-gray-500 dark:text-gray-400">Odczyt</span>
                               <input
                                 type="checkbox"
-                                className="w-5 h-5 accent-pink-600 cursor-pointer"
+                                className="w-5 h-5 accent-accent-primary cursor-pointer"
                                 checked={hasUserModuleAccess(selectedUserId, moduleKey, 'can_read')}
                                 onChange={() => toggleUserModuleAccess(selectedUserId, moduleKey, 'can_read')}
                               />
@@ -1212,7 +1217,7 @@ export default function GlobalSettings() {
                                                 allAccess
                                                   ? 'bg-gray-100 dark:bg-gray-700 text-gray-300 cursor-not-allowed'
                                                   : hasRoleAccess
-                                                  ? 'bg-pink-500 text-white'
+                                                  ? 'bg-accent-primary-light text-white'
                                                   : 'bg-gray-200 dark:bg-gray-600 text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-500'
                                               }`}
                                             >
@@ -1238,17 +1243,17 @@ export default function GlobalSettings() {
                                   key={tabKey}
                                   className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition ${
                                     hasAccess
-                                      ? 'bg-pink-50 dark:bg-pink-900/20 border-pink-300 dark:border-pink-700'
-                                      : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-pink-200 dark:hover:border-pink-800'
+                                      ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border-accent-primary-light dark:border-accent-primary'
+                                      : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark'
                                   }`}
                                 >
                                   <input
                                     type="checkbox"
-                                    className="w-4 h-4 accent-pink-600 cursor-pointer"
+                                    className="w-4 h-4 accent-accent-primary cursor-pointer"
                                     checked={hasAccess}
                                     onChange={() => toggleUserTabAccess(selectedUserId, moduleKey, tabKey)}
                                   />
-                                  <span className={`text-sm font-medium ${hasAccess ? 'text-pink-700 dark:text-pink-300' : 'text-gray-700 dark:text-gray-300'}`}>
+                                  <span className={`text-sm font-medium ${hasAccess ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-700 dark:text-gray-300'}`}>
                                     {tabLabel}
                                   </span>
                                 </label>
@@ -1278,7 +1283,7 @@ export default function GlobalSettings() {
               )}
               <button
                 onClick={selectedUserId ? saveUserPermissions : saveTabPermissions}
-                className="px-6 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-bold"
+                className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-bold"
               >
                 Zapisz wszystkie uprawnienia
               </button>
@@ -1356,7 +1361,7 @@ export default function GlobalSettings() {
                             }}
                             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
                               isSelected
-                                ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
+                                ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
                                 : 'bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
                             }`}
                           >
@@ -1398,7 +1403,7 @@ export default function GlobalSettings() {
                   </div>
                 </div>
               )}
-              <button onClick={saveUser} disabled={isCreatingAuthUser} className="w-full py-3 bg-pink-600 text-white rounded-xl font-bold mt-2 hover:bg-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+              <button onClick={saveUser} disabled={isCreatingAuthUser} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-2 hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed">
                 {isCreatingAuthUser ? 'Tworzenie konta...' : 'Zapisz'}
               </button>
             </div>

@@ -291,7 +291,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pink-600"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent-primary"></div>
       </div>
     );
   }
@@ -300,17 +300,17 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
     <div className="flex flex-col h-[calc(100vh-280px)] min-h-[500px]">
       {/* Pinned messages */}
       {pinnedPosts.length > 0 && (
-        <div className="bg-pink-50 dark:bg-pink-900/20 border-b border-pink-200 dark:border-pink-800 p-3">
-          <div className="flex items-center gap-2 text-pink-600 dark:text-pink-400 text-xs font-bold uppercase mb-2">
+        <div className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border-b border-accent-primary-lighter dark:border-accent-primary-dark p-3">
+          <div className="flex items-center gap-2 text-accent-primary dark:text-accent-primary-light text-xs font-bold uppercase mb-2">
             <Pin size={12} /> Przypiete wiadomosci
           </div>
           <div className="space-y-2">
             {pinnedPosts.map(post => (
-              <div key={post.id} className="bg-white dark:bg-gray-800 rounded-lg p-3 text-sm border border-pink-200 dark:border-pink-800">
+              <div key={post.id} className="bg-white dark:bg-gray-800 rounded-lg p-3 text-sm border border-accent-primary-lighter dark:border-accent-primary-dark">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-800 dark:text-gray-200">{getUserDisplayName(post)}</span>
                   {post.author_email === currentUserEmail && (
-                    <button onClick={() => togglePin(post)} className="text-pink-500 hover:text-pink-700 p-1">
+                    <button onClick={() => togglePin(post)} className="text-accent-primary-light hover:text-accent-primary p-1">
                       <Pin size={14} />
                     </button>
                   )}
@@ -365,7 +365,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
                         ) : (
                           <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm ${
                             isOwn
-                              ? 'bg-gradient-to-br from-pink-500 to-orange-500'
+                              ? 'bg-gradient-to-br from-accent-primary-light to-accent-secondary-light'
                               : 'bg-gradient-to-br from-blue-500 to-purple-500'
                           }`}>
                             {(getUserDisplayName(post) || 'U').charAt(0).toUpperCase()}
@@ -388,7 +388,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
 
                         <div className={`relative rounded-2xl px-4 py-2.5 ${
                           isOwn
-                            ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-tr-sm'
+                            ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-tr-sm'
                             : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-tl-sm'
                         }`}>
                           {/* Reply quote */}
@@ -396,11 +396,11 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
                             <div className={`mb-2 p-2 rounded-lg border-l-2 ${
                               isOwn
                                 ? 'bg-white/10 border-white/50'
-                                : 'bg-gray-100 dark:bg-gray-700 border-pink-400'
+                                : 'bg-gray-100 dark:bg-gray-700 border-accent-primary-light'
                             }`}>
                               <div className="flex items-center gap-1 mb-0.5">
                                 <CornerDownRight size={10} className={isOwn ? 'text-white/70' : 'text-gray-400'} />
-                                <span className={`text-[10px] font-bold ${isOwn ? 'text-white/80' : 'text-pink-500'}`}>
+                                <span className={`text-[10px] font-bold ${isOwn ? 'text-white/80' : 'text-accent-primary-light'}`}>
                                   {post.reply_to.author}
                                 </span>
                               </div>
@@ -488,8 +488,8 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
                               onClick={() => toggleLike(post)}
                               className={`p-1 rounded-full transition ${
                                 hasLiked
-                                  ? 'bg-pink-100 dark:bg-pink-900/50 text-pink-500'
-                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-pink-500'
+                                  ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary-light'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-accent-primary-light'
                               }`}
                             >
                               <Heart size={12} fill={hasLiked ? 'currentColor' : 'none'} />
@@ -503,8 +503,8 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
                                   onClick={() => togglePin(post)}
                                   className={`p-1 rounded-full transition ${
                                     post.pinned
-                                      ? 'bg-pink-100 dark:bg-pink-900/50 text-pink-500'
-                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-pink-500'
+                                      ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary-light'
+                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-accent-primary-light'
                                   }`}
                                 >
                                   <Pin size={12} />
@@ -642,7 +642,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
             <button
               onClick={() => imageInputRef.current?.click()}
               disabled={uploading}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-100 dark:hover:bg-pink-900/30 hover:text-pink-500 transition"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 hover:text-accent-primary-light transition"
               title="Dodaj zdjecie"
             >
               <Image size={20} />
@@ -658,7 +658,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-100 dark:hover:bg-pink-900/30 hover:text-pink-500 transition"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 hover:text-accent-primary-light transition"
               title="Dodaj plik"
             >
               <Paperclip size={20} />
@@ -669,7 +669,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
               className={`w-10 h-10 flex items-center justify-center rounded-xl transition ${
                 showLinkInput
                   ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-500'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-pink-100 dark:hover:bg-pink-900/30 hover:text-pink-500'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 hover:text-accent-primary-light'
               }`}
               title="Dodaj link"
             >
@@ -691,7 +691,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
                 }
               }}
               placeholder="Napisz wiadomosc..."
-              className="w-full h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition text-sm"
+              className="w-full h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:border-accent-primary-light focus:ring-2 focus:ring-accent-primary-light/20 transition text-sm"
             />
           </div>
 
@@ -699,7 +699,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
           <button
             onClick={sendMessage}
             disabled={!message.trim() && attachments.length === 0}
-            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-lg hover:shadow-pink-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition transform hover:scale-105 active:scale-95"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg hover:shadow-accent-primary-light/30 disabled:opacity-50 disabled:cursor-not-allowed transition transform hover:scale-105 active:scale-95"
           >
             <Send size={18} />
           </button>
@@ -707,7 +707,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
 
         {uploading && (
           <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-pink-500"></div>
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-accent-primary-light"></div>
             Przesylanie...
           </div>
         )}

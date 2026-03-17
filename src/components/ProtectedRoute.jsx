@@ -11,7 +11,7 @@ export default function ProtectedRoute({ children, resource }) {
   if (roleLoading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary"></div>
       </div>
     );
   }

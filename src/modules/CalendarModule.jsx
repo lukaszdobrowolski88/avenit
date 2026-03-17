@@ -111,8 +111,8 @@ const CustomDatePicker = ({ value, onChange }) => {
 
   return (
     <div className="relative w-full">
-      <div ref={triggerRef} onClick={() => setIsOpen(!isOpen)} className="w-full h-[42px] px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center gap-2 cursor-pointer hover:border-pink-400 transition">
-        <CalIcon size={16} className="text-pink-600 dark:text-pink-400" />
+      <div ref={triggerRef} onClick={() => setIsOpen(!isOpen)} className="w-full h-[42px] px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center gap-2 cursor-pointer hover:border-accent-primary-light transition">
+        <CalIcon size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
           {value ? new Date(value).toLocaleDateString('pl-PL') : 'Wybierz datę'}
         </span>
@@ -130,7 +130,7 @@ const CustomDatePicker = ({ value, onChange }) => {
              {daysArray.map(d => {
                const dateStr = `${viewDate.getFullYear()}-${String(viewDate.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                return (
-                 <button key={d} onClick={(e) => { e.stopPropagation(); handleDayClick(d); }} className={`h-8 w-8 rounded-lg text-xs font-medium transition ${value === dateStr ? 'bg-pink-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+                 <button key={d} onClick={(e) => { e.stopPropagation(); handleDayClick(d); }} className={`h-8 w-8 rounded-lg text-xs font-medium transition ${value === dateStr ? 'bg-accent-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
                    {d}
                  </button>
                )
@@ -150,7 +150,7 @@ const CustomTimePicker = ({ value, onChange, placeholder = 'Wybierz' }) => {
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-[42px] px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-200 font-medium hover:border-pink-400 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 outline-none transition cursor-pointer"
+        className="w-full h-[42px] px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-200 font-medium hover:border-accent-primary-light focus:border-accent-primary-light focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition cursor-pointer"
       />
     </div>
   );
@@ -176,7 +176,7 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
         </button>
 
         <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
-          <Plus size={24} className="text-pink-600" /> Co chcesz dodać?
+          <Plus size={24} className="text-accent-primary" /> Co chcesz dodać?
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
           {date ? new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Wybierz typ'}
@@ -185,9 +185,9 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
         <div className="grid grid-cols-2 gap-4">
           <button
             onClick={onSelectEvent}
-            className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 border-2 border-pink-200 dark:border-pink-800 rounded-2xl hover:border-pink-400 dark:hover:border-pink-600 hover:shadow-lg transition group"
+            className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border-2 border-accent-primary-lighter dark:border-accent-primary-dark rounded-2xl hover:border-accent-primary-light dark:hover:border-accent-primary hover:shadow-lg transition group"
           >
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-pink-500/30 group-hover:scale-110 transition">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white shadow-lg shadow-accent-primary-light/30 group-hover:scale-110 transition">
               <CalendarPlus size={28} />
             </div>
             <div className="text-center">
@@ -219,11 +219,11 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
 // Lista służb do wyboru przy dodawaniu wydarzenia
 const MINISTRY_CALENDARS = [
   { key: 'worship', icon: '🎵', title: 'Zespół Uwielbienia', color: 'from-purple-500 to-indigo-500', description: 'Próby, koncerty, nabożeństwa' },
-  { key: 'media', icon: '🎬', title: 'Media Team', color: 'from-orange-500 to-red-500', description: 'Produkcje, streaming, szkolenia' },
+  { key: 'media', icon: '🎬', title: 'Media Team', color: 'from-accent-secondary-light to-red-500', description: 'Produkcje, streaming, szkolenia' },
   { key: 'atmosfera', icon: '💚', title: 'Atmosfera Team', color: 'from-teal-500 to-green-500', description: 'Spotkania, integracje' },
   { key: 'kids', icon: '👶', title: 'Małe SchWro', color: 'from-yellow-500 to-amber-500', description: 'Zajęcia, warsztaty, wycieczki' },
   { key: 'homegroups', icon: '🏠', title: 'Grupy Domowe', color: 'from-blue-500 to-cyan-500', description: 'Spotkania grupowe' },
-  { key: 'mlodziezowka', icon: '🎉', title: 'Młodzieżówka', color: 'from-pink-500 to-rose-500', description: 'Wydarzenia młodzieżowe' }
+  { key: 'mlodziezowka', icon: '🎉', title: 'Młodzieżówka', color: 'from-accent-primary-light to-rose-500', description: 'Wydarzenia młodzieżowe' }
 ];
 
 const ModalSelectEventCategory = ({ date, categories, onClose, onSelectCategory, onSelectMinistry }) => {
@@ -236,7 +236,7 @@ const ModalSelectEventCategory = ({ date, categories, onClose, onSelectCategory,
         </button>
 
         <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
-          <CalendarPlus size={24} className="text-pink-600" /> Wybierz kalendarz
+          <CalendarPlus size={24} className="text-accent-primary" /> Wybierz kalendarz
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
           {date ? new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}
@@ -246,9 +246,9 @@ const ModalSelectEventCategory = ({ date, categories, onClose, onSelectCategory,
           {/* Nabożeństwo - zawsze na górze */}
           <button
             onClick={() => onSelectCategory('nabożeństwo')}
-            className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 border-2 border-pink-200 dark:border-pink-800 rounded-xl hover:border-pink-400 dark:hover:border-pink-600 hover:shadow-md transition group"
+            className="w-full flex items-center gap-4 p-4 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border-2 border-accent-primary-lighter dark:border-accent-primary-dark rounded-xl hover:border-accent-primary-light dark:hover:border-accent-primary hover:shadow-md transition group"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-pink-500/30 group-hover:scale-105 transition">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white shadow-lg shadow-accent-primary-light/30 group-hover:scale-105 transition">
               <Music size={24} />
             </div>
             <div className="text-left flex-1">
@@ -262,7 +262,7 @@ const ModalSelectEventCategory = ({ date, categories, onClose, onSelectCategory,
             <button
               key={ministry.key}
               onClick={() => onSelectMinistry(ministry.key)}
-              className="w-full flex items-center gap-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-pink-300 dark:hover:border-pink-600 hover:bg-pink-50/50 dark:hover:bg-pink-900/10 transition group"
+              className="w-full flex items-center gap-4 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-accent-primary-light dark:hover:border-accent-primary hover:bg-accent-primary-lightest/50 dark:hover:bg-accent-primary-darkest/10 transition group"
             >
               <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${ministry.color} flex items-center justify-center text-white shadow-lg group-hover:scale-105 transition text-2xl`}>
                 {ministry.icon}
@@ -343,11 +343,11 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
         </button>
 
         <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2">
-          <CalendarPlus size={24} className="text-pink-600" />
+          <CalendarPlus size={24} className="text-accent-primary" />
           {event.id ? 'Edytuj Wydarzenie' : 'Nowe Wydarzenie'}
         </h2>
         <div className="mb-6">
-          <span className="inline-block px-3 py-1 bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 text-xs font-bold rounded-full">
+          <span className="inline-block px-3 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light text-xs font-bold rounded-full">
             {event.category || category}
           </span>
         </div>
@@ -357,7 +357,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tytuł</label>
             <input
               autoFocus
-              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-pink-500/20 outline-none"
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
               value={event.title}
               onChange={e => setEvent({...event, title: e.target.value})}
               placeholder="Nazwa wydarzenia"
@@ -421,7 +421,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
 
           <div className="flex gap-2">
             <button onClick={onClose} className="px-4 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">Anuluj</button>
-            <button onClick={handleSubmit} className="px-4 py-2 bg-gradient-to-r from-pink-600 to-orange-600 text-white font-bold rounded-xl hover:shadow-lg shadow-pink-500/30 flex items-center gap-2 transition">
+            <button onClick={handleSubmit} className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg shadow-accent-primary-light/30 flex items-center gap-2 transition">
               <Save size={16} /> Zapisz
             </button>
           </div>
@@ -543,8 +543,8 @@ const EventBadge = ({ event, onClick }) => {
   const teamConfig = TEAMS[event.team] || TEAMS.media;
   const colors = {
     blue: "bg-blue-100 text-blue-700 border-blue-200",
-    orange: "bg-orange-100 text-orange-700 border-orange-200",
-    pink: "bg-pink-100 text-pink-700 border-pink-200",
+    orange: "bg-accent-secondary-lighter text-accent-secondary border-accent-secondary-lighter",
+    pink: "bg-accent-primary-lighter text-accent-primary border-accent-primary-lighter",
     purple: "bg-purple-100 text-purple-700 border-purple-200",
     yellow: "bg-yellow-100 text-yellow-700 border-yellow-200",
     teal: "bg-teal-100 text-teal-700 border-teal-200",
@@ -757,7 +757,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry }) => {
             ) : <div></div>}
             <div className="flex gap-3">
               <button onClick={onClose} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Anuluj</button>
-              <button onClick={handleSubmit} className="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl hover:shadow-lg hover:shadow-pink-500/50 transition font-medium flex items-center gap-2">
+              <button onClick={handleSubmit} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium flex items-center gap-2">
                 <Save size={16} /> Zapisz
               </button>
             </div>
@@ -1468,7 +1468,7 @@ export default function CalendarModule() {
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {selectedDate.toLocaleDateString('pl-PL', { month: 'long' })}
-                <span className="text-pink-500 ml-2">{selectedDate.getFullYear()}</span>
+                <span className="text-accent-primary-light ml-2">{selectedDate.getFullYear()}</span>
               </h2>
             </div>
             <div className="flex items-center gap-2">
@@ -1483,7 +1483,7 @@ export default function CalendarModule() {
                   const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
                   handleAddClick(dateStr);
                 }}
-                className="p-2 bg-pink-500 rounded-xl text-white shadow-lg shadow-pink-500/30"
+                className="p-2 bg-accent-primary-light rounded-xl text-white shadow-lg shadow-accent-primary-light/30"
               >
                 <Plus size={18} />
               </button>
@@ -1502,7 +1502,7 @@ export default function CalendarModule() {
                 onClick={() => setMobileViewMode(v.id)}
                 className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition ${
                   mobileViewMode === v.id
-                    ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm'
+                    ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm'
                     : 'text-gray-500 dark:text-gray-400'
                 }`}
               >
@@ -1546,20 +1546,20 @@ export default function CalendarModule() {
                     }}
                     className={`flex flex-col items-center py-2 px-2.5 rounded-2xl transition min-w-[40px] ${
                       isSelected
-                        ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
+                        ? 'bg-accent-primary-light text-white shadow-lg shadow-accent-primary-light/30'
                         : isToday
-                          ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+                          ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                           : 'text-gray-600 dark:text-gray-400'
                     }`}
                   >
-                    <span className={`text-[10px] font-medium uppercase ${isSelected ? 'text-pink-100' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span className={`text-[10px] font-medium uppercase ${isSelected ? 'text-accent-primary-lighter' : 'text-gray-400 dark:text-gray-500'}`}>
                       {d.toLocaleDateString('pl-PL', { weekday: 'short' }).slice(0, 2)}
                     </span>
                     <span className={`text-lg font-bold ${isSelected ? '' : ''}`}>
                       {d.getDate()}
                     </span>
                     {hasEvents && !isSelected && (
-                      <div className="w-1 h-1 rounded-full bg-pink-500 mt-0.5" />
+                      <div className="w-1 h-1 rounded-full bg-accent-primary-light mt-0.5" />
                     )}
                   </button>
                 );
@@ -1606,8 +1606,8 @@ export default function CalendarModule() {
                       const pos = getEventPosition(ev);
                       const teamColor = TEAMS[ev.team]?.color || 'gray';
                       const colorClasses = {
-                        pink: 'bg-pink-50 dark:bg-pink-900/20 border-l-pink-500 text-pink-900 dark:text-pink-100',
-                        orange: 'bg-orange-50 dark:bg-orange-900/20 border-l-orange-500 text-orange-900 dark:text-orange-100',
+                        pink: 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border-l-accent-primary-light text-accent-primary-darkest dark:text-accent-primary-lighter',
+                        orange: 'bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/20 border-l-accent-secondary-light text-accent-secondary-darkest dark:text-accent-secondary-lighter',
                         purple: 'bg-purple-50 dark:bg-purple-900/20 border-l-purple-500 text-purple-900 dark:text-purple-100',
                         teal: 'bg-teal-50 dark:bg-teal-900/20 border-l-teal-500 text-teal-900 dark:text-teal-100',
                         blue: 'bg-blue-50 dark:bg-blue-900/20 border-l-blue-500 text-blue-900 dark:text-blue-100',
@@ -1665,7 +1665,7 @@ export default function CalendarModule() {
                   const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
                   handleAddClick(dateStr);
                 }}
-                className="mt-3 text-pink-500 text-sm font-medium flex items-center gap-1"
+                className="mt-3 text-accent-primary-light text-sm font-medium flex items-center gap-1"
               >
                 <Plus size={16} /> Dodaj wydarzenie
               </button>
@@ -1679,7 +1679,7 @@ export default function CalendarModule() {
             const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
             handleAddClick(dateStr);
           }}
-          className="absolute bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-pink-500 to-orange-500 rounded-2xl shadow-lg shadow-pink-500/40 flex items-center justify-center text-white hover:shadow-xl transition transform hover:scale-105"
+          className="absolute bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-2xl shadow-lg shadow-accent-primary-light/40 flex items-center justify-center text-white hover:shadow-xl transition transform hover:scale-105"
         >
           <Plus size={24} />
         </button>
@@ -1738,14 +1738,14 @@ export default function CalendarModule() {
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 {selectedDate.toLocaleDateString('pl-PL', { month: 'long' })}
-                <span className="text-pink-500 ml-2">{selectedDate.getFullYear()}</span>
+                <span className="text-accent-primary-light ml-2">{selectedDate.getFullYear()}</span>
               </h2>
             </div>
             <div className="flex items-center gap-2">
               {/* Search button - rozwijalna lupka */}
               <button
                 onClick={() => { setMobileSearchExpanded(true); setTimeout(() => mobileSearchRef.current?.focus(), 100); }}
-                className={`p-2 rounded-xl transition ${searchQuery ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}
+                className={`p-2 rounded-xl transition ${searchQuery ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}
               >
                 <Search size={18} />
               </button>
@@ -1769,7 +1769,7 @@ export default function CalendarModule() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onBlur={() => { if (!searchQuery) setMobileSearchExpanded(false); }}
                 placeholder="Szukaj wydarzeń..."
-                className="w-full pl-9 pr-9 py-2.5 bg-gray-100 dark:bg-gray-800 border border-pink-400 dark:border-pink-500 rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none transition"
+                className="w-full pl-9 pr-9 py-2.5 bg-gray-100 dark:bg-gray-800 border border-accent-primary-light dark:border-accent-primary-light rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none transition"
               />
               <button
                 onClick={() => { setSearchQuery(''); setMobileSearchExpanded(false); }}
@@ -1780,7 +1780,7 @@ export default function CalendarModule() {
             </div>
           )}
           {searchQuery && !mobileSearchExpanded && (
-            <p className="text-xs text-pink-600 dark:text-pink-400 font-medium mb-2">
+            <p className="text-xs text-accent-primary dark:text-accent-primary-light font-medium mb-2">
               Znaleziono {filteredEvents.length} wydarzeń
             </p>
           )}
@@ -1797,7 +1797,7 @@ export default function CalendarModule() {
                 onClick={() => setMobileViewMode(v.id)}
                 className={`flex-1 py-2 px-2 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 ${
                   mobileViewMode === v.id
-                    ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm'
+                    ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm'
                     : 'text-gray-500 dark:text-gray-400'
                 }`}
               >
@@ -1844,20 +1844,20 @@ export default function CalendarModule() {
                     }}
                     className={`flex flex-col items-center py-1.5 rounded-xl transition ${
                       isSelected
-                        ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/30'
+                        ? 'bg-accent-primary-light text-white shadow-lg shadow-accent-primary-light/30'
                         : isToday
-                          ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+                          ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                     }`}
                   >
-                    <span className={`text-[9px] font-medium uppercase ${isSelected ? 'text-pink-200' : 'text-gray-400 dark:text-gray-500'}`}>
+                    <span className={`text-[9px] font-medium uppercase ${isSelected ? 'text-accent-primary-lighter' : 'text-gray-400 dark:text-gray-500'}`}>
                       {d.toLocaleDateString('pl-PL', { weekday: 'short' }).slice(0, 2)}
                     </span>
                     <span className="text-base font-bold">
                       {d.getDate()}
                     </span>
                     {hasEvents && !isSelected && (
-                      <div className="w-1 h-1 rounded-full bg-pink-500 mt-0.5" />
+                      <div className="w-1 h-1 rounded-full bg-accent-primary-light mt-0.5" />
                     )}
                   </button>
                 );
@@ -1894,8 +1894,8 @@ export default function CalendarModule() {
                   {dayEvents.map(ev => {
                     const teamColor = TEAMS[ev.team]?.color || 'gray';
                     const colorClasses = {
-                      pink: 'bg-gradient-to-r from-pink-50 to-pink-100/50 dark:from-pink-900/30 dark:to-pink-900/10 border-l-pink-500',
-                      orange: 'bg-gradient-to-r from-orange-50 to-orange-100/50 dark:from-orange-900/30 dark:to-orange-900/10 border-l-orange-500',
+                      pink: 'bg-gradient-to-r from-accent-primary-lightest to-accent-primary-lighter/50 dark:from-accent-primary-darkest/30 dark:to-accent-primary-darkest/10 border-l-accent-primary-light',
+                      orange: 'bg-gradient-to-r from-accent-secondary-lightest to-accent-secondary-lighter/50 dark:from-accent-secondary-darkest/30 dark:to-accent-secondary-darkest/10 border-l-accent-secondary-light',
                       purple: 'bg-gradient-to-r from-purple-50 to-purple-100/50 dark:from-purple-900/30 dark:to-purple-900/10 border-l-purple-500',
                       teal: 'bg-gradient-to-r from-teal-50 to-teal-100/50 dark:from-teal-900/30 dark:to-teal-900/10 border-l-teal-500',
                       blue: 'bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-900/10 border-l-blue-500',
@@ -1943,7 +1943,7 @@ export default function CalendarModule() {
                       const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
                       handleAddClick(dateStr);
                     }}
-                    className="text-pink-500 text-sm font-medium flex items-center gap-1 pointer-events-auto"
+                    className="text-accent-primary-light text-sm font-medium flex items-center gap-1 pointer-events-auto"
                   >
                     <Plus size={16} /> Dodaj wydarzenie
                   </button>
@@ -1973,9 +1973,9 @@ export default function CalendarModule() {
                     key={d.toString()}
                     className={`p-3 rounded-xl border transition ${
                       isSelected
-                        ? 'border-pink-300 dark:border-pink-700 bg-pink-50/50 dark:bg-pink-900/20'
+                        ? 'border-accent-primary-light dark:border-accent-primary bg-accent-primary-lightest/50 dark:bg-accent-primary-darkest/20'
                         : isToday
-                          ? 'border-pink-200 dark:border-pink-800 bg-pink-50/30 dark:bg-pink-900/10'
+                          ? 'border-accent-primary-lighter dark:border-accent-primary-dark bg-accent-primary-lightest/30 dark:bg-accent-primary-darkest/10'
                           : 'border-gray-200 dark:border-gray-700'
                     }`}
                     onClick={() => {
@@ -1986,9 +1986,9 @@ export default function CalendarModule() {
                     <div className="flex items-center gap-3 mb-2">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
                         isSelected
-                          ? 'bg-pink-500 text-white'
+                          ? 'bg-accent-primary-light text-white'
                           : isToday
-                            ? 'bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-400'
+                            ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary dark:text-accent-primary-light'
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                       }`}>
                         {d.getDate()}
@@ -2002,7 +2002,7 @@ export default function CalendarModule() {
                         </div>
                       </div>
                       {dayEventsForWeek.length > 0 && (
-                        <span className="px-2 py-0.5 bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 text-xs font-medium rounded-full">
+                        <span className="px-2 py-0.5 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light text-xs font-medium rounded-full">
                           {dayEventsForWeek.length}
                         </span>
                       )}
@@ -2018,8 +2018,8 @@ export default function CalendarModule() {
                               className="flex items-center gap-2 p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700"
                             >
                               <div className={`w-1 h-8 rounded-full flex-shrink-0 ${
-                                teamColor === 'pink' ? 'bg-pink-500' :
-                                teamColor === 'orange' ? 'bg-orange-500' :
+                                teamColor === 'pink' ? 'bg-accent-primary-light' :
+                                teamColor === 'orange' ? 'bg-accent-secondary-light' :
                                 teamColor === 'purple' ? 'bg-purple-500' :
                                 teamColor === 'teal' ? 'bg-teal-500' :
                                 teamColor === 'blue' ? 'bg-blue-500' :
@@ -2058,8 +2058,8 @@ export default function CalendarModule() {
                           className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl cursor-pointer active:scale-[0.98] transition"
                         >
                           <div className={`w-1 h-10 rounded-full flex-shrink-0 ${
-                            teamColor === 'pink' ? 'bg-pink-500' :
-                            teamColor === 'orange' ? 'bg-orange-500' :
+                            teamColor === 'pink' ? 'bg-accent-primary-light' :
+                            teamColor === 'orange' ? 'bg-accent-secondary-light' :
                             teamColor === 'purple' ? 'bg-purple-500' :
                             teamColor === 'teal' ? 'bg-teal-500' :
                             teamColor === 'blue' ? 'bg-blue-500' :
@@ -2120,9 +2120,9 @@ export default function CalendarModule() {
                       }}
                       className={`aspect-square rounded-xl flex flex-col items-center justify-center relative transition ${
                         isSelected
-                          ? 'bg-pink-500 text-white'
+                          ? 'bg-accent-primary-light text-white'
                           : isToday
-                            ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+                            ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}
                     >
@@ -2136,8 +2136,8 @@ export default function CalendarModule() {
                                 key={idx}
                                 className={`w-1 h-1 rounded-full ${
                                   isSelected ? 'bg-white/70' :
-                                  color === 'pink' ? 'bg-pink-500' :
-                                  color === 'orange' ? 'bg-orange-500' :
+                                  color === 'pink' ? 'bg-accent-primary-light' :
+                                  color === 'orange' ? 'bg-accent-secondary-light' :
                                   color === 'purple' ? 'bg-purple-500' : 'bg-gray-400'
                                 }`}
                               />
@@ -2174,8 +2174,8 @@ export default function CalendarModule() {
                           className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl cursor-pointer active:scale-[0.98] transition"
                         >
                           <div className={`w-1 h-10 rounded-full flex-shrink-0 ${
-                            teamColor === 'pink' ? 'bg-pink-500' :
-                            teamColor === 'orange' ? 'bg-orange-500' :
+                            teamColor === 'pink' ? 'bg-accent-primary-light' :
+                            teamColor === 'orange' ? 'bg-accent-secondary-light' :
                             teamColor === 'purple' ? 'bg-purple-500' :
                             teamColor === 'teal' ? 'bg-teal-500' :
                             teamColor === 'blue' ? 'bg-blue-500' :
@@ -2208,7 +2208,7 @@ export default function CalendarModule() {
             const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
             handleAddClick(dateStr);
           }}
-          className="absolute bottom-4 right-4 w-12 h-12 bg-gradient-to-br from-pink-500 to-orange-500 rounded-xl shadow-lg shadow-pink-500/40 flex items-center justify-center text-white active:scale-95 transition"
+          className="absolute bottom-4 right-4 w-12 h-12 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-xl shadow-lg shadow-accent-primary-light/40 flex items-center justify-center text-white active:scale-95 transition"
         >
           <Plus size={22} />
         </button>
@@ -2246,7 +2246,7 @@ export default function CalendarModule() {
             return (
               <div key={d} className="bg-white dark:bg-gray-900 min-h-[60px] lg:min-h-[100px] p-1 lg:p-2 relative group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
                 <div className="flex justify-between items-center mb-0.5 lg:mb-1">
-                  <span className={`text-xs lg:text-sm font-bold w-5 h-5 lg:w-7 lg:h-7 flex items-center justify-center rounded-full ${d === new Date().getDate() && currentDate.getMonth() === new Date().getMonth() ? 'bg-pink-600 text-white' : 'text-gray-700 dark:text-gray-300'}`}>{d}</span>
+                  <span className={`text-xs lg:text-sm font-bold w-5 h-5 lg:w-7 lg:h-7 flex items-center justify-center rounded-full ${d === new Date().getDate() && currentDate.getMonth() === new Date().getMonth() ? 'bg-accent-primary text-white' : 'text-gray-700 dark:text-gray-300'}`}>{d}</span>
                   <button onClick={() => handleAddClick(dateStr)} className="opacity-0 group-hover:opacity-100 p-0.5 lg:p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-gray-400"><Plus size={12} /></button>
                 </div>
                 <div className="space-y-0.5 lg:space-y-1 overflow-y-auto max-h-[40px] lg:max-h-[100px] custom-scrollbar">
@@ -2288,7 +2288,7 @@ export default function CalendarModule() {
             {weekDays.map(d => (
               <div key={d.toString()} className="py-3 text-center border-r border-gray-100 dark:border-gray-700/50 last:border-0">
                 <div className="text-xs text-gray-500 uppercase mb-1">{d.toLocaleDateString('pl-PL', {weekday: 'short'})}</div>
-                <div className={`text-lg font-bold w-8 h-8 rounded-full flex items-center justify-center mx-auto ${d.getDate() === new Date().getDate() && d.getMonth() === new Date().getMonth() ? 'bg-pink-600 text-white' : 'text-gray-800 dark:text-white'}`}>
+                <div className={`text-lg font-bold w-8 h-8 rounded-full flex items-center justify-center mx-auto ${d.getDate() === new Date().getDate() && d.getMonth() === new Date().getMonth() ? 'bg-accent-primary text-white' : 'text-gray-800 dark:text-white'}`}>
                   {d.getDate()}
                 </div>
               </div>
@@ -2301,7 +2301,7 @@ export default function CalendarModule() {
               return (
                 <div key={d.toString()} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition min-h-[200px]">
                   {dayEvents.map(ev => <EventBadge key={ev.id} event={ev} onClick={() => handleEventClick(ev)} />)}
-                  <button onClick={() => handleAddClick(dateStr)} className="w-full mt-2 py-2 text-xs text-gray-300 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/20 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg transition flex items-center justify-center gap-1"><Plus size={12}/> Dodaj</button>
+                  <button onClick={() => handleAddClick(dateStr)} className="w-full mt-2 py-2 text-xs text-gray-300 hover:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg transition flex items-center justify-center gap-1"><Plus size={12}/> Dodaj</button>
                 </div>
               )
             })}
@@ -2315,16 +2315,16 @@ export default function CalendarModule() {
             const dayEvents = filteredEvents.filter(e => e.date.getDate() === d.getDate() && e.date.getMonth() === d.getMonth());
             const isToday = d.getDate() === new Date().getDate() && d.getMonth() === new Date().getMonth();
             return (
-              <div key={d.toString()} className={`p-3 rounded-xl border ${isToday ? 'border-pink-300 dark:border-pink-700 bg-pink-50/50 dark:bg-pink-900/20' : 'border-gray-200 dark:border-gray-700'}`}>
+              <div key={d.toString()} className={`p-3 rounded-xl border ${isToday ? 'border-accent-primary-light dark:border-accent-primary bg-accent-primary-lightest/50 dark:bg-accent-primary-darkest/20' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${isToday ? 'bg-pink-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${isToday ? 'bg-accent-primary text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
                     {d.getDate()}
                   </div>
                   <div>
                     <div className="font-medium text-gray-800 dark:text-white">{d.toLocaleDateString('pl-PL', {weekday: 'long'})}</div>
                     <div className="text-xs text-gray-500">{d.toLocaleDateString('pl-PL', {day: 'numeric', month: 'long'})}</div>
                   </div>
-                  <button onClick={() => handleAddClick(dateStr)} className="ml-auto p-2 text-gray-400 hover:text-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-lg transition">
+                  <button onClick={() => handleAddClick(dateStr)} className="ml-auto p-2 text-gray-400 hover:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition">
                     <Plus size={18} />
                   </button>
                 </div>
@@ -2392,7 +2392,7 @@ export default function CalendarModule() {
                         <div
                             key={ev.id}
                             onClick={() => handleEventClick(ev)}
-                            className={`absolute left-1 lg:left-2 right-1 lg:right-2 rounded-lg lg:rounded-xl p-2 lg:p-3 shadow-sm border cursor-pointer hover:shadow-md transition z-10 ${ev.team === 'program' ? 'bg-pink-50 border-pink-200 text-pink-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}
+                            className={`absolute left-1 lg:left-2 right-1 lg:right-2 rounded-lg lg:rounded-xl p-2 lg:p-3 shadow-sm border cursor-pointer hover:shadow-md transition z-10 ${ev.team === 'program' ? 'bg-accent-primary-lightest border-accent-primary-lighter text-accent-primary-dark' : 'bg-blue-50 border-blue-200 text-blue-800'}`}
                             style={{ top: `${top}px`, height: isDesktop ? '70px' : '55px' }}
                         >
                             <div className="flex items-center gap-1 lg:gap-2 text-[10px] lg:text-xs font-bold opacity-70 mb-0.5 lg:mb-1">
@@ -2431,9 +2431,9 @@ export default function CalendarModule() {
                              <div className="text-lg lg:text-xl font-bold text-gray-800 dark:text-white">{ev.date.getDate()}</div>
                          </div>
                          <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
-                           TEAMS[ev.team]?.color === 'pink' ? 'bg-pink-500' :
+                           TEAMS[ev.team]?.color === 'pink' ? 'bg-accent-primary-light' :
                            TEAMS[ev.team]?.color === 'rose' ? 'bg-rose-500' :
-                           TEAMS[ev.team]?.color === 'orange' ? 'bg-orange-500' :
+                           TEAMS[ev.team]?.color === 'orange' ? 'bg-accent-secondary-light' :
                            TEAMS[ev.team]?.color === 'purple' ? 'bg-purple-500' :
                            TEAMS[ev.team]?.color === 'teal' ? 'bg-teal-500' :
                            TEAMS[ev.team]?.color === 'blue' ? 'bg-blue-500' :
@@ -2467,7 +2467,7 @@ export default function CalendarModule() {
         {/* HEADER */}
         <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
            <div className="flex items-center gap-3">
-              <div className="p-2 bg-pink-50 dark:bg-pink-900/30 rounded-lg text-pink-600 dark:text-pink-400"><CalIcon size={24} /></div>
+              <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-lg text-accent-primary dark:text-accent-primary-light"><CalIcon size={24} /></div>
               <div>
                  <h1 className="text-xl font-bold text-gray-800 dark:text-white">Kalendarz</h1>
                  <p className="text-xs text-gray-500 dark:text-gray-400">Zarządzanie wydarzeniami i zadaniami</p>
@@ -2483,7 +2483,7 @@ export default function CalendarModule() {
                  value={searchQuery}
                  onChange={(e) => setSearchQuery(e.target.value)}
                  placeholder="Szukaj wydarzeń..."
-                 className="w-full pl-10 pr-10 py-2 bg-gray-100 dark:bg-gray-700 border border-transparent focus:border-pink-400 dark:focus:border-pink-500 rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-400/20 transition"
+                 className="w-full pl-10 pr-10 py-2 bg-gray-100 dark:bg-gray-700 border border-transparent focus:border-accent-primary-light dark:focus:border-accent-primary-light rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 transition"
                />
                {searchQuery && (
                  <button
@@ -2512,7 +2512,7 @@ export default function CalendarModule() {
                 <button
                   key={v.id}
                   onClick={() => setView(v.id)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition ${view === v.id ? 'bg-white dark:bg-gray-800 text-pink-600 dark:text-pink-400 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition ${view === v.id ? 'bg-white dark:bg-gray-800 text-accent-primary dark:text-accent-primary-light shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                   title={v.label}
                 >
                    <v.icon size={16} /> <span>{v.label}</span>
@@ -2536,7 +2536,7 @@ export default function CalendarModule() {
             <div className="grid grid-cols-7 gap-1">
               {emptyDays.map((_, i) => <div key={`e-${i}`} />)}
               {daysArray.map(d => (
-                <div key={d} onClick={() => { setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), d)); setSidebarOpen(false); }} className={`h-8 w-8 flex items-center justify-center text-sm rounded-full cursor-pointer hover:bg-pink-50 dark:hover:bg-gray-700 ${d === currentDate.getDate() ? 'bg-pink-600 text-white font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                <div key={d} onClick={() => { setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), d)); setSidebarOpen(false); }} className={`h-8 w-8 flex items-center justify-center text-sm rounded-full cursor-pointer hover:bg-accent-primary-lightest dark:hover:bg-gray-700 ${d === currentDate.getDate() ? 'bg-accent-primary text-white font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
                   {d}
                 </div>
               ))}
@@ -2550,7 +2550,7 @@ export default function CalendarModule() {
                 <label key={key} className="flex items-center gap-3 cursor-pointer group p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition select-none">
                   <input
                     type="checkbox"
-                    className="w-5 h-5 rounded border-gray-300 text-pink-600 focus:ring-pink-500 rounded cursor-pointer accent-pink-600"
+                    className="w-5 h-5 rounded border-gray-300 text-accent-primary focus:ring-accent-primary-light rounded cursor-pointer accent-accent-primary"
                     checked={visibleTeams.includes(key)}
                     onChange={() => setVisibleTeams(p => p.includes(key) ? p.filter(k => k !== key) : [...p, key])}
                   />
@@ -2558,7 +2558,7 @@ export default function CalendarModule() {
                 </label>
               ))}
             </div>
-            <button onClick={() => { handleAddClick(new Date().toISOString().split('T')[0]); setSidebarOpen(false); }} className="w-full mt-6 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30 flex items-center justify-center gap-2 hover:shadow-pink-500/50 transition transform hover:-translate-y-0.5">
+            <button onClick={() => { handleAddClick(new Date().toISOString().split('T')[0]); setSidebarOpen(false); }} className="w-full mt-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl shadow-lg shadow-accent-primary-light/30 flex items-center justify-center gap-2 hover:shadow-accent-primary-light/50 transition transform hover:-translate-y-0.5">
               <Plus size={18} /> Dodaj
             </button>
           </div>
@@ -2587,7 +2587,7 @@ export default function CalendarModule() {
 
             <div className="flex items-center justify-between mb-6 mt-2">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <Filter size={20} className="text-pink-600" />
+                <Filter size={20} className="text-accent-primary" />
                 Filtry kalendarza
               </h2>
               <button
@@ -2610,13 +2610,13 @@ export default function CalendarModule() {
                       onClick={() => setVisibleTeams(p => p.includes(key) ? p.filter(k => k !== key) : [...p, key])}
                       className={`flex items-center gap-2 p-3 rounded-xl border-2 transition ${
                         isActive
-                          ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300'
+                          ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                           : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
                       <TeamIcon size={18} />
                       <span className="text-sm font-medium truncate">{cfg.label}</span>
-                      {isActive && <Check size={16} className="ml-auto text-pink-600" />}
+                      {isActive && <Check size={16} className="ml-auto text-accent-primary" />}
                     </button>
                   );
                 })}
@@ -2632,7 +2632,7 @@ export default function CalendarModule() {
               </button>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="flex-1 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white font-bold rounded-xl shadow-lg shadow-pink-500/30"
+                className="flex-1 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl shadow-lg shadow-accent-primary-light/30"
               >
                 Gotowe
               </button>

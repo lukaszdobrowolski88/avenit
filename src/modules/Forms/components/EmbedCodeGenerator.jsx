@@ -128,14 +128,14 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                       onClick={() => setEmbedType(option.id)}
                       className={`p-3 rounded-xl border-2 text-left transition-all ${
                         embedType === option.id
-                          ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/30'
+                          ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30'
                           : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <option.icon size={16} className={embedType === option.id ? 'text-pink-500' : 'text-gray-400'} />
+                        <option.icon size={16} className={embedType === option.id ? 'text-accent-primary-light' : 'text-gray-400'} />
                         <span className={`text-sm font-medium ${
-                          embedType === option.id ? 'text-pink-600 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300'
+                          embedType === option.id ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-700 dark:text-gray-300'
                         }`}>
                           {option.label}
                         </span>
@@ -164,7 +164,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                         value={iframeWidth}
                         onChange={(e) => setIframeWidth(e.target.value)}
                         placeholder="np. 100% lub 600px"
-                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
                       />
                     </div>
                     <div>
@@ -177,7 +177,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                         max="2000"
                         value={iframeHeight}
                         onChange={(e) => setIframeHeight(e.target.value)}
-                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 dark:text-white"
+                        className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
                       />
                     </div>
                   </div>
@@ -213,7 +213,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                       copied === 'code'
                         ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                        : 'bg-pink-500 text-white hover:bg-pink-600'
+                        : 'bg-accent-primary-light text-white hover:bg-accent-primary'
                     }`}
                   >
                     {copied === 'code' ? (
@@ -289,7 +289,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                       onClick={() => setPreviewDevice(device.id)}
                       className={`p-2 rounded-md transition-colors ${
                         previewDevice === device.id
-                          ? 'bg-white dark:bg-gray-600 text-pink-500 shadow-sm'
+                          ? 'bg-white dark:bg-gray-600 text-accent-primary-light shadow-sm'
                           : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                       }`}
                       title={device.label}

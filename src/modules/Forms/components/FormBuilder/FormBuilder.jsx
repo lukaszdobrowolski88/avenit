@@ -174,9 +174,9 @@ export default function FormBuilder({
 
       const Icon = fieldType.icon;
       return (
-        <div className="p-3 bg-white dark:bg-gray-800 border-2 border-pink-500 rounded-xl shadow-2xl flex items-center gap-3 w-64">
-          <div className="w-10 h-10 bg-pink-50 dark:bg-pink-900/30 rounded-lg flex items-center justify-center">
-            <Icon size={20} className="text-pink-600" />
+        <div className="p-3 bg-white dark:bg-gray-800 border-2 border-accent-primary-light rounded-xl shadow-2xl flex items-center gap-3 w-64">
+          <div className="w-10 h-10 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-lg flex items-center justify-center">
+            <Icon size={20} className="text-accent-primary" />
           </div>
           <div>
             <p className="font-medium text-sm text-gray-800 dark:text-gray-200">
@@ -197,9 +197,9 @@ export default function FormBuilder({
     const Icon = fieldType?.icon;
 
     return (
-      <div className="p-4 bg-white dark:bg-gray-800 border-2 border-pink-500 rounded-xl shadow-2xl">
+      <div className="p-4 bg-white dark:bg-gray-800 border-2 border-accent-primary-light rounded-xl shadow-2xl">
         <div className="flex items-center gap-2">
-          {Icon && <Icon size={18} className="text-pink-600" />}
+          {Icon && <Icon size={18} className="text-accent-primary" />}
           <span className="font-medium text-gray-900 dark:text-white">
             {field.label}
           </span>
@@ -320,7 +320,7 @@ export default function FormBuilder({
                   await handleSave();
                   onPublish();
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-lg hover:shadow-lg hover:shadow-pink-500/25 transition-all"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
               >
                 <Globe size={16} />
                 <span className="hidden sm:inline">Opublikuj</span>

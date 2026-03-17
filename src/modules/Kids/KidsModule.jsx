@@ -119,8 +119,8 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full px-4 py-3 border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all
           ${isOpen
-            ? 'border-pink-500 ring-2 ring-pink-500/20 dark:border-pink-400'
-            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-pink-300 dark:hover:border-pink-600'
+            ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light'
+            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'
           }
         `}
       >
@@ -168,9 +168,9 @@ const CustomDatePicker = ({ label, value, onChange }) => {
                   onClick={() => handleDayClick(day)}
                   className={`h-8 w-8 rounded-lg text-xs font-medium transition flex items-center justify-center
                     ${isSelected
-                      ? 'bg-pink-600 text-white shadow-md shadow-pink-500/30'
+                      ? 'bg-accent-primary text-white shadow-md shadow-accent-primary-light/30'
                       : isToday
-                        ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 border border-pink-100 dark:border-pink-800'
+                        ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light border border-accent-primary-lighter dark:border-accent-primary-dark'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }
                   `}
@@ -195,11 +195,11 @@ const TeacherMultiSelect = ({ teachers, selectedIds, onChange }) => {
   const toggleTeacher = (id) => { const n = selectedIds.includes(id) ? selectedIds.filter(tid => tid !== id) : [...selectedIds, id]; onChange(n); };
   return (
     <div ref={wrapperRef} className="relative">
-      <div onClick={() => setIsOpen(!isOpen)} className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 cursor-pointer min-h-[50px] flex flex-wrap gap-2 hover:border-pink-400 transition">
+      <div onClick={() => setIsOpen(!isOpen)} className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 cursor-pointer min-h-[50px] flex flex-wrap gap-2 hover:border-accent-primary-light transition">
         {selectedIds.length === 0 && <span className="text-gray-400 dark:text-gray-500 text-sm pt-1">Wybierz nauczycieli...</span>}
-        {selectedIds.map(id => { const t = teachers.find(x => x.id === id); return t ? <span key={id} className="bg-pink-50 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border border-pink-100 dark:border-pink-800">{t.full_name} <X size={12} className="cursor-pointer hover:text-pink-900" onClick={(e) => { e.stopPropagation(); toggleTeacher(id); }}/></span> : null; })}
+        {selectedIds.map(id => { const t = teachers.find(x => x.id === id); return t ? <span key={id} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border border-accent-primary-lighter dark:border-accent-primary-dark">{t.full_name} <X size={12} className="cursor-pointer hover:text-accent-primary-darkest" onClick={(e) => { e.stopPropagation(); toggleTeacher(id); }}/></span> : null; })}
       </div>
-      {isOpen && <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">{teachers.map(t => <div key={t.id} onClick={() => toggleTeacher(t.id)} className={`p-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer flex justify-between items-center ${selectedIds.includes(t.id) ? 'bg-pink-50 dark:bg-gray-800 text-pink-700 dark:text-pink-300 font-medium' : 'text-gray-700 dark:text-gray-300'}`}><span>{t.full_name}</span>{selectedIds.includes(t.id) && <Check size={16}/>}</div>)}</div>}
+      {isOpen && <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-60 overflow-y-auto custom-scrollbar">{teachers.map(t => <div key={t.id} onClick={() => toggleTeacher(t.id)} className={`p-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer flex justify-between items-center ${selectedIds.includes(t.id) ? 'bg-accent-primary-lightest dark:bg-gray-800 text-accent-primary dark:text-accent-primary-light font-medium' : 'text-gray-700 dark:text-gray-300'}`}><span>{t.full_name}</span>{selectedIds.includes(t.id) && <Check size={16}/>}</div>)}</div>}
     </div>
   );
 };
@@ -213,9 +213,9 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
   return (
     <div ref={wrapperRef} className="relative w-full h-full">
       <div className="w-full h-full min-h-[36px] px-2 py-1.5 text-xs cursor-pointer flex flex-wrap gap-1 items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition" onClick={()=>setIsOpen(!isOpen)}>
-        {selectedItems.length===0 ? <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span> : selectedItems.map((i,x)=><span key={x} className="bg-pink-50 dark:bg-pink-900/60 text-pink-700 dark:text-pink-200 px-1.5 py-0.5 rounded text-[10px] border border-pink-100 dark:border-pink-800 whitespace-nowrap">{i}</span>)}
+        {selectedItems.length===0 ? <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span> : selectedItems.map((i,x)=><span key={x} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/60 text-accent-primary dark:text-accent-primary-lighter px-1.5 py-0.5 rounded text-[10px] border border-accent-primary-lighter dark:border-accent-primary-dark whitespace-nowrap">{i}</span>)}
       </div>
-      {isOpen && <div className="absolute z-[9999] left-0 top-full mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar">{options.map(p=><div key={p.id} className={`px-3 py-1.5 text-xs cursor-pointer flex items-center justify-between transition ${absentMembers.includes(p.full_name)?'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed':'hover:bg-pink-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'} ${selectedItems.includes(p.full_name)?'bg-pink-50 dark:bg-gray-800 text-pink-700 dark:text-pink-300 font-medium':''}`} onClick={()=>t(p.full_name, absentMembers.includes(p.full_name))}><span className={absentMembers.includes(p.full_name)?'line-through':''}>{p.full_name}</span>{selectedItems.includes(p.full_name)&&!absentMembers.includes(p.full_name)&&<Check size={12}/>}</div>)}</div>}
+      {isOpen && <div className="absolute z-[9999] left-0 top-full mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar">{options.map(p=><div key={p.id} className={`px-3 py-1.5 text-xs cursor-pointer flex items-center justify-between transition ${absentMembers.includes(p.full_name)?'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed':'hover:bg-accent-primary-lightest dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'} ${selectedItems.includes(p.full_name)?'bg-accent-primary-lightest dark:bg-gray-800 text-accent-primary dark:text-accent-primary-light font-medium':''}`} onClick={()=>t(p.full_name, absentMembers.includes(p.full_name))}><span className={absentMembers.includes(p.full_name)?'line-through':''}>{p.full_name}</span>{selectedItems.includes(p.full_name)&&!absentMembers.includes(p.full_name)&&<Check size={12}/>}</div>)}</div>}
     </div>
   );
 };
@@ -263,7 +263,7 @@ const ScheduleTable = ({ programs, teachers, groups, onUpdateProgram }) => {
                   <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                     <tr>
                       <th className="p-4 font-semibold w-24 min-w-[90px]">Data</th>
-                      <th className="p-4 font-semibold min-w-[150px] text-pink-600 dark:text-pink-400">Temat lekcji</th>
+                      <th className="p-4 font-semibold min-w-[150px] text-accent-primary dark:text-accent-primary-light">Temat lekcji</th>
                       {dynamicColumns.map(c => <th key={c.id} className="p-4 font-semibold min-w-[130px]">{c.label}</th>)}
                       <th className="p-4 font-semibold min-w-[130px] text-red-500 dark:text-red-400">Absencja</th>
                       <th className="p-4 font-semibold min-w-[150px]">Notatki</th>
@@ -275,7 +275,7 @@ const ScheduleTable = ({ programs, teachers, groups, onUpdateProgram }) => {
                       return (
                         <tr key={prog.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                           <td className="p-4 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs border-r border-gray-100 dark:border-gray-800">{new Date(prog.date).toLocaleDateString('pl-PL', {day:'2-digit', month:'2-digit', year:'numeric'})}</td>
-                          <td className="p-2 border-r border-gray-100 dark:border-gray-800"><input className="w-full bg-transparent rounded px-2 py-1.5 text-xs outline-none font-semibold text-pink-700 dark:text-pink-300 placeholder-pink-200 dark:placeholder-gray-600 hover:bg-pink-50 dark:hover:bg-pink-900/20 focus:bg-pink-50 dark:focus:bg-pink-900/20 transition" placeholder="Temat..." defaultValue={prog.szkolka?.temat || ''} onBlur={e => updateField(prog.id, 'temat', e.target.value)} /></td>
+                          <td className="p-2 border-r border-gray-100 dark:border-gray-800"><input className="w-full bg-transparent rounded px-2 py-1.5 text-xs outline-none font-semibold text-accent-primary dark:text-accent-primary-light placeholder-accent-primary-lighter dark:placeholder-gray-600 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 focus:bg-accent-primary-lightest dark:focus:bg-accent-primary-darkest/20 transition" placeholder="Temat..." defaultValue={prog.szkolka?.temat || ''} onBlur={e => updateField(prog.id, 'temat', e.target.value)} /></td>
                           {dynamicColumns.map(c => (<td key={c.id} className="p-2 border-r border-gray-100 dark:border-gray-800 relative"><TableMultiSelect options={teachers} value={prog.szkolka?.[c.id] || ''} onChange={v => updateRole(prog.id, c.id, v)} absentMembers={abs} /></td>))}
                           <td className="p-2 border-r border-gray-100 dark:border-gray-800 relative"><AbsenceMultiSelect options={teachers} value={prog.szkolka?.absencja || ''} onChange={v => updateField(prog.id, 'absencja', v)} /></td>
                           <td className="p-2"><input className="w-full bg-transparent rounded px-2 py-1.5 text-xs outline-none text-gray-700 dark:text-gray-300 placeholder-gray-300 dark:placeholder-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 focus:bg-gray-50 dark:focus:bg-gray-800 transition" placeholder="Notatki..." defaultValue={prog.szkolka?.notatki || ''} onBlur={e => updateField(prog.id, 'notatki', e.target.value)} /></td>
@@ -544,12 +544,12 @@ export default function KidsModule() {
   const availableStudentOptions = availableStudents.map(s => ({ value: s.id, label: s.full_name }));
   const materialTypeOptions = ['Lekcja', 'Kolorowanka', 'Gra', 'Film', 'Książka', 'Inne'].map(t => ({ value: t, label: t }));
 
-  if (loading) return <div className="p-10 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div></div>;
+  if (loading) return <div className="p-10 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mx-auto"></div></div>;
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Małe SchWro</h1>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Małe SchWro</h1>
       </div>
 
       {/* TABS */}
@@ -597,7 +597,7 @@ export default function KidsModule() {
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Grupy Wiekowe</h2>
-          <button onClick={() => { setGroupForm({ id: null, name: '', teacher_ids: [], room: '', age_range: '' }); setShowGroupModal(true); }} className="bg-gradient-to-r from-pink-600 to-orange-600 text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj grupę</button>
+          <button onClick={() => { setGroupForm({ id: null, name: '', teacher_ids: [], room: '', age_range: '' }); setShowGroupModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj grupę</button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {groups.map(group => {
@@ -608,18 +608,18 @@ export default function KidsModule() {
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100">{group.name}</h3>
                   <div className="flex gap-1">
-                    <button onClick={() => { setGroupForm(group); setShowGroupModal(true); }} className="p-1.5 text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-gray-800 rounded-lg"><FileText size={16}/></button>
+                    <button onClick={() => { setGroupForm(group); setShowGroupModal(true); }} className="p-1.5 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-800 rounded-lg"><FileText size={16}/></button>
                     <button onClick={() => deleteGroup(group.id)} className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-800 rounded-lg"><Trash2 size={16}/></button>
                   </div>
                 </div>
                 <div className="space-y-2 mb-4 text-sm text-gray-600 dark:text-gray-300">
-                  <div className="flex items-center gap-2"><GraduationCap size={16} className="text-pink-500"/> <span className="font-medium">Nauczyciele:</span> {teacherNames || 'Brak'}</div>
-                  <div className="flex items-center gap-2"><MapPin size={16} className="text-orange-500"/> <span className="font-medium">Sala:</span> {group.room || '-'}</div>
+                  <div className="flex items-center gap-2"><GraduationCap size={16} className="text-accent-primary-light"/> <span className="font-medium">Nauczyciele:</span> {teacherNames || 'Brak'}</div>
+                  <div className="flex items-center gap-2"><MapPin size={16} className="text-accent-secondary-light"/> <span className="font-medium">Sala:</span> {group.room || '-'}</div>
                   <div className="flex items-center gap-2"><Baby size={16} className="text-green-500"/> <span className="font-medium">Wiek:</span> {group.age_range || '-'}</div>
                 </div>
                 <div className="flex gap-2 border-t border-gray-100 dark:border-gray-700 pt-3 mt-2">
-                  <button onClick={() => { setCurrentGroup(group); setShowGroupStudentsModal(true); }} className="flex-1 bg-pink-50 dark:bg-gray-800 text-pink-700 dark:text-pink-300 text-xs font-bold py-2 rounded-xl hover:bg-pink-100 dark:hover:bg-gray-700 transition flex items-center justify-center gap-1"><Users size={14}/> Uczniowie ({studentCount})</button>
-                  <button onClick={() => { setCurrentGroup(group); setShowMaterialsModal(true); }} className="flex-1 bg-orange-50 dark:bg-gray-800 text-orange-700 dark:text-orange-300 text-xs font-bold py-2 rounded-xl hover:bg-orange-100 dark:hover:bg-gray-700 transition flex items-center justify-center gap-1"><BookOpen size={14}/> Materiały ({group.materials?.length || 0})</button>
+                  <button onClick={() => { setCurrentGroup(group); setShowGroupStudentsModal(true); }} className="flex-1 bg-accent-primary-lightest dark:bg-gray-800 text-accent-primary dark:text-accent-primary-light text-xs font-bold py-2 rounded-xl hover:bg-accent-primary-lighter dark:hover:bg-gray-700 transition flex items-center justify-center gap-1"><Users size={14}/> Uczniowie ({studentCount})</button>
+                  <button onClick={() => { setCurrentGroup(group); setShowMaterialsModal(true); }} className="flex-1 bg-accent-secondary-lightest dark:bg-gray-800 text-accent-secondary dark:text-accent-secondary-light text-xs font-bold py-2 rounded-xl hover:bg-accent-secondary-lighter dark:hover:bg-gray-700 transition flex items-center justify-center gap-1"><BookOpen size={14}/> Materiały ({group.materials?.length || 0})</button>
                 </div>
               </div>
             );
@@ -633,7 +633,7 @@ export default function KidsModule() {
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Nauczyciele ({teachers.length})</h2>
-            <button onClick={() => { setTeacherForm({ id: null, full_name: '', role: 'Nauczyciel', email: '', phone: '' }); setShowTeacherModal(true); }} className="bg-gradient-to-r from-pink-600 to-orange-600 text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj nauczyciela</button>
+            <button onClick={() => { setTeacherForm({ id: null, full_name: '', role: 'Nauczyciel', email: '', phone: '' }); setShowTeacherModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj nauczyciela</button>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="overflow-x-auto">
@@ -649,7 +649,7 @@ export default function KidsModule() {
                     <td className="p-4 text-gray-600 dark:text-gray-400">{t.role}</td>
                     <td className="p-4 text-gray-600 dark:text-gray-400">{t.email}</td>
                     <td className="p-4 text-right flex justify-end gap-2">
-                      <button onClick={() => { setTeacherForm(t); setShowTeacherModal(true); }} className="text-pink-600 dark:text-pink-400 font-medium">Edytuj</button>
+                      <button onClick={() => { setTeacherForm(t); setShowTeacherModal(true); }} className="text-accent-primary dark:text-accent-primary-light font-medium">Edytuj</button>
                       <button onClick={() => deleteTeacher(t.id)} className="text-red-500 dark:text-red-400 font-medium">Usuń</button>
                     </td>
                   </tr>
@@ -671,7 +671,7 @@ export default function KidsModule() {
               <Search size={16} className="text-gray-400 dark:text-gray-500"/>
               <input className="bg-transparent text-sm outline-none w-full text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Szukaj ucznia..." value={studentFilter} onChange={e => setStudentFilter(e.target.value)}/>
             </div>
-            <button onClick={() => { setGlobalStudentForm({ id: null, full_name: '', birth_year: '', parent_info: '', notes: '', group_id: null, household_id: null }); setShowGlobalStudentModal(true); }} className="bg-gradient-to-r from-pink-600 to-orange-600 text-white text-sm px-4 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><UserPlus size={18}/> Nowy uczeń</button>
+            <button onClick={() => { setGlobalStudentForm({ id: null, full_name: '', birth_year: '', parent_info: '', notes: '', group_id: null, household_id: null }); setShowGlobalStudentModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-4 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><UserPlus size={18}/> Nowy uczeń</button>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -698,9 +698,9 @@ export default function KidsModule() {
                       <span className="text-gray-400 dark:text-gray-500">-</span>
                     )}
                   </td>
-                  <td className="p-4"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${s.group_id ? 'bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>{groups.find(g => g.id === s.group_id)?.name || '-'}</span></td>
+                  <td className="p-4"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${s.group_id ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>{groups.find(g => g.id === s.group_id)?.name || '-'}</span></td>
                   <td className="p-4 text-right flex justify-end gap-2">
-                    <button onClick={() => openEditStudent(s)} className="text-pink-600 dark:text-pink-400 font-medium hover:underline">Edytuj</button>
+                    <button onClick={() => openEditStudent(s)} className="text-accent-primary dark:text-accent-primary-light font-medium hover:underline">Edytuj</button>
                     <button onClick={() => deleteStudent(s.id)} className="text-red-500 dark:text-red-400 font-medium hover:underline">Usuń</button>
                   </td>
                 </tr>
@@ -757,7 +757,7 @@ export default function KidsModule() {
               <div><label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nauczyciele</label><TeacherMultiSelect teachers={teachers} selectedIds={groupForm.teacher_ids || []} onChange={ids => setGroupForm({...groupForm, teacher_ids: ids})} /></div>
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder="Numer sali" value={groupForm.room} onChange={e => setGroupForm({...groupForm, room: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder="Przedział wiekowy" value={groupForm.age_range} onChange={e => setGroupForm({...groupForm, age_range: e.target.value})} />
-              <button onClick={saveGroup} className="w-full py-3 bg-pink-600 text-white rounded-xl font-bold mt-4">Zapisz</button>
+              <button onClick={saveGroup} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-4">Zapisz</button>
             </div>
           </div>
         </div>,
@@ -774,7 +774,7 @@ export default function KidsModule() {
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder="Kontakt do rodzica (opcjonalnie)" value={globalStudentForm.parent_info} onChange={e => setGlobalStudentForm({...globalStudentForm, parent_info: e.target.value})} />
               <CustomSelect options={groupOptions} value={globalStudentForm.group_id} onChange={v => setGlobalStudentForm({...globalStudentForm, group_id: v})} placeholder="Przypisz do grupy..." icon={Users} />
               <textarea className="w-full p-3 rounded-xl border resize-none dark:bg-gray-900 dark:border-gray-600 dark:text-white" rows={3} placeholder="Uwagi" value={globalStudentForm.notes} onChange={e => setGlobalStudentForm({...globalStudentForm, notes: e.target.value})} />
-              <button onClick={saveGlobalStudent} className="w-full py-3 bg-pink-600 text-white rounded-xl font-bold mt-2">Zapisz</button>
+              <button onClick={saveGlobalStudent} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-2">Zapisz</button>
             </div>
           </div>
         </div>,
@@ -789,7 +789,7 @@ export default function KidsModule() {
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder="Rola" value={teacherForm.role} onChange={e => setTeacherForm({...teacherForm, role: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder="Telefon" value={teacherForm.phone} onChange={e => setTeacherForm({...teacherForm, phone: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder="Email" value={teacherForm.email} onChange={e => setTeacherForm({...teacherForm, email: e.target.value})} />
-              <button onClick={saveTeacher} className="w-full py-3 bg-pink-600 text-white rounded-xl font-bold mt-4">Zapisz</button>
+              <button onClick={saveTeacher} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-4">Zapisz</button>
             </div>
           </div>
         </div>,
@@ -799,9 +799,9 @@ export default function KidsModule() {
          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-3xl p-6 border border-white/20 dark:border-gray-700 flex flex-col max-h-[80vh]">
             <div className="flex justify-between mb-4 pb-4 border-b dark:border-gray-700"><h3 className="font-bold text-xl text-gray-800 dark:text-white">Uczniowie: {currentGroup.name}</h3><button onClick={() => setShowGroupStudentsModal(false)} className="text-gray-500 dark:text-gray-400"><X/></button></div>
-            <div className="bg-pink-50 dark:bg-gray-800 p-4 rounded-xl mb-4 flex gap-3 items-end">
+            <div className="bg-accent-primary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 flex gap-3 items-end">
               <div className="flex-1"><label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Dodaj ucznia</label><CustomSelect options={availableStudentOptions} value={attachStudentId} onChange={setAddStudentId} placeholder="Wybierz..." icon={UserPlus} /></div>
-              <button onClick={attachStudentToGroup} className="bg-pink-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-pink-700 h-[46px]">Dodaj</button>
+              <button onClick={attachStudentToGroup} className="bg-accent-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-accent-primary h-[46px]">Dodaj</button>
             </div>
             <div className="flex-1 overflow-y-auto">
               <table className="w-full text-sm text-left">
@@ -824,20 +824,20 @@ export default function KidsModule() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl p-6 border border-white/20 dark:border-gray-700 flex flex-col max-h-[80vh]">
             <div className="flex justify-between mb-4 pb-4 border-b dark:border-gray-700"><h3 className="font-bold text-xl text-gray-800 dark:text-white">Materiały</h3><button onClick={() => setShowMaterialsModal(false)} className="text-gray-500 dark:text-gray-400"><X/></button></div>
-            <div className="bg-orange-50 dark:bg-gray-800 p-4 rounded-xl mb-4 space-y-2">
+            <div className="bg-accent-secondary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 space-y-2">
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder="Nazwa" value={materialForm.title} onChange={e => setMaterialForm({...materialForm, title: e.target.value})} />
               <div className="flex gap-2 items-center">
                 <div className="flex-1"><CustomSelect options={materialTypeOptions} value={materialForm.type} onChange={val => setMaterialForm({...materialForm, type: val})} icon={BookOpen}/></div>
                 <input type="file" id="file-upload" className="hidden" onChange={e => setMaterialForm({...materialForm, attachment: e.target.files[0]})} />
-                <button onClick={() => document.getElementById('file-upload').click()} className={`border px-4 rounded-xl flex items-center gap-2 h-[46px] transition ${materialForm.attachment ? 'bg-orange-100 border-orange-300 text-orange-700' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-500 text-gray-600 dark:text-gray-300'}`}><Upload size={16}/> {materialForm.attachment ? 'Plik wybrany' : 'Plik'}</button>
-                <button onClick={addMaterial} disabled={uploading} className="bg-orange-600 text-white px-6 rounded-xl font-bold hover:bg-orange-700 h-[46px]">{uploading ? '...' : 'Dodaj'}</button>
+                <button onClick={() => document.getElementById('file-upload').click()} className={`border px-4 rounded-xl flex items-center gap-2 h-[46px] transition ${materialForm.attachment ? 'bg-accent-secondary-lighter border-accent-secondary-light text-accent-secondary' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-500 text-gray-600 dark:text-gray-300'}`}><Upload size={16}/> {materialForm.attachment ? 'Plik wybrany' : 'Plik'}</button>
+                <button onClick={addMaterial} disabled={uploading} className="bg-accent-secondary text-white px-6 rounded-xl font-bold hover:bg-accent-secondary h-[46px]">{uploading ? '...' : 'Dodaj'}</button>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto space-y-2">
               {(currentGroup.materials || []).map(m => (
                 <div key={m.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-xl">
-                  <div className="flex items-center gap-3"><div className="bg-orange-100 dark:bg-orange-900/40 p-2 rounded-lg text-orange-600 dark:text-orange-300"><BookOpen size={18}/></div><div><div className="font-bold text-gray-800 dark:text-gray-200">{m.title}</div><div className="text-xs text-gray-500 dark:text-gray-400">{m.type}</div></div></div>
-                  <div className="flex gap-2">{m.attachmentUrl && <a href={m.attachmentUrl} target="_blank" rel="noreferrer" className="text-orange-600 hover:bg-orange-50 p-2 rounded-lg"><LinkIcon size={18}/></a>}<button onClick={() => deleteMaterial(m.id)} className="text-red-400 hover:bg-red-50 p-2 rounded-lg"><Trash2 size={18}/></button></div>
+                  <div className="flex items-center gap-3"><div className="bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/40 p-2 rounded-lg text-accent-secondary dark:text-accent-secondary-light"><BookOpen size={18}/></div><div><div className="font-bold text-gray-800 dark:text-gray-200">{m.title}</div><div className="text-xs text-gray-500 dark:text-gray-400">{m.type}</div></div></div>
+                  <div className="flex gap-2">{m.attachmentUrl && <a href={m.attachmentUrl} target="_blank" rel="noreferrer" className="text-accent-secondary hover:bg-accent-secondary-lightest p-2 rounded-lg"><LinkIcon size={18}/></a>}<button onClick={() => deleteMaterial(m.id)} className="text-red-400 hover:bg-red-50 p-2 rounded-lg"><Trash2 size={18}/></button></div>
                 </div>
               ))}
             </div>
@@ -929,7 +929,7 @@ export default function KidsModule() {
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załączniki (opcjonalnie)</label>
                 <div className="space-y-2">
-                  <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-pink-300 dark:hover:border-pink-600 transition flex items-center gap-2">
+                  <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                     <Upload size={18} className="text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {uploadingFile ? 'Przesyłanie...' : 'Dodaj plik(i)'}
@@ -984,7 +984,7 @@ export default function KidsModule() {
                   {expenseForm.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300 rounded-lg text-xs flex items-center gap-1"
+                      className="px-2 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light rounded-lg text-xs flex items-center gap-1"
                     >
                       <Tag size={12} />
                       {tag}
@@ -1004,7 +1004,7 @@ export default function KidsModule() {
                 </button>
                 <button
                   onClick={saveExpense}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-medium"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
                 >
                   Zapisz
                 </button>

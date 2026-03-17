@@ -140,9 +140,9 @@ const CustomDatePicker = ({ value, onChange }) => {
     <div className="relative" ref={wrapperRef}>
       <div 
         onClick={() => setIsOpen(!isOpen)} 
-        className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-gray-200/50 dark:border-gray-700/50 cursor-pointer hover:border-pink-400 transition"
+        className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-gray-200/50 dark:border-gray-700/50 cursor-pointer hover:border-accent-primary-light transition"
       >
-        <Calendar size={16} className="text-pink-600 dark:text-pink-400" />
+        <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
           {value ? new Date(value).toLocaleDateString('pl-PL') : 'Wybierz datę'}
         </span>
@@ -175,7 +175,7 @@ const CustomDatePicker = ({ value, onChange }) => {
                     key={d} 
                     onClick={(e) => { e.stopPropagation(); handleDayClick(d); }} 
                     className={`h-8 w-8 rounded-lg text-xs font-medium transition 
-                      ${isSelected ? 'bg-pink-600 text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}
+                      ${isSelected ? 'bg-accent-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}
                     `}
                  >
                    {d}
@@ -195,14 +195,14 @@ const CustomDatePicker = ({ value, onChange }) => {
 const SectionCard = ({ title, dataKey, fields, program, setProgram }) => (
   <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
     <div className="flex justify-between items-center mb-4">
-      <h3 className="font-bold text-lg bg-gradient-to-r from-pink-700 to-orange-700 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">{title}</h3>
+      <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{title}</h3>
     </div>
     <div className="space-y-4">
       {fields.map(field => (
         <div key={field.key}>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{field.label}</label>
           <input 
-            className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+            className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             value={program[dataKey]?.[field.key] || ''}
             onChange={e => setProgram(prev => ({
               ...prev,
@@ -235,7 +235,7 @@ const ElementSelector = ({ value, onChange, options }) => {
     <div className="relative w-full" ref={wrapperRef}>
       <div className="relative">
         <input
-          className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-pink-500/20 outline-none placeholder:text-gray-400 dark:placeholder-gray-600"
+          className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-accent-primary-light/20 outline-none placeholder:text-gray-400 dark:placeholder-gray-600"
           placeholder="Wybierz lub wpisz..."
           value={value}
           onChange={(e) => {
@@ -265,7 +265,7 @@ const ElementSelector = ({ value, onChange, options }) => {
           {options.map((opt) => (
             <div
               key={opt}
-              className="px-4 py-2 hover:bg-pink-50 dark:hover:bg-pink-900/20 cursor-pointer text-sm text-gray-700 dark:text-gray-300 border-b border-gray-50 dark:border-gray-800 last:border-0"
+              className="px-4 py-2 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 cursor-pointer text-sm text-gray-700 dark:text-gray-300 border-b border-gray-50 dark:border-gray-800 last:border-0"
               onClick={() => {
                 onChange(opt);
                 setIsOpen(false);
@@ -313,18 +313,18 @@ const MultiSelect = ({ label, options, value, onChange, absentMembers = [] }) =>
     <div ref={wrapperRef} className="relative group">
       <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{label}</label>
       <div 
-        className="w-full min-h-[42px] px-4 py-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus-within:ring-2 focus-within:ring-pink-500/20 cursor-pointer flex flex-wrap gap-2 items-center"
+        className="w-full min-h-[42px] px-4 py-2 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus-within:ring-2 focus-within:ring-accent-primary-light/20 cursor-pointer flex flex-wrap gap-2 items-center"
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
           <span className="text-gray-400 dark:text-gray-500 text-sm">Wybierz osoby...</span>
         ) : (
           selectedItems.map((item, idx) => (
-            <span key={idx} className="bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 px-2 py-0.5 rounded-lg text-xs font-medium border border-pink-200 dark:border-pink-800 flex items-center gap-1">
+            <span key={idx} className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-lg text-xs font-medium border border-accent-primary-lighter dark:border-accent-primary-dark flex items-center gap-1">
               {item}
               <span 
                 onClick={(e) => { e.stopPropagation(); toggleSelection(item); }}
-                className="hover:bg-pink-200 dark:hover:bg-pink-800 rounded-full p-0.5 cursor-pointer"
+                className="hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-dark rounded-full p-0.5 cursor-pointer"
               >
                 <X size={10} />
               </span>
@@ -355,8 +355,8 @@ const MultiSelect = ({ label, options, value, onChange, absentMembers = [] }) =>
               <div 
                 key={person.id}
                 className={`px-4 py-2 text-sm cursor-pointer flex items-center justify-between transition 
-                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-pink-50 dark:hover:bg-pink-900/20 text-gray-700 dark:text-gray-300'}
-                  ${isSelected && !isAbsent ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300 font-medium' : ''}
+                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 text-gray-700 dark:text-gray-300'}
+                  ${isSelected && !isAbsent ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light font-medium' : ''}
                 `}
                 onClick={() => toggleSelection(person.full_name, isAbsent)}
               >
@@ -398,11 +398,11 @@ const SongSelector = ({ songs, onSelect }) => {
   return (
     <div className="relative w-full" ref={wrapperRef}>
       <div 
-        className="w-full px-3 py-2 bg-pink-50 dark:bg-pink-900/20 border border-pink-100 dark:border-pink-800 rounded-lg text-sm text-pink-800 dark:text-pink-300 font-medium flex items-center justify-between cursor-pointer hover:bg-pink-100 dark:hover:bg-pink-900/30 transition"
+        className="w-full px-3 py-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border border-accent-primary-lighter dark:border-accent-primary-dark rounded-lg text-sm text-accent-primary-dark dark:text-accent-primary-light font-medium flex items-center justify-between cursor-pointer hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 transition"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span>+ Wybierz pieśń...</span>
-        <ChevronDown size={16} className="text-pink-400" />
+        <ChevronDown size={16} className="text-accent-primary-light" />
       </div>
 
       {isOpen && coords.width > 0 && document.body && createPortal(
@@ -435,7 +435,7 @@ const SongSelector = ({ songs, onSelect }) => {
               filteredSongs.map(s => (
                 <div
                   key={s.id}
-                  className="px-4 py-2 hover:bg-pink-50 dark:hover:bg-pink-900/20 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex justify-between items-center border-b border-gray-50 dark:border-gray-800 last:border-0"
+                  className="px-4 py-2 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex justify-between items-center border-b border-gray-50 dark:border-gray-800 last:border-0"
                   onClick={() => {
                     onSelect(s);
                     setIsOpen(false);
@@ -466,13 +466,13 @@ const SortableSongItem = ({ item, idx, songDef, onRemove, onChangeKey }) => {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center justify-between gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 border border-pink-100 dark:border-pink-900/30 rounded-lg shadow-sm group">
-      <div {...attributes} {...listeners} className="cursor-grab text-gray-300 dark:text-gray-600 hover:text-pink-600 active:cursor-grabbing">
+    <div ref={setNodeRef} style={style} className="flex items-center justify-between gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 border border-accent-primary-lighter dark:border-accent-primary-darkest/30 rounded-lg shadow-sm group">
+      <div {...attributes} {...listeners} className="cursor-grab text-gray-300 dark:text-gray-600 hover:text-accent-primary active:cursor-grabbing">
         <GripVertical size={14} />
       </div>
 
       <div className="flex items-center gap-2 flex-1">
-        <span className="text-pink-700 dark:text-pink-400 font-medium text-xs">{idx + 1}.</span>
+        <span className="text-accent-primary dark:text-accent-primary-light font-medium text-xs">{idx + 1}.</span>
         <span className="text-gray-700 dark:text-gray-200 text-sm truncate">{songDef.title}</span>
       </div>
       
@@ -542,10 +542,10 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="p-3 hover:bg-pink-50/30 dark:hover:bg-pink-900/10 transition duration-150 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 last:border-0">
+    <div ref={setNodeRef} style={style} className="p-3 hover:bg-accent-primary-lightest/30 dark:hover:bg-accent-primary-darkest/10 transition duration-150 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 last:border-0">
       {/* Desktop: grid layout */}
       <div className="hidden lg:grid grid-cols-12 gap-4 items-start">
-        <div className="col-span-1 flex items-center justify-center pt-2 cursor-grab text-gray-300 dark:text-gray-600 hover:text-pink-500 active:cursor-grabbing" {...attributes} {...listeners}>
+        <div className="col-span-1 flex items-center justify-center pt-2 cursor-grab text-gray-300 dark:text-gray-600 hover:text-accent-primary-light active:cursor-grabbing" {...attributes} {...listeners}>
           <GripVertical size={20} />
         </div>
 
@@ -563,7 +563,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
 
         <div className="col-span-3">
           <input
-            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             placeholder="Jan Kowalski"
             value={row.person || ''}
             onChange={e => {
@@ -612,7 +612,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
             </div>
           ) : (
             <input
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
               value={row.details || ''}
               onChange={e => {
                 const newSchedule = [...program.schedule];
@@ -639,7 +639,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
       {/* Mobile: stacked layout */}
       <div className="lg:hidden space-y-3">
         <div className="flex items-center gap-2">
-          <div className="cursor-grab text-gray-300 dark:text-gray-600 hover:text-pink-500 active:cursor-grabbing" {...attributes} {...listeners}>
+          <div className="cursor-grab text-gray-300 dark:text-gray-600 hover:text-accent-primary-light active:cursor-grabbing" {...attributes} {...listeners}>
             <GripVertical size={18} />
           </div>
           <div className="flex-1">
@@ -666,7 +666,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
 
         <div className="pl-6">
           <input
-            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             placeholder="Osoba"
             value={row.person || ''}
             onChange={e => {
@@ -715,7 +715,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
             </div>
           ) : (
             <input
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
               placeholder="Szczegóły / Notatki"
               value={row.details || ''}
               onChange={e => {
@@ -767,7 +767,7 @@ const DynamicTeamSection = ({ title, dataKey, program, setProgram, roles, teamMe
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-pink-700 to-orange-700 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">{title}</h3>
+        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{title}</h3>
       </div>
       <div className="space-y-4">
         {teamMembers.length > 0 ? (
@@ -788,7 +788,7 @@ const DynamicTeamSection = ({ title, dataKey, program, setProgram, roles, teamMe
             <div key={field.key}>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{field.label}</label>
               <input
-                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
+                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program[dataKey]?.[field.key] || ''}
                 onChange={e => handleChange(field.key, e.target.value)}
               />
@@ -830,14 +830,14 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-pink-700 to-orange-700 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Szkółka Niedzielna</h3>
+        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Szkółka Niedzielna</h3>
       </div>
       <div className="space-y-4">
         {/* Temat lekcji */}
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Temat lekcji</label>
           <input
-            className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+            className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             value={program.szkolka?.temat || ''}
             onChange={e => handleFieldChange('temat', e.target.value)}
             placeholder="Temat lekcji..."
@@ -862,7 +862,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Młodsza</label>
               <input
-                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
+                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.mlodsza || ''}
                 onChange={e => handleFieldChange('mlodsza', e.target.value)}
               />
@@ -870,7 +870,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Średnia</label>
               <input
-                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
+                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.srednia || ''}
                 onChange={e => handleFieldChange('srednia', e.target.value)}
               />
@@ -878,7 +878,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Starsza</label>
               <input
-                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
+                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.starsza || ''}
                 onChange={e => handleFieldChange('starsza', e.target.value)}
               />
@@ -902,7 +902,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
         <div>
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki</label>
           <input
-            className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+            className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
             value={program.szkolka?.notatki || ''}
             onChange={e => handleFieldChange('notatki', e.target.value)}
             placeholder="Notatki..."
@@ -1117,7 +1117,7 @@ const DynamicScenaSection = ({
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-pink-700 to-orange-700 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Scena</h3>
+        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Scena</h3>
       </div>
       <div className="space-y-4">
         {allFields.map(field => {
@@ -1138,7 +1138,7 @@ const DynamicScenaSection = ({
               <div key={field.key}>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{field.label}</label>
                 <input
-                  className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
+                  className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                   value={displayValue}
                   onChange={e => handleChange(field.key, e.target.value, 'teaching')}
                 />
@@ -1163,7 +1163,7 @@ const DynamicScenaSection = ({
             <div key={field.key}>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{field.label}</label>
               <input
-                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
+                className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={displayValue}
                 onChange={e => handleChange(field.key, e.target.value, 'mc')}
               />
@@ -1184,8 +1184,8 @@ const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-white/20 dark:border-gray-700">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertTriangle size={24} className="text-orange-600 dark:text-orange-400" />
+          <div className="w-12 h-12 bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 rounded-full flex items-center justify-center flex-shrink-0">
+            <AlertTriangle size={24} className="text-accent-secondary dark:text-accent-secondary-light" />
           </div>
           <div>
             <h3 className="text-lg font-bold text-gray-800 dark:text-white">Niezapisane zmiany</h3>
@@ -1203,7 +1203,7 @@ const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
           </button>
           <button
             onClick={onSave}
-            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/30 transition flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center justify-center gap-2"
           >
             <Save size={16} /> Zapisz
           </button>
@@ -1863,13 +1863,13 @@ export default function Dashboard() {
       onClick={() => handleSelectProgram(p.id)}
       className={`p-3 rounded-xl border cursor-pointer transition group relative overflow-hidden mb-2 ${
         selectedId === p.id
-          ? 'bg-white dark:bg-gray-800 border-pink-200 dark:border-pink-700 shadow-md ring-1 ring-pink-100 dark:ring-pink-900'
+          ? 'bg-white dark:bg-gray-800 border-accent-primary-lighter dark:border-accent-primary shadow-md ring-1 ring-accent-primary-lighter dark:ring-accent-primary-darkest'
           : 'bg-white/40 dark:bg-gray-800/40 border-white/60 dark:border-gray-700/60 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:shadow-sm'
       }`}
     >
       <div className="flex justify-between items-start">
         <div>
-          <div className={`font-bold text-sm mb-0.5 ${selectedId === p.id ? 'text-pink-700 dark:text-pink-400' : 'text-gray-700 dark:text-gray-200'}`}>
+          <div className={`font-bold text-sm mb-0.5 ${selectedId === p.id ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-700 dark:text-gray-200'}`}>
             {p.date ? formatDateFull(p.date) : 'Brak daty'}
           </div>
           <div className="text-[10px] text-gray-500 dark:text-gray-400 font-medium bg-gray-100/50 dark:bg-gray-700/50 px-1.5 py-0.5 rounded inline-block">
@@ -1878,24 +1878,24 @@ export default function Dashboard() {
         </div>
       </div>
       <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition duration-200">
-        <button onClick={(e) => { e.stopPropagation(); handleDuplicate(p); }} className="p-1 bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 rounded hover:bg-pink-100 dark:hover:bg-pink-900/50" title="Duplikuj"><Copy size={14} /></button>
+        <button onClick={(e) => { e.stopPropagation(); handleDuplicate(p); }} className="p-1 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/50" title="Duplikuj"><Copy size={14} /></button>
         <button onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }} className="p-1 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/50" title="Usuń"><Trash2 size={14} /></button>
       </div>
-      {selectedId === p.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-pink-500"></div>}
+      {selectedId === p.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent-primary-light"></div>}
     </div>
   );
 
   return (
-    <div className="flex flex-col lg:flex-row h-full bg-gradient-to-br from-pink-50 via-orange-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200">
+    <div className="flex flex-col lg:flex-row h-full bg-gradient-to-br from-accent-primary-lightest via-accent-secondary-lightest to-accent-primary-lightest dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200">
       {/* LEWA KOLUMNA - LISTA */}
       <div className={`${mobileView === 'list' ? 'flex' : 'hidden'} lg:flex w-full lg:w-80 bg-white/40 dark:bg-gray-900/40 backdrop-blur-xl border-b lg:border-b-0 lg:border-r border-white/40 dark:border-gray-700/50 flex-col h-full`}>
         <div className="p-4 lg:p-6 border-b border-white/40 dark:border-gray-700/50">
-          <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent mb-4">Lista programów</h2>
+          <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent mb-4">Lista programów</h2>
           <div className="flex gap-2 mb-3">
             <div className="relative flex-1">
               <input
                 placeholder="Szukaj..."
-                className="w-full px-4 py-2 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm focus:ring-2 focus:ring-pink-500/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
+                className="w-full px-4 py-2 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
                 value={filter}
                 onChange={e => setFilter(e.target.value)}
               />
@@ -1908,7 +1908,7 @@ export default function Dashboard() {
               <ArrowUpDown size={18} />
             </button>
           </div>
-          <button onClick={handleNewProgram} className="w-full bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-500 dark:to-orange-500 text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-pink-500/30 transition transform hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2"><Plus size={16} /> Nowy Program</button>
+          <button onClick={handleNewProgram} className="w-full bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white py-2.5 rounded-xl font-bold shadow-lg hover:shadow-accent-primary-light/30 transition transform hover:-translate-y-0.5 text-sm flex items-center justify-center gap-2"><Plus size={16} /> Nowy Program</button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
@@ -1917,7 +1917,7 @@ export default function Dashboard() {
             {upcomingPrograms.length === 0 ? <div className="text-xs text-gray-400 dark:text-gray-500 italic ml-1">Brak planów</div> : upcomingPrograms.map(p => <ProgramItemWithHandler key={p.id} p={p} />)}
           </div>
           <div>
-            <button onClick={() => setShowHistory(!showHistory)} className="flex items-center gap-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 ml-1 hover:text-pink-600 dark:hover:text-pink-400 transition w-full text-left"><History size={12} /> Historia {showHistory ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</button>
+            <button onClick={() => setShowHistory(!showHistory)} className="flex items-center gap-2 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 ml-1 hover:text-accent-primary dark:hover:text-accent-primary-light transition w-full text-left"><History size={12} /> Historia {showHistory ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</button>
             {showHistory && <div className="animate-in fade-in slide-in-from-top-2 duration-200">{pastPrograms.map(p => <ProgramItemWithHandler key={p.id} p={p} />)}</div>}
           </div>
         </div>
@@ -1932,7 +1932,7 @@ export default function Dashboard() {
             {/* Przycisk wróć - tylko mobile */}
             <button
               onClick={handleBackToList}
-              className="lg:hidden flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-4 hover:text-pink-600 dark:hover:text-pink-400 transition"
+              className="lg:hidden flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-4 hover:text-accent-primary dark:hover:text-accent-primary-light transition"
             >
               <ChevronLeft size={20} />
               <span className="font-medium">Wróć do listy</span>
@@ -1959,7 +1959,7 @@ export default function Dashboard() {
               <button
                 onClick={handleSaveAndUploadPDF}
                 disabled={isLoading}
-                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-pink-600 bg-pink-50 hover:bg-pink-100 rounded-lg transition-colors border border-pink-200 font-medium text-sm disabled:opacity-50"
+                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-accent-primary bg-accent-primary-lightest hover:bg-accent-primary-lighter rounded-lg transition-colors border border-accent-primary-lighter font-medium text-sm disabled:opacity-50"
                 title="Zapisz PDF na dysku i w chmurze Supabase"
               >
                 {isLoading ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
@@ -1967,7 +1967,7 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={() => generateDocuments('ppt')}
-                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors border border-orange-200 font-medium text-sm"
+                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-accent-secondary bg-accent-secondary-lightest hover:bg-accent-secondary-lighter rounded-lg transition-colors border border-accent-secondary-lighter font-medium text-sm"
               >
                 <Presentation size={18} />
                 <span className="hidden sm:inline">PPT</span>
@@ -1975,7 +1975,7 @@ export default function Dashboard() {
 
               <button
                 onClick={handleSave}
-                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 lg:px-6 py-2.5 bg-gradient-to-r from-pink-600 to-orange-500 hover:from-pink-700 hover:to-orange-600 text-white rounded-lg shadow-lg shadow-pink-500/20 hover:shadow-pink-500/30 transition-all font-medium text-sm"
+                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 lg:px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-lg shadow-lg shadow-accent-primary-light/20 hover:shadow-accent-primary-light/30 transition-all font-medium text-sm"
               >
                 <Save size={18} />
                 <span className="hidden sm:inline">Zapisz</span>
@@ -1986,8 +1986,8 @@ export default function Dashboard() {
 
             <div className="bg-white/70 dark:bg-gray-800/40 backdrop-blur-xl rounded-2xl shadow-lg border border-white/60 dark:border-gray-700/50 p-4 lg:p-6 mb-6 lg:mb-8 min-h-[300px] lg:min-h-[500px]">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
-                <h3 className="font-bold text-lg lg:text-xl text-gray-800 dark:text-white flex items-center gap-2"><div className="w-1.5 h-5 lg:h-6 bg-pink-600 dark:bg-pink-500 rounded-full"></div>Plan szczegółowy</h3>
-                <button onClick={() => setProgram({...program, schedule: [...program.schedule, { id: Date.now(), element: '', person: '', details: '', songIds: [], selectedSongs: [] }]})} className="hidden sm:block bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-500 dark:to-orange-500 text-white text-sm px-4 py-2.5 rounded-xl font-bold hover:shadow-lg transition">+ Dodaj Element</button>
+                <h3 className="font-bold text-lg lg:text-xl text-gray-800 dark:text-white flex items-center gap-2"><div className="w-1.5 h-5 lg:h-6 bg-accent-primary dark:bg-accent-primary-light rounded-full"></div>Plan szczegółowy</h3>
+                <button onClick={() => setProgram({...program, schedule: [...program.schedule, { id: Date.now(), element: '', person: '', details: '', songIds: [], selectedSongs: [] }]})} className="hidden sm:block bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-4 py-2.5 rounded-xl font-bold hover:shadow-lg transition">+ Dodaj Element</button>
               </div>
               <div className="bg-white/50 dark:bg-gray-900/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-inner overflow-hidden overflow-x-auto">
                 <div className="hidden lg:grid grid-cols-12 gap-4 p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50 font-bold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider min-w-[600px]"><div className="col-span-1"></div><div className="col-span-3">Element</div><div className="col-span-3">Osoba</div><div className="col-span-4">Szczegóły / Notatki</div><div className="col-span-1"></div></div>
@@ -1998,12 +1998,12 @@ export default function Dashboard() {
                 </DndContext>
               </div>
               {/* Przycisk Dodaj Element - tylko mobile, na dole */}
-              <button onClick={() => setProgram({...program, schedule: [...program.schedule, { id: Date.now(), element: '', person: '', details: '', songIds: [], selectedSongs: [] }]})} className="sm:hidden w-full mt-4 bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-500 dark:to-orange-500 text-white text-sm px-4 py-3 rounded-xl font-bold hover:shadow-lg transition">+ Dodaj Element</button>
+              <button onClick={() => setProgram({...program, schedule: [...program.schedule, { id: Date.now(), element: '', person: '', details: '', songIds: [], selectedSongs: [] }]})} className="sm:hidden w-full mt-4 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-4 py-3 rounded-xl font-bold hover:shadow-lg transition">+ Dodaj Element</button>
             </div>
 
             <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-4 lg:p-6 mb-4 lg:mb-6 hover:shadow-xl transition relative z-50">
               <div className="flex justify-between items-center mb-4 lg:mb-6">
-                <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-pink-700 to-orange-700 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Zespół Uwielbienia</h3>
+                <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Zespół Uwielbienia</h3>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
                 {(worshipRoles.length > 0

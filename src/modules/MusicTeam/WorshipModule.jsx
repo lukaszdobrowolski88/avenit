@@ -123,8 +123,8 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full px-4 py-3 border rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm cursor-pointer flex justify-between items-center transition-all
           ${isOpen
-            ? 'border-pink-500 ring-2 ring-pink-500/20 dark:border-pink-400'
-            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-pink-300 dark:hover:border-pink-600'
+            ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20 dark:border-accent-primary-light'
+            : 'border-gray-200/50 dark:border-gray-700/50 hover:border-accent-primary-light dark:hover:border-accent-primary'
           }
         `}
       >
@@ -170,9 +170,9 @@ const CustomDatePicker = ({ label, value, onChange }) => {
                   onClick={() => handleDayClick(day)}
                   className={`h-8 w-8 rounded-lg text-xs font-medium transition flex items-center justify-center
                     ${isSelected
-                      ? 'bg-pink-600 text-white shadow-md shadow-pink-500/30'
+                      ? 'bg-accent-primary text-white shadow-md shadow-accent-primary-light/30'
                       : isToday
-                        ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 border border-pink-100 dark:border-pink-800'
+                        ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light border border-accent-primary-lighter dark:border-accent-primary-dark'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }
                   `}
@@ -763,13 +763,13 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [], getAss
       return 'bg-amber-50 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-100 dark:border-amber-800';
     }
     // default (self-assigned lub brak statusu)
-    return 'bg-pink-50 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 border-pink-100 dark:border-pink-800';
+    return 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light border-accent-primary-lighter dark:border-accent-primary-dark';
   };
 
   return (
     <div ref={triggerRef} className="relative w-full">
       <div
-        className="w-full min-h-[32px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs cursor-pointer flex flex-wrap gap-1 items-center hover:border-pink-300 dark:hover:border-pink-500 transition"
+        className="w-full min-h-[32px] px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs cursor-pointer flex flex-wrap gap-1 items-center hover:border-accent-primary-light dark:hover:border-accent-primary-light transition"
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
@@ -802,8 +802,8 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [], getAss
               <div
                 key={person.id}
                 className={`px-3 py-1.5 text-xs cursor-pointer flex items-center justify-between transition
-                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-pink-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}
-                  ${isSelected ? 'bg-pink-50 dark:bg-gray-800 text-pink-700 dark:text-pink-300 font-medium' : ''}
+                  ${isAbsent ? 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-accent-primary-lightest dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}
+                  ${isSelected ? 'bg-accent-primary-lightest dark:bg-gray-800 text-accent-primary dark:text-accent-primary-light font-medium' : ''}
                 `}
                 onClick={() => toggleSelection(person.full_name, isAbsent)}
               >
@@ -1104,7 +1104,7 @@ const ScheduleTable = ({ programs, worshipTeam, onUpdateProgram, roles, memberRo
                             </td>
                             <td className="p-2">
                               <input 
-                                className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-pink-500 text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
+                                className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
                                 placeholder="Wpisz..."
                                 defaultValue={prog.zespol?.notatki || ''}
                                 onBlur={(e) => updateNotes(prog.id, e.target.value)}
@@ -1361,13 +1361,13 @@ const AudioPlayer = ({ url, name }) => {
   ];
 
   return (
-    <div className="mt-3 p-3 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-gray-700 dark:to-gray-700 rounded-xl border border-pink-100 dark:border-gray-600">
+    <div className="mt-3 p-3 bg-gradient-to-r from-accent-primary-lightest to-purple-50 dark:from-gray-700 dark:to-gray-700 rounded-xl border border-accent-primary-lighter dark:border-gray-600">
       {/* Główne kontrolki */}
       <div className="flex items-center gap-3">
         <button
           onClick={togglePlay}
           disabled={isLoading}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-pink-600 dark:bg-pink-500 text-white shadow-lg shadow-pink-500/30 hover:bg-pink-700 dark:hover:bg-pink-600 transition disabled:opacity-50"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-accent-primary dark:bg-accent-primary-light text-white shadow-lg shadow-accent-primary-light/30 hover:bg-accent-primary dark:hover:bg-accent-primary transition disabled:opacity-50"
         >
           {isLoading ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1391,7 +1391,7 @@ const AudioPlayer = ({ url, name }) => {
             onClick={handleSeek}
           >
             <div
-              className="h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full transition-all duration-100"
+              className="h-full bg-gradient-to-r from-accent-primary-light to-purple-500 rounded-full transition-all duration-100"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -1399,7 +1399,7 @@ const AudioPlayer = ({ url, name }) => {
       </div>
 
       {/* Kontrolki zmiany tonacji */}
-      <div className="mt-3 pt-3 border-t border-pink-100 dark:border-gray-600">
+      <div className="mt-3 pt-3 border-t border-accent-primary-lighter dark:border-gray-600">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-gray-600 dark:text-gray-300 flex items-center gap-1">
             <Music size={12} />
@@ -1418,7 +1418,7 @@ const AudioPlayer = ({ url, name }) => {
               className={`px-3 py-1 rounded-lg text-xs font-medium transition min-w-[80px] ${
                 pitchShift === 0
                   ? 'bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
-                  : 'bg-pink-100 dark:bg-pink-900/50 text-pink-700 dark:text-pink-300 hover:bg-pink-200 dark:hover:bg-pink-800/50'
+                  : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-dark/50'
               }`}
             >
               {getPitchLabel()}
@@ -1438,7 +1438,7 @@ const AudioPlayer = ({ url, name }) => {
       </div>
 
       {/* Przycisk rozwijania kontrolek ścieżek */}
-      <div className="mt-3 pt-3 border-t border-pink-100 dark:border-gray-600">
+      <div className="mt-3 pt-3 border-t border-accent-primary-lighter dark:border-gray-600">
         <button
           onClick={() => setShowStemControls(!showStemControls)}
           className="w-full flex items-center justify-between px-3 py-2 bg-gray-100 dark:bg-gray-600 rounded-lg text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500 transition"
@@ -1763,7 +1763,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
              <button onClick={handleDownloadPDF} className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-2">
                 <FileDown size={16}/> PDF
             </button>
-            <button onClick={onEdit} className="px-4 py-2 bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 rounded-xl font-bold text-sm hover:bg-pink-100 dark:hover:bg-pink-900/50 transition">
+            <button onClick={onEdit} className="px-4 py-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded-xl font-bold text-sm hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/50 transition">
                 Edytuj
             </button>
             <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">
@@ -1775,13 +1775,13 @@ function SongDetailsModal({ song, onClose, onEdit }) {
         {/* TABS */}
         <div className="px-6 pt-6 pb-0">
              <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
-                <button onClick={() => setActiveTab('overview')} className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${activeTab === 'overview' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>
+                <button onClick={() => setActiveTab('overview')} className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${activeTab === 'overview' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>
                     <FileText size={16}/> Przegląd
                 </button>
-                <button onClick={() => setActiveTab('history')} className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${activeTab === 'history' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>
+                <button onClick={() => setActiveTab('history')} className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${activeTab === 'history' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>
                     <History size={16}/> Historia użycia
                 </button>
-                <button onClick={() => setActiveTab('materials')} className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${activeTab === 'materials' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>
+                <button onClick={() => setActiveTab('materials')} className={`px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 ${activeTab === 'materials' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>
                     <LinkIcon size={16}/> Materiały
                 </button>
             </div>
@@ -1801,7 +1801,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                             <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-xs font-bold uppercase">
                                 <Music size={14}/> Tonacja
                             </div>
-                            <span className="font-mono text-lg font-bold text-pink-600 dark:text-pink-400 min-w-[24px] text-center">{song.key || "-"}</span>
+                            <span className="font-mono text-lg font-bold text-accent-primary dark:text-accent-primary-light min-w-[24px] text-center">{song.key || "-"}</span>
                         </div>
 
                         {/* TRANSPOZYCJA - wybór tonacji docelowej (wg wytycznych PDF) */}
@@ -1847,7 +1847,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                          {/* TAGI */}
                          <div className="flex items-center gap-2 ml-auto">
                             {(song.tags || []).map(t => (
-                                <span key={t} className="px-3 py-1 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 text-xs font-bold border border-orange-100 dark:border-orange-800">
+                                <span key={t} className="px-3 py-1 rounded-lg bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/20 text-accent-secondary dark:text-accent-secondary-light text-xs font-bold border border-accent-secondary-lighter dark:border-accent-secondary-dark">
                                     #{t}
                                 </span>
                             ))}
@@ -1862,10 +1862,10 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                                 {song.lyrics || "Brak tekstu..."}
                             </pre>
                         </div>
-                        <div className="bg-pink-50/50 dark:bg-gray-800 rounded-xl p-5 border border-pink-100 dark:border-gray-700">
+                        <div className="bg-accent-primary-lightest/50 dark:bg-gray-800 rounded-xl p-5 border border-accent-primary-lighter dark:border-gray-700">
                             <div className="flex justify-between items-center mb-3">
                                 <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">Akordy w taktach</h3>
-                                {isTransposed && <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400 bg-pink-100 dark:bg-pink-900 px-2 py-0.5 rounded">TRANSPONOWANO ({originalKey} → {targetKey})</span>}
+                                {isTransposed && <span className="text-[10px] font-bold text-accent-primary dark:text-accent-primary-light bg-accent-primary-lighter dark:bg-accent-primary-darkest px-2 py-0.5 rounded">TRANSPONOWANO ({originalKey} → {targetKey})</span>}
                             </div>
                             {/* Ukryj różowe tło komórek w widoku szczegółów */}
                             <style>{`
@@ -1874,7 +1874,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                                 }
                             `}</style>
                             <div
-                                className="chords-display-view whitespace-pre-wrap font-mono text-pink-800 dark:text-pink-300 text-sm leading-relaxed"
+                                className="chords-display-view whitespace-pre-wrap font-mono text-accent-primary-dark dark:text-accent-primary-light text-sm leading-relaxed"
                                 dangerouslySetInnerHTML={{ __html: displayChords || 'Brak układu...' }}
                             />
                         </div>
@@ -1895,7 +1895,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                             {history.map(h => (
                                 <div key={h.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:shadow-sm transition">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-900 flex items-center justify-center text-pink-600 dark:text-pink-300 font-bold text-xs">
+                                        <div className="w-10 h-10 rounded-full bg-accent-primary-lighter dark:bg-accent-primary-darkest flex items-center justify-center text-accent-primary dark:text-accent-primary-light font-bold text-xs">
                                             {new Date(h.date).getDate()}
                                         </div>
                                         <div>
@@ -1939,10 +1939,10 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                             const isMP3 = att.type === 'file' && (att.name?.toLowerCase().endsWith('.mp3') || att.url?.toLowerCase().endsWith('.mp3'));
 
                             return (
-                                <div key={idx} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-pink-300 dark:hover:border-pink-500 transition group">
+                                <div key={idx} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-accent-primary-light dark:hover:border-accent-primary-light transition group">
                                     <div className="flex items-center justify-between p-4">
                                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${att.type === 'link' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' : isMP3 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' : 'bg-pink-100 dark:bg-pink-900/30 text-pink-600'}`}>
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${att.type === 'link' ? 'bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 text-accent-secondary' : isMP3 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary'}`}>
                                                 {att.type === 'link' ? <LinkIcon size={24}/> : isMP3 ? <Music size={24}/> : <FileText size={24}/>}
                                             </div>
                                             <div className="min-w-0 flex-1">
@@ -1955,7 +1955,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                                                     </div>
                                                 )}
                                                 <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 flex items-center gap-2">
-                                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${att.type === 'link' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' : isMP3 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' : 'bg-pink-100 dark:bg-pink-900/30 text-pink-600'}`}>
+                                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${att.type === 'link' ? 'bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 text-accent-secondary' : isMP3 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary'}`}>
                                                         {att.type === 'link' ? 'Link' : isMP3 ? 'MP3' : 'Plik'}
                                                     </span>
                                                     {att.date && new Date(att.date).toLocaleDateString('pl-PL')}
@@ -1981,7 +1981,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                                                 href={att.url}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="p-2.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-pink-50 dark:hover:bg-pink-900 hover:text-pink-600 transition"
+                                                className="p-2.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest hover:text-accent-primary transition"
                                                 title={att.type === 'link' ? 'Otwórz link' : 'Podgląd'}
                                             >
                                                 <ExternalLink size={18}/>
@@ -2006,7 +2006,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                                     <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 flex items-center justify-center"><FileText size={20}/></div>
                                     <div><div className="font-bold text-sm text-gray-800 dark:text-gray-200">Nuty / PDF (Legacy)</div></div>
                                 </div>
-                                <a href={song.sheet_music_url} target="_blank" rel="noreferrer" className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg hover:text-pink-600"><ExternalLink size={18}/></a>
+                                <a href={song.sheet_music_url} target="_blank" rel="noreferrer" className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg hover:text-accent-primary"><ExternalLink size={18}/></a>
                              </div>
                         )}
                     </div>
@@ -2499,7 +2499,7 @@ export default function WorshipModule() {
       : true)
   );
 
-  if (loading) return <div className="p-10 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div></div>;
+  if (loading) return <div className="p-10 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mx-auto"></div></div>;
 
   // Definicja zakładek
   const tabs = [
@@ -2517,7 +2517,7 @@ export default function WorshipModule() {
   return (
     <div className="space-y-4 lg:space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 dark:from-pink-400 dark:to-orange-400 bg-clip-text text-transparent">Grupa Uwielbienia</h1>
+        <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Grupa Uwielbienia</h1>
       </div>
 
       {/* TAB NAVIGATION */}
@@ -2560,8 +2560,8 @@ export default function WorshipModule() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
           <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">Baza Pieśni</h2>
           <div className="flex gap-2 w-full sm:w-auto">
-            <button onClick={() => setShowTagsModal(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/40 dark:to-orange-900/40 text-pink-700 dark:text-pink-300 text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-pink-200 dark:border-pink-800 hover:from-pink-100 hover:to-orange-100 dark:hover:from-pink-900/60 dark:hover:to-orange-900/60 transition flex items-center justify-center gap-2"><Tag size={16}/> <span className="hidden sm:inline">Zarządzaj</span> Tagi</button>
-            <button onClick={() => { setSongForm({}); setShowSongModal(true); }} className="flex-1 sm:flex-none bg-gradient-to-r from-orange-600 to-pink-600 text-white text-sm px-4 lg:px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-orange-500/50 transition flex items-center justify-center gap-2"><Plus size={18}/> <span className="hidden sm:inline">Dodaj</span> Pieśń</button>
+            <button onClick={() => setShowTagsModal(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 text-accent-primary dark:text-accent-primary-light text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-accent-primary-lighter dark:border-accent-primary-dark hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/60 dark:hover:to-accent-secondary-darkest/60 transition flex items-center justify-center gap-2"><Tag size={16}/> <span className="hidden sm:inline">Zarządzaj</span> Tagi</button>
+            <button onClick={() => { setSongForm({}); setShowSongModal(true); }} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-secondary to-accent-primary text-white text-sm px-4 lg:px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-secondary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> <span className="hidden sm:inline">Dodaj</span> Pieśń</button>
           </div>
         </div>
         
@@ -2588,8 +2588,8 @@ export default function WorshipModule() {
                     onClick={() => setTagFilter(tag)}
                     className={`px-3 py-1.5 rounded-xl text-xs border transition font-medium ${
                       tagFilter === tag
-                        ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white border-pink-500'
-                        : 'bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/40 dark:to-orange-900/40 text-pink-800 dark:text-pink-300 border-pink-200 dark:border-pink-800 hover:from-pink-100 hover:to-orange-100 dark:hover:from-pink-900/60 dark:hover:to-orange-900/60'
+                        ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white border-accent-primary-light'
+                        : 'bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 text-accent-primary-dark dark:text-accent-primary-light border-accent-primary-lighter dark:border-accent-primary-dark hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/60 dark:hover:to-accent-secondary-darkest/60'
                     }`}
                   >
                     {tag}
@@ -2613,15 +2613,15 @@ export default function WorshipModule() {
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {filteredSongs.map(s => (
-                <tr key={s.id} className="hover:bg-pink-50/30 dark:hover:bg-gray-800/50 transition">
+                <tr key={s.id} className="hover:bg-accent-primary-lightest/30 dark:hover:bg-gray-800/50 transition">
                   <td className="p-4 font-bold text-gray-800 dark:text-gray-200">{s.title}</td>
                   <td className="p-4 text-gray-600 dark:text-gray-400">{s.author || "-"}</td>
-                  <td className="p-4 font-mono font-bold text-pink-600 dark:text-pink-400">{s.key}</td>
+                  <td className="p-4 font-mono font-bold text-accent-primary dark:text-accent-primary-light">{s.key}</td>
                   <td className="p-4 text-gray-600 dark:text-gray-400">{s.tempo || "-"}</td>
                   <td className="p-4">
                     <div className="flex gap-1 flex-wrap">
                       {Array.isArray(s.tags) && s.tags.length > 0 ? s.tags.map((t, i) => (
-                        <span key={i} className="bg-gradient-to-r from-pink-100 to-orange-100 dark:from-pink-900/30 dark:to-orange-900/30 px-2 py-1 text-xs rounded-full text-pink-800 dark:text-pink-300 border border-pink-200 dark:border-pink-800 font-medium flex items-center gap-1 group">
+                        <span key={i} className="bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 px-2 py-1 text-xs rounded-full text-accent-primary-dark dark:text-accent-primary-light border border-accent-primary-lighter dark:border-accent-primary-dark font-medium flex items-center gap-1 group">
                           {t}
                           <button
                             onClick={(e) => { e.stopPropagation(); removeTagFromSong(s.id, t); }}
@@ -2636,7 +2636,7 @@ export default function WorshipModule() {
                   </td>
                   <td className="p-4 text-right flex justify-end gap-2">
                     <button onClick={() => setShowSongDetails(s)} className="text-gray-800 dark:text-gray-300 font-semibold px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">Szczegóły</button>
-                    <button onClick={() => { setSongForm(s); setShowSongModal(true); }} className="text-pink-600 dark:text-pink-400 hover:text-orange-600 dark:hover:text-orange-400 font-medium transition">Edytuj</button>
+                    <button onClick={() => { setSongForm(s); setShowSongModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">Edytuj</button>
                     <button onClick={() => deleteSong(s.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">Usuń</button>
                   </td>
                 </tr>
@@ -2652,7 +2652,7 @@ export default function WorshipModule() {
       <section className="bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 lg:p-6 relative z-[30] transition-colors">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
           <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">Członkowie Zespołu</h2>
-          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', status: 'Aktywny', phone: '', email: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="w-full sm:w-auto bg-gradient-to-r from-pink-600 to-orange-600 text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-pink-500/50 transition flex items-center justify-center gap-2"><Plus size={18}/> Dodaj członka</button>
+          <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', status: 'Aktywny', phone: '', email: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="w-full sm:w-auto bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> Dodaj członka</button>
         </div>
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
@@ -2671,13 +2671,13 @@ export default function WorshipModule() {
               {team.map(m => {
                 const roleNames = getMemberRoleNames(m.id);
                 return (
-                  <tr key={m.id} className="hover:bg-pink-50/30 dark:hover:bg-gray-800/50 transition">
+                  <tr key={m.id} className="hover:bg-accent-primary-lightest/30 dark:hover:bg-gray-800/50 transition">
                     <td className="p-4 font-medium text-gray-800 dark:text-gray-200">{m.full_name}</td>
                     <td className="p-4">
                       <div className="flex flex-wrap gap-1">
                         {roleNames.length > 0 ? (
                           roleNames.map((name, idx) => (
-                            <span key={idx} className="bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 px-2 py-0.5 rounded-lg text-xs font-medium border border-pink-100 dark:border-pink-800">
+                            <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-lg text-xs font-medium border border-accent-primary-lighter dark:border-accent-primary-dark">
                               {name}
                             </span>
                           ))
@@ -2690,7 +2690,7 @@ export default function WorshipModule() {
                     <td className="p-4 text-gray-600 dark:text-gray-400">{m.phone}</td>
                     <td className="p-4 text-gray-600 dark:text-gray-400">{m.email}</td>
                     <td className="p-4 text-right flex justify-end gap-2">
-                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-pink-600 dark:text-pink-400 hover:text-orange-600 dark:hover:text-orange-400 font-medium transition">Edytuj</button>
+                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">Edytuj</button>
                       <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">Usuń</button>
                     </td>
                   </tr>
@@ -2784,7 +2784,7 @@ export default function WorshipModule() {
                           }}
                           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${
                             isSelected
-                              ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-md'
+                              ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md'
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                           }`}
                         >
@@ -2813,7 +2813,7 @@ export default function WorshipModule() {
 
               <div className="flex justify-end gap-3 mt-6">
                 <button onClick={() => setShowMemberModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Anuluj</button>
-                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg hover:shadow-pink-500/50 transition font-medium">Zapisz</button>
+                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">Zapisz</button>
               </div>
             </div>
           </div>
@@ -2892,7 +2892,7 @@ export default function WorshipModule() {
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-white/20 dark:border-gray-700">
             <div className="flex justify-between mb-6">
               <h3 className="font-bold text-xl text-gray-800 dark:text-white flex items-center gap-2">
-                <Tag size={20} className="text-pink-500" />
+                <Tag size={20} className="text-accent-primary-light" />
                 Zarządzanie Tagami
               </h3>
               <button onClick={() => { setShowTagsModal(false); setEditingTag(null); setEditingTagValue(''); setNewTagInput(''); }} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition">
@@ -2912,12 +2912,12 @@ export default function WorshipModule() {
                 onChange={(e) => setNewTagInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') addNewTag(); }}
                 placeholder="Wpisz nowy tag..."
-                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-sm focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
               />
               <button
                 onClick={addNewTag}
                 disabled={!newTagInput.trim()}
-                className="px-4 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-pink-500/30 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus size={16} />
                 Dodaj
@@ -2942,7 +2942,7 @@ export default function WorshipModule() {
                             type="text"
                             value={editingTagValue}
                             onChange={(e) => setEditingTagValue(e.target.value)}
-                            className="flex-1 px-3 py-2 rounded-lg border border-pink-300 dark:border-pink-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm focus:ring-2 focus:ring-pink-500/20 outline-none"
+                            className="flex-1 px-3 py-2 rounded-lg border border-accent-primary-light dark:border-accent-primary bg-white dark:bg-gray-900 text-gray-800 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
                             autoFocus
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') renameTagGlobally(tag, editingTagValue);
@@ -2997,7 +2997,7 @@ export default function WorshipModule() {
             <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => { setShowTagsModal(false); setEditingTag(null); setEditingTagValue(''); setNewTagInput(''); }}
-                className="w-full py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-pink-500/30 transition"
+                className="w-full py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/30 transition"
               >
                 Zamknij
               </button>
@@ -3090,7 +3090,7 @@ export default function WorshipModule() {
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załączniki (opcjonalnie)</label>
                 <div className="space-y-2">
-                  <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-pink-300 dark:hover:border-pink-600 transition flex items-center gap-2">
+                  <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                     <Upload size={18} className="text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {uploadingFile ? 'Przesyłanie...' : 'Dodaj plik(i)'}
@@ -3145,7 +3145,7 @@ export default function WorshipModule() {
                   {expenseForm.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300 rounded-lg text-xs flex items-center gap-1"
+                      className="px-2 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light rounded-lg text-xs flex items-center gap-1"
                     >
                       <Tag size={12} />
                       {tag}
@@ -3165,7 +3165,7 @@ export default function WorshipModule() {
                 </button>
                 <button
                   onClick={saveExpense}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition font-medium"
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
                 >
                   Zapisz
                 </button>

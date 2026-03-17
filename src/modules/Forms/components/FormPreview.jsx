@@ -30,7 +30,7 @@ export default function FormPreview({
                 onClick={() => setViewMode('desktop')}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   viewMode === 'desktop'
-                    ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
+                    ? 'bg-white dark:bg-gray-600 text-accent-primary dark:text-accent-primary-light shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
@@ -41,7 +41,7 @@ export default function FormPreview({
                 onClick={() => setViewMode('mobile')}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   viewMode === 'mobile'
-                    ? 'bg-white dark:bg-gray-600 text-pink-600 dark:text-pink-400 shadow-sm'
+                    ? 'bg-white dark:bg-gray-600 text-accent-primary dark:text-accent-primary-light shadow-sm'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
@@ -74,7 +74,7 @@ export default function FormPreview({
             )}
 
             <div
-              className={`bg-gradient-to-br from-pink-50/50 via-white to-orange-50/50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 ${
+              className={`bg-gradient-to-br from-accent-primary-lightest/50 via-white to-accent-secondary-lightest/50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 ${
                 viewMode === 'mobile'
                   ? 'rounded-b-3xl border-x-4 border-b-4 border-gray-800 p-4'
                   : 'rounded-2xl p-6'

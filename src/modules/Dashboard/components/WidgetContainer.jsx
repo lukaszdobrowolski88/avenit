@@ -57,7 +57,7 @@ export default function WidgetContainer({
               </button>
             )}
             {Icon && (
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center">
                 <Icon size={16} className="text-white" />
               </div>
             )}

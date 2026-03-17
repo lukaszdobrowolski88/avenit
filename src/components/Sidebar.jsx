@@ -291,7 +291,7 @@ export default function Sidebar() {
               onError={(e) => { e.target.style.display = 'none'; }}
             />
           ) : (
-            <div className="w-full aspect-video text-3xl lg:text-4xl bg-gradient-to-br from-pink-100 to-orange-100 dark:from-pink-900 dark:to-orange-900 rounded-xl flex items-center justify-center text-pink-600 dark:text-pink-300 font-bold shadow-sm transition-all duration-300">
+            <div className="w-full aspect-video text-3xl lg:text-4xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest dark:to-accent-secondary-darkest rounded-xl flex items-center justify-center text-accent-primary dark:text-accent-primary-light font-bold shadow-sm transition-all duration-300">
               S
             </div>
           )}
@@ -337,9 +337,9 @@ export default function Sidebar() {
               <Link
                 to={link.path}
                 onClick={handleLinkClick}
-                className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-xl transition-all group ${isActive ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-lg shadow-pink-500/30 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-gray-700 hover:text-pink-600 dark:hover:text-white'}`}
+                className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-xl transition-all group ${isActive ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg shadow-accent-primary-light/30 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary dark:hover:text-white'}`}
               >
-                <link.icon size={20} className={`shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-pink-500 dark:group-hover:text-white transition-colors'}`} />
+                <link.icon size={20} className={`shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-accent-primary-light dark:group-hover:text-white transition-colors'}`} />
                 {(isMobile || !isCollapsed) && <span className="text-sm truncate">{link.label}</span>}
               </Link>
             </Tooltip>
@@ -382,7 +382,7 @@ export default function Sidebar() {
         {/* Przycisk zwijania */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-20 w-6 h-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full shadow-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400 hover:border-pink-300 dark:hover:border-pink-600 transition-all z-50"
+          className="absolute -right-3 top-20 w-6 h-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full shadow-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:border-accent-primary-light dark:hover:border-accent-primary transition-all z-50"
           title={isCollapsed ? 'Rozwiń sidebar' : 'Zwiń sidebar'}
         >
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}

@@ -122,8 +122,8 @@ export default function FieldItem({
       className={`group bg-white dark:bg-gray-800 rounded-xl border-2 transition-all cursor-pointer
         ${isDragging ? 'shadow-2xl opacity-90' : 'shadow-sm hover:shadow-md'}
         ${isSelected
-          ? 'border-pink-500 ring-2 ring-pink-500/20'
-          : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600'
+          ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20'
+          : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
         }`}
     >
       <div className="flex items-start gap-2 p-4">
@@ -139,8 +139,8 @@ export default function FieldItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             {Icon && (
-              <div className="w-6 h-6 bg-pink-50 dark:bg-pink-900/30 rounded flex items-center justify-center flex-shrink-0">
-                <Icon size={14} className="text-pink-600 dark:text-pink-400" />
+              <div className="w-6 h-6 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded flex items-center justify-center flex-shrink-0">
+                <Icon size={14} className="text-accent-primary dark:text-accent-primary-light" />
               </div>
             )}
             <span className="font-medium text-gray-900 dark:text-white truncate">

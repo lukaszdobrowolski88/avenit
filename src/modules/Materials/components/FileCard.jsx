@@ -44,7 +44,7 @@ function getIconColor(mimeType) {
   if (mimeType.includes('pdf')) return 'text-red-500';
   if (mimeType.includes('document') || mimeType.includes('word')) return 'text-blue-600';
   if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'text-green-600';
-  if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return 'text-orange-500';
+  if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return 'text-accent-secondary-light';
 
   return 'text-gray-500';
 }
@@ -88,7 +88,7 @@ export default function FileCard({
   return (
     <div
       onClick={handlePreview}
-      className={`group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 hover:shadow-md hover:border-pink-200 dark:hover:border-pink-800 transition-all duration-200 ${isImage ? 'cursor-pointer' : ''}`}
+      className={`group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 hover:shadow-md hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark transition-all duration-200 ${isImage ? 'cursor-pointer' : ''}`}
     >
       <div className="flex items-start gap-3">
         {/* Ikona lub miniatura */}
@@ -139,7 +139,7 @@ export default function FileCard({
           {isImage && (
             <button
               onClick={handlePreview}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-pink-600 transition-all duration-200"
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-accent-primary transition-all duration-200"
               title="Podgląd"
             >
               <Eye size={16} />
@@ -147,7 +147,7 @@ export default function FileCard({
           )}
           <button
             onClick={handleDownload}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-pink-600 transition-all duration-200"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-accent-primary transition-all duration-200"
             title="Pobierz"
           >
             <Download size={16} />

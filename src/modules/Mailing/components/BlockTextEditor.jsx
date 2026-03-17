@@ -41,7 +41,7 @@ export default function BlockTextEditor({
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: 'text-pink-600 underline'
+          class: 'text-accent-primary underline'
         }
       }),
       TextAlign.configure({
@@ -304,7 +304,7 @@ export default function BlockTextEditor({
                   className={`w-5 h-5 rounded-md border transition-all hover:scale-110 ${
                     (color.value && editor.isActive('textStyle', { color: color.value })) ||
                     (!color.value && !editor.getAttributes('textStyle').color)
-                      ? 'ring-2 ring-pink-500 ring-offset-1'
+                      ? 'ring-2 ring-accent-primary-light ring-offset-1'
                       : 'border-gray-300 dark:border-gray-600'
                   }`}
                   style={{ backgroundColor: color.value || '#ffffff' }}
@@ -327,7 +327,7 @@ export default function BlockTextEditor({
                 <button
                   key={v.key}
                   onClick={() => insertVariable(v.key)}
-                  className="px-1.5 py-0.5 text-[10px] font-medium bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/30 dark:to-orange-900/30 text-pink-600 dark:text-pink-400 rounded hover:from-pink-100 hover:to-orange-100 dark:hover:from-pink-900/50 dark:hover:to-orange-900/50 transition-all border border-pink-200/50 dark:border-pink-700/30"
+                  className="px-1.5 py-0.5 text-[10px] font-medium bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/50 dark:hover:to-accent-secondary-darkest/50 transition-all border border-accent-primary-lighter/50 dark:border-accent-primary/30"
                   title={v.description}
                 >
                   {v.key}
@@ -411,7 +411,7 @@ function ToolbarButton({ onClick, isActive, disabled, title, children }) {
       title={title}
       className={`p-1.5 rounded-lg transition-all ${
         isActive
-          ? 'bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-sm'
+          ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-sm'
           : disabled
             ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'

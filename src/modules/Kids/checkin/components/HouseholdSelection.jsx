@@ -25,7 +25,7 @@ export default function HouseholdSelection({ households, onSelect, onBack }) {
             <button
               key={household.id}
               onClick={() => onSelect(household)}
-              className="flex flex-col items-start p-5 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl cursor-pointer transition-all text-left w-full hover:border-pink-500 dark:hover:border-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/20"
+              className="flex flex-col items-start p-5 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl cursor-pointer transition-all text-left w-full hover:border-accent-primary-light dark:hover:border-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20"
             >
               {/* Family name */}
               <div className="text-xl font-bold text-gray-900 dark:text-white mb-2">
@@ -42,7 +42,7 @@ export default function HouseholdSelection({ households, onSelect, onBack }) {
 
               {/* Children count */}
               <div className="flex items-center gap-2 mt-2">
-                <span className="flex items-center gap-1.5 bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 px-3 py-1 rounded-full text-sm font-semibold">
+                <span className="flex items-center gap-1.5 bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-3 py-1 rounded-full text-sm font-semibold">
                   <Users size={14} />
                   {childrenCount} {childrenCount === 1 ? 'dziecko' : childrenCount < 5 ? 'dzieci' : 'dzieci'}
                 </span>

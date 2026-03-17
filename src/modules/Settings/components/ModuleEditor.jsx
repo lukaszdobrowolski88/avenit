@@ -88,7 +88,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
       <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg border border-white/20 dark:border-gray-700">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h3 className="font-bold text-xl bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent">
+          <h3 className="font-bold text-xl bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
             {isEditing ? 'Edytuj moduł' : 'Nowy moduł'}
           </h3>
           <button
@@ -121,7 +121,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
               className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
                 ${errors.label
                   ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-gray-200 dark:border-gray-700 focus:border-pink-500 focus:ring-pink-500/20'
+                  : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
                 } focus:outline-none focus:ring-2`}
             />
             {errors.label && (
@@ -144,7 +144,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
                 ${isEditing && module?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
                 ${errors.key
                   ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-gray-200 dark:border-gray-700 focus:border-pink-500 focus:ring-pink-500/20'
+                  : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
                 } focus:outline-none focus:ring-2`}
             />
             {errors.key && (
@@ -170,7 +170,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
                 ${isEditing && module?.is_system ? 'opacity-50 cursor-not-allowed' : ''}
                 ${errors.path
                   ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-gray-200 dark:border-gray-700 focus:border-pink-500 focus:ring-pink-500/20'
+                  : 'border-gray-200 dark:border-gray-700 focus:border-accent-primary-light focus:ring-accent-primary-light/20'
                 } focus:outline-none focus:ring-2`}
             />
             {errors.path && (
@@ -204,7 +204,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg hover:shadow-pink-500/30 transition font-medium flex items-center gap-2 disabled:opacity-50"
+            className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition font-medium flex items-center gap-2 disabled:opacity-50"
           >
             <Save size={16} />
             {saving ? 'Zapisuję...' : 'Zapisz'}

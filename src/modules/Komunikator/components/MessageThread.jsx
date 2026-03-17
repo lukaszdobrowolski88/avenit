@@ -214,9 +214,9 @@ export default function MessageThread({
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       // Podświetl wiadomość na chwilę
-      element.classList.add('bg-pink-100', 'dark:bg-pink-900/30');
+      element.classList.add('bg-accent-primary-lighter', 'dark:bg-accent-primary-darkest/30');
       setTimeout(() => {
-        element.classList.remove('bg-pink-100', 'dark:bg-pink-900/30');
+        element.classList.remove('bg-accent-primary-lighter', 'dark:bg-accent-primary-darkest/30');
       }, 2000);
     }
   }, []);
@@ -269,9 +269,9 @@ export default function MessageThread({
 
   if (!conversation) {
     return (
-      <div className="h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 via-pink-50/30 to-orange-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800/50 text-center px-4">
-        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-pink-100 to-orange-100 dark:from-pink-900/30 dark:to-orange-900/30 flex items-center justify-center mb-6 shadow-lg shadow-pink-500/10">
-          <MessageSquare size={40} className="text-pink-500" />
+      <div className="h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 via-accent-primary-lightest/30 to-accent-secondary-lightest/30 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800/50 text-center px-4">
+        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center mb-6 shadow-lg shadow-accent-primary-light/10">
+          <MessageSquare size={40} className="text-accent-primary-light" />
         </div>
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
           Wybierz rozmowę
@@ -296,12 +296,12 @@ export default function MessageThread({
     >
       {/* Drag & drop overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 bg-gradient-to-br from-pink-500/20 to-orange-500/20 backdrop-blur-sm flex items-center justify-center border-2 border-dashed border-pink-500 rounded-xl m-2 pointer-events-none animate-pulse">
-          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 border border-pink-200/50 dark:border-pink-800/50">
-            <div className="w-20 h-20 bg-gradient-to-br from-pink-100 to-orange-100 dark:from-pink-900/40 dark:to-orange-900/40 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/20">
-              <Upload size={36} className="text-pink-600" />
+        <div className="absolute inset-0 z-50 bg-gradient-to-br from-accent-primary-light/20 to-accent-secondary-light/20 backdrop-blur-sm flex items-center justify-center border-2 border-dashed border-accent-primary-light rounded-xl m-2 pointer-events-none animate-pulse">
+          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 border border-accent-primary-lighter/50 dark:border-accent-primary-dark/50">
+            <div className="w-20 h-20 bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 rounded-2xl flex items-center justify-center shadow-lg shadow-accent-primary-light/20">
+              <Upload size={36} className="text-accent-primary" />
             </div>
-            <p className="text-xl font-bold bg-gradient-to-r from-pink-600 to-orange-500 bg-clip-text text-transparent">Upuść pliki tutaj</p>
+            <p className="text-xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary-light bg-clip-text text-transparent">Upuść pliki tutaj</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Maksymalnie 10 plików, do 10MB każdy</p>
           </div>
         </div>
@@ -336,15 +336,15 @@ export default function MessageThread({
       >
         {loading && messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-100 to-orange-100 dark:from-pink-900/30 dark:to-orange-900/30 flex items-center justify-center">
-              <Loader size={24} className="animate-spin text-pink-600" />
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center">
+              <Loader size={24} className="animate-spin text-accent-primary" />
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">Ładowanie wiadomości...</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-pink-100 to-orange-100 dark:from-pink-900/30 dark:to-orange-900/30 flex items-center justify-center mb-4 shadow-lg shadow-pink-500/10">
-              <MessageSquare size={32} className="text-pink-500" />
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center mb-4 shadow-lg shadow-accent-primary-light/10">
+              <MessageSquare size={32} className="text-accent-primary-light" />
             </div>
             <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
               Brak wiadomości
@@ -361,7 +361,7 @@ export default function MessageThread({
                 <button
                   onClick={loadMore}
                   disabled={loading}
-                  className="px-4 py-2 text-sm font-medium text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-pink-200/50 dark:border-pink-800/50 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium text-accent-primary dark:text-accent-primary-light hover:text-accent-primary dark:hover:text-accent-primary-light bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-accent-primary-lighter/50 dark:border-accent-primary-dark/50 shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <span className="flex items-center gap-2">

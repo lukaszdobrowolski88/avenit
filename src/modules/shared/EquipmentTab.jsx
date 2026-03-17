@@ -190,7 +190,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pink-600"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent-primary"></div>
       </div>
     );
   }
@@ -201,7 +201,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Package className="text-pink-500" size={24} />
+            <Package className="text-accent-primary-light" size={24} />
             Wyposażenie
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -218,7 +218,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
               placeholder="Szukaj..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full sm:w-48 pl-9 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 text-gray-700 dark:text-gray-200"
+              className="w-full sm:w-48 pl-9 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light text-gray-700 dark:text-gray-200"
             />
           </div>
 
@@ -226,7 +226,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
           {canEdit && (
             <button
               onClick={openAddModal}
-              className="px-4 py-2 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2 whitespace-nowrap font-medium"
+              className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2 whitespace-nowrap font-medium"
             >
               <Plus size={18} />
               <span className="hidden sm:inline">Dodaj</span>
@@ -375,7 +375,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 text-gray-700 dark:text-gray-200"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light text-gray-700 dark:text-gray-200"
                   placeholder="np. Mikrofon Shure SM58"
                 />
               </div>
@@ -387,7 +387,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                   value={form.description}
                   onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
                   rows={2}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 resize-none text-gray-700 dark:text-gray-200"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light resize-none text-gray-700 dark:text-gray-200"
                   placeholder="Dodatkowy opis..."
                 />
               </div>
@@ -401,7 +401,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                     min="1"
                     value={form.quantity}
                     onChange={(e) => setForm(prev => ({ ...prev, quantity: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 text-gray-700 dark:text-gray-200"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light text-gray-700 dark:text-gray-200"
                   />
                 </div>
                 <div>
@@ -412,7 +412,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                     step="0.01"
                     value={form.unit_value}
                     onChange={(e) => setForm(prev => ({ ...prev, unit_value: e.target.value }))}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 text-gray-700 dark:text-gray-200"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light text-gray-700 dark:text-gray-200"
                   />
                 </div>
               </div>
@@ -424,7 +424,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                   type="text"
                   value={form.responsible_person}
                   onChange={(e) => setForm(prev => ({ ...prev, responsible_person: e.target.value }))}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 text-gray-700 dark:text-gray-200"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light text-gray-700 dark:text-gray-200"
                   placeholder="Imię i nazwisko"
                 />
               </div>
@@ -440,7 +440,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                       onClick={() => setForm(prev => ({ ...prev, condition: cond.value }))}
                       className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition ${
                         form.condition === cond.value
-                          ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300'
+                          ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light'
                           : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300'
                       }`}
                     >
@@ -457,7 +457,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                   value={form.notes}
                   onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))}
                   rows={2}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 resize-none text-gray-700 dark:text-gray-200"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light resize-none text-gray-700 dark:text-gray-200"
                   placeholder="Dodatkowe notatki..."
                 />
               </div>
@@ -473,7 +473,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
               </button>
               <button
                 onClick={handleSave}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl font-medium hover:shadow-lg transition"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium hover:shadow-lg transition"
               >
                 {editingItem ? 'Zapisz zmiany' : 'Dodaj'}
               </button>

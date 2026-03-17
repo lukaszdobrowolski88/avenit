@@ -238,7 +238,7 @@ export default function FormRenderer({
           </div>
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-pink-500 to-orange-500 transition-all duration-300"
+              className="h-full bg-gradient-to-r from-accent-primary-light to-accent-secondary-light transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -274,13 +274,13 @@ export default function FormRenderer({
           <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
             {eventInfo.location && (
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <MapPin size={16} className="text-pink-500" />
+                <MapPin size={16} className="text-accent-primary-light" />
                 {eventInfo.location}
               </div>
             )}
             {(eventInfo.dateStart || eventInfo.dateEnd) && (
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <Calendar size={16} className="text-pink-500" />
+                <Calendar size={16} className="text-accent-primary-light" />
                 {eventInfo.dateStart && new Date(eventInfo.dateStart).toLocaleDateString('pl-PL', {
                   day: 'numeric', month: 'long', year: 'numeric'
                 })}
@@ -293,7 +293,7 @@ export default function FormRenderer({
             )}
             {(eventInfo.timeStart || eventInfo.timeEnd) && (
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <Clock size={16} className="text-pink-500" />
+                <Clock size={16} className="text-accent-primary-light" />
                 {eventInfo.timeStart}
                 {eventInfo.timeEnd && <> - {eventInfo.timeEnd}</>}
               </div>
@@ -411,11 +411,11 @@ export default function FormRenderer({
                     onClick={() => setSelectedPaymentMethod('transfer')}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
                       selectedPaymentMethod === 'transfer'
-                        ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/30'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-pink-300'
+                        ? 'border-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-accent-primary-light'
                     }`}
                   >
-                    <CreditCard size={20} className="text-pink-600" />
+                    <CreditCard size={20} className="text-accent-primary" />
                     <span className="font-medium text-gray-700 dark:text-gray-300">Przelew bankowy</span>
                   </button>
                 )}
@@ -546,8 +546,8 @@ export default function FormRenderer({
         <button
           type="submit"
           disabled={isSubmitting || !canSubmit || (pricing.enabled && pricing.paymentRequired && totalPrice > 0 && !selectedPaymentMethod)}
-          className="w-full flex items-center justify-center gap-2 py-4 px-6 bg-gradient-to-r from-pink-500 to-orange-500 text-white font-medium rounded-xl
-            hover:shadow-lg hover:shadow-pink-500/25 transition-all
+          className="w-full flex items-center justify-center gap-2 py-4 px-6 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white font-medium rounded-xl
+            hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all
             disabled:opacity-50 disabled:cursor-not-allowed"
           style={settings?.theme?.primaryColor ? {
             background: settings.theme.primaryColor

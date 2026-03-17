@@ -40,7 +40,7 @@ export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpen
         </h2>
         <button
           onClick={onAddExpense}
-          className="px-4 py-2 bg-gradient-to-r from-pink-600 to-orange-600 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+          className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
         >
           <Plus size={18} />
           Dodaj wydatek
@@ -82,7 +82,7 @@ export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpen
                           {item.planned_amount.toLocaleString('pl-PL')} zł
                         </td>
                         <td
-                          className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium cursor-pointer hover:text-pink-600 dark:hover:text-pink-400 transition"
+                          className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium cursor-pointer hover:text-accent-primary dark:hover:text-accent-primary-light transition"
                           onClick={() => toggleExpand(item.id)}
                         >
                           {spent.toLocaleString('pl-PL')} zł
@@ -176,7 +176,7 @@ export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpen
           </div>
 
           {/* Summary */}
-          <div className="mt-6 p-4 bg-gradient-to-r from-pink-100 to-orange-100 dark:from-pink-900/40 dark:to-orange-900/40 rounded-xl">
+          <div className="mt-6 p-4 bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 rounded-xl">
             <div className="grid grid-cols-4 gap-4 text-center">
               <div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Plan całkowity</div>

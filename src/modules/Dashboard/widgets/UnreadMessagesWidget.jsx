@@ -237,7 +237,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -272,7 +272,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
       {totalUnread > 0 && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 text-white text-xs font-bold">
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-xs font-bold">
               {totalUnread > 99 ? '99+' : totalUnread}
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -311,7 +311,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
                 <div className="relative flex-shrink-0">
                   {renderSenderAvatar(conv)}
                   {/* Unread badge */}
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-pink-500 to-orange-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md">
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-md">
                     {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
                   </span>
                 </div>
@@ -340,7 +340,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
                 </div>
 
                 {/* Arrow */}
-                <ChevronRight size={16} className="text-gray-300 dark:text-gray-600 group-hover:text-pink-500 transition-colors flex-shrink-0" />
+                <ChevronRight size={16} className="text-gray-300 dark:text-gray-600 group-hover:text-accent-primary-light transition-colors flex-shrink-0" />
               </button>
             );
           })}
@@ -351,7 +351,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
       {conversations.length > 5 && (
         <button
           onClick={handleOpenMessenger}
-          className="w-full text-center py-2 text-sm text-pink-600 dark:text-pink-400 font-medium hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-lg transition-colors"
+          className="w-full text-center py-2 text-sm text-accent-primary dark:text-accent-primary-light font-medium hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition-colors"
         >
           Zobacz wszystkie ({conversations.length})
         </button>
@@ -361,7 +361,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
       {conversations.length > 0 && conversations.length <= 5 && (
         <button
           onClick={handleOpenMessenger}
-          className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
         >
           <MessageCircle size={16} />
           Otwórz komunikator

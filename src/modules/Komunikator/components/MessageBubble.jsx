@@ -135,7 +135,7 @@ export default function MessageBubble({
           />
           <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-all duration-300 rounded-xl flex items-center justify-center">
             <div className="opacity-0 group-hover/img:opacity-100 transition-all duration-300 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-full p-2 shadow-lg">
-              <Image size={18} className="text-pink-500" />
+              <Image size={18} className="text-accent-primary-light" />
             </div>
           </div>
         </a>
@@ -157,9 +157,9 @@ export default function MessageBubble({
         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
           isOwn
             ? 'bg-white/20'
-            : 'bg-gradient-to-br from-pink-500/20 to-orange-500/20'
+            : 'bg-gradient-to-br from-accent-primary-light/20 to-accent-secondary-light/20'
         }`}>
-          <IconComponent size={20} className={isOwn ? 'text-white' : 'text-pink-500'} />
+          <IconComponent size={20} className={isOwn ? 'text-white' : 'text-accent-primary-light'} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{attachment.name}</p>
@@ -206,7 +206,7 @@ export default function MessageBubble({
               <textarea
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="w-full min-w-[200px] px-4 py-3 rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-pink-500/50 resize-none shadow-lg"
+                className="w-full min-w-[200px] px-4 py-3 rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 resize-none shadow-lg"
                 rows={2}
                 autoFocus
               />
@@ -219,7 +219,7 @@ export default function MessageBubble({
                 </button>
                 <button
                   onClick={handleSaveEdit}
-                  className="p-2 rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white shadow-lg shadow-pink-500/30 transition-all duration-200"
+                  className="p-2 rounded-xl bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white shadow-lg shadow-accent-primary-light/30 transition-all duration-200"
                 >
                   <Check size={16} />
                 </button>
@@ -230,7 +230,7 @@ export default function MessageBubble({
               <div
                 className={`px-4 py-2.5 rounded-2xl transition-all duration-200 ${
                   isOwn
-                    ? 'bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-br-md shadow-lg shadow-pink-500/20'
+                    ? 'bg-gradient-to-br from-accent-primary-light to-accent-primary text-white rounded-br-md shadow-lg shadow-accent-primary-light/20'
                     : 'bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm text-gray-900 dark:text-gray-100 rounded-bl-md shadow-md border border-gray-100/50 dark:border-gray-700/50'
                 } ${isPinned ? 'ring-2 ring-yellow-400/50 ring-offset-2 ring-offset-white dark:ring-offset-gray-900' : ''}`}
               >
@@ -249,10 +249,10 @@ export default function MessageBubble({
                     className={`mb-2.5 p-2.5 rounded-xl cursor-pointer border-l-3 transition-all duration-200 ${
                       isOwn
                         ? 'bg-white/10 border-white/50 hover:bg-white/15'
-                        : 'bg-gradient-to-r from-pink-50 to-orange-50 dark:from-pink-900/20 dark:to-orange-900/20 border-pink-400 hover:from-pink-100 hover:to-orange-100 dark:hover:from-pink-900/30 dark:hover:to-orange-900/30'
+                        : 'bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border-accent-primary-light hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/30 dark:hover:to-accent-secondary-darkest/30'
                     }`}
                   >
-                    <p className={`text-xs font-semibold mb-0.5 ${isOwn ? 'text-white/90' : 'text-pink-600 dark:text-pink-400'}`}>
+                    <p className={`text-xs font-semibold mb-0.5 ${isOwn ? 'text-white/90' : 'text-accent-primary dark:text-accent-primary-light'}`}>
                       <Reply size={10} className="inline mr-1" />
                       {replyToMessage.sender?.full_name || replyToMessage.sender_email}
                     </p>
@@ -292,7 +292,7 @@ export default function MessageBubble({
                   {/* Odpowiedz */}
                   <button
                     onClick={handleReply}
-                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 dark:hover:from-pink-900/30 dark:hover:to-orange-900/30 transition-all duration-200"
+                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-accent-primary-lightest hover:to-accent-secondary-lightest dark:hover:from-accent-primary-darkest/30 dark:hover:to-accent-secondary-darkest/30 transition-all duration-200"
                   >
                     <Reply size={14} className="text-gray-400" />
                     Odpowiedz
@@ -300,7 +300,7 @@ export default function MessageBubble({
                   {/* Przekaż */}
                   <button
                     onClick={handleForward}
-                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 dark:hover:from-pink-900/30 dark:hover:to-orange-900/30 transition-all duration-200"
+                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-accent-primary-lightest hover:to-accent-secondary-lightest dark:hover:from-accent-primary-darkest/30 dark:hover:to-accent-secondary-darkest/30 transition-all duration-200"
                   >
                     <Forward size={14} className="text-gray-400" />
                     Przekaż
@@ -308,7 +308,7 @@ export default function MessageBubble({
                   {/* Kopiuj */}
                   <button
                     onClick={handleCopy}
-                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 dark:hover:from-pink-900/30 dark:hover:to-orange-900/30 transition-all duration-200"
+                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-accent-primary-lightest hover:to-accent-secondary-lightest dark:hover:from-accent-primary-darkest/30 dark:hover:to-accent-secondary-darkest/30 transition-all duration-200"
                   >
                     {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-gray-400" />}
                     {copied ? 'Skopiowano!' : 'Kopiuj'}
@@ -320,7 +320,7 @@ export default function MessageBubble({
                       className={`flex items-center gap-2.5 w-full px-3 py-2 text-sm transition-all duration-200 ${
                         isPinned
                           ? 'text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/30'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 dark:hover:from-pink-900/30 dark:hover:to-orange-900/30'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-accent-primary-lightest hover:to-accent-secondary-lightest dark:hover:from-accent-primary-darkest/30 dark:hover:to-accent-secondary-darkest/30'
                       }`}
                     >
                       <Pin size={14} className={isPinned ? 'fill-current text-yellow-500' : 'text-gray-400'} />
@@ -336,7 +336,7 @@ export default function MessageBubble({
                         setIsEditing(true);
                         setShowMenu(false);
                       }}
-                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-pink-50 hover:to-orange-50 dark:hover:from-pink-900/30 dark:hover:to-orange-900/30 transition-all duration-200"
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-accent-primary-lightest hover:to-accent-secondary-lightest dark:hover:from-accent-primary-darkest/30 dark:hover:to-accent-secondary-darkest/30 transition-all duration-200"
                     >
                       <Edit2 size={14} className="text-gray-400" />
                       Edytuj
@@ -357,7 +357,7 @@ export default function MessageBubble({
               {/* Przycisk reakcji - widoczny przy hover */}
               <button
                 onClick={() => setShowReactionPicker(!showReactionPicker)}
-                className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-pink-500 transition-all duration-200 shadow-sm ${
+                className={`absolute top-1/2 -translate-y-1/2 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-accent-primary-light transition-all duration-200 shadow-sm ${
                   isOwn ? '-left-[4.5rem]' : '-right-[4.5rem]'
                 }`}
               >
@@ -399,12 +399,12 @@ export default function MessageBubble({
                 onClick={() => onToggleReaction?.(message.id, emoji)}
                 className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-all duration-200 ${
                   hasUserReacted
-                    ? 'bg-gradient-to-r from-pink-100 to-orange-100 dark:from-pink-900/40 dark:to-orange-900/40 border border-pink-300/50 dark:border-pink-700/50 shadow-sm'
+                    ? 'bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 border border-accent-primary-light/50 dark:border-accent-primary/50 shadow-sm'
                     : 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105'
                 }`}
               >
                 <span className="text-sm">{emoji}</span>
-                <span className={`font-medium ${hasUserReacted ? 'text-pink-600 dark:text-pink-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                <span className={`font-medium ${hasUserReacted ? 'text-accent-primary dark:text-accent-primary-light' : 'text-gray-600 dark:text-gray-400'}`}>
                   {count}
                 </span>
               </button>

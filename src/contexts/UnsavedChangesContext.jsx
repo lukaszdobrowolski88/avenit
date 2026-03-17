@@ -27,8 +27,8 @@ const UnsavedChangesWarningModal = ({ isOpen, onClose, onSave, onDiscard }) => {
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-white/20 dark:border-gray-700">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertTriangle size={24} className="text-orange-600 dark:text-orange-400" />
+          <div className="w-12 h-12 bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 rounded-full flex items-center justify-center flex-shrink-0">
+            <AlertTriangle size={24} className="text-accent-secondary dark:text-accent-secondary-light" />
           </div>
           <div>
             <h3 className="text-lg font-bold text-gray-800 dark:text-white">Niezapisane zmiany</h3>
@@ -46,7 +46,7 @@ const UnsavedChangesWarningModal = ({ isOpen, onClose, onSave, onDiscard }) => {
           </button>
           <button
             onClick={onSave}
-            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-pink-500/30 transition flex items-center justify-center gap-2"
+            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center justify-center gap-2"
           >
             <Save size={16} /> Zapisz
           </button>

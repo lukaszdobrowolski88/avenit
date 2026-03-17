@@ -121,12 +121,12 @@ export default function IconPicker({ value, onChange, className = '' }) {
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex items-center justify-between gap-3 px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 transition-all
           ${isOpen
-            ? 'border-pink-500 ring-2 ring-pink-500/20'
-            : 'border-gray-200 dark:border-gray-700 hover:border-pink-300 dark:hover:border-pink-600'
+            ? 'border-accent-primary-light ring-2 ring-accent-primary-light/20'
+            : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary'
           }`}
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-orange-500 flex items-center justify-center text-white">
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white">
             <IconComponent size={20} />
           </div>
           <span className="text-sm text-gray-700 dark:text-gray-200">{value || 'Wybierz ikonę'}</span>
@@ -154,7 +154,7 @@ export default function IconPicker({ value, onChange, className = '' }) {
                 placeholder="Szukaj ikony..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
+                className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:border-accent-primary-light focus:ring-1 focus:ring-accent-primary-light"
               />
               {search && (
                 <button
@@ -176,7 +176,7 @@ export default function IconPicker({ value, onChange, className = '' }) {
                   onClick={() => setSelectedCategory(category)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition
                     ${selectedCategory === category
-                      ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400'
+                      ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light'
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                 >
@@ -204,8 +204,8 @@ export default function IconPicker({ value, onChange, className = '' }) {
                       title={iconName}
                       className={`p-3 rounded-xl flex items-center justify-center transition group
                         ${isSelected
-                          ? 'bg-gradient-to-br from-pink-500 to-orange-500 text-white'
-                          : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-pink-50 dark:hover:bg-pink-900/20 hover:text-pink-600 dark:hover:text-pink-400'
+                          ? 'bg-gradient-to-br from-accent-primary-light to-accent-secondary-light text-white'
+                          : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 hover:text-accent-primary dark:hover:text-accent-primary-light'
                         }`}
                     >
                       <Icon size={20} />

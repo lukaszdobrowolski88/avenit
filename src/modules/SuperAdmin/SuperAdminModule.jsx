@@ -55,7 +55,7 @@ export default function SuperAdminModule() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full p-10">
-        <Loader2 size={32} className="animate-spin text-pink-500" />
+        <Loader2 size={32} className="animate-spin text-accent-primary-light" />
       </div>
     );
   }
@@ -118,7 +118,7 @@ export default function SuperAdminModule() {
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
+      <div className="bg-gradient-to-r from-purple-600 to-accent-primary px-6 py-4">
         <div className="flex items-center gap-3">
           <Shield size={24} className="text-white" />
           <div>
@@ -143,7 +143,7 @@ export default function SuperAdminModule() {
               onClick={() => setActiveTab(item.id)}
               className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl whitespace-nowrap transition-all
                 ${isActive
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/25'
+                  ? 'bg-gradient-to-r from-purple-600 to-accent-primary text-white shadow-lg shadow-purple-500/25'
                   : 'bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
             >

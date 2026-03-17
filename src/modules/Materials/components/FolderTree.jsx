@@ -39,7 +39,7 @@ function FolderItem({ folder, level = 0, selectedId, onSelect, onCreateFolder, o
         onClick={handleSelect}
         className={`flex items-center gap-1 px-2 py-1.5 rounded-lg cursor-pointer group transition-all duration-200
           ${isSelected
-            ? 'bg-gradient-to-r from-pink-100 to-orange-100 dark:from-pink-900/40 dark:to-orange-900/40 text-pink-700 dark:text-pink-300'
+            ? 'bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 text-accent-primary dark:text-accent-primary-light'
             : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
           }`}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
@@ -58,9 +58,9 @@ function FolderItem({ folder, level = 0, selectedId, onSelect, onCreateFolder, o
 
         {/* Folder icon */}
         {isExpanded ? (
-          <FolderOpen size={16} className={isSelected ? 'text-pink-500' : 'text-yellow-500'} />
+          <FolderOpen size={16} className={isSelected ? 'text-accent-primary-light' : 'text-yellow-500'} />
         ) : (
-          <Folder size={16} className={isSelected ? 'text-pink-500' : 'text-yellow-500'} />
+          <Folder size={16} className={isSelected ? 'text-accent-primary-light' : 'text-yellow-500'} />
         )}
 
         {/* Folder name */}
@@ -175,11 +175,11 @@ export default function FolderTree({
         onClick={() => onSelect(null)}
         className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-200 mb-1
           ${selectedId === null
-            ? 'bg-gradient-to-r from-pink-100 to-orange-100 dark:from-pink-900/40 dark:to-orange-900/40 text-pink-700 dark:text-pink-300'
+            ? 'bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 text-accent-primary dark:text-accent-primary-light'
             : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
           }`}
       >
-        <Folder size={16} className={selectedId === null ? 'text-pink-500' : 'text-gray-500'} />
+        <Folder size={16} className={selectedId === null ? 'text-accent-primary-light' : 'text-gray-500'} />
         <span className="text-sm font-medium">Wszystkie pliki</span>
       </div>
 
@@ -206,7 +206,7 @@ export default function FolderTree({
       {canEdit && (
         <button
           onClick={() => onCreateFolder(null)}
-          className="flex items-center gap-2 w-full px-3 py-2 mt-2 text-sm text-gray-500 dark:text-gray-400 hover:text-pink-600 dark:hover:text-pink-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200"
+          className="flex items-center gap-2 w-full px-3 py-2 mt-2 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200"
         >
           <Plus size={14} />
           Nowy folder

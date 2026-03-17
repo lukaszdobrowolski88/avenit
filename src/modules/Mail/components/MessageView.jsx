@@ -197,7 +197,7 @@ export default function MessageView({
   if (loading) {
     return (
       <div className="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
-        <div className="w-8 h-8 border-3 border-pink-500 border-t-transparent rounded-full animate-spin mb-4" />
+        <div className="w-8 h-8 border-3 border-accent-primary-light border-t-transparent rounded-full animate-spin mb-4" />
         <p>Ładowanie wiadomości...</p>
       </div>
     );
@@ -347,7 +347,7 @@ export default function MessageView({
 
           <div className="flex items-start gap-4">
             {/* Avatar */}
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary-light to-rose-500 flex items-center justify-center text-white font-bold flex-shrink-0">
               {(message.from_name || message.from_email)?.[0]?.toUpperCase() || '?'}
             </div>
 
@@ -419,7 +419,7 @@ export default function MessageView({
                   </div>
                   <button
                     onClick={() => onDownloadAttachment(attachment)}
-                    className="p-2 text-gray-500 hover:text-pink-500 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    className="p-2 text-gray-500 hover:text-accent-primary-light hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
                     title="Pobierz"
                   >
                     <Download size={16} />

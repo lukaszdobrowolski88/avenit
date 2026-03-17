@@ -65,8 +65,8 @@ export default function ResetPassword() {
     <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
       {/* Tło ozdobne */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-pink-400/20 dark:bg-pink-600/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-orange-400/20 dark:bg-orange-600/10 rounded-full blur-3xl"></div>
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-accent-primary-light/20 dark:bg-accent-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-accent-secondary-light/20 dark:bg-accent-secondary/10 rounded-full blur-3xl"></div>
       </div>
 
       <form
@@ -81,7 +81,7 @@ export default function ResetPassword() {
               className="max-h-24 object-contain"
             />
           ) : (
-            <div className="h-16 w-16 bg-gradient-to-br from-pink-600 to-orange-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+            <div className="h-16 w-16 bg-gradient-to-br from-accent-primary to-accent-secondary rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-lg">
               S
             </div>
           )}
@@ -105,7 +105,7 @@ export default function ResetPassword() {
               <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">Nowe hasło</label>
               <input
                 type="password"
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
@@ -118,7 +118,7 @@ export default function ResetPassword() {
               <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">Powtórz hasło</label>
               <input
                 type="password"
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 outline-none transition"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 required
@@ -134,7 +134,7 @@ export default function ResetPassword() {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-700 hover:to-orange-700 text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-pink-500/25 transition transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-accent-primary to-accent-secondary hover:from-accent-primary hover:to-accent-secondary text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-accent-primary-light/25 transition transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
               disabled={loading}
             >
               {loading ? (

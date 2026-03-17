@@ -12,9 +12,9 @@ function PaletteItem({ fieldType, colorScheme = 'pink' }) {
 
   const colorSchemes = {
     pink: {
-      bg: 'from-pink-50 to-orange-50 dark:from-pink-900/30 dark:to-orange-900/30',
-      icon: 'text-pink-600 dark:text-pink-400',
-      hover: 'hover:border-pink-300 dark:hover:border-pink-600'
+      bg: 'from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30',
+      icon: 'text-accent-primary dark:text-accent-primary-light',
+      hover: 'hover:border-accent-primary-light dark:hover:border-accent-primary'
     },
     green: {
       bg: 'from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30',
@@ -32,7 +32,7 @@ function PaletteItem({ fieldType, colorScheme = 'pink' }) {
       {...listeners}
       className={`p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl cursor-grab active:cursor-grabbing flex items-center gap-3
         ${colors.hover} hover:shadow-md transition-all
-        ${isDragging ? 'opacity-50 shadow-lg ring-2 ring-pink-500/30' : ''}`}
+        ${isDragging ? 'opacity-50 shadow-lg ring-2 ring-accent-primary-light/30' : ''}`}
     >
       <div className={`w-10 h-10 bg-gradient-to-br ${colors.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
         <Icon size={20} className={colors.icon} />

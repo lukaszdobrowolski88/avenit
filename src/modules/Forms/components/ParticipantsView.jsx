@@ -331,7 +331,7 @@ export default function ParticipantsView({ forms }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-pink-200 border-t-pink-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent-primary-lighter border-t-accent-primary-light"></div>
       </div>
     );
   }
@@ -378,8 +378,8 @@ export default function ParticipantsView({ forms }) {
 
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-pink-100 dark:bg-pink-900/30 rounded-lg">
-              <DollarSign size={20} className="text-pink-600 dark:text-pink-400" />
+            <div className="p-2 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 rounded-lg">
+              <DollarSign size={20} className="text-accent-primary dark:text-accent-primary-light" />
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -402,7 +402,7 @@ export default function ParticipantsView({ forms }) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Szukaj uczestnika (imię, email, telefon)..."
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
             />
           </div>
 
@@ -412,14 +412,14 @@ export default function ParticipantsView({ forms }) {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-colors ${
                 showFilters
-                  ? 'bg-pink-50 dark:bg-pink-900/20 border-pink-300 dark:border-pink-700 text-pink-600 dark:text-pink-400'
+                  ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border-accent-primary-light dark:border-accent-primary text-accent-primary dark:text-accent-primary-light'
                   : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
               }`}
             >
               <Filter size={18} />
               Filtry
               {(selectedForm !== 'all' || paymentFilter !== 'all') && (
-                <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+                <span className="w-2 h-2 bg-accent-primary-light rounded-full"></span>
               )}
             </button>
 
@@ -433,7 +433,7 @@ export default function ParticipantsView({ forms }) {
 
             <button
               onClick={exportToCSV}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-pink-500/25 transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
             >
               <Download size={18} />
               Eksportuj
@@ -551,7 +551,7 @@ export default function ParticipantsView({ forms }) {
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-orange-400 rounded-full flex items-center justify-center text-white font-semibold">
+                        <div className="w-10 h-10 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-full flex items-center justify-center text-white font-semibold">
                           {participant.name.charAt(0).toUpperCase()}
                         </div>
                         <div>
@@ -636,7 +636,7 @@ export default function ParticipantsView({ forms }) {
             <div className="p-6 overflow-auto max-h-[calc(90vh-80px)]">
               {/* Info podstawowe */}
               <div className="flex items-start gap-4 mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-orange-400 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+                <div className="w-16 h-16 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
                   {selectedParticipant.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1">
@@ -647,7 +647,7 @@ export default function ParticipantsView({ forms }) {
                     {selectedParticipant.email && (
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                         <Mail size={16} />
-                        <a href={`mailto:${selectedParticipant.email}`} className="hover:text-pink-500">
+                        <a href={`mailto:${selectedParticipant.email}`} className="hover:text-accent-primary-light">
                           {selectedParticipant.email}
                         </a>
                       </div>
@@ -655,7 +655,7 @@ export default function ParticipantsView({ forms }) {
                     {selectedParticipant.phone && (
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                         <Phone size={16} />
-                        <a href={`tel:${selectedParticipant.phone}`} className="hover:text-pink-500">
+                        <a href={`tel:${selectedParticipant.phone}`} className="hover:text-accent-primary-light">
                           {selectedParticipant.phone}
                         </a>
                       </div>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { applyColorPreset } from '../lib/colorPresets';
 
 const PermissionsContext = createContext({
   permissions: [],
@@ -76,6 +77,12 @@ export function PermissionsProvider({ children }) {
         });
         setAppSettings(newSettings);
         localStorage.setItem(CACHE_KEYS.settings, JSON.stringify(newSettings));
+
+        // Zastosuj preset kolorów z bazy
+        const colorPreset = settings.find(s => s.key === 'color_preset')?.value;
+        if (colorPreset) {
+          applyColorPreset(colorPreset);
+        }
       }
 
       // Przetwórz uprawnienia

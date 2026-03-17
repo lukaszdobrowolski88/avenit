@@ -76,7 +76,7 @@ export default function InvoicesList() {
   if (loading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
-        <Loader2 size={32} className="animate-spin mx-auto text-pink-500 mb-4" />
+        <Loader2 size={32} className="animate-spin mx-auto text-accent-primary-light mb-4" />
         <p className="text-gray-600 dark:text-gray-400">Ładowanie faktur...</p>
       </div>
     );
@@ -151,7 +151,7 @@ export default function InvoicesList() {
                       <button
                         onClick={() => handlePay(invoice.id)}
                         disabled={payingInvoice === invoice.id}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-pink-600 to-orange-600 text-white text-sm font-medium rounded-lg hover:shadow-lg transition disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm font-medium rounded-lg hover:shadow-lg transition disabled:opacity-50"
                       >
                         {payingInvoice === invoice.id ? (
                           <Loader2 size={14} className="animate-spin" />
