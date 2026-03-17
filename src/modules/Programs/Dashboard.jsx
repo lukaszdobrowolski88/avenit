@@ -1543,9 +1543,9 @@ export default function Dashboard() {
             if (!song) return '';
             return `
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: ${idx < row.selectedSongs.length - 1 ? '6px' : '0'};">
-                <span style="display: inline-block; width: 20px; height: 20px; background: linear-gradient(135deg, #db2777, #ea580c); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 10px; font-weight: 700;">${idx + 1}</span>
+                <span style="display: inline-block; width: 20px; height: 20px; background: linear-gradient(135deg, #c7ab71, #a08847); color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 10px; font-weight: 700;">${idx + 1}</span>
                 <span style="color: #374151; font-weight: 500;">${song.title}</span>
-                <span style="background: #fce7f3; color: #db2777; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid #fbcfe8;">${s.key}</span>
+                <span style="background: #f5f0e3; color: #8a7340; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid #ddd0b0;">${s.key}</span>
               </div>
             `;
           }).filter(Boolean).join('');
@@ -1555,8 +1555,8 @@ export default function Dashboard() {
         }
 
         return `
-          <tr style="border-bottom: 1px solid #fecdd3;">
-            <td style="padding: 12px; font-weight: 600; color: #be123c; vertical-align: top;">${row.element || '-'}</td>
+          <tr style="border-bottom: 1px solid #ddd0b0;">
+            <td style="padding: 12px; font-weight: 600; color: #8a7340; vertical-align: top;">${row.element || '-'}</td>
             <td style="padding: 12px; color: #4b5563; vertical-align: top;">${row.person || '-'}</td>
             <td style="padding: 12px; font-size: 14px; vertical-align: top;">${detailsHTML}</td>
           </tr>
@@ -1572,10 +1572,10 @@ export default function Dashboard() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Program Nabożeństwa</title>
       </head>
-      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg, #fce7f3 0%, #fed7aa 100%); min-height: 100vh;">
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg, #f5f0e3 0%, #ede4cc 100%); min-height: 100vh;">
 
         <!-- Container -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #fce7f3 0%, #fed7aa 100%); padding: 40px 20px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #f5f0e3 0%, #ede4cc 100%); padding: 40px 20px;">
           <tr>
             <td align="center">
 
@@ -1624,11 +1624,11 @@ export default function Dashboard() {
                     </table>
 
                     <!-- Attachment Info -->
-                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fce7f3 100%); border-left: 4px solid #f59e0b; padding: 16px 20px; border-radius: 12px; margin-bottom: 32px;">
-                      <p style="margin: 0; color: #92400e; font-size: 14px; font-weight: 600;">
+                    <div style="background: linear-gradient(135deg, #f5f0e3 0%, #ede4cc 100%); border-left: 4px solid #c7ab71; padding: 16px 20px; border-radius: 12px; margin-bottom: 32px;">
+                      <p style="margin: 0; color: #6b5d3e; font-size: 14px; font-weight: 600;">
                         📎 <strong>Pełny program w załączniku PDF</strong>
                       </p>
-                      <p style="margin: 8px 0 0 0; color: #b45309; font-size: 13px;">
+                      <p style="margin: 8px 0 0 0; color: #8a7340; font-size: 13px;">
                         Szczegółowe informacje, pieśni z akordami oraz podział zespołów znajdziesz w załączonym pliku PDF.
                       </p>
                     </div>
