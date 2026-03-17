@@ -93,6 +93,9 @@ export const TAB_PERMISSIONS = {
 export function hasTabAccess(module, tab, userRole) {
   if (!module || !tab) return true; // fallback: pokaż wszystko
 
+  // Superadmin ma dostęp do wszystkiego
+  if (userRole === 'superadmin') return true;
+
   const modulePermissions = TAB_PERMISSIONS[module];
   if (!modulePermissions) return true; // moduł nie ma zdefiniowanych uprawnień
 
