@@ -7,11 +7,21 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'TWOJ-KLUCZ';
 // Aby włączyć: zmień REALTIME_DISABLED na false
 const REALTIME_DISABLED = true;
 
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-  ...(REALTIME_DISABLED && {
-    realtime: { autoConnect: false },
-  }),
-});
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Gdy Realtime wyłączone - nadpisz channel() żeby zwracał no-op
+// Kod aplikacji dalej wywołuje .channel().on().subscribe() ale nic się nie łączy
+if (REALTIME_DISABLED) {
+  const noopChannel = {
+    on: () => noopChannel,
+    subscribe: () => noopChannel,
+    unsubscribe: () => {},
+    send: () => {},
+  };
+  supabase.channel = () => noopChannel;
+  supabase.removeChannel = () => {};
+  supabase.removeAllChannels = () => {};
+}
 
 // Cache dla użytkownika - unikamy wielokrotnych wywołań getUser()
 let cachedUser = null;
