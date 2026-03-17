@@ -412,7 +412,7 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
     <body>
       <!-- STOPKA POZA KONTENEREM -->
       <div class="footer-print">
-          Wygenerowano w App SchWro Południe
+          Wygenerowano w App SCH TOMY
       </div>
 
 
@@ -422,7 +422,7 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
           <div class="header">
             <div class="header-top">
                 <div class="header-content">
-                    <div class="subtitle">App SchWro Południe</div>
+                    <div class="subtitle">App SCH TOMY</div>
                     <h1>Program nabożeństwa</h1>
                 </div>
                 <div class="date-badge"><span>${formatDateFull(program.date)}</span></div>
@@ -616,7 +616,7 @@ export const generatePDFBase64 = async (program, songsMap) => {
           
           for (let i = 1; i <= totalPages; i++) {
              doc.setPage(i);
-             doc.text("Wygenerowano w App SchWro Południe", 105, 290, { align: "center" });
+             doc.text("Wygenerowano w App SCH TOMY", 105, 290, { align: "center" });
           }
 
           const dataUri = doc.output('datauristring');

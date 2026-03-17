@@ -353,7 +353,7 @@ export default function GlobalSettings() {
   };
 
   const ensureSuperAdmin = async () => {
-    const superAdminEmail = 'lukasz@schwro.pl';
+    const superAdminEmail = 'lukasz.dobrowolski@schtomy.pl';
     const { data: existing } = await supabase
       .from('app_users')
       .select('*')
@@ -560,7 +560,7 @@ export default function GlobalSettings() {
 
   const deleteUser = async (id) => {
     const user = users.find(u => u.id === id);
-    if (user?.email === 'lukasz@schwro.pl') {
+    if (user?.email === 'lukasz.dobrowolski@schtomy.pl') {
       return alert('Nie można usunąć superadmina!');
     }
 
@@ -997,7 +997,7 @@ export default function GlobalSettings() {
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
                   {users.map(user => {
                     const roleLabel = definedRoles.find(r => r.key === user.role)?.label || user.role;
-                    const isSuperAdmin = user.email === 'lukasz@schwro.pl';
+                    const isSuperAdmin = user.email === 'lukasz.dobrowolski@schtomy.pl';
                     return (
                       <tr key={user.id} className={`hover:bg-accent-primary-lightest/30 dark:hover:bg-gray-600 transition text-gray-800 dark:text-gray-200 ${isSuperAdmin ? 'bg-yellow-50/30 dark:bg-yellow-900/10' : ''}`}>
                         <td className="p-4 font-medium flex items-center gap-3">

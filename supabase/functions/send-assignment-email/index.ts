@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // SendGrid API
 const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY");
-const FROM_EMAIL = Deno.env.get("MAILING_FROM_EMAIL") || "grafik@schwro.pl";
+const FROM_EMAIL = Deno.env.get("MAILING_FROM_EMAIL") || "noreply@schtomy.pl";
 const FROM_NAME = Deno.env.get("MAILING_FROM_NAME") || "Church Manager";
 
 // Supabase

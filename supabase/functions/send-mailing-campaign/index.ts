@@ -6,10 +6,10 @@ const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY");
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const FROM_EMAIL = Deno.env.get("MAILING_FROM_EMAIL") || "newsletter@schwro.pl";
-const FROM_NAME = Deno.env.get("MAILING_FROM_NAME") || "Społeczność Chrześcijańska";
-const BASE_URL = Deno.env.get("APP_BASE_URL") || "https://app.schwro.pl";
-const CHURCH_NAME = Deno.env.get("CHURCH_NAME") || "Społeczność Chrześcijańska";
+const FROM_EMAIL = Deno.env.get("MAILING_FROM_EMAIL") || "noreply@schtomy.pl";
+const FROM_NAME = Deno.env.get("MAILING_FROM_NAME") || "SCH TOMY";
+const BASE_URL = Deno.env.get("APP_BASE_URL") || "https://app.schtomy.pl";
+const CHURCH_NAME = Deno.env.get("CHURCH_NAME") || "SCH TOMY";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

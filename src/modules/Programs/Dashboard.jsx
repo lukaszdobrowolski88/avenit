@@ -1584,7 +1584,7 @@ export default function Dashboard() {
 
                 <!-- Header with Gradient -->
                 <tr>
-                  <td style="background: linear-gradient(135deg, #db2777 0%, #ea580c 100%); padding: 40px 30px; text-align: center;">
+                  <td style="background: linear-gradient(135deg, #c7ab71 0%, #a08847 100%); padding: 40px 30px; text-align: center;">
                     <h1 style="margin: 0 0 8px 0; color: white; font-size: 32px; font-weight: 800; letter-spacing: -0.5px;">Program Nabożeństwa</h1>
                     <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); padding: 8px 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.3);">
                       <p style="margin: 0; color: white; font-size: 16px; font-weight: 700;">${formatDateFull(program.date)}</p>
@@ -1605,17 +1605,17 @@ export default function Dashboard() {
                     </p>
 
                     <!-- Schedule Title -->
-                    <div style="margin-bottom: 20px; padding-bottom: 12px; border-bottom: 3px solid #db2777;">
+                    <div style="margin-bottom: 20px; padding-bottom: 12px; border-bottom: 3px solid #c7ab71;">
                       <h2 style="margin: 0; color: #1f2937; font-size: 22px; font-weight: 700;">📋 Plan Szczegółowy</h2>
                     </div>
 
                     <!-- Schedule Table -->
-                    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; border: 1px solid #fecdd3; border-radius: 12px; overflow: hidden; margin-bottom: 32px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; border: 1px solid #ddd0b0; border-radius: 12px; overflow: hidden; margin-bottom: 32px;">
                       <thead>
-                        <tr style="background: linear-gradient(135deg, #fce7f3 0%, #fed7aa 50%, #fce7f3 100%);">
-                          <th style="padding: 12px; text-align: left; font-size: 11px; font-weight: 700; color: #be123c; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #fda4af;">Element</th>
-                          <th style="padding: 12px; text-align: left; font-size: 11px; font-weight: 700; color: #be123c; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #fda4af;">Osoba</th>
-                          <th style="padding: 12px; text-align: left; font-size: 11px; font-weight: 700; color: #be123c; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #fda4af;">Szczegóły</th>
+                        <tr style="background: linear-gradient(135deg, #f5f0e3 0%, #ede4cc 50%, #f5f0e3 100%);">
+                          <th style="padding: 12px; text-align: left; font-size: 11px; font-weight: 700; color: #8a7340; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #c7ab71;">Element</th>
+                          <th style="padding: 12px; text-align: left; font-size: 11px; font-weight: 700; color: #8a7340; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #c7ab71;">Osoba</th>
+                          <th style="padding: 12px; text-align: left; font-size: 11px; font-weight: 700; color: #8a7340; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #c7ab71;">Szczegóły</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1637,8 +1637,8 @@ export default function Dashboard() {
                     <p style="margin: 0 0 8px 0; color: #374151; font-size: 15px;">
                       Pozdrawiam ciepło,
                     </p>
-                    <p style="margin: 0; color: #db2777; font-size: 16px; font-weight: 700;">
-                      Liderzy SchWro
+                    <p style="margin: 0; color: #c7ab71; font-size: 16px; font-weight: 700;">
+                      Liderzy SCH TOMY
                     </p>
                   </td>
                 </tr>
@@ -1647,10 +1647,10 @@ export default function Dashboard() {
                 <tr>
                   <td style="background: #f9fafb; padding: 24px 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                     <p style="margin: 0 0 4px 0; color: #9ca3af; font-size: 12px;">
-                      Wygenerowano w <strong style="background: linear-gradient(135deg, #db2777, #ea580c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">App SchWro</strong>
+                      Wygenerowano w <strong style="color: #c7ab71;">App SCH TOMY</strong>
                     </p>
                     <p style="margin: 0; color: #d1d5db; font-size: 11px;">
-                      IT Excellence • SchWro Południe
+                      SCH TOMY
                     </p>
                   </td>
                 </tr>
