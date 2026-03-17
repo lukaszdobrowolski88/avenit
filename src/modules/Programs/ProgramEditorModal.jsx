@@ -1213,7 +1213,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Dane z modułu Małe SchWro
+  // Dane z modułu Małe SCH TOMY
   const [kidsGroups, setKidsGroups] = useState([]);
   const [kidsTeachers, setKidsTeachers] = useState([]);
 

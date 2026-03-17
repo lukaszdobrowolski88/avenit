@@ -245,7 +245,7 @@ export default function Sidebar() {
     { path: '/worship', icon: Music, label: 'Grupa Uwielbienia', show: isModuleVisible('worship') },
     { path: '/media', icon: Video, label: 'MediaTeam', show: isModuleVisible('media') },
     { path: '/atmosfera', icon: HeartHandshake, label: 'Atmosfera Team', show: isModuleVisible('atmosfera') },
-    { path: '/kids', icon: Baby, label: 'Małe SchWro', show: isModuleVisible('kids') },
+    { path: '/kids', icon: Baby, label: 'Małe SCH TOMY', show: isModuleVisible('kids') },
     { path: '/home-groups', icon: UserCircle, label: 'Grupy domowe', show: isModuleVisible('groups') },
     { path: '/finance', icon: DollarSign, label: 'Finanse', show: hasModuleAccess('module:finance') },
     { path: '/teaching', icon: BookOpen, label: 'Nauczanie', show: hasModuleAccess('module:teaching') },

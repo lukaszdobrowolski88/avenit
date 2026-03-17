@@ -39,7 +39,7 @@ const MODULE_TABS = {
     }
   },
   kids: {
-    label: 'Małe SchWro',
+    label: 'Małe SCH TOMY',
     resourceKey: 'module:kids',
     tabs: {
       schedule: 'Grafik',
@@ -177,7 +177,7 @@ export default function GlobalSettings() {
     { key: 'worship', label: 'Grupa Uwielbienia', table: 'worship_team' },
     { key: 'media', label: 'Media Team', table: 'media_team' },
     { key: 'atmosfera', label: 'Atmosfera Team', table: 'atmosfera_members' },
-    { key: 'kids', label: 'Małe SchWro', table: 'kids_teachers' },
+    { key: 'kids', label: 'Małe SCH TOMY', table: 'kids_teachers' },
     { key: 'homegroups', label: 'Grupy Domowe (Lider)', table: 'home_group_leaders' }
   ];
 

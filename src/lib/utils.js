@@ -31,13 +31,13 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
   // --- STYLES & COMPONENTS ---
   
   const colors = {
-    // Główny motyw (Plan, Pieśni) - PINK
-    primary: '#db2777',      // Pink 600
-    primaryLight: '#fdf2f8', // Pink 50
-    primaryBorder: '#fbcfe8',// Pink 200
-    
-    // Motyw Sekcji (Zespoły) - ORANGE
-    sectionAccent: '#ea580c', // Orange 600
+    // Główny motyw (Plan, Pieśni) - SCH TOMY Gold
+    primary: '#a08847',      // Gold 600
+    primaryLight: '#f5f0e3', // Gold 50
+    primaryBorder: '#ddd0b0',// Gold 200
+
+    // Motyw Sekcji (Zespoły) - SCH TOMY Dark Gold
+    sectionAccent: '#8a7340', // Dark Gold
 
     // Ogólne teksty - SLATE
     textMain: '#1e293b',     // Slate 800

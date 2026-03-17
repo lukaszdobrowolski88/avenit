@@ -178,7 +178,7 @@ const MINISTRY_CONFIG = {
   kids: {
     tableName: 'kids_events',
     icon: '👶',
-    title: 'Małe SchWro',
+    title: 'Małe SCH TOMY',
     defaultType: 'zajecia',
     types: [
       { value: 'zajecia', label: 'Zajęcia' },

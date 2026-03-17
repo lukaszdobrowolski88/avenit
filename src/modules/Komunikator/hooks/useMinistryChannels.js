@@ -6,7 +6,7 @@ const MINISTRY_CHANNELS = [
   { key: 'worship_team', name: 'Zespół Uwielbienia', table: 'worship_team', emailField: 'email' },
   { key: 'media_team', name: 'Media Team', table: 'media_team', emailField: 'email' },
   { key: 'atmosfera_team', name: 'Atmosfera Team', table: 'atmosfera_members', emailField: 'email' },
-  { key: 'kids_ministry', name: 'Małe SchWro', table: 'kids_teachers', emailField: 'email' },
+  { key: 'kids_ministry', name: 'Małe SCH TOMY', table: 'kids_teachers', emailField: 'email' },
   { key: 'home_groups', name: 'Liderzy Grup Domowych', table: 'home_group_leaders', emailField: 'email' },
 ];
 

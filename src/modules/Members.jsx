@@ -26,7 +26,7 @@ const MINISTRY_OPTIONS = [
   { key: 'atmosfera_team', label: 'Atmosfera Team', table: 'atmosfera_members' },
   { key: 'worship_team', label: 'Grupa Uwielbienia', table: 'worship_team' },
   { key: 'home_groups', label: 'Grupy Domowe', table: 'home_group_members' },
-  { key: 'kids_ministry', label: 'Małe SchWro', table: 'kids_teachers' },
+  { key: 'kids_ministry', label: 'Małe SCH TOMY', table: 'kids_teachers' },
   { key: 'administration', label: 'Administracja', table: null }
 ];
 

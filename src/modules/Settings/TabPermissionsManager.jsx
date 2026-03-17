@@ -31,7 +31,7 @@ const MODULE_TABS = {
     }
   },
   kids: {
-    label: 'Małe SchWro',
+    label: 'Małe SCH TOMY',
     tabs: {
       schedule: 'Grafik',
       groups: 'Grupy',

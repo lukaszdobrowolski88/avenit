@@ -1236,7 +1236,7 @@ export default function Dashboard() {
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // { type: 'selectProgram' | 'navigate', payload: any }
 
-  // Dane z modułu Małe SchWro
+  // Dane z modułu Małe SCH TOMY
   const [kidsGroups, setKidsGroups] = useState([]);
   const [kidsTeachers, setKidsTeachers] = useState([]);
 

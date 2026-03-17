@@ -56,7 +56,7 @@ const TEAMS = {
   media: { label: 'Media Team', color: 'orange', icon: Video },
   atmosfera: { label: 'Atmosfera', color: 'teal', icon: HeartHandshake },
   worship: { label: 'Zespół Uwielbienia', color: 'purple', icon: Music },
-  kids: { label: 'Małe SchWro', color: 'yellow', icon: Baby },
+  kids: { label: 'Małe SCH TOMY', color: 'yellow', icon: Baby },
   groups: { label: 'Grupy Domowe', color: 'blue', icon: Home },
   mlodziezowka: { label: 'Młodzieżówka', color: 'rose', icon: Users },
 };
@@ -221,7 +221,7 @@ const MINISTRY_CALENDARS = [
   { key: 'worship', icon: '🎵', title: 'Zespół Uwielbienia', color: 'from-purple-500 to-indigo-500', description: 'Próby, koncerty, nabożeństwa' },
   { key: 'media', icon: '🎬', title: 'Media Team', color: 'from-accent-secondary-light to-red-500', description: 'Produkcje, streaming, szkolenia' },
   { key: 'atmosfera', icon: '💚', title: 'Atmosfera Team', color: 'from-teal-500 to-green-500', description: 'Spotkania, integracje' },
-  { key: 'kids', icon: '👶', title: 'Małe SchWro', color: 'from-yellow-500 to-amber-500', description: 'Zajęcia, warsztaty, wycieczki' },
+  { key: 'kids', icon: '👶', title: 'Małe SCH TOMY', color: 'from-yellow-500 to-amber-500', description: 'Zajęcia, warsztaty, wycieczki' },
   { key: 'homegroups', icon: '🏠', title: 'Grupy Domowe', color: 'from-blue-500 to-cyan-500', description: 'Spotkania grupowe' },
   { key: 'mlodziezowka', icon: '🎉', title: 'Młodzieżówka', color: 'from-accent-primary-light to-rose-500', description: 'Wydarzenia młodzieżowe' }
 ];
@@ -624,7 +624,7 @@ const MINISTRY_EVENT_CONFIG = {
   },
   kids: {
     icon: '👶',
-    title: 'Małe SchWro',
+    title: 'Małe SCH TOMY',
     defaultType: 'zajecia',
     types: [
       { value: 'zajecia', label: 'Zajęcia' },
@@ -809,7 +809,7 @@ export default function CalendarModule() {
     worshipEvent: null,    // { event data } - modal edycji wydarzenia Zespołu Uwielbienia
     mediaEvent: null,      // { event data } - modal edycji wydarzenia Media Team
     atmosferaEvent: null,  // { event data } - modal edycji wydarzenia Atmosfera Team
-    kidsEvent: null,       // { event data } - modal edycji wydarzenia Małe SchWro
+    kidsEvent: null,       // { event data } - modal edycji wydarzenia Małe SCH TOMY
     homegroupsEvent: null  // { event data } - modal edycji wydarzenia Grup Domowych
   });
   const [view, setView] = useState('month');
@@ -1005,7 +1005,7 @@ export default function CalendarModule() {
         });
     });
 
-    // Wydarzenia z Małe SchWro (Kids)
+    // Wydarzenia z Małe SCH TOMY (Kids)
     kidsEvents?.forEach(ev => {
         if (!ev.start_date) return;
         const d = new Date(ev.start_date);
@@ -1219,7 +1219,7 @@ export default function CalendarModule() {
     }
   };
 
-  // Obsługa zapisywania wydarzeń Małe SchWro
+  // Obsługa zapisywania wydarzeń Małe SCH TOMY
   const handleSaveKidsEvent = async (id, eventData) => {
     let error = null;
     if (id) {

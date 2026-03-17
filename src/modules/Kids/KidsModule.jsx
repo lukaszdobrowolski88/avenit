@@ -329,13 +329,13 @@ export default function KidsModule() {
     payment_date: '',
     amount: '',
     contractor: '',
-    category: 'małe schWro',
+    category: 'małe SCH TOMY',
     description: '',
     detailed_description: '',
     responsible_person: '',
     documents: [],
     tags: [],
-    ministry: 'małe schWro'
+    ministry: 'małe SCH TOMY'
   });
 
   useEffect(() => {
@@ -355,7 +355,7 @@ export default function KidsModule() {
 
   const fetchFinanceData = async () => {
     const currentYear = new Date().getFullYear();
-    const ministryName = 'małe schWro';
+    const ministryName = 'małe SCH TOMY';
 
     try {
       const { data: budget, error: budgetError } = await supabase
@@ -549,7 +549,7 @@ export default function KidsModule() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Małe SchWro</h1>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Małe SCH TOMY</h1>
       </div>
 
       {/* TABS */}
@@ -723,7 +723,7 @@ export default function KidsModule() {
       {/* FINANCES TAB */}
       {activeTab === 'finances' && (
         <FinanceTab
-          ministry="małe schWro"
+          ministry="małe SCH TOMY"
           budgetItems={budgetItems}
           expenses={expenses}
           onAddExpense={() => setShowExpenseModal(true)}
