@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Resend API
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+// SendGrid API
+const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY");
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -16,31 +16,30 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Wyślij email przez Resend API
-async function sendViaResend(
+// Wyślij email przez SendGrid API
+async function sendViaSendGrid(
   to: string,
   subject: string,
   htmlContent: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch("https://api.resend.com/emails", {
+    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${SENDGRID_API_KEY}`,
       },
       body: JSON.stringify({
-        from: `${FROM_NAME} <${FROM_EMAIL}>`,
-        to: to,
+        personalizations: [{ to: [{ email: to }] }],
+        from: { email: FROM_EMAIL, name: FROM_NAME },
         subject: subject,
-        html: htmlContent,
+        content: [{ type: "text/html", value: htmlContent }],
       }),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return { success: false, error: data.message || "Resend error" };
+    if (response.status !== 202) {
+      const data = await response.json().catch(() => ({}));
+      return { success: false, error: (data as any)?.errors?.[0]?.message || "SendGrid error" };
     }
 
     return { success: true };
@@ -90,11 +89,11 @@ serve(async (req) => {
   try {
     const { campaign_id, batch_size = 50, test_email, test_subject, test_html_content } = await req.json();
 
-    if (!RESEND_API_KEY) {
+    if (!SENDGRID_API_KEY) {
       return new Response(
         JSON.stringify({
           error: "No email provider configured",
-          details: "Configure RESEND_API_KEY in Supabase secrets",
+          details: "Configure SENDGRID_API_KEY in Supabase secrets",
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -110,7 +109,7 @@ serve(async (req) => {
         "test-preview"
       );
 
-      const result = await sendViaResend(test_email, `[TEST] ${test_subject}`, personalizedHtml);
+      const result = await sendViaSendGrid(test_email, `[TEST] ${test_subject}`, personalizedHtml);
 
       return new Response(
         JSON.stringify({
@@ -151,7 +150,7 @@ serve(async (req) => {
         campaign_id
       );
 
-      const result = await sendViaResend(test_email, `[TEST] ${campaign.subject}`, personalizedHtml);
+      const result = await sendViaSendGrid(test_email, `[TEST] ${campaign.subject}`, personalizedHtml);
 
       return new Response(
         JSON.stringify({
@@ -214,7 +213,7 @@ serve(async (req) => {
       sent: 0,
       failed: 0,
       errors: [] as string[],
-      provider: "Resend",
+      provider: "SendGrid",
     };
 
     // Wysyłaj emaile pojedynczo
@@ -225,7 +224,7 @@ serve(async (req) => {
         campaign_id
       );
 
-      const result = await sendViaResend(recipient.email, campaign.subject, personalizedHtml);
+      const result = await sendViaSendGrid(recipient.email, campaign.subject, personalizedHtml);
 
       if (result.success) {
         // Sukces - zaktualizuj status odbiorcy
@@ -252,7 +251,7 @@ serve(async (req) => {
         results.errors.push(`${recipient.email}: ${result.error || "Unknown error"}`);
       }
 
-      // Małe opóźnienie między emailami (Resend rate limit: 10/s)
+      // Małe opóźnienie między emailami (SendGrid rate limit)
       await new Promise((resolve) => setTimeout(resolve, 150));
     }
 

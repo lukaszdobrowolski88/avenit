@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Resend API
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+// SendGrid API
+const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY");
 const FROM_EMAIL = Deno.env.get("MAILING_FROM_EMAIL") || "grafik@schwro.pl";
 const FROM_NAME = Deno.env.get("MAILING_FROM_NAME") || "Church Manager";
 
@@ -15,34 +15,34 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Wyslij email przez Resend API
-async function sendViaResend(
+// Wyslij email przez SendGrid API
+async function sendViaSendGrid(
   to: string,
   subject: string,
   htmlContent: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    const response = await fetch("https://api.resend.com/emails", {
+    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${SENDGRID_API_KEY}`,
       },
       body: JSON.stringify({
-        from: `${FROM_NAME} <${FROM_EMAIL}>`,
-        to: to,
+        personalizations: [{ to: [{ email: to }] }],
+        from: { email: FROM_EMAIL, name: FROM_NAME },
         subject: subject,
-        html: htmlContent,
+        content: [{ type: "text/html", value: htmlContent }],
       }),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return { success: false, error: data.message || "Resend error" };
+    if (response.status !== 202) {
+      const data = await response.json().catch(() => ({}));
+      return { success: false, error: (data as any)?.errors?.[0]?.message || "SendGrid error" };
     }
 
-    return { success: true, messageId: data.id };
+    const messageId = response.headers.get("x-message-id") || undefined;
+    return { success: true, messageId };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -207,14 +207,14 @@ serve(async (req) => {
     });
     const programTitle = "Nabożeństwo";
 
-    // Sprawdz czy Resend jest skonfigurowany
-    if (!RESEND_API_KEY) {
-      console.log("RESEND_API_KEY not configured, skipping email");
+    // Sprawdz czy SendGrid jest skonfigurowany
+    if (!SENDGRID_API_KEY) {
+      console.log("SENDGRID_API_KEY not configured, skipping email");
       return new Response(
         JSON.stringify({
           success: false,
           error: "Email service not configured",
-          details: "RESEND_API_KEY is not set"
+          details: "SENDGRID_API_KEY is not set"
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -235,7 +235,7 @@ serve(async (req) => {
     const subject = `Zaproszenie do służby: ${roleName} - ${programDate}`;
 
     // Wyslij email
-    const result = await sendViaResend(to, subject, htmlContent);
+    const result = await sendViaSendGrid(to, subject, htmlContent);
 
     if (result.success) {
       return new Response(

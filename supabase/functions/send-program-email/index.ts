@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -120,35 +120,46 @@ serve(async (req) => {
       }
     }
 
-    // Wyślij email przez Resend API
+    // Wyślij email przez SendGrid API
     console.log("Sending email to:", emailTo);
-    const resendResponse = await fetch("https://api.resend.com/emails", {
+
+    const sendGridBody: Record<string, unknown> = {
+      personalizations: [{ to: emailTo.map((email: string) => ({ email })) }],
+      from: { email: "program@schwro.pl", name: "App SchWro" },
+      subject: subject || "Program nabożeństwa",
+      content: [{ type: "text/html", value: htmlBody }],
+    };
+
+    if (attachments.length > 0) {
+      sendGridBody.attachments = attachments.map((att: { content: string; filename: string }) => ({
+        content: att.content,
+        filename: att.filename,
+        type: "application/pdf",
+        disposition: "attachment",
+      }));
+    }
+
+    const sendGridResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${SENDGRID_API_KEY}`,
       },
-      body: JSON.stringify({
-        from: "App SchWro <program@schwro.pl>",
-        to: emailTo,
-        subject: subject || "Program nabożeństwa",
-        html: htmlBody,
-        attachments: attachments,
-      }),
+      body: JSON.stringify(sendGridBody),
     });
 
-    const resendData = await resendResponse.json();
-
-    if (!resendResponse.ok) {
-      console.error("Resend API Error:", resendData);
+    if (sendGridResponse.status !== 202) {
+      const sendGridData = await sendGridResponse.json().catch(() => ({}));
+      console.error("SendGrid API Error:", sendGridData);
       return new Response(
-        JSON.stringify({ error: "Resend API Error", details: resendData }),
+        JSON.stringify({ error: "SendGrid API Error", details: sendGridData }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Email sent successfully:", resendData);
-    return new Response(JSON.stringify(resendData), {
+    const messageId = sendGridResponse.headers.get("x-message-id");
+    console.log("Email sent successfully, message ID:", messageId);
+    return new Response(JSON.stringify({ id: messageId }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
