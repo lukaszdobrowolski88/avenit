@@ -413,50 +413,67 @@ export default function GlobalSettings() {
         setMessage({ type: 'success', text: 'Zaktualizowano użytkownika' });
       } else {
         // Tworzenie nowego użytkownika
-        // 1. Zapisz aktualną sesję admina przed utworzeniem nowego użytkownika
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
 
-        // 2. Utwórz konto w Supabase Auth z losowym hasłem
-        // UWAGA: W Supabase wyłącz "Confirm email" (Authentication → Providers → Email)
-        // żeby signUp() nie wysyłał emaila potwierdzającego
-        const tempPassword = crypto.randomUUID() + 'Aa1!';
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: userForm.email,
-          password: tempPassword,
-          options: {
-            data: {
-              full_name: userForm.full_name
+        // 0. Sprawdź czy użytkownik już istnieje w app_users
+        const { data: existingAppUser } = await supabase
+          .from('app_users')
+          .select('id, auth_user_id')
+          .eq('email', userForm.email)
+          .maybeSingle();
+
+        if (existingAppUser) {
+          // Użytkownik już istnieje - zaktualizuj zamiast tworzyć
+          await supabase.from('app_users').update({
+            full_name: userForm.full_name || '',
+            role: userForm.role,
+            is_active: userForm.is_active,
+            totp_required: require2FA
+          }).eq('id', existingAppUser.id);
+          setMessage({ type: 'success', text: `Użytkownik ${userForm.email} już istniał — zaktualizowano dane.` });
+        } else {
+          // 1. Zapisz aktualną sesję admina przed utworzeniem nowego użytkownika
+          const { data: { session: currentSession } } = await supabase.auth.getSession();
+
+          // 2. Utwórz konto w Supabase Auth z losowym hasłem
+          const tempPassword = crypto.randomUUID() + 'Aa1!';
+          const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: userForm.email,
+            password: tempPassword,
+            options: {
+              data: {
+                full_name: userForm.full_name
+              }
             }
-          }
-        });
-
-        if (authError) {
-          throw new Error(`Błąd tworzenia konta: ${authError.message}`);
-        }
-
-        // 3. Przywróć sesję admina (signUp automatycznie loguje nowego użytkownika)
-        if (currentSession) {
-          await supabase.auth.setSession({
-            access_token: currentSession.access_token,
-            refresh_token: currentSession.refresh_token
           });
-        }
 
-        // 4. Dodaj rekord do app_users
-        if (authData?.user?.id) {
-          const { error: insertError } = await supabase
-            .from('app_users')
-            .insert({
-              email: userForm.email,
-              full_name: userForm.full_name || '',
-              role: userForm.role,
-              is_active: userForm.is_active,
-              auth_user_id: authData.user.id,
-              totp_required: require2FA
+          if (authError) {
+            throw new Error(`Błąd tworzenia konta: ${authError.message}`);
+          }
+
+          // 3. Przywróć sesję admina (signUp automatycznie loguje nowego użytkownika)
+          if (currentSession) {
+            await supabase.auth.setSession({
+              access_token: currentSession.access_token,
+              refresh_token: currentSession.refresh_token
             });
+          }
 
-          if (insertError) {
-            console.error('Błąd dodawania do app_users:', insertError);
+          // 4. Dodaj rekord do app_users
+          if (authData?.user?.id) {
+            const { error: insertError } = await supabase
+              .from('app_users')
+              .upsert({
+                email: userForm.email,
+                full_name: userForm.full_name || '',
+                role: userForm.role,
+                is_active: userForm.is_active,
+                auth_user_id: authData.user.id,
+                totp_required: require2FA
+              }, { onConflict: 'email' });
+
+            if (insertError) {
+              console.error('Błąd dodawania do app_users:', insertError);
+            }
           }
         }
 
