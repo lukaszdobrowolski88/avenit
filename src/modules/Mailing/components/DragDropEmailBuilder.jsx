@@ -86,7 +86,7 @@ const BLOCK_TYPES = {
       type: 'button',
       text: 'Kliknij tutaj',
       linkUrl: '#',
-      backgroundColor: '#ec4899',
+      backgroundColor: '#c7ab71',
       textColor: '#ffffff',
       borderRadius: 8,
       alignment: 'center',
@@ -142,9 +142,9 @@ const BLOCK_TYPES = {
       type: 'quote',
       content: 'Wpisz tutaj cytat lub wyróżniony tekst...',
       author: '',
-      borderColor: '#ec4899',
-      backgroundColor: '#fdf2f8',
-      textColor: '#831843',
+      borderColor: '#c7ab71',
+      backgroundColor: '#f5f0e3',
+      textColor: '#8a7340',
       padding: 20
     }
   },
@@ -170,7 +170,7 @@ const BLOCK_TYPES = {
       type: 'video',
       thumbnailUrl: '',
       videoUrl: '',
-      playButtonColor: '#ec4899',
+      playButtonColor: '#c7ab71',
       alignment: 'center',
       padding: 10
     }
@@ -221,7 +221,7 @@ const BLOCK_PRESETS = {
     name: 'Hero Banner',
     description: 'Duży obraz z nagłówkiem',
     icon: ImageIcon,
-    color: 'pink',
+    color: 'amber',
     blocks: [
       { ...BLOCK_TYPES.image.defaultContent, id: 'preset-1' },
       { ...BLOCK_TYPES.heading.defaultContent, id: 'preset-2', content: 'Witaj {{imie}}!', level: 1, alignment: 'center' },
@@ -1195,9 +1195,9 @@ function getBlockEditingStyle(block) {
   if (block.backgroundGradient) {
     const { type, angle, color1, color2 } = block.backgroundGradient;
     if (type === 'linear') {
-      baseStyle.background = `linear-gradient(${angle || 135}deg, ${color1 || '#ec4899'}, ${color2 || '#f97316'})`;
+      baseStyle.background = `linear-gradient(${angle || 135}deg, ${color1 || '#c7ab71'}, ${color2 || '#a08847'})`;
     } else {
-      baseStyle.background = `radial-gradient(circle, ${color1 || '#ec4899'}, ${color2 || '#f97316'})`;
+      baseStyle.background = `radial-gradient(circle, ${color1 || '#c7ab71'}, ${color2 || '#a08847'})`;
     }
   } else if (block.backgroundImage) {
     baseStyle.backgroundImage = `url(${block.backgroundImage})`;
@@ -1288,9 +1288,9 @@ function getBlockEditingStyle(block) {
   if (block.type === 'quote') {
     return {
       ...baseStyle,
-      borderLeft: `4px solid ${block.borderColor || '#ec4899'}`,
-      backgroundColor: block.backgroundColor || '#fdf2f8',
-      color: block.textColor || '#831843',
+      borderLeft: `4px solid ${block.borderColor || '#c7ab71'}`,
+      backgroundColor: block.backgroundColor || '#f5f0e3',
+      color: block.textColor || '#8a7340',
       fontStyle: 'italic'
     };
   }
@@ -1670,8 +1670,8 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
   });
   const [gradientType, setGradientType] = useState(backgroundGradient?.type || 'linear');
   const [gradientAngle, setGradientAngle] = useState(backgroundGradient?.angle || 135);
-  const [gradientColor1, setGradientColor1] = useState(backgroundGradient?.color1 || '#ec4899');
-  const [gradientColor2, setGradientColor2] = useState(backgroundGradient?.color2 || '#f97316');
+  const [gradientColor1, setGradientColor1] = useState(backgroundGradient?.color1 || '#c7ab71');
+  const [gradientColor2, setGradientColor2] = useState(backgroundGradient?.color2 || '#a08847');
 
   // Synchronizacja stanów z propsami
   useEffect(() => {
@@ -1679,8 +1679,8 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
       setActiveTab('gradient');
       setGradientType(backgroundGradient.type || 'linear');
       setGradientAngle(backgroundGradient.angle || 135);
-      setGradientColor1(backgroundGradient.color1 || '#ec4899');
-      setGradientColor2(backgroundGradient.color2 || '#f97316');
+      setGradientColor1(backgroundGradient.color1 || '#c7ab71');
+      setGradientColor2(backgroundGradient.color2 || '#a08847');
     } else if (backgroundImage) {
       setActiveTab('image');
     } else {
@@ -1690,7 +1690,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
 
   // Predefiniowane gradienty
   const PRESET_GRADIENTS = [
-    { name: 'Różowo-pomarańczowy', color1: '#ec4899', color2: '#f97316' },
+    { name: 'SCH TOMY Gold', color1: '#c7ab71', color2: '#a08847' },
     { name: 'Niebieski', color1: '#3b82f6', color2: '#8b5cf6' },
     { name: 'Zielony', color1: '#10b981', color2: '#06b6d4' },
     { name: 'Zachód słońca', color1: '#f43f5e', color2: '#fbbf24' },
@@ -2824,10 +2824,10 @@ function blockToHtml(block) {
 
     case 'button':
       const btnWidth = block.fullWidth ? 'display: block; width: 100%;' : 'display: inline-block;';
-      return `<div style="${alignStyle} ${paddingStyle}"><a href="${block.linkUrl || '#'}" style="${btnWidth} padding: 12px 24px; background-color: ${block.backgroundColor || '#ec4899'}; color: ${block.textColor || '#ffffff'}; text-decoration: none; border-radius: ${block.borderRadius || 8}px; font-weight: 600; font-size: ${block.fontSize || 16}px; ${boxShadowStyle}">${block.text || 'Kliknij'}</a></div>`;
+      return `<div style="${alignStyle} ${paddingStyle}"><a href="${block.linkUrl || '#'}" style="${btnWidth} padding: 12px 24px; background-color: ${block.backgroundColor || '#c7ab71'}; color: ${block.textColor || '#ffffff'}; text-decoration: none; border-radius: ${block.borderRadius || 8}px; font-weight: 600; font-size: ${block.fontSize || 16}px; ${boxShadowStyle}">${block.text || 'Kliknij'}</a></div>`;
 
     case 'quote':
-      return `<blockquote style="${paddingStyle} ${marginStyle} ${borderRadiusStyle} ${borderStyle} ${boxShadowStyle} border-left: 4px solid ${block.borderColor || '#ec4899'}; ${bgStyle} ${opacityStyle} color: ${block.textColor || '#831843'}; font-style: italic;">
+      return `<blockquote style="${paddingStyle} ${marginStyle} ${borderRadiusStyle} ${borderStyle} ${boxShadowStyle} border-left: 4px solid ${block.borderColor || '#c7ab71'}; ${bgStyle} ${opacityStyle} color: ${block.textColor || '#8a7340'}; font-style: italic;">
         <p style="margin: 0;">${block.content || ''}</p>
         ${block.author ? `<footer style="margin-top: 8px; font-style: normal; font-size: 14px; opacity: 0.8;">— ${block.author}</footer>` : ''}
       </blockquote>`;
@@ -2843,7 +2843,7 @@ function blockToHtml(block) {
       return `<div style="${alignStyle} ${paddingStyle}">
         <a href="${block.videoUrl || '#'}" target="_blank" style="display: block; position: relative;">
           <img src="${thumbSrc}" alt="Video thumbnail" style="width: 100%; height: auto; display: block; border-radius: 8px;" />
-          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 64px; height: 64px; background-color: ${block.playButtonColor || '#ec4899'}; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 64px; height: 64px; background-color: ${block.playButtonColor || '#c7ab71'}; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
             <div style="width: 0; height: 0; border-top: 12px solid transparent; border-bottom: 12px solid transparent; border-left: 20px solid white; margin-left: 4px;"></div>
           </div>
         </a>

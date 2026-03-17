@@ -316,7 +316,7 @@ export const DEFAULT_FORM_SETTINGS = {
   oneResponsePerUser: false,
   showProgressBar: false,
   theme: {
-    primaryColor: '#ec4899',
+    primaryColor: '#c7ab71',
     backgroundColor: '#ffffff',
     fontFamily: 'inherit'
   },

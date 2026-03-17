@@ -33,7 +33,7 @@ export const DEFAULT_FORM_EMAIL_TEMPLATES = {
   <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
     <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
       <!-- Header -->
-      <div style="background: linear-gradient(135deg, #ec4899, #f97316); padding: 30px; text-align: center;">
+      <div style="background: linear-gradient(135deg, #c7ab71, #a08847); padding: 30px; text-align: center;">
         <h1 style="color: white; margin: 0; font-size: 24px;">Dziekujemy za rejestracje!</h1>
       </div>
 
@@ -421,7 +421,7 @@ export function personalizeFormEmail(template, data) {
   // Formatuj odpowiedzi jako HTML
   const answersHtml = answers.length > 0
     ? answers.map(a => `
-        <div style="margin-bottom: 12px; padding: 10px; background: white; border-radius: 6px; border-left: 3px solid #ec4899;">
+        <div style="margin-bottom: 12px; padding: 10px; background: white; border-radius: 6px; border-left: 3px solid #c7ab71;">
           <p style="margin: 0 0 4px 0; font-size: 12px; color: #6b7280; text-transform: uppercase;">${a.label}</p>
           <p style="margin: 0; font-size: 14px; color: #374151;">${a.value || '-'}</p>
         </div>

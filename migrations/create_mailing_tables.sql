@@ -247,7 +247,7 @@ VALUES
     .header { text-align: center; padding: 20px 0; }
     .content { padding: 20px 0; }
     .footer { text-align: center; padding: 20px 0; font-size: 12px; color: #666; border-top: 1px solid #eee; }
-    .button { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #ec4899, #f97316); color: white; text-decoration: none; border-radius: 8px; }
+    .button { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #c7ab71, #a08847); color: white; text-decoration: none; border-radius: 8px; }
   </style>
 </head>
 <body>
@@ -281,13 +281,13 @@ VALUES
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
     .container { max-width: 600px; margin: 0 auto; background: white; }
-    .header { background: linear-gradient(135deg, #ec4899, #f97316); color: white; text-align: center; padding: 30px 20px; }
+    .header { background: linear-gradient(135deg, #c7ab71, #a08847); color: white; text-align: center; padding: 30px 20px; }
     .header h1 { margin: 0; font-size: 28px; }
     .content { padding: 30px 20px; }
     .section { margin-bottom: 25px; }
-    .section h2 { color: #ec4899; font-size: 20px; margin-bottom: 10px; }
+    .section h2 { color: #c7ab71; font-size: 20px; margin-bottom: 10px; }
     .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; background: #f9f9f9; }
-    .button { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #ec4899, #f97316); color: white; text-decoration: none; border-radius: 8px; margin: 10px 0; }
+    .button { display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #c7ab71, #a08847); color: white; text-decoration: none; border-radius: 8px; margin: 10px 0; }
   </style>
 </head>
 <body>
@@ -340,14 +340,14 @@ VALUES
   <style>
     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
     .container { max-width: 600px; margin: 0 auto; background: white; }
-    .header { background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; text-align: center; padding: 40px 20px; }
+    .header { background: linear-gradient(135deg, #c7ab71, #c7ab71); color: white; text-align: center; padding: 40px 20px; }
     .header h1 { margin: 0; font-size: 32px; }
     .event-details { background: #f9f9f9; padding: 25px; margin: 20px; border-radius: 12px; }
     .event-details p { margin: 8px 0; }
-    .event-details strong { color: #8b5cf6; }
+    .event-details strong { color: #c7ab71; }
     .content { padding: 20px 30px; }
     .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
-    .button { display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; }
+    .button { display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #c7ab71, #c7ab71); color: white; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; }
   </style>
 </head>
 <body>

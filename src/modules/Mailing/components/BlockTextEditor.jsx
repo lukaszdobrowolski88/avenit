@@ -375,7 +375,7 @@ export default function BlockTextEditor({
           margin: 0.25em 0;
         }
         .ProseMirror blockquote {
-          border-left: 3px solid #ec4899;
+          border-left: 3px solid #c7ab71;
           padding-left: 1em;
           margin: 0.5em 0;
           color: #6b7280;
@@ -387,7 +387,7 @@ export default function BlockTextEditor({
           margin: 1em 0;
         }
         .ProseMirror a {
-          color: #ec4899;
+          color: #c7ab71;
           text-decoration: underline;
         }
         .ProseMirror p.is-editor-empty:first-child::before {
