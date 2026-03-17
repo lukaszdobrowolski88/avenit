@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { applyColorPreset } from '../lib/colorPresets';
+import { applyColorPreset, applyCustomColors } from '../lib/colorPresets';
 
 const PermissionsContext = createContext({
   permissions: [],
@@ -81,7 +81,17 @@ export function PermissionsProvider({ children }) {
         // Zastosuj preset kolorów z bazy
         const colorPreset = settings.find(s => s.key === 'color_preset')?.value;
         if (colorPreset) {
-          applyColorPreset(colorPreset);
+          if (colorPreset.startsWith('custom_color_preset_')) {
+            const customData = settings.find(s => s.key === colorPreset)?.value;
+            if (customData) {
+              try {
+                const parsed = JSON.parse(customData);
+                applyCustomColors(parsed.primary, parsed.secondary);
+              } catch {}
+            }
+          } else {
+            applyColorPreset(colorPreset);
+          }
         }
       }
 

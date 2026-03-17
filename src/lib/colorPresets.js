@@ -38,26 +38,82 @@ export const COLOR_PRESETS = {
   },
 };
 
+// Konwersja hex -> RGB triplet string
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `${r} ${g} ${b}`;
+}
+
+// Mieszaj kolor z białym (rozjaśnij) lub czarnym (ściemnij)
+function mixColor(hex, factor) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  if (factor > 0) {
+    // rozjaśnij (mix z białym)
+    return `${Math.round(r + (255 - r) * factor)} ${Math.round(g + (255 - g) * factor)} ${Math.round(b + (255 - b) * factor)}`;
+  }
+  // ściemnij (mix z czarnym)
+  const f = 1 + factor;
+  return `${Math.round(r * f)} ${Math.round(g * f)} ${Math.round(b * f)}`;
+}
+
+// Generuj pełny zestaw odcieni z jednego koloru hex
+export function generateShades(hex) {
+  return {
+    lightest: mixColor(hex, 0.92),
+    lighter: mixColor(hex, 0.82),
+    light: hexToRgb(hex),
+    DEFAULT: mixColor(hex, -0.15),
+    dark: mixColor(hex, -0.45),
+    darkest: mixColor(hex, -0.55),
+  };
+}
+
+function applyShades(root, prefix, shades) {
+  root.style.setProperty(`--accent-${prefix}`, shades.DEFAULT);
+  root.style.setProperty(`--accent-${prefix}-light`, shades.light);
+  root.style.setProperty(`--accent-${prefix}-lighter`, shades.lighter);
+  root.style.setProperty(`--accent-${prefix}-lightest`, shades.lightest);
+  root.style.setProperty(`--accent-${prefix}-dark`, shades.dark);
+  root.style.setProperty(`--accent-${prefix}-darkest`, shades.darkest);
+}
+
 export function applyColorPreset(presetKey) {
+  // Własny preset (zapisany jako JSON w app_settings)
+  if (presetKey === 'custom') {
+    const custom = getCustomPreset();
+    if (custom) {
+      applyCustomColors(custom.primary, custom.secondary);
+      return;
+    }
+  }
+
   const preset = COLOR_PRESETS[presetKey];
   if (!preset) return;
 
   const root = document.documentElement;
-  root.style.setProperty('--accent-primary', preset.primary.DEFAULT);
-  root.style.setProperty('--accent-primary-light', preset.primary.light);
-  root.style.setProperty('--accent-primary-lighter', preset.primary.lighter);
-  root.style.setProperty('--accent-primary-lightest', preset.primary.lightest);
-  root.style.setProperty('--accent-primary-dark', preset.primary.dark);
-  root.style.setProperty('--accent-primary-darkest', preset.primary.darkest);
-
-  root.style.setProperty('--accent-secondary', preset.secondary.DEFAULT);
-  root.style.setProperty('--accent-secondary-light', preset.secondary.light);
-  root.style.setProperty('--accent-secondary-lighter', preset.secondary.lighter);
-  root.style.setProperty('--accent-secondary-lightest', preset.secondary.lightest);
-  root.style.setProperty('--accent-secondary-dark', preset.secondary.dark);
-  root.style.setProperty('--accent-secondary-darkest', preset.secondary.darkest);
-
+  applyShades(root, 'primary', preset.primary);
+  applyShades(root, 'secondary', preset.secondary);
   localStorage.setItem('color_preset', presetKey);
+}
+
+export function applyCustomColors(primaryHex, secondaryHex) {
+  const root = document.documentElement;
+  applyShades(root, 'primary', generateShades(primaryHex));
+  applyShades(root, 'secondary', generateShades(secondaryHex));
+  localStorage.setItem('color_preset', 'custom');
+  localStorage.setItem('custom_preset', JSON.stringify({ primary: primaryHex, secondary: secondaryHex }));
+}
+
+export function getCustomPreset() {
+  try {
+    return JSON.parse(localStorage.getItem('custom_preset'));
+  } catch { return null; }
 }
 
 export function getPresetKey() {
