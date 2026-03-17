@@ -1,0 +1,52 @@
+-- ============================================
+-- AKTUALIZACJA STORAGE DLA WIADOMOŚCI GŁOSOWYCH
+-- ============================================
+
+-- Dodanie obsługi plików audio do bucketu messenger-attachments
+-- MIME types: audio/webm, audio/mp4, audio/ogg, audio/mpeg, audio/wav
+
+-- Uwaga: W Supabase Storage konfiguracja MIME types odbywa się przez Dashboard
+-- lub przez RLS policies. Ten plik służy jako dokumentacja.
+
+-- Jeśli bucket messenger-attachments nie istnieje, utwórz go:
+-- INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+-- VALUES (
+--   'messenger-attachments',
+--   'messenger-attachments',
+--   true,
+--   10485760, -- 10MB
+--   ARRAY[
+--     'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+--     'application/pdf',
+--     'application/msword',
+--     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+--     'application/vnd.ms-excel',
+--     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+--     'text/plain',
+--     'audio/webm', 'audio/mp4', 'audio/ogg', 'audio/mpeg', 'audio/wav'
+--   ]
+-- )
+-- ON CONFLICT (id) DO UPDATE SET
+--   allowed_mime_types = ARRAY[
+--     'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+--     'application/pdf',
+--     'application/msword',
+--     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+--     'application/vnd.ms-excel',
+--     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+--     'text/plain',
+--     'audio/webm', 'audio/mp4', 'audio/ogg', 'audio/mpeg', 'audio/wav'
+--   ];
+
+-- ============================================
+-- INSTRUKCJE MANUALNE (Supabase Dashboard):
+-- ============================================
+-- 1. Przejdź do Storage > messenger-attachments > Settings
+-- 2. Dodaj do "Allowed MIME types":
+--    - audio/webm
+--    - audio/mp4
+--    - audio/ogg
+--    - audio/mpeg
+--    - audio/wav
+-- 3. Zapisz zmiany
+-- ============================================

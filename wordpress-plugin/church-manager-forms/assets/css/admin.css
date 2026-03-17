@@ -1,0 +1,71 @@
+/**
+ * Church Manager Forms - Admin Styles
+ */
+
+/* Settings page */
+.cmf-usage-guide {
+    max-width: 800px;
+}
+
+.cmf-usage-guide h3 {
+    margin-top: 0;
+    color: #1d2327;
+    font-size: 1.2em;
+}
+
+.cmf-usage-guide h4 {
+    color: #50575e;
+    font-size: 1em;
+    margin-top: 20px;
+}
+
+.cmf-usage-guide code {
+    background: #f1f1f1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+.cmf-usage-guide ul {
+    margin-top: 10px;
+}
+
+.cmf-usage-guide ul li {
+    margin-bottom: 5px;
+}
+
+/* Error messages */
+.cmf-error {
+    padding: 15px 20px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    color: #856404;
+    font-size: 14px;
+}
+
+.cmf-error a {
+    color: #533f03;
+    text-decoration: underline;
+}
+
+/* Form wrapper */
+.church-manager-form-wrapper {
+    margin: 20px 0;
+}
+
+.church-manager-form-wrapper iframe {
+    display: block;
+    margin: 0 auto;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .cmf-usage-guide {
+        padding: 15px;
+    }
+
+    .cmf-usage-guide code {
+        word-break: break-all;
+    }
+}

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aktywacja konta - Church Manager</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8fafc;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 520px; margin: 0 auto;">
+
+          <!-- Logo / Header -->
+          <tr>
+            <td style="text-align: center; padding-bottom: 32px;">
+              <div style="display: inline-block; background: linear-gradient(135deg, #db2777 0%, #ea580c 100%); width: 64px; height: 64px; border-radius: 16px; line-height: 64px; font-size: 28px; font-weight: bold; color: white; box-shadow: 0 10px 25px -5px rgba(219, 39, 119, 0.3);">
+                CM
+              </div>
+            </td>
+          </tr>
+
+          <!-- Main Card -->
+          <tr>
+            <td>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: white; border-radius: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1); overflow: hidden;">
+
+                <!-- Gradient Top Bar -->
+                <tr>
+                  <td style="height: 4px; background: linear-gradient(90deg, #db2777 0%, #ea580c 100%);"></td>
+                </tr>
+
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 40px 36px;">
+
+                    <!-- Greeting -->
+                    <h1 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #1f2937;">
+                      Witaj{{ if .Data.full_name }}, {{ .Data.full_name }}{{ end }}!
+                    </h1>
+
+                    <p style="margin: 0 0 24px 0; font-size: 16px; color: #6b7280; line-height: 1.6;">
+                      Twoje konto w systemie <strong style="color: #374151;">Church Manager</strong> zostało utworzone.
+                    </p>
+
+                    <!-- Info Box -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(135deg, #fdf2f8 0%, #fff7ed 100%); border-radius: 12px; margin-bottom: 28px;">
+                      <tr>
+                        <td style="padding: 20px;">
+                          <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;">
+                            Twój email do logowania
+                          </p>
+                          <p style="margin: 0; font-size: 16px; font-weight: 600; color: #db2777;">
+                            {{ .Email }}
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style="margin: 0 0 28px 0; font-size: 15px; color: #4b5563; line-height: 1.6;">
+                      Aby aktywować konto i ustawić hasło, kliknij poniższy przycisk:
+                    </p>
+
+                    <!-- CTA Button -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                      <tr>
+                        <td style="text-align: center;">
+                          <a href="{{ .ConfirmationURL }}" style="display: inline-block; background: linear-gradient(135deg, #db2777 0%, #ea580c 100%); color: white; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 40px; border-radius: 12px; box-shadow: 0 4px 14px -3px rgba(219, 39, 119, 0.4);">
+                            Aktywuj konto
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Alternative Link -->
+                    <p style="margin: 28px 0 0 0; font-size: 13px; color: #9ca3af; line-height: 1.6;">
+                      Jeśli przycisk nie działa, skopiuj i wklej ten link do przeglądarki:<br>
+                      <a href="{{ .ConfirmationURL }}" style="color: #db2777; word-break: break-all;">{{ .ConfirmationURL }}</a>
+                    </p>
+
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 32px 20px; text-align: center;">
+              <p style="margin: 0 0 8px 0; font-size: 13px; color: #9ca3af;">
+                Ten email został wysłany automatycznie przez system Church Manager.
+              </p>
+              <p style="margin: 0; font-size: 13px; color: #9ca3af;">
+                Jeśli nie zakładałeś konta, zignoruj tę wiadomość.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

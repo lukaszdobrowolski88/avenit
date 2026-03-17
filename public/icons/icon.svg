@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Warstwa_1" data-name="Warstwa 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 439.82 534.22">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#linear-gradient);
+      }
+
+      .cls-2 {
+        fill: #d40d55;
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="219.77" y1="27.87" x2="219.77" y2="522.82" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f0900a"/>
+      <stop offset="1" stop-color="#d40d55"/>
+    </linearGradient>
+  </defs>
+  <path class="cls-1" d="M373.51,67.1c-84.91-84.86-222.58-84.86-307.49,0-84.91,84.86-84.91,222.45,0,307.31l153.75,153.66,153.74-153.66c84.91-84.86,84.91-222.45,0-307.31ZM268.72,346.35c-49.66,19.86-108.54,9.7-148.76-30.49-53.84-53.81-53.84-141.05,0-194.86,53.84-53.81,141.13-53.81,194.97,0,40.22,40.2,50.38,99.04,30.51,148.68l28.08,104.73-104.79-28.06Z"/>
+  <g>
+    <rect class="cls-2" x="205.99" y="122.63" width="28.11" height="194.03"/>
+    <rect class="cls-2" x="205.99" y="122.6" width="28.11" height="128.64" transform="translate(406.97 -33.13) rotate(90)"/>
+  </g>
+</svg>

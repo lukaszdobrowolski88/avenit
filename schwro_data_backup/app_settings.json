@@ -1,0 +1,9 @@
+[{"id":2,"key":"org_logo_url","value":"https://vsyxhwfnjznrmkgcinyx.supabase.co/storage/v1/object/public/public-assets/org-logo-1764522581813.png","description":"URL do Logo"}, 
+ {"id":4,"key":"module_members_enabled","value":"true","description":"Moduł: Baza Członków"}, 
+ {"id":6,"key":"module_media_enabled","value":"true","description":"Moduł: Media Team"}, 
+ {"id":5,"key":"module_worship_enabled","value":"true","description":"Moduł: Grupa Uwielbienia"}, 
+ {"id":7,"key":"module_kids_enabled","value":"true","description":"Moduł: Małe SchWro"}, 
+ {"id":8,"key":"module_groups_enabled","value":"true","description":"Moduł: Grupy Domowe"}, 
+ {"id":9,"key":"module_prayer_enabled","value":"true","description":null}, 
+ {"id":10,"key":"module_komunikator_enabled","value":"true","description":"Moduł Komunikator"}, 
+ {"id":1,"key":"org_name","value":"Społeczność Chrześcijańska Wrocław Południe","description":"Nazwa Kościoła"}]
