@@ -3,7 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://TWOJ-PROJEKT.supabase.co';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'TWOJ-KLUCZ';
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// REALTIME_DISABLED: Tymczasowo wyłączone - Realtime nie łączy się z bazą na tym projekcie
+// Aby włączyć: zmień REALTIME_DISABLED na false
+const REALTIME_DISABLED = true;
+
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  ...(REALTIME_DISABLED && {
+    realtime: { autoConnect: false },
+  }),
+});
 
 // Cache dla użytkownika - unikamy wielokrotnych wywołań getUser()
 let cachedUser = null;
