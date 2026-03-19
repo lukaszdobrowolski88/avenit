@@ -101,10 +101,13 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const active = location.pathname;
-  const { userRole } = useUserRole();
+  const { userRole, loading: roleLoading } = useUserRole();
   const { permissions, appSettings: moduleSettings, logoUrl } = usePermissions();
   const { isOpen, close } = useSidebar();
   const { hasUnsavedChanges, checkBeforeNavigate } = useUnsavedChanges();
+
+  // Sidebar jest gotowy gdy mamy rolę i uprawnienia
+  const sidebarReady = !roleLoading && userRole && permissions.length > 0;
 
   // Stan zwinięcia sidebara (z localStorage) - tylko dla desktop
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -324,35 +327,47 @@ export default function Sidebar() {
 
       {/* NAWIGACJA */}
       <nav className={`flex-1 ${isCollapsed && !isMobile ? 'p-2' : 'p-3 lg:p-4'} space-y-1 overflow-y-auto custom-scrollbar ${isMobile ? 'mt-0' : 'mt-2'}`}>
-        {allLinks.filter(l => l.show).map(link => {
-          const isActive = active === link.path;
+        {!sidebarReady ? (
+          // Skeleton loader — pulsujące placeholdery zamiast migotania
+          Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-xl animate-pulse`}>
+              <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded shrink-0" />
+              {(isMobile || !isCollapsed) && (
+                <div className={`h-4 bg-gray-200 dark:bg-gray-700 rounded ${i < 3 ? 'w-20' : i < 6 ? 'w-32' : 'w-24'}`} />
+              )}
+            </div>
+          ))
+        ) : (
+          allLinks.filter(l => l.show).map(link => {
+            const isActive = active === link.path;
 
-          // Obsługa kliknięcia z sprawdzeniem niezapisanych zmian
-          const handleLinkClick = (e) => {
-            if (hasUnsavedChanges) {
-              e.preventDefault();
-              checkBeforeNavigate(() => {
-                navigate(link.path);
-                if (isMobile) close();
-              });
-            } else if (isMobile) {
-              close();
-            }
-          };
+            // Obsługa kliknięcia z sprawdzeniem niezapisanych zmian
+            const handleLinkClick = (e) => {
+              if (hasUnsavedChanges) {
+                e.preventDefault();
+                checkBeforeNavigate(() => {
+                  navigate(link.path);
+                  if (isMobile) close();
+                });
+              } else if (isMobile) {
+                close();
+              }
+            };
 
-          return (
-            <Tooltip key={link.path} text={link.label} show={isCollapsed && !isMobile}>
-              <Link
-                to={link.path}
-                onClick={handleLinkClick}
-                className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-xl transition-all group ${isActive ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg shadow-accent-primary-light/30 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary dark:hover:text-white'}`}
-              >
-                <link.icon size={20} className={`shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-accent-primary-light dark:group-hover:text-white transition-colors'}`} />
-                {(isMobile || !isCollapsed) && <span className="text-sm truncate">{link.label}</span>}
-              </Link>
-            </Tooltip>
-          );
-        })}
+            return (
+              <Tooltip key={link.path} text={link.label} show={isCollapsed && !isMobile}>
+                <Link
+                  to={link.path}
+                  onClick={handleLinkClick}
+                  className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-xl transition-all group ${isActive ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg shadow-accent-primary-light/30 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary dark:hover:text-white'}`}
+                >
+                  <link.icon size={20} className={`shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-accent-primary-light dark:group-hover:text-white transition-colors'}`} />
+                  {(isMobile || !isCollapsed) && <span className="text-sm truncate">{link.label}</span>}
+                </Link>
+              </Tooltip>
+            );
+          })
+        )}
       </nav>
 
       {/* USTAWIENIA */}
