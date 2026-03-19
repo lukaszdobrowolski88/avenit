@@ -105,27 +105,26 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
 
       {/* Actions */}
       <div className="flex items-center gap-1">
-        {module.is_system ? (
+        {module.is_system && (
           <div className="p-2 text-gray-400" title="Moduł systemowy">
             <Lock size={16} />
           </div>
-        ) : (
-          <>
-            <button
-              onClick={() => onEdit(module)}
-              className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
-              title="Edytuj"
-            >
-              <Pencil size={16} />
-            </button>
-            <button
-              onClick={() => onDelete(module)}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition opacity-0 group-hover:opacity-100"
-              title="Usuń"
-            >
-              <Trash2 size={16} />
-            </button>
-          </>
+        )}
+        <button
+          onClick={() => onEdit(module)}
+          className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
+          title="Edytuj"
+        >
+          <Pencil size={16} />
+        </button>
+        {!module.is_system && (
+          <button
+            onClick={() => onDelete(module)}
+            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition opacity-0 group-hover:opacity-100"
+            title="Usuń"
+          >
+            <Trash2 size={16} />
+          </button>
         )}
       </div>
     </div>
