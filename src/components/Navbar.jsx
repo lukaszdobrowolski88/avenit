@@ -46,6 +46,7 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
     localStorage.removeItem('color_preset');
     localStorage.removeItem('custom_preset');
     localStorage.removeItem('sidebarCollapsed');
+    localStorage.removeItem('app_modules_cache');
     await supabase.auth.signOut();
     window.location.href = '/';
   };

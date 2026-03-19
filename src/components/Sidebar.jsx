@@ -106,16 +106,6 @@ export default function Sidebar() {
   const { isOpen, close } = useSidebar();
   const { hasUnsavedChanges, checkBeforeNavigate } = useUnsavedChanges();
 
-  // Debug - tymczasowe logowanie (usuń po rozwiązaniu problemu)
-  useEffect(() => {
-    console.log('[Sidebar Debug]', {
-      userRole,
-      permissionsCount: permissions.length,
-      liderPerms: permissions.filter(p => p.role === 'lider').length,
-      moduleSettings
-    });
-  }, [userRole, permissions, moduleSettings]);
-
   // Stan zwinięcia sidebara (z localStorage) - tylko dla desktop
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
@@ -144,9 +134,16 @@ export default function Sidebar() {
     };
   }, [isOpen]);
 
-  // Dynamiczne moduły z bazy danych
-  const [dynamicModules, setDynamicModules] = useState([]);
-  const [modulesLoaded, setModulesLoaded] = useState(false);
+  // Dynamiczne moduły z bazy danych (inicjalizuj z cache)
+  const [dynamicModules, setDynamicModules] = useState(() => {
+    try {
+      const cached = localStorage.getItem('app_modules_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
+  const [modulesLoaded, setModulesLoaded] = useState(() => {
+    return !!localStorage.getItem('app_modules_cache');
+  });
 
   // Funkcja do ładowania modułów
   const loadModules = async () => {
@@ -158,6 +155,7 @@ export default function Sidebar() {
 
       if (!error && data && data.length > 0) {
         setDynamicModules(data);
+        localStorage.setItem('app_modules_cache', JSON.stringify(data));
       }
     } catch (err) {
       console.log('Tabela app_modules nie istnieje jeszcze, używam statycznej listy');
@@ -284,14 +282,6 @@ export default function Sidebar() {
   // Użyj dynamicznych modułów jeśli są dostępne, w przeciwnym razie statycznych
   const moduleLinks = dynamicModules.length > 0 ? getDynamicModuleLinks() : staticModuleLinks;
   const allLinks = [...coreLinks, ...moduleLinks];
-
-  // Debug - tymczasowe logowanie (usuń po rozwiązaniu problemu)
-  console.log('[Sidebar Links]', {
-    dynamicModulesCount: dynamicModules.length,
-    usingDynamic: dynamicModules.length > 0,
-    visibleModules: moduleLinks.filter(l => l.show).map(l => l.label),
-    hiddenModules: moduleLinks.filter(l => !l.show).map(l => l.label)
-  });
 
   // Wspólna zawartość sidebara
   const SidebarContent = ({ isMobile = false }) => (
