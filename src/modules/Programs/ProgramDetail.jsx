@@ -773,14 +773,14 @@ const ItemEditPanel = ({ item, songs, worshipTeam = [], mediaTeam = [], onUpdate
           {/* Duration */}
           <div>
             <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Czas trwania</label>
-            <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-2 border border-gray-200/80 dark:border-gray-700/80">
-              <Clock size={16} className="text-gray-400 ml-2" />
+            <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 border border-gray-200/80 dark:border-gray-700/80">
+              <Clock size={16} className="text-gray-400" />
               <input
                 type="number"
                 min="0"
                 value={Math.floor((item.duration || 0) / 60)}
                 onChange={(e) => handleChange('duration', (parseInt(e.target.value) || 0) * 60 + ((item.duration || 0) % 60))}
-                className="w-12 px-2 py-1.5 text-sm font-medium bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-center focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
+                className="w-16 px-3 py-2 text-sm font-medium bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-center focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
               />
               <span className="text-gray-400 text-xs font-medium">min</span>
               <input
@@ -789,10 +789,10 @@ const ItemEditPanel = ({ item, songs, worshipTeam = [], mediaTeam = [], onUpdate
                 max="59"
                 value={(item.duration || 0) % 60}
                 onChange={(e) => handleChange('duration', Math.floor((item.duration || 0) / 60) * 60 + (parseInt(e.target.value) || 0))}
-                className="w-12 px-2 py-1.5 text-sm font-medium bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-center focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
+                className="w-16 px-3 py-2 text-sm font-medium bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-center focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
               />
               <span className="text-gray-400 text-xs font-medium">sek</span>
-              <div className="ml-auto text-sm font-mono text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-2 py-1 rounded-lg">
+              <div className="ml-auto text-base font-mono font-bold text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-3 py-1.5 rounded-lg">
                 {formatTime(item.duration || 0)}
               </div>
             </div>
