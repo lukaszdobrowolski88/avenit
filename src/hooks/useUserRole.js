@@ -48,11 +48,33 @@ const fetchRole = async () => {
         return;
       }
 
-      const { data: profile, error } = await supabase
-        .from('app_users')
-        .select('role')
-        .eq('email', user.email)
-        .maybeSingle();
+      // Szukaj najpierw po auth_user_id (najbardziej niezawodne)
+      let profile = null;
+      let error = null;
+
+      if (user.id) {
+        const result = await supabase
+          .from('app_users')
+          .select('role')
+          .eq('auth_user_id', user.id)
+          .limit(1)
+          .maybeSingle();
+        profile = result.data;
+        error = result.error;
+      }
+
+      // Fallback: szukaj po emailu (case-insensitive)
+      if (!profile && !error && user.email) {
+        const result = await supabase
+          .from('app_users')
+          .select('role')
+          .ilike('email', user.email)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        profile = result.data;
+        error = result.error;
+      }
 
       if (error) {
         console.error('Error fetching user role:', error);

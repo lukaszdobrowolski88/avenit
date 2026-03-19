@@ -117,7 +117,7 @@ export function getCustomPreset() {
 }
 
 export function getPresetKey() {
-  return localStorage.getItem('color_preset') || 'pink-orange';
+  return localStorage.getItem('color_preset') || 'amber-yellow';
 }
 
 // Zastosuj preset natychmiast przy imporcie (przed renderem React)

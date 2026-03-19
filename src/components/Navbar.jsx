@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import NotificationCenter from './NotificationCenter';
 import { useMyPresence, statusLabels } from '../hooks/usePresence';
 import { MobileMenuButton } from './Sidebar';
+import { resetUserRoleCache } from '../hooks/useUserRole';
 
 export default function Navbar({ user, darkMode, toggleTheme }) {
   const [userProfile, setUserProfile] = useState(null);
@@ -37,6 +38,14 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
 
   const handleLogout = async () => {
     setOffline();
+    // Wyczyść cały cache aplikacji przy wylogowaniu
+    resetUserRoleCache();
+    localStorage.removeItem('app_settings_cache');
+    localStorage.removeItem('app_permissions_cache');
+    localStorage.removeItem('app_logo_cache');
+    localStorage.removeItem('color_preset');
+    localStorage.removeItem('custom_preset');
+    localStorage.removeItem('sidebarCollapsed');
     await supabase.auth.signOut();
     window.location.href = '/';
   };

@@ -3,20 +3,20 @@
 @tailwind utilities;
 
 :root {
-  /* Pink-Orange (default) */
-  --accent-primary: 219 39 119;        /* pink-600 */
-  --accent-primary-light: 236 72 153;  /* pink-500 */
-  --accent-primary-lighter: 252 231 243; /* pink-100 */
-  --accent-primary-lightest: 253 242 248; /* pink-50 */
-  --accent-primary-dark: 157 23 77;    /* pink-800 */
-  --accent-primary-darkest: 131 24 67; /* pink-900 */
+  /* SCH TOMY Gold (default) */
+  --accent-primary: 217 119 6;         /* amber-600 */
+  --accent-primary-light: 245 158 11;  /* amber-500 */
+  --accent-primary-lighter: 254 243 199; /* amber-100 */
+  --accent-primary-lightest: 255 251 235; /* amber-50 */
+  --accent-primary-dark: 146 64 14;    /* amber-800 */
+  --accent-primary-darkest: 120 53 15; /* amber-900 */
 
-  --accent-secondary: 234 88 12;       /* orange-600 */
-  --accent-secondary-light: 249 115 22; /* orange-500 */
-  --accent-secondary-lighter: 255 237 213; /* orange-100 */
-  --accent-secondary-lightest: 255 247 237; /* orange-50 */
-  --accent-secondary-dark: 154 52 18;  /* orange-800 */
-  --accent-secondary-darkest: 124 45 18; /* orange-900 */
+  --accent-secondary: 202 138 4;       /* yellow-600 */
+  --accent-secondary-light: 234 179 8; /* yellow-500 */
+  --accent-secondary-lighter: 254 249 195; /* yellow-100 */
+  --accent-secondary-lightest: 254 252 232; /* yellow-50 */
+  --accent-secondary-dark: 133 77 14;  /* yellow-800 */
+  --accent-secondary-darkest: 113 63 18; /* yellow-900 */
 }
 
 html, body {

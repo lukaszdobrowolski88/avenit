@@ -106,6 +106,16 @@ export default function Sidebar() {
   const { isOpen, close } = useSidebar();
   const { hasUnsavedChanges, checkBeforeNavigate } = useUnsavedChanges();
 
+  // Debug - tymczasowe logowanie (usuń po rozwiązaniu problemu)
+  useEffect(() => {
+    console.log('[Sidebar Debug]', {
+      userRole,
+      permissionsCount: permissions.length,
+      liderPerms: permissions.filter(p => p.role === 'lider').length,
+      moduleSettings
+    });
+  }, [userRole, permissions, moduleSettings]);
+
   // Stan zwinięcia sidebara (z localStorage) - tylko dla desktop
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
@@ -274,6 +284,14 @@ export default function Sidebar() {
   // Użyj dynamicznych modułów jeśli są dostępne, w przeciwnym razie statycznych
   const moduleLinks = dynamicModules.length > 0 ? getDynamicModuleLinks() : staticModuleLinks;
   const allLinks = [...coreLinks, ...moduleLinks];
+
+  // Debug - tymczasowe logowanie (usuń po rozwiązaniu problemu)
+  console.log('[Sidebar Links]', {
+    dynamicModulesCount: dynamicModules.length,
+    usingDynamic: dynamicModules.length > 0,
+    visibleModules: moduleLinks.filter(l => l.show).map(l => l.label),
+    hiddenModules: moduleLinks.filter(l => !l.show).map(l => l.label)
+  });
 
   // Wspólna zawartość sidebara
   const SidebarContent = ({ isMobile = false }) => (

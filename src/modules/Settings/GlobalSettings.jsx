@@ -409,7 +409,11 @@ export default function GlobalSettings() {
           role: userForm.role,
           is_active: userForm.is_active
         };
-        await supabase.from('app_users').update(payload).eq('id', userForm.id);
+        const { error: updateError } = await supabase.from('app_users').update(payload).eq('id', userForm.id);
+        if (updateError) {
+          throw new Error(`Błąd aktualizacji: ${updateError.message}`);
+        }
+        fetchData();
         setMessage({ type: 'success', text: 'Zaktualizowano użytkownika' });
       } else {
         // Tworzenie nowego użytkownika
