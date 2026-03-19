@@ -42,7 +42,6 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
     resetUserRoleCache();
     localStorage.removeItem('app_settings_cache');
     localStorage.removeItem('app_permissions_cache');
-    localStorage.removeItem('app_logo_cache');
     localStorage.removeItem('color_preset');
     localStorage.removeItem('custom_preset');
     localStorage.removeItem('sidebarCollapsed');

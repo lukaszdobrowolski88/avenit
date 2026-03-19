@@ -8,7 +8,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [logoUrl, setLogoUrl] = useState(null);
+  const [logoUrl, setLogoUrl] = useState(() => localStorage.getItem('app_logo_cache') || null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
 
@@ -19,7 +19,7 @@ export default function Login() {
 
   const { verifyLoginCode, checkTwoFactorStatus, loading: verifyLoading } = useTwoFactor();
 
-  // Pobierz logo organizacji przy starcie
+  // Pobierz logo organizacji przy starcie (w tle odśwież cache)
   useEffect(() => {
     const fetchLogo = async () => {
       try {
@@ -31,6 +31,7 @@ export default function Login() {
 
         if (data?.value) {
           setLogoUrl(data.value);
+          localStorage.setItem('app_logo_cache', data.value);
         }
       } catch (err) {
         console.error("Błąd pobierania logo:", err);
