@@ -2184,11 +2184,11 @@ export default function ProgramDetail() {
   }
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-accent-primary-lightest via-accent-secondary-lightest to-accent-primary-lightest dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-2 sm:p-4 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 -m-4 lg:-m-6 p-4 md:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
 
         {/* EDYCJA PROGRAMU */}
-        <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-2xl rounded-2xl lg:rounded-3xl shadow-2xl border border-white/40 dark:border-gray-700/50 p-4 lg:p-8">
+        <div>
           {/* Przycisk wróć */}
           <button
             onClick={handleBackToList}
