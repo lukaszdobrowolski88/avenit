@@ -292,14 +292,16 @@ export default function Sidebar() {
       {/* LOGO - Desktop */}
       {!isMobile && (
         <div className={`${isCollapsed ? 'p-3' : 'p-4 lg:p-6'} border-b border-gray-200/50 dark:border-gray-700 flex justify-center items-center shrink-0`}>
-          {isCollapsed ? (
-            <img src={sidebarLogo} alt="Logo" className="w-10 h-10 object-contain transition-all duration-300" />
-          ) : logoUrl ? (
+          {(logoUrl || sidebarLogo) ? (
             <img
-              src={logoUrl}
+              src={logoUrl || sidebarLogo}
               alt="Logo"
-              className="w-full max-h-20 lg:max-h-32 object-contain rounded-md transition-all duration-300"
-              onError={(e) => { e.target.style.display = 'none'; }}
+              className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-10 h-10' : 'w-full max-h-20 lg:max-h-32 rounded-md'}`}
+              onError={(e) => {
+                if (logoUrl && e.target.src !== sidebarLogo) {
+                  e.target.src = sidebarLogo;
+                }
+              }}
             />
           ) : (
             <div className="w-full aspect-video text-3xl lg:text-4xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest dark:to-accent-secondary-darkest rounded-xl flex items-center justify-center text-accent-primary dark:text-accent-primary-light font-bold shadow-sm transition-all duration-300">
@@ -313,7 +315,7 @@ export default function Sidebar() {
       {isMobile && (
         <div className="shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={sidebarLogo} alt="Logo" className="w-8 h-8 object-contain" />
+            <img src={logoUrl || sidebarLogo} alt="Logo" className="w-8 h-8 object-contain" onError={(e) => { if (logoUrl && e.target.src !== sidebarLogo) e.target.src = sidebarLogo; }} />
             <span className="font-semibold text-gray-800 dark:text-white">Menu</span>
           </div>
           <button
