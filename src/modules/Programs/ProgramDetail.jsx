@@ -1781,13 +1781,13 @@ export default function ProgramDetail() {
 
   const fetchTemplates = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('program_templates')
         .select('*')
         .order('created_at', { ascending: false });
-      setTemplates(data || []);
+      if (!error) setTemplates(data || []);
     } catch (err) {
-      console.log('Błąd pobierania szablonów:', err);
+      // Tabela może jeszcze nie istnieć
     }
   };
 
