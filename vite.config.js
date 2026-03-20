@@ -9,13 +9,13 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'icons/*.png'],
       manifest: {
-        name: 'Church Manager',
-        short_name: 'ChurchMgr',
-        description: 'Aplikacja do zarządzania kościołem',
+        name: 'SCH TOMY',
+        short_name: 'SCH TOMY',
+        description: 'SCH TOMY - Aplikacja do zarządzania kościołem',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',
-        theme_color: '#db2777',
+        theme_color: '#d97706',
         orientation: 'portrait-primary',
         icons: [
           {
