@@ -250,7 +250,7 @@ export default function MailSettingsModal({
                       className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white font-bold">
                           {account.external_email?.[0]?.toUpperCase()}
                         </div>
                         <div>

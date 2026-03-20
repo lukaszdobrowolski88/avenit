@@ -232,7 +232,7 @@ export default function MailSidebar({
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={onCompose}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-accent-primary-light to-rose-500 hover:from-accent-primary hover:to-rose-600 text-white font-semibold rounded-xl shadow-lg shadow-accent-primary-light/25 transition-all"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-semibold rounded-xl shadow-lg shadow-accent-primary-light/25 transition-all"
         >
           <Mail size={20} />
           <span>Nowa wiadomość</span>

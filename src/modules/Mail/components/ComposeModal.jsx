@@ -231,7 +231,7 @@ export default function ComposeModal({
         `}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary-light to-rose-500">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-xl">
               <Edit3 size={20} className="text-white" />
@@ -673,7 +673,7 @@ export default function ComposeModal({
           <button
             onClick={handleSend}
             disabled={sending || !draft.to?.length}
-            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-accent-primary-light to-rose-500 hover:from-accent-primary hover:to-rose-600 text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-accent-primary-light/25"
+            className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-accent-primary-light/25"
           >
             {sending ? (
               <Loader2 size={18} className="animate-spin" />

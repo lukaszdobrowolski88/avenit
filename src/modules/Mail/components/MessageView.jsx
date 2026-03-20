@@ -347,7 +347,7 @@ export default function MessageView({
 
           <div className="flex items-start gap-4">
             {/* Avatar */}
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary-light to-rose-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white font-bold flex-shrink-0">
               {(message.from_name || message.from_email)?.[0]?.toUpperCase() || '?'}
             </div>
 
