@@ -725,7 +725,7 @@ const ItemEditPanel = ({ item, songs, worshipTeam = [], mediaTeam = [], onUpdate
   ];
 
   return (
-    <div className="w-full lg:w-[380px] bg-gradient-to-b from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-900/50 border-l border-gray-200/80 dark:border-gray-700/80 flex flex-col h-full shadow-[-4px_0_20px_rgba(0,0,0,0.03)]">
+    <div className="w-full lg:w-[440px] xl:w-[480px] bg-gradient-to-b from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-900/50 border-l border-gray-200/80 dark:border-gray-700/80 flex flex-col h-full shadow-[-4px_0_20px_rgba(0,0,0,0.03)]">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
         <div className="flex items-center gap-3">
@@ -2280,42 +2280,43 @@ export default function ProgramDetail() {
             <span className="font-medium">Wróć do listy</span>
           </button>
 
-          <div className="flex flex-col lg:flex-row justify-between items-start gap-4 mb-6 lg:mb-8 pb-4 lg:pb-6 border-b border-gray-200/50 dark:border-gray-700/50">
-            <div className="flex-1 max-w-xl">
+          <div className="bg-white/70 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-gray-200/60 dark:border-gray-700/50 p-5 lg:p-6 mb-6 lg:mb-8">
+            <div className="mb-4">
               <input
                 type="text"
                 value={program.title || ''}
                 onChange={(e) => setProgram({...program, title: e.target.value})}
                 placeholder={isNewProgram ? 'Nazwa programu (np. Nabożeństwo niedzielne)' : 'Nabożeństwo niedzielne'}
-                className="text-xl lg:text-2xl font-bold bg-transparent border-none outline-none text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 w-full mb-2"
+                className="text-xl lg:text-2xl font-bold bg-transparent border-none outline-none text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 w-full"
               />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <CustomDatePicker
                   value={program.date}
                   onChange={(v) => setProgram({...program, date: v})}
                 />
-                {/* Template buttons */}
+                <div className="h-5 w-px bg-gray-200 dark:bg-gray-700 hidden sm:block" />
                 <div className="flex items-center gap-1">
                   <button
                     onClick={handleSaveAsTemplate}
-                    className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition flex items-center gap-1"
+                    className="px-2.5 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition flex items-center gap-1"
                     title="Zapisz jako szablon"
                   >
-                    <Save size={14} />
+                    <Save size={13} />
                     Szablon
                   </button>
                   <button
                     onClick={() => setShowTemplateModal(true)}
-                    className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition flex items-center gap-1"
+                    className="px-2.5 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition flex items-center gap-1"
                     title="Wczytaj szablon"
                   >
-                    <FileText size={14} />
+                    <FileText size={13} />
                     Wczytaj
                   </button>
                 </div>
               </div>
-            </div>
-            <div className="flex flex-wrap gap-2 lg:gap-3 w-full lg:w-auto">
+              <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleSendEmail}
                 disabled={isSending}
@@ -2363,6 +2364,7 @@ export default function ProgramDetail() {
                 <Save size={18} />
                 <span className="hidden sm:inline">Zapisz</span>
               </button>
+              </div>
             </div>
           </div>
 
@@ -2403,7 +2405,7 @@ export default function ProgramDetail() {
               </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row min-h-[500px] lg:min-h-[550px]">
+            <div className="flex flex-col lg:flex-row min-h-[500px] lg:min-h-[600px]">
               {/* CENTER - Order list with tabs */}
               <div className={`flex-1 flex flex-col ${selectedScheduleItem ? 'hidden lg:flex' : 'flex'}`}>
                 {/* Tabs header */}
