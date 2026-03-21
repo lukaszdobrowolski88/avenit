@@ -7,27 +7,25 @@ export default function CampusSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Close dropdown on outside click - MUST be before any early return
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
   // Hide if less than 2 campuses
   if (campuses.length < 2) return null;
 
   const selectedCampus = campuses.find(c => c.id === selectedCampusId);
   const displayName = selectedCampus?.name || 'Wszystkie lokalizacje';
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isOpen]);
-
   if (!canSwitchCampus) {
-    // Locked - show campus name without dropdown
     return (
       <div className="flex items-center gap-1.5 px-2 py-1 text-sm text-gray-600 dark:text-gray-300">
         <MapPin size={14} className="text-accent-primary shrink-0" />
@@ -53,7 +51,6 @@ export default function CampusSelector() {
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Lokalizacja</p>
           </div>
           <div className="py-1 max-h-64 overflow-y-auto">
-            {/* All campuses option */}
             <button
               onClick={() => { setSelectedCampusId(null); setIsOpen(false); }}
               className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition ${
@@ -67,7 +64,6 @@ export default function CampusSelector() {
 
             <div className="h-px bg-gray-100 dark:bg-gray-700 mx-2 my-1" />
 
-            {/* Individual campuses */}
             {campuses.map(campus => (
               <button
                 key={campus.id}
