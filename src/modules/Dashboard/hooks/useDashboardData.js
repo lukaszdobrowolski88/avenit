@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { useCampusQuery } from '../../../hooks/useCampusQuery';
 
 const DASHBOARD_CACHE_KEY = 'dashboard_data_cache';
 
@@ -20,6 +21,8 @@ const DEFAULT_DATA = {
 };
 
 export function useDashboardData(userEmail) {
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
+
   // Inicjalizuj z cache jeśli dostępny
   const [data, setData] = useState(() => {
     if (!userEmail) return DEFAULT_DATA;
@@ -107,9 +110,9 @@ export function useDashboardData(userEmail) {
 
       // Pobierz programy i nieobecności równolegle
       const [programsResponse, absencesResponse] = await Promise.all([
-        supabase
+        withCampusFilter(supabase
           .from('programs')
-          .select('*')
+          .select('*'))
           .gte('date', today)
           .order('date', { ascending: true })
           .limit(20),
@@ -134,7 +137,7 @@ export function useDashboardData(userEmail) {
       console.error('Error fetching upcoming ministry:', error);
       return [];
     }
-  }, [userEmail]);
+  }, [userEmail, withCampusFilter]);
 
   // Pobierz historię służb użytkownika
   const fetchPastMinistry = useCallback(async (userName) => {
@@ -143,9 +146,9 @@ export function useDashboardData(userEmail) {
     try {
       const today = new Date().toISOString().split('T')[0];
 
-      const { data: programs } = await supabase
+      const { data: programs } = await withCampusFilter(supabase
         .from('programs')
-        .select('*')
+        .select('*'))
         .lt('date', today)
         .order('date', { ascending: false })
         .limit(10);
@@ -155,16 +158,16 @@ export function useDashboardData(userEmail) {
       console.error('Error fetching past ministry:', error);
       return [];
     }
-  }, [userEmail]);
+  }, [userEmail, withCampusFilter]);
 
   // Pobierz wszystkie nadchodzące programy (dla widgetu nieobecności)
   const fetchUpcomingPrograms = useCallback(async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
 
-      const { data: programs } = await supabase
+      const { data: programs } = await withCampusFilter(supabase
         .from('programs')
-        .select('*')
+        .select('*'))
         .gte('date', today)
         .order('date', { ascending: true })
         .limit(30);
@@ -174,7 +177,7 @@ export function useDashboardData(userEmail) {
       console.error('Error fetching upcoming programs:', error);
       return [];
     }
-  }, []);
+  }, [withCampusFilter]);
 
   // Pobierz zadania użytkownika ze wszystkich źródeł - ZOPTYMALIZOWANE
   const fetchTasks = useCallback(async (userName) => {

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
+import { useCampusQuery } from '../../hooks/useCampusQuery';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -342,6 +343,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
 // Główny komponent EventsTab
 export default function EventsTab({ ministry, currentUserEmail: propUserEmail }) {
   const config = getModuleConfig(ministry);
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(null);
@@ -367,7 +369,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [selectedCampusId]);
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -377,9 +379,9 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     const todayISO = today.toISOString();
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await withCampusFilter(supabase
         .from(config.tableName)
-        .select('*')
+        .select('*'))
         .gte('start_date', todayISO)
         .order('start_date', { ascending: true });
 
@@ -418,7 +420,8 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     } else {
       const { error: e } = await supabase.from(config.tableName).insert([{
         ...eventData,
-        created_by: userEmail
+        created_by: userEmail,
+        campus_id: campusIdForInsert
       }]);
       error = e;
     }

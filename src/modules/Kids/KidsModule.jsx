@@ -16,6 +16,7 @@ import CustomSelect from '../../components/CustomSelect';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { useUserRole } from '../../hooks/useUserRole';
 import { hasTabAccess } from '../../utils/tabPermissions';
+import { useCampusQuery } from '../../hooks/useCampusQuery';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -297,6 +298,7 @@ const ScheduleTable = ({ programs, teachers, groups, onUpdateProgram }) => {
 
 export default function KidsModule() {
   const { userRole } = useUserRole();
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('schedule');
   const [teachers, setTeachers] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -345,22 +347,22 @@ export default function KidsModule() {
       if (user) setCurrentUser({ email: user.email, name: user.user_metadata?.full_name || user.email });
     };
     getCurrentUser();
-  }, []);
+  }, [selectedCampusId]);
 
   useEffect(() => {
     if (activeTab === 'finances') {
       fetchFinanceData();
     }
-  }, [activeTab]);
+  }, [activeTab, selectedCampusId]);
 
   const fetchFinanceData = async () => {
     const currentYear = new Date().getFullYear();
     const ministryName = 'małe SCH TOMY';
 
     try {
-      const { data: budget, error: budgetError } = await supabase
+      const { data: budget, error: budgetError } = await withCampusFilter(supabase
         .from('budget_items')
-        .select('*')
+        .select('*'))
         .eq('ministry', ministryName)
         .eq('year', currentYear)
         .order('id', { ascending: true });
@@ -488,9 +490,9 @@ export default function KidsModule() {
     setLoading(true);
     try {
       const { data: t } = await supabase.from('kids_teachers').select('*').order('full_name');
-      const { data: g } = await supabase.from('kids_groups').select('*').order('created_at');
-      const { data: s } = await supabase.from('kids_students').select('*').order('full_name');
-      const { data: p } = await supabase.from('programs').select('*').order('date', { ascending: false });
+      const { data: g } = await withCampusFilter(supabase.from('kids_groups').select('*')).order('created_at');
+      const { data: s } = await withCampusFilter(supabase.from('kids_students').select('*')).order('full_name');
+      const { data: p } = await withCampusFilter(supabase.from('programs').select('*')).order('date', { ascending: false });
       const { data: h } = await supabase.from('households').select('*').order('family_name');
       setTeachers(t || []); setGroups(g || []); setStudents(s || []); setPrograms(p || []); setHouseholds(h || []);
     } catch (err) { console.error('Błąd:', err); }
@@ -525,9 +527,9 @@ export default function KidsModule() {
     }
   };
   const deleteTeacher = async (id) => { if (confirm('Usunąć?')) { await supabase.from('kids_teachers').delete().eq('id', id); fetchData(); } };
-  const saveGroup = async () => { if (!groupForm.name) return alert('Podaj nazwę'); const payload = { name: groupForm.name, room: groupForm.room, age_range: groupForm.age_range, teacher_ids: groupForm.teacher_ids }; try { if (groupForm.id) await supabase.from('kids_groups').update(payload).eq('id', groupForm.id); else await supabase.from('kids_groups').insert([{ ...payload, materials: [] }]); setShowGroupModal(false); fetchData(); } catch (err) { alert(err.message); } };
+  const saveGroup = async () => { if (!groupForm.name) return alert('Podaj nazwę'); const payload = { name: groupForm.name, room: groupForm.room, age_range: groupForm.age_range, teacher_ids: groupForm.teacher_ids }; try { if (groupForm.id) await supabase.from('kids_groups').update(payload).eq('id', groupForm.id); else await supabase.from('kids_groups').insert([{ ...payload, materials: [], campus_id: campusIdForInsert }]); setShowGroupModal(false); fetchData(); } catch (err) { alert(err.message); } };
   const deleteGroup = async (id) => { if (confirm('Usunąć?')) { await supabase.from('kids_groups').delete().eq('id', id); fetchData(); } };
-  const saveGlobalStudent = async () => { if (!globalStudentForm.full_name) return alert('Podaj imię'); const payload = { full_name: globalStudentForm.full_name, birth_year: globalStudentForm.birth_year, parent_info: globalStudentForm.parent_info, notes: globalStudentForm.notes, group_id: globalStudentForm.group_id ? parseInt(globalStudentForm.group_id) : null, household_id: globalStudentForm.household_id || null }; try { if (globalStudentForm.id) await supabase.from('kids_students').update(payload).eq('id', globalStudentForm.id); else await supabase.from('kids_students').insert([payload]); setShowGlobalStudentModal(false); fetchData(); } catch (err) { alert(err.message); } };
+  const saveGlobalStudent = async () => { if (!globalStudentForm.full_name) return alert('Podaj imię'); const payload = { full_name: globalStudentForm.full_name, birth_year: globalStudentForm.birth_year, parent_info: globalStudentForm.parent_info, notes: globalStudentForm.notes, group_id: globalStudentForm.group_id ? parseInt(globalStudentForm.group_id) : null, household_id: globalStudentForm.household_id || null }; try { if (globalStudentForm.id) await supabase.from('kids_students').update(payload).eq('id', globalStudentForm.id); else await supabase.from('kids_students').insert([{ ...payload, campus_id: campusIdForInsert }]); setShowGlobalStudentModal(false); fetchData(); } catch (err) { alert(err.message); } };
   const deleteStudent = async (id) => { if(confirm('Usunąć?')) { await supabase.from('kids_students').delete().eq('id', id); fetchData(); } };
   const openEditStudent = (s) => { setGlobalStudentForm({ id: s.id, full_name: s.full_name, birth_year: s.birth_year, parent_info: s.parent_info, notes: s.notes, group_id: s.group_id, household_id: s.household_id }); setShowGlobalStudentModal(true); };
   const attachStudentToGroup = async () => { if (!attachStudentId) return alert('Wybierz ucznia'); await supabase.from('kids_students').update({ group_id: currentGroup.id }).eq('id', attachStudentId); setAddStudentId(''); fetchData(); };

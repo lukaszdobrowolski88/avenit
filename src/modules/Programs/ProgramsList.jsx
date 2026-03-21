@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useCampusQuery } from '../../hooks/useCampusQuery';
 import {
   Plus, Search, History, ArrowUpDown, Copy, Trash2,
   ChevronUp, ChevronDown, Calendar
@@ -8,6 +9,7 @@ import {
 
 export default function ProgramsList() {
   const navigate = useNavigate();
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [programs, setPrograms] = useState([]);
   const [filter, setFilter] = useState('');
   const [showHistory, setShowHistory] = useState(false);
@@ -15,10 +17,10 @@ export default function ProgramsList() {
 
   useEffect(() => {
     fetchPrograms();
-  }, []);
+  }, [selectedCampusId]);
 
   const fetchPrograms = async () => {
-    const { data } = await supabase.from('programs').select('*').order('date', { ascending: false });
+    const { data } = await withCampusFilter(supabase.from('programs').select('*')).order('date', { ascending: false });
     setPrograms(data || []);
   };
 
@@ -35,7 +37,8 @@ export default function ProgramsList() {
     const { id, ...rest } = program;
     const newProgram = {
       ...rest,
-      date: new Date().toISOString().split('T')[0]
+      date: new Date().toISOString().split('T')[0],
+      campus_id: campusIdForInsert
     };
     const { data } = await supabase.from('programs').insert([newProgram]).select();
     if (data && data[0]) {

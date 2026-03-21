@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useUserRole } from '../../hooks/useUserRole';
 import { hasTabAccess } from '../../utils/tabPermissions';
+import { useCampusQuery } from '../../hooks/useCampusQuery';
 import WallTab from '../shared/WallTab';
 import MaterialsTab from '../shared/MaterialsTab';
 import CustomDatePicker from '../../components/CustomDatePicker';
@@ -960,6 +961,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
 
 export default function TeachingModule() {
   const { userRole } = useUserRole();
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('wall');
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState({ email: '', name: '' });
@@ -971,7 +973,7 @@ export default function TeachingModule() {
   useEffect(() => {
     fetchData();
     fetchCurrentUser();
-  }, []);
+  }, [selectedCampusId]);
 
   const fetchCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -994,7 +996,7 @@ export default function TeachingModule() {
       const [speakersRes, seriesRes, programsRes] = await Promise.all([
         supabase.from('teaching_speakers').select('*').order('name'),
         supabase.from('teaching_series').select('*').order('start_date', { ascending: false }),
-        supabase.from('programs').select('*').order('date', { ascending: false })
+        withCampusFilter(supabase.from('programs').select('*')).order('date', { ascending: false })
       ]);
 
       if (speakersRes.data) setSpeakers(speakersRes.data);

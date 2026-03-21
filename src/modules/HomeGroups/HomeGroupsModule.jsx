@@ -15,11 +15,13 @@ import MaterialsTab from '../shared/MaterialsTab';
 import EquipmentTab from '../shared/EquipmentTab';
 import { useUserRole } from '../../hooks/useUserRole';
 import { hasTabAccess } from '../../utils/tabPermissions';
+import { useCampusQuery } from '../../hooks/useCampusQuery';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
 export default function HomeGroupsModule() {
   const { userRole, loading: roleLoading } = useUserRole();
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('groups');
   const [groups, setGroups] = useState([]);
   const [leaders, setLeaders] = useState([]);
@@ -111,13 +113,13 @@ export default function HomeGroupsModule() {
   useEffect(() => {
     fetchData();
     getCurrentUser();
-  }, []);
+  }, [selectedCampusId]);
 
   useEffect(() => {
     if (activeTab === 'finances') {
       fetchFinanceData();
     }
-  }, [activeTab]);
+  }, [activeTab, selectedCampusId]);
 
   async function getCurrentUser() {
     const { data } = await supabase.auth.getUser();
@@ -131,9 +133,9 @@ export default function HomeGroupsModule() {
     const ministryName = 'Grupy domowe';
 
     try {
-      const { data: budget, error: budgetError } = await supabase
+      const { data: budget, error: budgetError } = await withCampusFilter(supabase
         .from('budget_items')
-        .select('*')
+        .select('*'))
         .eq('ministry', ministryName)
         .eq('year', currentYear)
         .order('id', { ascending: true });
@@ -203,7 +205,7 @@ export default function HomeGroupsModule() {
     setLoading(true);
     try {
       const [groupsRes, leadersRes, membersRes, tasksRes] = await Promise.all([
-        supabase.from('home_groups').select('*, home_group_leaders(full_name)').order('name'),
+        withCampusFilter(supabase.from('home_groups').select('*, home_group_leaders(full_name)')).order('name'),
         supabase.from('home_group_leaders').select('*').order('full_name'),
         supabase.from('home_group_members').select('*, home_groups(name)').order('full_name'),
         supabase.from('home_group_tasks').select('*').order('due_date')
@@ -250,7 +252,7 @@ export default function HomeGroupsModule() {
       } else {
         const { error } = await supabase
           .from('home_groups')
-          .insert([payload]);
+          .insert([{ ...payload, campus_id: campusIdForInsert }]);
         if (error) throw error;
       }
 

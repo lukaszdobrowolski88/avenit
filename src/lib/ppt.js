@@ -40,9 +40,31 @@ export const generatePPT = async (program, songsMap) => {
     songBackground: DEFAULT_GRAPHICS.songBackground
   };
 
+  // Sprawdź graphics_override na programie (per-campus override)
+  const overrideGraphics = program.graphics_override;
+  const hasOverride = overrideGraphics && Array.isArray(overrideGraphics) && overrideGraphics.length > 0;
+
+  if (hasOverride) {
+    // Użyj grafik nadpisanych na programie
+    seriesGraphics.titleSlide = findGraphicByName(overrideGraphics, 'zalacznik1')
+      || findGraphicByName(overrideGraphics, 'tytul')
+      || findGraphicByName(overrideGraphics, 'title')
+      || overrideGraphics[0]?.url;
+
+    seriesGraphics.transitionSlide = findGraphicByName(overrideGraphics, 'zalacznik2')
+      || findGraphicByName(overrideGraphics, 'przejscie')
+      || findGraphicByName(overrideGraphics, 'transition');
+
+    seriesGraphics.songBackground = findGraphicByName(overrideGraphics, 'piesn')
+      || findGraphicByName(overrideGraphics, 'song')
+      || findGraphicByName(overrideGraphics, 'lyrics')
+      || findGraphicByName(overrideGraphics, 'tlo');
+  }
+
   const seriesId = program.teaching?.series_id;
 
-  if (seriesId) {
+  // Fallback na grafiki z serii (tylko jeśli nie ma override)
+  if (seriesId && !hasOverride) {
     try {
       const { data: series, error } = await supabase
         .from('teaching_series')

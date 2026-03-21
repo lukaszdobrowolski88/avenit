@@ -14,6 +14,7 @@ import CustomSelect from '../components/CustomSelect';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import { useUserRole } from '../hooks/useUserRole';
 import { hasTabAccess } from '../utils/tabPermissions';
+import { useCampusQuery } from '../hooks/useCampusQuery';
 
 // --- UI COMPONENTS (PORTALS) ---
 
@@ -366,6 +367,7 @@ const ScheduleTable = ({ programs, team, onUpdateProgram, roles, memberRoles = [
 
 export default function AtmosferaTeamModule() {
   const { userRole } = useUserRole();
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('schedule');
   const [team, setTeam] = useState([]);
   const [programs, setPrograms] = useState([]);
@@ -404,7 +406,7 @@ export default function AtmosferaTeamModule() {
     fetchData();
     fetchAtmosferaRoles();
     getCurrentUser();
-  }, []);
+  }, [selectedCampusId]);
 
   async function getCurrentUser() {
     const { data } = await supabase.auth.getUser();
@@ -417,7 +419,7 @@ export default function AtmosferaTeamModule() {
     if (activeTab === 'finances') {
       fetchFinanceData();
     }
-  }, [activeTab]);
+  }, [activeTab, selectedCampusId]);
 
   const fetchAtmosferaRoles = async () => {
     try {
@@ -445,9 +447,9 @@ export default function AtmosferaTeamModule() {
     const ministryName = 'AtmosferaTeam';
 
     try {
-      const { data: budget, error: budgetError } = await supabase
+      const { data: budget, error: budgetError } = await withCampusFilter(supabase
         .from('budget_items')
-        .select('*')
+        .select('*'))
         .eq('ministry', ministryName)
         .eq('year', currentYear)
         .order('id', { ascending: true });
@@ -587,9 +589,9 @@ export default function AtmosferaTeamModule() {
          teamData = [];
       } else if (teamError) throw teamError;
 
-      const { data: progData, error: progError } = await supabase
+      const { data: progData, error: progError } = await withCampusFilter(supabase
         .from('programs')
-        .select('*')
+        .select('*'))
         .order('date', { ascending: false });
 
       if (progError) throw progError;

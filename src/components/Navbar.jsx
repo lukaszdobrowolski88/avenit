@@ -5,6 +5,7 @@ import NotificationCenter from './NotificationCenter';
 import { useMyPresence, statusLabels } from '../hooks/usePresence';
 import { MobileMenuButton } from './Sidebar';
 import { resetUserRoleCache } from '../hooks/useUserRole';
+import CampusSelector from './CampusSelector';
 
 export default function Navbar({ user, darkMode, toggleTheme }) {
   const [userProfile, setUserProfile] = useState(null);
@@ -46,6 +47,7 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
     localStorage.removeItem('custom_preset');
     localStorage.removeItem('sidebarCollapsed');
     localStorage.removeItem('app_modules_cache');
+    localStorage.removeItem('selected_campus_id');
     await supabase.auth.signOut();
     window.location.href = '/';
   };
@@ -76,6 +78,7 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
       <div className="flex items-center gap-2 lg:gap-4">
         {/* Hamburger menu - tylko mobile */}
         <MobileMenuButton />
+        <CampusSelector />
       </div>
 
       {/* Prawa strona */}

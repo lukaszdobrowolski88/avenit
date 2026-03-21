@@ -13,6 +13,7 @@ import CustomSelect from '../../components/CustomSelect';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { useUserRole } from '../../hooks/useUserRole';
 import { hasTabAccess } from '../../utils/tabPermissions';
+import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -1546,12 +1547,12 @@ function SongDetailsModal({ song, onClose, onEdit }) {
     if (activeTab === 'history') {
       fetchHistory();
     }
-  }, [activeTab]);
+  }, [activeTab, selectedCampusId]);
 
   async function fetchHistory() {
     setLoadingHistory(true);
     try {
-        const { data: programs } = await supabase.from('programs').select('*').order('date', { ascending: false });
+        const { data: programs } = await withCampusFilter(supabase.from('programs').select('*')).order('date', { ascending: false });
         const songHistory = (programs || []).filter(p => {
             // Sprawdź w schedule - pieśni są w elementach "uwielbienie"
             if (p.schedule && Array.isArray(p.schedule)) {
@@ -2023,6 +2024,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
 
 export default function WorshipModule() {
   const { userRole } = useUserRole();
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('wall');
   const [team, setTeam] = useState([]);
   const [songs, setSongs] = useState([]);
@@ -2081,13 +2083,13 @@ export default function WorshipModule() {
   useEffect(() => {
     fetchData();
     fetchWorshipRoles();
-  }, []);
+  }, [selectedCampusId]);
 
   useEffect(() => {
     if (activeTab === 'finances') {
       fetchFinanceData();
     }
-  }, [activeTab]);
+  }, [activeTab, selectedCampusId]);
 
   const fetchWorshipRoles = async () => {
     try {
@@ -2115,9 +2117,9 @@ export default function WorshipModule() {
     const ministryName = 'Grupa Uwielbienia';
 
     try {
-      const { data: budget, error: budgetError } = await supabase
+      const { data: budget, error: budgetError } = await withCampusFilter(supabase
         .from('budget_items')
-        .select('*')
+        .select('*'))
         .eq('ministry', ministryName)
         .eq('year', currentYear)
         .order('id', { ascending: true });
@@ -2246,7 +2248,7 @@ export default function WorshipModule() {
     try {
       const { data: t } = await supabase.from('worship_team').select('*').order('full_name');
       const { data: s } = await supabase.from('songs').select('*').order('title');
-      const { data: p } = await supabase.from('programs').select('*').order('date', { ascending: false });
+      const { data: p } = await withCampusFilter(supabase.from('programs').select('*')).order('date', { ascending: false });
 
       // Pobierz dane zalogowanego użytkownika
       const { data: { user } } = await supabase.auth.getUser();

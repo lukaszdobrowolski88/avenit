@@ -16,6 +16,7 @@ import CustomSelect from '../components/CustomSelect';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import { useUserRole } from '../hooks/useUserRole';
 import { hasTabAccess } from '../utils/tabPermissions';
+import { useCampusQuery } from '../hooks/useCampusQuery';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -535,6 +536,7 @@ const ScheduleTable = ({ programs, mediaTeam, onUpdateProgram, roles, memberRole
 
 export default function MediaTeamModule() {
   const { userRole } = useUserRole();
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('schedule');
   const [team, setTeam] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -596,13 +598,13 @@ export default function MediaTeamModule() {
     fetchData();
     getCurrentUser();
     fetchMediaRoles();
-  }, []);
+  }, [selectedCampusId]);
 
   useEffect(() => {
     if (activeTab === 'finances') {
       fetchFinanceData();
     }
-  }, [activeTab]);
+  }, [activeTab, selectedCampusId]);
 
   const fetchMediaRoles = async () => {
     try {
@@ -637,9 +639,9 @@ export default function MediaTeamModule() {
     const ministryName = 'MediaTeam';
 
     try {
-      const { data: budget, error: budgetError } = await supabase
+      const { data: budget, error: budgetError } = await withCampusFilter(supabase
         .from('budget_items')
-        .select('*')
+        .select('*'))
         .eq('ministry', ministryName)
         .eq('year', currentYear)
         .order('id', { ascending: true });
@@ -777,7 +779,7 @@ export default function MediaTeamModule() {
       const [teamResult, tasksResult, progResult] = await Promise.all([
         supabase.from('media_team').select('id, full_name, role, email, phone').order('full_name'),
         supabase.from('media_tasks').select('*').order('due_date'),
-        supabase.from('programs').select('id, date, produkcja').gte('date', dateFrom).order('date', { ascending: false })
+        withCampusFilter(supabase.from('programs').select('id, date, produkcja')).gte('date', dateFrom).order('date', { ascending: false })
       ]);
 
       if (teamResult.error) throw new Error(`Błąd zespołu: ${teamResult.error.message}`);

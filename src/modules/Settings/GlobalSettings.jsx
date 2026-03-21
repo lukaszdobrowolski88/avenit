@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import {
-  List, Plus, Trash2, X, Settings, Grid, Users, Shield, BookOpen,
+  List, Plus, Trash2, X, Settings, Grid, Users, Shield, BookOpen, Building2,
   CheckCircle, AlertCircle, Upload, Eye,
   Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, UserCheck, Check, ChevronDown, ChevronUp, Layers
 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import ModuleManager from './components/ModuleManager';
+import CampusManager from './components/CampusManager';
 import ColorPresetPicker from './components/ColorPresetPicker';
+import { useCampus } from '../../contexts/CampusContext';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 
 // --- MODULE TABS DEFINITION ---
@@ -160,6 +162,7 @@ export default function GlobalSettings() {
   const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
+  const { campuses } = useCampus();
 
   const [appSettings, setAppSettings] = useState([]);
   const [dictionaries, setDictionaries] = useState([]);
@@ -407,7 +410,8 @@ export default function GlobalSettings() {
           full_name: userForm.full_name || '',
           email: userForm.email,
           role: userForm.role,
-          is_active: userForm.is_active
+          is_active: userForm.is_active,
+          campus_id: userForm.campus_id || null
         };
         const { error: updateError } = await supabase.from('app_users').update(payload).eq('id', userForm.id);
         if (updateError) {
@@ -431,7 +435,8 @@ export default function GlobalSettings() {
             full_name: userForm.full_name || '',
             role: userForm.role,
             is_active: userForm.is_active,
-            totp_required: require2FA
+            totp_required: require2FA,
+            campus_id: userForm.campus_id || null
           }).eq('id', existingAppUser.id);
           setMessage({ type: 'success', text: `Użytkownik ${userForm.email} już istniał — zaktualizowano dane.` });
         } else {
@@ -472,7 +477,8 @@ export default function GlobalSettings() {
                 role: userForm.role,
                 is_active: userForm.is_active,
                 auth_user_id: authData.user.id,
-                totp_required: require2FA
+                totp_required: require2FA,
+                campus_id: userForm.campus_id || null
               }, { onConflict: 'email' });
 
             if (insertError) {
@@ -907,6 +913,7 @@ export default function GlobalSettings() {
         <ResponsiveTabs
           tabs={[
             { id: 'general', label: 'Organizacja', icon: Settings },
+            { id: 'campuses', label: 'Lokalizacje', icon: Building2 },
             { id: 'modules', label: 'Moduły', icon: Grid },
             { id: 'module_manager', label: 'Zarządzanie', icon: Layers },
             { id: 'users', label: 'Użytkownicy', icon: Users },
@@ -947,6 +954,11 @@ export default function GlobalSettings() {
               <ColorPresetPicker currentPreset={appSettings.find(s => s.key === 'color_preset')?.value || 'pink-orange'} />
             </div>
           </div>
+        )}
+
+        {/* --- TAB: LOKALIZACJE --- */}
+        {activeTab === 'campuses' && (
+          <CampusManager onMessage={setMessage} />
         )}
 
         {/* --- TAB: MODUŁY --- */}
@@ -1014,7 +1026,7 @@ export default function GlobalSettings() {
             </div>
             <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
               <table className="w-full text-sm text-left bg-white dark:bg-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4">Użytkownik</th><th className="p-4">Email</th><th className="p-4">Rola</th><th className="p-4">Status</th><th className="p-4 text-right">Akcje</th></tr></thead>
+                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4">Użytkownik</th><th className="p-4">Email</th><th className="p-4">Rola</th>{campuses.length > 0 && <th className="p-4">Lokalizacja</th>}<th className="p-4">Status</th><th className="p-4 text-right">Akcje</th></tr></thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
                   {users.map(user => {
                     const roleLabel = definedRoles.find(r => r.key === user.role)?.label || user.role;
@@ -1030,6 +1042,7 @@ export default function GlobalSettings() {
                         </td>
                         <td className="p-4 text-gray-600 dark:text-gray-400">{user.email}</td>
                         <td className="p-4"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : 'bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 text-accent-secondary dark:text-accent-secondary-light'}`}>{roleLabel}</span></td>
+                        {campuses.length > 0 && <td className="p-4 text-gray-500 dark:text-gray-400 text-sm">{campuses.find(c => c.id === user.campus_id)?.name || <span className="text-gray-300 dark:text-gray-600">—</span>}</td>}
                         <td className="p-4">
                           <button onClick={() => toggleUserStatus(user)} disabled={isSuperAdmin} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border ${user.is_active ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'} ${isSuperAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}>
                             {user.is_active ? <UserCheck size={12}/> : <UserX size={12}/>} {user.is_active ? 'Aktywny' : 'Zablokowany'}
@@ -1362,6 +1375,18 @@ export default function GlobalSettings() {
                 <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">Rola w systemie</label>
                 <CustomSelect options={definedRoles.filter(r => r.key !== 'superadmin').map(r => ({value: r.key, label: r.label}))} value={userForm.role} onChange={v => setUserForm({...userForm, role: v})} placeholder="Wybierz rolę..." />
               </div>
+              {campuses.length > 0 && (
+                <div>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">Lokalizacja (kampus)</label>
+                  <CustomSelect
+                    options={[{ value: '', label: 'Wszystkie lokalizacje (brak ograniczeń)' }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
+                    value={userForm.campus_id ? String(userForm.campus_id) : ''}
+                    onChange={v => setUserForm({ ...userForm, campus_id: v ? parseInt(v, 10) : null })}
+                    placeholder="Wybierz lokalizację..."
+                  />
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">Użytkownik przypisany do lokalizacji widzi tylko dane tej lokalizacji.</p>
+                </div>
+              )}
               {!userForm.id && (
                 <div>
                   <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2 block">Służby / Zespoły</label>

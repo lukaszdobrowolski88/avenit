@@ -16,6 +16,8 @@ import { exportToProPresenter } from '../../lib/propresenter';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useCampusQuery } from '../../hooks/useCampusQuery';
+import GraphicsOverride from './components/GraphicsOverride';
 
 const PROGRAM_ELEMENTS = [
   'Wstęp', 'Uwielbienie', 'Modlitwa', 'Czytanie', 'Kazanie',
@@ -1718,6 +1720,7 @@ export default function ProgramDetail() {
   const { id } = useParams();
   const isNewProgram = id === 'new';
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnSaveCallback } = useUnsavedChanges();
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
 
   const [program, setProgram] = useState(getEmptyProgram());
   const [originalProgram, setOriginalProgram] = useState(null);
@@ -1748,6 +1751,7 @@ export default function ProgramDetail() {
   const [atmosferaMemberRoles, setAtmosferaMemberRoles] = useState([]);
 
   const [teachingSpeakers, setTeachingSpeakers] = useState([]);
+  const [seriesGraphics, setSeriesGraphics] = useState([]);
   const [mcMembers, setMcMembers] = useState([]);
   const [mcRoles, setMcRoles] = useState([]);
   const [mcMemberRoles, setMcMemberRoles] = useState([]);
@@ -1778,6 +1782,17 @@ export default function ProgramDetail() {
       setOriginalProgram(JSON.parse(JSON.stringify(empty)));
     }
   }, [id, isNewProgram]);
+
+  // Fetch series graphics when program's teaching series changes
+  useEffect(() => {
+    const seriesId = program?.teaching?.series_id;
+    if (seriesId) {
+      supabase.from('teaching_series').select('graphics').eq('id', seriesId).single()
+        .then(({ data }) => setSeriesGraphics(data?.graphics || []));
+    } else {
+      setSeriesGraphics([]);
+    }
+  }, [program?.teaching?.series_id]);
 
   const fetchTemplates = async () => {
     try {
@@ -1851,7 +1866,7 @@ export default function ProgramDetail() {
 
   const fetchKidsData = async () => {
     try {
-      const { data: groupsData } = await supabase.from('kids_groups').select('*').order('created_at');
+      const { data: groupsData } = await withCampusFilter(supabase.from('kids_groups').select('*')).order('created_at');
       const { data: teachersData } = await supabase.from('kids_teachers').select('*').order('full_name');
       setKidsGroups(groupsData || []);
       setKidsTeachers(teachersData || []);
@@ -1974,7 +1989,7 @@ export default function ProgramDetail() {
     if (program.id) {
       await supabase.from('programs').update(program).eq('id', program.id);
     } else {
-      const { data } = await supabase.from('programs').insert([program]).select();
+      const { data } = await supabase.from('programs').insert([{ ...program, campus_id: campusIdForInsert }]).select();
       if (data && data[0]) {
         navigate(`/programs/${data[0].id}`, { replace: true });
         setProgram(data[0]);
@@ -2743,6 +2758,17 @@ export default function ProgramDetail() {
               memberRoles={mediaMemberRoles}
             />
           </div>
+
+          {/* Graphics Override Section - only show for saved programs */}
+          {program?.id && (
+            <div className="bg-white/70 dark:bg-gray-800/40 backdrop-blur-xl rounded-2xl shadow-lg border border-white/60 dark:border-gray-700/50 p-5 mb-4 lg:mb-6">
+              <GraphicsOverride
+                program={program}
+                seriesGraphics={seriesGraphics}
+                onUpdate={(updated) => setProgram(updated)}
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-4 lg:mb-6 relative z-0">
             <DynamicScenaSection

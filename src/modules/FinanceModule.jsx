@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { DollarSign, TrendingUp, Receipt, Calendar, Plus, Upload, Tag, X, FileText, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Users, Building2, Settings, Banknote, CreditCard, FolderOpen } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { createPortal } from 'react-dom';
+import { useCampusQuery } from '../hooks/useCampusQuery';
 import CustomSelect from '../components/CustomSelect';
 import MaterialsTab from './shared/MaterialsTab';
 import ResponsiveTabs from '../components/ResponsiveTabs';
@@ -177,6 +178,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
 };
 
 const FinanceModule = () => {
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('budget');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [budgetItems, setBudgetItems] = useState([]);
@@ -263,21 +265,21 @@ const FinanceModule = () => {
     if (activeTab === 'budget') {
       fetchBudgetItems();
     }
-  }, [activeTab, selectedYear]);
+  }, [activeTab, selectedYear, selectedCampusId]);
 
   // Fetch income transactions
   useEffect(() => {
     if (activeTab === 'income') {
       fetchIncomeTransactions();
     }
-  }, [activeTab, selectedYear]);
+  }, [activeTab, selectedYear, selectedCampusId]);
 
   // Fetch expense transactions
   useEffect(() => {
     if (activeTab === 'expenses' || activeTab === 'budget') {
       fetchExpenseTransactions();
     }
-  }, [activeTab, selectedYear]);
+  }, [activeTab, selectedYear, selectedCampusId]);
 
   // Fetch all data for reports
   useEffect(() => {
@@ -287,12 +289,12 @@ const FinanceModule = () => {
       fetchExpenseTransactions();
       fetchAccountBalances();
     }
-  }, [activeTab, selectedYear]);
+  }, [activeTab, selectedYear, selectedCampusId]);
 
   // Fetch account balances on mount
   useEffect(() => {
     fetchAccountBalances();
-  }, [selectedYear]);
+  }, [selectedYear, selectedCampusId]);
 
   const fetchAccountBalances = async () => {
     try {
@@ -375,9 +377,9 @@ const FinanceModule = () => {
   const fetchBudgetItems = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await withCampusFilter(supabase
         .from('budget_items')
-        .select('*')
+        .select('*'))
         .eq('year', selectedYear)
         .order('category');
 
@@ -453,7 +455,8 @@ const FinanceModule = () => {
           year: selectedYear,
           category: budgetForm.category,
           description: budgetForm.description,
-          planned_amount: parseFloat(budgetForm.planned_amount)
+          planned_amount: parseFloat(budgetForm.planned_amount),
+          campus_id: campusIdForInsert
         }]);
 
         if (error) throw error;

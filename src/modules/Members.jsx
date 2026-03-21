@@ -12,6 +12,8 @@ import CustomDatePicker from '../components/CustomDatePicker';
 import MaterialsTab from './shared/MaterialsTab';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import HouseholdManager from './Kids/components/HouseholdManager';
+import { useCampusQuery } from '../hooks/useCampusQuery';
+import { useCampus } from '../contexts/CampusContext';
 
 // --- STAŁE DANE ---
 
@@ -40,6 +42,8 @@ export default function Members() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
+  const { campuses } = useCampus();
 
   // Stan modala
   const [showModal, setShowModal] = useState(false);
@@ -56,7 +60,8 @@ export default function Members() {
     status: 'Sympatyk',
     membership_date: '',
     membership_declaration_url: '',
-    ministries: []
+    ministries: [],
+    campus_id: null
   });
 
   // Upload state
@@ -64,13 +69,13 @@ export default function Members() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [selectedCampusId]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const [membersResult, groupsResult, householdsResult] = await Promise.all([
-        supabase.from('members').select('*').order('last_name'),
+        withCampusFilter(supabase.from('members').select('*')).order('last_name'),
         supabase.from('home_groups').select('id, name').order('name'),
         supabase.from('households').select('*').order('family_name')
       ]);
@@ -178,6 +183,7 @@ export default function Members() {
       if (!dataToSave.address) dataToSave.address = null;
       if (!dataToSave.email) dataToSave.email = null;
       if (!dataToSave.phone) dataToSave.phone = null;
+      if (!dataToSave.campus_id) dataToSave.campus_id = campusIdForInsert;
 
       // Pobierz stare dane członka (jeśli edycja)
       let oldMinistries = [];
@@ -290,7 +296,8 @@ export default function Members() {
         status: 'Sympatyk',
         membership_date: '',
         membership_declaration_url: '',
-        ministries: []
+        ministries: [],
+        campus_id: campusIdForInsert
       });
     }
     setShowModal(true);
@@ -765,6 +772,18 @@ export default function Members() {
                 mapOptionToLabel={(opt) => opt.name}
                 icon={Home}
               />
+
+              {/* Lokalizacja */}
+              {campuses.length > 0 && (
+                <CustomSelect
+                  label="Lokalizacja"
+                  placeholder="Wybierz lokalizację..."
+                  value={formData.campus_id ? String(formData.campus_id) : ''}
+                  onChange={(val) => setFormData({ ...formData, campus_id: val ? parseInt(val, 10) : null })}
+                  options={[{ value: '', label: 'Brak' }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
+                  icon={MapPin}
+                />
+              )}
 
               {/* Służby */}
               <div>

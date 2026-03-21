@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { PermissionsProvider } from './contexts/PermissionsContext';
+import { CampusProvider } from './contexts/CampusContext';
 import { NotificationProvider, useNotificationContext } from './contexts/NotificationContext';
 import { UnsavedChangesProvider } from './contexts/UnsavedChangesContext';
 import ToastContainer from './components/ToastNotification';
@@ -284,8 +285,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <PermissionsProvider>
-        <NotificationProvider userEmail={session.user?.email}>
-          <UnsavedChangesProvider>
+        <CampusProvider>
+          <NotificationProvider userEmail={session.user?.email}>
+            <UnsavedChangesProvider>
             <SidebarProvider>
               <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
                 <Sidebar />
@@ -372,8 +374,9 @@ export default function App() {
             </div>
           </div>
             </SidebarProvider>
-          </UnsavedChangesProvider>
-        </NotificationProvider>
+            </UnsavedChangesProvider>
+          </NotificationProvider>
+        </CampusProvider>
       </PermissionsProvider>
     </BrowserRouter>
   );

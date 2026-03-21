@@ -15,6 +15,7 @@ import CustomSelect from '../components/CustomSelect';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import { useUserRole } from '../hooks/useUserRole';
 import { hasTabAccess } from '../utils/tabPermissions';
+import { useCampusQuery } from '../hooks/useCampusQuery';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -190,6 +191,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
 
 export default function MlodziezowkaModule() {
   const { userRole } = useUserRole();
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('events');
   const [members, setMembers] = useState([]);
   const [leaders, setLeaders] = useState([]);
@@ -259,13 +261,13 @@ export default function MlodziezowkaModule() {
   useEffect(() => {
     fetchData();
     getCurrentUser();
-  }, []);
+  }, [selectedCampusId]);
 
   useEffect(() => {
     if (activeTab === 'finances') {
       fetchFinanceData();
     }
-  }, [activeTab]);
+  }, [activeTab, selectedCampusId]);
 
   async function getCurrentUser() {
     const { data } = await supabase.auth.getUser();
@@ -279,9 +281,9 @@ export default function MlodziezowkaModule() {
     const ministryName = 'Mlodziezowka';
 
     try {
-      const { data: budget, error: budgetError } = await supabase
+      const { data: budget, error: budgetError } = await withCampusFilter(supabase
         .from('budget_items')
-        .select('*')
+        .select('*'))
         .eq('ministry', ministryName)
         .eq('year', currentYear)
         .order('id', { ascending: true });
@@ -313,7 +315,7 @@ export default function MlodziezowkaModule() {
         supabase.from('mlodziezowka_members').select('*').order('full_name'),
         supabase.from('mlodziezowka_leaders').select('*').order('full_name'),
         supabase.from('mlodziezowka_tasks').select('*').order('due_date'),
-        supabase.from('mlodziezowka_events').select('*').order('start_date', { ascending: false })
+        withCampusFilter(supabase.from('mlodziezowka_events').select('*')).order('start_date', { ascending: false })
       ]);
 
       if (membersResult.error) throw new Error(`Błąd członków: ${membersResult.error.message}`);
@@ -600,7 +602,7 @@ export default function MlodziezowkaModule() {
         const { error } = await supabase.from('mlodziezowka_events').update(eventData).eq('id', eventForm.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('mlodziezowka_events').insert([eventData]);
+        const { error } = await supabase.from('mlodziezowka_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
         if (error) throw error;
       }
 

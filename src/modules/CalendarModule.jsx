@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import ProgramEditorModal from './Programs/ProgramEditorModal';
+import { useCampusQuery } from '../hooks/useCampusQuery';
 
 // --- MODAL POTWIERDZENIA USUNIĘCIA ---
 
@@ -781,6 +782,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry }) => {
 
 
 export default function CalendarModule() {
+  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
   const [songs, setSongs] = useState([]);
@@ -836,7 +838,7 @@ export default function CalendarModule() {
       fetchEvents();
       fetchSongs();
       fetchEventCategories();
-  }, [currentDate.getMonth()]);
+  }, [currentDate.getMonth(), selectedCampusId]);
 
   const fetchEventCategories = async () => {
     const { data } = await supabase.from('app_dictionaries').select('*').eq('category', 'event_category');
@@ -849,15 +851,15 @@ export default function CalendarModule() {
   }
 
   const fetchEvents = async () => {
-    const { data: prog } = await supabase.from('programs').select('*');
+    const { data: prog } = await withCampusFilter(supabase.from('programs').select('*'));
     const { data: task } = await supabase.from('tasks').select('*');
-    const { data: eventsData } = await supabase.from('events').select('*');
-    const { data: mlodziezowkaEvents } = await supabase.from('mlodziezowka_events').select('*');
-    const { data: worshipEvents } = await supabase.from('worship_events').select('*');
-    const { data: mediaEvents } = await supabase.from('media_events').select('*');
-    const { data: atmosferaEvents } = await supabase.from('atmosfera_events').select('*');
-    const { data: kidsEvents } = await supabase.from('kids_events').select('*');
-    const { data: homegroupsEvents } = await supabase.from('homegroups_events').select('*');
+    const { data: eventsData } = await withCampusFilter(supabase.from('events').select('*'));
+    const { data: mlodziezowkaEvents } = await withCampusFilter(supabase.from('mlodziezowka_events').select('*'));
+    const { data: worshipEvents } = await withCampusFilter(supabase.from('worship_events').select('*'));
+    const { data: mediaEvents } = await withCampusFilter(supabase.from('media_events').select('*'));
+    const { data: atmosferaEvents } = await withCampusFilter(supabase.from('atmosfera_events').select('*'));
+    const { data: kidsEvents } = await withCampusFilter(supabase.from('kids_events').select('*'));
+    const { data: homegroupsEvents } = await withCampusFilter(supabase.from('homegroups_events').select('*'));
     const all = [];
 
     prog?.forEach(p => all.push({ id: p.id, type: 'program', team: 'program', title: p.title || 'Nabożeństwo', date: new Date(p.date), raw: p }));
@@ -1093,7 +1095,7 @@ export default function CalendarModule() {
       const { error: e } = await supabase.from('events').update(eventData).eq('id', eventData.id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('events').insert([eventData]);
+      const { error: e } = await supabase.from('events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
       error = e;
     }
 
@@ -1120,7 +1122,7 @@ export default function CalendarModule() {
       const { error: e } = await supabase.from('mlodziezowka_events').update(eventData).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('mlodziezowka_events').insert([eventData]);
+      const { error: e } = await supabase.from('mlodziezowka_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
       error = e;
     }
 
@@ -1148,7 +1150,7 @@ export default function CalendarModule() {
       const { error: e } = await supabase.from('worship_events').update(eventData).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('worship_events').insert([eventData]);
+      const { error: e } = await supabase.from('worship_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
       error = e;
     }
     if (error) {
@@ -1174,7 +1176,7 @@ export default function CalendarModule() {
       const { error: e } = await supabase.from('media_events').update(eventData).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('media_events').insert([eventData]);
+      const { error: e } = await supabase.from('media_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
       error = e;
     }
     if (error) {
@@ -1200,7 +1202,7 @@ export default function CalendarModule() {
       const { error: e } = await supabase.from('atmosfera_events').update(eventData).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('atmosfera_events').insert([eventData]);
+      const { error: e } = await supabase.from('atmosfera_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
       error = e;
     }
     if (error) {
@@ -1226,7 +1228,7 @@ export default function CalendarModule() {
       const { error: e } = await supabase.from('kids_events').update(eventData).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('kids_events').insert([eventData]);
+      const { error: e } = await supabase.from('kids_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
       error = e;
     }
     if (error) {
@@ -1252,7 +1254,7 @@ export default function CalendarModule() {
       const { error: e } = await supabase.from('homegroups_events').update(eventData).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('homegroups_events').insert([eventData]);
+      const { error: e } = await supabase.from('homegroups_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
       error = e;
     }
     if (error) {
@@ -1305,7 +1307,8 @@ export default function CalendarModule() {
         atmosfera_team: { przygotowanie: '', witanie: '' },
         produkcja: { naglosnienie: '', propresenter: '', social: '', host: '' },
         scena: { prowadzenie: '', czytanie: '', kazanie: '', modlitwa: '', wieczerza: '', ogloszenia: '' },
-        szkolka: { mlodsza: '', srednia: '', starsza: '' }
+        szkolka: { mlodsza: '', srednia: '', starsza: '' },
+        campus_id: campusIdForInsert
       }]).select().single();
 
       if (error) {
