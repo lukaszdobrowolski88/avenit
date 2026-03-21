@@ -696,7 +696,6 @@ const ItemEditPanel = ({ item, songs, worshipTeam = [], mediaTeam = [], onUpdate
     { id: 'details', label: 'Szczegóły', icon: Info },
     ...(item.type === 'song' ? [{ id: 'song', label: 'Pieśń', icon: Music }] : []),
     ...(item.type === 'media' ? [{ id: 'media', label: 'Media', icon: Image }] : []),
-    { id: 'teams', label: 'Zespoły', icon: User },
     { id: 'notes', label: 'Notatki', icon: NoteIcon },
   ];
 
@@ -2410,25 +2409,8 @@ export default function ProgramDetail() {
               <div className={`flex-1 flex flex-col ${selectedScheduleItem ? 'hidden lg:flex' : 'flex'}`}>
                 {/* Tabs header */}
                 <div className="flex items-center justify-between px-2 py-2 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-white/80 to-gray-50/50 dark:from-gray-800/50 dark:to-gray-900/30">
-                  <div className="flex items-center bg-gray-100/80 dark:bg-gray-800/80 rounded-xl p-1">
-                    <button
-                      onClick={() => setScheduleTab('order')}
-                      className={`px-4 py-2 text-[13px] font-medium rounded-lg transition-all ${scheduleTab === 'order' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                    >
-                      📋 Plan
-                    </button>
-                    <button
-                      onClick={() => setScheduleTab('teams')}
-                      className={`px-4 py-2 text-[13px] font-medium rounded-lg transition-all ${scheduleTab === 'teams' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                    >
-                      👥 Zespoły
-                    </button>
-                    <button
-                      onClick={() => setScheduleTab('rehearse')}
-                      className={`px-4 py-2 text-[13px] font-medium rounded-lg transition-all ${scheduleTab === 'rehearse' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                    >
-                      🎵 Próba
-                    </button>
+                  <div className="flex items-center px-2">
+                    <span className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</span>
                   </div>
                   <AddItemDropdown
                     onAdd={(type) => {
