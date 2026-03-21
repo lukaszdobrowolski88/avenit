@@ -694,7 +694,6 @@ const ItemEditPanel = ({ item, songs, worshipTeam = [], mediaTeam = [], onUpdate
 
   const tabs = [
     { id: 'details', label: 'Szczegóły', icon: Info },
-    ...(item.type === 'song' ? [{ id: 'song', label: 'Pieśń', icon: Music }] : []),
     ...(item.type === 'media' ? [{ id: 'media', label: 'Media', icon: Image }] : []),
     { id: 'notes', label: 'Notatki', icon: NoteIcon },
   ];
@@ -756,16 +755,70 @@ const ItemEditPanel = ({ item, songs, worshipTeam = [], mediaTeam = [], onUpdate
         </div>
       </div>
 
-      {/* Title input */}
+      {/* Title / Song selector */}
       <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-        <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Tytuł</label>
-        <input
-          type="text"
-          value={item.title || ''}
-          onChange={(e) => handleChange('title', e.target.value)}
-          placeholder={item.type === 'header' ? 'Nazwa sekcji...' : 'Tytuł elementu...'}
-          className="w-full text-base font-medium bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter dark:focus:border-accent-primary-dark text-gray-800 dark:text-white placeholder-gray-400 transition"
-        />
+        {item.type === 'song' ? (
+          <>
+            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Pieśń</label>
+            {selectedSong ? (
+              <div className="flex items-center gap-3 bg-gradient-to-r from-accent-primary-lightest to-accent-primary-lighter/30 dark:from-accent-primary-darkest/20 dark:to-accent-primary-darkest/10 border border-accent-primary-lighter/60 dark:border-accent-primary-dark/40 rounded-xl px-4 py-3">
+                <Music size={18} className="text-accent-primary dark:text-accent-primary-light shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">{selectedSong.title}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{selectedSong.artist || ''}{selectedSong.key ? ` · ${selectedSong.key}` : ''}</div>
+                </div>
+                <button
+                  onClick={() => { handleChange('songId', null); handleChange('songKey', null); handleChange('title', ''); }}
+                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition shrink-0"
+                  title="Zmień pieśń"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <SongSelector
+                songs={songs}
+                onSelect={(song) => {
+                  handleChange('songId', song.id);
+                  handleChange('songKey', song.key);
+                  handleChange('title', song.title);
+                }}
+              />
+            )}
+            {selectedSong && (
+              <div className="mt-3">
+                <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Tonacja wykonania</label>
+                <div className="grid grid-cols-6 gap-1.5">
+                  {MUSICAL_KEYS.map(k => (
+                    <button
+                      key={k}
+                      onClick={() => handleChange('songKey', k)}
+                      className={`py-2 text-xs font-bold rounded-lg transition-all
+                        ${(item.songKey || selectedSong.key) === k
+                          ? 'bg-gradient-to-b from-accent-primary-light to-accent-primary text-white shadow-lg shadow-accent-primary-light/25'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                        }
+                      `}
+                    >
+                      {k}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Tytuł</label>
+            <input
+              type="text"
+              value={item.title || ''}
+              onChange={(e) => handleChange('title', e.target.value)}
+              placeholder={item.type === 'header' ? 'Nazwa sekcji...' : 'Tytuł elementu...'}
+              className="w-full text-base font-medium bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter dark:focus:border-accent-primary-dark text-gray-800 dark:text-white placeholder-gray-400 transition"
+            />
+          </>
+        )}
       </div>
 
       {/* Duration & timing */}
@@ -895,76 +948,6 @@ const ItemEditPanel = ({ item, songs, worshipTeam = [], mediaTeam = [], onUpdate
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80 rounded-xl text-sm resize-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter dark:focus:border-accent-primary-dark outline-none transition"
               />
             </div>
-          </div>
-        )}
-
-        {/* Song tab */}
-        {activeTab === 'song' && item.type === 'song' && (
-          <div className="space-y-5">
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Music size={12} />
-                Wybrana pieśń
-              </label>
-              {selectedSong ? (
-                <div className="p-4 bg-gradient-to-r from-accent-primary-lightest to-accent-primary-lighter/50 dark:from-accent-primary-darkest/20 dark:to-accent-primary-darkest/10 border border-accent-primary-lighter/80 dark:border-accent-primary-dark/50 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 rounded-lg flex items-center justify-center">
-                      <Music size={18} className="text-accent-primary dark:text-accent-primary-light" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-accent-primary-dark dark:text-accent-primary-lighter">{selectedSong.title}</div>
-                      <div className="text-xs text-accent-primary/70 dark:text-accent-primary-light/70 mt-0.5">Oryginalna tonacja: {selectedSong.key}</div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <SongSelector
-                  songs={songs}
-                  onSelect={(song) => {
-                    handleChange('songId', song.id);
-                    handleChange('songKey', song.key);
-                    handleChange('title', song.title);
-                  }}
-                />
-              )}
-            </div>
-
-            {selectedSong && (
-              <>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Tonacja wykonania</label>
-                  <div className="grid grid-cols-6 gap-1.5">
-                    {MUSICAL_KEYS.map(k => (
-                      <button
-                        key={k}
-                        onClick={() => handleChange('songKey', k)}
-                        className={`py-2 text-xs font-bold rounded-lg transition-all
-                          ${(item.songKey || selectedSong.key) === k
-                            ? 'bg-gradient-to-b from-accent-primary-light to-accent-primary text-white shadow-lg shadow-accent-primary-light/25'
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                          }
-                        `}
-                      >
-                        {k}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => {
-                    handleChange('songId', null);
-                    handleChange('songKey', null);
-                    handleChange('title', '');
-                  }}
-                  className="w-full px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border border-gray-200 dark:border-gray-700 rounded-xl transition flex items-center justify-center gap-2"
-                >
-                  <X size={14} />
-                  Zmień pieśń
-                </button>
-              </>
-            )}
           </div>
         )}
 
