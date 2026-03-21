@@ -168,18 +168,16 @@ export default function ProgramsList() {
   const ProgramCard = ({ p, typeColor }) => (
     <div
       onClick={() => navigate(`/programs/${p.id}`)}
-      className="p-4 rounded-2xl border cursor-pointer transition group relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border-white/40 dark:border-gray-700/50 hover:bg-white dark:hover:bg-gray-800 hover:shadow-lg hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark"
+      className="px-4 py-3 rounded-xl cursor-pointer transition group bg-white/70 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700/50 hover:shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
     >
-      <div className="flex justify-between items-start">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md" style={{ background: typeColor || 'var(--color-accent-primary)' }}>
-            <Calendar size={20} />
-          </div>
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div className="w-1.5 h-8 rounded-full" style={{ background: typeColor || 'var(--color-accent-primary)' }} />
           <div>
-            <div className="font-bold text-sm sm:text-base text-gray-800 dark:text-white mb-0.5">
+            <div className="font-semibold text-sm text-gray-800 dark:text-white">
               {p.title || formatDateFull(p.date)}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-xs text-gray-400 dark:text-gray-500">
               {p.title ? formatDateFull(p.date) + ' · ' : ''}{p.schedule?.length || 0} elementów
             </div>
           </div>
@@ -198,22 +196,22 @@ export default function ProgramsList() {
     const past = typePrograms.filter(p => p.date < today);
 
     return (
-      <div className="mb-8">
+      <div className="mb-6 bg-white/50 dark:bg-gray-800/40 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/50 overflow-hidden">
         {/* Section header */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-700/50" style={{ background: `${type.color || '#6366f1'}08` }}>
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm" style={{ background: type.color || '#6366f1' }}>
               <DynamicIcon name={type.icon} size={16} />
             </div>
             <h2 className="font-bold text-gray-800 dark:text-white text-base">{type.name}</h2>
-            {past.length > 0 && (
-              <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">({upcoming.length} nadchodzących)</span>
-            )}
+            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
+              {upcoming.length > 0 ? `${upcoming.length} nadchodzących` : ''}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={(e) => openEditType(type, e)}
-              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-700 rounded-lg transition"
               title="Edytuj typ"
             >
               <Edit3 size={14} />
@@ -230,22 +228,24 @@ export default function ProgramsList() {
         </div>
 
         {/* Program cards */}
-        {upcoming.length === 0 ? (
-          <div className="text-center py-8 bg-white/30 dark:bg-gray-800/30 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
-            <p className="text-gray-400 dark:text-gray-500 text-sm">Brak nadchodzących</p>
-            <button
-              onClick={() => handleNewProgram(type.id)}
-              className="mt-2 text-sm font-medium hover:underline"
-              style={{ color: type.color || '#6366f1' }}
-            >
-              Utwórz pierwszy
-            </button>
-          </div>
-        ) : (
-          <div className="grid gap-2">
-            {upcoming.map(p => <ProgramCard key={p.id} p={p} typeColor={type.color} />)}
-          </div>
-        )}
+        <div className="p-3">
+          {upcoming.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400 dark:text-gray-500 text-sm">Brak nadchodzących programów</p>
+              <button
+                onClick={() => handleNewProgram(type.id)}
+                className="mt-2 text-sm font-medium hover:underline"
+                style={{ color: type.color || '#6366f1' }}
+              >
+                Utwórz pierwszy
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-2">
+              {upcoming.map(p => <ProgramCard key={p.id} p={p} typeColor={type.color} />)}
+            </div>
+          )}
+        </div>
       </div>
     );
   };
