@@ -96,7 +96,56 @@ export default function SimpleRichEditor({ content, onChange, placeholder = 'Wpi
       </div>
 
       {/* Editor */}
-      <EditorContent editor={editor} />
+      <div className="simple-rich-editor">
+        <EditorContent editor={editor} />
+      </div>
+
+      <style>{`
+        .simple-rich-editor .ProseMirror {
+          outline: none;
+        }
+        .simple-rich-editor .ProseMirror ul {
+          list-style-type: disc;
+          padding-left: 1.5em;
+          margin: 0.5em 0;
+        }
+        .simple-rich-editor .ProseMirror ol {
+          list-style-type: decimal;
+          padding-left: 1.5em;
+          margin: 0.5em 0;
+        }
+        .simple-rich-editor .ProseMirror li {
+          margin: 0.2em 0;
+        }
+        .simple-rich-editor .ProseMirror h2 {
+          font-size: 1.25em;
+          font-weight: 700;
+          margin: 0.75em 0 0.25em;
+        }
+        .simple-rich-editor .ProseMirror h3 {
+          font-size: 1.1em;
+          font-weight: 600;
+          margin: 0.5em 0 0.25em;
+        }
+        .simple-rich-editor .ProseMirror blockquote {
+          border-left: 3px solid #d1d5db;
+          padding-left: 1em;
+          margin: 0.5em 0;
+          color: #6b7280;
+          font-style: italic;
+        }
+        .dark .simple-rich-editor .ProseMirror blockquote {
+          border-left-color: #4b5563;
+          color: #9ca3af;
+        }
+        .simple-rich-editor .ProseMirror p.is-editor-empty:first-child::before {
+          content: attr(data-placeholder);
+          float: left;
+          color: #9ca3af;
+          pointer-events: none;
+          height: 0;
+        }
+      `}</style>
     </div>
   );
 }
