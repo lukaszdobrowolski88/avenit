@@ -1873,8 +1873,10 @@ export default function ProgramDetail() {
     setIsLoadingProgram(true);
     const { data, error } = await supabase.from('programs').select('*').eq('id', programId).single();
     if (data && !error) {
-      setProgram(data);
-      setOriginalProgram(JSON.parse(JSON.stringify(data)));
+      // Map DB 'notes' to frontend 'globalNotes'
+      const programData = { ...data, globalNotes: data.notes || '' };
+      setProgram(programData);
+      setOriginalProgram(JSON.parse(JSON.stringify(programData)));
     } else {
       navigate('/programs');
     }
@@ -2008,6 +2010,12 @@ export default function ProgramDetail() {
 
   const handleSave = async () => {
     // Only send known base DB columns
+    // Map globalNotes to the DB 'notes' column before saving
+    const programToSave = { ...program };
+    if (programToSave.globalNotes !== undefined) {
+      programToSave.notes = programToSave.globalNotes;
+    }
+
     const BASE_COLUMNS = [
       'date', 'template', 'notes', 'status', 'type',
       'schedule', 'song_ids', 'assignments', 'file_attachments',
@@ -2020,13 +2028,13 @@ export default function ProgramDetail() {
 
     const dbData = {};
     for (const key of BASE_COLUMNS) {
-      if (key in program && program[key] !== undefined) {
-        dbData[key] = program[key];
+      if (key in programToSave && programToSave[key] !== undefined) {
+        dbData[key] = programToSave[key];
       }
     }
     for (const key of OPTIONAL_COLUMNS) {
-      if (key in program && program[key] != null) {
-        dbData[key] = program[key];
+      if (key in programToSave && programToSave[key] != null) {
+        dbData[key] = programToSave[key];
       }
     }
 
