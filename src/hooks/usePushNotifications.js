@@ -65,20 +65,24 @@ export function usePushNotifications(userEmail) {
           setIsSubscribed(true);
 
           // Sprawdź czy subskrypcja jest zapisana w bazie
-          const { data } = await supabase
-            .from('push_subscriptions')
-            .select('id')
-            .eq('endpoint', existingSubscription.endpoint)
-            .single();
+          try {
+            const { data } = await supabase
+              .from('push_subscriptions')
+              .select('id')
+              .eq('endpoint', existingSubscription.endpoint)
+              .maybeSingle();
 
-          if (!data) {
-            // Zapisz subskrypcję do bazy
-            await saveSubscription(existingSubscription);
+            if (!data) {
+              await saveSubscription(existingSubscription);
+            }
+          } catch (dbErr) {
+            // Table may not exist - ignore
+            console.warn('push_subscriptions table not available:', dbErr);
           }
         }
       } catch (err) {
-        console.error('Błąd inicjalizacji push:', err);
-        setError(err.message);
+        console.warn('Push init error (non-critical):', err);
+        // Don't set error state for init failures - it's non-critical
       } finally {
         setLoading(false);
       }

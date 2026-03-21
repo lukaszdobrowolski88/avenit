@@ -621,7 +621,7 @@ export default function UserSettings() {
                 {pushError && (
                   <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
                     <AlertCircle size={16} />
-                    {pushError}
+                    {typeof pushError === 'string' ? pushError : 'Wystąpił błąd'}
                   </div>
                 )}
 
@@ -784,7 +784,7 @@ export default function UserSettings() {
                 {twoFactorError && (
                   <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
                     <AlertCircle size={16} />
-                    {twoFactorError}
+                    {typeof twoFactorError === 'string' ? twoFactorError : 'Wystąpił błąd'}
                   </div>
                 )}
               </div>

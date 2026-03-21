@@ -52,6 +52,32 @@ function ToastNotifications() {
   return <ToastContainer toasts={toasts} onClose={closeToast} onClick={handleToastClick} />;
 }
 
+// Error Boundary - zapobiega crashowi całej aplikacji
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    console.error('ErrorBoundary caught:', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-10 text-center">
+          <div className="text-red-500 dark:text-red-400 mb-4 text-lg font-bold">Wystąpił błąd</div>
+          <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">{this.state.error?.message || 'Nieznany błąd'}</p>
+          <button onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }} className="px-4 py-2 bg-accent-primary text-white rounded-xl">Odśwież stronę</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Komponent baneru offline
 function OfflineBanner() {
   const { isOffline } = useOffline();
@@ -300,6 +326,7 @@ export default function App() {
               {/* Offline Banner */}
               <OfflineBanner />
               <main className="flex-1 overflow-y-auto p-4 lg:p-6 custom-scrollbar">
+              <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<PersonalDashboard user={session.user} />} />
                 <Route path="/programs" element={<ProgramsList />} />
@@ -370,6 +397,7 @@ export default function App() {
 
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              </ErrorBoundary>
               </main>
             </div>
           </div>
