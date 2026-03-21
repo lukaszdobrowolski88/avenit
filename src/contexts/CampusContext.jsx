@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase, getCachedUser } from '../lib/supabase';
-import { useUserRole } from '../hooks/useUserRole';
 
 const CampusContext = createContext({
   campuses: [],
@@ -17,10 +16,10 @@ const ADMIN_ROLES = ['superadmin', 'rada_starszych'];
 const STORAGE_KEY = 'selected_campus_id';
 
 export function CampusProvider({ children }) {
-  const { userRole } = useUserRole();
   const [campuses, setCampuses] = useState([]);
   const [selectedCampusId, setSelectedCampusIdState] = useState(null);
   const [userCampusId, setUserCampusId] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const isAdmin = ADMIN_ROLES.includes(userRole);
@@ -33,44 +32,35 @@ export function CampusProvider({ children }) {
         const user = await getCachedUser();
         if (!user) return;
 
-        // Try to fetch campuses - table may not exist yet
-        let fetchedCampuses = [];
-        let primaryCampusId = null;
-
+        // Fetch campuses - may fail if table doesn't exist
         const campusesResult = await supabase
           .from('campuses')
           .select('*')
           .eq('is_active', true)
           .order('sort_order');
 
-        // If campuses table doesn't exist, gracefully skip
-        if (campusesResult.error) {
-          console.warn('Campuses table not available:', campusesResult.error.message);
+        if (campusesResult.error || !campusesResult.data?.length) {
+          // Table doesn't exist or no campuses - skip everything
           return;
         }
 
-        fetchedCampuses = campusesResult.data || [];
-
-        // Only fetch user campus if we actually have campuses
-        if (fetchedCampuses.length > 0) {
-          const userResult = await supabase
-            .from('app_users')
-            .select('campus_id')
-            .eq('auth_user_id', user.id)
-            .maybeSingle();
-
-          if (!userResult.error) {
-            primaryCampusId = userResult.data?.campus_id || null;
-          }
-        }
-
+        const fetchedCampuses = campusesResult.data;
         setCampuses(fetchedCampuses);
+
+        // Fetch user data including campus and role
+        const userResult = await supabase
+          .from('app_users')
+          .select('campus_id, role')
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+
+        const primaryCampusId = userResult.data?.campus_id || null;
+        const role = userResult.data?.role || null;
         setUserCampusId(primaryCampusId);
+        setUserRole(role);
 
         // Determine initial selectedCampusId
-        const isAdminRole = ADMIN_ROLES.includes(userRole);
-
-        if (primaryCampusId && !isAdminRole) {
+        if (primaryCampusId && !ADMIN_ROLES.includes(role)) {
           setSelectedCampusIdState(primaryCampusId);
         } else {
           const stored = localStorage.getItem(STORAGE_KEY);
@@ -82,13 +72,13 @@ export function CampusProvider({ children }) {
           }
         }
       } catch (err) {
-        // Silently fail - campus is optional
-        console.warn('Campus fetch error:', err);
+        // Silently fail - campus feature is optional
+        console.warn('Campus init error:', err);
       }
     };
 
     fetchData();
-  }, [userRole]);
+  }, []);
 
   // Setter that respects campus lock
   const setSelectedCampusId = useCallback((id) => {
