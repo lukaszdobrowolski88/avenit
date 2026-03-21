@@ -10,7 +10,7 @@ const CampusContext = createContext({
   setSelectedCampusId: () => {},
   applyCampusFilter: (query) => query,
   getCampusIdForInsert: () => null,
-  loading: true
+  loading: false
 });
 
 const ADMIN_ROLES = ['superadmin', 'rada_starszych'];
@@ -21,7 +21,7 @@ export function CampusProvider({ children }) {
   const [campuses, setCampuses] = useState([]);
   const [selectedCampusId, setSelectedCampusIdState] = useState(null);
   const [userCampusId, setUserCampusId] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const isAdmin = ADMIN_ROLES.includes(userRole);
   const canSwitchCampus = isAdmin || !userCampusId;
@@ -31,52 +31,59 @@ export function CampusProvider({ children }) {
     const fetchData = async () => {
       try {
         const user = await getCachedUser();
-        if (!user) {
-          setLoading(false);
+        if (!user) return;
+
+        // Try to fetch campuses - table may not exist yet
+        let fetchedCampuses = [];
+        let primaryCampusId = null;
+
+        const campusesResult = await supabase
+          .from('campuses')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order');
+
+        // If campuses table doesn't exist, gracefully skip
+        if (campusesResult.error) {
+          console.warn('Campuses table not available:', campusesResult.error.message);
           return;
         }
 
-        // Fetch campuses and user campus in parallel
-        const [campusesResult, userResult] = await Promise.all([
-          supabase
-            .from('campuses')
-            .select('*')
-            .eq('is_active', true)
-            .order('sort_order'),
-          supabase
+        fetchedCampuses = campusesResult.data || [];
+
+        // Only fetch user campus if we actually have campuses
+        if (fetchedCampuses.length > 0) {
+          const userResult = await supabase
             .from('app_users')
             .select('campus_id')
             .eq('auth_user_id', user.id)
-            .maybeSingle()
-        ]);
+            .maybeSingle();
 
-        const fetchedCampuses = campusesResult.data || [];
+          if (!userResult.error) {
+            primaryCampusId = userResult.data?.campus_id || null;
+          }
+        }
+
         setCampuses(fetchedCampuses);
-
-        const primaryCampusId = userResult.data?.campus_id || null;
         setUserCampusId(primaryCampusId);
 
         // Determine initial selectedCampusId
         const isAdminRole = ADMIN_ROLES.includes(userRole);
 
         if (primaryCampusId && !isAdminRole) {
-          // Non-admin with assigned campus → locked
           setSelectedCampusIdState(primaryCampusId);
         } else {
-          // Admin or no campus assigned → restore from localStorage
           const stored = localStorage.getItem(STORAGE_KEY);
           if (stored) {
             const parsed = parseInt(stored, 10);
-            // Verify the stored campus still exists
             if (fetchedCampuses.some(c => c.id === parsed)) {
               setSelectedCampusIdState(parsed);
             }
           }
         }
       } catch (err) {
-        console.error('Error fetching campus data:', err);
-      } finally {
-        setLoading(false);
+        // Silently fail - campus is optional
+        console.warn('Campus fetch error:', err);
       }
     };
 
@@ -85,7 +92,7 @@ export function CampusProvider({ children }) {
 
   // Setter that respects campus lock
   const setSelectedCampusId = useCallback((id) => {
-    if (!canSwitchCampus) return; // Locked user can't switch
+    if (!canSwitchCampus) return;
     setSelectedCampusIdState(id);
     if (id !== null) {
       localStorage.setItem(STORAGE_KEY, String(id));
