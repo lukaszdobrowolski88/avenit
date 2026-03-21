@@ -18,6 +18,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { CSS } from '@dnd-kit/utilities';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import GraphicsOverride from './components/GraphicsOverride';
+import SimpleRichEditor from '../../components/SimpleRichEditor';
 
 const PROGRAM_ELEMENTS = [
   'Wstęp', 'Uwielbienie', 'Modlitwa', 'Czytanie', 'Kazanie',
@@ -2531,11 +2532,11 @@ export default function ProgramDetail() {
                 {/* NOTES TAB CONTENT */}
                 {scheduleTab === 'notes' && (
                   <div className="flex-1 overflow-y-auto p-4">
-                    <textarea
-                      value={program.globalNotes || ''}
-                      onChange={(e) => setProgram({ ...program, globalNotes: e.target.value })}
+                    <SimpleRichEditor
+                      content={program.globalNotes || ''}
+                      onChange={(html) => setProgram(prev => ({ ...prev, globalNotes: html }))}
                       placeholder="Notatki do programu... (widoczne tylko dla organizatorów)"
-                      className="w-full h-full min-h-[400px] p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter resize-none"
+                      minHeight={350}
                     />
                   </div>
                 )}
