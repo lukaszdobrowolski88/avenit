@@ -2008,11 +2008,22 @@ export default function ProgramDetail() {
   };
 
   const handleSave = async () => {
-    if (program.id) {
-      await supabase.from('programs').update(program).eq('id', program.id);
+    // Remove fields that may not exist in DB yet (pre-migration)
+    const { id, created_at, updated_at, ...programData } = program;
+
+    // Strip null campus/type fields to avoid 400 if columns don't exist
+    const cleanData = { ...programData };
+    if (cleanData.campus_id === null || cleanData.campus_id === undefined) delete cleanData.campus_id;
+    if (cleanData.type_id === null || cleanData.type_id === undefined) delete cleanData.type_id;
+    if (cleanData.graphics_override === null || cleanData.graphics_override === undefined) delete cleanData.graphics_override;
+
+    if (id) {
+      await supabase.from('programs').update(cleanData).eq('id', id);
     } else {
-      const { data } = await supabase.from('programs').insert([{ ...program, campus_id: campusIdForInsert }]).select();
-      if (data && data[0]) {
+      const insertData = { ...cleanData };
+      if (campusIdForInsert) insertData.campus_id = campusIdForInsert;
+      const { data } = await supabase.from('programs').insert([insertData]).select();
+      if (data?.[0]) {
         navigate(`/programs/${data[0].id}`, { replace: true });
         setProgram(data[0]);
       }
