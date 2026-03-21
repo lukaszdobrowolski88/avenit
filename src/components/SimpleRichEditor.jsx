@@ -29,9 +29,6 @@ export default function SimpleRichEditor({ content, onChange, placeholder = 'Wpi
     extensions: [
       StarterKit.configure({
         heading: { levels: [2, 3] },
-        bulletList: true,
-        orderedList: true,
-        blockquote: true,
       }),
       Underline,
       Placeholder.configure({ placeholder }),
