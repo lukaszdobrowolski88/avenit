@@ -2008,21 +2008,26 @@ export default function ProgramDetail() {
   };
 
   const handleSave = async () => {
-    // Remove fields that may not exist in DB yet (pre-migration)
-    const { id, created_at, updated_at, ...programData } = program;
+    // Only send known DB columns - prevents 400 from unknown fields
+    const dbData = {};
+    const DB_COLUMNS = [
+      'title', 'date', 'template', 'notes', 'status', 'type',
+      'schedule', 'song_ids', 'assignments', 'file_attachments',
+      'zespol', 'produkcja', 'atmosfera_team', 'scena', 'szkolka',
+      'teaching', 'custom_mc_schedule', 'custom_mailing_schedule', 'custom_mail_schedule',
+      'created_by', 'campus_id', 'graphics_override', 'type_id'
+    ];
+    for (const key of DB_COLUMNS) {
+      if (key in program && program[key] !== undefined) {
+        dbData[key] = program[key];
+      }
+    }
 
-    // Strip null campus/type fields to avoid 400 if columns don't exist
-    const cleanData = { ...programData };
-    if (cleanData.campus_id === null || cleanData.campus_id === undefined) delete cleanData.campus_id;
-    if (cleanData.type_id === null || cleanData.type_id === undefined) delete cleanData.type_id;
-    if (cleanData.graphics_override === null || cleanData.graphics_override === undefined) delete cleanData.graphics_override;
-
-    if (id) {
-      await supabase.from('programs').update(cleanData).eq('id', id);
+    if (program.id) {
+      await supabase.from('programs').update(dbData).eq('id', program.id);
     } else {
-      const insertData = { ...cleanData };
-      if (campusIdForInsert) insertData.campus_id = campusIdForInsert;
-      const { data } = await supabase.from('programs').insert([insertData]).select();
+      if (campusIdForInsert) dbData.campus_id = campusIdForInsert;
+      const { data } = await supabase.from('programs').insert([dbData]).select();
       if (data?.[0]) {
         navigate(`/programs/${data[0].id}`, { replace: true });
         setProgram(data[0]);
