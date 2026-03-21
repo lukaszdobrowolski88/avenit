@@ -2008,30 +2008,59 @@ export default function ProgramDetail() {
   };
 
   const handleSave = async () => {
-    // Only send known DB columns - prevents 400 from unknown fields
-    const dbData = {};
-    const DB_COLUMNS = [
+    // Only send known base DB columns
+    const BASE_COLUMNS = [
       'title', 'date', 'template', 'notes', 'status', 'type',
       'schedule', 'song_ids', 'assignments', 'file_attachments',
       'zespol', 'produkcja', 'atmosfera_team', 'scena', 'szkolka',
       'teaching', 'custom_mc_schedule', 'custom_mailing_schedule', 'custom_mail_schedule',
-      'created_by', 'campus_id', 'graphics_override', 'type_id'
+      'created_by'
     ];
-    for (const key of DB_COLUMNS) {
+    // Optional columns from migrations (may not exist yet)
+    const OPTIONAL_COLUMNS = ['campus_id', 'graphics_override', 'type_id'];
+
+    const dbData = {};
+    for (const key of BASE_COLUMNS) {
       if (key in program && program[key] !== undefined) {
         dbData[key] = program[key];
       }
     }
-
-    if (program.id) {
-      await supabase.from('programs').update(dbData).eq('id', program.id);
-    } else {
-      if (campusIdForInsert) dbData.campus_id = campusIdForInsert;
-      const { data } = await supabase.from('programs').insert([dbData]).select();
-      if (data?.[0]) {
-        navigate(`/programs/${data[0].id}`, { replace: true });
-        setProgram(data[0]);
+    for (const key of OPTIONAL_COLUMNS) {
+      if (key in program && program[key] != null) {
+        dbData[key] = program[key];
       }
+    }
+
+    const doSave = async (data) => {
+      if (program.id) {
+        return await supabase.from('programs').update(data).eq('id', program.id).select();
+      } else {
+        if (campusIdForInsert) data.campus_id = campusIdForInsert;
+        return await supabase.from('programs').insert([data]).select();
+      }
+    };
+
+    // Try with all columns, retry without optional if 400
+    let result = await doSave({ ...dbData });
+    if (result.error?.code === '42703' || result.error?.message?.includes('column') || result.status === 400) {
+      // Column doesn't exist - retry without optional columns
+      const fallbackData = {};
+      for (const key of BASE_COLUMNS) {
+        if (key in program && program[key] !== undefined) {
+          fallbackData[key] = program[key];
+        }
+      }
+      result = await doSave(fallbackData);
+    }
+
+    if (result.error) {
+      alert('Błąd zapisu: ' + result.error.message);
+      return;
+    }
+
+    if (!program.id && result.data?.[0]) {
+      navigate(`/programs/${result.data[0].id}`, { replace: true });
+      setProgram(result.data[0]);
     }
     setOriginalProgram(JSON.parse(JSON.stringify(program)));
     alert('Zapisano!');
