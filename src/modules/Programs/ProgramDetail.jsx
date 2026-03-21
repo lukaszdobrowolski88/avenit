@@ -1755,6 +1755,7 @@ export default function ProgramDetail() {
   const [mcMembers, setMcMembers] = useState([]);
   const [mcRoles, setMcRoles] = useState([]);
   const [mcMemberRoles, setMcMemberRoles] = useState([]);
+  const [programTypeConfig, setProgramTypeConfig] = useState(null);
 
   // Template state
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -1793,6 +1794,23 @@ export default function ProgramDetail() {
       setSeriesGraphics([]);
     }
   }, [program?.teaching?.series_id]);
+
+  // Fetch program type config for conditional section rendering
+  useEffect(() => {
+    const typeId = program?.type_id;
+    if (typeId) {
+      supabase.from('program_types').select('visible_sections').eq('id', typeId).maybeSingle()
+        .then(({ data }) => setProgramTypeConfig(data));
+    } else {
+      setProgramTypeConfig(null); // Show all sections when no type
+    }
+  }, [program?.type_id]);
+
+  // Helper: check if a section is visible for the current program type
+  const isSectionVisible = (sectionKey) => {
+    if (!programTypeConfig?.visible_sections) return true; // No config = show all
+    return programTypeConfig.visible_sections.includes(sectionKey);
+  };
 
   const fetchTemplates = async () => {
     try {
@@ -1897,11 +1915,15 @@ export default function ProgramDetail() {
   }, [setGlobalUnsavedChanges]);
 
   function getEmptyProgram() {
+    // Read type_id from URL query param if creating new program
+    const urlParams = new URLSearchParams(window.location.search);
+    const typeIdFromUrl = urlParams.get('type');
     return {
       title: '',
       date: new Date().toISOString().split('T')[0],
       schedule: [],
       globalNotes: '',
+      type_id: typeIdFromUrl ? parseInt(typeIdFromUrl, 10) : null,
       atmosfera_team: { przygotowanie: '', witanie: '' },
       produkcja: { naglosnienie: '', propresenter: '', social: '', host: '' },
       scena: { prowadzenie: '', czytanie: '', kazanie: '', modlitwa: '', wieczerza: '', ogloszenia: '' },
@@ -2696,6 +2718,7 @@ export default function ProgramDetail() {
             )}
           </div>
 
+          {isSectionVisible('zespol') && (
           <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-4 lg:p-6 mb-4 lg:mb-6 hover:shadow-xl transition relative z-50">
             <div className="flex justify-between items-center mb-4 lg:mb-6">
               <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Zespół Uwielbienia</h3>
@@ -2733,8 +2756,10 @@ export default function ProgramDetail() {
               })}
             </div>
           </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-4 lg:mb-6 relative z-0">
+            {isSectionVisible('atmosfera_team') && (
             <DynamicTeamSection
               title="Atmosfera Team"
               dataKey="atmosfera_team"
@@ -2746,6 +2771,8 @@ export default function ProgramDetail() {
               absentList={absentList}
               memberRoles={atmosferaMemberRoles}
             />
+            )}
+            {isSectionVisible('produkcja') && (
             <DynamicTeamSection
               title="MediaTeam"
               dataKey="produkcja"
@@ -2757,6 +2784,7 @@ export default function ProgramDetail() {
               absentList={absentList}
               memberRoles={mediaMemberRoles}
             />
+            )}
           </div>
 
           {/* Graphics Override Section - only show for saved programs */}
@@ -2771,6 +2799,7 @@ export default function ProgramDetail() {
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-4 lg:mb-6 relative z-0">
+            {isSectionVisible('scena') && (
             <DynamicScenaSection
               program={program}
               setProgram={setProgram}
@@ -2779,7 +2808,10 @@ export default function ProgramDetail() {
               mcRoles={mcRoles}
               mcMemberRoles={mcMemberRoles}
             />
+            )}
+            {isSectionVisible('szkolka') && (
             <SzkolkaSection program={program} setProgram={setProgram} kidsGroups={kidsGroups} kidsTeachers={kidsTeachers} />
+            )}
           </div>
         </div>
       </div>
