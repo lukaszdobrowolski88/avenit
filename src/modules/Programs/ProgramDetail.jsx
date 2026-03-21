@@ -2010,14 +2010,14 @@ export default function ProgramDetail() {
   const handleSave = async () => {
     // Only send known base DB columns
     const BASE_COLUMNS = [
-      'title', 'date', 'template', 'notes', 'status', 'type',
+      'date', 'template', 'notes', 'status', 'type',
       'schedule', 'song_ids', 'assignments', 'file_attachments',
       'zespol', 'produkcja', 'atmosfera_team', 'scena', 'szkolka',
       'teaching', 'custom_mc_schedule', 'custom_mailing_schedule', 'custom_mail_schedule',
       'created_by'
     ];
     // Optional columns from migrations (may not exist yet)
-    const OPTIONAL_COLUMNS = ['campus_id', 'graphics_override', 'type_id'];
+    const OPTIONAL_COLUMNS = ['title', 'campus_id', 'graphics_override', 'type_id'];
 
     const dbData = {};
     for (const key of BASE_COLUMNS) {
