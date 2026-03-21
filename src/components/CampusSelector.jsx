@@ -7,24 +7,23 @@ export default function CampusSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Hide if less than 2 campuses
-  if (campuses.length < 2) return null;
-
-  const selectedCampus = campuses.find(c => c.id === selectedCampusId);
-  const displayName = selectedCampus?.name || 'Wszystkie lokalizacje';
-
-  // Close dropdown on outside click
+  // Close dropdown on outside click - MUST be before any early return
   useEffect(() => {
+    if (!isOpen) return;
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsOpen(false);
       }
     };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
+
+  // Hide if less than 2 campuses
+  if (campuses.length < 2) return null;
+
+  const selectedCampus = campuses.find(c => c.id === selectedCampusId);
+  const displayName = selectedCampus?.name || 'Wszystkie lokalizacje';
 
   if (!canSwitchCampus) {
     // Locked - show campus name without dropdown
