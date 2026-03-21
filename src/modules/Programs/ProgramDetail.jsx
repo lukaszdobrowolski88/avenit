@@ -2389,19 +2389,7 @@ export default function ProgramDetail() {
                   <span>pieśni</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    const notes = window.prompt('Notatki do programu:', program.globalNotes || '');
-                    if (notes !== null) setProgram({ ...program, globalNotes: notes });
-                  }}
-                  className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition flex items-center gap-1"
-                  title={program.globalNotes ? `Notatki: ${program.globalNotes}` : 'Dodaj notatki'}
-                >
-                  <NoteIcon size={14} />
-                  {program.globalNotes ? 'Edytuj notatki' : 'Notatki'}
-                </button>
-              </div>
+              <div className="flex items-center gap-2" />
             </div>
 
             <div className="flex flex-col lg:flex-row min-h-[500px] lg:min-h-[600px]">
@@ -2409,8 +2397,21 @@ export default function ProgramDetail() {
               <div className={`flex-1 flex flex-col ${selectedScheduleItem ? 'hidden lg:flex' : 'flex'}`}>
                 {/* Tabs header */}
                 <div className="flex items-center justify-between px-2 py-2 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-white/80 to-gray-50/50 dark:from-gray-800/50 dark:to-gray-900/30">
-                  <div className="flex items-center px-2">
-                    <span className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</span>
+                  <div className="flex items-center bg-gray-100/80 dark:bg-gray-800/80 rounded-xl p-1">
+                    <button
+                      onClick={() => setScheduleTab('order')}
+                      className={`px-4 py-2 text-[13px] font-medium rounded-lg transition-all ${scheduleTab === 'order' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                    >
+                      📋 Plan
+                    </button>
+                    <button
+                      onClick={() => setScheduleTab('notes')}
+                      className={`px-4 py-2 text-[13px] font-medium rounded-lg transition-all flex items-center gap-1 ${scheduleTab === 'notes' ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-accent-primary-light shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
+                    >
+                      <NoteIcon size={13} />
+                      Notatki
+                      {program.globalNotes && <span className="w-1.5 h-1.5 bg-accent-primary rounded-full" />}
+                    </button>
                   </div>
                   <AddItemDropdown
                     onAdd={(type) => {
@@ -2536,179 +2537,18 @@ export default function ProgramDetail() {
                   </>
                 )}
 
-                {/* TEAMS TAB CONTENT */}
-                {scheduleTab === 'teams' && (
-                  <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-transparent to-gray-50/50 dark:to-gray-900/30">
-                    <div className="space-y-3">
-                      {/* Team positions overview */}
-                      {program.schedule
-                        .filter(item => item.type !== 'header')
-                        .map((item, idx) => {
-                          const itemType = ITEM_TYPES[item.type] || ITEM_TYPES.item;
-                          const IconComponent = itemType.icon;
-                          const songTitle = item.type === 'song' && item.songId
-                            ? songs.find(s => s.id === item.songId)?.title || 'Nieznana pieśń'
-                            : null;
-                          const hasAssignments = item.person || Object.values(item.teamAssignments || {}).some(v => v);
-
-                          return (
-                            <div
-                              key={item.id}
-                              onClick={() => {
-                                setSelectedScheduleItem(item);
-                                setScheduleTab('order');
-                              }}
-                              className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all hover:shadow-md
-                                ${hasAssignments
-                                  ? 'bg-white dark:bg-gray-800 border-gray-200/80 dark:border-gray-700/80'
-                                  : 'bg-amber-50/50 dark:bg-amber-900/10 border-amber-200/50 dark:border-amber-700/30 border-dashed'
-                                }
-                              `}
-                            >
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
-                                <span className="text-[11px] font-bold text-gray-400 w-5">{idx + 1}</span>
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${itemType.bg} shadow-sm`}>
-                                  <IconComponent size={14} className={itemType.color} />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <div className="font-medium text-[13px] text-gray-800 dark:text-gray-200 truncate">
-                                    {item.type === 'song' ? songTitle : (item.title || 'Nowy element')}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex flex-wrap gap-1.5 justify-end max-w-[200px]">
-                                {item.person && (
-                                  <span className="text-[10px] bg-gradient-to-r from-accent-primary-lighter to-accent-primary-lightest dark:from-accent-primary-darkest/40 dark:to-accent-primary-darkest/20 text-accent-primary-dark dark:text-accent-primary-lighter px-2 py-1 rounded-md font-medium border border-accent-primary-lighter/50 dark:border-accent-primary-dark/50">
-                                    👤 {item.person}
-                                  </span>
-                                )}
-                                {item.teamAssignments?.audio && (
-                                  <span className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-md font-medium">
-                                    🎧 {item.teamAssignments.audio}
-                                  </span>
-                                )}
-                                {item.teamAssignments?.visual && (
-                                  <span className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-md font-medium">
-                                    🖥️ {item.teamAssignments.visual}
-                                  </span>
-                                )}
-                                {!hasAssignments && (
-                                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
-                                    ⚠️ Przypisz
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-
-                      {program.schedule.filter(item => item.type !== 'header').length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4">
-                            <User size={32} className="opacity-40" />
-                          </div>
-                          <p className="text-sm font-medium">Brak elementów do przypisania</p>
-                          <p className="text-xs mt-1 text-gray-400">Dodaj elementy w zakładce Plan</p>
-                        </div>
-                      )}
-                    </div>
+                {/* NOTES TAB CONTENT */}
+                {scheduleTab === 'notes' && (
+                  <div className="flex-1 overflow-y-auto p-4">
+                    <textarea
+                      value={program.globalNotes || ''}
+                      onChange={(e) => setProgram({ ...program, globalNotes: e.target.value })}
+                      placeholder="Notatki do programu... (widoczne tylko dla organizatorów)"
+                      className="w-full h-full min-h-[400px] p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter resize-none"
+                    />
                   </div>
                 )}
 
-                {/* REHEARSE TAB CONTENT */}
-                {scheduleTab === 'rehearse' && (
-                  <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-transparent to-gray-50/50 dark:to-gray-900/30">
-                    <div className="space-y-5">
-                      {/* Rehearsal timeline */}
-                      <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200/80 dark:border-gray-700/80 overflow-hidden shadow-sm">
-                        <div className="px-4 py-3 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-800/50 border-b border-gray-100 dark:border-gray-700">
-                          <h4 className="text-[13px] font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                            <Clock size={16} className="text-accent-primary-light" />
-                            Przebieg próby
-                          </h4>
-                        </div>
-                        <div className="divide-y divide-gray-100 dark:divide-gray-700/50">
-                          {program.schedule
-                            .filter(item => item.type !== 'header')
-                            .map((item) => {
-                              const itemType = ITEM_TYPES[item.type] || ITEM_TYPES.item;
-                              const IconComponent = itemType.icon;
-                              const songTitle = item.type === 'song' && item.songId
-                                ? songs.find(s => s.id === item.songId)?.title || 'Nieznana pieśń'
-                                : null;
-                              const cumTime = program.schedule.slice(0, program.schedule.indexOf(item)).reduce((sum, i) => sum + (i.duration || 0), 0);
-
-                              return (
-                                <div key={item.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
-                                  <div className="w-14 text-right">
-                                    <span className="text-[11px] font-mono text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
-                                      {formatTime(cumTime)}
-                                    </span>
-                                  </div>
-                                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${itemType.bg}`}>
-                                    <IconComponent size={14} className={itemType.color} />
-                                  </div>
-                                  <div className="flex-1 text-[13px] text-gray-700 dark:text-gray-300 font-medium">
-                                    {item.type === 'song' ? songTitle : item.title || 'Element'}
-                                    {item.type === 'song' && item.songKey && (
-                                      <span className="ml-2 text-xs bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light font-bold px-1.5 py-0.5 rounded">
-                                        {item.songKey}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-[11px] text-gray-400 font-mono">
-                                    {formatTime(item.duration || 0)}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                        </div>
-                      </div>
-
-                      {/* Songs for rehearsal */}
-                      {program.schedule.filter(item => item.type === 'song').length > 0 && (
-                        <div className="bg-gradient-to-br from-accent-primary-lightest to-accent-primary-lighter/30 dark:from-accent-primary-darkest/20 dark:to-accent-primary-darkest/5 rounded-2xl border border-accent-primary-lighter/50 dark:border-accent-primary-dark/30 overflow-hidden">
-                          <div className="px-4 py-3 bg-gradient-to-r from-accent-primary-lighter/50 to-transparent dark:from-accent-primary-darkest/30 border-b border-accent-primary-lighter/30 dark:border-accent-primary-dark/20">
-                            <h4 className="text-[13px] font-bold text-accent-primary-dark dark:text-accent-primary-lighter flex items-center gap-2">
-                              <Music size={16} />
-                              Setlista ({program.schedule.filter(item => item.type === 'song').length} pieśni)
-                            </h4>
-                          </div>
-                          <div className="p-3 space-y-2">
-                            {program.schedule
-                              .filter(item => item.type === 'song')
-                              .map((item, idx) => {
-                                const song = songs.find(s => s.id === item.songId);
-                                return (
-                                  <div key={item.id} className="flex items-center gap-3 bg-white/80 dark:bg-gray-800/80 rounded-xl p-3 shadow-sm">
-                                    <span className="w-7 h-7 bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light rounded-lg flex items-center justify-center text-xs font-bold">
-                                      {idx + 1}
-                                    </span>
-                                    <span className="flex-1 text-[13px] font-medium text-gray-700 dark:text-gray-300">
-                                      {song?.title || 'Nieznana pieśń'}
-                                    </span>
-                                    <span className="text-xs font-bold bg-gradient-to-r from-accent-primary-light to-accent-primary text-white px-2.5 py-1 rounded-lg shadow-sm">
-                                      {item.songKey || song?.key || '?'}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                          </div>
-                        </div>
-                      )}
-
-                      {program.schedule.filter(item => item.type !== 'header').length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-                          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4">
-                            <Music size={32} className="opacity-40" />
-                          </div>
-                          <p className="text-sm font-medium">Brak elementów do próby</p>
-                          <p className="text-xs mt-1 text-gray-400">Dodaj elementy w zakładce Plan</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* RIGHT PANEL - Item editor */}
