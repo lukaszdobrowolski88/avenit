@@ -285,7 +285,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <PermissionsProvider>
-        <CampusProvider>
           <NotificationProvider userEmail={session.user?.email}>
             <UnsavedChangesProvider>
             <SidebarProvider>
@@ -376,7 +375,6 @@ export default function App() {
             </SidebarProvider>
             </UnsavedChangesProvider>
           </NotificationProvider>
-        </CampusProvider>
       </PermissionsProvider>
     </BrowserRouter>
   );
