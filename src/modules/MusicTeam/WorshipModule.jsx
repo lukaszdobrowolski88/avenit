@@ -2835,7 +2835,7 @@ export default function WorshipModule() {
                 author: (data.author || '').trim(),
                 category: (data.category || '').trim(),
                 key: (data.key || 'C').trim(),
-                tempo: data.tempo ? parseInt(data.tempo) : null,
+                tempo: data.tempo ? parseFloat(data.tempo) : null,
                 meter: (data.meter || '').trim(),
                 tags: Array.isArray(data.tags) ? data.tags : [],
                 chords_bars: (data.chords_bars || '').trim(),
