@@ -443,86 +443,144 @@ export default function FormRenderer({
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 md:p-8 mb-6">
-        {/* Logo jeśli nie ma nagłówka graficznego */}
-        {branding.logoImage && !branding.headerImage && (
-          <div className={`mb-4 ${
-            branding.logoPosition === 'center' ? 'text-center' :
-            branding.logoPosition === 'right' ? 'text-right' : 'text-left'
-          }`}>
-            <img
-              src={branding.logoImage}
-              alt="Logo"
-              className="h-12 object-contain inline-block"
-            />
-          </div>
-        )}
+      {(() => {
+        const hdr = settings?.header || {};
+        const hdrBg = hdr.background || {};
+        const isImageBg = hdrBg.type === 'image' && hdrBg.image;
+        const isGradientBg = hdrBg.type === 'gradient';
+        const isDarkBg = hdr.textColor === 'light' || (hdr.textColor === 'auto' && (isImageBg || isGradientBg));
+        const textClass = isDarkBg ? 'text-white' : 'text-gray-900 dark:text-white';
+        const subtextClass = isDarkBg ? 'text-white/70' : 'text-gray-600 dark:text-gray-400';
+        const dividerClass = isDarkBg ? 'border-white/20' : 'border-gray-100 dark:border-gray-700';
 
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          {title}
-        </h1>
-        {description && (
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {description}
-          </p>
-        )}
+        const paddingMap = { sm: 'p-4', md: 'p-6 md:p-8', lg: 'p-8 md:p-10', xl: 'p-10 md:p-12' };
+        const radiusMap = { none: 'rounded-none', md: 'rounded-xl', xl: 'rounded-2xl', '2xl': 'rounded-3xl', '3xl': 'rounded-[2rem]' };
+        const shadowMap = { none: '', sm: 'shadow-sm', md: 'shadow-md', lg: 'shadow-lg', xl: 'shadow-xl' };
+        const titleSizeMap = { lg: 'text-lg', xl: 'text-xl', '2xl': 'text-2xl', '3xl': 'text-3xl' };
 
-        {/* Informacje o wydarzeniu */}
-        {hasEventInfo && (
-          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 space-y-2">
-            {eventInfo.location && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <MapPin size={16} className="text-accent-primary-light" />
-                {eventInfo.location}
-              </div>
+        const padding = paddingMap[hdr.padding] || 'p-6 md:p-8';
+        const radius = radiusMap[hdr.borderRadius] || 'rounded-2xl';
+        const shadow = shadowMap[hdr.shadow] || '';
+        const titleSize = titleSizeMap[hdr.titleSize] || 'text-2xl';
+        const titleAlign = hdr.titleAlign === 'center' ? 'text-center' : 'text-left';
+        const border = hdr.border !== false ? 'border border-gray-200 dark:border-gray-700' : '';
+
+        // Styl tła headera
+        let bgStyle = {};
+        let bgClassName = 'bg-white dark:bg-gray-800';
+        if (hdrBg.type === 'solid' && hdrBg.solidColor) {
+          bgStyle = { backgroundColor: hdrBg.solidColor };
+          bgClassName = '';
+        } else if (isGradientBg && hdrBg.gradient) {
+          const dirMap = { 'to-r': 'to right', 'to-br': 'to bottom right', 'to-b': 'to bottom', 'to-bl': 'to bottom left', 'to-t': 'to top', 'to-tr': 'to top right', 'to-l': 'to left', 'to-tl': 'to top left' };
+          const dir = dirMap[hdrBg.gradient.direction] || 'to right';
+          const stops = [hdrBg.gradient.from, hdrBg.gradient.via, hdrBg.gradient.to].filter(Boolean).join(', ');
+          bgStyle = { background: `linear-gradient(${dir}, ${stops})` };
+          bgClassName = '';
+        }
+
+        return (
+          <div
+            className={`relative overflow-hidden ${bgClassName} ${radius} ${border} ${shadow} ${padding} mb-6`}
+            style={bgStyle}
+          >
+            {/* Obrazek tła headera */}
+            {isImageBg && (
+              <>
+                <div
+                  className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                  style={{ backgroundImage: `url(${hdrBg.image})` }}
+                />
+                <div
+                  className="absolute inset-0 bg-black"
+                  style={{ opacity: hdrBg.overlay ?? 0.5 }}
+                />
+              </>
             )}
-            {(eventInfo.dateStart || eventInfo.dateEnd) && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <Calendar size={16} className="text-accent-primary-light" />
-                {eventInfo.dateStart && new Date(eventInfo.dateStart).toLocaleDateString('pl-PL', {
-                  day: 'numeric', month: 'long', year: 'numeric'
-                })}
-                {eventInfo.dateEnd && eventInfo.dateStart !== eventInfo.dateEnd && (
-                  <> - {new Date(eventInfo.dateEnd).toLocaleDateString('pl-PL', {
-                    day: 'numeric', month: 'long', year: 'numeric'
-                  })}</>
-                )}
-              </div>
-            )}
-            {(eventInfo.timeStart || eventInfo.timeEnd) && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <Clock size={16} className="text-accent-primary-light" />
-                {eventInfo.timeStart}
-                {eventInfo.timeEnd && <> - {eventInfo.timeEnd}</>}
-              </div>
-            )}
-            {eventInfo.price > 0 && (
-              <div className="flex items-center gap-2 text-sm font-semibold text-green-600 dark:text-green-400">
-                <DollarSign size={16} />
-                {formatPrice(eventInfo.price, eventInfo.priceCurrency)}
-                {eventInfo.priceType === 'per_person' && <span className="font-normal text-gray-500">/ os.</span>}
-              </div>
-            )}
-            {eventInfo.maxSeats && eventInfo.showRemaining && (
-              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <Users size={16} className="text-blue-500" />
-                {seatAvailability.remaining > 0 ? (
-                  <>Pozostało <span className="font-semibold text-blue-600">{seatAvailability.remaining}</span> miejsc</>
-                ) : isWaitlistMode ? (
-                  <span className="text-orange-600 dark:text-orange-400 font-semibold">
-                    Lista rezerwowa
-                    {seatAvailability.waitlistRemaining !== null && (
-                      <> — pozostało {seatAvailability.waitlistRemaining} miejsc</>
-                    )}
-                  </span>
-                ) : (
-                  <span className="text-red-500 font-semibold">Brak wolnych miejsc</span>
-                )}
-              </div>
-            )}
+
+            <div className="relative z-10">
+              {/* Logo */}
+              {branding.logoImage && (
+                <div className={`mb-4 ${
+                  branding.logoPosition === 'center' ? 'text-center' :
+                  branding.logoPosition === 'right' ? 'text-right' : 'text-left'
+                }`}>
+                  <img
+                    src={branding.logoImage}
+                    alt="Logo"
+                    className="h-12 object-contain inline-block"
+                  />
+                </div>
+              )}
+
+              <h1 className={`${titleSize} font-bold ${textClass} mb-2 ${titleAlign}`}>
+                {title}
+              </h1>
+              {description && (
+                <p className={`${subtextClass} mb-4 ${titleAlign}`}>
+                  {description}
+                </p>
+              )}
+
+              {/* Informacje o wydarzeniu */}
+              {hasEventInfo && (
+                <div className={`mt-4 pt-4 ${hdr.showDivider !== false ? `border-t ${dividerClass}` : ''} space-y-2`}>
+                  {eventInfo.location && (
+                    <div className={`flex items-center gap-2 text-sm ${subtextClass}`}>
+                      <MapPin size={16} className={isDarkBg ? 'text-white/80' : 'text-accent-primary-light'} />
+                      {eventInfo.location}
+                    </div>
+                  )}
+                  {(eventInfo.dateStart || eventInfo.dateEnd) && (
+                    <div className={`flex items-center gap-2 text-sm ${subtextClass}`}>
+                      <Calendar size={16} className={isDarkBg ? 'text-white/80' : 'text-accent-primary-light'} />
+                      {eventInfo.dateStart && new Date(eventInfo.dateStart).toLocaleDateString('pl-PL', {
+                        day: 'numeric', month: 'long', year: 'numeric'
+                      })}
+                      {eventInfo.dateEnd && eventInfo.dateStart !== eventInfo.dateEnd && (
+                        <> - {new Date(eventInfo.dateEnd).toLocaleDateString('pl-PL', {
+                          day: 'numeric', month: 'long', year: 'numeric'
+                        })}</>
+                      )}
+                    </div>
+                  )}
+                  {(eventInfo.timeStart || eventInfo.timeEnd) && (
+                    <div className={`flex items-center gap-2 text-sm ${subtextClass}`}>
+                      <Clock size={16} className={isDarkBg ? 'text-white/80' : 'text-accent-primary-light'} />
+                      {eventInfo.timeStart}
+                      {eventInfo.timeEnd && <> - {eventInfo.timeEnd}</>}
+                    </div>
+                  )}
+                  {eventInfo.price > 0 && (
+                    <div className={`flex items-center gap-2 text-sm font-semibold ${isDarkBg ? 'text-green-300' : 'text-green-600 dark:text-green-400'}`}>
+                      <DollarSign size={16} />
+                      {formatPrice(eventInfo.price, eventInfo.priceCurrency)}
+                      {eventInfo.priceType === 'per_person' && <span className={`font-normal ${isDarkBg ? 'text-white/60' : 'text-gray-500'}`}>/ os.</span>}
+                    </div>
+                  )}
+                  {eventInfo.maxSeats && eventInfo.showRemaining && (
+                    <div className={`flex items-center gap-2 text-sm ${subtextClass}`}>
+                      <Users size={16} className={isDarkBg ? 'text-blue-300' : 'text-blue-500'} />
+                      {seatAvailability.remaining > 0 ? (
+                        <>Pozostało <span className={`font-semibold ${isDarkBg ? 'text-blue-300' : 'text-blue-600'}`}>{seatAvailability.remaining}</span> miejsc</>
+                      ) : isWaitlistMode ? (
+                        <span className={`font-semibold ${isDarkBg ? 'text-orange-300' : 'text-orange-600 dark:text-orange-400'}`}>
+                          Lista rezerwowa
+                          {seatAvailability.waitlistRemaining !== null && (
+                            <> — pozostało {seatAvailability.waitlistRemaining} miejsc</>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-red-500 font-semibold">Brak wolnych miejsc</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+        );
+      })()}
 
       {/* Banner listy rezerwowej */}
       {isWaitlistMode && (

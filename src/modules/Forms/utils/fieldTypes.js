@@ -369,6 +369,28 @@ export const DEFAULT_FORM_SETTINGS = {
     headerHeight: 200,        // Wysokość nagłówka w px
     showHeaderOnPublic: true  // Pokaż nagłówek na publicznym formularzu
   },
+  // Stylowanie karty nagłówkowej (tytuł, opis, event info)
+  header: {
+    background: {
+      type: 'solid',           // 'solid' | 'gradient' | 'image'
+      solidColor: '#ffffff',
+      gradient: {
+        from: '#3b82f6',
+        to: '#8b5cf6',
+        direction: 'to-r'
+      },
+      image: null,             // URL obrazka
+      overlay: 0.5             // Przezroczystość overlay na obrazku
+    },
+    textColor: 'auto',         // 'auto' | 'light' | 'dark'
+    padding: 'md',             // 'sm' | 'md' | 'lg' | 'xl'
+    borderRadius: 'xl',        // 'none' | 'md' | 'xl' | '2xl' | '3xl'
+    border: true,              // Pokaż border
+    shadow: 'none',            // 'none' | 'sm' | 'md' | 'lg' | 'xl'
+    titleSize: 'xl',           // 'lg' | 'xl' | '2xl' | '3xl'
+    titleAlign: 'left',        // 'left' | 'center'
+    showDivider: true          // Linia oddzielająca event info
+  },
   // Ustawienia cennika/płatności
   pricing: {
     enabled: false,

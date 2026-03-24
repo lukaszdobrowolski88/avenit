@@ -17,6 +17,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
   const headerImageRef = useRef(null);
   const backgroundImageRef = useRef(null);
   const logoImageRef = useRef(null);
+  const headerBgImageRef = useRef(null);
 
   // Pobierz szablony emaili z modulu Mailing
   const { templates: mailingTemplates, loading: loadingTemplates } = useTemplates();
@@ -43,6 +44,36 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
     setLocalSettings(prev => ({
       ...prev,
       pricing: { ...(prev.pricing || {}), [key]: value }
+    }));
+  };
+
+  const handleHeaderChange = (key, value) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      header: { ...(prev.header || {}), [key]: value }
+    }));
+  };
+
+  const handleHeaderBgChange = (key, value) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      header: {
+        ...(prev.header || {}),
+        background: { ...(prev.header?.background || {}), [key]: value }
+      }
+    }));
+  };
+
+  const handleHeaderGradientChange = (key, value) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      header: {
+        ...(prev.header || {}),
+        background: {
+          ...(prev.header?.background || {}),
+          gradient: { ...(prev.header?.background?.gradient || {}), [key]: value }
+        }
+      }
     }));
   };
 
@@ -133,7 +164,12 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
         .from('form-uploads')
         .getPublicUrl(filePath);
 
-      handleBrandingChange(`${type}Image`, publicUrl);
+      // Header background image -> header.background.image
+      if (type === 'headerBg') {
+        handleHeaderBgChange('image', publicUrl);
+      } else {
+        handleBrandingChange(`${type}Image`, publicUrl);
+      }
     } catch (error) {
       console.error('Błąd uploadu:', error);
     } finally {
@@ -493,6 +529,290 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     />
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sekcja stylowania nagłówka */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              <Palette size={20} className="text-violet-500" />
+              Nagłówek formularza
+            </h2>
+
+            <div className="space-y-4">
+              {/* Typ tła nagłówka */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Tło nagłówka
+                </label>
+                <div className="flex gap-2">
+                  {[
+                    { id: 'solid', label: 'Kolor' },
+                    { id: 'gradient', label: 'Gradient' },
+                    { id: 'image', label: 'Grafika' }
+                  ].map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => handleHeaderBgChange('type', type.id)}
+                      className={`flex-1 py-2 px-3 rounded-xl text-sm border transition-colors ${
+                        (localSettings.header?.background?.type || 'solid') === type.id
+                          ? 'bg-violet-50 dark:bg-violet-900/30 border-violet-500 text-violet-700 dark:text-violet-400'
+                          : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
+                      }`}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Kolor solid */}
+              {(localSettings.header?.background?.type || 'solid') === 'solid' && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Kolor</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={localSettings.header?.background?.solidColor || '#ffffff'}
+                      onChange={(e) => handleHeaderBgChange('solidColor', e.target.value)}
+                      className="w-10 h-10 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={localSettings.header?.background?.solidColor || '#ffffff'}
+                      onChange={(e) => handleHeaderBgChange('solidColor', e.target.value)}
+                      className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Gradient */}
+              {(localSettings.header?.background?.type) === 'gradient' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Od</label>
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={localSettings.header?.background?.gradient?.from || '#3b82f6'}
+                          onChange={(e) => handleHeaderGradientChange('from', e.target.value)}
+                          className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer flex-shrink-0" />
+                        <input type="text" value={localSettings.header?.background?.gradient?.from || '#3b82f6'}
+                          onChange={(e) => handleHeaderGradientChange('from', e.target.value)}
+                          className="w-full px-2 py-1.5 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Do</label>
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={localSettings.header?.background?.gradient?.to || '#8b5cf6'}
+                          onChange={(e) => handleHeaderGradientChange('to', e.target.value)}
+                          className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer flex-shrink-0" />
+                        <input type="text" value={localSettings.header?.background?.gradient?.to || '#8b5cf6'}
+                          onChange={(e) => handleHeaderGradientChange('to', e.target.value)}
+                          className="w-full px-2 py-1.5 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white" />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Kierunek</label>
+                    <div className="flex flex-wrap gap-1">
+                      {[
+                        { id: 'to-r', label: '→' }, { id: 'to-br', label: '↘' },
+                        { id: 'to-b', label: '↓' }, { id: 'to-bl', label: '↙' },
+                        { id: 'to-l', label: '←' }, { id: 'to-tl', label: '↖' },
+                        { id: 'to-t', label: '↑' }, { id: 'to-tr', label: '↗' }
+                      ].map((dir) => (
+                        <button key={dir.id}
+                          onClick={() => handleHeaderGradientChange('direction', dir.id)}
+                          className={`w-8 h-8 rounded-lg text-sm border transition-colors ${
+                            (localSettings.header?.background?.gradient?.direction || 'to-r') === dir.id
+                              ? 'bg-violet-100 dark:bg-violet-900/30 border-violet-500 text-violet-700' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500'
+                          }`}>{dir.label}</button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Podgląd */}
+                  <div className="h-12 rounded-xl border border-gray-200 dark:border-gray-600" style={{
+                    background: (() => {
+                      const g = localSettings.header?.background?.gradient || {};
+                      const dirMap = { 'to-r': 'to right', 'to-br': 'to bottom right', 'to-b': 'to bottom', 'to-bl': 'to bottom left', 'to-t': 'to top', 'to-tr': 'to top right', 'to-l': 'to left', 'to-tl': 'to top left' };
+                      return `linear-gradient(${dirMap[g.direction] || 'to right'}, ${g.from || '#3b82f6'}, ${g.to || '#8b5cf6'})`;
+                    })()
+                  }} />
+                  {/* Presety */}
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { from: '#3b82f6', to: '#8b5cf6', label: 'Niebiesko-fioletowy' },
+                      { from: '#ec4899', to: '#f97316', label: 'Różowo-pomarańczowy' },
+                      { from: '#10b981', to: '#3b82f6', label: 'Zielono-niebieski' },
+                      { from: '#f59e0b', to: '#ef4444', label: 'Złoto-czerwony' },
+                      { from: '#1e293b', to: '#334155', label: 'Ciemny' },
+                      { from: '#6366f1', to: '#ec4899', label: 'Indigo-pink' }
+                    ].map((preset, i) => (
+                      <button key={i}
+                        onClick={() => handleHeaderBgChange('gradient', { ...localSettings.header?.background?.gradient, ...preset })}
+                        className="h-6 w-12 rounded-lg border border-gray-200 dark:border-gray-600 hover:scale-110 transition-transform"
+                        style={{ background: `linear-gradient(to right, ${preset.from}, ${preset.to})` }}
+                        title={preset.label} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Grafika tła nagłówka */}
+              {(localSettings.header?.background?.type) === 'image' && (
+                <div className="space-y-3">
+                  <input ref={headerBgImageRef} type="file" accept="image/*"
+                    onChange={(e) => handleImageUpload(e.target.files[0], 'headerBg')}
+                    className="hidden" />
+                  {localSettings.header?.background?.image ? (
+                    <div className="relative">
+                      <img src={localSettings.header.background.image} alt="Tło nagłówka"
+                        className="w-full h-24 object-cover rounded-xl border border-gray-200 dark:border-gray-600" />
+                      <button onClick={() => handleHeaderBgChange('image', null)}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => headerBgImageRef.current?.click()}
+                      disabled={uploadingImage === 'headerBg'}
+                      className="w-full h-24 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:border-violet-400 hover:text-violet-500 transition-colors">
+                      {uploadingImage === 'headerBg' ? (
+                        <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <><Upload size={20} /><span className="text-xs">Dodaj grafikę tła</span></>
+                      )}
+                    </button>
+                  )}
+                  <div>
+                    <label className="text-xs text-gray-500 dark:text-gray-400">
+                      Przyciemnienie: {Math.round((localSettings.header?.background?.overlay ?? 0.5) * 100)}%
+                    </label>
+                    <input type="range" min="0" max="100"
+                      value={(localSettings.header?.background?.overlay ?? 0.5) * 100}
+                      onChange={(e) => handleHeaderBgChange('overlay', parseInt(e.target.value) / 100)}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700" />
+                  </div>
+                </div>
+              )}
+
+              {/* Kolor tekstu */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kolor tekstu</label>
+                <div className="flex gap-2">
+                  {[
+                    { id: 'auto', label: 'Automatyczny' },
+                    { id: 'dark', label: 'Ciemny' },
+                    { id: 'light', label: 'Jasny' }
+                  ].map((c) => (
+                    <button key={c.id}
+                      onClick={() => handleHeaderChange('textColor', c.id)}
+                      className={`flex-1 py-2 px-3 rounded-xl text-xs border transition-colors ${
+                        (localSettings.header?.textColor || 'auto') === c.id
+                          ? 'bg-violet-50 dark:bg-violet-900/30 border-violet-500 text-violet-700 dark:text-violet-400'
+                          : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
+                      }`}>{c.label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rozmiar tytułu */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rozmiar tytułu</label>
+                <div className="flex gap-2">
+                  {[
+                    { id: 'lg', label: 'S' }, { id: 'xl', label: 'M' },
+                    { id: '2xl', label: 'L' }, { id: '3xl', label: 'XL' }
+                  ].map((s) => (
+                    <button key={s.id}
+                      onClick={() => handleHeaderChange('titleSize', s.id)}
+                      className={`flex-1 py-2 rounded-xl text-sm border transition-colors ${
+                        (localSettings.header?.titleSize || 'xl') === s.id
+                          ? 'bg-violet-50 dark:bg-violet-900/30 border-violet-500 text-violet-700' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600'
+                      }`}>{s.label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Wyrównanie */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Wyrównanie</label>
+                <div className="flex gap-2">
+                  {[{ id: 'left', label: 'Do lewej' }, { id: 'center', label: 'Na środku' }].map((a) => (
+                    <button key={a.id}
+                      onClick={() => handleHeaderChange('titleAlign', a.id)}
+                      className={`flex-1 py-2 rounded-xl text-sm border transition-colors ${
+                        (localSettings.header?.titleAlign || 'left') === a.id
+                          ? 'bg-violet-50 dark:bg-violet-900/30 border-violet-500 text-violet-700' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600'
+                      }`}>{a.label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Padding */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Padding</label>
+                <div className="flex gap-2">
+                  {[{ id: 'sm', label: 'S' }, { id: 'md', label: 'M' }, { id: 'lg', label: 'L' }, { id: 'xl', label: 'XL' }].map((p) => (
+                    <button key={p.id}
+                      onClick={() => handleHeaderChange('padding', p.id)}
+                      className={`flex-1 py-2 rounded-xl text-sm border transition-colors ${
+                        (localSettings.header?.padding || 'md') === p.id
+                          ? 'bg-violet-50 dark:bg-violet-900/30 border-violet-500 text-violet-700' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600'
+                      }`}>{p.label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Zaokrąglenie */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Zaokrąglenie</label>
+                <div className="flex gap-2">
+                  {[{ id: 'none', label: 'Brak' }, { id: 'md', label: 'Małe' }, { id: 'xl', label: 'Średnie' }, { id: '2xl', label: 'Duże' }, { id: '3xl', label: 'Bardzo duże' }].map((r) => (
+                    <button key={r.id}
+                      onClick={() => handleHeaderChange('borderRadius', r.id)}
+                      className={`flex-1 py-2 rounded-xl text-xs border transition-colors ${
+                        (localSettings.header?.borderRadius || 'xl') === r.id
+                          ? 'bg-violet-50 dark:bg-violet-900/30 border-violet-500 text-violet-700' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600'
+                      }`}>{r.label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cień */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cień</label>
+                <div className="flex gap-2">
+                  {[{ id: 'none', label: 'Brak' }, { id: 'sm', label: 'Mały' }, { id: 'md', label: 'Średni' }, { id: 'lg', label: 'Duży' }].map((s) => (
+                    <button key={s.id}
+                      onClick={() => handleHeaderChange('shadow', s.id)}
+                      className={`flex-1 py-2 rounded-xl text-xs border transition-colors ${
+                        (localSettings.header?.shadow || 'none') === s.id
+                          ? 'bg-violet-50 dark:bg-violet-900/30 border-violet-500 text-violet-700' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600'
+                      }`}>{s.label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Toggles */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Obramowanie</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked={localSettings.header?.border !== false}
+                    onChange={(e) => handleHeaderChange('border', e.target.checked)} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-500"></div>
+                </label>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <span className="text-sm text-gray-700 dark:text-gray-300">Linia oddzielająca info</span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked={localSettings.header?.showDivider !== false}
+                    onChange={(e) => handleHeaderChange('showDivider', e.target.checked)} className="sr-only peer" />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-500"></div>
+                </label>
               </div>
             </div>
           </div>
