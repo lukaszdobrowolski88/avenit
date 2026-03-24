@@ -273,18 +273,98 @@ export default function ResponsesView({ form }) {
               </div>
 
               <div className="space-y-4">
-                {(form?.fields || []).map((field) => (
-                  <div key={field.id}>
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                      {field.label}
-                    </p>
-                    <p className="text-gray-900 dark:text-white">
-                      {formatAnswerForExport(selectedResponse.answers[field.id], field.type) || (
-                        <span className="text-gray-400 italic">Brak odpowiedzi</span>
+                {/* Tryb rejestracji */}
+                {selectedResponse.answers?._registrationMode === 'group' && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <p className="text-sm font-medium text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                      <User size={14} />
+                      Rejestracja grupowa
+                      {selectedResponse.answers?._participants && (
+                        <span className="text-xs font-normal">
+                          ({selectedResponse.answers._participants.length} uczestników + osoba zgłaszająca)
+                        </span>
                       )}
                     </p>
                   </div>
+                )}
+
+                {/* Osoba kontaktowa (tryb grupowy) */}
+                {selectedResponse.answers?._contactPerson && (
+                  <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                      Osoba zgłaszająca
+                    </p>
+                    {(form?.fields || []).map((field) => {
+                      const value = selectedResponse.answers._contactPerson[field.id];
+                      if (value === undefined || value === null || value === '') return null;
+                      return (
+                        <div key={field.id} className="mb-1">
+                          <span className="text-xs text-gray-500">{field.label}: </span>
+                          <span className="text-sm text-gray-900 dark:text-white">
+                            {formatAnswerForExport(value, field.type)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Uczestnicy (tryb grupowy) */}
+                {selectedResponse.answers?._participants?.map((participant, pIdx) => (
+                  <div key={pIdx} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
+                      Członek zespołu {pIdx + 1}
+                    </p>
+                    {(form?.fields || []).map((field) => {
+                      const value = participant[field.id];
+                      if (value === undefined || value === null || value === '') return null;
+                      return (
+                        <div key={field.id} className="mb-1">
+                          <span className="text-xs text-gray-500">{field.label}: </span>
+                          <span className="text-sm text-gray-900 dark:text-white">
+                            {formatAnswerForExport(value, field.type)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {participant._addons && Object.entries(participant._addons).some(([, v]) => v > 0) && (
+                      <div className="mt-1 text-xs text-purple-600 dark:text-purple-400">
+                        Dodatki: {Object.entries(participant._addons).filter(([, v]) => v > 0).map(([id]) => id).join(', ')}
+                      </div>
+                    )}
+                  </div>
                 ))}
+
+                {/* Standardowe pola */}
+                {(form?.fields || []).map((field) => {
+                  // W trybie grupowym, pokaż tylko pola, które mają wartość bezpośrednio w answers
+                  const value = selectedResponse.answers[field.id];
+                  if (value === undefined || value === null || value === '') return null;
+                  return (
+                    <div key={field.id}>
+                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                        {field.label}
+                      </p>
+                      <p className="text-gray-900 dark:text-white">
+                        {formatAnswerForExport(value, field.type) || (
+                          <span className="text-gray-400 italic">Brak odpowiedzi</span>
+                        )}
+                      </p>
+                    </div>
+                  );
+                })}
+
+                {/* Podsumowanie cenowe */}
+                {selectedResponse.answers?._priceBreakdown?.grandTotal > 0 && (
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                    <p className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase tracking-wider mb-1">
+                      Kwota do zapłaty
+                    </p>
+                    <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                      {selectedResponse.answers._priceBreakdown.grandTotal.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} {form?.settings?.pricing?.currency || 'PLN'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

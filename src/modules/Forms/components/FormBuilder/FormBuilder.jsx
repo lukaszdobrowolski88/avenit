@@ -224,6 +224,7 @@ export default function FormBuilder({
     return (
       <FormSettings
         settings={settings}
+        fields={fields}
         onUpdate={setSettings}
         onClose={() => setShowSettings(false)}
       />

@@ -1,9 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
-import { AlertCircle, Check, Loader2, MapPin, Calendar, Clock, DollarSign, Users, CreditCard } from 'lucide-react';
+import { AlertCircle, Check, Loader2, MapPin, Calendar, Clock, DollarSign, Users, CreditCard, Plus } from 'lucide-react';
 import FieldRenderer from './FieldRenderer';
 import PayPalButton from './PayPalButton';
 import Przelewy24Button from './Przelewy24Button';
-import { calculateTotalPrice, formatPrice } from '../utils/fieldTypes';
+import ParticipantForm from './ParticipantForm';
+import AddonSelector from './AddonSelector';
+import PriceBreakdown from './PriceBreakdown';
+import { calculateTotalPrice, calculatePriceBreakdown, formatPrice } from '../utils/fieldTypes';
 
 export default function FormRenderer({
   title,
@@ -21,14 +24,80 @@ export default function FormRenderer({
   const [paymentData, setPaymentData] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
 
+  // Rejestracja grupowa
+  const groupConfig = settings?.groupRegistration || {};
+  const isGroupEnabled = groupConfig.enabled;
+  const [registrationMode, setRegistrationMode] = useState('individual');
+  const [contactAnswers, setContactAnswers] = useState({});
+  const [contactAddons, setContactAddons] = useState({});
+  const [participants, setParticipants] = useState([
+    { id: `p-${Date.now()}`, answers: {}, addons: {} }
+  ]);
+  const [registrationAddons, setRegistrationAddons] = useState({});
+  const [participantErrors, setParticipantErrors] = useState({});
+  const [contactErrors, setContactErrors] = useState({});
+
   // Wyciągnij ustawienia brandingu i cennika
   const branding = settings?.branding || {};
   const pricing = settings?.pricing || {};
+  const addonsConfig = settings?.addons || {};
+  const discountsConfig = settings?.discounts || {};
 
-  // Oblicz całkowitą cenę
-  const totalPrice = useMemo(() => {
-    return calculateTotalPrice(fields, answers);
-  }, [fields, answers]);
+  // Rozdziel pola na kontaktowe i uczestnika
+  const contactFields = useMemo(() => {
+    if (!isGroupEnabled) return [];
+    return fields.filter(f =>
+      (groupConfig.contactPersonFieldIds || []).includes(f.id) &&
+      !['price', 'seat_limit', 'quantity', 'location', 'date_start', 'date_end', 'time_start', 'time_end'].includes(f.type)
+    );
+  }, [fields, isGroupEnabled, groupConfig.contactPersonFieldIds]);
+
+  const participantFields = useMemo(() => {
+    if (!isGroupEnabled) return [];
+    return fields.filter(f =>
+      (groupConfig.participantFieldIds || []).includes(f.id) &&
+      !['price', 'seat_limit', 'quantity', 'location', 'date_start', 'date_end', 'time_start', 'time_end'].includes(f.type)
+    );
+  }, [fields, isGroupEnabled, groupConfig.participantFieldIds]);
+
+  // Pola, które nie są przypisane do grupy (wyświetlane normalnie)
+  const standardFields = useMemo(() => {
+    if (!isGroupEnabled) return fields;
+    const contactIds = groupConfig.contactPersonFieldIds || [];
+    const participantIds = groupConfig.participantFieldIds || [];
+    return fields.filter(f =>
+      !contactIds.includes(f.id) &&
+      !participantIds.includes(f.id) &&
+      !['price', 'seat_limit', 'location', 'date_start', 'date_end', 'time_start', 'time_end'].includes(f.type)
+    );
+  }, [fields, isGroupEnabled, groupConfig.contactPersonFieldIds, groupConfig.participantFieldIds]);
+
+  // Buduj odpowiedź do wyliczenia ceny
+  const answersForPricing = useMemo(() => {
+    if (!isGroupEnabled || registrationMode === 'individual') {
+      return {
+        ...answers,
+        _addons: contactAddons,
+        _registrationAddons: registrationAddons
+      };
+    }
+    return {
+      _contactPerson: { ...contactAnswers, _addons: contactAddons },
+      _participants: participants.map(p => ({
+        ...p.answers,
+        _addons: p.addons
+      })),
+      _registrationAddons: registrationAddons,
+      ...answers
+    };
+  }, [isGroupEnabled, registrationMode, answers, contactAnswers, contactAddons, participants, registrationAddons]);
+
+  // Oblicz rozbicie ceny
+  const priceBreakdown = useMemo(() => {
+    return calculatePriceBreakdown(fields, answersForPricing, settings);
+  }, [fields, answersForPricing, settings]);
+
+  const totalPrice = priceBreakdown.grandTotal;
 
   // Wyciągnij informacje o wydarzeniu z pól
   const eventInfo = useMemo(() => {
@@ -119,13 +188,87 @@ export default function FormRenderer({
     });
   }, []);
 
+  const handleContactChange = useCallback((fieldId, value) => {
+    setContactAnswers(prev => ({ ...prev, [fieldId]: value }));
+    setContactErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[fieldId];
+      return newErrors;
+    });
+  }, []);
+
+  const handleContactAddonChange = useCallback((addonId, quantity) => {
+    setContactAddons(prev => ({ ...prev, [addonId]: quantity }));
+  }, []);
+
+  const handleParticipantUpdate = useCallback((index, updated) => {
+    setParticipants(prev => {
+      const newList = [...prev];
+      newList[index] = updated;
+      return newList;
+    });
+    // Clear errors for this participant
+    setParticipantErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[index];
+      return newErrors;
+    });
+  }, []);
+
+  const addParticipant = useCallback(() => {
+    const max = groupConfig.maxParticipants || 10;
+    if (participants.length < max) {
+      setParticipants(prev => [
+        ...prev,
+        { id: `p-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, answers: {}, addons: {} }
+      ]);
+    }
+  }, [participants.length, groupConfig.maxParticipants]);
+
+  const removeParticipant = useCallback((index) => {
+    const min = groupConfig.minParticipants || 1;
+    if (participants.length > min) {
+      setParticipants(prev => prev.filter((_, i) => i !== index));
+    }
+  }, [participants.length, groupConfig.minParticipants]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
     const newErrors = {};
+    const newContactErrors = {};
+    const newParticipantErrors = {};
     let hasErrors = false;
 
-    fields.forEach(field => {
+    if (isGroupEnabled && registrationMode === 'group') {
+      // Waliduj pola osoby kontaktowej
+      contactFields.forEach(field => {
+        const error = validateField(field, contactAnswers[field.id]);
+        if (error) {
+          newContactErrors[field.id] = error;
+          hasErrors = true;
+        }
+      });
+
+      // Waliduj pola każdego uczestnika
+      participants.forEach((participant, index) => {
+        const pErrors = {};
+        participantFields.forEach(field => {
+          const error = validateField(field, participant.answers[field.id]);
+          if (error) {
+            pErrors[field.id] = error;
+            hasErrors = true;
+          }
+        });
+        if (Object.keys(pErrors).length > 0) {
+          newParticipantErrors[index] = pErrors;
+        }
+      });
+    }
+
+    // Waliduj standardowe pola (niezależnie od trybu)
+    const fieldsToValidate = isGroupEnabled && registrationMode === 'group' ? standardFields : fields;
+    fieldsToValidate.forEach(field => {
       const error = validateField(field, answers[field.id]);
       if (error) {
         newErrors[field.id] = error;
@@ -134,27 +277,64 @@ export default function FormRenderer({
     });
 
     setErrors(newErrors);
+    setContactErrors(newContactErrors);
+    setParticipantErrors(newParticipantErrors);
 
     if (hasErrors) {
-      const firstErrorField = fields.find(f => newErrors[f.id]);
-      if (firstErrorField) {
-        document.getElementById(`field-${firstErrorField.id}`)?.scrollIntoView({
+      // Scroll to first error
+      const firstErrorId = Object.keys(newErrors)[0] || Object.keys(newContactErrors)[0];
+      if (firstErrorId) {
+        document.getElementById(`field-${firstErrorId}`)?.scrollIntoView({
           behavior: 'smooth',
           block: 'center'
         });
+      } else {
+        // Error in participant
+        const firstPIdx = Object.keys(newParticipantErrors)[0];
+        if (firstPIdx !== undefined) {
+          const firstFieldId = Object.keys(newParticipantErrors[firstPIdx])[0];
+          document.getElementById(`field-p${firstPIdx}-${firstFieldId}`)?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
       }
       return;
     }
 
-    // Dodaj dane płatności do odpowiedzi
-    const submitData = {
-      ...answers,
-      _payment: paymentData ? {
-        method: selectedPaymentMethod,
-        ...paymentData
-      } : null,
-      _totalPrice: totalPrice
-    };
+    // Zbuduj dane do wysłania
+    let submitData;
+    if (isGroupEnabled && registrationMode === 'group') {
+      submitData = {
+        ...answers,
+        _registrationMode: 'group',
+        _contactPerson: { ...contactAnswers, _addons: contactAddons },
+        _participants: participants.map(p => ({
+          ...p.answers,
+          _addons: p.addons
+        })),
+        _registrationAddons: registrationAddons,
+        _priceBreakdown: priceBreakdown,
+        _payment: paymentData ? {
+          method: selectedPaymentMethod,
+          ...paymentData
+        } : null,
+        _totalPrice: totalPrice
+      };
+    } else {
+      submitData = {
+        ...answers,
+        _registrationMode: isGroupEnabled ? 'individual' : undefined,
+        _addons: contactAddons,
+        _registrationAddons: registrationAddons,
+        _priceBreakdown: priceBreakdown,
+        _payment: paymentData ? {
+          method: selectedPaymentMethod,
+          ...paymentData
+        } : null,
+        _totalPrice: totalPrice
+      };
+    }
 
     onSubmit(submitData);
   };
@@ -197,6 +377,12 @@ export default function FormRenderer({
     return value !== null && value !== undefined && value !== '' && (!Array.isArray(value) || value.length > 0);
   }).length;
   const progress = fields.length > 0 ? Math.round((completedFields / fields.length) * 100) : 0;
+
+  // Dodatki per osoba i per rejestracja
+  const perPersonAddons = (addonsConfig.items || []).filter(a => a.scope === 'per_person' && a.available !== false);
+  const perRegistrationAddons = (addonsConfig.items || []).filter(a => a.scope === 'per_registration' && a.available !== false);
+
+  const isGroupMode = isGroupEnabled && registrationMode === 'group';
 
   return (
     <form onSubmit={handleSubmit} className="max-w-xl mx-auto">
@@ -319,68 +505,209 @@ export default function FormRenderer({
         )}
       </div>
 
-      <div className="space-y-6">
-        {fields.map((field, index) => (
-          <div
-            key={field.id}
-            id={`field-${field.id}`}
-            className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6"
-          >
-            <label className="block mb-4">
-              <span className="text-base font-medium text-gray-900 dark:text-white">
-                {field.label}
-                {field.required && (
-                  <span className="text-red-500 ml-1">*</span>
+      {/* Przełącznik Indywidualna / Grupowa */}
+      {isGroupEnabled && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+          <label className="block text-base font-medium text-gray-900 dark:text-white mb-3">
+            Rodzaj rejestracji <span className="text-red-500">*</span>
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setRegistrationMode('individual')}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium border-2 transition-all ${
+                registrationMode === 'individual'
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                  : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-300'
+              }`}
+            >
+              Indywidualna
+            </button>
+            <button
+              type="button"
+              onClick={() => setRegistrationMode('group')}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium border-2 transition-all ${
+                registrationMode === 'group'
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                  : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-blue-300'
+              }`}
+            >
+              Grupowa
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Sekcja osoby zgłaszającej (tryb grupowy) */}
+      {isGroupEnabled && groupConfig.requireContactPerson !== false && contactFields.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1 text-center">
+            Osoba zgłaszająca
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center">
+            Ty będziesz głównym kontaktem pomiędzy nami, a członkami Twojego zespołu.
+          </p>
+
+          <div className="space-y-4">
+            {contactFields.map((field) => (
+              <div key={field.id} id={`field-${field.id}`}>
+                <label className="block mb-2">
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {field.label}
+                    {field.required && <span className="text-red-500 ml-1">*</span>}
+                  </span>
+                </label>
+                <FieldRenderer
+                  field={field}
+                  value={contactAnswers[field.id]}
+                  onChange={(value) => handleContactChange(field.id, value)}
+                  error={contactErrors[field.id]}
+                />
+                {contactErrors[field.id] && (
+                  <div className="flex items-center gap-2 mt-2 text-red-500 text-xs">
+                    <AlertCircle size={14} />
+                    {contactErrors[field.id]}
+                  </div>
                 )}
-              </span>
-              {field.description && (
-                <span className="block text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {field.description}
-                </span>
-              )}
-            </label>
-
-            <FieldRenderer
-              field={field}
-              value={answers[field.id]}
-              onChange={(value) => handleChange(field.id, value)}
-              error={errors[field.id]}
-            />
-
-            {errors[field.id] && (
-              <div className="flex items-center gap-2 mt-3 text-red-500 text-sm">
-                <AlertCircle size={16} />
-                {errors[field.id]}
               </div>
+            ))}
+
+            {/* Dodatki per osoba dla osoby kontaktowej */}
+            {addonsConfig.enabled && perPersonAddons.length > 0 && (
+              <AddonSelector
+                addons={perPersonAddons}
+                selectedAddons={contactAddons}
+                onChange={handleContactAddonChange}
+                currency={pricing.currency || 'PLN'}
+              />
             )}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
+
+      {/* Sekcja "Kto przyjedzie razem z Tobą?" (tryb grupowy) */}
+      {isGroupMode && participantFields.length > 0 && (
+        <div className="space-y-4 mb-6">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white text-center">
+            Kto przyjedzie razem z Tobą?
+          </h2>
+
+          {participants.map((participant, index) => (
+            <ParticipantForm
+              key={participant.id}
+              participant={participant}
+              fields={participantFields}
+              addons={addonsConfig.enabled ? addonsConfig.items : []}
+              index={index}
+              label={groupConfig.participantLabel || 'Członek zespołu'}
+              onUpdate={(updated) => handleParticipantUpdate(index, updated)}
+              onRemove={() => removeParticipant(index)}
+              canRemove={participants.length > (groupConfig.minParticipants || 1)}
+              errors={participantErrors[index]}
+            />
+          ))}
+
+          {participants.length < (groupConfig.maxParticipants || 10) && (
+            <button
+              type="button"
+              onClick={addParticipant}
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
+            >
+              <Plus size={18} />
+              Dodaj kolejną osobę
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Standardowe pola (niegrupowe lub tryb indywidualny) */}
+      {(!isGroupEnabled || registrationMode === 'individual' ? fields : standardFields).length > 0 && (
+        <div className="space-y-6">
+          {(!isGroupEnabled || registrationMode === 'individual' ? fields : standardFields).map((field) => (
+            <div
+              key={field.id}
+              id={`field-${field.id}`}
+              className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6"
+            >
+              <label className="block mb-4">
+                <span className="text-base font-medium text-gray-900 dark:text-white">
+                  {field.label}
+                  {field.required && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
+                </span>
+                {field.description && (
+                  <span className="block text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    {field.description}
+                  </span>
+                )}
+              </label>
+
+              <FieldRenderer
+                field={field}
+                value={answers[field.id]}
+                onChange={(value) => handleChange(field.id, value)}
+                error={errors[field.id]}
+              />
+
+              {errors[field.id] && (
+                <div className="flex items-center gap-2 mt-3 text-red-500 text-sm">
+                  <AlertCircle size={16} />
+                  {errors[field.id]}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Dodatki per osoba (tryb indywidualny z addons) */}
+      {addonsConfig.enabled && perPersonAddons.length > 0 && !isGroupMode && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mt-6">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+            Opcje dodatkowe
+          </h3>
+          <AddonSelector
+            addons={perPersonAddons}
+            selectedAddons={contactAddons}
+            onChange={handleContactAddonChange}
+            currency={pricing.currency || 'PLN'}
+          />
+        </div>
+      )}
+
+      {/* Dodatki per rejestracja */}
+      {addonsConfig.enabled && perRegistrationAddons.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mt-6">
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+            Opcje dodatkowe
+          </h3>
+          <AddonSelector
+            addons={perRegistrationAddons}
+            selectedAddons={registrationAddons}
+            onChange={(addonId, qty) => setRegistrationAddons(prev => ({ ...prev, [addonId]: qty }))}
+            currency={pricing.currency || 'PLN'}
+          />
+        </div>
+      )}
 
       {/* Podsumowanie ceny */}
       {pricing.enabled && pricing.showPriceSummary && totalPrice > 0 && (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-200 dark:border-green-800 p-6 mt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Do zapłaty</p>
-              <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                {formatPrice(totalPrice, pricing.currency || 'PLN')}
-              </p>
-            </div>
-            <div className="w-14 h-14 bg-green-500/20 rounded-full flex items-center justify-center">
-              <DollarSign size={28} className="text-green-600 dark:text-green-400" />
-            </div>
-          </div>
+        <div className="mt-6">
+          <PriceBreakdown
+            breakdown={priceBreakdown}
+            currency={pricing.currency || 'PLN'}
+          />
 
           {pricing.paymentInstructions && (
-            <p className="mt-3 text-sm text-gray-600 dark:text-gray-400 border-t border-green-200 dark:border-green-800 pt-3">
+            <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
               {pricing.paymentInstructions}
             </p>
           )}
 
           {/* Wybór metody płatności */}
           {pricing.paymentMethods && pricing.paymentMethods.length > 0 && pricing.paymentRequired && (
-            <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
+            <div className="mt-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Wybierz metodę płatności:
               </p>
@@ -455,68 +782,68 @@ export default function FormRenderer({
                   </button>
                 )}
               </div>
-            </div>
-          )}
 
-          {/* PayPal Button */}
-          {selectedPaymentMethod === 'paypal' && pricing.paypal?.clientId && !paymentCompleted && (
-            <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
-              <PayPalButton
-                clientId={pricing.paypal.clientId}
-                amount={totalPrice}
-                currency={pricing.currency || 'PLN'}
-                description={pricing.paypal.description || `Płatność za: ${title}`}
-                sandbox={pricing.paypal.sandbox !== false}
-                onSuccess={handlePayPalSuccess}
-                onError={(err) => console.error('PayPal error:', err)}
-                onCancel={() => console.log('PayPal cancelled')}
-              />
-            </div>
-          )}
+              {/* PayPal Button */}
+              {selectedPaymentMethod === 'paypal' && pricing.paypal?.clientId && !paymentCompleted && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <PayPalButton
+                    clientId={pricing.paypal.clientId}
+                    amount={totalPrice}
+                    currency={pricing.currency || 'PLN'}
+                    description={pricing.paypal.description || `Płatność za: ${title}`}
+                    sandbox={pricing.paypal.sandbox !== false}
+                    onSuccess={handlePayPalSuccess}
+                    onError={(err) => console.error('PayPal error:', err)}
+                    onCancel={() => console.log('PayPal cancelled')}
+                  />
+                </div>
+              )}
 
-          {/* Przelewy24 Button */}
-          {selectedPaymentMethod === 'przelewy24' && pricing.przelewy24?.merchantId && !paymentCompleted && (
-            <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
-              <Przelewy24Button
-                merchantId={pricing.przelewy24.merchantId}
-                crcKey={pricing.przelewy24.crcKey}
-                apiKey={pricing.przelewy24.apiKey}
-                amount={totalPrice}
-                currency={pricing.currency || 'PLN'}
-                description={pricing.przelewy24.description || `Płatność za: ${title}`}
-                sandbox={pricing.przelewy24.sandbox !== false}
-                formId={settings?.formId}
-                email={answers[fields.find(f => f.type === 'email')?.id] || ''}
-                onSuccess={(data) => {
-                  setPaymentCompleted(true);
-                  setPaymentData(data);
-                }}
-                onError={(err) => console.error('Przelewy24 error:', err)}
-              />
-            </div>
-          )}
+              {/* Przelewy24 Button */}
+              {selectedPaymentMethod === 'przelewy24' && pricing.przelewy24?.merchantId && !paymentCompleted && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <Przelewy24Button
+                    merchantId={pricing.przelewy24.merchantId}
+                    crcKey={pricing.przelewy24.crcKey}
+                    apiKey={pricing.przelewy24.apiKey}
+                    amount={totalPrice}
+                    currency={pricing.currency || 'PLN'}
+                    description={pricing.przelewy24.description || `Płatność za: ${title}`}
+                    sandbox={pricing.przelewy24.sandbox !== false}
+                    formId={settings?.formId}
+                    email={contactAnswers[contactFields.find(f => f.type === 'email')?.id] || answers[fields.find(f => f.type === 'email')?.id] || ''}
+                    onSuccess={(data) => {
+                      setPaymentCompleted(true);
+                      setPaymentData(data);
+                    }}
+                    onError={(err) => console.error('Przelewy24 error:', err)}
+                  />
+                </div>
+              )}
 
-          {/* Informacje o przelewie */}
-          {selectedPaymentMethod === 'transfer' && pricing.bankAccount && (
-            <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
-              <div className="p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">Numer konta do przelewu:</p>
-                <p className="font-mono text-sm text-gray-900 dark:text-white">
-                  {pricing.bankAccount}
-                </p>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                W tytule przelewu wpisz swoje imię i nazwisko.
-              </p>
-            </div>
-          )}
+              {/* Informacje o przelewie */}
+              {selectedPaymentMethod === 'transfer' && pricing.bankAccount && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <p className="text-xs text-gray-500 mb-1">Numer konta do przelewu:</p>
+                    <p className="font-mono text-sm text-gray-900 dark:text-white">
+                      {pricing.bankAccount}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    W tytule przelewu wpisz swoje imię i nazwisko.
+                  </p>
+                </div>
+              )}
 
-          {/* Info o gotówce */}
-          {selectedPaymentMethod === 'cash' && (
-            <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Płatność gotówką przy wejściu na wydarzenie.
-              </p>
+              {/* Info o gotówce */}
+              {selectedPaymentMethod === 'cash' && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Płatność gotówką przy wejściu na wydarzenie.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

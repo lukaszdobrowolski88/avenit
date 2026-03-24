@@ -61,60 +61,46 @@ export default function ParticipantsView({ forms }) {
       if (error) throw error;
 
       // Przetworz dane uczestnikow
-      const processedParticipants = (data || []).map(response => {
+      const processedParticipants = [];
+      (data || []).forEach(response => {
         const form = response.forms;
         const answers = response.answers || {};
 
-        // Znajdz dane kontaktowe w odpowiedziach
-        let email = response.respondent_email || '';
-        let name = response.respondent_name || '';
-        let phone = '';
-
-        if (form?.fields) {
-          form.fields.forEach(field => {
-            const value = answers[field.id];
-            if (!value) return;
-
-            if (field.type === 'email' && !email) {
-              email = value;
-            }
-            if (field.type === 'phone' && !phone) {
-              phone = value;
-            }
-            if (field.type === 'text' && !name) {
-              const label = field.label?.toLowerCase() || '';
-              if (label.includes('imie') || label.includes('imię') || label.includes('name') || label.includes('nazwisko')) {
-                name = value;
+        // Helper: extract contact info from answers object
+        const extractContactInfo = (answerObj, formFields) => {
+          let email = '';
+          let name = '';
+          let phone = '';
+          if (formFields) {
+            formFields.forEach(field => {
+              const value = answerObj[field.id];
+              if (!value) return;
+              if (field.type === 'email' && !email) email = value;
+              if (field.type === 'phone' && !phone) phone = value;
+              if (field.type === 'text' && !name) {
+                const label = field.label?.toLowerCase() || '';
+                if (label.includes('imie') || label.includes('imię') || label.includes('name') || label.includes('nazwisko')) {
+                  name = value;
+                }
               }
-            }
-          });
-        }
+            });
+          }
+          return { email, name, phone };
+        };
 
         // Oblicz kwote i status platnosci
-        let totalAmount = 0;
-        let paymentStatus = 'none'; // none, pending, paid
+        let totalAmount = answers._totalPrice || 0;
+        let paymentStatus = 'none';
         let paymentMethod = null;
 
         if (form?.settings?.pricing?.enabled) {
-          // Sprawdz czy jest pole price
-          const priceField = form.fields?.find(f => f.type === 'price');
-          if (priceField?.priceConfig?.basePrice) {
-            totalAmount = priceField.priceConfig.basePrice;
+          if (!totalAmount) {
+            const priceField = form.fields?.find(f => f.type === 'price');
+            if (priceField?.priceConfig?.basePrice) {
+              totalAmount = priceField.priceConfig.basePrice;
+            }
           }
 
-          // Sprawdz opcje z cenami
-          form.fields?.forEach(field => {
-            const value = answers[field.id];
-            if (!value || !field.options) return;
-
-            field.options.forEach(option => {
-              if (option.price && (value === option.value || (Array.isArray(value) && value.includes(option.value)))) {
-                totalAmount += option.price;
-              }
-            });
-          });
-
-          // Sprawdz dane platnosci z odpowiedzi
           if (answers._payment) {
             paymentMethod = answers._payment.method;
             paymentStatus = answers._payment.status === 'completed' ? 'paid' : 'pending';
@@ -123,15 +109,10 @@ export default function ParticipantsView({ forms }) {
           }
         }
 
-        return {
-          id: response.id,
+        const baseParticipant = {
           formId: response.form_id,
           formTitle: form?.title || 'Nieznany formularz',
-          name: name || 'Anonim',
-          email,
-          phone,
           submittedAt: response.submitted_at,
-          answers,
           fields: form?.fields || [],
           settings: form?.settings || {},
           totalAmount,
@@ -139,6 +120,53 @@ export default function ParticipantsView({ forms }) {
           paymentMethod,
           currency: form?.settings?.pricing?.currency || 'PLN'
         };
+
+        // Rejestracja grupowa — rozwiń na poszczególnych uczestników
+        if (answers._registrationMode === 'group') {
+          // Osoba zgłaszająca
+          if (answers._contactPerson) {
+            const contact = extractContactInfo(answers._contactPerson, form?.fields);
+            processedParticipants.push({
+              ...baseParticipant,
+              id: `${response.id}-contact`,
+              responseId: response.id,
+              name: contact.name || response.respondent_name || 'Osoba zgłaszająca',
+              email: contact.email || response.respondent_email || '',
+              phone: contact.phone,
+              answers: answers._contactPerson,
+              isGroupContact: true,
+              groupSize: (answers._participants?.length || 0) + 1
+            });
+          }
+
+          // Członkowie zespołu
+          (answers._participants || []).forEach((participant, idx) => {
+            const pContact = extractContactInfo(participant, form?.fields);
+            processedParticipants.push({
+              ...baseParticipant,
+              id: `${response.id}-p${idx}`,
+              responseId: response.id,
+              name: pContact.name || `Uczestnik ${idx + 1}`,
+              email: pContact.email,
+              phone: pContact.phone,
+              answers: participant,
+              isGroupMember: true,
+              groupSize: (answers._participants?.length || 0) + 1
+            });
+          });
+        } else {
+          // Zwykła rejestracja (nie grupowa)
+          const contact = extractContactInfo(answers, form?.fields);
+          processedParticipants.push({
+            ...baseParticipant,
+            id: response.id,
+            responseId: response.id,
+            name: contact.name || response.respondent_name || 'Anonim',
+            email: contact.email || response.respondent_email || '',
+            phone: contact.phone,
+            answers
+          });
+        }
       });
 
       setParticipants(processedParticipants);

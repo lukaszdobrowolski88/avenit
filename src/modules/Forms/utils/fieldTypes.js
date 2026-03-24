@@ -315,6 +315,28 @@ export const DEFAULT_FORM_SETTINGS = {
   limitResponses: null,
   oneResponsePerUser: false,
   showProgressBar: false,
+  // Rejestracja grupowa
+  groupRegistration: {
+    enabled: false,
+    minParticipants: 1,
+    maxParticipants: 10,
+    participantFieldIds: [],
+    contactPersonFieldIds: [],
+    participantLabel: 'Członek zespołu',
+    allowDynamicCount: true,
+    requireContactPerson: true
+  },
+  // Dodatki płatne
+  addons: {
+    enabled: false,
+    items: []
+  },
+  // Rabaty ilościowe
+  discounts: {
+    enabled: false,
+    rules: [],
+    stackingMode: 'best'
+  },
   theme: {
     primaryColor: '#c7ab71',
     backgroundColor: '#ffffff',
@@ -470,6 +492,164 @@ export function calculateTotalPrice(fields, answers) {
   });
 
   return totalPrice;
+}
+
+// Funkcja do wyliczania rozbicia cen (grupowa rejestracja, dodatki, rabaty)
+export function calculatePriceBreakdown(fields, answers, settings) {
+  const pricing = settings?.pricing || {};
+  const addonsConfig = settings?.addons || {};
+  const discountsConfig = settings?.discounts || {};
+  const groupConfig = settings?.groupRegistration || {};
+
+  // 1. Cena bazowa z pola price
+  let baseUnitPrice = 0;
+  let pricingType = 'fixed';
+  const priceField = fields.find(f => f.type === 'price' && f.priceConfig);
+  if (priceField) {
+    baseUnitPrice = priceField.priceConfig.basePrice || 0;
+    pricingType = priceField.priceConfig.pricingType || 'fixed';
+  }
+
+  // 2. Liczba uczestników
+  let participantCount = 1;
+  if (groupConfig.enabled && answers._participants) {
+    participantCount = answers._participants.length;
+    // +1 for contact person if they are also a participant
+    if (answers._contactPerson && groupConfig.requireContactPerson) {
+      participantCount += 1;
+    }
+  } else {
+    const quantityField = fields.find(f => f.type === 'quantity');
+    if (quantityField) {
+      participantCount = parseInt(answers[quantityField.id]) || 1;
+    }
+  }
+
+  // 3. Oblicz cenę bazową
+  let baseTotal = 0;
+  switch (pricingType) {
+    case 'per_person':
+      baseTotal = baseUnitPrice * participantCount;
+      break;
+    case 'tiered': {
+      const tier = priceField?.priceConfig?.tiers?.find(
+        t => participantCount >= t.minQty && participantCount <= t.maxQty
+      );
+      baseTotal = (tier ? tier.price : baseUnitPrice) * participantCount;
+      break;
+    }
+    default:
+      baseTotal = baseUnitPrice;
+  }
+
+  // 4. Oblicz dodatki
+  const addonsBreakdown = [];
+  let addonsTotal = 0;
+  if (addonsConfig.enabled && addonsConfig.items?.length > 0) {
+    addonsConfig.items.forEach(addon => {
+      if (!addon.available && addon.available !== undefined) return;
+      let totalQty = 0;
+
+      if (addon.scope === 'per_person') {
+        // Sumuj z każdego uczestnika
+        if (answers._participants) {
+          answers._participants.forEach(p => {
+            totalQty += (p._addons?.[addon.id] || 0);
+          });
+        }
+        // Osoba kontaktowa
+        if (answers._contactPerson?._addons?.[addon.id]) {
+          totalQty += answers._contactPerson._addons[addon.id];
+        }
+        // Tryb bez grupy
+        if (!groupConfig.enabled && answers._addons?.[addon.id]) {
+          totalQty += answers._addons[addon.id];
+        }
+      } else {
+        // per_registration
+        totalQty = answers._registrationAddons?.[addon.id] || 0;
+      }
+
+      if (totalQty > 0) {
+        const total = addon.price * totalQty;
+        addonsBreakdown.push({
+          id: addon.id,
+          name: addon.name,
+          unitPrice: addon.price,
+          quantity: totalQty,
+          total
+        });
+        addonsTotal += total;
+      }
+    });
+  }
+
+  // 5. Suma częściowa
+  const subtotal = baseTotal + addonsTotal;
+
+  // 6. Zastosuj rabaty
+  const appliedDiscounts = [];
+  let discountTotal = 0;
+  if (discountsConfig.enabled && discountsConfig.rules?.length > 0) {
+    const qualifyingRules = discountsConfig.rules
+      .filter(rule => {
+        if (rule.type === 'quantity') {
+          return participantCount >= rule.minQuantity;
+        }
+        return false;
+      })
+      .map(rule => {
+        let amount = 0;
+        switch (rule.discountType) {
+          case 'percentage':
+            amount = subtotal * (rule.value / 100);
+            break;
+          case 'fixed_per_person':
+            amount = rule.value * participantCount;
+            break;
+          case 'fixed_total':
+            amount = rule.value;
+            break;
+        }
+        return { ...rule, amount };
+      })
+      .sort((a, b) => b.amount - a.amount);
+
+    if (discountsConfig.stackingMode === 'all') {
+      qualifyingRules.forEach(rule => {
+        if (rule.stackable || qualifyingRules.length === 1) {
+          appliedDiscounts.push({ label: rule.label, amount: rule.amount });
+          discountTotal += rule.amount;
+        }
+      });
+      // Jeśli żaden nie jest stackable, weź najlepszy
+      if (appliedDiscounts.length === 0 && qualifyingRules.length > 0) {
+        appliedDiscounts.push({ label: qualifyingRules[0].label, amount: qualifyingRules[0].amount });
+        discountTotal = qualifyingRules[0].amount;
+      }
+    } else {
+      // 'best' - najlepszy rabat
+      if (qualifyingRules.length > 0) {
+        appliedDiscounts.push({ label: qualifyingRules[0].label, amount: qualifyingRules[0].amount });
+        discountTotal = qualifyingRules[0].amount;
+      }
+    }
+  }
+
+  const grandTotal = Math.max(0, subtotal - discountTotal);
+
+  return {
+    baseUnitPrice,
+    participantCount,
+    pricingType,
+    baseTotal,
+    addonsBreakdown,
+    addonsTotal,
+    subtotal,
+    appliedDiscounts,
+    discountTotal,
+    grandTotal
+  };
 }
 
 // Funkcja formatująca cenę

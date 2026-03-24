@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, Save, Upload, X, Image, DollarSign, CreditCard, Trash2, Mail, Bell, Clock, Edit3, Eye, AlertCircle, Code, Palette } from 'lucide-react';
+import { ChevronLeft, Save, Upload, X, Image, DollarSign, CreditCard, Trash2, Mail, Bell, Clock, Edit3, Eye, AlertCircle, Code, Palette, Users, Package, Percent } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useTemplates } from '../../Mailing/hooks/useTemplates';
 import { DEFAULT_FORM_EMAIL_TEMPLATES, FORM_EMAIL_VARIABLES } from '../utils/formEmailTemplates';
 import DragDropEmailBuilder from '../../Mailing/components/DragDropEmailBuilder';
+import GroupRegistrationSettings from './GroupRegistrationSettings';
+import AddonsSettings from './AddonsSettings';
+import DiscountSettings from './DiscountSettings';
 
-export default function FormSettings({ settings, onUpdate, onClose }) {
+export default function FormSettings({ settings, fields, onUpdate, onClose }) {
   const [localSettings, setLocalSettings] = useState(settings || {});
   const [uploadingImage, setUploadingImage] = useState(null);
   const [editingTemplate, setEditingTemplate] = useState(null);
@@ -40,6 +43,27 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
     setLocalSettings(prev => ({
       ...prev,
       pricing: { ...(prev.pricing || {}), [key]: value }
+    }));
+  };
+
+  const handleGroupRegistrationChange = (value) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      groupRegistration: value
+    }));
+  };
+
+  const handleAddonsChange = (value) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      addons: value
+    }));
+  };
+
+  const handleDiscountsChange = (value) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      discounts: value
     }));
   };
 
@@ -764,6 +788,43 @@ export default function FormSettings({ settings, onUpdate, onClose }) {
                 </>
               )}
             </div>
+          </div>
+
+          {/* Sekcja rejestracji grupowej */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              <Users size={20} className="text-blue-500" />
+              Rejestracja grupowa
+            </h2>
+            <GroupRegistrationSettings
+              settings={localSettings}
+              fields={fields || []}
+              onChange={handleGroupRegistrationChange}
+            />
+          </div>
+
+          {/* Sekcja dodatków */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              <Package size={20} className="text-purple-500" />
+              Dodatki (add-ons)
+            </h2>
+            <AddonsSettings
+              settings={localSettings}
+              onChange={handleAddonsChange}
+            />
+          </div>
+
+          {/* Sekcja rabatów */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              <Percent size={20} className="text-orange-500" />
+              Rabaty ilościowe
+            </h2>
+            <DiscountSettings
+              settings={localSettings}
+              onChange={handleDiscountsChange}
+            />
           </div>
 
           {/* Sekcja powiadomien email */}
