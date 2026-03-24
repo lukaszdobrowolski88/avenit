@@ -431,89 +431,135 @@ export default function ResponsesView({ form }) {
       </div>
 
       {/* Modal szczegółów */}
-      {selectedParticipant && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="font-semibold text-gray-900 dark:text-white">Szczegóły uczestnika</h2>
-              <button onClick={() => setSelectedParticipant(null)}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                <X size={20} />
-              </button>
-            </div>
+      {selectedParticipant && (() => {
+        const sp = selectedParticipant;
+        const contactFields = ['email', 'phone'];
+        const skipTypes = ['price', 'seat_limit', 'location', 'date_start', 'date_end', 'time_start', 'time_end'];
+        // Pola bez email/phone (te są w nagłówku)
+        const dataFields = (form?.fields || []).filter(f => {
+          if (skipTypes.includes(f.type)) return null;
+          if (contactFields.includes(f.type)) return null;
+          const value = sp.answers[f.id];
+          return value !== undefined && value !== null && value !== '';
+        });
 
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-lg font-semibold text-accent-primary dark:text-accent-primary-light">
-                    {(selectedParticipant.name || '?')[0]?.toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{selectedParticipant.name}</p>
-                    <p className="text-xs text-gray-500">{formatDate(selectedParticipant.submittedAt)}</p>
+        return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            {/* Nagłówek */}
+            <div className="relative bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 p-5 pb-4">
+              <button onClick={() => setSelectedParticipant(null)}
+                className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 bg-white/80 dark:bg-gray-800/80 rounded-lg transition-colors">
+                <X size={18} />
+              </button>
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center text-xl font-bold text-accent-primary dark:text-accent-primary-light">
+                  {(sp.name || '?')[0]?.toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">{sp.name}</h2>
+                  <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <span className="flex items-center gap-1"><Calendar size={12} />{formatDate(sp.submittedAt)}</span>
+                    {sp.isGroupContact && <span className="text-blue-500 font-medium">Zgłaszający · {sp.groupSize} os.</span>}
+                    {sp.isGroupMember && <span className="text-gray-400">Członek zespołu</span>}
                   </div>
                 </div>
-                {selectedParticipant.email && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"><Mail size={14} />{selectedParticipant.email}</div>
-                )}
-                {selectedParticipant.phone && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"><Phone size={14} />{selectedParticipant.phone}</div>
-                )}
               </div>
+              {/* Kontakt */}
+              {(sp.email || sp.phone) && (
+                <div className="flex items-center gap-4 mt-3 text-sm text-gray-600 dark:text-gray-400">
+                  {sp.email && <span className="flex items-center gap-1.5"><Mail size={13} />{sp.email}</span>}
+                  {sp.phone && <span className="flex items-center gap-1.5"><Phone size={13} />{sp.phone}</span>}
+                </div>
+              )}
+            </div>
 
-              {/* Odpowiedzi na pola */}
-              <div className="space-y-3">
-                {(form?.fields || []).map((field) => {
-                  if (['price', 'seat_limit', 'location', 'date_start', 'date_end', 'time_start', 'time_end'].includes(field.type)) return null;
-                  const value = selectedParticipant.answers[field.id];
-                  if (value === undefined || value === null || value === '') return null;
-                  return (
-                    <div key={field.id}>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">{field.label}</p>
-                      <p className="text-sm text-gray-900 dark:text-white">{formatAnswerForExport(value, field.type)}</p>
+            {/* Treść */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {/* Dane formularza */}
+              {dataFields.length > 0 && (
+                <div className="space-y-2.5">
+                  {dataFields.map((field) => (
+                    <div key={field.id} className="flex items-start gap-3">
+                      <span className="text-xs font-medium text-gray-400 dark:text-gray-500 w-28 flex-shrink-0 pt-0.5 text-right">
+                        {field.label}
+                      </span>
+                      <span className="text-sm text-gray-900 dark:text-white flex-1">
+                        {formatAnswerForExport(sp.answers[field.id], field.type)}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {/* Dodatki */}
-              {selectedParticipant.addonLabels?.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Dodatki</p>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedParticipant.addonLabels.map((label, i) => (
-                      <span key={i} className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full text-xs">{label}</span>
-                    ))}
+              {sp.addonLabels?.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex items-start gap-3">
+                    <span className="text-xs font-medium text-gray-400 w-28 flex-shrink-0 pt-0.5 text-right">Dodatki</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {sp.addonLabels.map((label, i) => (
+                        <span key={i} className="px-2.5 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg text-xs font-medium">{label}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Kwota i status */}
-              {selectedParticipant.totalAmount > 0 && (
-                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Płatność</p>
-                    {getPaymentStatusBadge(selectedParticipant.status, selectedParticipant.paidAmount, selectedParticipant.totalAmount)}
+              {/* Płatność */}
+              {sp.totalAmount > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Płatność</span>
+                      {getPaymentStatusBadge(sp.status, sp.paidAmount, sp.totalAmount)}
+                    </div>
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                          {formatPrice(sp.totalAmount, sp.currency)}
+                        </p>
+                        {sp.paidAmount > 0 && sp.status !== 'paid' && (
+                          <p className="text-sm text-gray-500 mt-0.5">
+                            Wpłacono: <span className="font-medium text-green-600">{formatPrice(sp.paidAmount, sp.currency)}</span>
+                            <span className="mx-1">·</span>
+                            Pozostało: <span className="font-medium text-orange-600">{formatPrice(sp.totalAmount - sp.paidAmount, sp.currency)}</span>
+                          </p>
+                        )}
+                        {sp.isGroupContact && sp.groupTotalAmount > 0 && (
+                          <p className="text-xs text-gray-400 mt-1">Łącznie za grupę: {formatPrice(sp.groupTotalAmount, sp.currency)}</p>
+                        )}
+                      </div>
+                      {(sp.status === 'pending' || sp.status === 'partial') && (
+                        <button
+                          onClick={() => {
+                            setPaymentModal({ participantId: sp.id, amount: sp.totalAmount, currency: sp.currency, name: sp.name });
+                            setPaymentAmount(String(sp.totalAmount - (sp.paidAmount || 0)));
+                            setSelectedParticipant(null);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
+                        >
+                          <Banknote size={14} />
+                          Dodaj wpłatę
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">
-                    {formatPrice(selectedParticipant.totalAmount, selectedParticipant.currency)}
-                  </p>
-                  {selectedParticipant.paidAmount > 0 && selectedParticipant.status !== 'paid' && (
-                    <p className="text-sm text-gray-500">Wpłacono: {formatPrice(selectedParticipant.paidAmount, selectedParticipant.currency)}</p>
-                  )}
                 </div>
               )}
             </div>
 
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <button onClick={() => handleDeleteResponse(selectedParticipant.responseId)}
-                className="w-full flex items-center justify-center gap-2 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
-                <Trash2 size={16} />Usuń odpowiedź
+            {/* Stopka */}
+            <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <button onClick={() => { handleDeleteResponse(sp.responseId); setSelectedParticipant(null); }}
+                className="w-full flex items-center justify-center gap-2 py-2 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                <Trash2 size={14} />Usuń rejestrację
               </button>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Modal płatności */}
       {paymentModal && (
