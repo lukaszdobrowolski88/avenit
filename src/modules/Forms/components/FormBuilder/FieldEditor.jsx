@@ -586,8 +586,8 @@ export default function FieldEditor({ field, onUpdate }) {
                 </p>
 
                 {(field.priceConfig?.datePricing?.tiers || []).map((tier, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <div className="flex-1">
+                  <div key={index} className="p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 space-y-1.5">
+                    <div className="flex items-center gap-1">
                       <input
                         type="text"
                         value={tier.label || ''}
@@ -597,10 +597,19 @@ export default function FieldEditor({ field, onUpdate }) {
                           onUpdate({ priceConfig: { ...(field.priceConfig || {}), datePricing: { ...(field.priceConfig?.datePricing || {}), tiers } } });
                         }}
                         placeholder="np. Early bird"
-                        className="w-full px-2 py-1 text-xs bg-transparent border-0 focus:ring-0 text-gray-900 dark:text-white"
+                        className="flex-1 min-w-0 px-2 py-1 text-xs bg-transparent border border-gray-200 dark:border-gray-500 rounded focus:ring-1 focus:ring-green-400 text-gray-900 dark:text-white"
                       />
+                      <button
+                        onClick={() => {
+                          const tiers = (field.priceConfig?.datePricing?.tiers || []).filter((_, i) => i !== index);
+                          onUpdate({ priceConfig: { ...(field.priceConfig || {}), datePricing: { ...(field.priceConfig?.datePricing || {}), tiers } } });
+                        }}
+                        className="p-1 text-red-400 hover:text-red-600 flex-shrink-0"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
-                    <div className="w-20">
+                    <div className="flex items-center gap-1.5">
                       <input
                         type="number"
                         min="0"
@@ -612,11 +621,9 @@ export default function FieldEditor({ field, onUpdate }) {
                           onUpdate({ priceConfig: { ...(field.priceConfig || {}), datePricing: { ...(field.priceConfig?.datePricing || {}), tiers } } });
                         }}
                         placeholder="Cena"
-                        className="w-full px-2 py-1 text-xs bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded text-gray-900 dark:text-white text-right"
+                        className="flex-1 min-w-0 px-2 py-1 text-xs bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded text-gray-900 dark:text-white"
                       />
-                    </div>
-                    <span className="text-[10px] text-gray-400">do</span>
-                    <div className="w-28">
+                      <span className="text-[10px] text-gray-400 flex-shrink-0">do</span>
                       <input
                         type="date"
                         value={tier.until || ''}
@@ -625,18 +632,9 @@ export default function FieldEditor({ field, onUpdate }) {
                           tiers[index] = { ...tiers[index], until: e.target.value };
                           onUpdate({ priceConfig: { ...(field.priceConfig || {}), datePricing: { ...(field.priceConfig?.datePricing || {}), tiers } } });
                         }}
-                        className="w-full px-2 py-1 text-xs bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded text-gray-900 dark:text-white"
+                        className="flex-1 min-w-0 px-2 py-1 text-xs bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded text-gray-900 dark:text-white"
                       />
                     </div>
-                    <button
-                      onClick={() => {
-                        const tiers = (field.priceConfig?.datePricing?.tiers || []).filter((_, i) => i !== index);
-                        onUpdate({ priceConfig: { ...(field.priceConfig || {}), datePricing: { ...(field.priceConfig?.datePricing || {}), tiers } } });
-                      }}
-                      className="p-1 text-red-400 hover:text-red-600"
-                    >
-                      <Trash2 size={14} />
-                    </button>
                   </div>
                 ))}
 

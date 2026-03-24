@@ -382,7 +382,7 @@ export default function FormBuilder({
             </div>
           </div>
 
-          <div className="w-80 flex-shrink-0 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto p-4">
+          <div className="w-80 flex-shrink-0 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto overflow-x-hidden p-4">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
               Ustawienia pola
             </h2>
