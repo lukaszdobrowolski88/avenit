@@ -21,7 +21,8 @@ import {
   Users,
   CreditCard,
   CheckCircle,
-  XCircle
+  XCircle,
+  Banknote
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
@@ -36,6 +37,9 @@ export default function ParticipantsView({ forms }) {
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [paymentModal, setPaymentModal] = useState(null); // { participantId, amount, currency }
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Pobierz wszystkich uczestników
   useEffect(() => {
@@ -404,6 +408,74 @@ export default function ParticipantsView({ forms }) {
     }
   };
 
+  const addPayment = async () => {
+    if (!paymentModal) return;
+    try {
+      const participant = participants.find(p => p.id === paymentModal.participantId);
+      if (!participant) return;
+
+      const responseId = participant.responseId || paymentModal.participantId;
+
+      const { data: responseData, error: fetchError } = await supabase
+        .from('form_responses')
+        .select('answers')
+        .eq('id', responseId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const fullAnswers = responseData.answers;
+      const paymentData = {
+        status: 'completed',
+        amount: parseFloat(paymentAmount) || participant.totalAmount || 0,
+        date: paymentDate,
+        method: 'manual',
+        updatedAt: new Date().toISOString()
+      };
+
+      if (participant.isGroupContact) {
+        fullAnswers._contactPerson = {
+          ...fullAnswers._contactPerson,
+          _payment: paymentData
+        };
+      } else if (participant.isGroupMember) {
+        const pIdx = parseInt(paymentModal.participantId.split('-p').pop());
+        if (fullAnswers._participants?.[pIdx]) {
+          fullAnswers._participants[pIdx] = {
+            ...fullAnswers._participants[pIdx],
+            _payment: paymentData
+          };
+        }
+      } else {
+        fullAnswers._payment = paymentData;
+      }
+
+      const { error } = await supabase
+        .from('form_responses')
+        .update({ answers: fullAnswers })
+        .eq('id', responseId);
+
+      if (error) throw error;
+
+      setParticipants(prev => prev.map(p =>
+        p.id === paymentModal.participantId
+          ? { ...p, paymentStatus: 'paid', paymentMethod: 'manual' }
+          : p
+      ));
+
+      if (selectedParticipant?.id === paymentModal.participantId) {
+        setSelectedParticipant(prev => ({ ...prev, paymentStatus: 'paid' }));
+      }
+
+      setPaymentModal(null);
+      setPaymentAmount('');
+      setPaymentDate(new Date().toISOString().split('T')[0]);
+    } catch (error) {
+      console.error('Error adding payment:', error);
+      alert('Wystąpił błąd podczas dodawania płatności');
+    }
+  };
+
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('pl-PL', {
       year: 'numeric',
@@ -722,15 +794,35 @@ export default function ParticipantsView({ forms }) {
                       {getPaymentStatusBadge(participant.paymentStatus)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedParticipant(participant);
-                        }}
-                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      >
-                        <Eye size={18} />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        {participant.totalAmount > 0 && participant.paymentStatus !== 'paid' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPaymentModal({
+                                participantId: participant.id,
+                                amount: participant.totalAmount,
+                                currency: participant.currency,
+                                name: participant.name
+                              });
+                              setPaymentAmount(String(participant.totalAmount));
+                            }}
+                            className="p-2 text-green-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                            title="Dodaj płatność"
+                          >
+                            <Banknote size={18} />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedParticipant(participant);
+                          }}
+                          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        >
+                          <Eye size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -897,6 +989,75 @@ export default function ParticipantsView({ forms }) {
                     })}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal dodawania płatności */}
+      {paymentModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Banknote size={20} className="text-green-500" />
+                Dodaj płatność
+              </h2>
+              <button
+                onClick={() => setPaymentModal(null)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Uczestnik</p>
+                <p className="font-medium text-gray-900 dark:text-white">{paymentModal.name}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Kwota ({paymentModal.currency})
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Data płatności
+                </label>
+                <input
+                  type="date"
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+              <button
+                onClick={() => setPaymentModal(null)}
+                className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={addPayment}
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <Check size={16} />
+                Potwierdź płatność
+              </button>
             </div>
           </div>
         </div>
