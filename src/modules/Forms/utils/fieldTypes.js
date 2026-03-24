@@ -894,5 +894,197 @@ export const BUILT_IN_TEMPLATES = [
       ...DEFAULT_FORM_SETTINGS,
       successMessage: 'Dziękujemy. Będziemy się modlić w Twojej intencji.'
     }
+  },
+  {
+    id: 'conference-group',
+    title: 'Rejestracja na konferencję (grupowa)',
+    category: 'events',
+    description: 'Formularz zapisów z rejestracją indywidualną i grupową, dodatkami płatnymi i rabatami',
+    fields: [
+      {
+        id: 'field-firstname',
+        type: 'text',
+        label: 'Imię',
+        placeholder: 'Jan',
+        required: true,
+        validation: { maxLength: 50 }
+      },
+      {
+        id: 'field-lastname',
+        type: 'text',
+        label: 'Nazwisko',
+        placeholder: 'Kowalski',
+        required: true,
+        validation: { maxLength: 50 }
+      },
+      {
+        id: 'field-email',
+        type: 'email',
+        label: 'Adres e-mail',
+        placeholder: 'jan@example.com',
+        required: true,
+        validation: { pattern: '^[^@]+@[^@]+\\.[^@]+$' }
+      },
+      {
+        id: 'field-phone',
+        type: 'phone',
+        label: 'Numer telefonu',
+        placeholder: '+48 512 345 678',
+        required: true
+      },
+      {
+        id: 'field-church',
+        type: 'text',
+        label: 'Nazwa wspólnoty',
+        placeholder: 'np. Kościół Nowe Życie',
+        required: true,
+        validation: { maxLength: 100 }
+      },
+      {
+        id: 'field-city',
+        type: 'text',
+        label: 'Miejscowość',
+        placeholder: 'np. Warszawa',
+        required: true,
+        validation: { maxLength: 100 }
+      },
+      {
+        id: 'field-role',
+        type: 'text',
+        label: 'Funkcja w kościele',
+        placeholder: 'np. pastor, starszy, lider lub liderka, członek zespołu',
+        required: true,
+        validation: { maxLength: 100 }
+      },
+      {
+        id: 'field-diet',
+        type: 'text',
+        label: 'Dieta (opcjonalnie)',
+        placeholder: 'np. wegetariańska, bezglutenowa',
+        required: false,
+        validation: { maxLength: 100 }
+      },
+      {
+        id: 'field-price',
+        type: 'price',
+        label: 'Cena',
+        required: false,
+        showInHeader: true,
+        priceConfig: {
+          basePrice: 250,
+          currency: 'PLN',
+          showInSummary: true,
+          pricingType: 'per_person',
+          tiers: [],
+          optionPrices: {}
+        }
+      },
+      {
+        id: 'field-seats',
+        type: 'seat_limit',
+        label: 'Limit miejsc',
+        required: false,
+        showInHeader: true,
+        seatConfig: {
+          maxSeats: 200,
+          showRemaining: true,
+          allowWaitlist: false
+        }
+      }
+    ],
+    settings: {
+      ...DEFAULT_FORM_SETTINGS,
+      submitButtonText: 'Wyślij zgłoszenie',
+      successMessage: 'Dziękujemy za rejestrację! Potwierdzenie zostanie wysłane na podany adres email. Do zobaczenia na konferencji!',
+      groupRegistration: {
+        enabled: true,
+        minParticipants: 1,
+        maxParticipants: 15,
+        participantFieldIds: ['field-firstname', 'field-lastname', 'field-role', 'field-diet'],
+        contactPersonFieldIds: ['field-firstname', 'field-lastname', 'field-email', 'field-phone', 'field-church', 'field-city', 'field-role', 'field-diet'],
+        participantLabel: 'Członek zespołu',
+        allowDynamicCount: true,
+        requireContactPerson: true
+      },
+      addons: {
+        enabled: true,
+        items: [
+          {
+            id: 'addon-consultation',
+            name: 'Indywidualne konsultacje',
+            description: 'Dodatkowe konsultacje indywidualne z prelegentem',
+            price: 149,
+            scope: 'per_person',
+            required: false,
+            maxQuantity: 1,
+            available: true
+          },
+          {
+            id: 'addon-lunch',
+            name: 'Pakiet lunchowy',
+            description: 'Obiad i przerwa kawowa w cenie',
+            price: 45,
+            scope: 'per_person',
+            required: false,
+            maxQuantity: 1,
+            available: true
+          },
+          {
+            id: 'addon-parking',
+            name: 'Miejsce parkingowe',
+            description: 'Rezerwacja miejsca parkingowego na czas konferencji',
+            price: 30,
+            scope: 'per_registration',
+            required: false,
+            maxQuantity: 1,
+            available: true
+          }
+        ]
+      },
+      discounts: {
+        enabled: true,
+        rules: [
+          {
+            id: 'disc-3plus',
+            type: 'quantity',
+            minQuantity: 3,
+            discountType: 'percentage',
+            value: 10,
+            label: '10% rabatu dla grup 3+ osób',
+            stackable: false
+          },
+          {
+            id: 'disc-5plus',
+            type: 'quantity',
+            minQuantity: 5,
+            discountType: 'percentage',
+            value: 15,
+            label: '15% rabatu dla grup 5+ osób',
+            stackable: false
+          },
+          {
+            id: 'disc-10plus',
+            type: 'quantity',
+            minQuantity: 10,
+            discountType: 'percentage',
+            value: 20,
+            label: '20% rabatu dla grup 10+ osób',
+            stackable: false
+          }
+        ],
+        stackingMode: 'best'
+      },
+      pricing: {
+        enabled: true,
+        currency: 'PLN',
+        showPriceSummary: true,
+        paymentRequired: true,
+        paymentMethods: ['transfer', 'przelewy24'],
+        bankAccount: '',
+        paymentInstructions: 'Płatność wymagana w ciągu 7 dni od rejestracji.',
+        paypal: { clientId: '', sandbox: true, description: '' },
+        przelewy24: { merchantId: '', crcKey: '', apiKey: '', sandbox: true, description: '' }
+      }
+    }
   }
 ];
