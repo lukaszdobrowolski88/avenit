@@ -28,7 +28,7 @@ export default function PriceBreakdown({ breakdown, currency = 'PLN', isWaitlist
           <DollarSign size={20} className="text-green-600 dark:text-green-400" />
         </div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Podsumowanie zamówienia
+          Podsumowanie rejestracji
         </h3>
       </div>
 

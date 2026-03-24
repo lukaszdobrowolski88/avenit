@@ -549,14 +549,10 @@ export function calculatePriceBreakdown(fields, answers, settings) {
     pricingType = priceField.priceConfig.pricingType || 'fixed';
   }
 
-  // 2. Liczba uczestników
+  // 2. Liczba uczestników (osoba kontaktowa + członkowie)
   let participantCount = 1;
-  if (groupConfig.enabled && answers._participants) {
-    participantCount = answers._participants.length;
-    // +1 for contact person if they are also a participant
-    if (answers._contactPerson && groupConfig.requireContactPerson) {
-      participantCount += 1;
-    }
+  if (groupConfig.enabled && (answers._participants || answers._contactPerson)) {
+    participantCount = (answers._participants?.length || 0) + (answers._contactPerson ? 1 : 0);
   } else {
     const quantityField = fields.find(f => f.type === 'quantity');
     if (quantityField) {
@@ -641,7 +637,7 @@ export function calculatePriceBreakdown(fields, answers, settings) {
         let amount = 0;
         switch (rule.discountType) {
           case 'percentage':
-            amount = subtotal * (rule.value / 100);
+            amount = baseTotal * (rule.value / 100);
             break;
           case 'fixed_per_person':
             amount = rule.value * participantCount;
