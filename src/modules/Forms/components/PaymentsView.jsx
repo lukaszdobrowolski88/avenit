@@ -41,6 +41,12 @@ export default function PaymentsView({ forms }) {
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [editingPayment, setEditingPayment] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [unpaidParticipants, setUnpaidParticipants] = useState([]);
+  const [loadingUnpaid, setLoadingUnpaid] = useState(false);
+  const [selectedUnpaid, setSelectedUnpaid] = useState(null);
+  const [addPaymentAmount, setAddPaymentAmount] = useState('');
+  const [addPaymentDate, setAddPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [unpaidSearch, setUnpaidSearch] = useState('');
   const [newPayment, setNewPayment] = useState({
     responseId: '',
     amount: '',
@@ -153,6 +159,148 @@ export default function PaymentsView({ forms }) {
       console.error('Error fetching payments:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Pobierz nieopłaconych uczestników do modala
+  const fetchUnpaidParticipants = async () => {
+    setLoadingUnpaid(true);
+    try {
+      const { data, error } = await supabase
+        .from('form_responses')
+        .select('*, forms:form_id (id, title, fields, settings)')
+        .order('submitted_at', { ascending: false });
+
+      if (error) throw error;
+
+      const unpaid = [];
+      const extractName = (answerObj, formFields) => {
+        let firstName = '', lastName = '';
+        (formFields || []).forEach(f => {
+          const v = answerObj[f.id];
+          if (!v || f.type !== 'text') return;
+          const l = f.label?.toLowerCase() || '';
+          if ((l.includes('imie') || l.includes('imię')) && !l.includes('nazwisko') && !firstName) firstName = v;
+          else if (l.includes('nazwisko') && !lastName) lastName = v;
+        });
+        return [firstName, lastName].filter(Boolean).join(' ');
+      };
+
+      const extractEmail = (answerObj, formFields) => {
+        const emailField = (formFields || []).find(f => f.type === 'email');
+        return emailField ? answerObj[emailField.id] || '' : '';
+      };
+
+      (data || []).forEach(response => {
+        const form = response.forms;
+        if (!form?.settings?.pricing?.enabled) return;
+        const answers = response.answers || {};
+        const addonsItems = form?.settings?.addons?.items || [];
+        const breakdown = answers._priceBreakdown || {};
+        const basePerPerson = breakdown.baseUnitPrice || 0;
+        const groupSize = answers._registrationMode === 'group'
+          ? (answers._participants?.length || 0) + (answers._contactPerson ? 1 : 0) : 1;
+        const discountPP = groupSize > 0 ? (breakdown.discountTotal || 0) / groupSize : 0;
+
+        const calcAmount = (addons) => {
+          let amt = basePerPerson;
+          if (addons) Object.entries(addons).forEach(([id, qty]) => {
+            if (qty > 0) { const a = addonsItems.find(x => x.id === id); if (a) amt += a.price * qty; }
+          });
+          return Math.max(0, amt - discountPP);
+        };
+
+        const isUnpaid = (payment) => !payment || (payment.status !== 'completed');
+
+        if (answers._registrationMode === 'group') {
+          if (answers._contactPerson && isUnpaid(answers._contactPerson._payment)) {
+            const amt = calcAmount(answers._contactPerson._addons);
+            if (amt > 0) unpaid.push({
+              id: `${response.id}-contact`, responseId: response.id, type: 'contact',
+              name: extractName(answers._contactPerson, form.fields) || response.respondent_name || 'Osoba zgłaszająca',
+              email: extractEmail(answers._contactPerson, form.fields) || response.respondent_email,
+              formTitle: form.title, amount: amt, paidAmount: answers._contactPerson._payment?.totalPaid || 0,
+              currency: form.settings.pricing.currency || 'PLN'
+            });
+          }
+          (answers._participants || []).forEach((p, idx) => {
+            if (isUnpaid(p._payment)) {
+              const amt = calcAmount(p._addons);
+              if (amt > 0) unpaid.push({
+                id: `${response.id}-p${idx}`, responseId: response.id, type: 'participant', pIdx: idx,
+                name: extractName(p, form.fields) || `Uczestnik ${idx + 1}`,
+                email: extractEmail(p, form.fields),
+                formTitle: form.title, amount: amt, paidAmount: p._payment?.totalPaid || 0,
+                currency: form.settings.pricing.currency || 'PLN'
+              });
+            }
+          });
+        } else {
+          if (isUnpaid(answers._payment)) {
+            const amt = answers._totalPrice || breakdown.grandTotal || 0;
+            if (amt > 0) unpaid.push({
+              id: response.id, responseId: response.id, type: 'individual',
+              name: extractName(answers, form.fields) || response.respondent_name || 'Anonim',
+              email: extractEmail(answers, form.fields) || response.respondent_email,
+              formTitle: form.title, amount: amt, paidAmount: answers._payment?.totalPaid || 0,
+              currency: form.settings.pricing.currency || 'PLN'
+            });
+          }
+        }
+      });
+
+      setUnpaidParticipants(unpaid);
+    } catch (err) {
+      console.error('Error fetching unpaid:', err);
+    } finally {
+      setLoadingUnpaid(false);
+    }
+  };
+
+  const handleOpenAddModal = () => {
+    setShowAddModal(true);
+    setSelectedUnpaid(null);
+    setAddPaymentAmount('');
+    setAddPaymentDate(new Date().toISOString().split('T')[0]);
+    setUnpaidSearch('');
+    fetchUnpaidParticipants();
+  };
+
+  const handleAddPayment = async () => {
+    if (!selectedUnpaid) return;
+    try {
+      const { data: responseData, error: fetchError } = await supabase
+        .from('form_responses').select('answers').eq('id', selectedUnpaid.responseId).single();
+      if (fetchError) throw fetchError;
+
+      const fullAnswers = responseData.answers;
+      const paidAmount = parseFloat(addPaymentAmount) || 0;
+      const dueAmount = selectedUnpaid.amount;
+      const getExisting = (pa) => pa?._payment || {};
+
+      let existing;
+      if (selectedUnpaid.type === 'contact') existing = getExisting(fullAnswers._contactPerson);
+      else if (selectedUnpaid.type === 'participant') existing = getExisting(fullAnswers._participants?.[selectedUnpaid.pIdx]);
+      else existing = getExisting(fullAnswers);
+
+      const totalPaid = (existing.totalPaid || 0) + paidAmount;
+      const paymentData = {
+        status: totalPaid >= dueAmount ? 'completed' : 'partial',
+        totalPaid, dueAmount,
+        payments: [...(existing.payments || []), { amount: paidAmount, date: addPaymentDate, method: 'manual', addedAt: new Date().toISOString() }],
+        updatedAt: new Date().toISOString()
+      };
+
+      if (selectedUnpaid.type === 'contact') fullAnswers._contactPerson = { ...fullAnswers._contactPerson, _payment: paymentData };
+      else if (selectedUnpaid.type === 'participant') fullAnswers._participants[selectedUnpaid.pIdx] = { ...fullAnswers._participants[selectedUnpaid.pIdx], _payment: paymentData };
+      else fullAnswers._payment = paymentData;
+
+      await supabase.from('form_responses').update({ answers: fullAnswers }).eq('id', selectedUnpaid.responseId);
+      setShowAddModal(false);
+      fetchAllPayments();
+    } catch (err) {
+      console.error('Error adding payment:', err);
+      alert('Wystąpił błąd podczas dodawania płatności');
     }
   };
 
@@ -528,10 +676,17 @@ export default function PaymentsView({ forms }) {
 
             <button
               onClick={exportToCSV}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               <Download size={18} />
               Eksportuj
+            </button>
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-2 px-4 py-2.5 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors"
+            >
+              <Plus size={18} />
+              Dodaj płatność
             </button>
           </div>
         </div>
@@ -919,6 +1074,126 @@ export default function PaymentsView({ forms }) {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal dodawania płatności */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Banknote size={20} className="text-green-500" />
+                Dodaj płatność
+              </h2>
+              <button onClick={() => setShowAddModal(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"><X size={20} /></button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {!selectedUnpaid ? (
+                <>
+                  {/* Wyszukiwarka uczestników */}
+                  <div className="relative mb-3">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input type="text" value={unpaidSearch} onChange={(e) => setUnpaidSearch(e.target.value)}
+                      placeholder="Szukaj uczestnika..."
+                      className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
+                  </div>
+
+                  {loadingUnpaid ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {unpaidParticipants
+                        .filter(p => !unpaidSearch || p.name.toLowerCase().includes(unpaidSearch.toLowerCase()) || p.email?.toLowerCase().includes(unpaidSearch.toLowerCase()) || p.formTitle.toLowerCase().includes(unpaidSearch.toLowerCase()))
+                        .map(p => (
+                        <button key={p.id} onClick={() => { setSelectedUnpaid(p); setAddPaymentAmount(String(p.amount - (p.paidAmount || 0))); }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left">
+                          <div className="w-9 h-9 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-sm font-semibold text-accent-primary">
+                            {(p.name || '?')[0]?.toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{p.name}</p>
+                            <p className="text-xs text-gray-500 truncate">{p.formTitle}</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatPrice(p.amount, p.currency)}</p>
+                            {p.paidAmount > 0 && (
+                              <p className="text-[10px] text-orange-500">wpłacono {formatPrice(p.paidAmount, p.currency)}</p>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                      {unpaidParticipants.filter(p => !unpaidSearch || p.name.toLowerCase().includes(unpaidSearch.toLowerCase()) || p.email?.toLowerCase().includes(unpaidSearch.toLowerCase())).length === 0 && (
+                        <p className="text-center text-sm text-gray-400 py-8">Brak nieopłaconych uczestników</p>
+                      )}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Wybrany uczestnik */}
+                  <button onClick={() => setSelectedUnpaid(null)}
+                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-3">
+                    <ChevronDown size={14} className="rotate-90" />Zmień uczestnika
+                  </button>
+
+                  <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-sm font-bold text-accent-primary">
+                        {(selectedUnpaid.name || '?')[0]?.toUpperCase()}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 dark:text-white">{selectedUnpaid.name}</p>
+                        <p className="text-xs text-gray-500">{selectedUnpaid.formTitle}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold">{formatPrice(selectedUnpaid.amount, selectedUnpaid.currency)}</p>
+                        {selectedUnpaid.paidAmount > 0 && (
+                          <p className="text-[10px] text-green-500">wpłacono {formatPrice(selectedUnpaid.paidAmount, selectedUnpaid.currency)}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        Kwota wpłaty ({selectedUnpaid.currency})
+                      </label>
+                      <input type="number" min="0" step="0.01" value={addPaymentAmount}
+                        onChange={(e) => setAddPaymentAmount(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        Data płatności
+                      </label>
+                      <input type="date" value={addPaymentDate}
+                        onChange={(e) => setAddPaymentDate(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {selectedUnpaid && (
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+                <button onClick={() => setShowAddModal(false)}
+                  className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 transition-colors">
+                  Anuluj
+                </button>
+                <button onClick={handleAddPayment}
+                  className="flex-1 py-2.5 text-sm font-medium text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
+                  <Check size={16} />Potwierdź płatność
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
