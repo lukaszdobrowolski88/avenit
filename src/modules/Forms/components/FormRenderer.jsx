@@ -526,7 +526,7 @@ export default function FormRenderer({
               )}
 
               {/* Informacje o wydarzeniu */}
-              {hasEventInfo && (
+              {hasEventInfo && hdr.showEventInfo !== false && (
                 <div className={`mt-4 pt-4 ${hdr.showDivider !== false ? `border-t ${dividerClass}` : ''} space-y-2`}>
                   {eventInfo.location && (
                     <div className={`flex items-center gap-2 text-sm ${subtextClass}`}>
