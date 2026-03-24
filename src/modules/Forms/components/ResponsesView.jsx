@@ -621,12 +621,14 @@ export default function ResponsesView({ form }) {
                           {formatPrice(sp.totalAmount, sp.currency)}
                         </p>
                         {sp.paidAmount > 0 && sp.status !== 'paid' && (
-                          <p className="text-sm text-gray-500 mt-0.5">
-                            Wpłacono: <span className="font-medium text-green-600">{formatPrice(sp.paidAmount, sp.currency)}</span>
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            Pozostało: <span className="font-medium text-orange-600">{formatPrice(sp.totalAmount - sp.paidAmount, sp.currency)}</span>
-                          </p>
+                          <>
+                            <p className="text-sm text-gray-500 mt-0.5">
+                              Wpłacono: <span className="font-medium text-green-600">{formatPrice(sp.paidAmount, sp.currency)}</span>
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Pozostało: <span className="font-medium text-orange-600">{formatPrice(sp.totalAmount - sp.paidAmount, sp.currency)}</span>
+                            </p>
+                          </>
                         )}
                         {sp.isGroupContact && sp.groupTotalAmount > 0 && (
                           <p className="text-xs text-gray-400 mt-1">Łącznie za grupę: {formatPrice(sp.groupTotalAmount, sp.currency)}</p>
