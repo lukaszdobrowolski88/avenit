@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Download,
   Trash2,
@@ -9,14 +9,27 @@ import {
   X,
   FileText,
   Calendar,
-  User
+  User,
+  Mail,
+  Phone,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  Banknote,
+  Check,
+  DollarSign
 } from 'lucide-react';
 import { useFormResponses } from '../hooks/useFormResponses';
 import { exportToCSV, exportToJSON, formatAnswerForExport } from '../utils/exportUtils';
+import { formatPrice } from '../utils/fieldTypes';
+import { supabase } from '../../../lib/supabase';
 
 export default function ResponsesView({ form }) {
-  const [selectedResponse, setSelectedResponse] = useState(null);
+  const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [paymentModal, setPaymentModal] = useState(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
 
   const {
     responses,
@@ -33,22 +46,139 @@ export default function ResponsesView({ form }) {
     }
   }, [form?.id, fetchResponses]);
 
-  const handleExportCSV = () => {
-    exportToCSV(form, responses);
-    setShowExportMenu(false);
-  };
+  // Przetwórz odpowiedzi na uczestników (jak ParticipantsView)
+  const participants = useMemo(() => {
+    const result = [];
+    const fields = form?.fields || [];
+    const addonsItems = form?.settings?.addons?.items || [];
+    const currency = form?.settings?.pricing?.currency || 'PLN';
 
-  const handleExportJSON = () => {
-    exportToJSON(form, responses);
-    setShowExportMenu(false);
-  };
+    const extractContactInfo = (answerObj) => {
+      let email = '', name = '', phone = '';
+      fields.forEach(field => {
+        const value = answerObj[field.id];
+        if (!value) return;
+        if (field.type === 'email' && !email) email = value;
+        if (field.type === 'phone' && !phone) phone = value;
+        if (field.type === 'text' && !name) {
+          const label = field.label?.toLowerCase() || '';
+          if (label.includes('imie') || label.includes('imię') || label.includes('name') || label.includes('nazwisko')) {
+            name = value;
+          }
+        }
+      });
+      return { email, name, phone };
+    };
+
+    (responses || []).forEach(response => {
+      const answers = response.answers || {};
+      const breakdown = answers._priceBreakdown || {};
+      const totalAmount = answers._totalPrice || breakdown.grandTotal || 0;
+      const basePerPerson = breakdown.baseUnitPrice || 0;
+      const groupSize = answers._registrationMode === 'group'
+        ? (answers._participants?.length || 0) + (answers._contactPerson ? 1 : 0)
+        : 1;
+      const discountPerPerson = groupSize > 0 ? (breakdown.discountTotal || 0) / groupSize : 0;
+
+      const calcPersonAmount = (personAddons) => {
+        let amount = basePerPerson;
+        if (personAddons) {
+          Object.entries(personAddons).forEach(([addonId, qty]) => {
+            if (qty > 0) {
+              const addon = addonsItems.find(a => a.id === addonId);
+              if (addon) amount += addon.price * qty;
+            }
+          });
+        }
+        return Math.max(0, amount - discountPerPerson);
+      };
+
+      const getAddonLabels = (personAddons) => {
+        if (!personAddons) return [];
+        return Object.entries(personAddons)
+          .filter(([, qty]) => qty > 0)
+          .map(([addonId]) => addonsItems.find(a => a.id === addonId)?.name)
+          .filter(Boolean);
+      };
+
+      const getPaymentInfo = (personAnswers) => {
+        if (answers._isWaitlist) return { status: 'none', paidAmount: 0 };
+        const payment = personAnswers?._payment;
+        const totalPaid = payment?.totalPaid || 0;
+        if (payment?.status === 'completed') return { status: 'paid', paidAmount: totalPaid };
+        if (payment?.status === 'partial') return { status: 'partial', paidAmount: totalPaid };
+        const amt = calcPersonAmount(personAnswers?._addons || {});
+        return { status: amt > 0 ? 'pending' : 'none', paidAmount: 0 };
+      };
+
+      if (answers._registrationMode === 'group') {
+        if (answers._contactPerson) {
+          const contact = extractContactInfo(answers._contactPerson);
+          const personAddons = answers._contactPerson._addons || {};
+          result.push({
+            id: `${response.id}-contact`,
+            responseId: response.id,
+            name: contact.name || response.respondent_name || 'Osoba zgłaszająca',
+            email: contact.email || response.respondent_email || '',
+            phone: contact.phone,
+            answers: answers._contactPerson,
+            submittedAt: response.submitted_at,
+            isGroupContact: true,
+            groupSize,
+            totalAmount: calcPersonAmount(personAddons),
+            addonLabels: getAddonLabels(personAddons),
+            groupTotalAmount: totalAmount,
+            currency,
+            ...getPaymentInfo(answers._contactPerson)
+          });
+        }
+
+        (answers._participants || []).forEach((participant, idx) => {
+          const pContact = extractContactInfo(participant);
+          const personAddons = participant._addons || {};
+          result.push({
+            id: `${response.id}-p${idx}`,
+            responseId: response.id,
+            name: pContact.name || `Uczestnik ${idx + 1}`,
+            email: pContact.email,
+            phone: pContact.phone,
+            answers: participant,
+            submittedAt: response.submitted_at,
+            isGroupMember: true,
+            groupSize,
+            totalAmount: calcPersonAmount(personAddons),
+            addonLabels: getAddonLabels(personAddons),
+            currency,
+            ...getPaymentInfo(participant)
+          });
+        });
+      } else {
+        const contact = extractContactInfo(answers);
+        const personAddons = answers._addons || {};
+        const payInfo = getPaymentInfo(answers);
+        result.push({
+          id: response.id,
+          responseId: response.id,
+          name: contact.name || response.respondent_name || 'Anonim',
+          email: contact.email || response.respondent_email || '',
+          phone: contact.phone,
+          answers,
+          submittedAt: response.submitted_at,
+          totalAmount: totalAmount || calcPersonAmount(personAddons),
+          addonLabels: getAddonLabels(personAddons),
+          currency,
+          ...payInfo
+        });
+      }
+    });
+
+    return result;
+  }, [responses, form]);
 
   const handleDeleteResponse = async (responseId) => {
     if (window.confirm('Czy na pewno chcesz usunąć tę odpowiedź?')) {
       await deleteResponse(responseId);
-      if (selectedResponse?.id === responseId) {
-        setSelectedResponse(null);
-      }
+      setSelectedParticipant(null);
     }
   };
 
@@ -58,14 +188,82 @@ export default function ResponsesView({ form }) {
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('pl-PL', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const addPayment = async () => {
+    if (!paymentModal) return;
+    try {
+      const participant = participants.find(p => p.id === paymentModal.participantId);
+      if (!participant) return;
+
+      const responseId = participant.responseId;
+      const { data: responseData, error: fetchError } = await supabase
+        .from('form_responses')
+        .select('answers')
+        .eq('id', responseId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const fullAnswers = responseData.answers;
+      const paidAmount = parseFloat(paymentAmount) || 0;
+      const dueAmount = participant.totalAmount || 0;
+
+      const getExisting = (pa) => pa?._payment || {};
+      let existing;
+      if (participant.isGroupContact) existing = getExisting(fullAnswers._contactPerson);
+      else if (participant.isGroupMember) {
+        const idx = parseInt(paymentModal.participantId.split('-p').pop());
+        existing = getExisting(fullAnswers._participants?.[idx]);
+      } else existing = getExisting(fullAnswers);
+
+      const totalPaid = (existing.totalPaid || 0) + paidAmount;
+      const payments = [...(existing.payments || []), {
+        amount: paidAmount, date: paymentDate, method: 'manual', addedAt: new Date().toISOString()
+      }];
+      const paymentData = {
+        status: totalPaid >= dueAmount ? 'completed' : 'partial',
+        totalPaid, dueAmount, payments, updatedAt: new Date().toISOString()
+      };
+
+      if (participant.isGroupContact) {
+        fullAnswers._contactPerson = { ...fullAnswers._contactPerson, _payment: paymentData };
+      } else if (participant.isGroupMember) {
+        const idx = parseInt(paymentModal.participantId.split('-p').pop());
+        if (fullAnswers._participants?.[idx]) {
+          fullAnswers._participants[idx] = { ...fullAnswers._participants[idx], _payment: paymentData };
+        }
+      } else {
+        fullAnswers._payment = paymentData;
+      }
+
+      await supabase.from('form_responses').update({ answers: fullAnswers }).eq('id', responseId);
+      fetchResponses(pagination.page);
+      setPaymentModal(null);
+      setPaymentAmount('');
+      setPaymentDate(new Date().toISOString().split('T')[0]);
+    } catch (error) {
+      console.error('Error adding payment:', error);
+      alert('Wystąpił błąd podczas dodawania płatności');
+    }
+  };
+
+  const handleExportCSV = () => { exportToCSV(form, responses); setShowExportMenu(false); };
+  const handleExportJSON = () => { exportToJSON(form, responses); setShowExportMenu(false); };
+
+  const formatDate = (dateString) => new Date(dateString).toLocaleString('pl-PL', {
+    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+
+  const getPaymentStatusBadge = (status, paidAmt, dueAmt) => {
+    switch (status) {
+      case 'paid':
+        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium"><CheckCircle size={12} />Opłacone</span>);
+      case 'partial':
+        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium"><AlertCircle size={12} />Częściowo{paidAmt > 0 && dueAmt > 0 && <span className="text-[10px] font-normal ml-0.5">({formatPrice(paidAmt, 'PLN')}/{formatPrice(dueAmt, 'PLN')})</span>}</span>);
+      case 'pending':
+        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium"><Clock size={12} />Oczekuje</span>);
+      default:
+        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full text-xs font-medium">-</span>);
+    }
   };
 
   const totalPages = Math.ceil(pagination.total / pagination.limit);
@@ -84,12 +282,8 @@ export default function ResponsesView({ form }) {
         <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
           <FileText size={32} className="text-gray-400" />
         </div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
-          Brak odpowiedzi
-        </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Ten formularz nie otrzymał jeszcze żadnych odpowiedzi
-        </p>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">Brak odpowiedzi</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Ten formularz nie otrzymał jeszcze żadnych odpowiedzi</p>
       </div>
     );
   }
@@ -100,58 +294,37 @@ export default function ResponsesView({ form }) {
         <div>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Łącznie odpowiedzi: <span className="font-semibold">{pagination.total}</span>
+            {participants.length !== pagination.total && (
+              <span className="ml-2">({participants.length} uczestników)</span>
+            )}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => fetchResponses(pagination.page)}
-            disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            Odśwież
+          <button onClick={() => fetchResponses(pagination.page)} disabled={loading}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />Odśwież
           </button>
 
           <div className="relative">
-            <button
-              onClick={() => setShowExportMenu(!showExportMenu)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <Download size={16} />
-              Eksportuj
+            <button onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <Download size={16} />Eksportuj
             </button>
-
             {showExportMenu && (
               <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowExportMenu(false)}
-                />
+                <div className="fixed inset-0 z-10" onClick={() => setShowExportMenu(false)} />
                 <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20">
-                  <button
-                    onClick={handleExportCSV}
-                    className="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Eksportuj CSV
-                  </button>
-                  <button
-                    onClick={handleExportJSON}
-                    className="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Eksportuj JSON
-                  </button>
+                  <button onClick={handleExportCSV} className="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">CSV</button>
+                  <button onClick={handleExportJSON} className="w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">JSON</button>
                 </div>
               </>
             )}
           </div>
 
-          <button
-            onClick={handleDeleteAll}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-          >
-            <Trash2 size={16} />
-            Usuń wszystkie
+          <button onClick={handleDeleteAll}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+            <Trash2 size={16} />Usuń wszystkie
           </button>
         </div>
       </div>
@@ -161,53 +334,75 @@ export default function ResponsesView({ form }) {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                  Data
-                </th>
-                {(form?.fields || []).slice(0, 3).map((field) => (
-                  <th
-                    key={field.id}
-                    className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider"
-                  >
-                    {field.label}
-                  </th>
-                ))}
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-                  Akcje
-                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Uczestnik</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Kontakt</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Kwota</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Akcje</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {responses.map((response) => (
-                <tr
-                  key={response.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                >
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                    {formatDate(response.submitted_at)}
+              {participants.map((p) => (
+                <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                  onClick={() => setSelectedParticipant(p)}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-sm font-semibold text-accent-primary dark:text-accent-primary-light">
+                        {(p.name || '?')[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{p.name}</p>
+                        {p.isGroupContact && (
+                          <p className="text-[10px] text-blue-500">Osoba zgłaszająca · Grupa {p.groupSize} os.</p>
+                        )}
+                        {p.isGroupMember && (
+                          <p className="text-[10px] text-gray-400">Członek zespołu</p>
+                        )}
+                      </div>
+                    </div>
                   </td>
-                  {(form?.fields || []).slice(0, 3).map((field) => (
-                    <td
-                      key={field.id}
-                      className="px-4 py-3 text-sm text-gray-900 dark:text-white max-w-xs truncate"
-                    >
-                      {formatAnswerForExport(response.answers[field.id], field.type) || '-'}
-                    </td>
-                  ))}
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    {p.email && <div className="flex items-center gap-1"><Mail size={12} />{p.email}</div>}
+                    {p.phone && <div className="flex items-center gap-1"><Phone size={12} />{p.phone}</div>}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                    {formatDate(p.submittedAt)}
+                  </td>
+                  <td className="px-4 py-3">
+                    {p.totalAmount > 0 ? (
+                      <div>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {formatPrice(p.totalAmount, p.currency)}
+                        </span>
+                        {p.addonLabels?.length > 0 && (
+                          <div className="text-[10px] text-purple-500 mt-0.5">{p.addonLabels.join(', ')}</div>
+                        )}
+                        {p.isGroupContact && p.groupTotalAmount > 0 && (
+                          <div className="text-[10px] text-gray-400 mt-0.5">Grupa: {formatPrice(p.groupTotalAmount, p.currency)}</div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {getPaymentStatusBadge(p.status, p.paidAmount, p.totalAmount)}
+                  </td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => setSelectedResponse(response)}
-                        className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                        title="Zobacz szczegóły"
-                      >
+                    <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                      {p.totalAmount > 0 && (p.status === 'pending' || p.status === 'partial') && (
+                        <button onClick={() => { setPaymentModal({ participantId: p.id, amount: p.totalAmount, currency: p.currency, name: p.name }); setPaymentAmount(String(p.totalAmount - (p.paidAmount || 0))); }}
+                          className="p-2 text-green-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors" title="Dodaj płatność">
+                          <Banknote size={16} />
+                        </button>
+                      )}
+                      <button onClick={() => setSelectedParticipant(p)}
+                        className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="Szczegóły">
                         <Eye size={16} />
                       </button>
-                      <button
-                        onClick={() => handleDeleteResponse(response.id)}
-                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        title="Usuń"
-                      >
+                      <button onClick={() => handleDeleteResponse(p.responseId)}
+                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Usuń">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -220,22 +415,14 @@ export default function ResponsesView({ form }) {
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Strona {pagination.page} z {totalPages}
-            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Strona {pagination.page} z {totalPages}</p>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => fetchResponses(pagination.page - 1)}
-                disabled={pagination.page <= 1}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
+              <button onClick={() => fetchResponses(pagination.page - 1)} disabled={pagination.page <= 1}
+                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                 <ChevronLeft size={18} />
               </button>
-              <button
-                onClick={() => fetchResponses(pagination.page + 1)}
-                disabled={pagination.page >= totalPages}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
+              <button onClick={() => fetchResponses(pagination.page + 1)} disabled={pagination.page >= totalPages}
+                className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                 <ChevronRight size={18} />
               </button>
             </div>
@@ -243,139 +430,118 @@ export default function ResponsesView({ form }) {
         )}
       </div>
 
-      {selectedResponse && (
+      {/* Modal szczegółów */}
+      {selectedParticipant && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="font-semibold text-gray-900 dark:text-white">
-                Szczegóły odpowiedzi
-              </h2>
-              <button
-                onClick={() => setSelectedResponse(null)}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
+              <h2 className="font-semibold text-gray-900 dark:text-white">Szczegóły uczestnika</h2>
+              <button onClick={() => setSelectedParticipant(null)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
                 <X size={20} />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4">
               <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  <Calendar size={14} />
-                  {formatDate(selectedResponse.submitted_at)}
-                </div>
-                {selectedResponse.respondent_email && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <User size={14} />
-                    {selectedResponse.respondent_email}
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 flex items-center justify-center text-lg font-semibold text-accent-primary dark:text-accent-primary-light">
+                    {(selectedParticipant.name || '?')[0]?.toUpperCase()}
                   </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">{selectedParticipant.name}</p>
+                    <p className="text-xs text-gray-500">{formatDate(selectedParticipant.submittedAt)}</p>
+                  </div>
+                </div>
+                {selectedParticipant.email && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"><Mail size={14} />{selectedParticipant.email}</div>
+                )}
+                {selectedParticipant.phone && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"><Phone size={14} />{selectedParticipant.phone}</div>
                 )}
               </div>
 
-              <div className="space-y-4">
-                {/* Tryb rejestracji */}
-                {selectedResponse.answers?._registrationMode === 'group' && (
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                    <p className="text-sm font-medium text-blue-700 dark:text-blue-400 flex items-center gap-2">
-                      <User size={14} />
-                      Rejestracja grupowa
-                      {selectedResponse.answers?._participants && (
-                        <span className="text-xs font-normal">
-                          ({selectedResponse.answers._participants.length} uczestników + osoba zgłaszająca)
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                )}
-
-                {/* Osoba kontaktowa (tryb grupowy) */}
-                {selectedResponse.answers?._contactPerson && (
-                  <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
-                      Osoba zgłaszająca
-                    </p>
-                    {(form?.fields || []).map((field) => {
-                      const value = selectedResponse.answers._contactPerson[field.id];
-                      if (value === undefined || value === null || value === '') return null;
-                      return (
-                        <div key={field.id} className="mb-1">
-                          <span className="text-xs text-gray-500">{field.label}: </span>
-                          <span className="text-sm text-gray-900 dark:text-white">
-                            {formatAnswerForExport(value, field.type)}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Uczestnicy (tryb grupowy) */}
-                {selectedResponse.answers?._participants?.map((participant, pIdx) => (
-                  <div key={pIdx} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                    <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
-                      Członek zespołu {pIdx + 1}
-                    </p>
-                    {(form?.fields || []).map((field) => {
-                      const value = participant[field.id];
-                      if (value === undefined || value === null || value === '') return null;
-                      return (
-                        <div key={field.id} className="mb-1">
-                          <span className="text-xs text-gray-500">{field.label}: </span>
-                          <span className="text-sm text-gray-900 dark:text-white">
-                            {formatAnswerForExport(value, field.type)}
-                          </span>
-                        </div>
-                      );
-                    })}
-                    {participant._addons && Object.entries(participant._addons).some(([, v]) => v > 0) && (
-                      <div className="mt-1 text-xs text-purple-600 dark:text-purple-400">
-                        Dodatki: {Object.entries(participant._addons).filter(([, v]) => v > 0).map(([id]) => id).join(', ')}
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* Standardowe pola */}
+              {/* Odpowiedzi na pola */}
+              <div className="space-y-3">
                 {(form?.fields || []).map((field) => {
-                  // W trybie grupowym, pokaż tylko pola, które mają wartość bezpośrednio w answers
-                  const value = selectedResponse.answers[field.id];
+                  if (['price', 'seat_limit', 'location', 'date_start', 'date_end', 'time_start', 'time_end'].includes(field.type)) return null;
+                  const value = selectedParticipant.answers[field.id];
                   if (value === undefined || value === null || value === '') return null;
                   return (
                     <div key={field.id}>
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                        {field.label}
-                      </p>
-                      <p className="text-gray-900 dark:text-white">
-                        {formatAnswerForExport(value, field.type) || (
-                          <span className="text-gray-400 italic">Brak odpowiedzi</span>
-                        )}
-                      </p>
+                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-0.5">{field.label}</p>
+                      <p className="text-sm text-gray-900 dark:text-white">{formatAnswerForExport(value, field.type)}</p>
                     </div>
                   );
                 })}
-
-                {/* Podsumowanie cenowe */}
-                {selectedResponse.answers?._priceBreakdown?.grandTotal > 0 && (
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                    <p className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase tracking-wider mb-1">
-                      Kwota do zapłaty
-                    </p>
-                    <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                      {selectedResponse.answers._priceBreakdown.grandTotal.toLocaleString('pl-PL', { minimumFractionDigits: 2 })} {form?.settings?.pricing?.currency || 'PLN'}
-                    </p>
-                  </div>
-                )}
               </div>
+
+              {/* Dodatki */}
+              {selectedParticipant.addonLabels?.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Dodatki</p>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedParticipant.addonLabels.map((label, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full text-xs">{label}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Kwota i status */}
+              {selectedParticipant.totalAmount > 0 && (
+                <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Płatność</p>
+                    {getPaymentStatusBadge(selectedParticipant.status, selectedParticipant.paidAmount, selectedParticipant.totalAmount)}
+                  </div>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
+                    {formatPrice(selectedParticipant.totalAmount, selectedParticipant.currency)}
+                  </p>
+                  {selectedParticipant.paidAmount > 0 && selectedParticipant.status !== 'paid' && (
+                    <p className="text-sm text-gray-500">Wpłacono: {formatPrice(selectedParticipant.paidAmount, selectedParticipant.currency)}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={() => handleDeleteResponse(selectedResponse.id)}
-                className="w-full flex items-center justify-center gap-2 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-              >
-                <Trash2 size={16} />
-                Usuń odpowiedź
+              <button onClick={() => handleDeleteResponse(selectedParticipant.responseId)}
+                className="w-full flex items-center justify-center gap-2 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                <Trash2 size={16} />Usuń odpowiedź
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal płatności */}
+      {paymentModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2"><Banknote size={20} className="text-green-500" />Dodaj płatność</h2>
+              <button onClick={() => setPaymentModal(null)} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"><X size={20} /></button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <p className="text-sm text-gray-500">Uczestnik</p>
+                <p className="font-medium text-gray-900 dark:text-white">{paymentModal.name}</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Kwota ({paymentModal.currency})</label>
+                <input type="number" min="0" step="0.01" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Data płatności</label>
+                <input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+              <button onClick={() => setPaymentModal(null)} className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 transition-colors">Anuluj</button>
+              <button onClick={addPayment} className="flex-1 py-2.5 text-sm font-medium text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2"><Check size={16} />Potwierdź</button>
             </div>
           </div>
         </div>
