@@ -223,7 +223,8 @@ export default function PublicFormPage() {
       return { background: bgConfig.solidColor || '#ffffff' };
     }
 
-    if (bgConfig.type === 'gradient') {
+    // Gradient: jawnie ustawiony LUB domyślny (type undefined/gradient)
+    if (bgConfig.type === 'gradient' || !bgConfig.type) {
       const g = bgConfig.gradient || {};
       const dirMap = {
         'to-r': 'to right',
@@ -260,10 +261,45 @@ export default function PublicFormPage() {
   };
   const formMaxWidth = widthMap[layout.maxWidth] || 'max-w-xl';
 
+  const primaryColor = form?.settings?.theme?.primaryColor || null;
+
+  // Konwertuj kolor hex na RGB i wygeneruj warianty
+  const getColorOverrides = () => {
+    if (!primaryColor) return {};
+    const hex = primaryColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    // Jaśniejsze warianty
+    const lighten = (r, g, b, amount) => [
+      Math.min(255, r + (255 - r) * amount),
+      Math.min(255, g + (255 - g) * amount),
+      Math.min(255, b + (255 - b) * amount)
+    ].map(Math.round);
+    const light = [r, g, b];
+    const lighter = lighten(r, g, b, 0.4);
+    const lightest = lighten(r, g, b, 0.85);
+    const dark = [Math.round(r * 0.7), Math.round(g * 0.7), Math.round(b * 0.7)];
+    const darkest = [Math.round(r * 0.4), Math.round(g * 0.4), Math.round(b * 0.4)];
+    return {
+      '--accent-primary': `${r} ${g} ${b}`,
+      '--accent-primary-light': `${light[0]} ${light[1]} ${light[2]}`,
+      '--accent-primary-lighter': `${lighter[0]} ${lighter[1]} ${lighter[2]}`,
+      '--accent-primary-lightest': `${lightest[0]} ${lightest[1]} ${lightest[2]}`,
+      '--accent-primary-dark': `${dark[0]} ${dark[1]} ${dark[2]}`,
+      '--accent-primary-darkest': `${darkest[0]} ${darkest[1]} ${darkest[2]}`,
+      '--accent-secondary': `${r} ${g} ${b}`,
+      '--accent-secondary-light': `${light[0]} ${light[1]} ${light[2]}`
+    };
+  };
+
   return (
     <div
       className="min-h-screen py-8 px-4 relative overflow-hidden"
-      style={getBackgroundStyle()}
+      style={{
+        ...getBackgroundStyle(),
+        ...getColorOverrides()
+      }}
     >
       {/* Obrazek tła (stara ścieżka z branding) */}
       {branding.backgroundImage && (
