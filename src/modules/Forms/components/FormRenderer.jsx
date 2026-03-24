@@ -446,8 +446,10 @@ export default function FormRenderer({
       {(() => {
         const hdr = settings?.header || {};
         const hdrBg = hdr.background || {};
-        const isImageBg = hdrBg.type === 'image' && hdrBg.image;
-        const isGradientBg = hdrBg.type === 'gradient';
+        const hdrBgType = hdrBg.type || 'solid';
+        const isImageBg = hdrBgType === 'image' && hdrBg.image;
+        const isGradientBg = hdrBgType === 'gradient';
+        const isSolidBg = hdrBgType === 'solid';
         const isDarkBg = hdr.textColor === 'light' || (hdr.textColor === 'auto' && (isImageBg || isGradientBg));
         const textClass = isDarkBg ? 'text-white' : 'text-gray-900 dark:text-white';
         const subtextClass = isDarkBg ? 'text-white/70' : 'text-gray-600 dark:text-gray-400';
@@ -468,13 +470,14 @@ export default function FormRenderer({
         // Styl tła headera
         let bgStyle = {};
         let bgClassName = 'bg-white dark:bg-gray-800';
-        if (hdrBg.type === 'solid' && hdrBg.solidColor) {
+        if (isSolidBg && hdrBg.solidColor) {
           bgStyle = { backgroundColor: hdrBg.solidColor };
           bgClassName = '';
-        } else if (isGradientBg && hdrBg.gradient) {
+        } else if (isGradientBg) {
+          const g = hdrBg.gradient || {};
           const dirMap = { 'to-r': 'to right', 'to-br': 'to bottom right', 'to-b': 'to bottom', 'to-bl': 'to bottom left', 'to-t': 'to top', 'to-tr': 'to top right', 'to-l': 'to left', 'to-tl': 'to top left' };
-          const dir = dirMap[hdrBg.gradient.direction] || 'to right';
-          const stops = [hdrBg.gradient.from, hdrBg.gradient.via, hdrBg.gradient.to].filter(Boolean).join(', ');
+          const dir = dirMap[g.direction] || 'to right';
+          const stops = [g.from || '#3b82f6', g.via, g.to || '#8b5cf6'].filter(Boolean).join(', ');
           bgStyle = { background: `linear-gradient(${dir}, ${stops})` };
           bgClassName = '';
         }
