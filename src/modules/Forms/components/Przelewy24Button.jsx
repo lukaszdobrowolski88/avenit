@@ -53,7 +53,7 @@ export default function Przelewy24Button({
 
     try {
       // Wywołaj edge function do rejestracji transakcji
-      const { data, error: fnError } = await supabase.functions.invoke('przelewy24-register', {
+      const { data, error: fnError } = await supabase.functions.invoke('przelewy24-create-payment', {
         body: {
           merchantId,
           crcKey,
