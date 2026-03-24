@@ -128,7 +128,9 @@ export default function ParticipantsView({ forms }) {
 
         // Rejestracja grupowa — rozwiń na poszczególnych uczestników
         if (answers._registrationMode === 'group') {
-          // Osoba zgłaszająca
+          const groupSize = (answers._participants?.length || 0) + (answers._contactPerson ? 1 : 0);
+
+          // Osoba zgłaszająca — pokazuje całą kwotę grupy
           if (answers._contactPerson) {
             const contact = extractContactInfo(answers._contactPerson, form?.fields);
             processedParticipants.push({
@@ -140,11 +142,12 @@ export default function ParticipantsView({ forms }) {
               phone: contact.phone,
               answers: answers._contactPerson,
               isGroupContact: true,
-              groupSize: (answers._participants?.length || 0) + 1
+              groupSize,
+              totalAmount, // Pełna kwota za grupę
             });
           }
 
-          // Członkowie zespołu
+          // Członkowie zespołu — bez kwoty (jest przy osobie kontaktowej)
           (answers._participants || []).forEach((participant, idx) => {
             const pContact = extractContactInfo(participant, form?.fields);
             processedParticipants.push({
@@ -156,7 +159,9 @@ export default function ParticipantsView({ forms }) {
               phone: pContact.phone,
               answers: participant,
               isGroupMember: true,
-              groupSize: (answers._participants?.length || 0) + 1
+              groupSize,
+              totalAmount: 0, // Kwota jest przy osobie kontaktowej
+              paymentStatus: 'none'
             });
           });
         } else {
