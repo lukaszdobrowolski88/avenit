@@ -561,8 +561,8 @@ export function calculatePriceBreakdown(fields, answers, settings) {
         if (answers._contactPerson?._addons?.[addon.id]) {
           totalQty += answers._contactPerson._addons[addon.id];
         }
-        // Tryb bez grupy
-        if (!groupConfig.enabled && answers._addons?.[addon.id]) {
+        // Tryb indywidualny (top-level _addons)
+        if (answers._addons?.[addon.id]) {
           totalQty += answers._addons[addon.id];
         }
       } else {
