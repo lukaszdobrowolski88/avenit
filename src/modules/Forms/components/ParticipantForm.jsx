@@ -8,6 +8,7 @@ export default function ParticipantForm({
   addons,
   index,
   label,
+  subtitle,
   onUpdate,
   onRemove,
   canRemove,
@@ -32,9 +33,14 @@ export default function ParticipantForm({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-          {label || 'Członek zespołu'} {index + 1}
-        </h3>
+        <div>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+            {index === 0 && label === 'Osoba zgłaszająca' ? label : `${label || 'Członek zespołu'} ${index + 1}`}
+          </h3>
+          {subtitle && (
+            <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
+          )}
+        </div>
         {canRemove && (
           <button
             type="button"

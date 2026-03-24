@@ -81,16 +81,19 @@ export default function FormRenderer({
         _registrationAddons: registrationAddons
       };
     }
+    // Tryb grupowy: pierwszy uczestnik = osoba kontaktowa
+    const contactP = participants[0];
+    const otherP = participants.slice(1);
     return {
-      _contactPerson: { ...contactAnswers, _addons: contactAddons },
-      _participants: participants.map(p => ({
+      _contactPerson: { ...contactP?.answers, _addons: contactP?.addons || {} },
+      _participants: otherP.map(p => ({
         ...p.answers,
         _addons: p.addons
       })),
       _registrationAddons: registrationAddons,
       ...answers
     };
-  }, [isGroupEnabled, registrationMode, answers, contactAnswers, contactAddons, participants, registrationAddons]);
+  }, [isGroupEnabled, registrationMode, answers, contactAddons, participants, registrationAddons]);
 
   // Oblicz rozbicie ceny
   const priceBreakdown = useMemo(() => {
@@ -248,19 +251,13 @@ export default function FormRenderer({
     let hasErrors = false;
 
     if (isGroupEnabled && registrationMode === 'group') {
-      // Waliduj pola osoby kontaktowej
-      contactFields.forEach(field => {
-        const error = validateField(field, contactAnswers[field.id]);
-        if (error) {
-          newContactErrors[field.id] = error;
-          hasErrors = true;
-        }
-      });
-
       // Waliduj pola każdego uczestnika
+      // Pierwszy uczestnik (index 0) = osoba zgłaszająca → contactFields
+      // Pozostali → participantFields
       participants.forEach((participant, index) => {
         const pErrors = {};
-        participantFields.forEach(field => {
+        const fieldsForParticipant = index === 0 ? contactFields : participantFields;
+        fieldsForParticipant.forEach(field => {
           const error = validateField(field, participant.answers[field.id]);
           if (error) {
             pErrors[field.id] = error;
@@ -284,12 +281,12 @@ export default function FormRenderer({
     });
 
     setErrors(newErrors);
-    setContactErrors(newContactErrors);
+    setContactErrors({});
     setParticipantErrors(newParticipantErrors);
 
     if (hasErrors) {
       // Scroll to first error
-      const firstErrorId = Object.keys(newErrors)[0] || Object.keys(newContactErrors)[0];
+      const firstErrorId = Object.keys(newErrors)[0];
       if (firstErrorId) {
         document.getElementById(`field-${firstErrorId}`)?.scrollIntoView({
           behavior: 'smooth',
@@ -312,12 +309,15 @@ export default function FormRenderer({
     // Zbuduj dane do wysłania
     let submitData;
     if (isGroupEnabled && registrationMode === 'group') {
+      // Pierwszy uczestnik = osoba kontaktowa, reszta = członkowie
+      const contactParticipant = participants[0];
+      const otherParticipants = participants.slice(1);
       submitData = {
         ...answers,
         _registrationMode: 'group',
         _isWaitlist: isWaitlistMode || undefined,
-        _contactPerson: { ...contactAnswers, _addons: contactAddons },
-        _participants: participants.map(p => ({
+        _contactPerson: { ...contactParticipant.answers, _addons: contactParticipant.addons },
+        _participants: otherParticipants.map(p => ({
           ...p.answers,
           _addons: p.addons
         })),
@@ -576,71 +576,21 @@ export default function FormRenderer({
         </div>
       )}
 
-      {/* Sekcja osoby zgłaszającej (tryb grupowy) */}
-      {isGroupEnabled && groupConfig.requireContactPerson !== false && contactFields.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-1 text-center">
-            Osoba zgłaszająca
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center">
-            Ty będziesz głównym kontaktem pomiędzy nami, a członkami Twojego zespołu.
-          </p>
-
-          <div className="space-y-4">
-            {contactFields.map((field) => (
-              <div key={field.id} id={`field-${field.id}`}>
-                <label className="block mb-2">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {field.label}
-                    {field.required && <span className="text-red-500 ml-1">*</span>}
-                  </span>
-                </label>
-                <FieldRenderer
-                  field={field}
-                  value={contactAnswers[field.id]}
-                  onChange={(value) => handleContactChange(field.id, value)}
-                  error={contactErrors[field.id]}
-                />
-                {contactErrors[field.id] && (
-                  <div className="flex items-center gap-2 mt-2 text-red-500 text-xs">
-                    <AlertCircle size={14} />
-                    {contactErrors[field.id]}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Dodatki per osoba dla osoby kontaktowej */}
-            {addonsConfig.enabled && perPersonAddons.length > 0 && (
-              <AddonSelector
-                addons={perPersonAddons}
-                selectedAddons={contactAddons}
-                onChange={handleContactAddonChange}
-                currency={pricing.currency || 'PLN'}
-              />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Sekcja "Kto przyjedzie razem z Tobą?" (tryb grupowy) */}
-      {isGroupMode && participantFields.length > 0 && (
+      {/* Uczestnicy (tryb grupowy) — pierwszy = osoba zgłaszająca z pełnymi polami */}
+      {isGroupMode && (
         <div className="space-y-4 mb-6">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white text-center">
-            Kto przyjedzie razem z Tobą?
-          </h2>
-
           {participants.map((participant, index) => (
             <ParticipantForm
               key={participant.id}
               participant={participant}
-              fields={participantFields}
+              fields={index === 0 ? contactFields : participantFields}
               addons={addonsConfig.enabled ? addonsConfig.items : []}
               index={index}
-              label={groupConfig.participantLabel || 'Członek zespołu'}
+              label={index === 0 ? 'Osoba zgłaszająca' : (groupConfig.participantLabel || 'Członek zespołu')}
+              subtitle={index === 0 ? 'Osoba kontaktowa dla całej grupy' : null}
               onUpdate={(updated) => handleParticipantUpdate(index, updated)}
               onRemove={() => removeParticipant(index)}
-              canRemove={participants.length > (groupConfig.minParticipants || 1)}
+              canRemove={index > 0 && participants.length > (groupConfig.minParticipants || 1)}
               errors={participantErrors[index]}
             />
           ))}

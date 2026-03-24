@@ -223,8 +223,8 @@ export default function PublicFormPage() {
       return { background: bgConfig.solidColor || '#ffffff' };
     }
 
-    if (bgConfig.type === 'gradient' && bgConfig.gradient) {
-      const g = bgConfig.gradient;
+    if (bgConfig.type === 'gradient') {
+      const g = bgConfig.gradient || {};
       const dirMap = {
         'to-r': 'to right',
         'to-br': 'to bottom right',
@@ -236,11 +236,13 @@ export default function PublicFormPage() {
         'to-tl': 'to top left'
       };
       const dir = dirMap[g.direction] || 'to bottom right';
-      const stops = [g.from, g.via, g.to].filter(Boolean).join(', ');
-      return { background: `linear-gradient(${dir}, ${stops})` };
+      const from = g.from || '#fdf2f8';
+      const via = g.via || '#ffffff';
+      const to = g.to || '#fff7ed';
+      return { background: `linear-gradient(${dir}, ${from}, ${via}, ${to})` };
     }
 
-    // Domyślny gradient
+    // Domyślny gradient (dla formularzy bez ustawień layout)
     if (form?.settings?.theme?.backgroundColor && form.settings.theme.backgroundColor !== '#ffffff') {
       return { background: form.settings.theme.backgroundColor };
     }
