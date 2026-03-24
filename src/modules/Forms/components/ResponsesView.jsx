@@ -458,7 +458,7 @@ export default function ResponsesView({ form }) {
                           <p className="text-[10px] text-blue-500">Osoba zgłaszająca · Grupa {p.groupSize} os.</p>
                         )}
                         {p.isGroupMember && (
-                          <p className="text-[10px] text-gray-400">Członek zespołu</p>
+                          <p className="text-[10px] text-gray-400">Rejestracja grupowa</p>
                         )}
                       </div>
                     </div>
@@ -562,7 +562,7 @@ export default function ResponsesView({ form }) {
                   <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     <span className="flex items-center gap-1"><Calendar size={12} />{formatDate(sp.submittedAt)}</span>
                     {sp.isGroupContact && <span className="text-blue-500 font-medium">Zgłaszający · {sp.groupSize} os.</span>}
-                    {sp.isGroupMember && <span className="text-gray-400">Członek zespołu</span>}
+                    {sp.isGroupMember && <span className="text-gray-400">Rejestracja grupowa</span>}
                   </div>
                 </div>
               </div>
