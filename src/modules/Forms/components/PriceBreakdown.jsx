@@ -14,12 +14,14 @@ export default function PriceBreakdown({ breakdown, currency = 'PLN', isWaitlist
     subtotal,
     appliedDiscounts,
     discountTotal,
-    grandTotal
+    grandTotal,
+    activeDateTier
   } = breakdown;
 
   const hasDetails = (pricingType === 'per_person' && participantCount > 1) ||
     addonsBreakdown.length > 0 ||
-    appliedDiscounts.length > 0;
+    appliedDiscounts.length > 0 ||
+    activeDateTier;
 
   return (
     <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-200 dark:border-green-800 p-6">
@@ -34,6 +36,18 @@ export default function PriceBreakdown({ breakdown, currency = 'PLN', isWaitlist
 
       {hasDetails && (
         <div className="space-y-2 mb-4">
+          {/* Aktywny próg cenowy */}
+          {activeDateTier && activeDateTier.label && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full font-medium">
+                {activeDateTier.label}
+                {activeDateTier.until && (
+                  <span className="font-normal text-blue-500"> — do {new Date(activeDateTier.until).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}</span>
+                )}
+              </span>
+            </div>
+          )}
+
           {/* Cena bazowa */}
           {baseTotal > 0 && (
             <div className="flex items-center justify-between text-sm">

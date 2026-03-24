@@ -249,7 +249,11 @@ export const FIELD_TYPES = {
         showInSummary: true,
         pricingType: 'fixed', // 'fixed' | 'per_person' | 'tiered' | 'options'
         tiers: [], // dla tiered: [{ minQty: 1, maxQty: 5, price: 100 }, ...]
-        optionPrices: {} // dla options: { 'option_id': 50, ... }
+        optionPrices: {}, // dla options: { 'option_id': 50, ... }
+        datePricing: {
+          enabled: false,
+          tiers: [] // [{ label: 'Early bird', price: 150, until: '2026-06-01' }, ...]
+        }
       }
     }
   },
@@ -540,13 +544,35 @@ export function calculatePriceBreakdown(fields, answers, settings) {
   const discountsConfig = settings?.discounts || {};
   const groupConfig = settings?.groupRegistration || {};
 
-  // 1. Cena bazowa z pola price
+  // 1. Cena bazowa z pola price (z uwzględnieniem cennika datowego)
   let baseUnitPrice = 0;
   let pricingType = 'fixed';
+  let activeDateTier = null;
   const priceField = fields.find(f => f.type === 'price' && f.priceConfig);
   if (priceField) {
     baseUnitPrice = priceField.priceConfig.basePrice || 0;
     pricingType = priceField.priceConfig.pricingType || 'fixed';
+
+    // Sprawdź cennik datowy
+    const dp = priceField.priceConfig.datePricing;
+    if (dp?.enabled && dp.tiers?.length > 0) {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      // Sortuj progi po dacie (najwcześniejsze pierwsze)
+      const sortedTiers = [...dp.tiers]
+        .filter(t => t.until && t.price != null)
+        .sort((a, b) => new Date(a.until) - new Date(b.until));
+      // Znajdź aktywny próg — pierwszy, którego data `until` jest >= dziś
+      for (const tier of sortedTiers) {
+        const tierDate = new Date(tier.until + 'T23:59:59');
+        if (now <= tierDate) {
+          activeDateTier = tier;
+          baseUnitPrice = tier.price;
+          break;
+        }
+      }
+      // Jeśli żaden próg nie pasuje (wszystkie minęły), użyj basePrice
+    }
   }
 
   // 2. Liczba uczestników (osoba kontaktowa + członkowie)
@@ -683,7 +709,8 @@ export function calculatePriceBreakdown(fields, answers, settings) {
     subtotal,
     appliedDiscounts,
     discountTotal,
-    grandTotal
+    grandTotal,
+    activeDateTier
   };
 }
 

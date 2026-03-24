@@ -548,6 +548,111 @@ export default function FieldEditor({ field, onUpdate }) {
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
             </label>
           </div>
+
+          {/* Cennik datowy */}
+          <div className="pt-3 border-t border-green-200 dark:border-green-800">
+            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/30 rounded-lg mb-3">
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Cennik datowy
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Różne ceny w zależności od terminu zapisu
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={field.priceConfig?.datePricing?.enabled || false}
+                  onChange={(e) => onUpdate({
+                    priceConfig: {
+                      ...(field.priceConfig || {}),
+                      datePricing: {
+                        ...(field.priceConfig?.datePricing || {}),
+                        enabled: e.target.checked
+                      }
+                    }
+                  })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
+              </label>
+            </div>
+
+            {field.priceConfig?.datePricing?.enabled && (
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Dodaj progi cenowe od najwcześniejszego. Cena bazowa ({field.priceConfig?.basePrice || 0} {field.priceConfig?.currency || 'PLN'}) obowiązuje po ostatnim progu.
+                </p>
+
+                {(field.priceConfig?.datePricing?.tiers || []).map((tier, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={tier.label || ''}
+                        onChange={(e) => {
+                          const tiers = [...(field.priceConfig?.datePricing?.tiers || [])];
+                          tiers[index] = { ...tiers[index], label: e.target.value };
+                          onUpdate({ priceConfig: { ...(field.priceConfig || {}), datePricing: { ...(field.priceConfig?.datePricing || {}), tiers } } });
+                        }}
+                        placeholder="np. Early bird"
+                        className="w-full px-2 py-1 text-xs bg-transparent border-0 focus:ring-0 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div className="w-20">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={tier.price ?? ''}
+                        onChange={(e) => {
+                          const tiers = [...(field.priceConfig?.datePricing?.tiers || [])];
+                          tiers[index] = { ...tiers[index], price: parseFloat(e.target.value) || 0 };
+                          onUpdate({ priceConfig: { ...(field.priceConfig || {}), datePricing: { ...(field.priceConfig?.datePricing || {}), tiers } } });
+                        }}
+                        placeholder="Cena"
+                        className="w-full px-2 py-1 text-xs bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded text-gray-900 dark:text-white text-right"
+                      />
+                    </div>
+                    <span className="text-[10px] text-gray-400">do</span>
+                    <div className="w-28">
+                      <input
+                        type="date"
+                        value={tier.until || ''}
+                        onChange={(e) => {
+                          const tiers = [...(field.priceConfig?.datePricing?.tiers || [])];
+                          tiers[index] = { ...tiers[index], until: e.target.value };
+                          onUpdate({ priceConfig: { ...(field.priceConfig || {}), datePricing: { ...(field.priceConfig?.datePricing || {}), tiers } } });
+                        }}
+                        className="w-full px-2 py-1 text-xs bg-gray-50 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        const tiers = (field.priceConfig?.datePricing?.tiers || []).filter((_, i) => i !== index);
+                        onUpdate({ priceConfig: { ...(field.priceConfig || {}), datePricing: { ...(field.priceConfig?.datePricing || {}), tiers } } });
+                      }}
+                      className="p-1 text-red-400 hover:text-red-600"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  onClick={() => {
+                    const tiers = [...(field.priceConfig?.datePricing?.tiers || []), { label: '', price: 0, until: '' }];
+                    onUpdate({ priceConfig: { ...(field.priceConfig || {}), datePricing: { ...(field.priceConfig?.datePricing || {}), tiers } } });
+                  }}
+                  className="w-full flex items-center justify-center gap-1 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-xs text-gray-500 hover:border-green-400 hover:text-green-500 transition-colors"
+                >
+                  <Plus size={14} />
+                  Dodaj próg cenowy
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
