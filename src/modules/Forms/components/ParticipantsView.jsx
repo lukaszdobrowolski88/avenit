@@ -162,6 +162,14 @@ export default function ParticipantsView({ forms }) {
               .filter(Boolean);
           };
 
+          // Status płatności per osoba
+          const getPersonPaymentStatus = (personAnswers) => {
+            if (answers._isWaitlist) return 'none';
+            if (personAnswers?._payment?.status === 'completed') return 'paid';
+            const amt = calcPersonAmount(personAnswers?._addons || {});
+            return amt > 0 ? 'pending' : 'none';
+          };
+
           // Osoba zgłaszająca
           if (answers._contactPerson) {
             const contact = extractContactInfo(answers._contactPerson, form?.fields);
@@ -178,7 +186,8 @@ export default function ParticipantsView({ forms }) {
               groupSize,
               totalAmount: calcPersonAmount(personAddons),
               addonLabels: getAddonLabels(personAddons),
-              groupTotalAmount: totalAmount
+              groupTotalAmount: totalAmount,
+              paymentStatus: getPersonPaymentStatus(answers._contactPerson)
             });
           }
 
@@ -198,7 +207,7 @@ export default function ParticipantsView({ forms }) {
               groupSize,
               totalAmount: calcPersonAmount(personAddons),
               addonLabels: getAddonLabels(personAddons),
-              paymentStatus: 'none'
+              paymentStatus: getPersonPaymentStatus(participant)
             });
           });
         } else {
@@ -326,40 +335,67 @@ export default function ParticipantsView({ forms }) {
     link.click();
   };
 
-  // Aktualizacja statusu platnosci
+  // Aktualizacja statusu platnosci (obsługuje też członków grupy)
   const updatePaymentStatus = async (participantId, newStatus) => {
     try {
       const participant = participants.find(p => p.id === participantId);
       if (!participant) return;
 
-      const updatedAnswers = {
-        ...participant.answers,
-        _payment: {
-          ...(participant.answers._payment || {}),
-          status: newStatus === 'paid' ? 'completed' : 'pending',
-          updatedAt: new Date().toISOString()
-        }
+      const responseId = participant.responseId || participantId;
+      const paymentUpdate = {
+        status: newStatus === 'paid' ? 'completed' : 'pending',
+        updatedAt: new Date().toISOString()
       };
+
+      // Pobierz aktualną odpowiedź z bazy
+      const { data: responseData, error: fetchError } = await supabase
+        .from('form_responses')
+        .select('answers')
+        .eq('id', responseId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const fullAnswers = responseData.answers;
+
+      if (participant.isGroupContact) {
+        // Osoba kontaktowa — aktualizuj _contactPerson._payment
+        fullAnswers._contactPerson = {
+          ...fullAnswers._contactPerson,
+          _payment: { ...(fullAnswers._contactPerson?._payment || {}), ...paymentUpdate }
+        };
+      } else if (participant.isGroupMember) {
+        // Członek grupy — znajdź indeks i aktualizuj _participants[idx]._payment
+        const pIdx = parseInt(participantId.split('-p').pop());
+        if (fullAnswers._participants && fullAnswers._participants[pIdx]) {
+          fullAnswers._participants[pIdx] = {
+            ...fullAnswers._participants[pIdx],
+            _payment: { ...(fullAnswers._participants[pIdx]._payment || {}), ...paymentUpdate }
+          };
+        }
+      } else {
+        // Zwykła rejestracja
+        fullAnswers._payment = { ...(fullAnswers._payment || {}), ...paymentUpdate };
+      }
 
       const { error } = await supabase
         .from('form_responses')
-        .update({ answers: updatedAnswers })
-        .eq('id', participantId);
+        .update({ answers: fullAnswers })
+        .eq('id', responseId);
 
       if (error) throw error;
 
       // Aktualizuj lokalny stan
       setParticipants(prev => prev.map(p =>
         p.id === participantId
-          ? { ...p, paymentStatus: newStatus, answers: updatedAnswers }
+          ? { ...p, paymentStatus: newStatus }
           : p
       ));
 
       if (selectedParticipant?.id === participantId) {
         setSelectedParticipant(prev => ({
           ...prev,
-          paymentStatus: newStatus,
-          answers: updatedAnswers
+          paymentStatus: newStatus
         }));
       }
     } catch (error) {
