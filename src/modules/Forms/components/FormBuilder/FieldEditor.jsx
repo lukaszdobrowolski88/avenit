@@ -63,7 +63,7 @@ export default function FieldEditor({ field, onUpdate }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-hidden">
       <div>
         <div className="flex items-center gap-2 mb-4">
           {fieldType?.icon && (
