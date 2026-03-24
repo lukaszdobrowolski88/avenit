@@ -337,6 +337,21 @@ export const DEFAULT_FORM_SETTINGS = {
     rules: [],
     stackingMode: 'best'
   },
+  // Layout formularza
+  layout: {
+    maxWidth: 'md',         // 'sm' (480px) | 'md' (576px) | 'lg' (672px) | 'xl' (768px) | '2xl' (896px)
+    background: {
+      type: 'gradient',     // 'solid' | 'gradient' | 'image'
+      solidColor: '#ffffff',
+      gradient: {
+        from: '#fdf2f8',    // pink-50
+        via: '#ffffff',
+        to: '#fff7ed',      // orange-50
+        direction: 'to-br'  // 'to-r' | 'to-br' | 'to-b' | 'to-bl' | 'to-t'
+      },
+      orbs: []              // [{ color, size, x, y, blur }]
+    }
+  },
   theme: {
     primaryColor: '#c7ab71',
     backgroundColor: '#ffffff',

@@ -190,21 +190,62 @@ export default function PublicFormPage() {
   }
 
   const branding = form?.settings?.branding || {};
-  const hasBackgroundImage = branding.backgroundImage;
+  const layout = form?.settings?.layout || {};
+  const bgConfig = layout.background || {};
+  const hasBackgroundImage = branding.backgroundImage || bgConfig.type === 'image';
+  const orbs = bgConfig.orbs || [];
+
+  // Zbuduj styl tła
+  const getBackgroundStyle = () => {
+    // Background image z branding (stara ścieżka)
+    if (branding.backgroundImage) return undefined;
+
+    if (bgConfig.type === 'solid') {
+      return { background: bgConfig.solidColor || '#ffffff' };
+    }
+
+    if (bgConfig.type === 'gradient' && bgConfig.gradient) {
+      const g = bgConfig.gradient;
+      const dirMap = {
+        'to-r': 'to right',
+        'to-br': 'to bottom right',
+        'to-b': 'to bottom',
+        'to-bl': 'to bottom left',
+        'to-t': 'to top',
+        'to-tr': 'to top right',
+        'to-l': 'to left',
+        'to-tl': 'to top left'
+      };
+      const dir = dirMap[g.direction] || 'to bottom right';
+      const stops = [g.from, g.via, g.to].filter(Boolean).join(', ');
+      return { background: `linear-gradient(${dir}, ${stops})` };
+    }
+
+    // Domyślny gradient
+    if (form?.settings?.theme?.backgroundColor && form.settings.theme.backgroundColor !== '#ffffff') {
+      return { background: form.settings.theme.backgroundColor };
+    }
+
+    return { background: 'linear-gradient(to bottom right, rgb(253 242 248 / 0.5), white, rgb(255 247 237 / 0.5))' };
+  };
+
+  // Szerokość formularza
+  const widthMap = {
+    'sm': 'max-w-[480px]',
+    'md': 'max-w-xl',
+    'lg': 'max-w-2xl',
+    'xl': 'max-w-3xl',
+    '2xl': 'max-w-4xl'
+  };
+  const formMaxWidth = widthMap[layout.maxWidth] || 'max-w-xl';
 
   return (
     <div
-      className="min-h-screen py-8 px-4 relative"
-      style={{
-        background: !hasBackgroundImage && form?.settings?.theme?.backgroundColor
-          ? form.settings.theme.backgroundColor
-          : !hasBackgroundImage
-            ? 'linear-gradient(to bottom right, rgb(253 242 248 / 0.5), white, rgb(255 247 237 / 0.5))'
-            : undefined
-      }}
+      className="min-h-screen py-8 px-4 relative overflow-hidden"
+      style={getBackgroundStyle()}
     >
-      {/* Obrazek tła */}
-      {hasBackgroundImage && (
+      {/* Obrazek tła (stara ścieżka z branding) */}
+      {branding.backgroundImage && (
         <>
           <div
             className="fixed inset-0 bg-cover bg-center bg-no-repeat"
@@ -217,19 +258,36 @@ export default function PublicFormPage() {
         </>
       )}
 
+      {/* Orby dekoracyjne */}
+      {orbs.map((orb, i) => (
+        <div
+          key={i}
+          className="fixed rounded-full pointer-events-none"
+          style={{
+            width: `${orb.size || 300}px`,
+            height: `${orb.size || 300}px`,
+            left: `${orb.x || 0}%`,
+            top: `${orb.y || 0}%`,
+            background: orb.color || 'rgba(99, 102, 241, 0.15)',
+            filter: `blur(${orb.blur || 80}px)`,
+            transform: 'translate(-50%, -50%)'
+          }}
+        />
+      ))}
+
       <div className="relative z-10">
         <FormRenderer
           title={form.title}
           description={form.description}
           fields={form.fields || []}
-          settings={form.settings}
+          settings={{ ...form.settings, _formMaxWidth: formMaxWidth }}
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           isSubmitted={isSubmitted}
           responseCount={form.response_count || 0}
         />
 
-        <div className="max-w-xl mx-auto mt-8 text-center">
+        <div className={`${formMaxWidth} mx-auto mt-8 text-center`}>
           <p className={`text-xs ${hasBackgroundImage ? 'text-white/60' : 'text-gray-400'}`}>
             Powered by Church Manager
           </p>

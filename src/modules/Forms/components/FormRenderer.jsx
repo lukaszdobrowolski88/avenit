@@ -356,9 +356,11 @@ export default function FormRenderer({
     paymentCompleted ||
     (selectedPaymentMethod !== 'paypal' && selectedPaymentMethod !== 'przelewy24');
 
+  const formMaxWidth = settings?._formMaxWidth || 'max-w-xl';
+
   if (isSubmitted) {
     return (
-      <div className="max-w-xl mx-auto p-8 text-center">
+      <div className={`${formMaxWidth} mx-auto p-8 text-center`}>
         <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
           <Check size={40} className="text-green-600 dark:text-green-400" />
         </div>
@@ -385,7 +387,7 @@ export default function FormRenderer({
   const isGroupMode = isGroupEnabled && registrationMode === 'group';
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl mx-auto">
+    <form onSubmit={handleSubmit} className={`${formMaxWidth} mx-auto`}>
       {/* Nagłówek z grafiką */}
       {branding.headerImage && branding.showHeaderOnPublic !== false && (
         <div

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, Save, Upload, X, Image, DollarSign, CreditCard, Trash2, Mail, Bell, Clock, Edit3, Eye, AlertCircle, Code, Palette, Users, Package, Percent } from 'lucide-react';
+import { ChevronLeft, Save, Upload, X, Image, DollarSign, CreditCard, Trash2, Mail, Bell, Clock, Edit3, Eye, AlertCircle, Code, Palette, Users, Package, Percent, Layout, Plus, Sparkles } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useTemplates } from '../../Mailing/hooks/useTemplates';
 import { DEFAULT_FORM_EMAIL_TEMPLATES, FORM_EMAIL_VARIABLES } from '../utils/formEmailTemplates';
@@ -43,6 +43,36 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
     setLocalSettings(prev => ({
       ...prev,
       pricing: { ...(prev.pricing || {}), [key]: value }
+    }));
+  };
+
+  const handleLayoutChange = (key, value) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      layout: { ...(prev.layout || {}), [key]: value }
+    }));
+  };
+
+  const handleLayoutBgChange = (key, value) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      layout: {
+        ...(prev.layout || {}),
+        background: { ...(prev.layout?.background || {}), [key]: value }
+      }
+    }));
+  };
+
+  const handleLayoutGradientChange = (key, value) => {
+    setLocalSettings(prev => ({
+      ...prev,
+      layout: {
+        ...(prev.layout || {}),
+        background: {
+          ...(prev.layout?.background || {}),
+          gradient: { ...(prev.layout?.background?.gradient || {}), [key]: value }
+        }
+      }
     }));
   };
 
@@ -463,6 +493,346 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     />
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+
+          {/* Sekcja layoutu i tła */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              <Layout size={20} className="text-indigo-500" />
+              Layout i tło
+            </h2>
+
+            <div className="space-y-4">
+              {/* Szerokość formularza */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Szerokość formularza
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: 'sm', label: 'Wąski', desc: '480px' },
+                    { id: 'md', label: 'Średni', desc: '576px' },
+                    { id: 'lg', label: 'Szeroki', desc: '672px' },
+                    { id: 'xl', label: 'Bardzo szeroki', desc: '768px' },
+                    { id: '2xl', label: 'Maksymalny', desc: '896px' }
+                  ].map((size) => (
+                    <button
+                      key={size.id}
+                      onClick={() => handleLayoutChange('maxWidth', size.id)}
+                      className={`flex flex-col items-center px-3 py-2 rounded-xl border transition-colors ${
+                        (localSettings.layout?.maxWidth || 'md') === size.id
+                          ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-500 text-indigo-700 dark:text-indigo-400'
+                          : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
+                      }`}
+                    >
+                      <span className="text-xs font-medium">{size.label}</span>
+                      <span className="text-[10px] opacity-60">{size.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Typ tła */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Typ tła
+                </label>
+                <div className="flex gap-2">
+                  {[
+                    { id: 'solid', label: 'Kolor' },
+                    { id: 'gradient', label: 'Gradient' }
+                  ].map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => handleLayoutBgChange('type', type.id)}
+                      className={`flex-1 py-2 px-3 rounded-xl text-sm border transition-colors ${
+                        (localSettings.layout?.background?.type || 'gradient') === type.id
+                          ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-500 text-indigo-700 dark:text-indigo-400'
+                          : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
+                      }`}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Kolor tła (solid) */}
+              {(localSettings.layout?.background?.type || 'gradient') === 'solid' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Kolor tła
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={localSettings.layout?.background?.solidColor || '#ffffff'}
+                      onChange={(e) => handleLayoutBgChange('solidColor', e.target.value)}
+                      className="w-12 h-12 rounded-xl border border-gray-200 dark:border-gray-600 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={localSettings.layout?.background?.solidColor || '#ffffff'}
+                      onChange={(e) => handleLayoutBgChange('solidColor', e.target.value)}
+                      className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Gradient */}
+              {(localSettings.layout?.background?.type || 'gradient') === 'gradient' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Od</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={localSettings.layout?.background?.gradient?.from || '#fdf2f8'}
+                          onChange={(e) => handleLayoutGradientChange('from', e.target.value)}
+                          className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer flex-shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={localSettings.layout?.background?.gradient?.from || '#fdf2f8'}
+                          onChange={(e) => handleLayoutGradientChange('from', e.target.value)}
+                          className="w-full px-2 py-1.5 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Przez</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={localSettings.layout?.background?.gradient?.via || '#ffffff'}
+                          onChange={(e) => handleLayoutGradientChange('via', e.target.value)}
+                          className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer flex-shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={localSettings.layout?.background?.gradient?.via || '#ffffff'}
+                          onChange={(e) => handleLayoutGradientChange('via', e.target.value)}
+                          className="w-full px-2 py-1.5 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Do</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={localSettings.layout?.background?.gradient?.to || '#fff7ed'}
+                          onChange={(e) => handleLayoutGradientChange('to', e.target.value)}
+                          className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer flex-shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={localSettings.layout?.background?.gradient?.to || '#fff7ed'}
+                          onChange={(e) => handleLayoutGradientChange('to', e.target.value)}
+                          className="w-full px-2 py-1.5 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Kierunek</label>
+                    <div className="flex flex-wrap gap-1">
+                      {[
+                        { id: 'to-r', label: '→' },
+                        { id: 'to-br', label: '↘' },
+                        { id: 'to-b', label: '↓' },
+                        { id: 'to-bl', label: '↙' },
+                        { id: 'to-l', label: '←' },
+                        { id: 'to-tl', label: '↖' },
+                        { id: 'to-t', label: '↑' },
+                        { id: 'to-tr', label: '↗' }
+                      ].map((dir) => (
+                        <button
+                          key={dir.id}
+                          onClick={() => handleLayoutGradientChange('direction', dir.id)}
+                          className={`w-8 h-8 rounded-lg text-sm border transition-colors ${
+                            (localSettings.layout?.background?.gradient?.direction || 'to-br') === dir.id
+                              ? 'bg-indigo-100 dark:bg-indigo-900/30 border-indigo-500 text-indigo-700'
+                              : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-500'
+                          }`}
+                        >
+                          {dir.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Podgląd gradientu */}
+                  <div
+                    className="h-16 rounded-xl border border-gray-200 dark:border-gray-600"
+                    style={{
+                      background: (() => {
+                        const g = localSettings.layout?.background?.gradient || {};
+                        const dirMap = { 'to-r': 'to right', 'to-br': 'to bottom right', 'to-b': 'to bottom', 'to-bl': 'to bottom left', 'to-t': 'to top', 'to-tr': 'to top right', 'to-l': 'to left', 'to-tl': 'to top left' };
+                        const stops = [g.from || '#fdf2f8', g.via || '#ffffff', g.to || '#fff7ed'].join(', ');
+                        return `linear-gradient(${dirMap[g.direction] || 'to bottom right'}, ${stops})`;
+                      })()
+                    }}
+                  />
+
+                  {/* Presety gradientów */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Presety</label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { from: '#fdf2f8', via: '#ffffff', to: '#fff7ed', label: 'Różowo-pomarańczowy' },
+                        { from: '#eff6ff', via: '#ffffff', to: '#f0fdf4', label: 'Niebiesko-zielony' },
+                        { from: '#faf5ff', via: '#ffffff', to: '#fef2f2', label: 'Fioletowo-czerwony' },
+                        { from: '#f0f9ff', via: '#e0f2fe', to: '#f0f9ff', label: 'Niebieski' },
+                        { from: '#fefce8', via: '#ffffff', to: '#fefce8', label: 'Ciepły żółty' },
+                        { from: '#f8fafc', via: '#f1f5f9', to: '#f8fafc', label: 'Szary' }
+                      ].map((preset, i) => (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            handleLayoutBgChange('gradient', { ...localSettings.layout?.background?.gradient, ...preset });
+                          }}
+                          className="h-6 w-12 rounded-lg border border-gray-200 dark:border-gray-600 hover:scale-110 transition-transform"
+                          style={{ background: `linear-gradient(to right, ${preset.from}, ${preset.via}, ${preset.to})` }}
+                          title={preset.label}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Orby dekoracyjne */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <Sparkles size={14} className="text-indigo-500" />
+                    Orby dekoracyjne
+                  </label>
+                  <button
+                    onClick={() => {
+                      const orbs = [...(localSettings.layout?.background?.orbs || [])];
+                      orbs.push({
+                        color: 'rgba(99, 102, 241, 0.15)',
+                        size: 300,
+                        x: Math.round(Math.random() * 80 + 10),
+                        y: Math.round(Math.random() * 80 + 10),
+                        blur: 80
+                      });
+                      handleLayoutBgChange('orbs', orbs);
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                  >
+                    <Plus size={14} />
+                    Dodaj orb
+                  </button>
+                </div>
+
+                {(localSettings.layout?.background?.orbs || []).length === 0 && (
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    Orby to rozmyte, kolorowe kule w tle formularza nadające mu nowoczesny wygląd.
+                  </p>
+                )}
+
+                <div className="space-y-3">
+                  {(localSettings.layout?.background?.orbs || []).map((orb, index) => (
+                    <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                      <input
+                        type="color"
+                        value={orb.color?.startsWith('rgba') ? '#6366f1' : orb.color || '#6366f1'}
+                        onChange={(e) => {
+                          const orbs = [...(localSettings.layout?.background?.orbs || [])];
+                          const hex = e.target.value;
+                          // Konwertuj hex na rgba z przezroczystością
+                          const r = parseInt(hex.slice(1, 3), 16);
+                          const g = parseInt(hex.slice(3, 5), 16);
+                          const b = parseInt(hex.slice(5, 7), 16);
+                          orbs[index] = { ...orbs[index], color: `rgba(${r}, ${g}, ${b}, 0.15)` };
+                          handleLayoutBgChange('orbs', orbs);
+                        }}
+                        className="w-8 h-8 rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer flex-shrink-0"
+                      />
+                      <div className="flex-1 grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-[10px] text-gray-400">Rozmiar</label>
+                          <input
+                            type="number"
+                            min="50"
+                            max="800"
+                            step="50"
+                            value={orb.size || 300}
+                            onChange={(e) => {
+                              const orbs = [...(localSettings.layout?.background?.orbs || [])];
+                              orbs[index] = { ...orbs[index], size: parseInt(e.target.value) || 300 };
+                              handleLayoutBgChange('orbs', orbs);
+                            }}
+                            className="w-full px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-gray-400">X %</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={orb.x || 0}
+                            onChange={(e) => {
+                              const orbs = [...(localSettings.layout?.background?.orbs || [])];
+                              orbs[index] = { ...orbs[index], x: parseInt(e.target.value) || 0 };
+                              handleLayoutBgChange('orbs', orbs);
+                            }}
+                            className="w-full px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-gray-400">Y %</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={orb.y || 0}
+                            onChange={(e) => {
+                              const orbs = [...(localSettings.layout?.background?.orbs || [])];
+                              orbs[index] = { ...orbs[index], y: parseInt(e.target.value) || 0 };
+                              handleLayoutBgChange('orbs', orbs);
+                            }}
+                            className="w-full px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg"
+                          />
+                        </div>
+                      </div>
+                      <div className="w-14">
+                        <label className="text-[10px] text-gray-400">Blur</label>
+                        <input
+                          type="number"
+                          min="10"
+                          max="200"
+                          step="10"
+                          value={orb.blur || 80}
+                          onChange={(e) => {
+                            const orbs = [...(localSettings.layout?.background?.orbs || [])];
+                            orbs[index] = { ...orbs[index], blur: parseInt(e.target.value) || 80 };
+                            handleLayoutBgChange('orbs', orbs);
+                          }}
+                          className="w-full px-2 py-1 text-xs bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          const orbs = (localSettings.layout?.background?.orbs || []).filter((_, i) => i !== index);
+                          handleLayoutBgChange('orbs', orbs);
+                        }}
+                        className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors flex-shrink-0"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
