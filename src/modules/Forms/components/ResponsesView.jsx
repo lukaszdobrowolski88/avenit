@@ -17,7 +17,10 @@ import {
   AlertCircle,
   Banknote,
   Check,
-  DollarSign
+  DollarSign,
+  Search,
+  Filter,
+  Users
 } from 'lucide-react';
 import { useFormResponses } from '../hooks/useFormResponses';
 import { exportToCSV, exportToJSON, formatAnswerForExport } from '../utils/exportUtils';
@@ -27,6 +30,9 @@ import { supabase } from '../../../lib/supabase';
 export default function ResponsesView({ form }) {
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [paymentFilter, setPaymentFilter] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
   const [paymentModal, setPaymentModal] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -175,6 +181,33 @@ export default function ResponsesView({ form }) {
     return result;
   }, [responses, form]);
 
+  // Filtrowanie
+  const filteredParticipants = useMemo(() => {
+    let list = [...participants];
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(p =>
+        p.name?.toLowerCase().includes(q) ||
+        p.email?.toLowerCase().includes(q) ||
+        p.phone?.includes(q)
+      );
+    }
+    if (paymentFilter !== 'all') {
+      list = list.filter(p => p.status === paymentFilter);
+    }
+    return list;
+  }, [participants, searchQuery, paymentFilter]);
+
+  // Statystyki
+  const stats = useMemo(() => {
+    const total = participants.length;
+    const paid = participants.filter(p => p.status === 'paid').length;
+    const pending = participants.filter(p => p.status === 'pending' || p.status === 'partial').length;
+    const totalRevenue = participants.filter(p => p.status === 'paid').reduce((s, p) => s + p.totalAmount, 0)
+      + participants.filter(p => p.status === 'partial').reduce((s, p) => s + (p.paidAmount || 0), 0);
+    return { total, paid, pending, totalRevenue };
+  }, [participants]);
+
   const handleDeleteResponse = async (responseId) => {
     if (window.confirm('Czy na pewno chcesz usunąć tę odpowiedź?')) {
       await deleteResponse(responseId);
@@ -290,25 +323,70 @@ export default function ResponsesView({ form }) {
 
   return (
     <div className="p-4 md:p-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Łącznie odpowiedzi: <span className="font-semibold">{pagination.total}</span>
-            {participants.length !== pagination.total && (
-              <span className="ml-2">({participants.length} uczestników)</span>
-            )}
-          </p>
+      {/* Statystyki */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+            <Users size={20} className="text-blue-500" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+            <p className="text-xs text-gray-500">Wszystkich uczestników</p>
+          </div>
         </div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+          <div className="w-10 h-10 bg-green-50 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+            <CheckCircle size={20} className="text-green-500" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.paid}</p>
+            <p className="text-xs text-gray-500">Opłaconych</p>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+          <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center">
+            <Clock size={20} className="text-amber-500" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pending}</p>
+            <p className="text-xs text-gray-500">Oczekuje na płatność</p>
+          </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
+          <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
+            <DollarSign size={20} className="text-emerald-500" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatPrice(stats.totalRevenue, form?.settings?.pricing?.currency || 'PLN')}</p>
+            <p className="text-xs text-gray-500">Otrzymane wpłaty</p>
+          </div>
+        </div>
+      </div>
 
+      {/* Wyszukiwarka i filtry */}
+      <div className="flex flex-col md:flex-row gap-3 mb-6">
+        <div className="flex-1 relative">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Szukaj uczestnika (imię, email, telefon)..."
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
+          />
+        </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => fetchResponses(pagination.page)} disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />Odśwież
+          <button onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <Filter size={16} />Filtry
           </button>
-
+          <button onClick={() => fetchResponses(pagination.page)} disabled={loading}
+            className="p-2.5 text-gray-500 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          </button>
           <div className="relative">
             <button onClick={() => setShowExportMenu(!showExportMenu)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-accent-primary-light rounded-xl hover:bg-accent-primary transition-colors">
               <Download size={16} />Eksportuj
             </button>
             {showExportMenu && (
@@ -321,13 +399,31 @@ export default function ResponsesView({ form }) {
               </>
             )}
           </div>
-
-          <button onClick={handleDeleteAll}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
-            <Trash2 size={16} />Usuń wszystkie
-          </button>
         </div>
       </div>
+
+      {/* Filtry płatności */}
+      {showFilters && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {[
+            { id: 'all', label: 'Wszystkie' },
+            { id: 'paid', label: 'Opłacone' },
+            { id: 'partial', label: 'Częściowe' },
+            { id: 'pending', label: 'Oczekujące' }
+          ].map((f) => (
+            <button key={f.id} onClick={() => setPaymentFilter(f.id)}
+              className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                paymentFilter === f.id
+                  ? 'bg-accent-primary-lightest border-accent-primary-light text-accent-primary-dark'
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'
+              }`}>{f.label}</button>
+          ))}
+          <button onClick={handleDeleteAll}
+            className="ml-auto px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 transition-colors">
+            <Trash2 size={12} className="inline mr-1" />Usuń wszystkie
+          </button>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="overflow-x-auto">
@@ -343,7 +439,7 @@ export default function ResponsesView({ form }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {participants.map((p) => (
+              {filteredParticipants.map((p) => (
                 <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                   onClick={() => setSelectedParticipant(p)}>
                   <td className="px-4 py-3">
