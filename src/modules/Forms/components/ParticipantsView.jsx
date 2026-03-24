@@ -129,10 +129,43 @@ export default function ParticipantsView({ forms }) {
         // Rejestracja grupowa — rozwiń na poszczególnych uczestników
         if (answers._registrationMode === 'group') {
           const groupSize = (answers._participants?.length || 0) + (answers._contactPerson ? 1 : 0);
+          const breakdown = answers._priceBreakdown || {};
+          const basePerPerson = breakdown.baseUnitPrice || 0;
+          // Rabat per osoba (równy podział)
+          const discountPerPerson = groupSize > 0 ? (breakdown.discountTotal || 0) / groupSize : 0;
+          // Addons konfiguracja
+          const addonsItems = form?.settings?.addons?.items || [];
 
-          // Osoba zgłaszająca — pokazuje całą kwotę grupy
+          // Oblicz kwotę per osoba z addons
+          const calcPersonAmount = (personAddons) => {
+            let amount = basePerPerson;
+            if (personAddons) {
+              Object.entries(personAddons).forEach(([addonId, qty]) => {
+                if (qty > 0) {
+                  const addon = addonsItems.find(a => a.id === addonId);
+                  if (addon) amount += addon.price * qty;
+                }
+              });
+            }
+            return Math.max(0, amount - discountPerPerson);
+          };
+
+          // Opis addons osoby
+          const getAddonLabels = (personAddons) => {
+            if (!personAddons) return [];
+            return Object.entries(personAddons)
+              .filter(([, qty]) => qty > 0)
+              .map(([addonId]) => {
+                const addon = addonsItems.find(a => a.id === addonId);
+                return addon ? addon.name : null;
+              })
+              .filter(Boolean);
+          };
+
+          // Osoba zgłaszająca
           if (answers._contactPerson) {
             const contact = extractContactInfo(answers._contactPerson, form?.fields);
+            const personAddons = answers._contactPerson._addons || {};
             processedParticipants.push({
               ...baseParticipant,
               id: `${response.id}-contact`,
@@ -143,13 +176,16 @@ export default function ParticipantsView({ forms }) {
               answers: answers._contactPerson,
               isGroupContact: true,
               groupSize,
-              totalAmount, // Pełna kwota za grupę
+              totalAmount: calcPersonAmount(personAddons),
+              addonLabels: getAddonLabels(personAddons),
+              groupTotalAmount: totalAmount
             });
           }
 
-          // Członkowie zespołu — bez kwoty (jest przy osobie kontaktowej)
+          // Członkowie zespołu
           (answers._participants || []).forEach((participant, idx) => {
             const pContact = extractContactInfo(participant, form?.fields);
+            const personAddons = participant._addons || {};
             processedParticipants.push({
               ...baseParticipant,
               id: `${response.id}-p${idx}`,
@@ -160,7 +196,8 @@ export default function ParticipantsView({ forms }) {
               answers: participant,
               isGroupMember: true,
               groupSize,
-              totalAmount: 0, // Kwota jest przy osobie kontaktowej
+              totalAmount: calcPersonAmount(personAddons),
+              addonLabels: getAddonLabels(personAddons),
               paymentStatus: 'none'
             });
           });
@@ -626,9 +663,21 @@ export default function ParticipantsView({ forms }) {
                     </td>
                     <td className="px-4 py-3">
                       {participant.totalAmount > 0 ? (
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {formatPrice(participant.totalAmount, participant.currency)}
-                        </span>
+                        <div>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {formatPrice(participant.totalAmount, participant.currency)}
+                          </span>
+                          {participant.addonLabels?.length > 0 && (
+                            <div className="text-[10px] text-purple-500 mt-0.5">
+                              {participant.addonLabels.join(', ')}
+                            </div>
+                          )}
+                          {participant.isGroupContact && participant.groupTotalAmount > 0 && (
+                            <div className="text-[10px] text-gray-400 mt-0.5">
+                              Grupa: {formatPrice(participant.groupTotalAmount, participant.currency)}
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
