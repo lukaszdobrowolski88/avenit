@@ -551,6 +551,29 @@ export default function FieldEditor({ field, onUpdate }) {
         </div>
       )}
 
+      {/* Wartość pola eventowego — wyświetlana w nagłówku */}
+      {['location', 'date_start', 'date_end', 'time_start', 'time_end'].includes(field.type) && (
+        <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              {field.type === 'location' ? 'Adres / miejsce' :
+               field.type.includes('date') ? 'Data' : 'Godzina'}
+            </label>
+            <input
+              type={field.type.includes('date') ? 'date' : field.type.includes('time') ? 'time' : 'text'}
+              value={field.defaultValue || ''}
+              onChange={(e) => handleChange('defaultValue', e.target.value)}
+              placeholder={field.type === 'location' ? 'np. Sala główna, ul. Przykładowa 1' :
+                           field.type.includes('date') ? '' : 'np. 10:00'}
+              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Ta wartość będzie wyświetlana w nagłówku formularza
+            </p>
+          </div>
+        </div>
+      )}
+
       {field.type === 'seat_limit' && (
         <div className="space-y-4 pt-4 border-t border-blue-200 dark:border-blue-800">
           <h4 className="text-sm font-medium text-blue-700 dark:text-blue-400">
