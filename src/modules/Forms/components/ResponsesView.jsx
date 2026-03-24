@@ -60,19 +60,24 @@ export default function ResponsesView({ form }) {
     const currency = form?.settings?.pricing?.currency || 'PLN';
 
     const extractContactInfo = (answerObj) => {
-      let email = '', name = '', phone = '';
+      let email = '', firstName = '', lastName = '', phone = '';
       fields.forEach(field => {
         const value = answerObj[field.id];
         if (!value) return;
         if (field.type === 'email' && !email) email = value;
         if (field.type === 'phone' && !phone) phone = value;
-        if (field.type === 'text' && !name) {
+        if (field.type === 'text') {
           const label = field.label?.toLowerCase() || '';
-          if (label.includes('imie') || label.includes('imię') || label.includes('name') || label.includes('nazwisko')) {
-            name = value;
+          if ((label.includes('imie') || label.includes('imię')) && !label.includes('nazwisko')) {
+            if (!firstName) firstName = value;
+          } else if (label.includes('nazwisko')) {
+            if (!lastName) lastName = value;
+          } else if (label.includes('name') && !firstName) {
+            firstName = value;
           }
         }
       });
+      const name = [firstName, lastName].filter(Boolean).join(' ');
       return { email, name, phone };
     };
 

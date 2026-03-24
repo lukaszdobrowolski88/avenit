@@ -73,7 +73,8 @@ export default function ParticipantsView({ forms }) {
         // Helper: extract contact info from answers object
         const extractContactInfo = (answerObj, formFields) => {
           let email = '';
-          let name = '';
+          let firstName = '';
+          let lastName = '';
           let phone = '';
           if (formFields) {
             formFields.forEach(field => {
@@ -81,14 +82,19 @@ export default function ParticipantsView({ forms }) {
               if (!value) return;
               if (field.type === 'email' && !email) email = value;
               if (field.type === 'phone' && !phone) phone = value;
-              if (field.type === 'text' && !name) {
+              if (field.type === 'text') {
                 const label = field.label?.toLowerCase() || '';
-                if (label.includes('imie') || label.includes('imię') || label.includes('name') || label.includes('nazwisko')) {
-                  name = value;
+                if ((label.includes('imie') || label.includes('imię')) && !label.includes('nazwisko')) {
+                  if (!firstName) firstName = value;
+                } else if (label.includes('nazwisko')) {
+                  if (!lastName) lastName = value;
+                } else if (label.includes('name') && !firstName) {
+                  firstName = value;
                 }
               }
             });
           }
+          const name = [firstName, lastName].filter(Boolean).join(' ');
           return { email, name, phone };
         };
 
