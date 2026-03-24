@@ -1,7 +1,7 @@
 import { DollarSign } from 'lucide-react';
 import { formatPrice } from '../utils/fieldTypes';
 
-export default function PriceBreakdown({ breakdown, currency = 'PLN' }) {
+export default function PriceBreakdown({ breakdown, currency = 'PLN', isWaitlist = false }) {
   if (!breakdown || breakdown.grandTotal === 0) return null;
 
   const {
@@ -90,11 +90,18 @@ export default function PriceBreakdown({ breakdown, currency = 'PLN' }) {
       {/* Suma końcowa */}
       <div className={`flex items-center justify-between ${hasDetails ? 'pt-3 border-t border-green-200 dark:border-green-700' : ''}`}>
         <span className="text-base font-semibold text-gray-900 dark:text-white">
-          Do zapłaty
+          {isWaitlist ? 'Wartość' : 'Do zapłaty'}
         </span>
-        <span className="text-2xl font-bold text-green-600 dark:text-green-400">
-          {formatPrice(grandTotal, currency)}
-        </span>
+        <div className="text-right">
+          {isWaitlist && (
+            <span className="block text-xs text-orange-500 line-through mb-0.5">
+              {formatPrice(grandTotal, currency)}
+            </span>
+          )}
+          <span className={`text-2xl font-bold ${isWaitlist ? 'text-orange-500' : 'text-green-600 dark:text-green-400'}`}>
+            {isWaitlist ? 'Lista rezerwowa' : formatPrice(grandTotal, currency)}
+          </span>
+        </div>
       </div>
     </div>
   );

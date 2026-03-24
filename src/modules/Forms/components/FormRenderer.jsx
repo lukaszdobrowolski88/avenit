@@ -316,13 +316,13 @@ export default function FormRenderer({
         ...answers,
         _registrationMode: 'group',
         _isWaitlist: isWaitlistMode || undefined,
-        _contactPerson: { ...contactAnswers, _addons: isWaitlistMode ? {} : contactAddons },
+        _contactPerson: { ...contactAnswers, _addons: contactAddons },
         _participants: participants.map(p => ({
           ...p.answers,
-          _addons: isWaitlistMode ? {} : p.addons
+          _addons: p.addons
         })),
-        _registrationAddons: isWaitlistMode ? {} : registrationAddons,
-        _priceBreakdown: isWaitlistMode ? undefined : priceBreakdown,
+        _registrationAddons: registrationAddons,
+        _priceBreakdown: priceBreakdown,
         _payment: !isWaitlistMode && paymentData ? {
           method: selectedPaymentMethod,
           ...paymentData
@@ -334,9 +334,9 @@ export default function FormRenderer({
         ...answers,
         _registrationMode: isGroupEnabled ? 'individual' : undefined,
         _isWaitlist: isWaitlistMode || undefined,
-        _addons: isWaitlistMode ? {} : contactAddons,
-        _registrationAddons: isWaitlistMode ? {} : registrationAddons,
-        _priceBreakdown: isWaitlistMode ? undefined : priceBreakdown,
+        _addons: contactAddons,
+        _registrationAddons: registrationAddons,
+        _priceBreakdown: priceBreakdown,
         _payment: !isWaitlistMode && paymentData ? {
           method: selectedPaymentMethod,
           ...paymentData
@@ -699,8 +699,8 @@ export default function FormRenderer({
         </div>
       )}
 
-      {/* Dodatki per osoba (tryb indywidualny z addons) — ukryte w trybie rezerwowym */}
-      {addonsConfig.enabled && perPersonAddons.length > 0 && !isGroupMode && !isWaitlistMode && (
+      {/* Dodatki per osoba (tryb indywidualny z addons) */}
+      {addonsConfig.enabled && perPersonAddons.length > 0 && !isGroupMode && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mt-6">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
             Opcje dodatkowe
@@ -714,8 +714,8 @@ export default function FormRenderer({
         </div>
       )}
 
-      {/* Dodatki per rejestracja — ukryte w trybie rezerwowym */}
-      {addonsConfig.enabled && perRegistrationAddons.length > 0 && !isWaitlistMode && (
+      {/* Dodatki per rejestracja */}
+      {addonsConfig.enabled && perRegistrationAddons.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mt-6">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
             Opcje dodatkowe
@@ -729,22 +729,29 @@ export default function FormRenderer({
         </div>
       )}
 
-      {/* Podsumowanie ceny — ukryte w trybie listy rezerwowej */}
-      {pricing.enabled && pricing.showPriceSummary && totalPrice > 0 && !isWaitlistMode && (
+      {/* Podsumowanie ceny */}
+      {pricing.enabled && pricing.showPriceSummary && totalPrice > 0 && (
         <div className="mt-6">
           <PriceBreakdown
             breakdown={priceBreakdown}
             currency={pricing.currency || 'PLN'}
+            isWaitlist={isWaitlistMode}
           />
 
-          {pricing.paymentInstructions && (
+          {!isWaitlistMode && pricing.paymentInstructions && (
             <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
               {pricing.paymentInstructions}
             </p>
           )}
 
-          {/* Wybór metody płatności */}
-          {pricing.paymentMethods && pricing.paymentMethods.length > 0 && pricing.paymentRequired && (
+          {isWaitlistMode && (
+            <p className="mt-3 text-sm text-orange-600 dark:text-orange-400">
+              Płatność nie jest wymagana przy zapisie na listę rezerwową. W przypadku zwolnienia miejsca skontaktujemy się z Tobą.
+            </p>
+          )}
+
+          {/* Wybór metody płatności — ukryty w trybie rezerwowym */}
+          {!isWaitlistMode && pricing.paymentMethods && pricing.paymentMethods.length > 0 && pricing.paymentRequired && (
             <div className="mt-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Wybierz metodę płatności:
