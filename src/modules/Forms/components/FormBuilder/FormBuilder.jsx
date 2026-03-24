@@ -225,7 +225,15 @@ export default function FormBuilder({
       <FormSettings
         settings={settings}
         fields={fields}
-        onUpdate={setSettings}
+        onUpdate={(newSettings) => {
+          setSettings(newSettings);
+          // Auto-save do bazy po zapisaniu ustawień
+          onSave({ title, description, fields, settings: newSettings }).then(result => {
+            if (result.success) {
+              setLastSaved(new Date());
+            }
+          });
+        }}
         onClose={() => setShowSettings(false)}
       />
     );
