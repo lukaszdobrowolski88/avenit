@@ -94,17 +94,22 @@ export default function ParticipantsView({ forms }) {
         let paymentMethod = null;
 
         if (form?.settings?.pricing?.enabled) {
+          // Priorytet: _totalPrice z odpowiedzi > _priceBreakdown.grandTotal > basePrice
           if (!totalAmount) {
-            const priceField = form.fields?.find(f => f.type === 'price');
-            if (priceField?.priceConfig?.basePrice) {
-              totalAmount = priceField.priceConfig.basePrice;
+            if (answers._priceBreakdown?.grandTotal) {
+              totalAmount = answers._priceBreakdown.grandTotal;
+            } else {
+              const priceField = form.fields?.find(f => f.type === 'price');
+              if (priceField?.priceConfig?.basePrice) {
+                totalAmount = priceField.priceConfig.basePrice;
+              }
             }
           }
 
           if (answers._payment) {
             paymentMethod = answers._payment.method;
             paymentStatus = answers._payment.status === 'completed' ? 'paid' : 'pending';
-          } else if (totalAmount > 0) {
+          } else if (totalAmount > 0 && !answers._isWaitlist) {
             paymentStatus = 'pending';
           }
         }
