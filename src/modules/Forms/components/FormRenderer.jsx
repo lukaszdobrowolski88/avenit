@@ -124,10 +124,30 @@ export default function FormRenderer({
             if (field.defaultValue || field.value) info.timeEnd = field.defaultValue || field.value;
             break;
           case 'price':
-            if (field.priceConfig?.basePrice > 0) {
-              info.price = field.priceConfig.basePrice;
-              info.priceCurrency = field.priceConfig.currency || 'PLN';
-              info.priceType = field.priceConfig.pricingType;
+            if (field.priceConfig?.basePrice > 0 || field.priceConfig?.datePricing?.enabled) {
+              let price = field.priceConfig.basePrice || 0;
+              let dateTierLabel = null;
+              // Sprawdź cennik datowy
+              const dp = field.priceConfig.datePricing;
+              if (dp?.enabled && dp.tiers?.length > 0) {
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                const sorted = [...dp.tiers].filter(t => t.until && t.price != null)
+                  .sort((a, b) => new Date(a.until) - new Date(b.until));
+                for (const tier of sorted) {
+                  if (now <= new Date(tier.until + 'T23:59:59')) {
+                    price = tier.price;
+                    dateTierLabel = tier.label;
+                    break;
+                  }
+                }
+              }
+              if (price > 0) {
+                info.price = price;
+                info.priceCurrency = field.priceConfig.currency || 'PLN';
+                info.priceType = field.priceConfig.pricingType;
+                info.dateTierLabel = dateTierLabel;
+              }
             }
             break;
           case 'seat_limit':
@@ -559,6 +579,11 @@ export default function FormRenderer({
                       <DollarSign size={16} />
                       {formatPrice(eventInfo.price, eventInfo.priceCurrency)}
                       {eventInfo.priceType === 'per_person' && <span className={`font-normal ${isDarkBg ? 'text-white/60' : 'text-gray-500'}`}>/ os.</span>}
+                      {eventInfo.dateTierLabel && (
+                        <span className={`text-xs font-normal px-2 py-0.5 rounded-full ${isDarkBg ? 'bg-white/20 text-white/80' : 'bg-blue-100 text-blue-700'}`}>
+                          {eventInfo.dateTierLabel}
+                        </span>
+                      )}
                     </div>
                   )}
                   {eventInfo.maxSeats && eventInfo.showRemaining && (
