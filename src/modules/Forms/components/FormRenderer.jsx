@@ -6,7 +6,7 @@ import Przelewy24Button from './Przelewy24Button';
 import ParticipantForm from './ParticipantForm';
 import AddonSelector from './AddonSelector';
 import PriceBreakdown from './PriceBreakdown';
-import { calculateTotalPrice, calculatePriceBreakdown, formatPrice } from '../utils/fieldTypes';
+import { calculateTotalPrice, calculatePriceBreakdown, formatPrice, checkSeatAvailability } from '../utils/fieldTypes';
 
 export default function FormRenderer({
   title,
@@ -141,6 +141,13 @@ export default function FormRenderer({
   }, [fields, responseCount]);
 
   const hasEventInfo = Object.keys(eventInfo).length > 0;
+
+  // Sprawdź dostępność miejsc i tryb listy rezerwowej
+  const seatAvailability = useMemo(() => {
+    return checkSeatAvailability(fields, responseCount);
+  }, [fields, responseCount]);
+
+  const isWaitlistMode = seatAvailability.isWaitlist;
 
   const validateField = useCallback((field, value) => {
     if (field.required) {
@@ -308,31 +315,33 @@ export default function FormRenderer({
       submitData = {
         ...answers,
         _registrationMode: 'group',
-        _contactPerson: { ...contactAnswers, _addons: contactAddons },
+        _isWaitlist: isWaitlistMode || undefined,
+        _contactPerson: { ...contactAnswers, _addons: isWaitlistMode ? {} : contactAddons },
         _participants: participants.map(p => ({
           ...p.answers,
-          _addons: p.addons
+          _addons: isWaitlistMode ? {} : p.addons
         })),
-        _registrationAddons: registrationAddons,
-        _priceBreakdown: priceBreakdown,
-        _payment: paymentData ? {
+        _registrationAddons: isWaitlistMode ? {} : registrationAddons,
+        _priceBreakdown: isWaitlistMode ? undefined : priceBreakdown,
+        _payment: !isWaitlistMode && paymentData ? {
           method: selectedPaymentMethod,
           ...paymentData
         } : null,
-        _totalPrice: totalPrice
+        _totalPrice: isWaitlistMode ? 0 : totalPrice
       };
     } else {
       submitData = {
         ...answers,
         _registrationMode: isGroupEnabled ? 'individual' : undefined,
-        _addons: contactAddons,
-        _registrationAddons: registrationAddons,
-        _priceBreakdown: priceBreakdown,
-        _payment: paymentData ? {
+        _isWaitlist: isWaitlistMode || undefined,
+        _addons: isWaitlistMode ? {} : contactAddons,
+        _registrationAddons: isWaitlistMode ? {} : registrationAddons,
+        _priceBreakdown: isWaitlistMode ? undefined : priceBreakdown,
+        _payment: !isWaitlistMode && paymentData ? {
           method: selectedPaymentMethod,
           ...paymentData
         } : null,
-        _totalPrice: totalPrice
+        _totalPrice: isWaitlistMode ? 0 : totalPrice
       };
     }
 
@@ -345,8 +354,9 @@ export default function FormRenderer({
     setPaymentData(data);
   };
 
-  // Sprawdź czy płatność online jest wymagana
-  const isOnlinePaymentRequired = pricing.enabled &&
+  // Sprawdź czy płatność online jest wymagana (nie w trybie listy rezerwowej)
+  const isOnlinePaymentRequired = !isWaitlistMode &&
+    pricing.enabled &&
     pricing.paymentRequired &&
     (pricing.paymentMethods?.includes('paypal') || pricing.paymentMethods?.includes('przelewy24')) &&
     totalPrice > 0;
@@ -496,8 +506,15 @@ export default function FormRenderer({
             {eventInfo.maxSeats && eventInfo.showRemaining && (
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <Users size={16} className="text-blue-500" />
-                {eventInfo.remaining > 0 ? (
-                  <>Pozostało <span className="font-semibold text-blue-600">{eventInfo.remaining}</span> miejsc</>
+                {seatAvailability.remaining > 0 ? (
+                  <>Pozostało <span className="font-semibold text-blue-600">{seatAvailability.remaining}</span> miejsc</>
+                ) : isWaitlistMode ? (
+                  <span className="text-orange-600 dark:text-orange-400 font-semibold">
+                    Lista rezerwowa
+                    {seatAvailability.waitlistRemaining !== null && (
+                      <> — pozostało {seatAvailability.waitlistRemaining} miejsc</>
+                    )}
+                  </span>
                 ) : (
                   <span className="text-red-500 font-semibold">Brak wolnych miejsc</span>
                 )}
@@ -506,6 +523,25 @@ export default function FormRenderer({
           </div>
         )}
       </div>
+
+      {/* Banner listy rezerwowej */}
+      {isWaitlistMode && (
+        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-2xl border border-orange-200 dark:border-orange-800 p-5 mb-6">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/40 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertCircle size={20} className="text-orange-600 dark:text-orange-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-orange-800 dark:text-orange-300 mb-1">
+                Lista rezerwowa
+              </h3>
+              <p className="text-sm text-orange-700 dark:text-orange-400">
+                {seatAvailability.waitlistMessage}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Przełącznik Indywidualna / Grupowa */}
       {isGroupEnabled && (
@@ -663,8 +699,8 @@ export default function FormRenderer({
         </div>
       )}
 
-      {/* Dodatki per osoba (tryb indywidualny z addons) */}
-      {addonsConfig.enabled && perPersonAddons.length > 0 && !isGroupMode && (
+      {/* Dodatki per osoba (tryb indywidualny z addons) — ukryte w trybie rezerwowym */}
+      {addonsConfig.enabled && perPersonAddons.length > 0 && !isGroupMode && !isWaitlistMode && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mt-6">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
             Opcje dodatkowe
@@ -678,8 +714,8 @@ export default function FormRenderer({
         </div>
       )}
 
-      {/* Dodatki per rejestracja */}
-      {addonsConfig.enabled && perRegistrationAddons.length > 0 && (
+      {/* Dodatki per rejestracja — ukryte w trybie rezerwowym */}
+      {addonsConfig.enabled && perRegistrationAddons.length > 0 && !isWaitlistMode && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mt-6">
           <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-3">
             Opcje dodatkowe
@@ -693,8 +729,8 @@ export default function FormRenderer({
         </div>
       )}
 
-      {/* Podsumowanie ceny */}
-      {pricing.enabled && pricing.showPriceSummary && totalPrice > 0 && (
+      {/* Podsumowanie ceny — ukryte w trybie listy rezerwowej */}
+      {pricing.enabled && pricing.showPriceSummary && totalPrice > 0 && !isWaitlistMode && (
         <div className="mt-6">
           <PriceBreakdown
             breakdown={priceBreakdown}
@@ -863,7 +899,7 @@ export default function FormRenderer({
         )}
 
         {/* Komunikat o wyborze metody płatności */}
-        {pricing.enabled && pricing.paymentRequired && totalPrice > 0 && !selectedPaymentMethod && (
+        {!isWaitlistMode && pricing.enabled && pricing.paymentRequired && totalPrice > 0 && !selectedPaymentMethod && (
           <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
             <p className="text-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
               <CreditCard size={16} />
@@ -874,11 +910,13 @@ export default function FormRenderer({
 
         <button
           type="submit"
-          disabled={isSubmitting || !canSubmit || (pricing.enabled && pricing.paymentRequired && totalPrice > 0 && !selectedPaymentMethod)}
-          className="w-full flex items-center justify-center gap-2 py-4 px-6 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white font-medium rounded-xl
-            hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all
-            disabled:opacity-50 disabled:cursor-not-allowed"
-          style={settings?.theme?.primaryColor ? {
+          disabled={isSubmitting || !canSubmit || (!isWaitlistMode && pricing.enabled && pricing.paymentRequired && totalPrice > 0 && !selectedPaymentMethod)}
+          className={`w-full flex items-center justify-center gap-2 py-4 px-6 text-white font-medium rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+            isWaitlistMode
+              ? 'bg-gradient-to-r from-orange-500 to-amber-500 hover:shadow-lg hover:shadow-orange-500/25'
+              : 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:shadow-lg hover:shadow-accent-primary-light/25'
+          }`}
+          style={!isWaitlistMode && settings?.theme?.primaryColor ? {
             background: settings.theme.primaryColor
           } : {}}
         >
@@ -892,10 +930,10 @@ export default function FormRenderer({
               {paymentCompleted && (selectedPaymentMethod === 'paypal' || selectedPaymentMethod === 'przelewy24') && (
                 <Check size={18} className="mr-1" />
               )}
-              {pricing.enabled && totalPrice > 0 && !paymentCompleted && (
+              {pricing.enabled && totalPrice > 0 && !paymentCompleted && !isWaitlistMode && (
                 <span className="mr-2">{formatPrice(totalPrice, pricing.currency || 'PLN')} •</span>
               )}
-              {settings?.submitButtonText || 'Wyślij'}
+              {isWaitlistMode ? 'Zapisz na listę rezerwową' : (settings?.submitButtonText || 'Wyślij')}
             </>
           )}
         </button>

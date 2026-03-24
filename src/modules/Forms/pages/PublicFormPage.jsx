@@ -5,6 +5,7 @@ import { supabase } from '../../../lib/supabase';
 import FormRenderer from '../components/FormRenderer';
 import { useFormResponses } from '../hooks/useFormResponses';
 import { useFormEmails } from '../hooks/useFormEmails';
+import { checkSeatAvailability } from '../utils/fieldTypes';
 
 export default function PublicFormPage() {
   const { formId } = useParams();
@@ -43,6 +44,13 @@ export default function PublicFormPage() {
 
       if (data.closes_at && new Date(data.closes_at) < new Date()) {
         setError('form_closed');
+        return;
+      }
+
+      // Sprawdź dostępność miejsc
+      const seatCheck = checkSeatAvailability(data.fields || [], data.response_count || 0);
+      if (!seatCheck.available) {
+        setError('seats_full');
         return;
       }
 
@@ -181,6 +189,17 @@ export default function PublicFormPage() {
               </h1>
               <p className="text-gray-600">
                 Ten formularz osiągnął maksymalną liczbę odpowiedzi.
+              </p>
+            </>
+          )}
+
+          {error === 'seats_full' && (
+            <>
+              <h1 className="text-xl font-bold text-gray-900 mb-2">
+                Brak wolnych miejsc
+              </h1>
+              <p className="text-gray-600">
+                Wszystkie miejsca (w tym rezerwowe) zostały zajęte.
               </p>
             </>
           )}

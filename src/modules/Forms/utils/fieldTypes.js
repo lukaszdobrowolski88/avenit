@@ -267,7 +267,9 @@ export const FIELD_TYPES = {
       seatConfig: {
         maxSeats: null,
         showRemaining: true,
-        allowWaitlist: false
+        allowWaitlist: false,
+        waitlistSeats: null,
+        waitlistMessage: 'Miejsca podstawowe zostały wyczerpane. Możesz zapisać się na listę rezerwową.'
       }
     }
   },
@@ -680,17 +682,32 @@ export function formatPrice(amount, currency = 'PLN') {
 export function checkSeatAvailability(fields, responseCount) {
   const seatField = fields.find(f => f.type === 'seat_limit');
   if (!seatField || !seatField.seatConfig?.maxSeats) {
-    return { available: true, remaining: null };
+    return { available: true, remaining: null, isWaitlist: false };
   }
 
-  const maxSeats = seatField.seatConfig.maxSeats;
+  const config = seatField.seatConfig;
+  const maxSeats = config.maxSeats;
   const remaining = maxSeats - responseCount;
+  const allowWaitlist = config.allowWaitlist || false;
+  const waitlistSeats = config.waitlistSeats || 0;
+  const waitlistRemaining = waitlistSeats > 0
+    ? waitlistSeats - Math.max(0, responseCount - maxSeats)
+    : (allowWaitlist ? Infinity : 0);
+
+  // Czy jest na liście rezerwowej
+  const isWaitlist = remaining <= 0 && allowWaitlist && waitlistRemaining > 0;
+  // Czy w ogóle można się zapisać
+  const available = remaining > 0 || isWaitlist;
 
   return {
-    available: remaining > 0,
-    remaining: remaining,
-    maxSeats: maxSeats,
-    allowWaitlist: seatField.seatConfig.allowWaitlist || false
+    available,
+    remaining: Math.max(0, remaining),
+    maxSeats,
+    allowWaitlist,
+    isWaitlist,
+    waitlistRemaining: waitlistSeats > 0 ? Math.max(0, waitlistRemaining) : null,
+    waitlistSeats,
+    waitlistMessage: config.waitlistMessage || 'Miejsca podstawowe zostały wyczerpane. Możesz zapisać się na listę rezerwową.'
   };
 }
 
