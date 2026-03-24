@@ -553,6 +553,17 @@ export default function PaymentsView({ forms }) {
 
   return (
     <div className="space-y-6">
+      {/* Header z przyciskiem */}
+      <div className="flex items-center justify-end">
+        <button
+          onClick={handleOpenAddModal}
+          className="flex items-center gap-2 px-5 py-2.5 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 shadow-sm hover:shadow-md transition-all"
+        >
+          <Plus size={18} />
+          Dodaj płatność
+        </button>
+      </div>
+
       {/* Statystyki */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
@@ -650,7 +661,7 @@ export default function PaymentsView({ forms }) {
           </div>
 
           {/* Przyciski */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-colors ${
@@ -680,13 +691,6 @@ export default function PaymentsView({ forms }) {
             >
               <Download size={18} />
               Eksportuj
-            </button>
-            <button
-              onClick={handleOpenAddModal}
-              className="flex items-center gap-2 px-4 py-2.5 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors"
-            >
-              <Plus size={18} />
-              Dodaj płatność
             </button>
           </div>
         </div>
