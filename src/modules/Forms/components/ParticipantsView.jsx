@@ -167,11 +167,14 @@ export default function ParticipantsView({ forms }) {
           };
 
           // Status płatności per osoba
-          const getPersonPaymentStatus = (personAnswers) => {
-            if (answers._isWaitlist) return 'none';
-            if (personAnswers?._payment?.status === 'completed') return 'paid';
+          const getPersonPaymentInfo = (personAnswers) => {
+            if (answers._isWaitlist) return { status: 'none', paidAmount: 0 };
+            const payment = personAnswers?._payment;
+            const totalPaid = payment?.totalPaid || 0;
+            if (payment?.status === 'completed') return { status: 'paid', paidAmount: totalPaid };
+            if (payment?.status === 'partial') return { status: 'partial', paidAmount: totalPaid };
             const amt = calcPersonAmount(personAnswers?._addons || {});
-            return amt > 0 ? 'pending' : 'none';
+            return { status: amt > 0 ? 'pending' : 'none', paidAmount: 0 };
           };
 
           // Osoba zgłaszająca
@@ -191,7 +194,7 @@ export default function ParticipantsView({ forms }) {
               totalAmount: calcPersonAmount(personAddons),
               addonLabels: getAddonLabels(personAddons),
               groupTotalAmount: totalAmount,
-              paymentStatus: getPersonPaymentStatus(answers._contactPerson)
+              ...getPersonPaymentInfo(answers._contactPerson)
             });
           }
 
@@ -199,6 +202,7 @@ export default function ParticipantsView({ forms }) {
           (answers._participants || []).forEach((participant, idx) => {
             const pContact = extractContactInfo(participant, form?.fields);
             const personAddons = participant._addons || {};
+            const payInfo = getPersonPaymentInfo(participant);
             processedParticipants.push({
               ...baseParticipant,
               id: `${response.id}-p${idx}`,
@@ -211,7 +215,7 @@ export default function ParticipantsView({ forms }) {
               groupSize,
               totalAmount: calcPersonAmount(personAddons),
               addonLabels: getAddonLabels(personAddons),
-              paymentStatus: getPersonPaymentStatus(participant)
+              ...payInfo
             });
           });
         } else {
@@ -292,13 +296,16 @@ export default function ParticipantsView({ forms }) {
     const total = participants.length;
     const withPayment = participants.filter(p => p.totalAmount > 0).length;
     const paid = participants.filter(p => p.paymentStatus === 'paid').length;
-    const pending = participants.filter(p => p.paymentStatus === 'pending').length;
+    const pending = participants.filter(p => p.paymentStatus === 'pending' || p.paymentStatus === 'partial').length;
     const totalRevenue = participants
       .filter(p => p.paymentStatus === 'paid')
-      .reduce((sum, p) => sum + p.totalAmount, 0);
+      .reduce((sum, p) => sum + p.totalAmount, 0)
+      + participants
+      .filter(p => p.paymentStatus === 'partial')
+      .reduce((sum, p) => sum + (p.paidAmount || 0), 0);
     const pendingRevenue = participants
-      .filter(p => p.paymentStatus === 'pending')
-      .reduce((sum, p) => sum + p.totalAmount, 0);
+      .filter(p => p.paymentStatus === 'pending' || p.paymentStatus === 'partial')
+      .reduce((sum, p) => sum + p.totalAmount - (p.paidAmount || 0), 0);
 
     return { total, withPayment, paid, pending, totalRevenue, pendingRevenue };
   }, [participants]);
@@ -425,11 +432,37 @@ export default function ParticipantsView({ forms }) {
       if (fetchError) throw fetchError;
 
       const fullAnswers = responseData.answers;
-      const paymentData = {
-        status: 'completed',
-        amount: parseFloat(paymentAmount) || participant.totalAmount || 0,
+      const paidAmount = parseFloat(paymentAmount) || 0;
+      const dueAmount = participant.totalAmount || 0;
+
+      // Pobierz wcześniejsze wpłaty
+      const getExistingPayment = (personAnswers) => personAnswers?._payment || {};
+      let existingPayment;
+      if (participant.isGroupContact) {
+        existingPayment = getExistingPayment(fullAnswers._contactPerson);
+      } else if (participant.isGroupMember) {
+        const pIdx = parseInt(paymentModal.participantId.split('-p').pop());
+        existingPayment = getExistingPayment(fullAnswers._participants?.[pIdx]);
+      } else {
+        existingPayment = getExistingPayment(fullAnswers);
+      }
+
+      const previousPaid = existingPayment.totalPaid || 0;
+      const totalPaid = previousPaid + paidAmount;
+      const isFullyPaid = totalPaid >= dueAmount;
+
+      const payments = [...(existingPayment.payments || []), {
+        amount: paidAmount,
         date: paymentDate,
         method: 'manual',
+        addedAt: new Date().toISOString()
+      }];
+
+      const paymentData = {
+        status: isFullyPaid ? 'completed' : 'partial',
+        totalPaid,
+        dueAmount,
+        payments,
         updatedAt: new Date().toISOString()
       };
 
@@ -457,14 +490,15 @@ export default function ParticipantsView({ forms }) {
 
       if (error) throw error;
 
+      const newStatus = isFullyPaid ? 'paid' : 'partial';
       setParticipants(prev => prev.map(p =>
         p.id === paymentModal.participantId
-          ? { ...p, paymentStatus: 'paid', paymentMethod: 'manual' }
+          ? { ...p, paymentStatus: newStatus, paidAmount: totalPaid }
           : p
       ));
 
       if (selectedParticipant?.id === paymentModal.participantId) {
-        setSelectedParticipant(prev => ({ ...prev, paymentStatus: 'paid' }));
+        setSelectedParticipant(prev => ({ ...prev, paymentStatus: newStatus, paidAmount: totalPaid }));
       }
 
       setPaymentModal(null);
@@ -486,13 +520,25 @@ export default function ParticipantsView({ forms }) {
     });
   };
 
-  const getPaymentStatusBadge = (status) => {
+  const getPaymentStatusBadge = (status, paidAmount, dueAmount) => {
     switch (status) {
       case 'paid':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
             <CheckCircle size={12} />
             Opłacone
+          </span>
+        );
+      case 'partial':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium">
+            <AlertCircle size={12} />
+            Częściowo
+            {paidAmount > 0 && dueAmount > 0 && (
+              <span className="text-[10px] font-normal ml-0.5">
+                ({formatPrice(paidAmount, 'PLN')}/{formatPrice(dueAmount, 'PLN')})
+              </span>
+            )}
           </span>
         );
       case 'pending':
@@ -791,11 +837,11 @@ export default function ParticipantsView({ forms }) {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {getPaymentStatusBadge(participant.paymentStatus)}
+                      {getPaymentStatusBadge(participant.paymentStatus, participant.paidAmount, participant.totalAmount)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {participant.totalAmount > 0 && participant.paymentStatus !== 'paid' && (
+                        {participant.totalAmount > 0 && (participant.paymentStatus === 'pending' || participant.paymentStatus === 'partial') && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -901,7 +947,7 @@ export default function ParticipantsView({ forms }) {
                       <CreditCard size={16} />
                       Płatność
                     </div>
-                    {getPaymentStatusBadge(selectedParticipant.paymentStatus)}
+                    {getPaymentStatusBadge(selectedParticipant.paymentStatus, selectedParticipant.paidAmount, selectedParticipant.totalAmount)}
                   </div>
 
                   <div className="flex items-center justify-between">
