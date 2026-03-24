@@ -79,6 +79,20 @@ export function useFormResponses(formId) {
         .single();
 
       if (insertError) throw insertError;
+
+      // Aktualizuj response_count w formularzu
+      const { count } = await supabase
+        .from('form_responses')
+        .select('*', { count: 'exact', head: true })
+        .eq('form_id', formId);
+
+      if (count !== null) {
+        await supabase
+          .from('forms')
+          .update({ response_count: count })
+          .eq('id', formId);
+      }
+
       return { success: true, data };
     } catch (err) {
       console.error('Error submitting response:', err);
@@ -99,13 +113,23 @@ export function useFormResponses(formId) {
 
       setResponses(prev => prev.filter(r => r.id !== responseId));
       setPagination(prev => ({ ...prev, total: prev.total - 1 }));
+
+      // Aktualizuj response_count
+      const { count } = await supabase
+        .from('form_responses')
+        .select('*', { count: 'exact', head: true })
+        .eq('form_id', formId);
+      if (count !== null) {
+        await supabase.from('forms').update({ response_count: count }).eq('id', formId);
+      }
+
       return { success: true };
     } catch (err) {
       console.error('Error deleting response:', err);
       setError(err.message);
       return { success: false, error: err.message };
     }
-  }, []);
+  }, [formId]);
 
   const deleteAllResponses = useCallback(async () => {
     if (!formId) return { success: false, error: 'No form ID' };
@@ -121,6 +145,10 @@ export function useFormResponses(formId) {
 
       setResponses([]);
       setPagination(prev => ({ ...prev, total: 0 }));
+
+      // Wyzeruj response_count
+      await supabase.from('forms').update({ response_count: 0 }).eq('id', formId);
+
       return { success: true };
     } catch (err) {
       console.error('Error deleting all responses:', err);
