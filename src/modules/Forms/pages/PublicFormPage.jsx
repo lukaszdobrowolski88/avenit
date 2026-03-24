@@ -223,32 +223,23 @@ export default function PublicFormPage() {
       return { background: bgConfig.solidColor || '#ffffff' };
     }
 
-    // Gradient: jawnie ustawiony LUB domyślny (type undefined/gradient)
-    if (bgConfig.type === 'gradient' || !bgConfig.type) {
-      const g = bgConfig.gradient || {};
-      const dirMap = {
-        'to-r': 'to right',
-        'to-br': 'to bottom right',
-        'to-b': 'to bottom',
-        'to-bl': 'to bottom left',
-        'to-t': 'to top',
-        'to-tr': 'to top right',
-        'to-l': 'to left',
-        'to-tl': 'to top left'
-      };
-      const dir = dirMap[g.direction] || 'to bottom right';
-      const from = g.from || '#fdf2f8';
-      const via = g.via || '#ffffff';
-      const to = g.to || '#fff7ed';
-      return { background: `linear-gradient(${dir}, ${from}, ${via}, ${to})` };
-    }
-
-    // Domyślny gradient (dla formularzy bez ustawień layout)
-    if (form?.settings?.theme?.backgroundColor && form.settings.theme.backgroundColor !== '#ffffff') {
-      return { background: form.settings.theme.backgroundColor };
-    }
-
-    return { background: 'linear-gradient(to bottom right, rgb(253 242 248 / 0.5), white, rgb(255 247 237 / 0.5))' };
+    // Gradient — zawsze gdy nie solid i nie image
+    const g = bgConfig.gradient || {};
+    const dirMap = {
+      'to-r': 'to right',
+      'to-br': 'to bottom right',
+      'to-b': 'to bottom',
+      'to-bl': 'to bottom left',
+      'to-t': 'to top',
+      'to-tr': 'to top right',
+      'to-l': 'to left',
+      'to-tl': 'to top left'
+    };
+    const dir = dirMap[g.direction] || 'to bottom right';
+    const from = g.from || '#fdf2f8';
+    const via = g.via || '#ffffff';
+    const to = g.to || '#fff7ed';
+    return { background: `linear-gradient(${dir}, ${from}, ${via}, ${to})` };
   };
 
   // Szerokość formularza
@@ -264,43 +255,31 @@ export default function PublicFormPage() {
   const primaryColor = form?.settings?.theme?.primaryColor || null;
 
   // Konwertuj kolor hex na RGB i wygeneruj warianty
-  const getColorOverrides = () => {
-    if (!primaryColor) return {};
+  const getColorStyleTag = () => {
+    if (!primaryColor) return null;
     const hex = primaryColor.replace('#', '');
     const r = parseInt(hex.substring(0, 2), 16);
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
-    // Jaśniejsze warianty
     const lighten = (r, g, b, amount) => [
       Math.min(255, r + (255 - r) * amount),
       Math.min(255, g + (255 - g) * amount),
       Math.min(255, b + (255 - b) * amount)
     ].map(Math.round);
-    const light = [r, g, b];
     const lighter = lighten(r, g, b, 0.4);
     const lightest = lighten(r, g, b, 0.85);
     const dark = [Math.round(r * 0.7), Math.round(g * 0.7), Math.round(b * 0.7)];
     const darkest = [Math.round(r * 0.4), Math.round(g * 0.4), Math.round(b * 0.4)];
-    return {
-      '--accent-primary': `${r} ${g} ${b}`,
-      '--accent-primary-light': `${light[0]} ${light[1]} ${light[2]}`,
-      '--accent-primary-lighter': `${lighter[0]} ${lighter[1]} ${lighter[2]}`,
-      '--accent-primary-lightest': `${lightest[0]} ${lightest[1]} ${lightest[2]}`,
-      '--accent-primary-dark': `${dark[0]} ${dark[1]} ${dark[2]}`,
-      '--accent-primary-darkest': `${darkest[0]} ${darkest[1]} ${darkest[2]}`,
-      '--accent-secondary': `${r} ${g} ${b}`,
-      '--accent-secondary-light': `${light[0]} ${light[1]} ${light[2]}`
-    };
+    return `:root{--accent-primary:${r} ${g} ${b}!important;--accent-primary-light:${r} ${g} ${b}!important;--accent-primary-lighter:${lighter.join(' ')}!important;--accent-primary-lightest:${lightest.join(' ')}!important;--accent-primary-dark:${dark.join(' ')}!important;--accent-primary-darkest:${darkest.join(' ')}!important;--accent-secondary:${r} ${g} ${b}!important;--accent-secondary-light:${r} ${g} ${b}!important;--accent-secondary-lighter:${lighter.join(' ')}!important;--accent-secondary-lightest:${lightest.join(' ')}!important;--accent-secondary-dark:${dark.join(' ')}!important;--accent-secondary-darkest:${darkest.join(' ')}!important}body{background-color:transparent!important}`;
   };
 
   return (
-    <div
-      className="min-h-screen py-8 px-4 relative overflow-hidden"
-      style={{
-        ...getBackgroundStyle(),
-        ...getColorOverrides()
-      }}
-    >
+    <>
+      <style>{`body{background-color:transparent!important}${getColorStyleTag() || ''}`}</style>
+      <div
+        className="min-h-screen py-8 px-4 relative overflow-hidden"
+        style={getBackgroundStyle()}
+      >
       {/* Obrazek tła (stara ścieżka z branding) */}
       {branding.backgroundImage && (
         <>
@@ -351,5 +330,6 @@ export default function PublicFormPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
