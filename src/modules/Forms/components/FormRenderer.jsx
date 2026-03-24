@@ -670,9 +670,12 @@ export default function FormRenderer({
       )}
 
       {/* Standardowe pola (niegrupowe lub tryb indywidualny) */}
-      {(!isGroupEnabled || registrationMode === 'individual' ? fields : standardFields).length > 0 && (
+      {(() => {
+        const displayFields = (!isGroupEnabled || registrationMode === 'individual' ? fields : standardFields)
+          .filter(f => !['price', 'seat_limit', 'location', 'date_start', 'date_end', 'time_start', 'time_end'].includes(f.type));
+        return displayFields.length > 0 && (
         <div className="space-y-6">
-          {(!isGroupEnabled || registrationMode === 'individual' ? fields : standardFields).map((field) => (
+          {displayFields.map((field) => (
             <div
               key={field.id}
               id={`field-${field.id}`}
@@ -708,7 +711,8 @@ export default function FormRenderer({
             </div>
           ))}
         </div>
-      )}
+      );
+      })()}
 
       {/* Dodatki per osoba (tryb indywidualny z addons) */}
       {addonsConfig.enabled && perPersonAddons.length > 0 && !isGroupMode && (
