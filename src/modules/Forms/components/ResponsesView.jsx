@@ -623,7 +623,8 @@ export default function ResponsesView({ form }) {
                         {sp.paidAmount > 0 && sp.status !== 'paid' && (
                           <p className="text-sm text-gray-500 mt-0.5">
                             Wpłacono: <span className="font-medium text-green-600">{formatPrice(sp.paidAmount, sp.currency)}</span>
-                            <span className="mx-1">·</span>
+                          </p>
+                          <p className="text-sm text-gray-500">
                             Pozostało: <span className="font-medium text-orange-600">{formatPrice(sp.totalAmount - sp.paidAmount, sp.currency)}</span>
                           </p>
                         )}
