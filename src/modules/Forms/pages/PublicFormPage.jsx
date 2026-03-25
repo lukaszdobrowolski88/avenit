@@ -316,7 +316,7 @@ export default function PublicFormPage() {
           title={form.title}
           description={form.description}
           fields={form.fields || []}
-          settings={{ ...form.settings, _formMaxWidth: formMaxWidth }}
+          settings={{ ...form.settings, _formMaxWidth: formMaxWidth, formId: form.id }}
           onSubmit={handleSubmit}
           isSubmitting={isSubmitting}
           isSubmitted={isSubmitted}

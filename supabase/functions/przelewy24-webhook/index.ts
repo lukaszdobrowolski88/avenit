@@ -20,8 +20,8 @@ const P24_API_KEY = Deno.env.get('P24_API_KEY')!;
  * Generuje sumę kontrolną dla weryfikacji P24
  */
 async function generateVerifyChecksum(data: Record<string, string | number>): Promise<string> {
-  const values = Object.values(data).join('|');
-  const stringToHash = `${values}|${P24_CRC}`;
+  const checksumData = { ...data, crc: P24_CRC };
+  const stringToHash = JSON.stringify(checksumData);
 
   const encoder = new TextEncoder();
   const dataBuffer = encoder.encode(stringToHash);
@@ -72,9 +72,14 @@ serve(async (req) => {
 
     // Weryfikuj podpis
     const expectedSign = await generateVerifyChecksum({
+      merchantId: parseInt(merchantId),
+      posId: parseInt(posId),
       sessionId,
-      orderId,
-      amount,
+      amount: parseInt(amount),
+      originAmount: parseInt(originAmount),
+      orderId: parseInt(orderId),
+      methodId: parseInt(methodId),
+      statement,
       currency
     });
 
@@ -101,8 +106,8 @@ serve(async (req) => {
       orderId: parseInt(orderId),
       sign: await generateVerifyChecksum({
         sessionId,
-        orderId,
-        amount,
+        orderId: parseInt(orderId),
+        amount: parseInt(amount),
         currency
       })
     };

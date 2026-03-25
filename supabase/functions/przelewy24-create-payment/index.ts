@@ -1,6 +1,7 @@
 /**
  * Supabase Edge Function - Przelewy24 Create Payment
  * Tworzy sesję płatności w Przelewy24
+ * Obsługuje zarówno płatności z faktur (invoiceId/tenantId) jak i z formularzy publicznych (formId/sessionId)
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -25,8 +26,9 @@ const corsHeaders = {
  * Generuje sumę kontrolną dla P24
  */
 async function generateChecksum(data: Record<string, string | number>): Promise<string> {
-  const values = Object.values(data).join('|');
-  const stringToHash = `${values}|${P24_CRC}`;
+  // P24 wymaga JSON string z polami + crc jako input do SHA-384
+  const checksumData = { ...data, crc: P24_CRC };
+  const stringToHash = JSON.stringify(checksumData);
 
   const encoder = new TextEncoder();
   const dataBuffer = encoder.encode(stringToHash);
@@ -48,66 +50,70 @@ serve(async (req) => {
     );
 
     // Pobierz dane z requestu
+    const body = await req.json();
     const {
+      // Tryb fakturowy
       invoiceId,
       tenantId,
+      // Tryb formularzowy
+      formId,
+      sessionId: clientSessionId,
+      // Wspólne
       amount,
       description,
       email,
       returnUrl,
-      statusUrl
-    } = await req.json();
+      statusUrl,
+      urlReturn,
+      urlStatus
+    } = body;
 
-    // Walidacja
-    if (!invoiceId || !tenantId || !amount || !email) {
+    // Walidacja - wymagane: amount i email
+    if (!amount || !email) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Missing required fields: amount and email are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Generuj unikalny sessionId
-    const sessionId = `${tenantId}_${invoiceId}_${Date.now()}`;
-
-    // Przygotuj dane do sumowania kontrolnego
-    const checksumData = {
-      sessionId,
-      merchantId: parseInt(P24_MERCHANT_ID),
-      amount: amount, // w groszach
-      currency: 'PLN',
-      crc: P24_CRC
-    };
+    const sessionId = clientSessionId || `${tenantId || formId}_${invoiceId || Date.now()}_${Date.now()}`;
 
     const sign = await generateChecksum({
       sessionId,
-      merchantId: P24_MERCHANT_ID,
-      amount: amount.toString(),
+      merchantId: parseInt(P24_MERCHANT_ID),
+      amount: amount,
       currency: 'PLN'
     });
 
     // Dane transakcji dla P24
+    const finalReturnUrl = urlReturn || returnUrl || `${Deno.env.get('APP_URL')}/billing/success`;
+    const finalStatusUrl = urlStatus || statusUrl || `${Deno.env.get('SUPABASE_URL')}/functions/v1/przelewy24-webhook`;
+
     const transactionData = {
       merchantId: parseInt(P24_MERCHANT_ID),
       posId: parseInt(P24_POS_ID),
       sessionId,
       amount,
       currency: 'PLN',
-      description: description || 'Subskrypcja AppSchtomy',
+      description: description || 'Płatność AppSchtomy',
       email,
       country: 'PL',
       language: 'pl',
-      urlReturn: returnUrl || `${Deno.env.get('APP_URL')}/billing/success`,
-      urlStatus: statusUrl || `${Deno.env.get('SUPABASE_URL')}/functions/v1/przelewy24-webhook`,
+      urlReturn: finalReturnUrl,
+      urlStatus: finalStatusUrl,
       sign,
       encoding: 'UTF-8'
     };
 
     // Rejestruj transakcję w P24
+    const authString = `${P24_POS_ID}:${P24_API_KEY}`;
+
     const p24Response = await fetch(`${P24_API_URL}/api/v1/transaction/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${btoa(`${P24_POS_ID}:${P24_API_KEY}`)}`
+        'Authorization': `Basic ${btoa(authString)}`
       },
       body: JSON.stringify(transactionData)
     });
@@ -122,39 +128,50 @@ serve(async (req) => {
       );
     }
 
+    const paymentUrl = `${P24_API_URL}/trnRequest/${p24Result.data.token}`;
+
     // Zapisz transakcję w bazie
+    const insertData: Record<string, unknown> = {
+      gateway: 'przelewy24',
+      gateway_session_id: sessionId,
+      gateway_order_id: p24Result.data.token,
+      amount,
+      status: 'pending',
+      gateway_response: p24Result
+    };
+
+    if (tenantId) insertData.tenant_id = tenantId;
+    if (invoiceId) insertData.invoice_id = invoiceId;
+
     const { data: transaction, error: dbError } = await supabaseClient
       .from('payment_transactions')
-      .insert({
-        tenant_id: tenantId,
-        invoice_id: invoiceId,
-        gateway: 'przelewy24',
-        gateway_session_id: sessionId,
-        gateway_order_id: p24Result.data.token,
-        amount,
-        status: 'pending',
-        gateway_response: p24Result
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (dbError) {
       console.error('Database error:', dbError);
+      // Nie blokuj płatności jeśli zapis do bazy się nie uda - token P24 już jest
       return new Response(
-        JSON.stringify({ error: 'Failed to save transaction' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          success: true,
+          token: p24Result.data.token,
+          paymentUrl
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Aktualizuj fakturę z linkiem do płatności
-    const paymentUrl = `${P24_API_URL}/trnRequest/${p24Result.data.token}`;
-    await supabaseClient
-      .from('invoices')
-      .update({
-        payment_url: paymentUrl,
-        payment_id: p24Result.data.token
-      })
-      .eq('id', invoiceId);
+    // Aktualizuj fakturę jeśli jest invoiceId
+    if (invoiceId) {
+      await supabaseClient
+        .from('invoices')
+        .update({
+          payment_url: paymentUrl,
+          payment_id: p24Result.data.token
+        })
+        .eq('id', invoiceId);
+    }
 
     return new Response(
       JSON.stringify({
