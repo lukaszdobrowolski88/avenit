@@ -1,232 +1,207 @@
 import { useState } from 'react';
 import {
-  View,
-  TextInput,
+  Alert,
   KeyboardAvoidingView,
   Platform,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
-import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
-import { ThemedView } from '../../src/components/ThemedView';
-import { ThemedText } from '../../src/components/ThemedText';
-import { AccentButton } from '../../src/components/AccentButton';
-import { useAuth } from '../../src/contexts/AuthContext';
-import { useTheme } from '../../src/contexts/ThemeContext';
+import { useRouter } from 'expo-router';
+import { signInWithPassword, sendPasswordReset } from '../../src/lib/auth';
+import { checkTwoFactorStatus } from '../../src/lib/totp';
+import { GradientAvatar } from '../../src/components/ui/GradientAvatar';
+import { GradientButton } from '../../src/components/ui/GradientButton';
 
 export default function LoginScreen() {
-  const { signIn } = useAuth();
-  const { theme } = useTheme();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
-  async function handleLogin() {
-    if (!email.trim() || !password.trim()) {
-      setError('Wprowadź email i hasło');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Brak danych', 'Wpisz email i hasło.');
       return;
     }
-
     setLoading(true);
-    setError('');
-
-    const result = await signIn(email.trim(), password);
-
-    if (result.error) {
-      setError(result.error);
+    const trimmed = email.trim();
+    const { error } = await signInWithPassword(trimmed, password);
+    if (error) {
       setLoading(false);
+      Alert.alert('Błąd logowania', error.message);
       return;
     }
-
-    // Zapisz credentials dla biometrii
-    try {
-      await SecureStore.setItemAsync('saved_email', email.trim());
-      await SecureStore.setItemAsync('saved_password', password);
-    } catch {}
-
+    const status = await checkTwoFactorStatus(trimmed);
     setLoading(false);
-    router.replace('/(tabs)');
-  }
-
-  async function handleBiometricLogin() {
-    try {
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-
-      if (!hasHardware || !isEnrolled) return;
-
-      const savedEmail = await SecureStore.getItemAsync('saved_email');
-      const savedPassword = await SecureStore.getItemAsync('saved_password');
-
-      if (!savedEmail || !savedPassword) return;
-
-      const auth = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Zaloguj się do SCH TOMY',
-        cancelLabel: 'Anuluj',
-        fallbackLabel: 'Użyj hasła',
-      });
-
-      if (auth.success) {
-        setLoading(true);
-        setEmail(savedEmail);
-        const result = await signIn(savedEmail, savedPassword);
-        if (result.error) {
-          setError('Sesja wygasła. Zaloguj się ponownie.');
-          setLoading(false);
-        } else {
-          router.replace('/(tabs)');
-        }
-      }
-    } catch (err) {
-      console.error('Biometric error:', err);
+    if (status.enabled || status.required) {
+      router.replace({ pathname: '/(auth)/totp', params: { email: trimmed } });
+      return;
     }
-  }
+    router.replace('/(auth)/biometric');
+  };
+
+  const handleReset = async () => {
+    if (!email) {
+      Alert.alert('Wpisz email', 'Podaj adres email aby zresetować hasło.');
+      return;
+    }
+    const { error } = await sendPasswordReset(email.trim());
+    if (error) Alert.alert('Błąd', error.message);
+    else Alert.alert('Sprawdź pocztę', 'Wysłaliśmy link do resetu hasła.');
+  };
 
   return (
-    <ThemedView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1, backgroundColor: '#ffffff' }}
+    >
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.content}>
-          {/* Logo */}
-          <View style={styles.logoContainer}>
-            <View style={[styles.logoCircle, { backgroundColor: theme.colors.accent.primaryLightest }]}>
-              <ThemedText size="3xl" weight="bold" style={{ color: theme.colors.accent.primary }}>
-                SCH
-              </ThemedText>
-            </View>
-            <ThemedText size="2xl" weight="bold" style={styles.appName}>
-              SCH TOMY
-            </ThemedText>
-            <ThemedText variant="muted" size="sm">
-              Aplikacja do zarządzania kościołem
-            </ThemedText>
-          </View>
+        <View style={{ alignItems: 'center', marginBottom: 24 }}>
+          <GradientAvatar initial="S" size={80} rounded={false} />
+        </View>
 
-          {/* Formularz */}
-          <View style={styles.form}>
-            {error ? (
-              <View style={styles.errorContainer}>
-                <ThemedText size="sm" style={styles.errorText}>
-                  {error}
-                </ThemedText>
-              </View>
-            ) : null}
+        <Text
+          style={{
+            fontSize: 28,
+            color: '#0c0a09',
+            textAlign: 'center',
+            marginBottom: 6,
+            letterSpacing: -0.6,
+            fontFamily: 'Inter_700Bold',
+          }}
+        >
+          SCH TOMY
+        </Text>
+        <Text
+          style={{
+            fontSize: 14,
+            color: '#78716c',
+            textAlign: 'center',
+            marginBottom: 28,
+            fontFamily: 'Inter_500Medium',
+          }}
+        >
+          Zaloguj się do aplikacji
+        </Text>
 
+        <View
+          style={{
+            borderRadius: 20,
+            backgroundColor: '#ffffff',
+            shadowColor: '#0f172a',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.05,
+            shadowRadius: 14,
+            elevation: 2,
+          }}
+        >
+          <View
+            style={{
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: '#eef0f3',
+              padding: 20,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 12,
+                color: '#57534e',
+                marginBottom: 6,
+                fontFamily: 'Inter_600SemiBold',
+                textTransform: 'uppercase',
+                letterSpacing: 0.4,
+              }}
+            >
+              Email
+            </Text>
             <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.colors.input.background,
-                  borderColor: theme.colors.input.border,
-                  color: theme.colors.text.primary,
-                },
-              ]}
-              placeholder="Email"
-              placeholderTextColor={theme.colors.input.placeholder}
-              value={email}
-              onChangeText={setEmail}
+              style={{
+                borderWidth: 1,
+                borderColor: '#eef0f3',
+                borderRadius: 14,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 15,
+                color: '#0c0a09',
+                backgroundColor: '#fafaf9',
+                marginBottom: 14,
+                fontFamily: 'Inter_500Medium',
+              }}
               autoCapitalize="none"
+              autoComplete="email"
               keyboardType="email-address"
               textContentType="emailAddress"
-              autoComplete="email"
+              placeholder="ty@schtomy.pl"
+              placeholderTextColor="#a8a29e"
+              value={email}
+              onChangeText={setEmail}
+              editable={!loading}
             />
 
+            <Text
+              style={{
+                fontSize: 12,
+                color: '#57534e',
+                marginBottom: 6,
+                fontFamily: 'Inter_600SemiBold',
+                textTransform: 'uppercase',
+                letterSpacing: 0.4,
+              }}
+            >
+              Hasło
+            </Text>
             <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.colors.input.background,
-                  borderColor: theme.colors.input.border,
-                  color: theme.colors.text.primary,
-                },
-              ]}
-              placeholder="Hasło"
-              placeholderTextColor={theme.colors.input.placeholder}
+              style={{
+                borderWidth: 1,
+                borderColor: '#eef0f3',
+                borderRadius: 14,
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                fontSize: 15,
+                color: '#0c0a09',
+                backgroundColor: '#fafaf9',
+                marginBottom: 18,
+                fontFamily: 'Inter_500Medium',
+              }}
+              autoCapitalize="none"
+              autoComplete="password"
+              textContentType="password"
+              secureTextEntry
+              placeholder="••••••••"
+              placeholderTextColor="#a8a29e"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
-              textContentType="password"
-              autoComplete="password"
+              editable={!loading}
             />
 
-            <AccentButton
-              title="Zaloguj się"
-              onPress={handleLogin}
-              loading={loading}
-              size="lg"
-              style={styles.loginButton}
-            />
+            <View style={{ marginBottom: 12 }}>
+              <GradientButton onPress={handleLogin} loading={loading}>
+                Zaloguj
+              </GradientButton>
+            </View>
 
-            <TouchableOpacity onPress={handleBiometricLogin} style={styles.biometricButton}>
-              <ThemedText variant="secondary" size="sm">
-                Zaloguj biometrycznie
-              </ThemedText>
-            </TouchableOpacity>
+            <Pressable onPress={handleReset} disabled={loading}>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: 13,
+                  color: '#be185d',
+                  fontFamily: 'Inter_600SemiBold',
+                }}
+              >
+                Nie pamiętam hasła
+              </Text>
+            </Pressable>
           </View>
         </View>
-      </KeyboardAvoidingView>
-    </ThemedView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 48,
-  },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  appName: {
-    marginBottom: 4,
-  },
-  form: {
-    gap: 12,
-  },
-  input: {
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    fontFamily: 'Inter',
-  },
-  loginButton: {
-    marginTop: 8,
-  },
-  biometricButton: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  errorContainer: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderRadius: 8,
-    padding: 12,
-  },
-  errorText: {
-    color: '#ef4444',
-    textAlign: 'center',
-  },
-});

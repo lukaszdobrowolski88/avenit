@@ -36,3 +36,4 @@ npm-debug.log*
 
 # Lokalne pliki instalacyjne z wklejonymi kluczami — NIE commitować
 migrations/_install_*.sql
+**/supabase/.temp/

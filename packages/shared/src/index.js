@@ -1,7 +1,14 @@
 // @schtomy/shared - Shared logic for web and mobile
 
 // Color presets & theming
-export { COLOR_PRESETS, generateShades, hexToRgb, mixColor } from './lib/colorPresets.js';
+export {
+  COLOR_PRESETS,
+  generateShades,
+  hexToRgb,
+  mixColor,
+  rgbTripletToColor,
+  getPresetColors,
+} from './lib/colorPresets.js';
 
 // Tab permissions
 export { TAB_PERMISSIONS, hasTabAccess } from './utils/tabPermissions.js';

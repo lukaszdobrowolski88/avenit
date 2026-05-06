@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, clearUserCache } from '../lib/supabase';
+import { setBiometricEnabled } from '../lib/biometric';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -94,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     clearUserCache();
+    await setBiometricEnabled(false).catch(() => undefined);
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
