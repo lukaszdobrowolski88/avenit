@@ -1350,12 +1350,12 @@ export default function GlobalSettings() {
       {/* MODAL DODAWANIA UŻYTKOWNIKA (DARK MODE) */}
       {showUserModal && document.body && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 border border-white/20 dark:border-gray-700">
-            <div className="flex justify-between mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border border-white/20 dark:border-gray-700 max-h-[calc(100vh-2rem)] flex flex-col">
+            <div className="flex justify-between items-center px-6 pt-6 pb-4 flex-shrink-0">
               <h3 className="font-bold text-xl text-gray-800 dark:text-white">Użytkownik</h3>
               <button onClick={() => setShowUserModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"><X/></button>
             </div>
-            <div className="space-y-4">
+            <div className="px-6 pb-2 overflow-y-auto flex-1 min-h-0 space-y-4">
               <div>
                 <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Imię i nazwisko</label>
                 <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="Jan Kowalski" value={userForm.full_name || ''} onChange={e => setUserForm({...userForm, full_name: e.target.value})} />
@@ -1449,7 +1449,9 @@ export default function GlobalSettings() {
                   </div>
                 </div>
               )}
-              <button onClick={saveUser} disabled={isCreatingAuthUser} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-2 hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed">
+            </div>
+            <div className="px-6 py-4 flex-shrink-0 border-t border-gray-100 dark:border-gray-700">
+              <button onClick={saveUser} disabled={isCreatingAuthUser} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed">
                 {isCreatingAuthUser ? 'Tworzenie konta...' : 'Zapisz'}
               </button>
             </div>

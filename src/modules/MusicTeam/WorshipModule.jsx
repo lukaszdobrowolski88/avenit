@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { Plus, Search, Trash2, X, FileText, Music, Calendar, ChevronDown, Check, ChevronUp, User, UserX, Link as LinkIcon, Clock, History, ExternalLink, Minus, Hash, DollarSign, ChevronLeft, ChevronRight, Tag, Upload, FileDown, MessageSquare, Download, Play, Pause, Volume2, Users, FolderOpen, Package } from 'lucide-react';
 import SongForm from './SongForm';
+import { AddSongToProgramModal, ProgramsSongsManagerModal } from './ProgramSuggestionsModals';
+import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import FinanceTab from '../shared/FinanceTab';
 import WallTab from '../shared/WallTab';
 import EventsTab from '../shared/EventsTab';
@@ -900,6 +902,7 @@ const AbsenceMultiSelect = ({ options, value, onChange }) => {
 
 const ScheduleTable = ({ programs, worshipTeam, onUpdateProgram, roles, memberRoles = [], currentUser, assignments = [], onCreateAssignment, onRemoveAssignment }) => {
   const [expandedMonths, setExpandedMonths] = useState({});
+  const { getCampus } = useCampusBadge();
 
   const groupedPrograms = programs.reduce((acc, prog) => {
     if (!prog.date) return acc;
@@ -1083,7 +1086,10 @@ const ScheduleTable = ({ programs, worshipTeam, onUpdateProgram, roles, memberRo
                         return (
                           <tr key={prog.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition relative">
                             <td className="p-3 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs">
-                              {formatDateShort(prog.date)}
+                              <div className="flex flex-col gap-1 items-start">
+                                <span>{formatDateShort(prog.date)}</span>
+                                <CampusBadge campus={getCampus(prog.campus_id)} />
+                              </div>
                             </td>
                             {columns.map(col => (
                               <td key={col.key} className="p-2 relative">
@@ -1507,6 +1513,7 @@ const AudioPlayer = ({ url, name }) => {
 };
 
 function SongDetailsModal({ song, onClose, onEdit }) {
+  const { withCampusFilter, selectedCampusId } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('overview'); // overview | history | materials
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -2031,6 +2038,8 @@ export default function WorshipModule() {
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState({ email: '', name: '' });
+  const [addToProgramSong, setAddToProgramSong] = useState(null);
+  const [showProgramsManager, setShowProgramsManager] = useState(false);
 
   // Hook do zarządzania przypisaniami do służby
   const {
@@ -2562,6 +2571,7 @@ export default function WorshipModule() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
           <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">Baza Pieśni</h2>
           <div className="flex gap-2 w-full sm:w-auto">
+            <button onClick={() => setShowProgramsManager(true)} className="flex-1 sm:flex-none bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary dark:hover:text-accent-primary-light transition flex items-center justify-center gap-2"><Calendar size={16}/> Programy</button>
             <button onClick={() => setShowTagsModal(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 text-accent-primary dark:text-accent-primary-light text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-accent-primary-lighter dark:border-accent-primary-dark hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/60 dark:hover:to-accent-secondary-darkest/60 transition flex items-center justify-center gap-2"><Tag size={16}/> <span className="hidden sm:inline">Zarządzaj</span> Tagi</button>
             <button onClick={() => { setSongForm({}); setShowSongModal(true); }} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-secondary to-accent-primary text-white text-sm px-4 lg:px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-secondary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> <span className="hidden sm:inline">Dodaj</span> Pieśń</button>
           </div>
@@ -2638,6 +2648,7 @@ export default function WorshipModule() {
                   </td>
                   <td className="p-4 text-right flex justify-end gap-2">
                     <button onClick={() => setShowSongDetails(s)} className="text-gray-800 dark:text-gray-300 font-semibold px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">Szczegóły</button>
+                    <button onClick={() => setAddToProgramSong(s)} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-primary-dark dark:hover:text-accent-primary font-medium transition flex items-center gap-1" title="Dodaj do programu jako sugerowaną pieśń"><Calendar size={14}/> Do programu</button>
                     <button onClick={() => { setSongForm(s); setShowSongModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">Edytuj</button>
                     <button onClick={() => deleteSong(s.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">Usuń</button>
                   </td>
@@ -3176,6 +3187,20 @@ export default function WorshipModule() {
           </div>
         </div>,
         document.body
+      )}
+
+      {addToProgramSong && (
+        <AddSongToProgramModal
+          song={addToProgramSong}
+          onClose={() => setAddToProgramSong(null)}
+        />
+      )}
+
+      {showProgramsManager && (
+        <ProgramsSongsManagerModal
+          songs={songs}
+          onClose={() => setShowProgramsManager(false)}
+        />
       )}
     </div>
   );

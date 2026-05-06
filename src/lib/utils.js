@@ -15,7 +15,51 @@ const formatDateFull = (dateString) => {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 };
 
-const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
+export const DEFAULT_PDF_OPTIONS = {
+  sections: {
+    schedule: true,
+    teams: true,
+    teamWorship: true,
+    teamMedia: true,
+    teamAtmosfera: true,
+    teamScena: true,
+    teamSzkolka: true,
+    songs: true,
+    programNotes: true,
+  },
+  scheduleColumns: {
+    time: true,             // długość elementu (mm:ss)
+    person: true,
+    details: true,
+    songKey: true,
+  },
+  songDetails: {
+    tempo: true,
+    meter: true,
+    lyrics: true,
+    chords: true,
+  },
+  pageSize: 'A4',           // 'A4' | 'Letter'
+  orientation: 'p',         // 'p' (portrait) | 'l' (landscape)
+  fontSize: 12,             // base body font size in pt
+  showLogo: true,
+  showCampus: true,         // pokaż nazwę kampusu w nagłówku
+  colorAccents: true,       // when false, mute the gold accent throughout
+  // Wstrzykiwane przez wywołującego (nie ma sensu w modalu):
+  campusName: '',           // nazwa kampusu z bazy (np. "Piotrków Trybunalski")
+  fileName: '',             // pełna nazwa pliku bez rozszerzenia
+};
+
+const mergePdfOptions = (options = {}) => ({
+  ...DEFAULT_PDF_OPTIONS,
+  ...options,
+  sections: { ...DEFAULT_PDF_OPTIONS.sections, ...(options.sections || {}) },
+  scheduleColumns: { ...DEFAULT_PDF_OPTIONS.scheduleColumns, ...(options.scheduleColumns || {}) },
+  songDetails: { ...DEFAULT_PDF_OPTIONS.songDetails, ...(options.songDetails || {}) },
+});
+
+const getPDFHtmlContent = (program, songsMap, teamRoles = {}, options = {}) => {
+  const opts = mergePdfOptions(options);
   let songCounter = 0;
   const songNumberMap = {};
 
@@ -30,20 +74,24 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
 
   // --- STYLES & COMPONENTS ---
   
-  const colors = {
-    // Główny motyw (Plan, Pieśni) - SCH TOMY Gold
+  const colors = opts.colorAccents ? {
     primary: '#a08847',      // Gold 600
     primaryLight: '#f5f0e3', // Gold 50
     primaryBorder: '#ddd0b0',// Gold 200
-
-    // Motyw Sekcji (Zespoły) - SCH TOMY Dark Gold
     sectionAccent: '#8a7340', // Dark Gold
-
-    // Ogólne teksty - SLATE
-    textMain: '#1e293b',     // Slate 800
-    textMuted: '#64748b',    // Slate 500
-    border: '#e2e8f0',       // Slate 200
-    bgGray: '#f8fafc'        // Slate 50
+    textMain: '#1e293b',
+    textMuted: '#64748b',
+    border: '#e2e8f0',
+    bgGray: '#f8fafc'
+  } : {
+    primary: '#475569',      // Slate 600
+    primaryLight: '#f1f5f9', // Slate 100
+    primaryBorder: '#cbd5e1',// Slate 300
+    sectionAccent: '#475569',
+    textMain: '#1e293b',
+    textMuted: '#64748b',
+    border: '#e2e8f0',
+    bgGray: '#f8fafc'
   };
 
   // Funkcja do kolorowania słów kluczowych w akordach
@@ -60,6 +108,40 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
   };
 
   const renderScheduleTable = () => {
+    const showTime = opts.scheduleColumns.time;
+    const showPerson = opts.scheduleColumns.person;
+    const showDetails = opts.scheduleColumns.details;
+    const showKey = opts.scheduleColumns.songKey;
+
+    const formatRowTime = (seconds) => {
+      const total = Number(seconds) || 0;
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      return `${m}:${String(s).padStart(2, '0')}`;
+    };
+
+    // Dynamiczne kolumny: Czas | Element | Osoba | Szczegóły
+    const cols = [];
+    if (showTime) cols.push({ key: 'time', label: 'Długość' });
+    cols.push({ key: 'element', label: 'Element' });
+    if (showPerson) cols.push({ key: 'person', label: 'Osoba Odpowiedzialna' });
+    if (showDetails) cols.push({ key: 'details', label: 'Szczegóły / Pieśni' });
+
+    const widthMap = (() => {
+      // Pełne 4 kolumny: 10/20/30/40
+      if (showTime && showPerson && showDetails) return { time: '10%', element: '20%', person: '30%', details: '40%' };
+      if (!showTime && showPerson && showDetails) return { element: '20%', person: '35%', details: '45%' };
+      if (showTime && !showPerson && showDetails) return { time: '12%', element: '28%', details: '60%' };
+      if (showTime && showPerson && !showDetails) return { time: '12%', element: '28%', person: '60%' };
+      if (!showTime && !showPerson && showDetails) return { element: '30%', details: '70%' };
+      if (!showTime && showPerson && !showDetails) return { element: '30%', person: '70%' };
+      if (showTime && !showPerson && !showDetails) return { time: '15%', element: '85%' };
+      return { element: '100%' };
+    })();
+
+    const thStyle = `padding: 8px 12px; text-align: left; font-weight: 700; font-size: 10px; color: ${colors.textMuted}; text-transform: uppercase; letter-spacing: 0.8px; border-top: 1px solid ${colors.border}; border-bottom: 1px solid ${colors.border}; font-family: 'Roboto', sans-serif; vertical-align: middle;`;
+    const tdBase = `padding: 8px 12px 10px 12px; border-bottom: 1px solid ${colors.border}; vertical-align: middle; word-wrap: break-word;`;
+
     return `
       <div style="margin-bottom: 40px;">
         <div style="display: flex; align-items: center; margin-bottom: 16px; border-bottom: 2px solid ${colors.primary}; padding-bottom: 8px;">
@@ -70,49 +152,34 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
         <table style="width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed;">
           <thead>
             <tr style="background-color: ${colors.bgGray};">
-              <th style="width: 20%; padding: 8px 12px; text-align: left; font-weight: 700; font-size: 10px; color: ${colors.textMuted}; text-transform: uppercase; letter-spacing: 0.8px; border-top: 1px solid ${colors.border}; border-bottom: 1px solid ${colors.border}; font-family: 'Roboto', sans-serif; vertical-align: middle;">Element</th>
-              <th style="width: 35%; padding: 8px 12px; text-align: left; font-weight: 700; font-size: 10px; color: ${colors.textMuted}; text-transform: uppercase; letter-spacing: 0.8px; border-top: 1px solid ${colors.border}; border-bottom: 1px solid ${colors.border}; font-family: 'Roboto', sans-serif; vertical-align: middle;">Osoba Odpowiedzialna</th>
-              <th style="width: 45%; padding: 8px 12px; text-align: left; font-weight: 700; font-size: 10px; color: ${colors.textMuted}; text-transform: uppercase; letter-spacing: 0.8px; border-top: 1px solid ${colors.border}; border-bottom: 1px solid ${colors.border}; font-family: 'Roboto', sans-serif; vertical-align: middle;">Szczegóły / Pieśni</th>
+              ${cols.map(c => `<th style="width: ${widthMap[c.key]}; ${thStyle}">${c.label}</th>`).join('')}
             </tr>
           </thead>
           <tbody>
-            ${program.schedule?.map((row, idx) => `
+            ${program.schedule?.map((row) => `
               <tr style="border-bottom: 1px solid ${colors.border};">
-                
-                <!-- KOLUMNA 1: ELEMENT (Przesunięcie -5px) -->
-                <td style="padding: 8px 12px 10px 12px; border-bottom: 1px solid ${colors.border}; color: ${colors.textMain}; font-weight: 600; font-size: 12px; font-family: 'Roboto', sans-serif; vertical-align: middle; word-wrap: break-word;">
+                ${showTime ? `
+                <td style="${tdBase} color: ${colors.textMuted}; font-size: 11px; font-family: 'Roboto', sans-serif; font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; padding-right: 16px;">
                   <span style="display: inline-block; position: relative; top: -5px;">
-                    ${row.element || '-'}
+                    ${formatRowTime(row.duration)}
+                  </span>
+                </td>` : ''}
+                <td style="${tdBase} color: ${colors.textMain}; font-weight: 600; font-size: 12px; font-family: 'Roboto', sans-serif;">
+                  <span style="display: inline-block; position: relative; top: -5px;">
+                    ${row.element || row.title || '-'}
                   </span>
                 </td>
-
-                <!-- KOLUMNA 2: OSOBA (Przesunięcie -5px wewnątrz plakietki) -->
-                <td style="padding: 8px 12px 10px 12px; border-bottom: 1px solid ${colors.border}; vertical-align: middle; word-wrap: break-word;">
+                ${showPerson ? `
+                <td style="${tdBase}">
                    ${row.person ? `
-                    <span style="
-                        display: inline-block; 
-                        background-color: #f1f5f9; 
-                        color: #334155; 
-                        border: 1px solid #e2e8f0; 
-                        border-radius: 4px; 
-                        padding: 4px 10px 4px 10px; 
-                        font-size: 11px; 
-                        font-weight: 600; 
-                        font-family: 'Roboto', sans-serif; 
-                        vertical-align: middle;
-                    ">
-                        <span style="display: inline-block; position: relative; top: -5px;">
-                            ${row.person}
-                        </span>
+                    <span style="display: inline-block; background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 10px; font-size: 11px; font-weight: 600; font-family: 'Roboto', sans-serif; vertical-align: middle;">
+                        <span style="display: inline-block; position: relative; top: -5px;">${row.person}</span>
                     </span>
-                   ` : `
-                    <span style="display: inline-block; position: relative; top: -5px; color: #cbd5e1; font-size: 11px;">-</span>
-                   `}
-                </td>
-
-                <!-- KOLUMNA 3: SZCZEGÓŁY / PIEŚNI -->
-                <td style="padding: 8px 12px 10px 12px; border-bottom: 1px solid ${colors.border}; vertical-align: middle;">
-                  ${(row.element || '').toLowerCase().includes('uwielbienie') && row.selectedSongs?.length > 0 ? 
+                   ` : `<span style="display: inline-block; position: relative; top: -5px; color: #cbd5e1; font-size: 11px;">-</span>`}
+                </td>` : ''}
+                ${showDetails ? `
+                <td style="${tdBase}">
+                  ${(row.element || '').toLowerCase().includes('uwielbienie') && row.selectedSongs?.length > 0 ?
                     `
                     <div style="display: flex; flex-direction: column; gap: 3px;">
                       ${row.selectedSongs.map((s) => {
@@ -120,37 +187,46 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
                         const songNum = songNumberMap[s.songId];
                         return song ? `
                           <div style="display: flex; align-items: center; gap: 8px;">
-                            
-                            <!-- NUMER PIEŚNI: Kółko zostaje, cyfra leci -5px do góry -->
                             <span style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; background-color: ${colors.primary}; color: white; border-radius: 50%; font-size: 9px; font-weight: 700;">
                                 <span style="position: relative; top: -5px;">${songNum}</span>
                             </span>
-                            
-                            <!-- TYTUŁ PIEŚNI: Leci -5px do góry -->
                             <span style="font-size: 12px; font-weight: 500; color: ${colors.textMain}; font-family: 'Roboto', sans-serif;">
                               <span style="position: relative; top: -5px;">${song.title}</span>
                             </span>
-                            
-                            <!-- TONACJA: Tło zostaje, tekst leci -5px do góry -->
+                            ${showKey ? `
                             <span style="background-color: ${colors.primaryLight}; color: ${colors.primary}; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 700; border: 1px solid ${colors.primaryBorder};">
                                 <span style="position: relative; top: -5px;">${s.key}</span>
-                            </span>
-
+                            </span>` : ''}
                           </div>
                         ` : '';
                       }).join('')}
-                    </div>` 
+                    </div>`
                     : `
-                    <!-- ZWYKŁE SZCZEGÓŁY: Przesunięcie -5px -->
                     <span style="display: inline-block; position: relative; top: -5px; color: ${colors.textMuted}; font-size: 12px; font-family: 'Roboto', sans-serif;">
                         ${row.details || '-'}
                     </span>
                     `}
-                </td>
+                </td>` : ''}
               </tr>
             `).join('') || ''}
           </tbody>
         </table>
+      </div>
+    `;
+  };
+
+  const renderProgramNotes = () => {
+    if (!opts.sections.programNotes) return '';
+    const notes = (program.notes || program.globalNotes || '').trim();
+    if (!notes) return '';
+    const escaped = notes
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    return `
+      <div style="margin-top: 24px; padding: 16px 18px; background: ${colors.bgGray}; border-left: 4px solid ${colors.primary}; border-radius: 6px;">
+        <h3 style="font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 700; color: ${colors.textMuted}; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 8px 0;">Notatka do programu</h3>
+        <div style="font-family: 'Roboto', sans-serif; font-size: 12px; color: ${colors.textMain}; white-space: pre-wrap; line-height: 1.5;">${escaped}</div>
       </div>
     `;
   };
@@ -226,14 +302,14 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
     }
 
     const sectionConfigs = [
-      { title: 'Atmosfera Team', data: program.atmosfera_team, fields: atmosferaFields },
-      { title: 'MediaTeam', data: program.produkcja, fields: mediaFields },
-      { title: 'Scena', data: scenaData, fields: scenaFields },
-      { title: 'Szkółka Niedzielna', data: program.szkolka, fields: szkolkaFields },
-      { title: 'Zespół Uwielbienia', data: program.zespol, fields: worshipFields }
+      { title: 'Atmosfera Team', data: program.atmosfera_team, fields: atmosferaFields, enabled: opts.sections.teamAtmosfera },
+      { title: 'MediaTeam', data: program.produkcja, fields: mediaFields, enabled: opts.sections.teamMedia },
+      { title: 'Scena', data: scenaData, fields: scenaFields, enabled: opts.sections.teamScena },
+      { title: 'Szkółka Niedzielna', data: program.szkolka, fields: szkolkaFields, enabled: opts.sections.teamSzkolka },
+      { title: 'Zespół Uwielbienia', data: program.zespol, fields: worshipFields, enabled: opts.sections.teamWorship }
     ];
 
-    return sectionConfigs.map(section => {
+    return sectionConfigs.filter(s => s.enabled).map(section => {
       const filledFields = section.fields.filter(f => section.data?.[f.key]?.trim()).map(f => ({ label: f.label, value: section.data?.[f.key] }));
       return renderSectionCard(section.title, filledFields);
     }).filter(s => s).join('');
@@ -255,9 +331,37 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
 
     if (allSongs.length === 0) return '';
 
-    return allSongs.map((song) => `
+    const showLyrics = opts.songDetails.lyrics;
+    const showChords = opts.songDetails.chords;
+    const showTempo = opts.songDetails.tempo;
+    const showMeter = opts.songDetails.meter;
+
+    return allSongs.map((song) => {
+      const bodyCols = [];
+      if (showLyrics) bodyCols.push(`
+          <div>
+            <div style="background: white; border: 1px solid ${colors.border}; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden;">
+                <div style="background: ${colors.bgGray}; padding: 10px 14px; border-bottom: 1px solid ${colors.border};">
+                    <h3 style="font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 700; color: ${colors.textMuted}; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">Tekst</h3>
+                </div>
+                <div style="font-family: 'Roboto', sans-serif; font-size: 11px; line-height: 1.4; color: ${colors.textMain}; white-space: pre-wrap; padding: 14px;">${(song.lyrics || '').trim() || '<span style="color:#9ca3af; font-style:italic;">Brak tekstu</span>'}</div>
+            </div>
+          </div>`);
+      if (showChords) bodyCols.push(`
+          <div>
+            <div style="background: white; border: 1px solid ${colors.border}; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden;">
+                <div style="background: ${colors.primaryLight}; padding: 10px 14px; border-bottom: 1px solid ${colors.primaryBorder};">
+                    <h3 style="font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 700; color: ${colors.primary}; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">Akordy</h3>
+                </div>
+                <div style="padding: 14px; font-size: 11px; line-height: 1.4; color: ${colors.textMain}; white-space: pre-wrap; font-family: 'Roboto', sans-serif; font-weight: 600;">${formatChordsText((song.finalChords || '').trim())}</div>
+            </div>
+          </div>`);
+
+      // Pomijamy całą stronę pieśni jeśli nic nie ma być pokazane (poza nagłówkiem) - zachowujemy nagłówek tylko gdy choć jeden szczegół włączony
+      if (bodyCols.length === 0) return '';
+
+      return `
       <div style="page-break-before: always; page-break-inside: avoid; padding: 20px 0 40px 0;">
-        <!-- Song Header -->
         <div style="border-bottom: 1px solid ${colors.border}; padding-bottom: 20px; margin-bottom: 24px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
@@ -271,12 +375,12 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
                         <div style="font-size: 10px; text-transform: uppercase; color: ${colors.textMuted}; font-weight: 600; letter-spacing: 0.5px;">Tonacja</div>
                         <div style="font-size: 18px; font-weight: 700; color: ${colors.primary};">${song.selectedKey || '-'}</div>
                      </div>
-                     ${song.tempo ? `
+                     ${showTempo && song.tempo ? `
                      <div style="background: ${colors.bgGray}; border: 1px solid ${colors.border}; padding: 8px 16px; border-radius: 8px; text-align: center;">
                         <div style="font-size: 10px; text-transform: uppercase; color: ${colors.textMuted}; font-weight: 600; letter-spacing: 0.5px;">Tempo</div>
                         <div style="font-size: 18px; font-weight: 700; color: ${colors.textMain};">${song.tempo}</div>
                      </div>` : ''}
-                     ${song.meter ? `
+                     ${showMeter && song.meter ? `
                      <div style="background: ${colors.bgGray}; border: 1px solid ${colors.border}; padding: 8px 16px; border-radius: 8px; text-align: center;">
                         <div style="font-size: 10px; text-transform: uppercase; color: ${colors.textMuted}; font-weight: 600; letter-spacing: 0.5px;">Metrum</div>
                         <div style="font-size: 18px; font-weight: 700; color: ${colors.textMain};">${song.meter}</div>
@@ -285,29 +389,11 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-          <!-- Lyrics Card -->
-          <div>
-            <div style="background: white; border: 1px solid ${colors.border}; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden;">
-                <div style="background: ${colors.bgGray}; padding: 10px 14px; border-bottom: 1px solid ${colors.border};">
-                    <h3 style="font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 700; color: ${colors.textMuted}; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">Tekst</h3>
-                </div>
-                <div style="font-family: 'Roboto', sans-serif; font-size: 11px; line-height: 1.4; color: ${colors.textMain}; white-space: pre-wrap; padding: 14px;">${(song.lyrics || '').trim() || '<span style="color:#9ca3af; font-style:italic;">Brak tekstu</span>'}</div>
-            </div>
-          </div>
-
-          <!-- Chords Card -->
-          <div>
-            <div style="background: white; border: 1px solid ${colors.border}; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden;">
-                <div style="background: ${colors.primaryLight}; padding: 10px 14px; border-bottom: 1px solid ${colors.primaryBorder};">
-                    <h3 style="font-family: 'Roboto', sans-serif; font-size: 11px; font-weight: 700; color: ${colors.primary}; text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">Akordy</h3>
-                </div>
-                <div style="padding: 14px; font-size: 11px; line-height: 1.4; color: ${colors.textMain}; white-space: pre-wrap; font-family: 'Roboto', sans-serif; font-weight: 600;">${formatChordsText((song.finalChords || '').trim())}</div>
-            </div>
-          </div>
+        <div style="display: grid; grid-template-columns: ${bodyCols.length === 2 ? '1fr 1fr' : '1fr'}; gap: 20px;">
+          ${bodyCols.join('')}
         </div>
       </div>
-    `).join('');
+    `;}).join('');
   };
 
   return `
@@ -417,21 +503,24 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
 
 
       <div class="container">
+        ${opts.sections.schedule ? `
         <!-- STRONA 1 -->
         <div class="page-1">
           <div class="header">
             <div class="header-top">
                 <div class="header-content">
-                    <div class="subtitle">App SCH TOMY</div>
-                    <h1>Program nabożeństwa</h1>
+                    ${opts.showCampus && opts.campusName ? `<div class="subtitle">${opts.campusName}</div>` : ''}
+                    <h1>${program.title || 'Program nabożeństwa'}</h1>
                 </div>
                 <div class="date-badge"><span>${formatDateFull(program.date)}</span></div>
             </div>
           </div>
           ${renderScheduleTable()}
-        </div>
+          ${renderProgramNotes()}
+        </div>` : ''}
 
 
+        ${opts.sections.teams ? `
         <!-- STRONA 2 -->
         <div class="sections-wrapper">
            <div style="margin-bottom: 32px;">
@@ -439,19 +528,22 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}) => {
                 <p style="color: ${colors.textMuted}; font-size: 14px;">Szczegółowy podział obowiązków na dzisiejsze nabożeństwo.</p>
            </div>
           ${renderSections()}
-        </div>
+        </div>` : ''}
 
 
+        ${opts.sections.songs ? `
         <!-- STRONY 3+ -->
         ${renderSongsPages()}
+        ` : ''}
       </div>
     </body>
     </html>
   `;
 };
 
-export const generatePDF = async (program, songsMap, teamRoles = {}) => {
-  const htmlContent = getPDFHtmlContent(program, songsMap, teamRoles);
+export const generatePDF = async (program, songsMap, teamRoles = {}, options = {}) => {
+  const opts = mergePdfOptions(options);
+  const htmlContent = getPDFHtmlContent(program, songsMap, teamRoles, opts);
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlContent, 'text/html');
@@ -466,9 +558,10 @@ export const generatePDF = async (program, songsMap, teamRoles = {}) => {
     return text && text.length > 50; // Minimalna długość treści pieśni
   });
 
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  const a4Width = 210;
-  const a4Height = 297;
+  const format = opts.pageSize === 'Letter' ? 'letter' : 'a4';
+  const pdf = new jsPDF(opts.orientation === 'l' ? 'l' : 'p', 'mm', format);
+  const a4Width = pdf.internal.pageSize.getWidth();
+  const a4Height = pdf.internal.pageSize.getHeight();
   let pageNumber = 1;
 
   const renderSection = async (element) => {
@@ -496,14 +589,14 @@ export const generatePDF = async (program, songsMap, teamRoles = {}) => {
     contentDiv.innerHTML = element.innerHTML;
     container.appendChild(contentDiv);
 
-    // STYLIZACJA KONTENERA - FIX DARK MODE & FONT
     container.style.position = 'absolute';
     container.style.left = '-10000px';
-    container.style.width = '210mm';
+    container.style.width = `${a4Width}mm`;
     container.style.backgroundColor = '#ffffff';
     container.style.color = '#1e293b';
     container.style.padding = '20px';
     container.style.fontFamily = "'Roboto', sans-serif";
+    container.style.fontSize = `${opts.fontSize}px`;
 
     document.body.appendChild(container);
 
@@ -526,11 +619,7 @@ export const generatePDF = async (program, songsMap, teamRoles = {}) => {
       const imgData = canvas.toDataURL('image/jpeg', 0.85);
       const imgHeight = (canvas.height * a4Width) / canvas.width;
 
-      // Sprawdź czy wysokość nie jest zbyt mała (pusta strona)
-      if (imgHeight < 50) {
-        console.log('Pomijam stronę - zbyt mała wysokość');
-        return;
-      }
+      if (imgHeight < 50) return;
 
       if (pageNumber > 1) pdf.addPage();
 
@@ -556,20 +645,15 @@ export const generatePDF = async (program, songsMap, teamRoles = {}) => {
     if (page1Div) await renderSection(page1Div);
     if (sectionsDiv) await renderSection(sectionsDiv);
 
-    // Renderuj wszystkie pieśni razem, każda na osobnej stronie PDF
     if (songPages.length > 0) {
       for (const songPage of songPages) {
-        // Sprawdź czy pieśń ma jakąkolwiek treść przed renderowaniem
         const hasContent = songPage.textContent?.trim().length > 0;
-        if (hasContent) {
-          await renderSection(songPage);
-        } else {
-          console.log('Pomijam pustą pieśń');
-        }
+        if (hasContent) await renderSection(songPage);
       }
     }
 
-    pdf.save(`${program.name || 'Program'}.pdf`);
+    const baseName = (opts.fileName || program.title || program.name || 'Program').toString().trim();
+    pdf.save(`${baseName || 'Program'}.pdf`);
     return pdf;
   } catch (error) {
     console.error('Error generating PDF:', error);
@@ -634,13 +718,14 @@ export const generatePDFBase64 = async (program, songsMap) => {
   });
 };
 
-export const downloadPDF = async (program, songsMap, teamRoles = {}) => {
-  return generatePDF(program, songsMap, teamRoles);
+export const downloadPDF = async (program, songsMap, teamRoles = {}, options = {}) => {
+  return generatePDF(program, songsMap, teamRoles, options);
 };
 
-export const savePDFToSupabase = async (program, songsMap, teamRoles = {}) => {
+export const savePDFToSupabase = async (program, songsMap, teamRoles = {}, options = {}) => {
   try {
-    const htmlContent = getPDFHtmlContent(program, songsMap, teamRoles);
+    const opts = mergePdfOptions(options);
+    const htmlContent = getPDFHtmlContent(program, songsMap, teamRoles, opts);
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlContent, 'text/html');
@@ -655,24 +740,20 @@ export const savePDFToSupabase = async (program, songsMap, teamRoles = {}) => {
       return text && text.length > 50; // Minimalna długość treści pieśni
     });
 
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const a4Width = 210;
-    const a4Height = 297;
+    const format = opts.pageSize === 'Letter' ? 'letter' : 'a4';
+    const pdf = new jsPDF(opts.orientation === 'l' ? 'l' : 'p', 'mm', format);
+    const a4Width = pdf.internal.pageSize.getWidth();
+    const a4Height = pdf.internal.pageSize.getHeight();
     let pageNumber = 1;
 
     const renderSection = async (element) => {
       if (!element) return;
 
-      // Sprawdź czy element ma jakąś treść (nie jest pusty)
       const textContent = element.textContent?.trim();
-      if (!textContent || textContent.length === 0) {
-        console.log('Pomijam pusty element');
-        return;
-      }
+      if (!textContent || textContent.length === 0) return;
 
       const container = document.createElement('div');
 
-      // Skopiuj pełny HTML razem ze stylami
       const wrapper = document.createElement('div');
       wrapper.innerHTML = htmlContent;
       const styleTag = wrapper.querySelector('style');
@@ -685,14 +766,14 @@ export const savePDFToSupabase = async (program, songsMap, teamRoles = {}) => {
       contentDiv.innerHTML = element.innerHTML;
       container.appendChild(contentDiv);
 
-      // FIX DARK MODE
       container.style.position = 'absolute';
       container.style.left = '-10000px';
-      container.style.width = '210mm';
+      container.style.width = `${a4Width}mm`;
       container.style.backgroundColor = '#ffffff';
       container.style.color = '#1e293b';
       container.style.padding = '20px';
       container.style.fontFamily = "'Roboto', sans-serif";
+      container.style.fontSize = `${opts.fontSize}px`;
 
       document.body.appendChild(container);
 

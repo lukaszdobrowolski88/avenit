@@ -5,7 +5,7 @@ import {
   Save, FileText, Presentation, X, Calendar,
   ChevronDown, GripVertical, Search, Check, ChevronUp,
   User, UserX, ChevronLeft, ChevronRight,
-  Mail, Loader2, Music, Trash2, AlertTriangle
+  Mail, Loader2, Music, Trash2, AlertTriangle, Type, Paperclip
 } from 'lucide-react';
 import { downloadPDF, savePDFToSupabase } from '../../lib/utils';
 import { generatePPT } from '../../lib/ppt';
@@ -375,7 +375,7 @@ const MultiSelect = ({ label, options, value, onChange, absentMembers = [] }) =>
           <span className="text-gray-400 dark:text-gray-500 text-sm">Wybierz osoby...</span>
         ) : (
           selectedItems.map((item, idx) => (
-            <span key={idx} className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-lg text-xs font-medium border border-accent-primary-lighter dark:border-accent-primary-dark flex items-center gap-1">
+            <span key={idx} className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary-dark dark:text-accent-primary-light px-2 py-0.5 rounded-lg text-xs font-medium border border-accent-primary-lighter dark:border-accent-primary-dark flex items-center gap-1">
               {item}
               <span
                 onClick={(e) => { e.stopPropagation(); toggleSelection(item); }}
@@ -411,7 +411,7 @@ const MultiSelect = ({ label, options, value, onChange, absentMembers = [] }) =>
                 key={person.id}
                 className={`px-4 py-2 text-sm cursor-pointer flex items-center justify-between transition
                   ${isAbsent ? 'bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-600 cursor-not-allowed' : 'hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 text-gray-700 dark:text-gray-300'}
-                  ${isSelected && !isAbsent ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary dark:text-accent-primary-light font-medium' : ''}
+                  ${isSelected && !isAbsent ? 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 text-accent-primary-dark dark:text-accent-primary-light font-medium' : ''}
                 `}
                 onClick={() => toggleSelection(person.full_name, isAbsent)}
               >
@@ -527,7 +527,7 @@ const SortableSongItem = ({ item, idx, songDef, onRemove, onChangeKey }) => {
       </div>
 
       <div className="flex items-center gap-2 flex-1">
-        <span className="text-accent-primary dark:text-accent-primary-light font-medium text-xs">{idx + 1}.</span>
+        <span className="text-accent-primary-dark dark:text-accent-primary-light font-medium text-xs">{idx + 1}.</span>
         <span className="text-gray-700 dark:text-gray-200 text-sm truncate">{songDef.title}</span>
       </div>
 
@@ -821,7 +821,7 @@ const DynamicTeamSection = ({ title, dataKey, program, setProgram, roles, teamMe
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{title}</h3>
+        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary-dark dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{title}</h3>
       </div>
       <div className="space-y-4">
         {teamMembers.length > 0 ? (
@@ -967,7 +967,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Szkółka Niedzielna</h3>
+        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary-dark dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Szkółka Niedzielna</h3>
       </div>
       <div className="space-y-4">
         <div>
@@ -1144,7 +1144,7 @@ const DynamicScenaSection = ({
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Scena</h3>
+        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary-dark dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Scena</h3>
       </div>
       <div className="space-y-4">
         {allFields.map(field => {
@@ -1213,7 +1213,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Dane z modułu Małe SCH TOMY
+  // Dane z modułu Małe SchWro
   const [kidsGroups, setKidsGroups] = useState([]);
   const [kidsTeachers, setKidsTeachers] = useState([]);
 
@@ -1365,12 +1365,26 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
     }
   };
 
-  const handleSaveAndUploadPDF = async () => {
+  const [showPdfMenu, setShowPdfMenu] = useState(false);
+  const pdfMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (pdfMenuRef.current && !pdfMenuRef.current.contains(e.target)) {
+        setShowPdfMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSaveAndUploadPDF = async (songPagesMode = 'lyrics') => {
     if (!program || !program.date) {
       alert('Najpierw wybierz datę programu.');
       return;
     }
 
+    setShowPdfMenu(false);
     setIsLoading(true);
 
     try {
@@ -1387,8 +1401,8 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
         teachingSpeakers: teachingSpeakers
       };
 
-      await downloadPDF(program, freshSongsMap, teamRolesForPDF);
-      const result = await savePDFToSupabase(program, freshSongsMap, teamRolesForPDF);
+      await downloadPDF(program, freshSongsMap, teamRolesForPDF, songPagesMode);
+      const result = await savePDFToSupabase(program, freshSongsMap, teamRolesForPDF, songPagesMode);
 
       if (result.success) {
         alert('PDF został pobrany i zapisany w chmurze!');
@@ -1444,15 +1458,51 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
             </div>
           </div>
           <div className="flex flex-wrap gap-2 lg:gap-3 w-full lg:w-auto">
-            <button
-              onClick={handleSaveAndUploadPDF}
-              disabled={isLoading}
-              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-accent-primary bg-accent-primary-lightest hover:bg-accent-primary-lighter rounded-lg transition-colors border border-accent-primary-lighter font-medium text-sm disabled:opacity-50"
-              title="Zapisz PDF"
-            >
-              {isLoading ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
-              <span className="hidden sm:inline">PDF</span>
-            </button>
+            <div className="relative flex-1 lg:flex-none" ref={pdfMenuRef}>
+              <button
+                onClick={() => setShowPdfMenu(!showPdfMenu)}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-accent-primary bg-accent-primary-lightest hover:bg-accent-primary-lighter rounded-lg transition-colors border border-accent-primary-lighter font-medium text-sm disabled:opacity-50"
+                title="Generuj PDF"
+              >
+                {isLoading ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
+                <span className="hidden sm:inline">PDF</span>
+                <ChevronDown size={14} />
+              </button>
+              {showPdfMenu && (
+                <div className="absolute right-0 bottom-full mb-1 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1">
+                  <button
+                    onClick={() => handleSaveAndUploadPDF('lyrics')}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <Type size={16} className="text-accent-primary-light" />
+                    Z tekstami i akordami
+                  </button>
+                  <button
+                    onClick={() => handleSaveAndUploadPDF('attachments')}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <FileText size={16} className="text-accent-secondary-light" />
+                    Z załącznikami PDF
+                  </button>
+                  <button
+                    onClick={() => handleSaveAndUploadPDF('both')}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <FileText size={16} className="text-purple-500" />
+                    Teksty + załączniki pieśni
+                  </button>
+                  <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                  <button
+                    onClick={() => handleSaveAndUploadPDF('custom')}
+                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <Paperclip size={16} className="text-green-500" />
+                    Z własnymi załącznikami
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               onClick={handleGeneratePPT}
               className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-accent-secondary bg-accent-secondary-lightest hover:bg-accent-secondary-lighter rounded-lg transition-colors border border-accent-secondary-lighter font-medium text-sm"
@@ -1536,7 +1586,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
           {/* Zespół Uwielbienia */}
           <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-4 lg:p-6 hover:shadow-xl transition relative z-50">
             <div className="flex justify-between items-center mb-4 lg:mb-6">
-              <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Zespół Uwielbienia</h3>
+              <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary-dark dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Zespół Uwielbienia</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
               {(worshipRoles.length > 0

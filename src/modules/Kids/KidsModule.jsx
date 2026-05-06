@@ -13,6 +13,7 @@ import EquipmentTab from '../shared/EquipmentTab';
 import CheckinTab from './checkin/CheckinTab';
 import HouseholdManager from './components/HouseholdManager';
 import CustomSelect from '../../components/CustomSelect';
+import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { useUserRole } from '../../hooks/useUserRole';
 import { hasTabAccess } from '../../utils/tabPermissions';
@@ -240,6 +241,7 @@ const AbsenceMultiSelect = ({ options, value, onChange }) => {
 // --- TABELA GRAFIKU ---
 const ScheduleTable = ({ programs, teachers, groups, onUpdateProgram }) => {
   const [expandedMonths, setExpandedMonths] = useState({});
+  const { getCampus } = useCampusBadge();
   const groupedPrograms = programs.reduce((acc, prog) => { if (!prog.date) return acc; const d = new Date(prog.date); const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; if (!acc[k]) acc[k] = []; acc[k].push(prog); return acc; }, {});
   const sortedMonths = Object.keys(groupedPrograms).sort().reverse();
   useEffect(() => { setExpandedMonths(prev => ({ ...prev, [new Date().toISOString().slice(0, 7)]: true })); }, []);
@@ -275,7 +277,12 @@ const ScheduleTable = ({ programs, teachers, groups, onUpdateProgram }) => {
                       const abs = prog.szkolka?.absencja ? prog.szkolka.absencja.split(',').map(s=>s.trim()).filter(Boolean) : [];
                       return (
                         <tr key={prog.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                          <td className="p-4 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs border-r border-gray-100 dark:border-gray-800">{new Date(prog.date).toLocaleDateString('pl-PL', {day:'2-digit', month:'2-digit', year:'numeric'})}</td>
+                          <td className="p-4 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs border-r border-gray-100 dark:border-gray-800">
+                            <div className="flex flex-col gap-1 items-start">
+                              <span>{new Date(prog.date).toLocaleDateString('pl-PL', {day:'2-digit', month:'2-digit', year:'numeric'})}</span>
+                              <CampusBadge campus={getCampus(prog.campus_id)} />
+                            </div>
+                          </td>
                           <td className="p-2 border-r border-gray-100 dark:border-gray-800"><input className="w-full bg-transparent rounded px-2 py-1.5 text-xs outline-none font-semibold text-accent-primary dark:text-accent-primary-light placeholder-accent-primary-lighter dark:placeholder-gray-600 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 focus:bg-accent-primary-lightest dark:focus:bg-accent-primary-darkest/20 transition" placeholder="Temat..." defaultValue={prog.szkolka?.temat || ''} onBlur={e => updateField(prog.id, 'temat', e.target.value)} /></td>
                           {dynamicColumns.map(c => (<td key={c.id} className="p-2 border-r border-gray-100 dark:border-gray-800 relative"><TableMultiSelect options={teachers} value={prog.szkolka?.[c.id] || ''} onChange={v => updateRole(prog.id, c.id, v)} absentMembers={abs} /></td>))}
                           <td className="p-2 border-r border-gray-100 dark:border-gray-800 relative"><AbsenceMultiSelect options={teachers} value={prog.szkolka?.absencja || ''} onChange={v => updateField(prog.id, 'absencja', v)} /></td>

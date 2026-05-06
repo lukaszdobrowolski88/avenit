@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
+import { useCampus } from '../../contexts/CampusContext';
+
 import * as LucideIcons from 'lucide-react';
 
 const {
   Plus, Search, History, ArrowUpDown, Copy, Trash2,
   ChevronUp, ChevronDown, Calendar, X, Edit3, GripVertical,
-  Settings, ToggleLeft, ToggleRight, Palette
+  Settings, ToggleLeft, ToggleRight, Palette, MapPin
 } = LucideIcons;
 
 // Dynamiczna ikona z lucide-react
@@ -29,6 +31,13 @@ const ALL_SECTIONS = [
 export default function ProgramsList() {
   const navigate = useNavigate();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
+  const { campuses } = useCampus();
+  const campusById = useMemo(() => {
+    const map = {};
+    for (const c of campuses) map[c.id] = c;
+    return map;
+  }, [campuses]);
+  const showCampus = !selectedCampusId && campuses.length > 0;
   const [programs, setPrograms] = useState([]);
   const [programTypes, setProgramTypes] = useState([]);
   const [filter, setFilter] = useState('');
@@ -73,7 +82,7 @@ export default function ProgramsList() {
     const newProgram = {
       ...rest,
       date: new Date().toISOString().split('T')[0],
-      campus_id: campusIdForInsert
+      campus_id: campusIdForInsert,
     };
     const { data } = await supabase.from('programs').insert([newProgram]).select();
     if (data?.[0]) navigate(`/programs/${data[0].id}`);
@@ -165,30 +174,51 @@ export default function ProgramsList() {
   };
 
   // --- Components ---
-  const ProgramCard = ({ p, typeColor }) => (
-    <div
-      onClick={() => navigate(`/programs/${p.id}`)}
-      className="px-4 py-3 rounded-xl cursor-pointer transition group bg-white/70 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700/50 hover:shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
-    >
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="w-1.5 h-8 rounded-full" style={{ background: typeColor || 'var(--color-accent-primary)' }} />
-          <div>
-            <div className="font-semibold text-sm text-gray-800 dark:text-white">
-              {p.title || formatDateFull(p.date)}
+  const ProgramCard = ({ p, typeColor }) => {
+    const campus = showCampus ? campusById[p.campus_id] : null;
+    return (
+      <div
+        onClick={() => navigate(`/programs/${p.id}`)}
+        className="px-4 py-3 rounded-xl cursor-pointer transition group bg-white/70 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700/50 hover:shadow-sm border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
+      >
+        <div className="flex justify-between items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-1.5 h-8 rounded-full flex-shrink-0" style={{ background: typeColor || '#ec4899' }} />
+            <div className="min-w-0">
+              <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">
+                {p.title || formatDateFull(p.date)}
+              </div>
+              <div className="text-xs text-gray-400 dark:text-gray-500 truncate">
+                {p.title ? formatDateFull(p.date) + ' · ' : ''}{p.schedule?.length || 0} elementów
+              </div>
             </div>
-            <div className="text-xs text-gray-400 dark:text-gray-500">
-              {p.title ? formatDateFull(p.date) + ' · ' : ''}{p.schedule?.length || 0} elementów
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {campus && (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-gray-100 dark:bg-gray-700/60 text-gray-600 dark:text-gray-300"
+                style={campus.color ? { background: `${campus.color}1a`, color: campus.color } : undefined}
+                title={`Kampus: ${campus.name}`}
+              >
+                <MapPin size={11} />
+                {campus.name}
+              </span>
+            )}
+            {!campus && showCampus && p.campus_id == null && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-gray-100 dark:bg-gray-700/60 text-gray-400 dark:text-gray-500" title="Brak przypisanego kampusu">
+                <MapPin size={11} />
+                Bez kampusu
+              </span>
+            )}
+            <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
+              <button onClick={(e) => handleDuplicate(p, e)} className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition" title="Duplikuj"><Copy size={14} /></button>
+              <button onClick={(e) => handleDelete(p.id, e)} className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-lg hover:bg-red-100 transition" title="Usuń"><Trash2 size={14} /></button>
             </div>
           </div>
         </div>
-        <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
-          <button onClick={(e) => handleDuplicate(p, e)} className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition" title="Duplikuj"><Copy size={14} /></button>
-          <button onClick={(e) => handleDelete(p.id, e)} className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-lg hover:bg-red-100 transition" title="Usuń"><Trash2 size={14} /></button>
-        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const TypeSection = ({ type }) => {
     const typePrograms = getProgramsByType(type.id);

@@ -12,6 +12,7 @@ import EquipmentTab from './shared/EquipmentTab';
 import RolesTab from '../components/RolesTab';
 import CustomSelect from '../components/CustomSelect';
 import ResponsiveTabs from '../components/ResponsiveTabs';
+import { CampusBadge, useCampusBadge } from '../components/CampusBadge';
 import { useUserRole } from '../hooks/useUserRole';
 import { hasTabAccess } from '../utils/tabPermissions';
 import { useCampusQuery } from '../hooks/useCampusQuery';
@@ -227,6 +228,7 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
 // --- TABLE COMPONENT ---
 
 const ScheduleTable = ({ programs, team, onUpdateProgram, roles, memberRoles = [] }) => {
+  const { getCampus } = useCampusBadge();
   const [expandedMonths, setExpandedMonths] = useState({});
 
   const groupedPrograms = programs.reduce((acc, prog) => {
@@ -331,7 +333,10 @@ const ScheduleTable = ({ programs, team, onUpdateProgram, roles, memberRoles = [
                       .map((prog) => (
                         <tr key={prog.id} className="hover:bg-white/60 dark:hover:bg-gray-700/30 transition relative">
                           <td className="p-3 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs">
-                            {formatDateShort(prog.date)}
+                            <div className="flex flex-col gap-1 items-start">
+                              <span>{formatDateShort(prog.date)}</span>
+                              <CampusBadge campus={getCampus(prog.campus_id)} />
+                            </div>
                           </td>
                           {columns.map(col => (
                             <td key={col.key} className="p-2 relative">

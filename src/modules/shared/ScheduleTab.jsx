@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { ChevronUp, ChevronDown, Check, UserX } from 'lucide-react';
+import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -121,6 +122,7 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
 
 // Główny komponent grafiku
 export default function ScheduleTab({ moduleKey, moduleName }) {
+  const { getCampus } = useCampusBadge();
   const [programs, setPrograms] = useState([]);
   const [members, setMembers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -353,7 +355,10 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                           .map((prog) => (
                             <tr key={prog.id} className="hover:bg-white/60 dark:hover:bg-gray-700/30 transition relative">
                               <td className="p-3 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs">
-                                {formatDateShort(prog.date)}
+                                <div className="flex flex-col gap-1 items-start">
+                                  <span>{formatDateShort(prog.date)}</span>
+                                  <CampusBadge campus={getCampus(prog.campus_id)} />
+                                </div>
                               </td>
                               {columns.map(col => (
                                 <td key={col.key} className="p-2 relative">

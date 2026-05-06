@@ -12,6 +12,7 @@ import WallTab from '../shared/WallTab';
 import MaterialsTab from '../shared/MaterialsTab';
 import CustomDatePicker from '../../components/CustomDatePicker';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 
 // ================== TABLE SELECT COMPONENT ==================
 
@@ -134,6 +135,7 @@ const TableSelect = ({ options, value, onChange, placeholder = 'Wybierz...' }) =
 // ================== SCHEDULE TABLE ==================
 
 const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
+  const { getCampus } = useCampusBadge();
   const [expandedMonths, setExpandedMonths] = useState({});
 
   const groupedPrograms = programs.reduce((acc, prog) => {
@@ -233,7 +235,10 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
                       .map((prog) => (
                         <tr key={prog.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition relative">
                           <td className="p-3 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs">
-                            {formatDateShort(prog.date)}
+                            <div className="flex flex-col gap-1 items-start">
+                              <span>{formatDateShort(prog.date)}</span>
+                              <CampusBadge campus={getCampus(prog.campus_id)} />
+                            </div>
                           </td>
                           {columns.map(col => (
                             <td key={col.key} className="p-2 relative">

@@ -8,17 +8,17 @@ import {
   ChevronDown, GripVertical, Search, X, Check,
   ChevronLeft, ChevronRight, Mail, Loader2, AlertTriangle, UserX, ArrowLeft,
   Music, Type, Image, Clock, MoreHorizontal, FileText as NoteIcon,
-  Info, User, Mic2
+  Info, User, Mic2, Paperclip, Upload, Settings
 } from 'lucide-react';
-import { downloadPDF, savePDFToSupabase } from '../../lib/utils';
+import { downloadPDF, savePDFToSupabase, DEFAULT_PDF_OPTIONS } from '../../lib/utils';
 import { generatePPT } from '../../lib/ppt';
 import { exportToProPresenter } from '../../lib/propresenter';
+import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
+import { useCampusQuery } from '../../hooks/useCampusQuery';
+import { useCampus } from '../../contexts/CampusContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { useCampusQuery } from '../../hooks/useCampusQuery';
-import GraphicsOverride from './components/GraphicsOverride';
-import SimpleRichEditor from '../../components/SimpleRichEditor';
 
 const PROGRAM_ELEMENTS = [
   'Wstęp', 'Uwielbienie', 'Modlitwa', 'Czytanie', 'Kazanie',
@@ -374,7 +374,7 @@ const MultiSelect = ({ label, options, value, onChange, absentMembers = [] }) =>
   );
 };
 
-const SongSelector = ({ songs, onSelect }) => {
+const SongSelector = ({ songs, onSelect, suggestions = [] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const wrapperRef = useRef(null);
@@ -391,7 +391,28 @@ const SongSelector = ({ songs, onSelect }) => {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [isOpen]);
 
-  const filteredSongs = songs.filter(s => s.title.toLowerCase().includes(search.toLowerCase()));
+  // Build a Map: song_id -> suggestion (kept in original sort order)
+  const suggestionMap = new Map();
+  suggestions.forEach(sug => suggestionMap.set(sug.song_id, sug));
+
+  const matchSearch = (s) => {
+    const q = search.toLowerCase();
+    if (!q) return true;
+    return (s.title || '').toLowerCase().includes(q) ||
+           (s.author || '').toLowerCase().includes(q);
+  };
+
+  const suggestedSongs = suggestions
+    .map(sug => {
+      const song = songs.find(s => s.id === sug.song_id);
+      if (!song) return null;
+      return { song, suggestion: sug };
+    })
+    .filter(x => x && matchSearch(x.song));
+
+  const otherSongs = songs
+    .filter(s => !suggestionMap.has(s.id) && matchSearch(s))
+    .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
 
   return (
     <div className="relative w-full" ref={wrapperRef}>
@@ -399,14 +420,14 @@ const SongSelector = ({ songs, onSelect }) => {
         className="w-full px-3 py-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border border-accent-primary-lighter dark:border-accent-primary-dark rounded-lg text-sm text-accent-primary-dark dark:text-accent-primary-lighter font-medium flex items-center justify-between cursor-pointer hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 transition"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span>+ Wybierz pieśń...</span>
+        <span>+ Wybierz pieśń{suggestions.length > 0 ? ` (${suggestions.length} sugerowanych)` : '...'}</span>
         <ChevronDown size={16} className="text-accent-primary-light" />
       </div>
 
       {isOpen && coords.width > 0 && document.body && createPortal(
         <div
             id="song-selector-portal"
-            className="fixed z-[9999] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-60 flex flex-col overflow-hidden"
+            className="fixed z-[9999] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-80 flex flex-col overflow-hidden"
             style={{
               top: coords.openUpward ? 'auto' : `${coords.top}px`,
               bottom: coords.openUpward ? `${window.innerHeight - coords.top + 4}px` : 'auto',
@@ -426,24 +447,68 @@ const SongSelector = ({ songs, onSelect }) => {
               />
             </div>
           </div>
-          <div className="overflow-y-auto flex-1 max-h-48 custom-scrollbar">
-            {filteredSongs.length === 0 ? (
+          <div className="overflow-y-auto flex-1 max-h-64 custom-scrollbar">
+            {suggestedSongs.length === 0 && otherSongs.length === 0 ? (
               <div className="p-3 text-xs text-gray-400 text-center">Brak wyników</div>
             ) : (
-              filteredSongs.map(s => (
-                <div
-                  key={s.id}
-                  className="px-4 py-2 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex justify-between items-center border-b border-gray-50 dark:border-gray-800 last:border-0"
-                  onClick={() => {
-                    onSelect(s);
-                    setIsOpen(false);
-                    setSearch('');
-                  }}
-                >
-                  <span className="font-medium">{s.title}</span>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700">{s.key}</span>
-                </div>
-              ))
+              <>
+                {suggestedSongs.length > 0 && (
+                  <>
+                    <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest/60 dark:bg-accent-primary-darkest/20 border-b border-accent-primary-lighter dark:border-accent-primary-darkest/40 flex items-center gap-1.5">
+                      <Music size={11} />
+                      Sugerowane do programu
+                    </div>
+                    {suggestedSongs.map(({ song: s, suggestion: sug }) => (
+                      <div
+                        key={`sug-${s.id}`}
+                        className="px-4 py-2 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 cursor-pointer text-sm text-gray-700 dark:text-gray-300 border-b border-gray-50 dark:border-gray-800 bg-accent-primary-lightest/30 dark:bg-accent-primary-darkest/10"
+                        onClick={() => {
+                          onSelect(s, sug);
+                          setIsOpen(false);
+                          setSearch('');
+                        }}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{s.title}</div>
+                            {sug.note && (
+                              <div className="text-[11px] text-accent-secondary dark:text-accent-secondary-light truncate mt-0.5 italic">
+                                {sug.note}
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-[10px] font-bold text-accent-primary-dark dark:text-accent-primary-light bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 px-1.5 py-0.5 rounded border border-accent-primary-lighter dark:border-accent-primary-dark shrink-0">
+                            {sug.song_key || s.key}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {otherSongs.length > 0 && (
+                  <>
+                    {suggestedSongs.length > 0 && (
+                      <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800">
+                        Wszystkie pieśni
+                      </div>
+                    )}
+                    {otherSongs.map(s => (
+                      <div
+                        key={s.id}
+                        className="px-4 py-2 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 cursor-pointer text-sm text-gray-700 dark:text-gray-300 flex justify-between items-center border-b border-gray-50 dark:border-gray-800 last:border-0"
+                        onClick={() => {
+                          onSelect(s, null);
+                          setIsOpen(false);
+                          setSearch('');
+                        }}
+                      >
+                        <span className="font-medium">{s.title}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700">{s.key}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
             )}
           </div>
         </div>,
@@ -686,7 +751,56 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
 
 // --- ITEM EDIT PANEL (Side panel like Planning Center) ---
 
-const ItemEditPanel = ({ item, songs, worshipTeam = [], mediaTeam = [], onUpdate, onClose, onDelete }) => {
+// Combobox z autouzupełnianiem dla osoby odpowiedzialnej
+const PersonCombobox = ({ value, onChange, members = [], placeholder = 'Wpisz imię i nazwisko...' }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (isOpen && wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isOpen]);
+
+  const query = (value || '').toLowerCase().trim();
+  const filtered = query
+    ? members.filter(m => (m.full_name || '').toLowerCase().includes(query))
+    : members;
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <input
+        type="text"
+        value={value || ''}
+        onChange={(e) => { onChange(e.target.value); setIsOpen(true); }}
+        onFocus={() => setIsOpen(true)}
+        placeholder={placeholder}
+        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80 rounded-xl text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter dark:focus:border-accent-primary-dark outline-none transition"
+      />
+      {isOpen && filtered.length > 0 && (
+        <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl">
+          {filtered.map(member => (
+            <button
+              key={member.id}
+              type="button"
+              onClick={() => { onChange(member.full_name); setIsOpen(false); }}
+              className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 transition flex items-center gap-2"
+            >
+              <User size={14} className="text-gray-400" />
+              {member.full_name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], mediaTeam = [], onUpdate, onClose, onDelete }) => {
   if (!item) return null;
 
   const [activeTab, setActiveTab] = useState('details');
@@ -769,7 +883,7 @@ const ItemEditPanel = ({ item, songs, worshipTeam = [], mediaTeam = [], onUpdate
                   <div className="text-xs text-gray-500 dark:text-gray-400">{selectedSong.artist || ''}{selectedSong.key ? ` · ${selectedSong.key}` : ''}</div>
                 </div>
                 <button
-                  onClick={() => { handleChange('songId', null); handleChange('songKey', null); handleChange('title', ''); }}
+                  onClick={() => onUpdate({ ...item, songId: null, songKey: null, title: '' })}
                   className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition shrink-0"
                   title="Zmień pieśń"
                 >
@@ -779,10 +893,18 @@ const ItemEditPanel = ({ item, songs, worshipTeam = [], mediaTeam = [], onUpdate
             ) : (
               <SongSelector
                 songs={songs}
-                onSelect={(song) => {
-                  handleChange('songId', song.id);
-                  handleChange('songKey', song.key);
-                  handleChange('title', song.title);
+                suggestions={songSuggestions}
+                onSelect={(song, suggestion) => {
+                  const updated = {
+                    ...item,
+                    songId: song.id,
+                    songKey: (suggestion && suggestion.song_key) || song.key,
+                    title: song.title,
+                  };
+                  if (suggestion && suggestion.note && !item.notes) {
+                    updated.notes = suggestion.note;
+                  }
+                  onUpdate(updated);
                 }}
               />
             )}
@@ -804,6 +926,62 @@ const ItemEditPanel = ({ item, songs, worshipTeam = [], mediaTeam = [], onUpdate
                       {k}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+            {/* Własne załączniki PDF */}
+            {selectedSong && (
+              <div className="mt-4">
+                <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <Paperclip size={12} />
+                  Załączniki PDF do programu
+                </label>
+                <div className="space-y-2">
+                  {(item.customAttachments || []).map((att, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/20 border border-accent-secondary-lighter/60 dark:border-accent-secondary-dark/40 rounded-lg px-3 py-2">
+                      <FileText size={14} className="text-accent-secondary-light shrink-0" />
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate flex-1">{att.name}</span>
+                      <button
+                        onClick={() => {
+                          const updated = [...(item.customAttachments || [])];
+                          updated.splice(i, 1);
+                          handleChange('customAttachments', updated);
+                        }}
+                        className="p-1 text-gray-400 hover:text-red-500 rounded transition shrink-0"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  <label className="flex items-center justify-center gap-2 px-3 py-2.5 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-accent-secondary-light hover:bg-accent-secondary-lightest/50 dark:hover:border-accent-secondary-dark dark:hover:bg-accent-secondary-darkest/10 transition text-gray-400 hover:text-accent-secondary-light">
+                    <Upload size={14} />
+                    <span className="text-xs font-medium">Dodaj PDF</span>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 10 * 1024 * 1024) {
+                          alert('Plik jest za duży (max 10MB)');
+                          return;
+                        }
+                        try {
+                          const path = `program_attachments/${Date.now()}_${Math.random().toString(36).slice(2)}.pdf`;
+                          const { error } = await supabase.storage.from('public-assets').upload(path, file);
+                          if (error) throw error;
+                          const { data: urlData } = supabase.storage.from('public-assets').getPublicUrl(path);
+                          const newAtt = { name: file.name, url: urlData.publicUrl, date: new Date().toISOString() };
+                          handleChange('customAttachments', [...(item.customAttachments || []), newAtt]);
+                        } catch (err) {
+                          console.error('Upload error:', err);
+                          alert('Błąd uploadu pliku');
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
                 </div>
               </div>
             )}
@@ -927,12 +1105,11 @@ const ItemEditPanel = ({ item, songs, worshipTeam = [], mediaTeam = [], onUpdate
                 <User size={12} />
                 Osoba odpowiedzialna
               </label>
-              <input
-                type="text"
-                value={item.person || ''}
-                onChange={(e) => handleChange('person', e.target.value)}
+              <PersonCombobox
+                value={item.person}
+                onChange={(val) => handleChange('person', val)}
+                members={worshipTeam}
                 placeholder="Wpisz imię i nazwisko..."
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80 rounded-xl text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter dark:focus:border-accent-primary-dark outline-none transition"
               />
             </div>
 
@@ -1696,6 +1873,202 @@ const TemplateModal = ({ isOpen, onClose, templates, onLoad, onDelete }) => {
   );
 };
 
+// --- MODAL: OPCJE WYDRUKU PDF ---
+
+function PrintOptionsCard({ title, children, className = '' }) {
+  return (
+    <div className={`border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800/40 overflow-hidden ${className}`}>
+      <div className="px-4 py-2 bg-accent-primary-lightest/60 dark:bg-accent-primary-darkest/30 border-b border-accent-primary-lighter/50 dark:border-gray-700">
+        <div className="text-[11px] font-bold text-accent-primary dark:text-accent-primary-light uppercase tracking-wider">
+          {title}
+        </div>
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
+function PrintCheckbox({ checked, onChange, label, disabled = false, sub = false }) {
+  return (
+    <label className={`flex items-center gap-2 text-sm select-none ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer text-gray-700 dark:text-gray-200'} ${sub ? 'pl-6' : ''}`}>
+      <input
+        type="checkbox"
+        disabled={disabled}
+        checked={!!checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-accent-primary focus:ring-accent-primary"
+      />
+      {label}
+    </label>
+  );
+}
+
+function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGenerate, isLoading }) {
+  const setSection = (k, v) => setPrintOptions(o => ({ ...o, sections: { ...o.sections, [k]: v } }));
+  const setColumn  = (k, v) => setPrintOptions(o => ({ ...o, scheduleColumns: { ...o.scheduleColumns, [k]: v } }));
+  const setSongDt  = (k, v) => setPrintOptions(o => ({ ...o, songDetails: { ...o.songDetails, [k]: v } }));
+  const setRoot    = (k, v) => setPrintOptions(o => ({ ...o, [k]: v }));
+
+  const applyPreset = (patch) => setPrintOptions(o => ({
+    ...DEFAULT_PDF_OPTIONS,
+    ...o,
+    ...patch,
+    sections: { ...DEFAULT_PDF_OPTIONS.sections, ...(patch.sections || {}) },
+  }));
+
+  const PRESETS = [
+    { id: 'full', label: 'Pełny', desc: 'Plan + zespoły + pieśni', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections } } },
+    { id: 'planTeams', label: 'Plan + zespoły', desc: 'Bez stron pieśni', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, songs: false } } },
+    { id: 'planOnly', label: 'Sam plan', desc: 'Tylko plan szczegółowy', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, teams: false, songs: false } } },
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl border border-white/20 dark:border-gray-700 max-h-[calc(100vh-2rem)] flex flex-col">
+        {/* HEADER */}
+        <div className="flex justify-between items-start px-6 pt-6 pb-4 flex-shrink-0 border-b border-gray-100 dark:border-gray-700">
+          <div>
+            <h3 className="font-bold text-xl text-gray-800 dark:text-white">Opcje wydruku PDF</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Dopasuj zawartość i wygląd generowanego pliku.</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-white transition" aria-label="Zamknij">
+            <X size={22} />
+          </button>
+        </div>
+
+        {/* BODY */}
+        <div className="px-6 py-5 overflow-y-auto flex-1 min-h-0 space-y-5 bg-gray-50/50 dark:bg-gray-900/20">
+          {/* QUICK PRESETS */}
+          <div>
+            <div className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Szybkie presety</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {PRESETS.map(p => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => applyPreset(p.patch)}
+                  className="text-left px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/60 hover:border-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 transition group"
+                >
+                  <div className="text-sm font-semibold text-gray-800 dark:text-gray-100 group-hover:text-accent-primary dark:group-hover:text-accent-primary-light">{p.label}</div>
+                  <div className="text-[11px] text-gray-500 dark:text-gray-400">{p.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* SEKCJE */}
+          <PrintOptionsCard title="Sekcje w PDF">
+            <div className="space-y-2">
+              <PrintCheckbox label="Plan szczegółowy (strona 1)" checked={printOptions.sections.schedule} onChange={v => setSection('schedule', v)} />
+              <PrintCheckbox label="Notatka do programu (na końcu strony 1)" checked={printOptions.sections.programNotes} onChange={v => setSection('programNotes', v)} disabled={!printOptions.sections.schedule} />
+              <PrintCheckbox label='Strona "Służby i Zespoły"' checked={printOptions.sections.teams} onChange={v => setSection('teams', v)} />
+              <div className={`pl-2 ml-2 border-l-2 border-accent-primary-lighter/60 dark:border-accent-primary-darkest space-y-1.5 ${!printOptions.sections.teams ? 'opacity-50' : ''}`}>
+                <PrintCheckbox label="Zespół Uwielbienia" checked={printOptions.sections.teamWorship} onChange={v => setSection('teamWorship', v)} disabled={!printOptions.sections.teams} sub />
+                <PrintCheckbox label="MediaTeam"          checked={printOptions.sections.teamMedia}   onChange={v => setSection('teamMedia',   v)} disabled={!printOptions.sections.teams} sub />
+                <PrintCheckbox label="Atmosfera Team"     checked={printOptions.sections.teamAtmosfera} onChange={v => setSection('teamAtmosfera', v)} disabled={!printOptions.sections.teams} sub />
+                <PrintCheckbox label="Scena"              checked={printOptions.sections.teamScena}   onChange={v => setSection('teamScena',   v)} disabled={!printOptions.sections.teams} sub />
+                <PrintCheckbox label="Szkółka Niedzielna" checked={printOptions.sections.teamSzkolka} onChange={v => setSection('teamSzkolka', v)} disabled={!printOptions.sections.teams} sub />
+              </div>
+              <PrintCheckbox label="Pieśni z tekstami i akordami" checked={printOptions.sections.songs} onChange={v => setSection('songs', v)} />
+            </div>
+          </PrintOptionsCard>
+
+          {/* KOLUMNY PLANU */}
+          <PrintOptionsCard title="Kolumny w planie szczegółowym" className={!printOptions.sections.schedule ? 'opacity-50 pointer-events-none' : ''}>
+            <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+              <PrintCheckbox label="Czas (długość)"        checked={printOptions.scheduleColumns.time}    onChange={v => setColumn('time', v)} />
+              <PrintCheckbox label="Osoba odpowiedzialna"  checked={printOptions.scheduleColumns.person}  onChange={v => setColumn('person', v)} />
+              <PrintCheckbox label="Szczegóły / Pieśni"    checked={printOptions.scheduleColumns.details} onChange={v => setColumn('details', v)} />
+              <PrintCheckbox label="Tonacja przy pieśni"   checked={printOptions.scheduleColumns.songKey} onChange={v => setColumn('songKey', v)} disabled={!printOptions.scheduleColumns.details} />
+            </div>
+          </PrintOptionsCard>
+
+          {/* STRONY PIEŚNI */}
+          <PrintOptionsCard title="Strony pieśni" className={!printOptions.sections.songs ? 'opacity-50 pointer-events-none' : ''}>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-4">
+              <PrintCheckbox label="Tekst"   checked={printOptions.songDetails.lyrics} onChange={v => setSongDt('lyrics', v)} />
+              <PrintCheckbox label="Akordy"  checked={printOptions.songDetails.chords} onChange={v => setSongDt('chords', v)} />
+              <PrintCheckbox label="Tempo"   checked={printOptions.songDetails.tempo}  onChange={v => setSongDt('tempo', v)} />
+              <PrintCheckbox label="Metrum"  checked={printOptions.songDetails.meter}  onChange={v => setSongDt('meter', v)} />
+            </div>
+          </PrintOptionsCard>
+
+          {/* UKŁAD STRONY */}
+          <PrintOptionsCard title="Układ strony">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <label className="block">
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wider font-semibold">Format</span>
+                <select
+                  value={printOptions.pageSize}
+                  onChange={(e) => setRoot('pageSize', e.target.value)}
+                  className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+                >
+                  <option value="A4">A4</option>
+                  <option value="Letter">Letter</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wider font-semibold">Orientacja</span>
+                <select
+                  value={printOptions.orientation}
+                  onChange={(e) => setRoot('orientation', e.target.value)}
+                  className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+                >
+                  <option value="p">Pionowa</option>
+                  <option value="l">Pozioma</option>
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wider font-semibold">Czcionka</span>
+                <select
+                  value={printOptions.fontSize}
+                  onChange={(e) => setRoot('fontSize', parseInt(e.target.value, 10))}
+                  className="w-full p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/30"
+                >
+                  {[10,11,12,13,14].map(n => <option key={n} value={n}>{n}pt</option>)}
+                </select>
+              </label>
+            </div>
+          </PrintOptionsCard>
+
+          {/* NAGŁÓWEK / WYGLĄD */}
+          <PrintOptionsCard title="Nagłówek i wygląd">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+              <PrintCheckbox label="Pokaż nazwę kampusu w nagłówku"     checked={printOptions.showCampus}  onChange={v => setRoot('showCampus', v)} />
+              <PrintCheckbox label="Złote akcenty (gold)"               checked={printOptions.colorAccents} onChange={v => setRoot('colorAccents', v)} />
+            </div>
+          </PrintOptionsCard>
+        </div>
+
+        {/* FOOTER */}
+        <div className="flex items-center justify-between gap-3 px-6 py-4 flex-shrink-0 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <button
+            onClick={() => setPrintOptions(DEFAULT_PDF_OPTIONS)}
+            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
+          >
+            Przywróć domyślne
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+            >
+              Anuluj
+            </button>
+            <button
+              onClick={onGenerate}
+              disabled={isLoading}
+              className="px-5 py-2.5 text-sm font-bold bg-accent-primary text-white rounded-lg hover:bg-accent-primary-dark shadow-sm hover:shadow transition disabled:opacity-50 flex items-center gap-2"
+            >
+              {isLoading ? <><Loader2 size={16} className="animate-spin" /> Generowanie...</> : <><FileText size={16} /> Generuj PDF</>}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- GŁÓWNY KOMPONENT ---
 
 export default function ProgramDetail() {
@@ -1703,11 +2076,15 @@ export default function ProgramDetail() {
   const { id } = useParams();
   const isNewProgram = id === 'new';
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnSaveCallback } = useUnsavedChanges();
-  const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
+  const { withCampusFilter, campusIdForInsert } = useCampusQuery();
+  const { campuses } = useCampus();
 
   const [program, setProgram] = useState(getEmptyProgram());
   const [originalProgram, setOriginalProgram] = useState(null);
+  const [currentUser, setCurrentUser] = useState({ email: '', name: '' });
+  const { createAssignment, removeAssignment } = useScheduleAssignments();
   const [songs, setSongs] = useState([]);
+  const [songSuggestions, setSongSuggestions] = useState([]);
   const [worshipTeam, setWorshipTeam] = useState([]);
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -1757,15 +2134,33 @@ export default function ProgramDetail() {
     fetchAllTeams();
     fetchScenaData();
     fetchTemplates();
+    fetchCurrentUser();
 
     if (!isNewProgram && id) {
       fetchProgram(id);
+      fetchSongSuggestions(id);
     } else {
       const empty = getEmptyProgram();
       setProgram(empty);
       setOriginalProgram(JSON.parse(JSON.stringify(empty)));
+      setSongSuggestions([]);
     }
   }, [id, isNewProgram]);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('app_users')
+        .select('full_name')
+        .eq('email', user.email)
+        .maybeSingle();
+      setCurrentUser({ email: user.email, name: profile?.full_name || user.email });
+    } catch (err) {
+      console.error('Error fetching current user:', err);
+    }
+  };
 
   // Fetch series graphics when program's teaching series changes
   useEffect(() => {
@@ -1900,12 +2295,13 @@ export default function ProgramDetail() {
   }, [setGlobalUnsavedChanges]);
 
   function getEmptyProgram() {
-    // Read type_id from URL query param if creating new program
+    // Read type_id and date from URL query param if creating new program
     const urlParams = new URLSearchParams(window.location.search);
     const typeIdFromUrl = urlParams.get('type');
+    const dateFromUrl = urlParams.get('date');
     return {
       title: '',
-      date: new Date().toISOString().split('T')[0],
+      date: dateFromUrl || new Date().toISOString().split('T')[0],
       schedule: [],
       globalNotes: '',
       type_id: typeIdFromUrl ? parseInt(typeIdFromUrl, 10) : null,
@@ -1920,6 +2316,19 @@ export default function ProgramDetail() {
   const fetchSongs = async () => {
     const { data } = await supabase.from('songs').select('*');
     setSongs(data || []);
+  };
+
+  const fetchSongSuggestions = async (programId) => {
+    if (!programId || programId === 'new') {
+      setSongSuggestions([]);
+      return;
+    }
+    const { data } = await supabase
+      .from('program_song_suggestions')
+      .select('*')
+      .eq('program_id', programId)
+      .order('sort_order', { ascending: true });
+    setSongSuggestions(data || []);
   };
 
   const fetchWorshipTeam = async () => {
@@ -2022,18 +2431,22 @@ export default function ProgramDetail() {
       }
     }
 
+    // Multi-tenant: stamp campus on new programs
+    if (!program.id && campusIdForInsert) {
+      dbData.campus_id = campusIdForInsert;
+    }
+
     const doSave = async (data) => {
       if (program.id) {
         return await supabase.from('programs').update(data).eq('id', program.id).select();
       } else {
-        if (campusIdForInsert) data.campus_id = campusIdForInsert;
         return await supabase.from('programs').insert([data]).select();
       }
     };
 
-    // Try with all columns, retry without optional if 400
+    // Try with all columns, retry without optional if column doesn't exist
     let result = await doSave({ ...dbData });
-    if (result.error?.code === '42703' || result.error?.message?.includes('column') || result.status === 400) {
+    if (result.error?.code === '42703' || (result.error?.message && /column.*does not exist|undefined column/i.test(result.error.message))) {
       // Column doesn't exist - retry without optional columns
       const fallbackData = {};
       for (const key of BASE_COLUMNS) {
@@ -2049,6 +2462,15 @@ export default function ProgramDetail() {
       return;
     }
 
+    const savedProgramId = program.id || result.data?.[0]?.id;
+
+    // Synchronizuj przypisania Zespołu Uwielbienia (utwórz nowe, usuń odjęte) + wyślij maile
+    try {
+      await syncWorshipAssignments(savedProgramId);
+    } catch (err) {
+      console.error('Error syncing worship assignments:', err);
+    }
+
     if (!program.id && result.data?.[0]) {
       navigate(`/programs/${result.data[0].id}`, { replace: true });
       setProgram(result.data[0]);
@@ -2057,13 +2479,130 @@ export default function ProgramDetail() {
     alert('Zapisano!');
   };
 
-  const handleSaveAndUploadPDF = async () => {
+  const syncWorshipAssignments = async (programId) => {
+    if (!programId) return;
+    if (!currentUser?.email) return;
+
+    const roleKeys = worshipRoles.length > 0
+      ? worshipRoles.map(r => r.field_key)
+      : ['lider', 'piano', 'gitara_akustyczna', 'gitara_elektryczna', 'bas', 'wokale', 'cajon'];
+
+    const oldZespol = originalProgram?.zespol || {};
+    const newZespol = program?.zespol || {};
+
+    const splitNames = (val) => (val ? String(val).split(',').map(s => s.trim()).filter(Boolean) : []);
+
+    for (const key of roleKeys) {
+      const oldNames = splitNames(oldZespol[key]);
+      const newNames = splitNames(newZespol[key]);
+      const added = newNames.filter(n => !oldNames.includes(n));
+      const removed = oldNames.filter(n => !newNames.includes(n));
+
+      for (const name of added) {
+        const member = worshipTeam.find(m => m.full_name === name);
+        const isSelfAssignment = currentUser?.name === name;
+        await createAssignment({
+          programId,
+          teamType: 'worship',
+          roleKey: key,
+          assignedName: name,
+          assignedEmail: member?.email || null,
+          assignedByEmail: currentUser?.email,
+          assignedByName: currentUser?.name,
+          isSelfAssignment
+        });
+      }
+
+      for (const name of removed) {
+        await removeAssignment(programId, 'worship', key, name);
+      }
+    }
+  };
+
+  const [showPrintOptions, setShowPrintOptions] = useState(false);
+  const [printOptions, setPrintOptions] = useState(() => {
+    try {
+      const stored = localStorage.getItem('pdf_print_options');
+      if (stored) return { ...DEFAULT_PDF_OPTIONS, ...JSON.parse(stored) };
+    } catch {}
+    return DEFAULT_PDF_OPTIONS;
+  });
+  useEffect(() => {
+    try { localStorage.setItem('pdf_print_options', JSON.stringify(printOptions)); } catch {}
+  }, [printOptions]);
+
+  // Helper: nowy element planu z domyślnymi wartościami
+  const createScheduleItem = useCallback((type) => {
+    const liderRole = worshipRoles.find(r => r.field_key === 'lider' || (r.name || '').toLowerCase().includes('lider'));
+    const liderKey = liderRole?.field_key || 'lider';
+    const defaultPerson = type === 'song'
+      ? ((program?.zespol?.[liderKey] || '').split(',')[0].trim() || '')
+      : '';
+
+    return {
+      id: Date.now(),
+      type,
+      title: type === 'header' ? 'NOWA SEKCJA' : '',
+      person: defaultPerson,
+      details: '',
+      notes: '',
+      duration: type === 'header' ? 0 : 180,
+      timing: 'during',
+      songId: null,
+      songKey: null,
+      teamAssignments: {},
+    };
+  }, [program, worshipRoles]);
+
+  const addScheduleItem = useCallback((type) => {
+    const newItem = createScheduleItem(type);
+    setProgram(prev => ({ ...prev, schedule: [...(prev.schedule || []), newItem] }));
+    setSelectedScheduleItem(newItem);
+  }, [createScheduleItem]);
+
+  // Skróty klawiszowe dla dodawania elementów (i/h/s/m)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) return;
+
+      const map = { i: 'item', h: 'header', s: 'song', m: 'media' };
+      const type = map[e.key.toLowerCase()];
+      if (!type) return;
+      e.preventDefault();
+      addScheduleItem(type);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [addScheduleItem]);
+
+  const buildPdfFileName = useCallback(() => {
+    const sanitize = (s) => (s || '').toString().replace(/[\/\\?%*:|"<>]+/g, '').replace(/\s+/g, ' ').trim();
+    const titlePart = sanitize(program?.title) || 'Program';
+    const datePart = program?.date || '';
+    const campus = campuses?.find(c => c.id === program?.campus_id);
+    const campusPart = sanitize(campus?.name);
+    return [titlePart, datePart, campusPart].filter(Boolean).join('_');
+  }, [program, campuses]);
+
+  const handleSaveAndUploadPDF = async (customOptions = null) => {
     if (!program || !program.date) {
       alert('Najpierw wybierz lub utwórz program.');
       return;
     }
 
+    setShowPrintOptions(false);
     setIsLoading(true);
+
+    const baseOptions = customOptions || printOptions;
+    const campus = campuses?.find(c => c.id === program?.campus_id);
+    const optionsToUse = {
+      ...baseOptions,
+      campusName: campus?.name || '',
+      fileName: buildPdfFileName(),
+    };
 
     try {
       const { data: allSongsData } = await supabase.from('songs').select('*');
@@ -2080,9 +2619,9 @@ export default function ProgramDetail() {
         teachingSpeakers: teachingSpeakers
       };
 
-      await downloadPDF(program, freshSongsMap, teamRolesForPDF);
+      await downloadPDF(program, freshSongsMap, teamRolesForPDF, optionsToUse);
 
-      const result = await savePDFToSupabase(program, freshSongsMap, teamRolesForPDF);
+      const result = await savePDFToSupabase(program, freshSongsMap, teamRolesForPDF, optionsToUse);
 
       if (result.success) {
         alert('PDF został pobrany i zapisany w chmurze!');
@@ -2180,23 +2719,46 @@ export default function ProgramDetail() {
         teachingSpeakers: teachingSpeakers
       };
 
-      const response = await fetch('/api/send-program', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          program,
-          songsMap: freshSongsMap,
-          teamRoles: teamRolesForPDF,
-          recipients
+      // Generate and upload PDF to Supabase Storage
+      const pdfResult = await savePDFToSupabase(program, freshSongsMap, teamRolesForPDF, 'lyrics');
+
+      const dateStr = program.date.split('T')[0];
+      const subject = `Program nabożeństwa – ${dateStr}`;
+
+      // Build simple HTML email body
+      const scheduleHtml = (program.schedule || [])
+        .map(item => {
+          if (item.type === 'song' && item.songId) {
+            const song = freshSongsMap[item.songId];
+            return `<li>🎵 ${song ? song.title : item.title || 'Pieśń'}${item.key ? ` (${item.key})` : ''}</li>`;
+          }
+          return `<li>${item.title || item.type || 'Element'}</li>`;
         })
+        .join('');
+
+      const htmlBody = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Program nabożeństwa – ${dateStr}</h2>
+          <ul>${scheduleHtml}</ul>
+          ${pdfResult.success ? '<p><em>PDF w załączniku.</em></p>' : ''}
+        </div>
+      `;
+
+      const { data, error } = await supabase.functions.invoke('send-program-email', {
+        body: {
+          emailTo: recipients,
+          subject,
+          htmlBody,
+          filePath: pdfResult.success ? pdfResult.path : undefined,
+          filename: pdfResult.success ? `Program-${dateStr}.pdf` : undefined,
+        }
       });
 
-      const result = await response.json();
-      if (result.success) {
-        alert('Program został wysłany!');
-      } else {
-        alert('Błąd wysyłki: ' + (result.error || 'Nieznany błąd'));
+      if (error) {
+        throw error;
       }
+
+      alert('Program został wysłany!');
     } catch (error) {
       console.error('Error sending email:', error);
       alert('Wystąpił błąd podczas wysyłania.');
@@ -2271,7 +2833,7 @@ export default function ProgramDetail() {
             <span className="font-medium">Wróć do listy</span>
           </button>
 
-          <div className="bg-white/70 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-gray-200/60 dark:border-gray-700/50 p-5 lg:p-6 mb-6 lg:mb-8">
+          <div className="bg-white/70 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-gray-200/60 dark:border-gray-700/50 p-5 lg:p-6 mb-6 lg:mb-8 relative">
             <div className="mb-4">
               <input
                 type="text"
@@ -2318,10 +2880,10 @@ export default function ProgramDetail() {
                 <span className="hidden sm:inline">Mail</span>
               </button>
               <button
-                onClick={handleSaveAndUploadPDF}
+                onClick={() => setShowPrintOptions(true)}
                 disabled={isLoading}
                 className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-accent-primary bg-accent-primary-lightest hover:bg-accent-primary-lighter rounded-lg transition-colors border border-accent-primary-lighter font-medium text-sm disabled:opacity-50"
-                title="Zapisz PDF na dysku i w chmurze Supabase"
+                title="Otwórz opcje wydruku PDF"
               >
                 {isLoading ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
                 <span className="hidden sm:inline">PDF</span>
@@ -2405,25 +2967,7 @@ export default function ProgramDetail() {
                       {program.globalNotes && <span className="w-1.5 h-1.5 bg-accent-primary rounded-full" />}
                     </button>
                   </div>
-                  <AddItemDropdown
-                    onAdd={(type) => {
-                      const newItem = {
-                        id: Date.now(),
-                        type,
-                        title: type === 'header' ? 'NOWA SEKCJA' : '',
-                        person: '',
-                        details: '',
-                        notes: '',
-                        duration: type === 'header' ? 0 : 180,
-                        timing: 'during',
-                        songId: null,
-                        songKey: null,
-                        teamAssignments: {},
-                      };
-                      setProgram({ ...program, schedule: [...program.schedule, newItem] });
-                      setSelectedScheduleItem(newItem);
-                    }}
-                  />
+                  <AddItemDropdown onAdd={addScheduleItem} />
                 </div>
 
                 {/* ORDER TAB CONTENT */}
@@ -2485,20 +3029,7 @@ export default function ProgramDetail() {
                       {/* Add item row at bottom */}
                       {program.schedule.length > 0 && (
                         <div className="flex items-center gap-2 px-4 py-3 border-t border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light cursor-pointer transition group"
-                          onClick={() => {
-                            const newItem = {
-                              id: Date.now(),
-                              type: 'item',
-                              title: '',
-                              person: '',
-                              details: '',
-                              notes: '',
-                              duration: 180,
-                              timing: 'during',
-                            };
-                            setProgram({ ...program, schedule: [...program.schedule, newItem] });
-                            setSelectedScheduleItem(newItem);
-                          }}
+                          onClick={() => addScheduleItem('item')}
                         >
                           <GripVertical size={16} className="opacity-0" />
                           <span className="text-sm">Dodaj element...</span>
@@ -2532,11 +3063,11 @@ export default function ProgramDetail() {
                 {/* NOTES TAB CONTENT */}
                 {scheduleTab === 'notes' && (
                   <div className="flex-1 overflow-y-auto p-4">
-                    <SimpleRichEditor
-                      content={program.globalNotes || ''}
-                      onChange={(html) => setProgram(prev => ({ ...prev, globalNotes: html }))}
+                    <textarea
+                      value={program.globalNotes || ''}
+                      onChange={(e) => setProgram(prev => ({ ...prev, globalNotes: e.target.value }))}
                       placeholder="Notatki do programu... (widoczne tylko dla organizatorów)"
-                      minHeight={350}
+                      className="w-full min-h-[350px] px-4 py-3 bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm resize-none focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition text-gray-700 dark:text-gray-200 placeholder-gray-400"
                     />
                   </div>
                 )}
@@ -2548,6 +3079,7 @@ export default function ProgramDetail() {
                 <ItemEditPanel
                   item={selectedScheduleItem}
                   songs={songs}
+                  songSuggestions={songSuggestions}
                   worshipTeam={worshipTeam}
                   mediaTeam={mediaTeam}
                   onUpdate={(updatedItem) => {
@@ -2648,16 +3180,7 @@ export default function ProgramDetail() {
             )}
           </div>
 
-          {/* Graphics Override Section - only show for saved programs */}
-          {program?.id && (
-            <div className="bg-white/70 dark:bg-gray-800/40 backdrop-blur-xl rounded-2xl shadow-lg border border-white/60 dark:border-gray-700/50 p-5 mb-4 lg:mb-6">
-              <GraphicsOverride
-                program={program}
-                seriesGraphics={seriesGraphics}
-                onUpdate={(updated) => setProgram(updated)}
-              />
-            </div>
-          )}
+
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-4 lg:mb-6 relative z-0">
             {isSectionVisible('scena') && (
@@ -2691,6 +3214,17 @@ export default function ProgramDetail() {
         onLoad={handleLoadTemplate}
         onDelete={handleDeleteTemplate}
       />
+
+      {showPrintOptions && document.body && createPortal(
+        <PrintOptionsModalBody
+          printOptions={printOptions}
+          setPrintOptions={setPrintOptions}
+          onClose={() => setShowPrintOptions(false)}
+          onGenerate={() => handleSaveAndUploadPDF(printOptions)}
+          isLoading={isLoading}
+        />,
+        document.body
+      )}
     </div>
   );
 }
