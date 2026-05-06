@@ -33,3 +33,6 @@ npm-debug.log*
 .claude/
 .vercel
 .env*.local
+
+# Lokalne pliki instalacyjne z wklejonymi kluczami — NIE commitować
+migrations/_install_*.sql

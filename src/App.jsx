@@ -33,6 +33,7 @@ import PrayerWallModule from './modules/PrayerWall/PrayerWallModule';
 import KomunikatorModule from './modules/Komunikator/KomunikatorModule';
 import MlodziezowkaModule from './modules/MlodziezowkaModule';
 import MailingModule from './modules/Mailing/MailingModule';
+import PushCampaignsModule from './modules/PushCampaigns/PushCampaignsModule';
 import MailModule from './modules/Mail/MailModule';
 import FormsModule from './modules/Forms/FormsModule';
 import PublicFormPage from './modules/Forms/pages/PublicFormPage';
@@ -43,7 +44,7 @@ import CustomModule from './modules/CustomModule/CustomModule';
 const SYSTEM_MODULE_KEYS = [
   'dashboard', 'programs', 'calendar', 'members', 'worship', 'media',
   'atmosfera', 'kids', 'homegroups', 'finance', 'teaching', 'prayer',
-  'komunikator', 'mlodziezowka', 'mailing', 'mail', 'forms', 'settings'
+  'komunikator', 'mlodziezowka', 'mailing', 'mail', 'forms', 'settings', 'push_campaigns'
 ];
 
 // Komponent do wyświetlania toast notifications (używa context)
@@ -367,6 +368,9 @@ export default function App() {
                 } />
                 <Route path="/mailing" element={
                   <ProtectedRoute resource="module:mailing"><MailingModule /></ProtectedRoute>
+                } />
+                <Route path="/push-campaigns" element={
+                  <ProtectedRoute resource="module:push_campaigns"><PushCampaignsModule /></ProtectedRoute>
                 } />
                 <Route path="/mail" element={
                   <ProtectedRoute resource="module:mail"><MailModule /></ProtectedRoute>
