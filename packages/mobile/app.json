@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "SCH TOMY",
+    "slug": "schtomy",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "schtomy",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#d97706"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.schtomy.app",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Użyj Face ID do szybkiego logowania"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#d97706"
+      },
+      "package": "com.schtomy.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-local-authentication",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#d97706"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

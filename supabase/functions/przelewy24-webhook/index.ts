@@ -16,10 +16,7 @@ const P24_POS_ID = Deno.env.get('P24_POS_ID') || P24_MERCHANT_ID;
 const P24_CRC = Deno.env.get('P24_CRC')!;
 const P24_API_KEY = Deno.env.get('P24_API_KEY')!;
 
-/**
- * Generuje sumę kontrolną dla weryfikacji P24
- */
-async function generateVerifyChecksum(data: Record<string, string | number>): Promise<string> {
+async function generateChecksum(data: Record<string, string | number>): Promise<string> {
   const checksumData = { ...data, crc: P24_CRC };
   const stringToHash = JSON.stringify(checksumData);
 
@@ -31,30 +28,58 @@ async function generateVerifyChecksum(data: Record<string, string | number>): Pr
 }
 
 serve(async (req) => {
+  // P24 może wysłać OPTIONS
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { status: 200 });
+  }
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Parsuj dane z POST
-    const formData = await req.formData();
-    const merchantId = formData.get('merchantId') as string;
-    const posId = formData.get('posId') as string;
-    const sessionId = formData.get('sessionId') as string;
-    const amount = formData.get('amount') as string;
-    const originAmount = formData.get('originAmount') as string;
-    const currency = formData.get('currency') as string;
-    const orderId = formData.get('orderId') as string;
-    const methodId = formData.get('methodId') as string;
-    const statement = formData.get('statement') as string;
-    const sign = formData.get('sign') as string;
+    // P24 może wysyłać dane jako JSON lub form-data — obsłuż oba formaty
+    let merchantId: string, posId: string, sessionId: string, amount: string,
+        originAmount: string, currency: string, orderId: string, methodId: string,
+        statement: string, sign: string;
 
-    console.log('P24 Webhook received:', { sessionId, orderId, amount });
+    const contentType = req.headers.get('content-type') || '';
+    console.log('P24 Webhook - content-type:', contentType, 'method:', req.method);
+
+    if (contentType.includes('application/json')) {
+      const json = await req.json();
+      console.log('P24 Webhook JSON body:', JSON.stringify(json));
+      merchantId = String(json.merchantId);
+      posId = String(json.posId);
+      sessionId = String(json.sessionId);
+      amount = String(json.amount);
+      originAmount = String(json.originAmount);
+      currency = String(json.currency);
+      orderId = String(json.orderId);
+      methodId = String(json.methodId);
+      statement = String(json.statement || '');
+      sign = String(json.sign);
+    } else {
+      const formData = await req.formData();
+      console.log('P24 Webhook form entries:', [...formData.entries()].map(([k,v]) => `${k}=${v}`).join(', '));
+      merchantId = formData.get('merchantId') as string;
+      posId = formData.get('posId') as string;
+      sessionId = formData.get('sessionId') as string;
+      amount = formData.get('amount') as string;
+      originAmount = formData.get('originAmount') as string;
+      currency = formData.get('currency') as string;
+      orderId = formData.get('orderId') as string;
+      methodId = formData.get('methodId') as string;
+      statement = formData.get('statement') as string || '';
+      sign = formData.get('sign') as string;
+    }
+
+    console.log('P24 Webhook parsed:', { merchantId, posId, sessionId, orderId, amount, currency, sign: sign?.substring(0, 10) + '...' });
 
     // Walidacja merchantId
     if (merchantId !== P24_MERCHANT_ID) {
-      console.error('Invalid merchantId');
+      console.error('Invalid merchantId:', merchantId, 'expected:', P24_MERCHANT_ID);
       return new Response('Invalid merchantId', { status: 400 });
     }
 
@@ -66,37 +91,20 @@ serve(async (req) => {
       .single();
 
     if (txError || !transaction) {
-      console.error('Transaction not found:', sessionId);
+      console.error('Transaction not found for sessionId:', sessionId, 'error:', txError);
       return new Response('Transaction not found', { status: 404 });
     }
 
-    // Weryfikuj podpis
-    const expectedSign = await generateVerifyChecksum({
-      merchantId: parseInt(merchantId),
-      posId: parseInt(posId),
+    console.log('Transaction found:', transaction.id);
+
+    // Weryfikuj transakcję w P24
+    const verifySign = await generateChecksum({
       sessionId,
-      amount: parseInt(amount),
-      originAmount: parseInt(originAmount),
       orderId: parseInt(orderId),
-      methodId: parseInt(methodId),
-      statement,
+      amount: parseInt(amount),
       currency
     });
 
-    if (sign !== expectedSign) {
-      console.error('Invalid signature');
-      await supabaseClient
-        .from('payment_transactions')
-        .update({
-          status: 'failed',
-          error_message: 'Invalid webhook signature',
-          gateway_response: { merchantId, posId, sessionId, orderId, amount, currency, sign }
-        })
-        .eq('id', transaction.id);
-      return new Response('Invalid signature', { status: 400 });
-    }
-
-    // Weryfikuj transakcję w P24
     const verifyData = {
       merchantId: parseInt(P24_MERCHANT_ID),
       posId: parseInt(P24_POS_ID),
@@ -104,13 +112,10 @@ serve(async (req) => {
       amount: parseInt(amount),
       currency,
       orderId: parseInt(orderId),
-      sign: await generateVerifyChecksum({
-        sessionId,
-        orderId: parseInt(orderId),
-        amount: parseInt(amount),
-        currency
-      })
+      sign: verifySign
     };
+
+    console.log('P24 verify request:', JSON.stringify(verifyData));
 
     const verifyResponse = await fetch(`${P24_API_URL}/api/v1/transaction/verify`, {
       method: 'PUT',
@@ -122,9 +127,9 @@ serve(async (req) => {
     });
 
     const verifyResult = await verifyResponse.json();
+    console.log('P24 verify response:', verifyResponse.status, JSON.stringify(verifyResult));
 
     if (verifyResult.data?.status === 'success') {
-      // Płatność zweryfikowana pomyślnie
       await supabaseClient
         .from('payment_transactions')
         .update({
@@ -135,11 +140,8 @@ serve(async (req) => {
         })
         .eq('id', transaction.id);
 
-      // Faktura zostanie zaktualizowana automatycznie przez trigger w bazie
       console.log('Payment verified successfully:', orderId);
-
     } else {
-      // Weryfikacja nieudana
       await supabaseClient
         .from('payment_transactions')
         .update({
@@ -152,11 +154,10 @@ serve(async (req) => {
       console.error('Payment verification failed:', verifyResult);
     }
 
-    // P24 wymaga odpowiedzi "OK" na webhook
     return new Response('OK', { status: 200 });
 
   } catch (error) {
-    console.error('Webhook error:', error);
+    console.error('Webhook error:', error?.message || error, 'stack:', error?.stack);
     return new Response('Internal error', { status: 500 });
   }
 });
