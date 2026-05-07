@@ -671,6 +671,11 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
             </span>
           )}
         </div>
+        {item.details && (
+          <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5" title={item.details}>
+            {item.details}
+          </div>
+        )}
       </div>
 
       {/* Song key badge with quick picker */}

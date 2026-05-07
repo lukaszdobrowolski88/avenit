@@ -236,6 +236,7 @@ export default function Sidebar() {
     mlodziezowka: 'module:mlodziezowka',
     mailing: 'module:mailing',
     push_campaigns: 'module:push_campaigns',
+    sms_campaigns: 'module:sms_campaigns',
     settings: 'module:settings'
   };
 
@@ -266,6 +267,7 @@ export default function Sidebar() {
     { path: '/mlodziezowka', icon: Sparkles, label: 'Młodzieżówka', show: hasModuleAccess('module:mlodziezowka') },
     { path: '/mailing', icon: LucideIcons.Mail, label: 'Mailing', show: hasModuleAccess('module:mailing') },
     { path: '/push-campaigns', icon: LucideIcons.Bell, label: 'Push Kampanie', show: hasModuleAccess('module:push_campaigns') },
+    { path: '/sms-campaigns', icon: LucideIcons.MessageSquare, label: 'SMS Kampanie', show: hasModuleAccess('module:sms_campaigns') },
   ];
 
   // Wygeneruj linki modułów z bazy danych

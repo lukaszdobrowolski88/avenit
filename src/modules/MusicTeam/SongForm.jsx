@@ -685,7 +685,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
     if (files.length === 0) return;
 
     // Filtruj pliki do akceptowanych typów
-    const acceptedTypes = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.mp3', '.wav'];
+    const acceptedTypes = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.mp3', '.wav', '.pro'];
     const validFiles = files.filter(file => {
       const ext = '.' + file.name.split('.').pop().toLowerCase();
       return acceptedTypes.includes(ext);
@@ -1518,7 +1518,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                     type="file"
                     onChange={handleFileUpload}
                     className="hidden"
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.mp3,.wav"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.mp3,.wav,.pro"
                     disabled={uploadingFile}
                     multiple
                   />

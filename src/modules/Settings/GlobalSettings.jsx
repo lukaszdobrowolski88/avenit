@@ -4,12 +4,13 @@ import { supabase } from '../../lib/supabase';
 import {
   List, Plus, Trash2, X, Settings, Grid, Users, Shield, BookOpen, Building2,
   CheckCircle, AlertCircle, Upload, Eye,
-  Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, UserCheck, Check, ChevronDown, ChevronUp, Layers
+  Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, UserCheck, Check, ChevronDown, ChevronUp, Layers, Plug
 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import ModuleManager from './components/ModuleManager';
 import CampusManager from './components/CampusManager';
 import ColorPresetPicker from './components/ColorPresetPicker';
+import IntegrationsTab from './components/IntegrationsTab';
 import { useCampus } from '../../contexts/CampusContext';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 
@@ -919,6 +920,7 @@ export default function GlobalSettings() {
             { id: 'users', label: 'Użytkownicy', icon: Users },
             { id: 'permissions', label: 'Uprawnienia', icon: Shield },
             { id: 'dictionaries', label: 'Słowniki', icon: BookOpen },
+            { id: 'integrations', label: 'Integracje', icon: Plug },
           ]}
           activeTab={activeTab}
           onChange={setActiveTab}
@@ -1344,6 +1346,9 @@ export default function GlobalSettings() {
             <DictionaryEditor title="Kategorie Wydarzeń" category="event_category" items={dictionaries} onAdd={addDict} onDelete={delDict} />
           </div>
         )}
+
+        {/* --- TAB: INTEGRACJE --- */}
+        {activeTab === 'integrations' && <IntegrationsTab />}
 
       </div>
 
