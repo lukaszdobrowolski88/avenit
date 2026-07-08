@@ -85,14 +85,14 @@ const SEARCHERS = [
     run: async (q) => {
       const { data } = await supabase
         .from('events')
-        .select('id, title, start_date, location')
+        .select('id, title, date, time, location')
         .or(`title.ilike.%${q}%,description.ilike.%${q}%,location.ilike.%${q}%`)
-        .order('start_date', { ascending: false })
+        .order('date', { ascending: false })
         .limit(5);
       return (data || []).map((e) => ({
         id: `event-${e.id}`,
         label: e.title || 'Wydarzenie',
-        sub: [e.start_date ? new Date(e.start_date).toLocaleDateString('pl-PL') : '', e.location].filter(Boolean).join(' · '),
+        sub: [e.date ? new Date(e.date).toLocaleDateString('pl-PL') : '', e.location].filter(Boolean).join(' · '),
         path: '/calendar',
       }));
     },
