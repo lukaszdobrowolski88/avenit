@@ -14,8 +14,9 @@ mkdir -p "$DEST"
 PGUSER="${POSTGRES_USER:-avenit}"
 
 echo "==> Backup baz danych..."
-# Lista wszystkich baz avenit_* (platform + tenanci)
-DBS=$(docker compose exec -T postgres psql -U "$PGUSER" -tAc \
+# Lista wszystkich baz avenit_* (platform + tenanci).
+# -d postgres: bez tego psql łączy się z bazą o nazwie usera (która nie istnieje).
+DBS=$(docker compose exec -T postgres psql -U "$PGUSER" -d postgres -tAc \
   "SELECT datname FROM pg_database WHERE datname LIKE 'avenit_%'")
 
 for db in $DBS; do
