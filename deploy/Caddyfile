@@ -39,6 +39,20 @@
 		reverse_proxy api:3001
 	}
 
+	# Samowyrejestrowujący SW dla avenit.pl i app.avenit.pl (kasuje stary PWA,
+	# który cache'ował apkę, gdy te hosty serwowały wcześniej aplikację).
+	@killsw {
+		host {$APP_DOMAIN} app.{$APP_DOMAIN}
+		path /sw.js /sw-push.js
+	}
+	handle @killsw {
+		root * /srv/static
+		rewrite * /sw.js
+		header Content-Type application/javascript
+		header Cache-Control "no-cache, no-store, must-revalidate"
+		file_server
+	}
+
 	# Domena główna: placeholder „wkrótce" (docelowo strona www)
 	@root host {$APP_DOMAIN}
 	handle @root {
