@@ -76,7 +76,7 @@ export default function LoginScreen() {
             fontFamily: 'Inter_700Bold',
           }}
         >
-          SCH TOMY
+          Avenit
         </Text>
         <Text
           style={{
@@ -138,7 +138,7 @@ export default function LoginScreen() {
               autoComplete="email"
               keyboardType="email-address"
               textContentType="emailAddress"
-              placeholder="ty@schtomy.pl"
+              placeholder="ty@avenit.pl"
               placeholderTextColor="#a8a29e"
               value={email}
               onChangeText={setEmail}

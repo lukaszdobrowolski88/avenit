@@ -325,7 +325,7 @@ export default function PublicFormPage() {
 
         <div className={`${formMaxWidth} mx-auto mt-8 text-center`}>
           <p className={`text-xs ${hasBackgroundImage ? 'text-white/60' : 'text-gray-400'}`}>
-            Powered by Church Manager
+            Powered by Avenit
           </p>
         </div>
       </div>

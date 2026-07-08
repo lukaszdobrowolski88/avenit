@@ -1,5 +1,5 @@
 -- =============================================================================
--- APPSCHTOMY - BASE SCHEMA
+-- AVENIT - BASE SCHEMA
 -- Podstawowa struktura bazy danych dla aplikacji SaaS do zarządzania kościołem
 -- =============================================================================
 

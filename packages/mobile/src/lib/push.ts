@@ -4,6 +4,22 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
 
+// Wywołanie funkcji backendu Avenit (/api/fn/*) z nagłówkiem tenanta i tokenem.
+const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
+const TENANT = process.env.EXPO_PUBLIC_TENANT || '';
+async function callFn(name: string, body: Record<string, unknown>) {
+  const { data: { session } } = await supabase.auth.getSession();
+  return fetch(`${API_URL}/api/fn/${name}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(TENANT ? { 'X-Tenant': TENANT } : {}),
+      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+}
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldPlaySound: true,
@@ -105,20 +121,12 @@ export const handleCampaignAction = async (
   if (mapping.type === 'inline_rsvp') {
     try {
       const userEmail = (await supabase.auth.getUser()).data.user?.email;
-      const { data: { session } } = await supabase.auth.getSession();
-      await fetch(`${(supabase as any).supabaseUrl}/functions/v1/push-action-handler`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-        },
-        body: JSON.stringify({
-          campaign_id: campaignId,
-          recipient_id: recipientId,
-          user_email: userEmail,
-          action_type: 'inline_rsvp',
-          action_value: mapping.value,
-        }),
+      await callFn('push-action-handler', {
+        campaign_id: campaignId,
+        recipient_id: recipientId,
+        user_email: userEmail,
+        action_type: 'inline_rsvp',
+        action_value: mapping.value,
       });
     } catch (e) {
       console.warn('[push] inline rsvp failed:', (e as Error)?.message);
@@ -146,19 +154,11 @@ const trackEvent = async (
   event: 'opened' | 'action_clicked' | 'dismissed',
   actionId?: string,
 ) => {
-  const { data: { session } } = await supabase.auth.getSession();
-  await fetch(`${(supabase as any).supabaseUrl}/functions/v1/push-event-track`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-    },
-    body: JSON.stringify({
-      campaign_id: campaignId,
-      recipient_id: recipientId,
-      event,
-      action_id: actionId,
-    }),
+  await callFn('push-event-track', {
+    campaign_id: campaignId,
+    recipient_id: recipientId,
+    event,
+    action_id: actionId,
   });
 };
 

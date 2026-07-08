@@ -44,7 +44,7 @@ const ministryNames = {
   worship_team: 'Grupa Uwielbienia',
   media_team: 'Media Team',
   atmosfera_team: 'Atmosfera',
-  kids_ministry: 'Małe SCH TOMY',
+  kids_ministry: 'Małe Avenit',
   home_groups: 'Grupy Domowe',
   youth_ministry: 'Młodzieżówka',
   prayer_team: 'Centrum Modlitwy',

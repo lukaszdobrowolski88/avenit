@@ -31,7 +31,7 @@ const MODULE_TABS = {
     }
   },
   kids: {
-    label: 'Małe SCH TOMY',
+    label: 'Małe Avenit',
     tabs: {
       schedule: 'Grafik',
       groups: 'Grupy',

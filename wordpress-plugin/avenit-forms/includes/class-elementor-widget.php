@@ -1,6 +1,6 @@
 <?php
 /**
- * Elementor Widget dla Church Manager Forms
+ * Elementor Widget dla Avenit Forms
  */
 
 if (!defined('ABSPATH')) {
@@ -13,14 +13,14 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
      * Nazwa widgetu
      */
     public function get_name() {
-        return 'church_manager_form';
+        return 'avenit_form';
     }
 
     /**
      * Tytuł widgetu
      */
     public function get_title() {
-        return __('Church Manager Form', 'church-manager-forms');
+        return __('Avenit Form', 'avenit-forms');
     }
 
     /**
@@ -53,7 +53,7 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_form',
             [
-                'label' => __('Formularz', 'church-manager-forms'),
+                'label' => __('Formularz', 'avenit-forms'),
                 'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
             ]
         );
@@ -61,10 +61,10 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'form_id',
             [
-                'label' => __('ID formularza', 'church-manager-forms'),
+                'label' => __('ID formularza', 'avenit-forms'),
                 'type' => \Elementor\Controls_Manager::TEXT,
-                'placeholder' => __('Wprowadź ID formularza', 'church-manager-forms'),
-                'description' => __('Znajdziesz je w Church Manager przy osadzaniu formularza', 'church-manager-forms'),
+                'placeholder' => __('Wprowadź ID formularza', 'avenit-forms'),
+                'description' => __('Znajdziesz je w Avenit przy osadzaniu formularza', 'avenit-forms'),
             ]
         );
 
@@ -74,7 +74,7 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_size',
             [
-                'label' => __('Rozmiar', 'church-manager-forms'),
+                'label' => __('Rozmiar', 'avenit-forms'),
                 'tab' => \Elementor\Controls_Manager::TAB_CONTENT,
             ]
         );
@@ -82,12 +82,12 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
         $this->add_responsive_control(
             'form_width',
             [
-                'label' => __('Szerokość', 'church-manager-forms'),
+                'label' => __('Szerokość', 'avenit-forms'),
                 'type' => \Elementor\Controls_Manager::TEXT,
                 'default' => '100%',
                 'placeholder' => '100%',
                 'selectors' => [
-                    '{{WRAPPER}} .church-manager-form-wrapper iframe' => 'width: {{VALUE}};',
+                    '{{WRAPPER}} .avenit-form-wrapper iframe' => 'width: {{VALUE}};',
                 ],
             ]
         );
@@ -95,7 +95,7 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
         $this->add_responsive_control(
             'form_height',
             [
-                'label' => __('Wysokość (px)', 'church-manager-forms'),
+                'label' => __('Wysokość (px)', 'avenit-forms'),
                 'type' => \Elementor\Controls_Manager::SLIDER,
                 'size_units' => ['px'],
                 'range' => [
@@ -110,7 +110,7 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
                     'size' => 600,
                 ],
                 'selectors' => [
-                    '{{WRAPPER}} .church-manager-form-wrapper iframe' => 'height: {{SIZE}}{{UNIT}};',
+                    '{{WRAPPER}} .avenit-form-wrapper iframe' => 'height: {{SIZE}}{{UNIT}};',
                 ],
             ]
         );
@@ -121,7 +121,7 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
         $this->start_controls_section(
             'section_style',
             [
-                'label' => __('Style', 'church-manager-forms'),
+                'label' => __('Style', 'avenit-forms'),
                 'tab' => \Elementor\Controls_Manager::TAB_STYLE,
             ]
         );
@@ -129,11 +129,11 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
         $this->add_control(
             'border_radius',
             [
-                'label' => __('Zaokrąglenie narożników', 'church-manager-forms'),
+                'label' => __('Zaokrąglenie narożników', 'avenit-forms'),
                 'type' => \Elementor\Controls_Manager::DIMENSIONS,
                 'size_units' => ['px', '%'],
                 'selectors' => [
-                    '{{WRAPPER}} .church-manager-form-wrapper iframe' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+                    '{{WRAPPER}} .avenit-form-wrapper iframe' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
                 ],
             ]
         );
@@ -142,7 +142,7 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
             \Elementor\Group_Control_Box_Shadow::get_type(),
             [
                 'name' => 'box_shadow',
-                'selector' => '{{WRAPPER}} .church-manager-form-wrapper iframe',
+                'selector' => '{{WRAPPER}} .avenit-form-wrapper iframe',
             ]
         );
 
@@ -159,8 +159,8 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
             if (\Elementor\Plugin::$instance->editor->is_edit_mode()) {
                 echo '<div class="cmf-elementor-placeholder" style="padding: 40px; background: #f5f5f5; border: 2px dashed #ddd; border-radius: 8px; text-align: center;">
                     <span class="dashicons dashicons-feedback" style="font-size: 48px; color: #ec4899; margin-bottom: 15px; display: block;"></span>
-                    <p style="font-weight: 600; margin-bottom: 5px;">' . __('Church Manager Form', 'church-manager-forms') . '</p>
-                    <p style="color: #666; margin: 0;">' . __('Wprowadź ID formularza w panelu ustawień', 'church-manager-forms') . '</p>
+                    <p style="font-weight: 600; margin-bottom: 5px;">' . __('Avenit Form', 'avenit-forms') . '</p>
+                    <p style="color: #666; margin: 0;">' . __('Wprowadź ID formularza w panelu ustawień', 'avenit-forms') . '</p>
                 </div>';
             }
             return;
@@ -169,7 +169,7 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
         $height = isset($settings['form_height']['size']) ? $settings['form_height']['size'] : 600;
 
         echo do_shortcode(sprintf(
-            '[church_form id="%s" width="%s" height="%d"]',
+            '[avenit_form id="%s" width="%s" height="%d"]',
             esc_attr($settings['form_id']),
             esc_attr($settings['form_width']),
             absint($height)
@@ -186,8 +186,8 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
             #>
             <div class="cmf-elementor-placeholder" style="padding: 40px; background: #f5f5f5; border: 2px dashed #ddd; border-radius: 8px; text-align: center;">
                 <span class="dashicons dashicons-feedback" style="font-size: 48px; color: #ec4899; margin-bottom: 15px; display: block;"></span>
-                <p style="font-weight: 600; margin-bottom: 5px;"><?php esc_html_e('Church Manager Form', 'church-manager-forms'); ?></p>
-                <p style="color: #666; margin: 0;"><?php esc_html_e('Wprowadź ID formularza w panelu ustawień', 'church-manager-forms'); ?></p>
+                <p style="font-weight: 600; margin-bottom: 5px;"><?php esc_html_e('Avenit Form', 'avenit-forms'); ?></p>
+                <p style="color: #666; margin: 0;"><?php esc_html_e('Wprowadź ID formularza w panelu ustawień', 'avenit-forms'); ?></p>
             </div>
             <#
         } else {
@@ -196,21 +196,21 @@ class CMF_Elementor_Widget extends \Elementor\Widget_Base {
                 var formUrl = appUrl + '/form/' + settings.form_id;
                 var height = settings.form_height && settings.form_height.size ? settings.form_height.size : 600;
                 #>
-                <div class="church-manager-form-wrapper">
+                <div class="avenit-form-wrapper">
                     <iframe
                         src="{{ formUrl }}"
                         width="{{ settings.form_width }}"
                         height="{{ height }}px"
                         frameborder="0"
                         style="border: none; max-width: 100%;"
-                        title="Formularz Church Manager"
+                        title="Formularz Avenit"
                     ></iframe>
                 </div>
                 <#
             } else {
                 #>
                 <div class="cmf-elementor-placeholder" style="padding: 40px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; text-align: center;">
-                    <p style="color: #856404; margin: 0;"><?php esc_html_e('Skonfiguruj URL aplikacji w ustawieniach pluginu', 'church-manager-forms'); ?></p>
+                    <p style="color: #856404; margin: 0;"><?php esc_html_e('Skonfiguruj URL aplikacji w ustawieniach pluginu', 'avenit-forms'); ?></p>
                 </div>
                 <#
             }

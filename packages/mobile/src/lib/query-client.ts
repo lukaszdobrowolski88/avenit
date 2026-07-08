@@ -15,6 +15,6 @@ export const queryClient = new QueryClient({
 
 export const queryPersister = createAsyncStoragePersister({
   storage: AsyncStorage,
-  key: 'schtomy.query-cache.v1',
+  key: 'avenit.query-cache.v1',
   throttleTime: 1000,
 });

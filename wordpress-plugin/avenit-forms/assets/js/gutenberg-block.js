@@ -7,15 +7,15 @@
     var useBlockProps = blockEditor.useBlockProps;
 
     // Rejestracja bloku
-    blocks.registerBlockType('church-manager/form', {
-        title: i18n.__('Church Manager Form', 'church-manager-forms'),
-        description: i18n.__('Osadź formularz z Church Manager', 'church-manager-forms'),
+    blocks.registerBlockType('avenit/form', {
+        title: i18n.__('Avenit Form', 'avenit-forms'),
+        description: i18n.__('Osadź formularz z Avenit', 'avenit-forms'),
         icon: 'feedback',
         category: 'embed',
         keywords: [
-            i18n.__('formularz', 'church-manager-forms'),
-            i18n.__('church', 'church-manager-forms'),
-            i18n.__('ankieta', 'church-manager-forms')
+            i18n.__('formularz', 'avenit-forms'),
+            i18n.__('church', 'avenit-forms'),
+            i18n.__('ankieta', 'avenit-forms')
         ],
         attributes: {
             formId: {
@@ -91,7 +91,7 @@
                             color: '#333',
                             margin: '0 0 10px'
                         }
-                    }, i18n.__('Church Manager Form', 'church-manager-forms')),
+                    }, i18n.__('Avenit Form', 'avenit-forms')),
                     el('p', {
                         style: {
                             fontSize: '14px',
@@ -99,8 +99,8 @@
                             margin: '0'
                         }
                     }, attributes.formId
-                        ? i18n.__('Skonfiguruj URL aplikacji w ustawieniach pluginu', 'church-manager-forms')
-                        : i18n.__('Wprowadź ID formularza w panelu po prawej stronie', 'church-manager-forms')
+                        ? i18n.__('Skonfiguruj URL aplikacji w ustawieniach pluginu', 'avenit-forms')
+                        : i18n.__('Wprowadź ID formularza w panelu po prawej stronie', 'avenit-forms')
                     )
                 );
             }
@@ -108,27 +108,27 @@
             return el('div', blockProps,
                 el(InspectorControls, {},
                     el(PanelBody, {
-                        title: i18n.__('Ustawienia formularza', 'church-manager-forms'),
+                        title: i18n.__('Ustawienia formularza', 'avenit-forms'),
                         initialOpen: true
                     },
                         el(TextControl, {
-                            label: i18n.__('ID formularza', 'church-manager-forms'),
-                            help: i18n.__('Znajdziesz je w Church Manager przy osadzaniu formularza', 'church-manager-forms'),
+                            label: i18n.__('ID formularza', 'avenit-forms'),
+                            help: i18n.__('Znajdziesz je w Avenit przy osadzaniu formularza', 'avenit-forms'),
                             value: attributes.formId,
                             onChange: function(value) {
                                 setAttributes({ formId: value });
                             }
                         }),
                         el(TextControl, {
-                            label: i18n.__('Szerokość', 'church-manager-forms'),
-                            help: i18n.__('np. 100%, 600px', 'church-manager-forms'),
+                            label: i18n.__('Szerokość', 'avenit-forms'),
+                            help: i18n.__('np. 100%, 600px', 'avenit-forms'),
                             value: attributes.width,
                             onChange: function(value) {
                                 setAttributes({ width: value });
                             }
                         }),
                         el(RangeControl, {
-                            label: i18n.__('Wysokość (px)', 'church-manager-forms'),
+                            label: i18n.__('Wysokość (px)', 'avenit-forms'),
                             value: attributes.height,
                             onChange: function(value) {
                                 setAttributes({ height: value });

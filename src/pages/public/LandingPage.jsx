@@ -66,7 +66,7 @@ export default function LandingPage() {
     {
       name: 'Pastor Jan Kowalski',
       church: 'Kościół Łaski, Warszawa',
-      text: 'AppSchtomy zrewolucjonizowało sposób, w jaki zarządzamy naszą społecznością. Oszczędzamy godziny pracy tygodniowo!'
+      text: 'Avenit zrewolucjonizowało sposób, w jaki zarządzamy naszą społecznością. Oszczędzamy godziny pracy tygodniowo!'
     },
     {
       name: 'Anna Nowak',
@@ -89,7 +89,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-2">
               <Church size={28} className="text-accent-primary" />
               <span className="text-xl font-bold text-gray-900 dark:text-white">
-                AppSchtomy
+                Avenit
               </span>
             </div>
             <div className="hidden md:flex items-center gap-8">
@@ -347,7 +347,7 @@ export default function LandingPage() {
             Gotowy, aby zacząć?
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-            Dołącz do setek kościołów, które już korzystają z AppSchtomy.
+            Dołącz do setek kościołów, które już korzystają z Avenit.
             Wypróbuj za darmo przez 14 dni.
           </p>
           <Link
@@ -367,7 +367,7 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Church size={24} className="text-accent-primary-light" />
-                <span className="text-lg font-bold text-white">AppSchtomy</span>
+                <span className="text-lg font-bold text-white">Avenit</span>
               </div>
               <p className="text-gray-400 text-sm">
                 Nowoczesne oprogramowanie do zarządzania kościołem.
@@ -397,7 +397,7 @@ export default function LandingPage() {
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li className="flex items-center gap-2">
                   <Mail size={14} />
-                  kontakt@appschtomy.pl
+                  kontakt@avenit.pl
                 </li>
                 <li className="flex items-center gap-2">
                   <Phone size={14} />
@@ -408,7 +408,7 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t border-gray-800 pt-8 text-center text-gray-400 text-sm">
-            © {new Date().getFullYear()} AppSchtomy. Wszystkie prawa zastrzeżone.
+            © {new Date().getFullYear()} Avenit. Wszystkie prawa zastrzeżone.
           </div>
         </div>
       </footer>

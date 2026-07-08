@@ -30,7 +30,7 @@ export const TAB_PERMISSIONS = {
     equipment: ['rada_starszych', 'koordynator', 'lider']
   },
 
-  // Moduł Małe SCH TOMY
+  // Moduł Małe Avenit
   kids: {
     schedule: null,
     groups: null,

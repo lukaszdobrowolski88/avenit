@@ -3,8 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // SendGrid API
 const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY");
-const FROM_EMAIL = Deno.env.get("MAILING_FROM_EMAIL") || "noreply@schtomy.pl";
-const FROM_NAME = Deno.env.get("MAILING_FROM_NAME") || "Church Manager";
+const FROM_EMAIL = Deno.env.get("MAILING_FROM_EMAIL") || "noreply@avenit.pl";
+const FROM_NAME = Deno.env.get("MAILING_FROM_NAME") || "Avenit";
 
 // Supabase
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -144,7 +144,7 @@ function generateEmailHtml(params: {
           <tr>
             <td style="padding: 24px 32px; background-color: #f9fafb; border-radius: 0 0 16px 16px; text-align: center;">
               <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                Ten email został wysłany automatycznie z Church Manager.
+                Ten email został wysłany automatycznie z Avenit.
               </p>
             </td>
           </tr>

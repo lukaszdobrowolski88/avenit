@@ -170,7 +170,7 @@ export default function RegisterPage() {
           <Link to="/" className="flex items-center gap-2 mb-8">
             <Church size={32} className="text-accent-primary" />
             <span className="text-2xl font-bold text-gray-900 dark:text-white">
-              AppSchtomy
+              Avenit
             </span>
           </Link>
 
@@ -310,7 +310,7 @@ export default function RegisterPage() {
                     </label>
                     <div className="flex items-center">
                       <span className="px-3 py-3 bg-gray-100 dark:bg-gray-700 border border-r-0 border-gray-200 dark:border-gray-700 rounded-l-xl text-gray-500 text-sm">
-                        app.appschtomy.pl/
+                        app.avenit.pl/
                       </span>
                       <input
                         type="text"
@@ -436,7 +436,7 @@ export default function RegisterPage() {
       <div className="hidden lg:flex flex-1 bg-gradient-to-br from-accent-primary to-accent-secondary items-center justify-center p-12">
         <div className="max-w-md text-white">
           <h2 className="text-3xl font-bold mb-4">
-            Dołącz do społeczności AppSchtomy
+            Dołącz do społeczności Avenit
           </h2>
           <p className="text-white/80 mb-8">
             Ponad 500 kościołów już korzysta z naszej platformy do zarządzania

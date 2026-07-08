@@ -1787,7 +1787,7 @@ const FinanceModule = () => {
                   { value: 'Grupa Uwielbienia', label: 'Grupa Uwielbienia' },
                   { value: 'MediaTeam', label: 'MediaTeam' },
                   { value: 'Grupy domowe', label: 'Grupy domowe' },
-                  { value: 'małe SCH TOMY', label: 'małe SCH TOMY' },
+                  { value: 'małe Avenit', label: 'małe Avenit' },
                   { value: 'AtmosferaTeam', label: 'AtmosferaTeam' }
                 ]}
                 placeholder="Wybierz służbę"

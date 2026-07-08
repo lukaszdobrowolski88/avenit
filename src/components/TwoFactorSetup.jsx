@@ -48,7 +48,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
 
   // Rozpocznij konfiguracje
   const handleStartSetup = async () => {
-    const result = await setupTwoFactor('Church Manager');
+    const result = await setupTwoFactor('Avenit');
     if (result.success) {
       setSetupData(result);
       setStep(2);
@@ -82,12 +82,12 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
 
   // Pobierz kody jako plik
   const downloadBackupCodes = () => {
-    const codesText = `Kody zapasowe dla Church Manager (${userEmail})\n\nUżyj jednego z tych kodów, jeśli nie masz dostępu do aplikacji Authenticator:\n\n${setupData.backupCodes.join('\n')}\n\nUwaga: Każdy kod można użyć tylko raz.\nWygenerowano: ${new Date().toLocaleString('pl-PL')}`;
+    const codesText = `Kody zapasowe dla Avenit (${userEmail})\n\nUżyj jednego z tych kodów, jeśli nie masz dostępu do aplikacji Authenticator:\n\n${setupData.backupCodes.join('\n')}\n\nUwaga: Każdy kod można użyć tylko raz.\nWygenerowano: ${new Date().toLocaleString('pl-PL')}`;
     const blob = new Blob([codesText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `church-manager-backup-codes-${Date.now()}.txt`;
+    a.download = `avenit-backup-codes-${Date.now()}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };

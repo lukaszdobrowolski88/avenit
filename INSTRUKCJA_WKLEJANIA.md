@@ -4,7 +4,7 @@
 
 1. Przejdź do: https://app.supabase.com
 2. Zaloguj się do swojego konta
-3. Wybierz swój projekt (church-manager)
+3. Wybierz swój projekt (avenit)
 
 ## Krok 2: Przejdź do Edge Functions
 

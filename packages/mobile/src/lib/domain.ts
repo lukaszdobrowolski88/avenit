@@ -1,5 +1,5 @@
 // Inline'owana zawartość `@church/domain` — schemy, transpozycja akordów, format dat.
-// Plan zakładał, że nie tworzymy osobnego `@schtomy/domain` pakietu — wszystko trzymamy w mobile.
+// Plan zakładał, że nie tworzymy osobnego `@avenit/domain` pakietu — wszystko trzymamy w mobile.
 
 import { z } from 'zod';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';

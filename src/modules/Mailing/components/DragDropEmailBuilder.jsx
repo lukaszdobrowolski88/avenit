@@ -1690,7 +1690,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
 
   // Predefiniowane gradienty
   const PRESET_GRADIENTS = [
-    { name: 'SCH TOMY Gold', color1: '#c7ab71', color2: '#a08847' },
+    { name: 'Avenit Gold', color1: '#c7ab71', color2: '#a08847' },
     { name: 'Niebieski', color1: '#3b82f6', color2: '#8b5cf6' },
     { name: 'Zielony', color1: '#10b981', color2: '#06b6d4' },
     { name: 'Zachód słońca', color1: '#f43f5e', color2: '#fbbf24' },

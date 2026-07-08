@@ -1,5 +1,5 @@
 /**
- * Church Manager Forms - Admin Styles
+ * Avenit Forms - Admin Styles
  */
 
 /* Settings page */
@@ -50,11 +50,11 @@
 }
 
 /* Form wrapper */
-.church-manager-form-wrapper {
+.avenit-form-wrapper {
     margin: 20px 0;
 }
 
-.church-manager-form-wrapper iframe {
+.avenit-form-wrapper iframe {
     display: block;
     margin: 0 auto;
 }

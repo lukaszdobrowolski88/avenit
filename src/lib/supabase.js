@@ -1,27 +1,18 @@
-import { createClient } from '@supabase/supabase-js';
+// Klient danych aplikacji — Avenit API (własny backend), interfejs zgodny
+// z supabase-js, więc moduły używają go bez zmian.
+// Web działa na subdomenie tenanta (schwro.avenit.pl) — API jest same-origin,
+// tenant rozpoznawany po Host. W dev: VITE_API_URL + VITE_TENANT.
+import { createApiClient } from '@avenit/shared';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://TWOJ-PROJEKT.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'TWOJ-KLUCZ';
+const apiUrl = import.meta.env.VITE_API_URL || '';
+const tenant = import.meta.env.VITE_TENANT || null;
 
-// REALTIME_DISABLED: Tymczasowo wyłączone - Realtime nie łączy się z bazą na tym projekcie
-// Aby włączyć: zmień REALTIME_DISABLED na false
-const REALTIME_DISABLED = true;
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Gdy Realtime wyłączone - nadpisz channel() żeby zwracał no-op
-// Kod aplikacji dalej wywołuje .channel().on().subscribe() ale nic się nie łączy
-if (REALTIME_DISABLED) {
-  const noopChannel = {
-    on: () => noopChannel,
-    subscribe: () => noopChannel,
-    unsubscribe: () => {},
-    send: () => {},
-  };
-  supabase.channel = () => noopChannel;
-  supabase.removeChannel = () => {};
-  supabase.removeAllChannels = () => {};
-}
+export const supabase = createApiClient({
+  apiUrl,
+  tenant,
+  storage: typeof localStorage !== 'undefined' ? localStorage : null,
+  realtime: false, // web: realtime wyłączony (jak dotąd) — channel() to no-op
+});
 
 // Cache dla użytkownika - unikamy wielokrotnych wywołań getUser()
 let cachedUser = null;

@@ -16,7 +16,7 @@ const SMSAPI_KEYS = [
     label: 'Domyślny nadawca (Sender ID)',
     description: 'Zarejestrowany w SMSAPI. Max 11 znaków alfanumerycznych.',
     secret: false,
-    placeholder: 'np. Schtomy',
+    placeholder: 'np. Avenit',
     maxLength: 11,
   },
   {
@@ -44,11 +44,11 @@ export default function IntegrationsTab() {
   const [message, setMessage] = useState(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
-  const [supabaseUrl, setSupabaseUrl] = useState('');
+  const [apiUrl, setApiUrl] = useState('');
 
   useEffect(() => {
     loadSettings();
-    setSupabaseUrl(import.meta.env.VITE_SUPABASE_URL || '');
+    setApiUrl(import.meta.env.VITE_API_URL || window.location.origin);
   }, []);
 
   const loadSettings = async () => {
@@ -117,7 +117,7 @@ export default function IntegrationsTab() {
 
   const copyWebhookUrl = async () => {
     const secret = settings.smsapi_webhook_secret?.value;
-    const url = `${supabaseUrl}/functions/v1/sms-incoming-webhook${secret ? `?secret=${secret}` : ''}`;
+    const url = `${apiUrl}/api/fn/sms-incoming-webhook${secret ? `?secret=${secret}` : ''}`;
     try {
       await navigator.clipboard.writeText(url);
       setMessage({ type: 'success', text: 'Skopiowano URL webhooka' });
@@ -248,7 +248,7 @@ export default function IntegrationsTab() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-blue-700 dark:text-blue-300">URL webhooka MO (do wklejenia w panelu SMSAPI)</p>
                 <code className="text-xs text-blue-700 dark:text-blue-400 break-all block mt-1 font-mono">
-                  {supabaseUrl}/functions/v1/sms-incoming-webhook
+                  {apiUrl}/api/fn/sms-incoming-webhook
                   {settings.smsapi_webhook_secret?.value ? `?secret=${'•'.repeat(8)}` : ''}
                 </code>
                 <button

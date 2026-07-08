@@ -124,12 +124,12 @@ serve(async (req) => {
       await client.send({
         from: config.smtp_from,
         to: [config.smtp_user],
-        subject: "Test połączenia SMTP - Church Manager",
-        content: "To jest wiadomość testowa z Church Manager.\n\nJeśli otrzymałeś ten email, konfiguracja SMTP działa poprawnie!",
+        subject: "Test połączenia SMTP - Avenit",
+        content: "To jest wiadomość testowa z Avenit.\n\nJeśli otrzymałeś ten email, konfiguracja SMTP działa poprawnie!",
         html: `
           <div style="font-family: Arial, sans-serif; padding: 20px;">
             <h2 style="color: #ec4899;">Test połączenia SMTP</h2>
-            <p>To jest wiadomość testowa z <strong>Church Manager</strong>.</p>
+            <p>To jest wiadomość testowa z <strong>Avenit</strong>.</p>
             <p style="color: #22c55e;">✓ Jeśli otrzymałeś ten email, konfiguracja SMTP działa poprawnie!</p>
             <hr style="margin: 20px 0;">
             <p style="color: #6b7280; font-size: 12px;">

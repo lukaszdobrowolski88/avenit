@@ -4,15 +4,17 @@ const variant = process.env.APP_VARIANT ?? 'production';
 const isPreview = variant === 'preview';
 const isDev = variant === 'development';
 
+// Bundle ID celowo pozostaje 'com.schtomy.app' — zmiana identyfikatora oznacza
+// NOWĄ aplikację w App Store/Google Play (utrata instalacji i tokenów push).
 const baseId = 'com.schtomy.app';
 const suffix = isPreview ? '.preview' : isDev ? '.dev' : '';
 
 const config: ExpoConfig = {
-  name: isPreview ? 'SCH TOMY (preview)' : isDev ? 'SCH TOMY (dev)' : 'SCH TOMY',
-  slug: 'schtomy',
+  name: isPreview ? 'Avenit (preview)' : isDev ? 'Avenit (dev)' : 'Avenit',
+  slug: 'avenit',
   version: '1.0.0',
   orientation: 'portrait',
-  scheme: 'schtomy',
+  scheme: ['avenit', 'schtomy'],
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
   newArchEnabled: true,
@@ -25,7 +27,7 @@ const config: ExpoConfig = {
     bundleIdentifier: baseId + suffix,
     supportsTablet: true,
     infoPlist: {
-      NSFaceIDUsageDescription: 'Użyj Face ID aby odblokować aplikację SCH TOMY bez wpisywania hasła.',
+      NSFaceIDUsageDescription: 'Użyj Face ID aby odblokować aplikację Avenit bez wpisywania hasła.',
       NSCalendarsUsageDescription: 'Aplikacja eksportuje wydarzenia do Twojego kalendarza.',
       NSPhotoLibraryUsageDescription: 'Wybierz zdjęcie do wysłania w wiadomości.',
       NSCameraUsageDescription: 'Zrób zdjęcie do wysłania w wiadomości.',
@@ -73,8 +75,8 @@ const config: ExpoConfig = {
     ],
   ],
   extra: {
-    supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-    supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    apiUrl: process.env.EXPO_PUBLIC_API_URL,
+    tenant: process.env.EXPO_PUBLIC_TENANT,
     eas: {
       projectId: process.env.EAS_PROJECT_ID ?? null,
     },

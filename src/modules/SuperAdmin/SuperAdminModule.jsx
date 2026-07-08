@@ -126,7 +126,7 @@ export default function SuperAdminModule() {
               Panel Super Administratora
             </h1>
             <p className="text-sm text-white/80">
-              AppSchtomy - Zarządzanie systemem
+              Avenit - Zarządzanie systemem
             </p>
           </div>
         </div>

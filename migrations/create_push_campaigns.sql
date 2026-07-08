@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS push_user_preferences (
 );
 
 -- ============================================
--- 8. Trigger updated_at (per-tabela, konwencja appschtomy)
+-- 8. Trigger updated_at (per-tabela, konwencja avenit)
 -- ============================================
 
 CREATE OR REPLACE FUNCTION update_push_campaigns_updated_at()

@@ -42,7 +42,7 @@ const MODULE_TABS = {
     }
   },
   kids: {
-    label: 'Małe SCH TOMY',
+    label: 'Małe Avenit',
     resourceKey: 'module:kids',
     tabs: {
       schedule: 'Grafik',
@@ -181,7 +181,7 @@ export default function GlobalSettings() {
     { key: 'worship', label: 'Grupa Uwielbienia', table: 'worship_team' },
     { key: 'media', label: 'Media Team', table: 'media_team' },
     { key: 'atmosfera', label: 'Atmosfera Team', table: 'atmosfera_members' },
-    { key: 'kids', label: 'Małe SCH TOMY', table: 'kids_teachers' },
+    { key: 'kids', label: 'Małe Avenit', table: 'kids_teachers' },
     { key: 'homegroups', label: 'Grupy Domowe (Lider)', table: 'home_group_leaders' }
   ];
 
@@ -350,31 +350,7 @@ export default function GlobalSettings() {
 
     console.log('Pobrani użytkownicy:', u);
 
-    // Sprawdź czy istnieje superadmin
-    await ensureSuperAdmin();
-
     setLoading(false);
-  };
-
-  const ensureSuperAdmin = async () => {
-    const superAdminEmail = 'lukasz.dobrowolski@schtomy.pl';
-    const { data: existing } = await supabase
-      .from('app_users')
-      .select('*')
-      .eq('email', superAdminEmail)
-      .single();
-
-    if (!existing) {
-      // Utwórz superadmina w tabeli app_users
-      await supabase.from('app_users').insert([{
-        email: superAdminEmail,
-        full_name: 'Łukasz Dobrowolski',
-        role: 'superadmin',
-        is_active: true
-      }]);
-
-      console.log('Utworzono superadmina');
-    }
   };
 
   const handleLogoUpload = async (e) => {
@@ -588,7 +564,7 @@ export default function GlobalSettings() {
 
   const deleteUser = async (id) => {
     const user = users.find(u => u.id === id);
-    if (user?.email === 'lukasz.dobrowolski@schtomy.pl') {
+    if (user?.is_super_admin) {
       return alert('Nie można usunąć superadmina!');
     }
 
@@ -1032,7 +1008,7 @@ export default function GlobalSettings() {
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
                   {users.map(user => {
                     const roleLabel = definedRoles.find(r => r.key === user.role)?.label || user.role;
-                    const isSuperAdmin = user.email === 'lukasz.dobrowolski@schtomy.pl';
+                    const isSuperAdmin = user.is_super_admin === true;
                     return (
                       <tr key={user.id} className={`hover:bg-accent-primary-lightest/30 dark:hover:bg-gray-600 transition text-gray-800 dark:text-gray-200 ${isSuperAdmin ? 'bg-yellow-50/30 dark:bg-yellow-900/10' : ''}`}>
                         <td className="p-4 font-medium flex items-center gap-3">

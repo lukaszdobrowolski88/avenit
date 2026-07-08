@@ -13,7 +13,7 @@
 - ✅ Gradient różowo-pomarańczowy (zgodny z aplikacją)
 - ✅ Tabela z planem nabożeństwa
 - ✅ Lista pieśni z tonacjami
-- ✅ Branding: "Church Manager" + "IT Excellence • SchWro Południe"
+- ✅ Branding: "Avenit" + "IT Excellence • SchWro Południe"
 - ✅ Responsywny (działa na telefonie i desktopie)
 
 ## 🎨 Główne elementy designu:

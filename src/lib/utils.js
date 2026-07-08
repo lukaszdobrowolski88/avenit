@@ -498,7 +498,7 @@ const getPDFHtmlContent = (program, songsMap, teamRoles = {}, options = {}) => {
     <body>
       <!-- STOPKA POZA KONTENEREM -->
       <div class="footer-print">
-          Wygenerowano w App SCH TOMY
+          Wygenerowano w Avenit
       </div>
 
 
@@ -700,7 +700,7 @@ export const generatePDFBase64 = async (program, songsMap) => {
           
           for (let i = 1; i <= totalPages; i++) {
              doc.setPage(i);
-             doc.text("Wygenerowano w App SCH TOMY", 105, 290, { align: "center" });
+             doc.text("Wygenerowano w Avenit", 105, 290, { align: "center" });
           }
 
           const dataUri = doc.output('datauristring');

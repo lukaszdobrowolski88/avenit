@@ -8,8 +8,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@appschtomy.pl';
-const APP_URL = Deno.env.get('APP_URL') || 'https://app.appschtomy.pl';
+const FROM_EMAIL = Deno.env.get('RESEND_FROM_EMAIL') || 'noreply@avenit.pl';
+const APP_URL = Deno.env.get('APP_URL') || 'https://app.avenit.pl';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,7 +45,7 @@ async function sendEmail(to: string, subject: string, html: string) {
         'Authorization': `Bearer ${RESEND_API_KEY}`
       },
       body: JSON.stringify({
-        from: `AppSchtomy <${FROM_EMAIL}>`,
+        from: `Avenit <${FROM_EMAIL}>`,
         to: [to],
         subject,
         html
@@ -86,7 +86,7 @@ function generateEmailContent(stage: number, data: DunningItem): { subject: stri
             </p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
             <p style="color: #999; font-size: 12px;">
-              AppSchtomy - Zarządzanie kościołem<br>
+              Avenit - Zarządzanie kościołem<br>
               Ta wiadomość została wysłana automatycznie.
             </p>
           </div>
@@ -111,7 +111,7 @@ function generateEmailContent(stage: number, data: DunningItem): { subject: stri
             </a>
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
             <p style="color: #999; font-size: 12px;">
-              AppSchtomy - Zarządzanie kościołem
+              Avenit - Zarządzanie kościołem
             </p>
           </div>
         `
@@ -142,11 +142,11 @@ function generateEmailContent(stage: number, data: DunningItem): { subject: stri
               Zapłać teraz i zachowaj dostęp
             </a>
             <p style="color: #666;">
-              W razie problemów z płatnością, skontaktuj się z nami: kontakt@appschtomy.pl
+              W razie problemów z płatnością, skontaktuj się z nami: kontakt@avenit.pl
             </p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
             <p style="color: #999; font-size: 12px;">
-              AppSchtomy - Zarządzanie kościołem
+              Avenit - Zarządzanie kościołem
             </p>
           </div>
         `
@@ -154,7 +154,7 @@ function generateEmailContent(stage: number, data: DunningItem): { subject: stri
 
     case 4:
       return {
-        subject: `Twoje konto AppSchtomy zostało zawieszone`,
+        subject: `Twoje konto Avenit zostało zawieszone`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #dc2626; color: white; padding: 20px; text-align: center;">
@@ -163,7 +163,7 @@ function generateEmailContent(stage: number, data: DunningItem): { subject: stri
             <div style="padding: 20px;">
               <p>Szanowny Kliencie,</p>
               <p>Z powodu nieuregulowanej faktury <strong>${data.invoice_number}</strong>
-              na kwotę <strong>${formatAmount(data.amount)}</strong>, Twoje konto AppSchtomy zostało zawieszone.</p>
+              na kwotę <strong>${formatAmount(data.amount)}</strong>, Twoje konto Avenit zostało zawieszone.</p>
               <p style="font-weight: bold;">Co to oznacza:</p>
               <ul style="color: #666;">
                 <li>Ty i Twoi użytkownicy nie macie dostępu do aplikacji</li>
@@ -176,7 +176,7 @@ function generateEmailContent(stage: number, data: DunningItem): { subject: stri
                 Opłać fakturę i odblokuj konto
               </a>
               <p style="color: #666; font-size: 14px;">
-                Masz pytania? Napisz do nas: kontakt@appschtomy.pl
+                Masz pytania? Napisz do nas: kontakt@avenit.pl
               </p>
             </div>
           </div>

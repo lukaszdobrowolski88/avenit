@@ -321,11 +321,11 @@ export default function UserSettings() {
 
   const downloadBackupCodes = () => {
     const codes = backupCodesData.unused.map(c => c.code).join('\n');
-    const blob = new Blob([`Church Manager - Kody zapasowe 2FA\n\n${codes}\n\nUwaga: Każdy kod może być użyty tylko raz.`], { type: 'text/plain' });
+    const blob = new Blob([`Avenit - Kody zapasowe 2FA\n\n${codes}\n\nUwaga: Każdy kod może być użyty tylko raz.`], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'church-manager-backup-codes.txt';
+    a.download = 'avenit-backup-codes.txt';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -440,8 +440,8 @@ export default function UserSettings() {
   // URL subskrypcji iCal
   const getIcalSubscriptionUrl = () => {
     if (!icalSubscription) return '';
-    const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-    return `${baseUrl}/functions/v1/ical/${icalSubscription.token}`;
+    const baseUrl = import.meta.env.VITE_API_URL || window.location.origin;
+    return `${baseUrl}/api/fn/ical/${icalSubscription.token}`;
   };
 
   // Kopiowanie URL do schowka

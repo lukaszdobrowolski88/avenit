@@ -1,12 +1,12 @@
 // Service Worker dla Push Notifications
 // Obsługuje:
 //   - notyfikacje z dynamicznymi przyciskami akcji (data.actions)
-//   - tracking otwarć i kliknięć przycisków przez /functions/v1/push-event-track
-//   - inline akcje (RSVP) przez /functions/v1/push-action-handler
+//   - tracking otwarć i kliknięć przycisków przez /api/fn/push-event-track
+//   - inline akcje (RSVP) przez /api/fn/push-action-handler
 //   - deep linki w obrębie origin
 
-const TRACK_URL = '/functions/v1/push-event-track';
-const ACTION_URL = '/functions/v1/push-action-handler';
+const TRACK_URL = '/api/fn/push-event-track';
+const ACTION_URL = '/api/fn/push-action-handler';
 
 self.addEventListener('push', function(event) {
   let data = {

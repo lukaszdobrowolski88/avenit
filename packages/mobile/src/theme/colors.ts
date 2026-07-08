@@ -1,4 +1,4 @@
-import { COLOR_PRESETS, rgbTripletToColor, generateShades } from '@schtomy/shared';
+import { COLOR_PRESETS, rgbTripletToColor, generateShades } from '@avenit/shared';
 
 export interface AccentColors {
   primary: string;

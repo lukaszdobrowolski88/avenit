@@ -1,14 +1,14 @@
 <?php
 /**
- * Plugin Name: Church Manager Forms
- * Plugin URI: https://github.com/your-repo/church-manager
- * Description: Osadzaj formularze z Church Manager na swojej stronie WordPress za pomocą prostego shortcode.
+ * Plugin Name: Avenit Forms
+ * Plugin URI: https://avenit.pl
+ * Description: Osadzaj formularze z Avenit na swojej stronie WordPress za pomocą prostego shortcode.
  * Version: 1.0.0
- * Author: Church Manager Team
- * Author URI: https://churchmanager.app
+ * Author: Avenit Team
+ * Author URI: https://avenit.pl
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: church-manager-forms
+ * Text Domain: avenit-forms
  * Domain Path: /languages
  */
 
@@ -25,7 +25,7 @@ define('CMF_PLUGIN_URL', plugin_dir_url(__FILE__));
 /**
  * Główna klasa pluginu
  */
-class Church_Manager_Forms {
+class Avenit_Forms {
 
     /**
      * Instancja singleton
@@ -33,7 +33,7 @@ class Church_Manager_Forms {
     private static $instance = null;
 
     /**
-     * Domyślny URL aplikacji Church Manager
+     * Domyślny URL aplikacji Avenit
      */
     private $default_app_url = '';
 
@@ -58,7 +58,8 @@ class Church_Manager_Forms {
      * Inicjalizacja hooków
      */
     private function init_hooks() {
-        // Rejestracja shortcode
+        // Rejestracja shortcode (church_form = alias dla wstecznej zgodności z istniejącymi osadzeniami)
+        add_shortcode('avenit_form', array($this, 'render_form_shortcode'));
         add_shortcode('church_form', array($this, 'render_form_shortcode'));
 
         // Menu administracyjne
@@ -80,7 +81,7 @@ class Church_Manager_Forms {
     /**
      * Renderowanie shortcode formularza
      *
-     * Użycie: [church_form id="uuid" width="100%" height="600"]
+     * Użycie: [avenit_form id="uuid" width="100%" height="600"]
      */
     public function render_form_shortcode($atts) {
         $atts = shortcode_atts(array(
@@ -88,13 +89,13 @@ class Church_Manager_Forms {
             'width'  => '100%',
             'height' => '600',
             'class'  => '',
-        ), $atts, 'church_form');
+        ), $atts, 'avenit_form');
 
         // Walidacja ID
         if (empty($atts['id'])) {
             if (current_user_can('edit_posts')) {
                 return '<div class="cmf-error" style="padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; color: #856404;">
-                    <strong>Church Manager Forms:</strong> Brak ID formularza. Użyj: [church_form id="twoje-id"]
+                    <strong>Avenit Forms:</strong> Brak ID formularza. Użyj: [avenit_form id="twoje-id"]
                 </div>';
             }
             return '';
@@ -105,7 +106,7 @@ class Church_Manager_Forms {
         if (empty($app_url)) {
             if (current_user_can('edit_posts')) {
                 return '<div class="cmf-error" style="padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; color: #856404;">
-                    <strong>Church Manager Forms:</strong> Skonfiguruj URL aplikacji w <a href="' . admin_url('options-general.php?page=church-manager-forms') . '">ustawieniach</a>.
+                    <strong>Avenit Forms:</strong> Skonfiguruj URL aplikacji w <a href="' . admin_url('options-general.php?page=avenit-forms') . '">ustawieniach</a>.
                 </div>';
             }
             return '';
@@ -125,7 +126,7 @@ class Church_Manager_Forms {
 
         // Budowanie HTML
         $html = sprintf(
-            '<div class="church-manager-form-wrapper %s" style="max-width: 100%%;">
+            '<div class="avenit-form-wrapper %s" style="max-width: 100%%;">
                 <iframe
                     id="%s"
                     src="%s"
@@ -133,7 +134,7 @@ class Church_Manager_Forms {
                     height="%dpx"
                     frameborder="0"
                     style="border: none; max-width: 100%%; display: block;"
-                    title="Formularz Church Manager"
+                    title="Formularz Avenit"
                     allow="clipboard-write"
                     loading="lazy"
                 ></iframe>
@@ -186,10 +187,10 @@ class Church_Manager_Forms {
      */
     public function add_admin_menu() {
         add_options_page(
-            __('Church Manager Forms', 'church-manager-forms'),
-            __('Church Manager Forms', 'church-manager-forms'),
+            __('Avenit Forms', 'avenit-forms'),
+            __('Avenit Forms', 'avenit-forms'),
             'manage_options',
-            'church-manager-forms',
+            'avenit-forms',
             array($this, 'render_settings_page')
         );
     }
@@ -206,16 +207,16 @@ class Church_Manager_Forms {
 
         add_settings_section(
             'cmf_main_section',
-            __('Ustawienia główne', 'church-manager-forms'),
+            __('Ustawienia główne', 'avenit-forms'),
             array($this, 'render_section_info'),
-            'church-manager-forms'
+            'avenit-forms'
         );
 
         add_settings_field(
             'cmf_app_url',
-            __('URL aplikacji Church Manager', 'church-manager-forms'),
+            __('URL aplikacji Avenit', 'avenit-forms'),
             array($this, 'render_app_url_field'),
-            'church-manager-forms',
+            'avenit-forms',
             'cmf_main_section'
         );
     }
@@ -224,7 +225,7 @@ class Church_Manager_Forms {
      * Informacje sekcji
      */
     public function render_section_info() {
-        echo '<p>' . esc_html__('Wprowadź adres URL Twojej instalacji Church Manager.', 'church-manager-forms') . '</p>';
+        echo '<p>' . esc_html__('Wprowadź adres URL Twojej instalacji Avenit.', 'avenit-forms') . '</p>';
     }
 
     /**
@@ -236,7 +237,7 @@ class Church_Manager_Forms {
             '<input type="url" id="cmf_app_url" name="cmf_app_url" value="%s" class="regular-text" placeholder="https://twoja-aplikacja.com" />
             <p class="description">%s</p>',
             esc_attr($value),
-            esc_html__('Przykład: https://churchmanager.twojadomena.pl', 'church-manager-forms')
+            esc_html__('Przykład: https://twojkosciol.avenit.pl', 'avenit-forms')
         );
     }
 
@@ -254,35 +255,35 @@ class Church_Manager_Forms {
             <form action="options.php" method="post">
                 <?php
                 settings_fields('cmf_settings');
-                do_settings_sections('church-manager-forms');
-                submit_button(__('Zapisz ustawienia', 'church-manager-forms'));
+                do_settings_sections('avenit-forms');
+                submit_button(__('Zapisz ustawienia', 'avenit-forms'));
                 ?>
             </form>
 
             <hr />
 
-            <h2><?php esc_html_e('Jak używać', 'church-manager-forms'); ?></h2>
+            <h2><?php esc_html_e('Jak używać', 'avenit-forms'); ?></h2>
 
             <div class="cmf-usage-guide" style="background: #fff; padding: 20px; border: 1px solid #ccd0d4; border-radius: 4px; margin-top: 15px;">
-                <h3><?php esc_html_e('Shortcode', 'church-manager-forms'); ?></h3>
-                <p><?php esc_html_e('Użyj poniższego shortcode w dowolnym poście lub stronie:', 'church-manager-forms'); ?></p>
-                <code style="display: block; padding: 10px; background: #f1f1f1; margin: 10px 0;">[church_form id="TWOJE_ID_FORMULARZA"]</code>
+                <h3><?php esc_html_e('Shortcode', 'avenit-forms'); ?></h3>
+                <p><?php esc_html_e('Użyj poniższego shortcode w dowolnym poście lub stronie:', 'avenit-forms'); ?></p>
+                <code style="display: block; padding: 10px; background: #f1f1f1; margin: 10px 0;">[avenit_form id="TWOJE_ID_FORMULARZA"]</code>
 
-                <h4><?php esc_html_e('Opcjonalne parametry:', 'church-manager-forms'); ?></h4>
+                <h4><?php esc_html_e('Opcjonalne parametry:', 'avenit-forms'); ?></h4>
                 <ul style="list-style: disc; margin-left: 20px;">
                     <li><code>width</code> - szerokość iframe (domyślnie: 100%)</li>
                     <li><code>height</code> - wysokość iframe w pikselach (domyślnie: 600)</li>
                     <li><code>class</code> - dodatkowa klasa CSS</li>
                 </ul>
 
-                <h4><?php esc_html_e('Przykłady:', 'church-manager-forms'); ?></h4>
-                <code style="display: block; padding: 10px; background: #f1f1f1; margin: 5px 0;">[church_form id="abc123" width="100%" height="800"]</code>
-                <code style="display: block; padding: 10px; background: #f1f1f1; margin: 5px 0;">[church_form id="abc123" class="my-custom-form"]</code>
+                <h4><?php esc_html_e('Przykłady:', 'avenit-forms'); ?></h4>
+                <code style="display: block; padding: 10px; background: #f1f1f1; margin: 5px 0;">[avenit_form id="abc123" width="100%" height="800"]</code>
+                <code style="display: block; padding: 10px; background: #f1f1f1; margin: 5px 0;">[avenit_form id="abc123" class="my-custom-form"]</code>
 
                 <hr style="margin: 20px 0;" />
 
-                <h3><?php esc_html_e('Blok Gutenberg', 'church-manager-forms'); ?></h3>
-                <p><?php esc_html_e('W edytorze bloków wyszukaj "Church Manager Form" i dodaj blok do swojej strony.', 'church-manager-forms'); ?></p>
+                <h3><?php esc_html_e('Blok Gutenberg', 'avenit-forms'); ?></h3>
+                <p><?php esc_html_e('W edytorze bloków wyszukaj "Avenit Form" i dodaj blok do swojej strony.', 'avenit-forms'); ?></p>
             </div>
         </div>
         <?php
@@ -307,7 +308,7 @@ class Church_Manager_Forms {
             'appUrl' => $this->get_app_url(),
         ));
 
-        register_block_type('church-manager/form', array(
+        register_block_type('avenit/form', array(
             'editor_script' => 'cmf-gutenberg-block',
             'render_callback' => array($this, 'render_gutenberg_block'),
             'attributes' => array(
@@ -342,7 +343,7 @@ class Church_Manager_Forms {
      * Skrypty dla admina
      */
     public function enqueue_admin_scripts($hook) {
-        if ('settings_page_church-manager-forms' !== $hook) {
+        if ('settings_page_avenit-forms' !== $hook) {
             return;
         }
 
@@ -372,7 +373,7 @@ class Church_Manager_Forms {
 
 // Inicjalizacja pluginu
 function cmf_init() {
-    Church_Manager_Forms::get_instance();
+    Avenit_Forms::get_instance();
 }
 add_action('plugins_loaded', 'cmf_init');
 

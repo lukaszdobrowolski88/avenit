@@ -1,10 +1,24 @@
 import { useEffect, useState } from 'react';
-import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
+// Kształty sesji/usera z Avenit API (zgodne z dotychczasowym użyciem pól).
+export interface AuthUser {
+  id: string;
+  email: string;
+  full_name?: string | null;
+  role?: string | null;
+  [key: string]: unknown;
+}
+
+export interface AuthSession {
+  access_token: string;
+  refresh_token: string;
+  user: AuthUser | null;
+}
+
 export interface AuthState {
-  session: Session | null;
-  user: User | null;
+  session: AuthSession | null;
+  user: AuthUser | null;
   loading: boolean;
 }
 
@@ -39,5 +53,5 @@ export const signOut = () => supabase.auth.signOut();
 
 export const sendPasswordReset = (email: string) =>
   supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: 'schtomy://reset-password',
+    redirectTo: 'avenit://reset-password',
   });

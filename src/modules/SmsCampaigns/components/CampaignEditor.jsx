@@ -306,7 +306,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                     maxLength={SENDER_MAX}
                     value={form.sender}
                     onChange={e => updateForm({ sender: e.target.value })}
-                    placeholder="np. Schtomy"
+                    placeholder="np. Avenit"
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono"
                   />
                   <p className="text-xs text-gray-500 mt-1">

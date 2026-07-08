@@ -6,7 +6,7 @@ const MINISTRY_DEFINITIONS = [
   { key: 'worship_team', name: 'Zespół Uwielbienia', table: 'worship_team', emailField: 'email', nameField: 'full_name' },
   { key: 'media_team', name: 'Media Team', table: 'media_team', emailField: 'email', nameField: 'full_name' },
   { key: 'atmosfera_team', name: 'Atmosfera Team', table: 'atmosfera_members', emailField: 'email', nameField: 'full_name' },
-  { key: 'kids_ministry', name: 'Małe SCH TOMY', table: 'kids_teachers', emailField: 'email', nameField: 'full_name' },
+  { key: 'kids_ministry', name: 'Małe Avenit', table: 'kids_teachers', emailField: 'email', nameField: 'full_name' },
 ];
 
 export function useRecipients() {

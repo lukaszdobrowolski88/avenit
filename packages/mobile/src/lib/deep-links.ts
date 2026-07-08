@@ -2,15 +2,15 @@ import type { Router } from 'expo-router';
 
 // Mapowanie URL/data.link na route w aplikacji.
 // Akceptuje:
-//   - "schtomy://program/123"
-//   - "schtomy://message/<conversationId>"
+//   - "avenit://program/123"
+//   - "avenit://message/<conversationId>"
 //   - "/program/123"  (bez schematu)
 //   - "/(app)/programs/123"  (już route-mode)
 export const navigateFromDeepLink = (router: Router, link: string | null | undefined) => {
   if (!link) return;
   let path = link;
-  // Strip schemat schtomy:// (i toleruj dawne church:// linki, jeśli ktoś by je miał).
-  path = path.replace(/^schtomy:\/\//, '/').replace(/^church:\/\//, '/');
+  // Strip schemat avenit:// (i toleruj dawne linki schtomy:// oraz church://, jeśli ktoś by je miał).
+  path = path.replace(/^avenit:\/\//, '/').replace(/^schtomy:\/\//, '/').replace(/^church:\/\//, '/');
   const programMatch = path.match(/^\/?(?:\(app\)\/)?programs?\/(\d+)/);
   if (programMatch) {
     router.push({
