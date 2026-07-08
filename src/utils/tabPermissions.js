@@ -12,7 +12,8 @@ export const TAB_PERMISSIONS = {
     onlineUsers: null, // Kto jest online - wszyscy
     unreadMessages: null, // Nieprzeczytane wiadomości - wszyscy
     upcomingEvents: null, // Nadchodzące wydarzenia - wszyscy
-    quickAccess: null // Szybki dostęp - wszyscy
+    quickAccess: null, // Szybki dostęp - wszyscy
+    birthdays: null // Urodziny - wszyscy
   },
 
   // Moduł Grupy Domowe

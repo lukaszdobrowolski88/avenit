@@ -50,6 +50,8 @@ export default function Members() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [profileMember, setProfileMember] = useState(null);
+  const [tagInput, setTagInput] = useState('');
+  const [tagFilter, setTagFilter] = useState(null);
   const [formData, setFormData] = useState({
     id: null,
     first_name: '',
@@ -63,6 +65,9 @@ export default function Members() {
     membership_date: '',
     membership_declaration_url: '',
     ministries: [],
+    birth_date: '',
+    notes: '',
+    tags: [],
     campus_id: null
   });
 
@@ -185,6 +190,9 @@ export default function Members() {
       if (!dataToSave.address) dataToSave.address = null;
       if (!dataToSave.email) dataToSave.email = null;
       if (!dataToSave.phone) dataToSave.phone = null;
+      if (!dataToSave.birth_date) dataToSave.birth_date = null;
+      if (!dataToSave.notes) dataToSave.notes = null;
+      if (!Array.isArray(dataToSave.tags)) dataToSave.tags = [];
       if (!dataToSave.campus_id) dataToSave.campus_id = campusIdForInsert;
 
       // Pobierz stare dane członka (jeśli edycja)
@@ -283,7 +291,10 @@ export default function Members() {
         status: member.status || 'Sympatyk',
         membership_date: member.membership_date || '',
         membership_declaration_url: member.membership_declaration_url || '',
-        ministries: member.ministries || []
+        ministries: member.ministries || [],
+        birth_date: member.birth_date || '',
+        notes: member.notes || '',
+        tags: member.tags || []
       });
     } else {
       setFormData({
@@ -299,6 +310,9 @@ export default function Members() {
         membership_date: '',
         membership_declaration_url: '',
         ministries: [],
+        birth_date: '',
+        notes: '',
+        tags: [],
         campus_id: campusIdForInsert
       });
     }
@@ -399,8 +413,13 @@ export default function Members() {
       ? true
       : member.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    const matchesTag = !tagFilter || (member.tags || []).includes(tagFilter);
+
+    return matchesSearch && matchesStatus && matchesTag;
   });
+
+  // Wszystkie unikalne tagi (do filtrowania listy).
+  const allTags = Array.from(new Set(members.flatMap((m) => m.tags || []))).sort();
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -474,6 +493,24 @@ export default function Members() {
             <Plus size={18} /> Dodaj osobę
           </button>
         </div>
+
+        {allTags.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 mb-5">
+            <span className="text-xs font-semibold text-gray-400 uppercase mr-1">Tagi:</span>
+            {allTags.map((t) => (
+              <button
+                key={t}
+                onClick={() => setTagFilter(tagFilter === t ? null : t)}
+                className={`text-xs px-2.5 py-1 rounded-full border transition ${tagFilter === t ? 'bg-accent-primary text-white border-accent-primary' : 'bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-accent-primary-light'}`}
+              >
+                {t}
+              </button>
+            ))}
+            {tagFilter && (
+              <button onClick={() => setTagFilter(null)} className="text-xs text-gray-400 hover:text-red-500 ml-1">wyczyść</button>
+            )}
+          </div>
+        )}
 
         <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
           <div className="overflow-x-auto">
@@ -750,6 +787,57 @@ export default function Members() {
                     onChange={e => setFormData({ ...formData, address: e.target.value })}
                   />
                 </div>
+              </div>
+
+              {/* Data urodzenia */}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data urodzenia</label>
+                <CustomDatePicker
+                  value={formData.birth_date || ''}
+                  onChange={(val) => setFormData({ ...formData, birth_date: val })}
+                />
+              </div>
+
+              {/* Tagi */}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tagi</label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {(formData.tags || []).map((t) => (
+                    <span key={t} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">
+                      {t}
+                      <button type="button" onClick={() => setFormData({ ...formData, tags: formData.tags.filter((x) => x !== t) })} className="hover:text-red-500">
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <input
+                  className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
+                  placeholder="Wpisz tag i naciśnij Enter (np. nowy, do odwiedzenia)"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const t = tagInput.trim();
+                      if (t && !(formData.tags || []).includes(t)) {
+                        setFormData({ ...formData, tags: [...(formData.tags || []), t] });
+                      }
+                      setTagInput('');
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Notatki */}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki (widoczne dla zespołu)</label>
+                <textarea
+                  className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100 h-24 resize-none"
+                  placeholder="Notatki duszpasterskie, historia kontaktu…"
+                  value={formData.notes || ''}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                />
               </div>
 
               {/* Rodzina (Household) */}
