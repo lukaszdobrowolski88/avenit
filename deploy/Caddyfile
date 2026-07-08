@@ -1,20 +1,22 @@
-# Caddy — reverse proxy + TLS + serwowanie statycznych SPA.
-# {$APP_DOMAIN} pochodzi z env. Wildcard TLS przez DNS-01 (Cloudflare).
+# Caddy — reverse proxy + TLS (on-demand, HTTP-01) + serwowanie statycznych SPA.
+# Działa z dowolnym DNS (lh.pl, Hostinger itd.) — bez wtyczki DNS. Wymaga
+# jedynie, by hosty rozwiązywały się na to IP (rekord wildcard *.{$APP_DOMAIN}).
+#
+# Certyfikaty wystawiane per-host przy pierwszym wejściu; endpoint `ask` w API
+# dopuszcza tylko znane subdomeny (admin/api/domena/tenanci).
 
 {
 	email {$ACME_EMAIL}
+	on_demand_tls {
+		ask http://api:3001/api/internal/tls-check
+	}
 }
 
-# ── Panel administracyjny: admin.domena.pl ───────────────────────────
+# ── Panel administracyjny: admin.domena ──────────────────────────────
 admin.{$APP_DOMAIN} {
-	tls {
-		dns cloudflare {$CLOUDFLARE_API_TOKEN}
-	}
-	# /api → backend
 	handle /api/* {
 		reverse_proxy api:3001
 	}
-	# SPA panelu
 	handle {
 		root * /srv/admin
 		try_files {path} /index.html
@@ -22,37 +24,19 @@ admin.{$APP_DOMAIN} {
 	}
 }
 
-# ── API dla aplikacji mobilnej: api.domena.pl ────────────────────────
+# ── API dla aplikacji mobilnej: api.domena ───────────────────────────
 api.{$APP_DOMAIN} {
-	tls {
-		dns cloudflare {$CLOUDFLARE_API_TOKEN}
-	}
 	reverse_proxy api:3001
 }
 
-# ── Tenanci: *.domena.pl (każdy kościół na swojej subdomenie) ─────────
-*.{$APP_DOMAIN} {
-	tls {
-		dns cloudflare {$CLOUDFLARE_API_TOKEN}
-	}
-
-	# API tenanta (tenant rozpoznawany po nagłówku Host przez backend)
+# ── Domena główna ────────────────────────────────────────────────────
+{$APP_DOMAIN} {
 	handle /api/* {
 		reverse_proxy api:3001
 	}
-
-	# Realtime WebSocket
-	handle /api/realtime {
-		reverse_proxy api:3001
-	}
-
-	# Publiczne pliki storage: /storage/<bucket>/<path>
-	# Backend rozpoznaje tenanta po Host i mapuje na katalog na dysku.
 	handle /storage/* {
 		reverse_proxy api:3001
 	}
-
-	# Aplikacja web (SPA)
 	handle {
 		root * /srv/web
 		try_files {path} /index.html
@@ -60,12 +44,18 @@ api.{$APP_DOMAIN} {
 	}
 }
 
-# ── Domena główna (landing / przekierowanie) ─────────────────────────
-{$APP_DOMAIN} {
+# ── Tenanci: *.domena (certyfikat on-demand per subdomena kościoła) ───
+*.{$APP_DOMAIN} {
 	tls {
-		dns cloudflare {$CLOUDFLARE_API_TOKEN}
+		on_demand
+	}
+	handle /api/realtime {
+		reverse_proxy api:3001
 	}
 	handle /api/* {
+		reverse_proxy api:3001
+	}
+	handle /storage/* {
 		reverse_proxy api:3001
 	}
 	handle {

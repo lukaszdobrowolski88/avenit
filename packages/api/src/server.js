@@ -52,6 +52,21 @@ export async function buildServer() {
 
   app.get('/api/health', async () => ({ ok: true, service: 'avenit-api' }));
 
+  // Kontrola on-demand TLS dla Caddy: zwraca 200 tylko dla znanych hostów
+  // (admin/api/domena główna lub istniejący tenant), inaczej 403 — zapobiega
+  // wystawianiu certyfikatów dla przypadkowych domen wskazujących na to IP.
+  app.get('/api/internal/tls-check', async (req, reply) => {
+    const domain = String(req.query.domain || '').toLowerCase();
+    const base = config.APP_DOMAIN.toLowerCase();
+    if (domain === base) return reply.code(200).send('ok');
+    if (!domain.endsWith(`.${base}`)) return reply.code(403).send('no');
+    const sub = domain.slice(0, -(base.length + 1));
+    if (['admin', 'api', 'www', 'app'].includes(sub)) return reply.code(200).send('ok');
+    const { resolveTenant } = await import('./db.js');
+    const tenant = await resolveTenant(sub).catch(() => null);
+    return tenant ? reply.code(200).send('ok') : reply.code(403).send('no');
+  });
+
   await app.register(authRoutes);
   await app.register(dataApiRoutes);
   await app.register(storageRoutes);
