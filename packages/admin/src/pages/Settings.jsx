@@ -34,6 +34,8 @@ export default function Settings() {
     <div>
       <h1 className="h1">Ustawienia platformy</h1>
 
+      <TwoFactor />
+
       <div className="card" style={{ marginBottom: 24 }}>
         <h3 style={{ marginTop: 0 }}>Integracje usług</h3>
         <p className="muted" style={{ marginBottom: 12 }}>Status konfiguracji usług zewnętrznych (z pliku .env na serwerze).</p>
@@ -102,6 +104,78 @@ function Broadcast({ onClose, onSent }) {
         <button onClick={send} disabled={sending || !f.subject || !f.body}>{sending ? 'Wysyłanie…' : 'Wyślij do wszystkich'}</button>
       </div>
     </Modal>
+  );
+}
+
+function TwoFactor() {
+  const [enabled, setEnabled] = useState(null);
+  const [setup, setSetup] = useState(null); // { secret, otpauthUrl, backupCodes }
+  const [code, setCode] = useState('');
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+
+  useEffect(() => { api.me().then((r) => setEnabled(!!r.admin?.totp_enabled)).catch(() => {}); }, []);
+
+  const startSetup = async () => {
+    setErr('');
+    try { setSetup(await api.twofaSetup()); } catch (e) { setErr(e.message); }
+  };
+  const enable = async () => {
+    setErr('');
+    try {
+      await api.twofaEnable({ secret: setup.secret, code, backupCodes: setup.backupCodes });
+      setEnabled(true); setSetup(null); setCode(''); setMsg('2FA włączone');
+    } catch (e) { setErr(e.message); }
+  };
+  const disable = async () => {
+    setErr('');
+    try { await api.twofaDisable(code); setEnabled(false); setCode(''); setMsg('2FA wyłączone'); }
+    catch (e) { setErr(e.message); }
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: 24 }}>
+      <h3 style={{ marginTop: 0 }}>Weryfikacja dwuetapowa (2FA)</h3>
+      {enabled === null && <div className="muted">Ładowanie…</div>}
+
+      {enabled === true && !setup && (
+        <div>
+          <p className="muted">2FA jest <b style={{ color: 'var(--green)' }}>włączone</b> dla Twojego konta.</p>
+          <div className="row" style={{ marginTop: 8 }}>
+            <input placeholder="Kod z aplikacji" value={code} onChange={(e) => setCode(e.target.value)} style={{ maxWidth: 160 }} />
+            <button className="danger" onClick={disable} disabled={code.length < 6}>Wyłącz 2FA</button>
+          </div>
+        </div>
+      )}
+
+      {enabled === false && !setup && (
+        <div>
+          <p className="muted">Zabezpiecz konto kodem z aplikacji Authenticator.</p>
+          <button onClick={startSetup}>Włącz 2FA</button>
+        </div>
+      )}
+
+      {setup && (
+        <div>
+          <p className="muted">1. Zeskanuj lub wpisz klucz w aplikacji Authenticator:</p>
+          <div style={{ padding: 12, background: 'var(--bg)', borderRadius: 8, fontFamily: 'monospace', fontSize: 15, margin: '8px 0', userSelect: 'all' }}>{setup.secret}</div>
+          <p className="muted" style={{ fontSize: 12 }}>Link otpauth: <a href={setup.otpauthUrl} style={{ wordBreak: 'break-all' }}>{setup.otpauthUrl}</a></p>
+          <p className="muted" style={{ marginTop: 12 }}>2. Kody zapasowe (zapisz je):</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '6px 0' }}>
+            {setup.backupCodes.map((c) => <span key={c} style={{ fontFamily: 'monospace', background: 'var(--bg)', padding: '3px 8px', borderRadius: 6 }}>{c}</span>)}
+          </div>
+          <p className="muted" style={{ marginTop: 12 }}>3. Wpisz kod z aplikacji, aby włączyć:</p>
+          <div className="row" style={{ marginTop: 6 }}>
+            <input placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} style={{ maxWidth: 160 }} />
+            <button onClick={enable} disabled={code.length < 6}>Włącz</button>
+            <button className="ghost" onClick={() => { setSetup(null); setCode(''); }}>Anuluj</button>
+          </div>
+        </div>
+      )}
+
+      {msg && <div style={{ color: 'var(--green)', marginTop: 8 }}>{msg}</div>}
+      {err && <div className="err">{err}</div>}
+    </div>
   );
 }
 

@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import { z } from 'zod';
 import { platformPool } from '../db.js';
 import { verifyPassword, hashPassword } from '../auth/passwords.js';
-import { verifyTOTP, consumeBackupCode } from '../auth/totp.js';
+import { verifyTOTP, consumeBackupCode, generateSecret } from '../auth/totp.js';
 import {
   signAccessToken, newRefreshToken, storeRefreshToken,
   rotateRefreshToken, revokeRefreshToken, AUD_ADMIN,
@@ -117,6 +117,14 @@ export default async function adminRoutes(app) {
         SELECT a.action, a.target_type, a.created_at, pa.email AS admin_email FROM audit_log a
           LEFT JOIN platform_admins pa ON a.admin_id = pa.id ORDER BY a.created_at DESC LIMIT 8`),
     ]);
+    // Listy alertów (klikalne w panelu).
+    const [trialsList, unpaidList] = await Promise.all([
+      platformPool.query(`SELECT id, name, subdomain, trial_ends_at FROM tenants
+        WHERE status='trial' AND trial_ends_at < now() + interval '7 days' ORDER BY trial_ends_at LIMIT 10`),
+      platformPool.query(`SELECT i.id, i.invoice_number, i.total, i.due_date, i.status, t.name AS tenant_name, t.id AS tenant_id
+        FROM invoices i JOIN tenants t ON i.tenant_id = t.id
+        WHERE i.status IN ('pending','overdue') ORDER BY i.due_date LIMIT 10`),
+    ]);
     return reply.send({
       tenantsByStatus: tenants.rows,
       invoices: invoices.rows,
@@ -126,7 +134,53 @@ export default async function adminRoutes(app) {
       revenueThisMonth: Number(revenue.rows[0].sum),
       newTenants30d: newTenants.rows[0].n,
       recentActivity: recentAudit.rows,
+      trialsEndingList: trialsList.rows,
+      unpaidInvoicesList: unpaidList.rows,
     });
+  });
+
+  // ── 2FA ADMINA PLATFORMY ───────────────────────────────────────────
+  app.post('/api/admin/2fa/setup', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const secret = generateSecret();
+    const backupCodes = Array.from({ length: 10 }, () =>
+      crypto.randomBytes(4).toString('hex').toUpperCase().slice(0, 8)
+    );
+    return reply.send({
+      secret,
+      backupCodes,
+      otpauthUrl: `otpauth://totp/${encodeURIComponent('Avenit Admin')}:${encodeURIComponent(req.admin.email)}?secret=${secret}&issuer=Avenit`,
+    });
+  });
+  app.post('/api/admin/2fa/enable', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { secret, code, backupCodes } = req.body || {};
+    if (!secret || !verifyTOTP(String(secret), String(code || ''))) {
+      return reply.code(400).send({ error: 'Nieprawidłowy kod — spróbuj ponownie' });
+    }
+    const codes = (backupCodes || []).map((c) => (typeof c === 'string' ? { code: c.toUpperCase(), used: false } : c));
+    await platformPool.query(
+      `UPDATE platform_admins SET totp_secret=$1, totp_enabled=true, totp_backup_codes=$2 WHERE id=$3`,
+      [String(secret), JSON.stringify(codes), req.admin.id]
+    );
+    await audit(req.admin.id, 'admin.2fa_enable', 'admin', req.admin.id);
+    return reply.send({ ok: true });
+  });
+  app.post('/api/admin/2fa/disable', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { rows } = await platformPool.query(`SELECT totp_secret FROM platform_admins WHERE id=$1`, [req.admin.id]);
+    if (!rows[0]?.totp_secret || !verifyTOTP(rows[0].totp_secret, String(req.body?.code || ''))) {
+      return reply.code(400).send({ error: 'Nieprawidłowy kod weryfikacyjny' });
+    }
+    await platformPool.query(
+      `UPDATE platform_admins SET totp_secret=NULL, totp_enabled=false, totp_backup_codes='[]'::jsonb WHERE id=$1`,
+      [req.admin.id]
+    );
+    await audit(req.admin.id, 'admin.2fa_disable', 'admin', req.admin.id);
+    return reply.send({ ok: true });
+  });
+
+  // ── NOTATKI O TENANCIE (CRM) ───────────────────────────────────────
+  app.put('/api/admin/tenants/:id/notes', { preHandler: app.requireAdmin }, async (req, reply) => {
+    await platformPool.query(`UPDATE tenants SET admin_notes=$1 WHERE id=$2`, [req.body?.notes ?? null, req.params.id]);
+    return reply.send({ ok: true });
   });
 
   // ── WZROST (dashboard: wykresy czasowe) ────────────────────────────
@@ -333,11 +387,35 @@ export default async function adminRoutes(app) {
       email: z.string().email().optional(), adminEmail: z.string().email(),
       adminName: z.string().optional(), adminPassword: z.string().min(8).optional(),
       planKey: z.string().optional(), company: z.record(z.any()).optional(),
+      sendWelcome: z.boolean().optional(),
     }).safeParse(req.body);
     if (!body.success) return reply.code(400).send({ error: 'Nieprawidłowe dane', details: body.error.issues });
     try {
       const result = await provisionTenant(body.data);
       await audit(req.admin.id, 'tenant.create', 'tenant', result.tenant.id, { slug: body.data.slug });
+      // E-mail powitalny do administratora kościoła (opcjonalny).
+      if (body.data.sendWelcome) {
+        try {
+          const { sendEmail } = await import('../lib/email.js');
+          const url = `https://${result.tenant.subdomain}.${config.APP_DOMAIN}`;
+          const pass = body.data.adminPassword || result.adminPassword;
+          await sendEmail({
+            to: body.data.adminEmail,
+            subject: 'Witaj w Avenit — Twój kościół jest gotowy',
+            html: `<div style="font-family:sans-serif;max-width:520px">
+              <h2>Witaj w Avenit!</h2>
+              <p>Utworzyliśmy przestrzeń dla <strong>${result.tenant.name}</strong>.</p>
+              <p><strong>Adres:</strong> <a href="${url}">${url}</a><br>
+              <strong>Login:</strong> ${body.data.adminEmail}${pass ? `<br><strong>Hasło:</strong> ${pass}` : ''}</p>
+              <p style="margin:24px 0"><a href="${url}" style="background:#d97706;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none">Otwórz aplikację →</a></p>
+              <p style="color:#6b7280;font-size:13px">Zalecamy zmianę hasła po pierwszym logowaniu.</p>
+            </div>`,
+          });
+          result.welcomeSent = true;
+        } catch (err) {
+          result.welcomeError = err.message;
+        }
+      }
       return reply.send(result);
     } catch (err) {
       return reply.code(400).send({ error: err.message });
@@ -523,13 +601,24 @@ export default async function adminRoutes(app) {
     return reply.send({ success: true, results });
   });
 
-  // ── AUDIT LOG ──────────────────────────────────────────────────────
+  // ── AUDIT LOG (z filtrowaniem) ─────────────────────────────────────
   app.get('/api/admin/audit', { preHandler: app.requireAdmin }, async (req, reply) => {
-    const { rows } = await platformPool.query(`
-      SELECT a.*, pa.email AS admin_email FROM audit_log a
-        LEFT JOIN platform_admins pa ON a.admin_id = pa.id
-       ORDER BY a.created_at DESC LIMIT 200`);
-    return reply.send({ entries: rows });
+    const { action, admin, since } = req.query || {};
+    const conds = [];
+    const params = [];
+    if (action) { params.push(`%${action}%`); conds.push(`a.action ILIKE $${params.length}`); }
+    if (admin) { params.push(`%${admin}%`); conds.push(`pa.email ILIKE $${params.length}`); }
+    if (since) { params.push(since); conds.push(`a.created_at >= $${params.length}::timestamptz`); }
+    const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
+    const { rows } = await platformPool.query(
+      `SELECT a.*, pa.email AS admin_email FROM audit_log a
+         LEFT JOIN platform_admins pa ON a.admin_id = pa.id
+        ${where} ORDER BY a.created_at DESC LIMIT 200`,
+      params
+    );
+    // Lista akcji do filtra.
+    const { rows: actions } = await platformPool.query(`SELECT DISTINCT action FROM audit_log ORDER BY action`);
+    return reply.send({ entries: rows, actions: actions.map((r) => r.action) });
   });
 
   // ── IMPERSONACJA (zaloguj się jako użytkownik tenanta) ─────────────

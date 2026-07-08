@@ -40,6 +40,8 @@ CREATE TABLE IF NOT EXISTS tenants (
 CREATE INDEX IF NOT EXISTS idx_tenants_slug ON tenants(slug);
 CREATE INDEX IF NOT EXISTS idx_tenants_subdomain ON tenants(subdomain);
 CREATE INDEX IF NOT EXISTS idx_tenants_status ON tenants(status);
+-- Notatki administratora platformy o tenancie (CRM).
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_notes TEXT;
 
 -- Wspólny trigger updated_at dla całej bazy platform.
 CREATE OR REPLACE FUNCTION set_updated_at()

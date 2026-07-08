@@ -88,6 +88,14 @@ export const api = {
   broadcastEmail: (body) => request('/api/admin/broadcast-email', { method: 'POST', body }),
   // Reset hasła konta tenanta
   resetUserPassword: (id, userId) => request(`/api/admin/tenants/${id}/reset-user-password`, { method: 'POST', body: { userId } }),
+  // Notatki o tenancie
+  saveTenantNotes: (id, notes) => request(`/api/admin/tenants/${id}/notes`, { method: 'PUT', body: { notes } }),
+  // 2FA admina
+  twofaSetup: () => request('/api/admin/2fa/setup', { method: 'POST' }),
+  twofaEnable: (body) => request('/api/admin/2fa/enable', { method: 'POST', body }),
+  twofaDisable: (code) => request('/api/admin/2fa/disable', { method: 'POST', body: { code } }),
+  // Audit z filtrami
+  auditFiltered: (params) => request(`/api/admin/audit?${new URLSearchParams(params)}`),
   // Ogłoszenia
   announcements: () => request('/api/admin/announcements'),
   createAnnouncement: (body) => request('/api/admin/announcements', { method: 'POST', body }),

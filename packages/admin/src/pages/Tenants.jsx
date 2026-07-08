@@ -85,6 +85,10 @@ function NewTenant({ plans, onClose, onCreated }) {
       <select value={f.planKey} onChange={(e) => set('planKey', e.target.value)}>
         {plans.map((p) => <option key={p.id} value={p.key || p.slug}>{p.name}</option>)}
       </select>
+      <label className="row" style={{ marginTop: 14 }}>
+        <input type="checkbox" style={{ width: 'auto' }} checked={!!f.sendWelcome} onChange={(e) => set('sendWelcome', e.target.checked)} />
+        Wyślij e-mail powitalny z danymi logowania
+      </label>
       {err && <div className="err">{err}</div>}
       <div className="row" style={{ marginTop: 16, justifyContent: 'flex-end' }}>
         <button className="ghost" onClick={onClose}>Anuluj</button>

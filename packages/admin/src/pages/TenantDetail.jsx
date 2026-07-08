@@ -65,6 +65,17 @@ export default function TenantDetail() {
         <TenantEmail tenantId={id} tenantName={tenant.name} onDone={() => setMsg('E-mail wysłany')} onError={setErr} />
       </div>
 
+      <div className="card" style={{ marginBottom: 24 }}>
+        <h3 style={{ marginTop: 0, marginBottom: 8 }}>Notatki wewnętrzne</h3>
+        <textarea
+          defaultValue={tenant.admin_notes || ''}
+          placeholder="Notatki widoczne tylko dla administratorów platformy…"
+          rows={3}
+          onBlur={(e) => { if (e.target.value !== (tenant.admin_notes || '')) act(() => api.saveTenantNotes(id, e.target.value), 'Notatki zapisane'); }}
+          style={{ width: '100%', background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', resize: 'vertical' }}
+        />
+      </div>
+
       <h3>Moduły (per tenant)</h3>
       <div className="cards" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
         {MODULE_KEYS.map((key) => {
