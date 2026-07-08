@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api, formatPLN } from '../lib/api.js';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [d, setD] = useState(null);
   const [growth, setGrowth] = useState(null);
   const [err, setErr] = useState('');
@@ -31,6 +33,31 @@ export default function Dashboard() {
         <Card label="Kończące trial (7 dni)" value={d.trialsEndingSoon} warn={d.trialsEndingSoon > 0} />
         <Card label="Nieopłacone faktury" value={unpaid} warn={unpaid > 0} />
       </div>
+
+      {((d.trialsEndingList || []).length > 0 || (d.unpaidInvoicesList || []).length > 0) && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+          <div className="card" style={{ borderColor: (d.trialsEndingList || []).length ? 'var(--amber)' : undefined }}>
+            <h3 style={{ marginTop: 0, marginBottom: 12 }}>⏳ Kończące się triale</h3>
+            {(d.trialsEndingList || []).length === 0 && <div className="muted">Brak</div>}
+            {(d.trialsEndingList || []).map((t) => (
+              <div key={t.id} onClick={() => navigate(`/tenants/${t.id}`)} className="search-item row" style={{ justifyContent: 'space-between', padding: '8px 6px', cursor: 'pointer', fontSize: 13, borderRadius: 6 }}>
+                <span>{t.name} <span className="muted">({t.subdomain})</span></span>
+                <span className="muted">{new Date(t.trial_ends_at).toLocaleDateString('pl-PL')}</span>
+              </div>
+            ))}
+          </div>
+          <div className="card" style={{ borderColor: (d.unpaidInvoicesList || []).length ? 'var(--red)' : undefined }}>
+            <h3 style={{ marginTop: 0, marginBottom: 12 }}>💰 Nieopłacone faktury</h3>
+            {(d.unpaidInvoicesList || []).length === 0 && <div className="muted">Brak</div>}
+            {(d.unpaidInvoicesList || []).map((i) => (
+              <div key={i.id} onClick={() => navigate(`/tenants/${i.tenant_id}`)} className="search-item row" style={{ justifyContent: 'space-between', padding: '8px 6px', cursor: 'pointer', fontSize: 13, borderRadius: 6 }}>
+                <span>{i.tenant_name} <span className="muted">{i.invoice_number}</span></span>
+                <span><span className={`badge ${i.status}`} style={{ fontSize: 10 }}>{i.status}</span> {formatPLN(i.total)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {growth && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
