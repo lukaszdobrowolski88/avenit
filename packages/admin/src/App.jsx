@@ -1,0 +1,64 @@
+import React, { useEffect, useState } from 'react';
+import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
+import { api, setToken, getToken } from './lib/api.js';
+import Login from './pages/Login.jsx';
+import Dashboard from './pages/Dashboard.jsx';
+import Tenants from './pages/Tenants.jsx';
+import TenantDetail from './pages/TenantDetail.jsx';
+import Plans from './pages/Plans.jsx';
+import Invoices from './pages/Invoices.jsx';
+import Coupons from './pages/Coupons.jsx';
+import Audit from './pages/Audit.jsx';
+import Settings from './pages/Settings.jsx';
+
+export default function App() {
+  const [admin, setAdmin] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!getToken()) { setLoading(false); return; }
+    api.me().then((r) => setAdmin(r.admin)).catch(() => setToken(null)).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="main">Ładowanie…</div>;
+  if (!admin) return <Login onLogin={setAdmin} />;
+
+  return <Shell admin={admin} onLogout={() => { api.logout().catch(() => {}); setToken(null); setAdmin(null); }} />;
+}
+
+function Shell({ admin, onLogout }) {
+  const navigate = useNavigate();
+  return (
+    <div className="layout">
+      <aside className="sidebar">
+        <div className="brand">Avenit</div>
+        <nav className="nav">
+          <NavLink to="/" end>Dashboard</NavLink>
+          <NavLink to="/tenants">Tenanci</NavLink>
+          <NavLink to="/plans">Plany</NavLink>
+          <NavLink to="/invoices">Faktury</NavLink>
+          <NavLink to="/coupons">Kupony</NavLink>
+          <NavLink to="/audit">Log audytu</NavLink>
+          <NavLink to="/settings">Ustawienia</NavLink>
+        </nav>
+        <div style={{ padding: '20px', marginTop: 'auto', position: 'absolute', bottom: 0, width: 220 }}>
+          <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>{admin.email}</div>
+          <button className="ghost" onClick={() => { onLogout(); navigate('/'); }}>Wyloguj</button>
+        </div>
+      </aside>
+      <main className="main">
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/tenants" element={<Tenants />} />
+          <Route path="/tenants/:id" element={<TenantDetail />} />
+          <Route path="/plans" element={<Plans />} />
+          <Route path="/invoices" element={<Invoices />} />
+          <Route path="/coupons" element={<Coupons />} />
+          <Route path="/audit" element={<Audit />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
