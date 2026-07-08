@@ -39,7 +39,23 @@
 		reverse_proxy api:3001
 	}
 
-	# Domena główna + tenanci (subdomena kościoła) → aplikacja web
+	# Domena główna: placeholder „wkrótce" (docelowo strona www)
+	@root host {$APP_DOMAIN}
+	handle @root {
+		root * /srv/static/landing
+		try_files {path} /index.html
+		file_server
+	}
+
+	# app.domena: strona wyboru kościoła → przekierowanie na subdomenę
+	@app host app.{$APP_DOMAIN}
+	handle @app {
+		root * /srv/static/entry
+		try_files {path} /index.html
+		file_server
+	}
+
+	# Tenanci (subdomena kościoła) → aplikacja web
 	handle /api/* {
 		reverse_proxy api:3001
 	}

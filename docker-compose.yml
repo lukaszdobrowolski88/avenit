@@ -117,6 +117,7 @@ services:
       ACME_EMAIL: ${ACME_EMAIL:-admin@avenit.pl}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/static:/srv/static:ro
       - web_dist:/srv/web:ro
       - admin_dist:/srv/admin:ro
       - storage:/srv/storage:ro
