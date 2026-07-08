@@ -74,6 +74,23 @@ export const api = {
   admins: () => request('/api/admin/admins'),
   createAdmin: (body) => request('/api/admin/admins', { method: 'POST', body }),
   runDunning: () => request('/api/admin/dunning/run', { method: 'POST' }),
+  // Impersonacja
+  tenantUsers: (id) => request(`/api/admin/tenants/${id}/users`),
+  impersonate: (id, userId) => request(`/api/admin/tenants/${id}/impersonate`, { method: 'POST', body: { userId } }),
+  // System / monitoring
+  system: () => request('/api/admin/system'),
+  // Ogłoszenia
+  announcements: () => request('/api/admin/announcements'),
+  createAnnouncement: (body) => request('/api/admin/announcements', { method: 'POST', body }),
+  updateAnnouncement: (id, body) => request(`/api/admin/announcements/${id}`, { method: 'PUT', body }),
+  deleteAnnouncement: (id) => request(`/api/admin/announcements/${id}`, { method: 'DELETE' }),
+};
+
+export const formatBytes = (b) => {
+  if (!b) return '0 B';
+  const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(b) / Math.log(1024));
+  return `${(b / Math.pow(1024, i)).toFixed(i ? 1 : 0)} ${u[i]}`;
 };
 
 export const formatPLN = (grosze) => `${((grosze || 0) / 100).toFixed(2)} zł`;

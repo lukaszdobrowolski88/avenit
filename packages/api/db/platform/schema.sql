@@ -393,3 +393,16 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_log_admin ON audit_log(admin_id);
+
+-- ── OGŁOSZENIA SYSTEMOWE (baner widoczny u wszystkich tenantów) ───────
+CREATE TABLE IF NOT EXISTS platform_announcements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  body TEXT,
+  level VARCHAR(20) DEFAULT 'info' CHECK (level IN ('info', 'warning', 'success', 'critical')),
+  is_active BOOLEAN DEFAULT TRUE,
+  starts_at TIMESTAMPTZ,
+  ends_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);

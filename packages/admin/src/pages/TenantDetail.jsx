@@ -61,6 +61,7 @@ export default function TenantDetail() {
           : <button className="danger" onClick={() => act(() => api.suspendTenant(id), 'Zawieszono')}>Zawieś</button>}
         <button className="ghost" onClick={() => act(() => api.extendTrial(id, 14), 'Trial przedłużony o 14 dni')}>+14 dni trial</button>
         <ChangePlan tenantId={id} plans={plans} onDone={() => act(async () => {}, 'Zmieniono plan')} />
+        <Impersonate tenantId={id} subdomain={tenant.subdomain} onError={setErr} />
       </div>
 
       <h3>Moduły (per tenant)</h3>
@@ -94,6 +95,52 @@ export default function TenantDetail() {
         </tbody>
       </table>
     </div>
+  );
+}
+
+function Impersonate({ tenantId, subdomain, onError }) {
+  const [open, setOpen] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const openPicker = async () => {
+    setOpen(true);
+    try { const r = await api.tenantUsers(tenantId); setUsers(r.users || []); }
+    catch (e) { onError(e.message); setOpen(false); }
+  };
+
+  const go = async (userId) => {
+    setLoading(true);
+    try {
+      const r = await api.impersonate(tenantId, userId);
+      if (r.redirect) window.open(r.redirect, '_blank');
+      setOpen(false);
+    } catch (e) { onError(e.message); } finally { setLoading(false); }
+  };
+
+  return (
+    <>
+      <button className="ghost" onClick={openPicker}>Zaloguj się jako →</button>
+      {open && (
+        <Modal title="Zaloguj się jako użytkownik" onClose={() => setOpen(false)}>
+          <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
+            Otworzy nową kartę zalogowaną jako wybrane konto w <b>{subdomain}.avenit.pl</b>. Sesja jest jednorazowa (bilet 60 s).
+          </p>
+          {users.length === 0 && <div className="muted">Ładowanie / brak kont…</div>}
+          <div style={{ maxHeight: 340, overflow: 'auto' }}>
+            {users.map((u) => (
+              <div key={u.id} className="row" style={{ justifyContent: 'space-between', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 8, opacity: u.is_active ? 1 : 0.5 }}>
+                <div>
+                  <div>{u.full_name || u.email} {u.is_super_admin && <span className="badge active" style={{ marginLeft: 6 }}>admin</span>}</div>
+                  <div className="muted" style={{ fontSize: 12 }}>{u.email} · {u.role}</div>
+                </div>
+                <button disabled={loading || !u.is_active} onClick={() => go(u.id)}>Wejdź</button>
+              </div>
+            ))}
+          </div>
+        </Modal>
+      )}
+    </>
   );
 }
 

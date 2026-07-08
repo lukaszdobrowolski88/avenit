@@ -2,6 +2,7 @@
 // Autoryzacja: platform_admins + JWT z audience 'admin' + obowiązkowe TOTP.
 // Wszystkie operacje logowane w audit_log (w przeciwieństwie do martwego
 // modułu SuperAdmin, który działał anon-keyem z przeglądarki).
+import crypto from 'node:crypto';
 import { z } from 'zod';
 import { platformPool } from '../db.js';
 import { verifyPassword, hashPassword } from '../auth/passwords.js';
@@ -98,7 +99,7 @@ export default async function adminRoutes(app) {
 
   // ── DASHBOARD (KPI) ────────────────────────────────────────────────
   app.get('/api/admin/dashboard', { preHandler: app.requireAdmin }, async (req, reply) => {
-    const [tenants, invoices, mrr, trials] = await Promise.all([
+    const [tenants, invoices, mrr, trials, planDist, revenue, newTenants, recentAudit] = await Promise.all([
       platformPool.query(`SELECT status, count(*)::int AS n FROM tenants GROUP BY status`),
       platformPool.query(`SELECT status, count(*)::int AS n, COALESCE(sum(total),0)::bigint AS sum FROM invoices GROUP BY status`),
       platformPool.query(`
@@ -106,12 +107,43 @@ export default async function adminRoutes(app) {
         FROM tenant_subscriptions ts JOIN subscription_plans sp ON ts.plan_id = sp.id
         WHERE ts.status IN ('active','trialing')`),
       platformPool.query(`SELECT count(*)::int AS n FROM tenants WHERE status='trial' AND trial_ends_at < now() + interval '7 days'`),
+      platformPool.query(`
+        SELECT sp.name AS plan, count(*)::int AS n FROM tenant_subscriptions ts
+          JOIN subscription_plans sp ON ts.plan_id = sp.id
+         WHERE ts.status IN ('active','trialing') GROUP BY sp.name ORDER BY n DESC`),
+      platformPool.query(`SELECT COALESCE(sum(total),0)::bigint AS sum FROM invoices WHERE status='paid' AND paid_at >= date_trunc('month', now())`),
+      platformPool.query(`SELECT count(*)::int AS n FROM tenants WHERE created_at >= now() - interval '30 days'`),
+      platformPool.query(`
+        SELECT a.action, a.target_type, a.created_at, pa.email AS admin_email FROM audit_log a
+          LEFT JOIN platform_admins pa ON a.admin_id = pa.id ORDER BY a.created_at DESC LIMIT 8`),
     ]);
     return reply.send({
       tenantsByStatus: tenants.rows,
       invoices: invoices.rows,
       mrr: Number(mrr.rows[0].mrr),
       trialsEndingSoon: trials.rows[0].n,
+      planDistribution: planDist.rows,
+      revenueThisMonth: Number(revenue.rows[0].sum),
+      newTenants30d: newTenants.rows[0].n,
+      recentActivity: recentAudit.rows,
+    });
+  });
+
+  // ── SYSTEM / MONITORING ────────────────────────────────────────────
+  app.get('/api/admin/system', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const [ver, dbs, totals] = await Promise.all([
+      platformPool.query(`SHOW server_version`),
+      platformPool.query(`SELECT datname, pg_database_size(datname) AS size FROM pg_database WHERE datname LIKE 'avenit_%' ORDER BY size DESC`),
+      platformPool.query(`SELECT (SELECT count(*) FROM tenants)::int AS tenants, (SELECT count(*) FROM platform_admins)::int AS admins`),
+    ]);
+    const databases = dbs.rows.map((r) => ({ name: r.datname, sizeBytes: Number(r.size) }));
+    return reply.send({
+      postgresVersion: ver.rows[0].server_version,
+      databases,
+      totalDbBytes: databases.reduce((a, d) => a + d.sizeBytes, 0),
+      tenants: totals.rows[0].tenants,
+      admins: totals.rows[0].admins,
+      serverTime: new Date().toISOString(),
     });
   });
 
@@ -354,6 +386,79 @@ export default async function adminRoutes(app) {
         LEFT JOIN platform_admins pa ON a.admin_id = pa.id
        ORDER BY a.created_at DESC LIMIT 200`);
     return reply.send({ entries: rows });
+  });
+
+  // ── IMPERSONACJA (zaloguj się jako użytkownik tenanta) ─────────────
+  // Lista kont tenanta do wyboru.
+  app.get('/api/admin/tenants/:id/users', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { rows: t } = await platformPool.query(`SELECT db_name FROM tenants WHERE id = $1`, [req.params.id]);
+    if (!t[0]) return reply.code(404).send({ error: 'Tenant nie istnieje' });
+    try {
+      const { rows } = await getTenantPool(t[0].db_name).query(
+        `SELECT id, email, full_name, role, is_active, is_super_admin
+           FROM app_users ORDER BY is_super_admin DESC, role, email LIMIT 200`
+      );
+      return reply.send({ users: rows });
+    } catch {
+      return reply.send({ users: [] });
+    }
+  });
+
+  // Wygeneruj jednorazowy bilet SSO i URL do wejścia jako dany użytkownik.
+  app.post('/api/admin/tenants/:id/impersonate', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { rows: t } = await platformPool.query(
+      `SELECT db_name, subdomain FROM tenants WHERE id = $1`, [req.params.id]
+    );
+    if (!t[0]) return reply.code(404).send({ error: 'Tenant nie istnieje' });
+    const pool = getTenantPool(t[0].db_name);
+    let userId = req.body?.userId;
+    if (!userId) {
+      const { rows } = await pool.query(
+        `SELECT id FROM app_users WHERE is_active AND (is_super_admin OR role = 'superadmin')
+          ORDER BY is_super_admin DESC LIMIT 1`
+      );
+      userId = rows[0]?.id;
+    }
+    if (!userId) return reply.code(400).send({ error: 'Brak aktywnego konta administratora w tym kościele' });
+    const raw = crypto.randomBytes(32).toString('base64url');
+    const hash = crypto.createHash('sha256').update(raw).digest('hex');
+    await pool.query(
+      `INSERT INTO login_tickets (user_id, code_hash, expires_at) VALUES ($1, $2, now() + interval '60 seconds')`,
+      [userId, hash]
+    );
+    await audit(req.admin.id, 'tenant.impersonate', 'tenant', req.params.id, { userId });
+    return reply.send({ redirect: `https://${t[0].subdomain}.${config.APP_DOMAIN}/login?ticket=${raw}` });
+  });
+
+  // ── OGŁOSZENIA SYSTEMOWE (baner u tenantów) ────────────────────────
+  app.get('/api/admin/announcements', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { rows } = await platformPool.query(`SELECT * FROM platform_announcements ORDER BY created_at DESC`);
+    return reply.send({ announcements: rows });
+  });
+  app.post('/api/admin/announcements', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const p = req.body || {};
+    const { rows } = await platformPool.query(
+      `INSERT INTO platform_announcements (title, body, level, is_active, starts_at, ends_at)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [p.title, p.body || null, p.level || 'info', p.is_active !== false, p.starts_at || null, p.ends_at || null]
+    );
+    await audit(req.admin.id, 'announcement.create', 'announcement', rows[0].id);
+    return reply.send({ announcement: rows[0] });
+  });
+  app.put('/api/admin/announcements/:id', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const p = req.body || {};
+    const { rows } = await platformPool.query(
+      `UPDATE platform_announcements SET title=$1, body=$2, level=$3, is_active=$4, starts_at=$5, ends_at=$6
+        WHERE id=$7 RETURNING *`,
+      [p.title, p.body || null, p.level || 'info', p.is_active !== false, p.starts_at || null, p.ends_at || null, req.params.id]
+    );
+    await audit(req.admin.id, 'announcement.update', 'announcement', req.params.id);
+    return reply.send({ announcement: rows[0] });
+  });
+  app.delete('/api/admin/announcements/:id', { preHandler: app.requireAdmin }, async (req, reply) => {
+    await platformPool.query(`DELETE FROM platform_announcements WHERE id = $1`, [req.params.id]);
+    await audit(req.admin.id, 'announcement.delete', 'announcement', req.params.id);
+    return reply.send({ ok: true });
   });
 
   // ── ADMINI PLATFORMY ───────────────────────────────────────────────
