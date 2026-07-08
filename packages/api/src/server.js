@@ -78,6 +78,10 @@ export async function buildServer() {
   const { registerFunctions } = await import('./fn/index.js');
   await registerFunctions(app);
 
+  // Informacje o tenancie (plan, limity) dla aplikacji kościoła.
+  const { default: tenantRoutes } = await import('./tenant/routes.js');
+  await app.register(tenantRoutes);
+
   // Admin API (panel administracyjny platformy).
   const { default: adminRoutes } = await import('./admin/routes.js');
   await app.register(adminRoutes);

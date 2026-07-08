@@ -4,15 +4,49 @@ import { supabase } from '../../lib/supabase';
 import {
   List, Plus, Trash2, X, Settings, Grid, Users, Shield, BookOpen, Building2,
   CheckCircle, AlertCircle, Upload, Eye,
-  Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, UserCheck, Check, ChevronDown, ChevronUp, Layers, Plug
+  Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, UserCheck, Check, ChevronDown, ChevronUp, Layers, Plug,
+  Palette, Bell, Globe, CreditCard
 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import ModuleManager from './components/ModuleManager';
 import CampusManager from './components/CampusManager';
 import ColorPresetPicker from './components/ColorPresetPicker';
 import IntegrationsTab from './components/IntegrationsTab';
+import AppearanceSettings from './components/AppearanceSettings';
+import NotificationSettings from './components/NotificationSettings';
+import SecuritySettings from './components/SecuritySettings';
+import LocalizationSettings from './components/LocalizationSettings';
+import SubscriptionInfo from './components/SubscriptionInfo';
 import { useCampus } from '../../contexts/CampusContext';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+
+// Grupy nawigacji ustawień (menu po lewej).
+const SETTINGS_NAV = [
+  { group: 'Ogólne', items: [
+    { id: 'general', label: 'Organizacja', icon: Settings },
+    { id: 'appearance', label: 'Wygląd', icon: Palette },
+    { id: 'localization', label: 'Regionalne', icon: Globe },
+    { id: 'campuses', label: 'Lokalizacje', icon: Building2 },
+  ]},
+  { group: 'Zespół i dostęp', items: [
+    { id: 'users', label: 'Użytkownicy', icon: Users },
+    { id: 'permissions', label: 'Uprawnienia', icon: Shield },
+    { id: 'security', label: 'Bezpieczeństwo', icon: Shield },
+  ]},
+  { group: 'Moduły', items: [
+    { id: 'modules', label: 'Moduły', icon: Grid },
+    { id: 'module_manager', label: 'Zarządzanie', icon: Layers },
+    { id: 'dictionaries', label: 'Słowniki', icon: BookOpen },
+  ]},
+  { group: 'Komunikacja', items: [
+    { id: 'notifications', label: 'Powiadomienia', icon: Bell },
+    { id: 'integrations', label: 'Integracje', icon: Plug },
+  ]},
+  { group: 'Konto', items: [
+    { id: 'subscription', label: 'Subskrypcja', icon: CreditCard },
+  ]},
+];
+const SETTINGS_NAV_FLAT = SETTINGS_NAV.flatMap((g) => g.items);
 
 // --- MODULE TABS DEFINITION ---
 const MODULE_TABS = {
@@ -880,57 +914,103 @@ export default function GlobalSettings() {
   const logoUrl = appSettings.find(s => s.key === 'org_logo_url')?.value;
   const modulesSettings = appSettings.filter(s => s.key.startsWith('module_'));
 
+  // Helpery odczytu/zapisu ustawień (app_settings, klucz/wartość).
+  const getSetting = (key) => appSettings.find(s => s.key === key)?.value;
+  const saveSetting = async (key, value) => {
+    const v = String(value);
+    await supabase.from('app_settings').upsert({ key, value: v }, { onConflict: 'key' });
+    setAppSettings(prev => prev.some(s => s.key === key)
+      ? prev.map(s => s.key === key ? { ...s, value: v } : s)
+      : [...prev, { key, value: v }]);
+    setMessage({ type: 'success', text: 'Zapisano' });
+  };
+  const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
+
   return (
-    <div className="flex flex-col h-full space-y-6">
-      {/* NAGŁÓWEK + MENU */}
-      <div className="flex justify-between items-end flex-wrap gap-4">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">Konfiguracja</h1>
-        </div>
-        <ResponsiveTabs
-          tabs={[
-            { id: 'general', label: 'Organizacja', icon: Settings },
-            { id: 'campuses', label: 'Lokalizacje', icon: Building2 },
-            { id: 'modules', label: 'Moduły', icon: Grid },
-            { id: 'module_manager', label: 'Zarządzanie', icon: Layers },
-            { id: 'users', label: 'Użytkownicy', icon: Users },
-            { id: 'permissions', label: 'Uprawnienia', icon: Shield },
-            { id: 'dictionaries', label: 'Słowniki', icon: BookOpen },
-            { id: 'integrations', label: 'Integracje', icon: Plug },
-          ]}
-          activeTab={activeTab}
-          onChange={setActiveTab}
-        />
+    <div className="flex flex-col h-full space-y-4">
+      {/* NAGŁÓWEK */}
+      <div>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">Ustawienia</h1>
       </div>
 
       {message && <div className={`p-4 rounded-xl flex items-center gap-2 cursor-pointer ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800'}`} onClick={() => setMessage(null)}>{message.type === 'success' ? <CheckCircle size={20}/> : <AlertCircle size={20}/>} {message.text}</div>}
 
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700 p-8 flex-1 overflow-y-auto transition-colors">
-        
+      {/* Mobile: poziome zakładki */}
+      <div className="lg:hidden">
+        <ResponsiveTabs tabs={SETTINGS_NAV_FLAT} activeTab={activeTab} onChange={setActiveTab} />
+      </div>
+
+      <div className="flex gap-6 flex-1 min-h-0">
+        {/* MENU PO LEWEJ (desktop) */}
+        <nav className="hidden lg:flex flex-col w-60 shrink-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700 p-3 overflow-y-auto">
+          {SETTINGS_NAV.map((section) => (
+            <div key={section.group} className="mb-2">
+              <div className="px-3 pt-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{section.group}</div>
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                const active = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition mb-0.5 ${
+                      active
+                        ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md shadow-accent-primary-light/30'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Icon size={18} className="shrink-0" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        {/* TREŚĆ */}
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700 p-6 lg:p-8 flex-1 overflow-y-auto transition-colors">
+        {activeNav && (
+          <div className="flex items-center gap-2.5 mb-6 lg:hidden">
+            <activeNav.icon size={22} className="text-accent-primary" />
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">{activeNav.label}</h2>
+          </div>
+        )}
+
         {/* --- TAB: ORGANIZACJA --- */}
         {activeTab === 'general' && (
           <div className="max-w-2xl">
-            <SectionHeader title="Identyfikacja" description="Logo i nazwa wyświetlana w aplikacji." />
-            <div className="flex gap-8 items-start">
-              <div className="w-48 text-center">
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl aspect-square flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-700 relative overflow-hidden group hover:border-accent-primary-light transition mb-2">
-                  {logoUrl ? <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-4"/> : <ImageIcon size={40} className="text-gray-300 dark:text-gray-500"/>}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                    <button onClick={() => document.getElementById('logo-u').click()} className="bg-white text-gray-900 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg"><Upload size={16}/> Zmień</button>
-                  </div>
-                  <input id="logo-u" type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
-                </div>
-                <span className="text-xs text-gray-400">Kliknij by zmienić</span>
+            <SectionHeader title="Profil organizacji" description="Podstawowe dane Twojego kościoła." />
+            {[
+              { key: 'org_name', label: 'Nazwa organizacji', placeholder: 'np. Kościół Chrześcijański' },
+              { key: 'org_legal_name', label: 'Nazwa prawna', placeholder: 'Pełna nazwa do dokumentów' },
+              { key: 'org_tax_id', label: 'NIP', placeholder: '000-000-00-00' },
+              { key: 'org_email', label: 'E-mail kontaktowy', type: 'email', placeholder: 'kontakt@kosciol.pl' },
+              { key: 'org_phone', label: 'Telefon', placeholder: '+48 000 000 000' },
+              { key: 'org_website', label: 'Strona WWW', placeholder: 'https://...' },
+            ].map((f) => (
+              <div key={f.key} className="mb-4">
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">{f.label}</label>
+                <input
+                  type={f.type || 'text'}
+                  placeholder={f.placeholder}
+                  className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-accent-primary-light outline-none transition"
+                  defaultValue={getSetting(f.key) || ''}
+                  onBlur={(e) => { if (e.target.value !== (getSetting(f.key) || '')) saveSetting(f.key, e.target.value); }}
+                />
               </div>
-              <div className="flex-1">
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Nazwa Organizacji</label>
-                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-accent-primary-light outline-none transition" defaultValue={appSettings.find(s=>s.key==='org_name')?.value} onBlur={async (e) => { await supabase.from('app_settings').update({value: e.target.value}).eq('key', 'org_name'); setMessage({type:'success', text:'Zapisano'}); }} />
-              </div>
+            ))}
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">Adres</label>
+              <textarea
+                rows={2}
+                placeholder="Ulica, kod pocztowy, miasto"
+                className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-accent-primary-light outline-none transition resize-none"
+                defaultValue={getSetting('org_address') || ''}
+                onBlur={(e) => { if (e.target.value !== (getSetting('org_address') || '')) saveSetting('org_address', e.target.value); }}
+              />
             </div>
-
-            <div className="mt-8">
-              <ColorPresetPicker currentPreset={appSettings.find(s => s.key === 'color_preset')?.value || 'pink-orange'} />
-            </div>
+            <p className="text-xs text-gray-400 mt-2">Logo i kolory ustawisz w zakładce <strong>Wygląd</strong>.</p>
           </div>
         )}
 
@@ -1326,6 +1406,30 @@ export default function GlobalSettings() {
         {/* --- TAB: INTEGRACJE --- */}
         {activeTab === 'integrations' && <IntegrationsTab />}
 
+        {/* --- TAB: WYGLĄD --- */}
+        {activeTab === 'appearance' && (
+          <AppearanceSettings get={getSetting} save={saveSetting} logoUrl={logoUrl} onLogoUpload={handleLogoUpload} />
+        )}
+
+        {/* --- TAB: REGIONALNE --- */}
+        {activeTab === 'localization' && (
+          <LocalizationSettings get={getSetting} save={saveSetting} />
+        )}
+
+        {/* --- TAB: POWIADOMIENIA --- */}
+        {activeTab === 'notifications' && (
+          <NotificationSettings get={getSetting} save={saveSetting} />
+        )}
+
+        {/* --- TAB: BEZPIECZEŃSTWO --- */}
+        {activeTab === 'security' && (
+          <SecuritySettings get={getSetting} save={saveSetting} />
+        )}
+
+        {/* --- TAB: SUBSKRYPCJA --- */}
+        {activeTab === 'subscription' && <SubscriptionInfo />}
+
+        </div>
       </div>
 
       {/* MODAL DODAWANIA UŻYTKOWNIKA (DARK MODE) */}
