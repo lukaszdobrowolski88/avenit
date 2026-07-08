@@ -1,0 +1,128 @@
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { api, formatPLN } from '../lib/api.js';
+import { Modal } from './Tenants.jsx';
+
+// Klucze modułów systemowych (do przełączania per tenant).
+const MODULE_KEYS = [
+  'dashboard', 'programs', 'calendar', 'members', 'worship', 'media', 'atmosfera',
+  'kids', 'homegroups', 'finance', 'teaching', 'prayer', 'komunikator',
+  'mlodziezowka', 'mailing', 'mail', 'forms', 'push_campaigns', 'sms_campaigns', 'settings',
+];
+
+export default function TenantDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [data, setData] = useState(null);
+  const [plans, setPlans] = useState([]);
+  const [err, setErr] = useState('');
+  const [msg, setMsg] = useState('');
+
+  const load = () => api.tenant(id).then(setData).catch((e) => setErr(e.message));
+  useEffect(() => { load(); api.plans().then((r) => setPlans(r.plans)); }, [id]);
+
+  if (err) return <div className="err">{err}</div>;
+  if (!data) return <div>Ładowanie…</div>;
+  const { tenant, subscription, invoices, modules, usage } = data;
+  const disabled = new Set(modules.filter((m) => !m.is_enabled).map((m) => m.module_key));
+
+  const act = async (fn, okMsg) => {
+    try { await fn(); setMsg(okMsg); load(); setTimeout(() => setMsg(''), 2500); }
+    catch (e) { setErr(e.message); }
+  };
+
+  const toggleModule = async (key) => {
+    const nowEnabled = disabled.has(key); // był wyłączony → włączamy
+    await act(() => api.toggleModule(id, key, nowEnabled), 'Zapisano moduł');
+  };
+
+  return (
+    <div>
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <h1 className="h1">{tenant.name} <span className={`badge ${tenant.status}`}>{tenant.status}</span></h1>
+        <button className="ghost" onClick={() => navigate('/tenants')}>← Wróć</button>
+      </div>
+      {msg && <div style={{ color: 'var(--green)', marginBottom: 12 }}>{msg}</div>}
+
+      <div className="cards">
+        <div className="card"><div className="label">Subdomena</div><div className="value" style={{ fontSize: 18 }}>{tenant.subdomain}</div></div>
+        <div className="card"><div className="label">Baza</div><div className="value" style={{ fontSize: 14 }}>{tenant.db_name}</div></div>
+        <div className="card"><div className="label">Plan</div><div className="value" style={{ fontSize: 18 }}>{subscription?.plan_name || '—'}</div></div>
+        {usage && <>
+          <div className="card"><div className="label">Członkowie</div><div className="value">{usage.members}</div></div>
+          <div className="card"><div className="label">Użytkownicy</div><div className="value">{usage.users}</div></div>
+          <div className="card"><div className="label">Grupy</div><div className="value">{usage.groups}</div></div>
+        </>}
+      </div>
+
+      <div className="row" style={{ gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+        {tenant.status === 'suspended'
+          ? <button onClick={() => act(() => api.resumeTenant(id), 'Wznowiono')}>Wznów</button>
+          : <button className="danger" onClick={() => act(() => api.suspendTenant(id), 'Zawieszono')}>Zawieś</button>}
+        <button className="ghost" onClick={() => act(() => api.extendTrial(id, 14), 'Trial przedłużony o 14 dni')}>+14 dni trial</button>
+        <ChangePlan tenantId={id} plans={plans} onDone={() => act(async () => {}, 'Zmieniono plan')} />
+      </div>
+
+      <h3>Moduły (per tenant)</h3>
+      <div className="cards" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))' }}>
+        {MODULE_KEYS.map((key) => {
+          const on = !disabled.has(key);
+          return (
+            <div key={key} className="card toggle" onClick={() => toggleModule(key)}
+                 style={{ cursor: 'pointer', borderColor: on ? 'var(--green)' : 'var(--red)' }}>
+              <div className="row" style={{ justifyContent: 'space-between' }}>
+                <span>{key}</span>
+                <span className={`badge ${on ? 'active' : 'suspended'}`}>{on ? 'ON' : 'OFF'}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <h3 style={{ marginTop: 28 }}>Faktury</h3>
+      <table>
+        <thead><tr><th>Numer</th><th>Kwota</th><th>Status</th><th>Termin</th></tr></thead>
+        <tbody>
+          {invoices.length === 0 && <tr><td colSpan={4} className="muted">Brak faktur</td></tr>}
+          {invoices.map((i) => (
+            <tr key={i.id}>
+              <td>{i.invoice_number}</td><td>{formatPLN(i.total)}</td>
+              <td><span className={`badge ${i.status}`}>{i.status}</span></td>
+              <td className="muted">{i.due_date}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ChangePlan({ tenantId, plans, onDone }) {
+  const [open, setOpen] = useState(false);
+  const [planId, setPlanId] = useState('');
+  const [cycle, setCycle] = useState('monthly');
+  const save = async () => { await api.changePlan(tenantId, planId, cycle); setOpen(false); onDone(); };
+  return (
+    <>
+      <button className="ghost" onClick={() => setOpen(true)}>Zmień plan</button>
+      {open && (
+        <Modal title="Zmień plan" onClose={() => setOpen(false)}>
+          <label>Plan</label>
+          <select value={planId} onChange={(e) => setPlanId(e.target.value)}>
+            <option value="">— wybierz —</option>
+            {plans.map((p) => <option key={p.id} value={p.id}>{p.name} ({formatPLN(p.price_monthly)}/mc)</option>)}
+          </select>
+          <label>Cykl</label>
+          <select value={cycle} onChange={(e) => setCycle(e.target.value)}>
+            <option value="monthly">Miesięczny</option>
+            <option value="yearly">Roczny</option>
+          </select>
+          <div className="row" style={{ marginTop: 16, justifyContent: 'flex-end' }}>
+            <button className="ghost" onClick={() => setOpen(false)}>Anuluj</button>
+            <button onClick={save} disabled={!planId}>Zapisz</button>
+          </div>
+        </Modal>
+      )}
+    </>
+  );
+}

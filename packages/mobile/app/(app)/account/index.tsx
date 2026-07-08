@@ -61,7 +61,7 @@ export default function AccountScreen() {
   const handleBiometricToggle = async (next: boolean) => {
     if (!biometricSupported) return;
     if (next) {
-      const ok = await authenticateWithBiometric('Włącz biometrykę dla SCH TOMY');
+      const ok = await authenticateWithBiometric('Włącz biometrykę dla Avenit');
       if (!ok) return;
     }
     await setBiometricEnabled(next);
@@ -361,7 +361,7 @@ export default function AccountScreen() {
         className="text-[11px] text-center mt-2"
         style={{ color: '#a8a29e', fontFamily: 'Inter_500Medium' }}
       >
-        SCH TOMY · v1.0.0
+        Avenit · v1.0.0
       </Text>
     </ScrollView>
   );

@@ -225,7 +225,7 @@ ${scheduleSongs.map(({ song, songKey }) => {
   return `- ${song.title} (${key})`;
 }).join('\n')}
 
-Utworzono przez SCH TOMY
+Utworzono przez Avenit
 `;
 
   folder.file('README.txt', readme);

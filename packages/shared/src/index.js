@@ -1,4 +1,4 @@
-// @schtomy/shared - Shared logic for web and mobile
+// @avenit/shared - Shared logic for web and mobile
 
 // Color presets & theming
 export {
@@ -13,8 +13,8 @@ export {
 // Tab permissions
 export { TAB_PERMISSIONS, hasTabAccess } from './utils/tabPermissions.js';
 
-// Supabase client factory
-export { createSupabaseClient, createCachedUserHelper, CACHE_DURATION } from './lib/supabase.js';
+// Fabryka klienta danych (Avenit API, interfejs zgodny z supabase-js)
+export { createSupabaseClient, createCachedUserHelper, createApiClient, CACHE_DURATION } from './lib/supabase.js';
 
 // Tenant context
 export {

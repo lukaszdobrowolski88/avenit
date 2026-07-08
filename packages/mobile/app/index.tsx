@@ -24,7 +24,7 @@ export default function Index() {
         setLock('unlocked');
         return;
       }
-      const ok = await authenticateWithBiometric('Odblokuj SCH TOMY');
+      const ok = await authenticateWithBiometric('Odblokuj Avenit');
       if (!cancelled) setLock(ok ? 'unlocked' : 'locked');
     })();
     return () => {
@@ -87,7 +87,7 @@ export default function Index() {
         </Text>
         <Pressable
           onPress={async () => {
-            const ok = await authenticateWithBiometric('Odblokuj SCH TOMY');
+            const ok = await authenticateWithBiometric('Odblokuj Avenit');
             setLock(ok ? 'unlocked' : 'locked');
           }}
           style={{

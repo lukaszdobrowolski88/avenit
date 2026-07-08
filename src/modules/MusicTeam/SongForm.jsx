@@ -692,7 +692,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
     });
 
     if (validFiles.length === 0) {
-      alert('Nieobsługiwany format pliku. Akceptowane: PDF, JPG, PNG, MP3, DOC');
+      alert('Nieobsługiwany format pliku. Akceptowane: PDF, JPG, PNG, MP3, DOC, .pro, .pro6, .pro6pl, .pro7');
       return;
     }
 
@@ -1512,7 +1512,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                   <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                     {uploadingFile ? 'Przesyłanie...' : isDragOver ? 'Upuść plik tutaj' : 'Kliknij lub przeciągnij plik'}
                   </span>
-                  <span className="text-xs text-gray-400">PDF, JPG, PNG, MP3, DOC (max 10MB)</span>
+                  <span className="text-xs text-gray-400">PDF, JPG, PNG, MP3, DOC, .pro / .pro6 / .pro6pl / .pro7 (max 10MB)</span>
                   <input
                     id="file-upload-input"
                     type="file"

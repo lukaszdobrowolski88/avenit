@@ -1,0 +1,133 @@
+# Avenit — pełny stack na VPS (Hostinger). Zastępuje Vercel + Supabase.
+#
+#   docker compose up -d
+#
+# Wymaga pliku .env (skopiuj z deploy/.env.production.example).
+# Wildcard DNS *.${APP_DOMAIN} → IP VPS.
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-avenit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: avenit_platform
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-avenit}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Nie wystawiamy portu na świat — dostęp tylko z sieci compose.
+
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      HOST: 0.0.0.0
+      APP_DOMAIN: ${APP_DOMAIN}
+      PUBLIC_API_URL: https://api.${APP_DOMAIN}
+      DATABASE_URL: postgres://${POSTGRES_USER:-avenit}:${POSTGRES_PASSWORD}@postgres:5432/avenit_platform
+      JWT_SECRET: ${JWT_SECRET}
+      STORAGE_DIR: /srv/storage
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      MAILING_FROM_EMAIL: ${MAILING_FROM_EMAIL:-noreply@avenit.pl}
+      MAILING_FROM_NAME: ${MAILING_FROM_NAME:-Avenit}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@avenit.pl}
+      SMSAPI_TOKEN: ${SMSAPI_TOKEN:-}
+      SMSAPI_DEFAULT_SENDER: ${SMSAPI_DEFAULT_SENDER:-}
+      SMSAPI_WEBHOOK_SECRET: ${SMSAPI_WEBHOOK_SECRET:-}
+      EXPO_ACCESS_TOKEN: ${EXPO_ACCESS_TOKEN:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_EMAIL: ${VAPID_EMAIL:-mailto:kontakt@avenit.pl}
+      MAIL_ENCRYPTION_SECRET: ${MAIL_ENCRYPTION_SECRET:-}
+      P24_MERCHANT_ID: ${P24_MERCHANT_ID:-}
+      P24_POS_ID: ${P24_POS_ID:-}
+      P24_CRC: ${P24_CRC:-}
+      P24_API_KEY: ${P24_API_KEY:-}
+      P24_SANDBOX: ${P24_SANDBOX:-true}
+    volumes:
+      - storage:/srv/storage
+
+  worker:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    restart: unless-stopped
+    command: ["node", "src/worker.js"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      APP_DOMAIN: ${APP_DOMAIN}
+      PUBLIC_API_URL: https://api.${APP_DOMAIN}
+      DATABASE_URL: postgres://${POSTGRES_USER:-avenit}:${POSTGRES_PASSWORD}@postgres:5432/avenit_platform
+      JWT_SECRET: ${JWT_SECRET}
+      STORAGE_DIR: /srv/storage
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@avenit.pl}
+      SMSAPI_TOKEN: ${SMSAPI_TOKEN:-}
+      SMSAPI_DEFAULT_SENDER: ${SMSAPI_DEFAULT_SENDER:-}
+      EXPO_ACCESS_TOKEN: ${EXPO_ACCESS_TOKEN:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_EMAIL: ${VAPID_EMAIL:-mailto:kontakt@avenit.pl}
+      MAIL_ENCRYPTION_SECRET: ${MAIL_ENCRYPTION_SECRET:-}
+    volumes:
+      - storage:/srv/storage
+
+  # Buduje statyczne SPA do wolumenów (jednorazowo przy deploy).
+  frontend-build:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_URL: ""   # same-origin (Caddy proxuje /api)
+    volumes:
+      - web_dist:/web_out
+      - admin_dist:/admin_out
+    command: ["sh", "-c", "rm -rf /web_out/* /admin_out/* && cp -r /out/. /web_out/ && cp -r /out-admin/. /admin_out/ && echo 'Frontend skopiowany'"]
+    restart: "no"
+
+  caddy:
+    build:
+      context: ./deploy
+      dockerfile: Caddy.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@avenit.pl}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - web_dist:/srv/web:ro
+      - admin_dist:/srv/admin:ro
+      - storage:/srv/storage:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  storage:
+  web_dist:
+  admin_dist:
+  caddy_data:
+  caddy_config:

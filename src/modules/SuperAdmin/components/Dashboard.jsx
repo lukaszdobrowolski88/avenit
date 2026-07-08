@@ -107,7 +107,7 @@ export default function Dashboard() {
           Dashboard
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Przegląd systemu AppSchtomy
+          Przegląd systemu Avenit
         </p>
       </div>
 

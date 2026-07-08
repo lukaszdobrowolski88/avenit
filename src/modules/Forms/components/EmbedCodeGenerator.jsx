@@ -51,7 +51,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
   };
 
   const getWordPressShortcode = () => {
-    return `[church_form id="${formId}" width="${iframeWidth}" height="${iframeHeight}"]`;
+    return `[avenit_form id="${formId}" width="${iframeWidth}" height="${iframeHeight}"]`;
   };
 
   const getDirectLink = () => {
@@ -324,7 +324,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                     Instrukcje dla WordPress
                   </h4>
                   <ol className="text-sm text-blue-600 dark:text-blue-300 space-y-1 list-decimal list-inside">
-                    <li>Pobierz i zainstaluj plugin Church Manager Forms</li>
+                    <li>Pobierz i zainstaluj plugin Avenit Forms</li>
                     <li>Aktywuj plugin w panelu WordPress</li>
                     <li>Wklej shortcode na dowolnej stronie lub w poście</li>
                     <li>Formularz pojawi się automatycznie</li>

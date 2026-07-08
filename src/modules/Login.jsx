@@ -46,46 +46,22 @@ export default function Login() {
     setError('');
 
     try {
-      // Równoległe: sprawdź 2FA i weryfikuj hasło jednocześnie (szybsze logowanie)
-      const [twoFactorStatus, authResponse] = await Promise.all([
-        checkTwoFactorStatus(email),
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify({ email, password })
-        })
-      ]);
+      // Weryfikacja hasła i statusu 2FA po stronie API (jedno wywołanie).
+      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
-      // Sprawdź czy hasło jest poprawne
-      if (!authResponse.ok) {
-        const errorData = await authResponse.json();
-        setError(errorData.error_description || errorData.msg || 'Błędny e-mail lub hasło.');
+      if (authError) {
+        setError(authError.message || 'Błędny e-mail lub hasło.');
         setLoading(false);
         return;
       }
 
-      if (twoFactorStatus.enabled) {
-        // Hasło poprawne + 2FA włączone - NIE ustawiamy sesji, tylko przechodzimy do weryfikacji 2FA
+      if (data?.requires2fa) {
+        // Hasło poprawne + 2FA włączone - przechodzimy do weryfikacji kodu
         setPendingEmail(email);
         setRequires2FA(true);
         setLoading(false);
-      } else {
-        // Hasło poprawne + brak 2FA - ustaw sesję z tokenami z odpowiedzi
-        const authData = await authResponse.json();
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: authData.access_token,
-          refresh_token: authData.refresh_token
-        });
-
-        if (sessionError) {
-          setError(sessionError.message || 'Błąd ustawiania sesji.');
-          setLoading(false);
-        }
-        // Sukces - App.jsx wykryje sesję
       }
+      // Sukces bez 2FA - App.jsx wykryje sesję (onAuthStateChange)
     } catch (err) {
       setError('Wystąpił błąd podczas logowania');
       setLoading(false);
@@ -102,25 +78,19 @@ export default function Login() {
     setLoading(true);
     setError('');
 
-    const result = await verifyLoginCode(pendingEmail, totpCode);
+    // Kod TOTP weryfikuje serwer razem z hasłem (kody zapasowe też).
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email: pendingEmail,
+      password,
+      totpCode
+    });
 
-    if (result.success) {
-      // Kod poprawny - zaloguj ponownie
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: pendingEmail,
-        password
-      });
-
-      if (authError) {
-        setError('Błąd logowania. Spróbuj ponownie.');
-        setLoading(false);
-        return;
-      }
-      // Sukces - sesja zostanie wykryta przez App.jsx
-    } else {
-      setError(result.error || 'Nieprawidłowy kod weryfikacyjny');
+    if (authError || data?.requires2fa) {
+      setError(authError?.message || 'Nieprawidłowy kod weryfikacyjny');
       setLoading(false);
+      return;
     }
+    // Sukces - sesja zostanie wykryta przez App.jsx
   };
 
   const handleBack2FA = () => {
@@ -263,7 +233,7 @@ export default function Login() {
         <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
           {showForgotPassword
             ? 'Podaj adres e-mail, a wyślemy Ci link do zresetowania hasła'
-            : 'Zaloguj się do Church Manager'}
+            : 'Zaloguj się do Avenit'}
         </p>
 
         <div className="mb-5">

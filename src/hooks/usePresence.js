@@ -88,20 +88,16 @@ export function useMyPresence(userEmail) {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) {
-          fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/user_presence?user_email=eq.${encodeURIComponent(userEmail)}`,
-            {
-              method: 'PATCH',
-              keepalive: true,
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${session.access_token}`,
-                'Prefer': 'return=minimal'
-              },
-              body: JSON.stringify({ status: 'offline', last_seen: new Date().toISOString() })
-            }
-          );
+          fetch(`${import.meta.env.VITE_API_URL || ''}/api/presence`, {
+            method: 'POST',
+            keepalive: true,
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ status: 'offline', last_seen: new Date().toISOString() })
+          });
         }
       } catch (e) {
         // Ignoruj błędy przy zamykaniu strony

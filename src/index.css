@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* SCH TOMY Gold (default) */
+  /* Avenit Gold (default) */
   --accent-primary: 217 119 6;         /* amber-600 */
   --accent-primary-light: 245 158 11;  /* amber-500 */
   --accent-primary-lighter: 254 243 199; /* amber-100 */

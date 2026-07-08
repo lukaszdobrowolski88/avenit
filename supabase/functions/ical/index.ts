@@ -48,7 +48,7 @@ function escapeICalText(text: string | null | undefined): string {
 
 // Generowanie unikalnego UID dla wydarzenia
 function generateUID(id: string, type: string): string {
-  return `${type}-${id}@church-manager.app`;
+  return `${type}-${id}@avenit.app`;
 }
 
 // Struktura wydarzenia
@@ -330,10 +330,10 @@ serve(async (req) => {
     const icalContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Church Manager//Calendar//PL',
+      'PRODID:-//Avenit//Calendar//PL',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
-      'X-WR-CALNAME:Church Manager',
+      'X-WR-CALNAME:Avenit',
       'X-WR-TIMEZONE:Europe/Warsaw',
       // Definicja strefy czasowej
       'BEGIN:VTIMEZONE',
@@ -362,7 +362,7 @@ serve(async (req) => {
       status: 200,
       headers: {
         'Content-Type': 'text/calendar; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="church-manager.ics"',
+        'Content-Disposition': 'attachment; filename="avenit.ics"',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         ...corsHeaders
       }

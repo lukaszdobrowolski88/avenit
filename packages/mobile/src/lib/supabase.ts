@@ -1,19 +1,22 @@
-import { createSupabaseClient, createCachedUserHelper } from '@schtomy/shared';
+import { createSupabaseClient, createCachedUserHelper } from '@avenit/shared';
 import * as SecureStore from 'expo-secure-store';
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+// Avenit API (własny backend) — mobile łączy się z api.<domena> i wskazuje
+// tenanta nagłówkiem X-Tenant (slug kościoła).
+const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
+const TENANT = process.env.EXPO_PUBLIC_TENANT || '';
 
-// SecureStore adapter dla Supabase Auth
+// SecureStore adapter dla sesji auth
 const secureStoreAdapter = {
   getItem: (key: string) => SecureStore.getItemAsync(key),
   setItem: (key: string, value: string) => SecureStore.setItemAsync(key, value),
   removeItem: (key: string) => SecureStore.deleteItemAsync(key),
 };
 
-export const supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const supabase = createSupabaseClient(API_URL, {
+  tenant: TENANT,
   storage: secureStoreAdapter,
-  detectSessionInUrl: false, // Nie wykrywaj sesji z URL w React Native
+  realtime: true, // mobile używa realtime (messenger, presence)
 });
 
 const userHelper = createCachedUserHelper(supabase);

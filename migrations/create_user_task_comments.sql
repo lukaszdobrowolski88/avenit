@@ -74,7 +74,7 @@ CREATE POLICY "user_task_comments_delete" ON user_task_comments
     )
   );
 
--- Trigger updated_at (konwencja per-tabela, tak jak inne migracje appschtomy).
+-- Trigger updated_at (konwencja per-tabela, tak jak inne migracje avenit).
 CREATE OR REPLACE FUNCTION update_user_task_comments_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN

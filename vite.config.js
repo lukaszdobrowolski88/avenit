@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'icons/*.png'],
       manifest: {
-        name: 'SCH TOMY',
-        short_name: 'SCH TOMY',
-        description: 'SCH TOMY - Aplikacja do zarządzania kościołem',
+        name: 'Avenit',
+        short_name: 'Avenit',
+        description: 'Avenit - Aplikacja do zarządzania kościołem',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',

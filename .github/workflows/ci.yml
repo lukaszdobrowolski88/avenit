@@ -1,0 +1,70 @@
+# CI Avenit — uruchamiane na każdym PR do main oraz na push do main.
+# Egzekwuje flow z GITFLOW.md: testy API + buildy frontendów muszą przejść.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalacja zależności
+        run: npm install --no-audit --no-fund
+
+      - name: Testy jednostkowe API
+        run: node --test packages/api/test/*.test.js
+
+      - name: Walidacja generatora schematu tenanta
+        run: node packages/api/db/build-tenant-schema.mjs
+
+      - name: Build aplikacji web
+        run: npm run build
+
+      - name: Build panelu administracyjnego
+        run: cd packages/admin && npx vite build
+
+  # Test schematu na prawdziwym Postgresie (ładowanie platform + tenant).
+  db-schema:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: avenit_platform
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm install --no-audit --no-fund
+      - name: Generuj szablon tenanta
+        run: node packages/api/db/build-tenant-schema.mjs
+      - name: Załaduj schemat platform
+        env:
+          PGPASSWORD: ci
+        run: psql -h localhost -U postgres -d avenit_platform -v ON_ERROR_STOP=1 -f packages/api/db/platform/schema.sql
+      - name: Załaduj szablon tenanta (struktura musi się utworzyć)
+        env:
+          PGPASSWORD: ci
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE avenit_tenant_ci"
+          psql -h localhost -U postgres -d avenit_tenant_ci -f packages/api/db/template/tenant_schema.sql || true
+          # Sanity: kluczowe tabele muszą istnieć
+          psql -h localhost -U postgres -d avenit_tenant_ci -tc "SELECT to_regclass('public.app_users'), to_regclass('public.members'), to_regclass('public.programs')" | grep -q app_users

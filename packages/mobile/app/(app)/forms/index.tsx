@@ -84,7 +84,7 @@ export default function FormsScreen() {
               const closed = form.status === 'closed';
               const closesSoon =
                 !closed && form.closes_at && new Date(form.closes_at) > new Date();
-              const url = `https://app.schtomy.pl/form/${form.id}`;
+              const url = `https://app.avenit.pl/form/${form.id}`;
               return (
                 <Pressable
                   key={form.id}

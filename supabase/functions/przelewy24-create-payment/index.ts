@@ -96,7 +96,7 @@ serve(async (req) => {
       sessionId,
       amount,
       currency: 'PLN',
-      description: description || 'Płatność AppSchtomy',
+      description: description || 'Płatność Avenit',
       email,
       country: 'PL',
       language: 'pl',

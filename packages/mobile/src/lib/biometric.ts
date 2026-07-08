@@ -1,7 +1,7 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 
-const BIOMETRIC_KEY = 'schtomy.biometric.enabled';
+const BIOMETRIC_KEY = 'avenit.biometric.enabled';
 
 export interface BiometricCapability {
   hasHardware: boolean;
@@ -36,7 +36,7 @@ export const setBiometricEnabled = async (enabled: boolean): Promise<void> => {
 };
 
 export const authenticateWithBiometric = async (
-  reason: string = 'Odblokuj SCH TOMY',
+  reason: string = 'Odblokuj Avenit',
 ): Promise<boolean> => {
   const cap = await getBiometricCapability();
   if (!cap.available) return false;

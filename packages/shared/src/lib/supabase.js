@@ -1,30 +1,34 @@
-import { createClient } from '@supabase/supabase-js';
+// Fabryka klienta danych — od migracji na własny backend (Avenit API) tworzy
+// klienta zgodnego interfejsem z supabase-js, ale gadającego z /api/*.
+// Nazwy createSupabaseClient/createCachedUserHelper zostają dla zgodności
+// z istniejącymi importami w web i mobile.
+import { createApiClient } from './apiClient.js';
 
 export const CACHE_DURATION = 30000; // 30 sekund
 
 /**
- * Factory do tworzenia klienta Supabase z platform-specific storage
- * Web: { storage: localStorage }
- * Mobile: { storage: SecureStore adapter }
+ * Tworzy klienta Avenit API.
+ * @param {string} apiUrl  Bazowy URL API ('' = same-origin, subdomena tenanta)
+ * @param {object} options { tenant, storage, realtime }
+ *   - tenant:   slug tenanta (wymagany, gdy apiUrl nie jest subdomeną tenanta — np. mobile)
+ *   - storage:  { getItem, setItem, removeItem } (localStorage / SecureStore adapter)
+ *   - realtime: true włącza WebSocket (mobile); false = no-op channel (web)
  */
-export function createSupabaseClient(url, key, options = {}) {
-  return createClient(url, key, {
-    auth: {
-      storage: options.storage,
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: options.detectSessionInUrl ?? true,
-      ...options.auth,
-    },
-    ...options.clientOptions,
+export function createSupabaseClient(apiUrl, options = {}) {
+  return createApiClient({
+    apiUrl,
+    tenant: options.tenant,
+    storage: options.storage,
+    realtime: options.realtime ?? false,
   });
 }
 
+export { createApiClient };
+
 /**
- * Tworzy helper getCachedUser() z cache'owaniem
- * Platform-agnostic - nie zależy od localStorage/SecureStore
+ * Helper getCachedUser() z cache'owaniem — bez zmian względem wersji supabase.
  */
-export function createCachedUserHelper(supabaseClient) {
+export function createCachedUserHelper(client) {
   let cachedUser = null;
   let userFetchPromise = null;
   let lastFetchTime = 0;
@@ -41,7 +45,7 @@ export function createCachedUserHelper(supabaseClient) {
     }
 
     userFetchPromise = Promise.race([
-      supabaseClient.auth.getUser().then(({ data }) => data?.user || null),
+      client.auth.getUser().then(({ data }) => data?.user || null),
       new Promise(resolve => setTimeout(() => resolve(cachedUser), 3000))
     ]).then(user => {
       cachedUser = user;

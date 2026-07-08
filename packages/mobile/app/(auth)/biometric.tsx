@@ -36,7 +36,7 @@ export default function BiometricScreen() {
   }, [available, router]);
 
   const enableBiometric = async () => {
-    const ok = await authenticateWithBiometric('Włącz biometrykę dla SCH TOMY');
+    const ok = await authenticateWithBiometric('Włącz biometrykę dla Avenit');
     if (ok) {
       await setBiometricEnabled(true);
     }

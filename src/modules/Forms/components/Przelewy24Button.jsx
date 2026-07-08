@@ -34,7 +34,7 @@ export default function Przelewy24Button({
 
   // URL zwrotny po płatności
   const returnUrl = `${window.location.origin}/form/${formId}?payment=success&session=${currentSessionId}`;
-  const statusUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/przelewy24-webhook`;
+  const statusUrl = `${import.meta.env.VITE_API_URL || window.location.origin}/api/fn/przelewy24-webhook`;
 
   // Rejestracja transakcji w Przelewy24
   const registerTransaction = async () => {

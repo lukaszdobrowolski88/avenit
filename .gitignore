@@ -37,3 +37,13 @@ npm-debug.log*
 # Lokalne pliki instalacyjne z wklejonymi kluczami — NIE commitować
 migrations/_install_*.sql
 **/supabase/.temp/
+
+# Avenit — backupy, artefakty migracji, cache, storage lokalne
+backups/
+migration_*/
+storage/
+/srv/
+*.dump
+live_schema.sql
+.npm-cache/
+avenit-npm-cache/

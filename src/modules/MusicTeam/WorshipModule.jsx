@@ -1663,7 +1663,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
         </div>
 
         <div style="margin-top: 20px; text-align: center; color: #999; font-size: 9px;">
-          Wygenerowano ${new Date().toLocaleDateString('pl-PL')} o ${new Date().toLocaleTimeString('pl-PL')} | App SCH TOMY
+          Wygenerowano ${new Date().toLocaleDateString('pl-PL')} o ${new Date().toLocaleTimeString('pl-PL')} | Avenit
         </div>
       `;
 
