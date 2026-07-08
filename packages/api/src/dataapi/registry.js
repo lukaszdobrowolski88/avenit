@@ -61,6 +61,7 @@ export const REGISTRY = {
 
   // ── Członkowie ──────────────────────────────────────────────────────────
   members: T('module:members'),
+  attendance: T('module:members'),
   households: T('module:members'),
   parent_contacts: T('module:members'),
   groups: T('module:members'),

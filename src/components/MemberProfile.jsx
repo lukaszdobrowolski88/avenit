@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, Edit2, Mail, Phone, MapPin, Home, Users, Calendar, FileText,
-  CheckCircle, CalendarClock, UserCircle2, Cake, Tag, StickyNote,
+  CheckCircle, CalendarClock, UserCircle2, Cake, Tag, StickyNote, CalendarCheck,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -35,6 +35,25 @@ function Row({ icon: Icon, label, children }) {
 // Read-only profil członka. Samodzielnie dociąga nadchodzące zapisy na wydarzenia.
 export default function MemberProfile({ member, members = [], homeGroups = [], households = [], getMinistryLabels, onClose, onEdit }) {
   const [events, setEvents] = useState([]);
+  const [attendance, setAttendance] = useState([]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (!member?.id) { setAttendance([]); return; }
+      try {
+        const { data } = await supabase
+          .from('attendance')
+          .select('date, kind')
+          .eq('member_id', member.id)
+          .eq('present', true)
+          .order('date', { ascending: false })
+          .limit(60);
+        if (active) setAttendance(data || []);
+      } catch (e) { console.error('MemberProfile attendance error:', e); }
+    })();
+    return () => { active = false; };
+  }, [member?.id]);
 
   useEffect(() => {
     let active = true;
@@ -155,6 +174,28 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
               <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{member.notes}</p>
             </div>
           )}
+
+          {attendance.length > 0 && (() => {
+            const now = Date.now();
+            const last90 = attendance.filter((a) => (now - new Date(a.date).getTime()) <= 90 * 86400000).length;
+            return (
+              <div className="py-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
+                  <CalendarCheck size={14} /> Frekwencja
+                </div>
+                <div className="text-sm text-gray-700 dark:text-gray-200">
+                  Ostatnie 90 dni: <b>{last90}</b> {last90 === 1 ? 'obecność' : 'obecności'} · łącznie {attendance.length}
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {attendance.slice(0, 8).map((a, i) => (
+                    <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-300" title={a.kind}>
+                      {fmtDate(a.date)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {events.length > 0 && (
             <div className="py-3">

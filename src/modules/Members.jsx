@@ -10,6 +10,7 @@ import {
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
 import MemberProfile from '../components/MemberProfile';
+import AttendanceTab from './AttendanceTab';
 import MaterialsTab from './shared/MaterialsTab';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import HouseholdManager from './Kids/components/HouseholdManager';
@@ -455,6 +456,7 @@ export default function Members() {
       <ResponsiveTabs
         tabs={[
           { id: 'members', label: 'Członkowie', icon: Users },
+          { id: 'attendance', label: 'Obecność', icon: CheckCircle },
           { id: 'households', label: 'Rodziny', icon: Home },
           { id: 'files', label: 'Pliki', icon: FolderOpen },
         ]}
@@ -631,6 +633,11 @@ export default function Members() {
           )}
         </div>
       </section>
+      )}
+
+      {/* ATTENDANCE TAB */}
+      {activeTab === 'attendance' && (
+        <AttendanceTab members={members} />
       )}
 
       {/* HOUSEHOLDS TAB */}
