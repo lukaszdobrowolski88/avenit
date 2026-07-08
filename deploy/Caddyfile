@@ -13,7 +13,13 @@
 }
 
 # ── Panel administracyjny: admin.domena ──────────────────────────────
+# on_demand na wszystkich blokach — cert wystawiany synchronicznie przy
+# pierwszym handshake (gate: endpoint ask). Deterministyczne, bez problemów
+# z timingiem zarządzanych certów przy starcie Caddy.
 admin.{$APP_DOMAIN} {
+	tls {
+		on_demand
+	}
 	handle /api/* {
 		reverse_proxy api:3001
 	}
@@ -26,11 +32,17 @@ admin.{$APP_DOMAIN} {
 
 # ── API dla aplikacji mobilnej: api.domena ───────────────────────────
 api.{$APP_DOMAIN} {
+	tls {
+		on_demand
+	}
 	reverse_proxy api:3001
 }
 
 # ── Domena główna ────────────────────────────────────────────────────
 {$APP_DOMAIN} {
+	tls {
+		on_demand
+	}
 	handle /api/* {
 		reverse_proxy api:3001
 	}
