@@ -9,8 +9,29 @@ import { runSqlScript } from '../lib/sqlscript.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_PATH = path.resolve(__dirname, '../../db/template/tenant_schema.sql');
+const TENANT_MIGRATIONS_DIR = path.resolve(__dirname, '../../db/tenant-migrations');
 
 const SLUG_RE = /^[a-z][a-z0-9-]{1,40}$/;
+
+// Nakłada migracje przyrostowe z db/tenant-migrations na bazę tenanta (raz każdą).
+export async function applyTenantMigrations(pool) {
+  await pool.query(`CREATE TABLE IF NOT EXISTS _migrations (
+    id SERIAL PRIMARY KEY, filename TEXT UNIQUE NOT NULL, applied_at TIMESTAMPTZ DEFAULT now())`);
+  let files = [];
+  try {
+    files = (await fs.readdir(TENANT_MIGRATIONS_DIR)).filter((f) => f.endsWith('.sql')).sort();
+  } catch {
+    return;
+  }
+  const { rows } = await pool.query(`SELECT filename FROM _migrations`);
+  const applied = new Set(rows.map((r) => r.filename));
+  for (const file of files) {
+    if (applied.has(file)) continue;
+    const sql = await fs.readFile(path.join(TENANT_MIGRATIONS_DIR, file), 'utf8');
+    await pool.query(sql);
+    await pool.query(`INSERT INTO _migrations (filename) VALUES ($1)`, [file]);
+  }
+}
 
 export function slugToDbName(slug) {
   return `avenit_tenant_${slug.replaceAll('-', '_')}`;
@@ -51,6 +72,11 @@ export async function provisionTenant({
     if (!check[0].t) {
       throw new Error(`Szablon nie utworzył app_users (${result.failed} błędów instrukcji)`);
     }
+
+    // 2b. Migracje przyrostowe po szablonie (szablon = baza, migracje = przyrosty).
+    //     Dzięki temu nowe tabele wystarczy dodać jako migrację — bez regeneracji
+    //     szablonu. Śledzone w tabeli _migrations.
+    await applyTenantMigrations(pool);
 
     // 3. Konto administratora kościoła.
     const password = adminPassword || crypto.randomBytes(9).toString('base64url');
