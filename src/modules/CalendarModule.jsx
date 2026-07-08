@@ -13,6 +13,7 @@ import CustomSelect from '../components/CustomSelect';
 import ProgramEditorModal from './Programs/ProgramEditorModal';
 import EventRSVP from '../components/EventRSVP';
 import { useCampusQuery } from '../hooks/useCampusQuery';
+import { useT } from '../i18n';
 
 // --- MODAL POTWIERDZENIA USUNIĘCIA ---
 
@@ -169,6 +170,7 @@ const getDaysInMonth = (date) => {
 // --- MODAL WYBORU TYPU (WYDARZENIE VS ZADANIE) ---
 
 const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
+  const t = useT();
   if (!document.body) return null;
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
@@ -178,10 +180,10 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
         </button>
 
         <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
-          <Plus size={24} className="text-accent-primary" /> Co chcesz dodać?
+          <Plus size={24} className="text-accent-primary" /> {t('Co chcesz dodać?')}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          {date ? new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Wybierz typ'}
+          {date ? new Date(date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' }) : t('Wybierz typ')}
         </p>
 
         <div className="grid grid-cols-2 gap-4">
@@ -193,8 +195,8 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
               <CalendarPlus size={28} />
             </div>
             <div className="text-center">
-              <div className="font-bold text-gray-800 dark:text-white">Wydarzenie</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Nabożeństwo, spotkanie...</div>
+              <div className="font-bold text-gray-800 dark:text-white">{t('Wydarzenie')}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t('Nabożeństwo, spotkanie...')}</div>
             </div>
           </button>
 
@@ -206,8 +208,8 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
               <ListTodo size={28} />
             </div>
             <div className="text-center">
-              <div className="font-bold text-gray-800 dark:text-white">Zadanie</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Do zrobienia, reminder...</div>
+              <div className="font-bold text-gray-800 dark:text-white">{t('Zadanie')}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{t('Do zrobienia, reminder...')}</div>
             </div>
           </button>
         </div>
@@ -284,6 +286,7 @@ const ModalSelectEventCategory = ({ date, categories, onClose, onSelectCategory,
 // --- MODAL OGÓLNEGO WYDARZENIA (nie Nabożeństwo) ---
 
 const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) => {
+  const t = useT();
   const [event, setEvent] = useState(initialEvent || {
     title: '',
     description: '',
@@ -348,7 +351,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
 
         <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2">
           <CalendarPlus size={24} className="text-accent-primary" />
-          {event.id ? 'Edytuj Wydarzenie' : 'Nowe Wydarzenie'}
+          {event.id ? t('Edytuj Wydarzenie') : t('Nowe Wydarzenie')}
         </h2>
         <div className="mb-6">
           <span className="inline-block px-3 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light text-xs font-bold rounded-full">
@@ -358,24 +361,24 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tytuł</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Tytuł')}</label>
             <input
               autoFocus
               className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
               value={event.title}
               onChange={e => setEvent({...event, title: e.target.value})}
-              placeholder="Nazwa wydarzenia"
+              placeholder={t('Nazwa wydarzenia')}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Data</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Data')}</label>
             <CustomDatePicker value={event.date} onChange={v => setEvent({...event, date: v})} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Godzina rozpoczęcia</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina rozpoczęcia')}</label>
               <CustomTimePicker
                 value={event.time}
                 onChange={v => setEvent({...event, time: v})}
@@ -383,7 +386,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Godzina zakończenia</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina zakończenia')}</label>
               <CustomTimePicker
                 value={event.end_time || ''}
                 onChange={v => setEvent({...event, end_time: v})}
@@ -393,25 +396,25 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Miejsce</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Miejsce')}</label>
             <div className="relative">
               <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm"
                 value={event.location || ''}
                 onChange={e => setEvent({...event, location: e.target.value})}
-                placeholder="np. Sala główna"
+                placeholder={t('np. Sala główna')}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Opis</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Opis')}</label>
             <textarea
               className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm h-24 resize-none"
               value={event.description || ''}
               onChange={e => setEvent({...event, description: e.target.value})}
-              placeholder="Szczegóły wydarzenia..."
+              placeholder={t('Szczegóły wydarzenia...')}
             />
           </div>
 
@@ -419,7 +422,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
           <div className="pt-1">
             <label className="flex items-center justify-between gap-3 cursor-pointer">
               <span className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                <Users size={16} className="text-accent-primary" /> Zapisy na wydarzenie
+                <Users size={16} className="text-accent-primary" /> {t('Zapisy na wydarzenie')}
               </span>
               <input
                 type="checkbox"
@@ -430,14 +433,14 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
             </label>
             {event.registration_required && (
               <div className="mt-3">
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Limit miejsc (opcjonalnie)</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Limit miejsc (opcjonalnie)')}</label>
                 <input
                   type="number"
                   min="0"
                   className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm"
                   value={event.max_participants || ''}
                   onChange={e => setEvent({...event, max_participants: e.target.value})}
-                  placeholder="np. 30 — puste = bez limitu"
+                  placeholder={t('np. 30 — puste = bez limitu')}
                 />
                 {event.id && (
                   <EventRSVP eventId={event.id} maxParticipants={event.max_participants} />
@@ -455,9 +458,9 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
           ) : <div></div>}
 
           <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">Anuluj</button>
+            <button onClick={onClose} className="px-4 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">{t('Anuluj')}</button>
             <button onClick={handleSubmit} className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg shadow-accent-primary-light/30 flex items-center gap-2 transition">
-              <Save size={16} /> Zapisz
+              <Save size={16} /> {t('Zapisz')}
             </button>
           </div>
         </div>
@@ -477,6 +480,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
 // --- TASK MODAL ---
 
 const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
+  const t = useT();
   const [task, setTask] = useState(initialTask || {
     title: '',
     description: '',
@@ -537,27 +541,27 @@ const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
         <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"><X size={20} className="text-gray-500" /></button>
         <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
             {task.id ? <CheckCircle size={24} className="text-blue-600" /> : <Plus size={24} className="text-blue-600" />} 
-            {task.id ? 'Edytuj Zadanie' : 'Nowe Zadanie'}
+            {task.id ? t('Edytuj Zadanie') : t('Nowe Zadanie')}
         </h2>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tytuł</label>
-            <input autoFocus className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500/20 outline-none" value={task.title} onChange={e => setTask({...task, title: e.target.value})} placeholder="Co jest do zrobienia?" />
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Tytuł')}</label>
+            <input autoFocus className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500/20 outline-none" value={task.title} onChange={e => setTask({...task, title: e.target.value})} placeholder={t('Co jest do zrobienia?')} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kategoria</label><CustomSelect value={task.team} onChange={v => setTask({...task, team: v})} options={Object.entries(TEAMS).filter(([k]) => k !== 'program').map(([k, v]) => ({ value: k, label: v.label }))} /></div>
-             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Miejsce</label><div className="relative"><MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm" value={task.location || ''} onChange={e => setTask({...task, location: e.target.value})} placeholder="np. Biuro" /></div></div>
+             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Kategoria')}</label><CustomSelect value={task.team} onChange={v => setTask({...task, team: v})} options={Object.entries(TEAMS).filter(([k]) => k !== 'program').map(([k, v]) => ({ value: k, label: v.label }))} /></div>
+             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Miejsce')}</label><div className="relative"><MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm" value={task.location || ''} onChange={e => setTask({...task, location: e.target.value})} placeholder={t('np. Biuro')} /></div></div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Data</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Data')}</label>
             <CustomDatePicker value={task.due_date} onChange={handleDateChange} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Godzina rozpoczęcia</label><CustomTimePicker value={task.due_time} onChange={v => setTask({...task, due_time: v})} placeholder="Od" /></div>
-             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Godzina zakończenia</label><CustomTimePicker value={task.end_time} onChange={v => setTask({...task, end_time: v})} placeholder="Do" /></div>
+             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina rozpoczęcia')}</label><CustomTimePicker value={task.due_time} onChange={v => setTask({...task, due_time: v})} placeholder="Od" /></div>
+             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina zakończenia')}</label><CustomTimePicker value={task.end_time} onChange={v => setTask({...task, end_time: v})} placeholder="Do" /></div>
           </div>
-          <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">Opis</label><textarea className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm h-24 resize-none" value={task.description || ''} onChange={e => setTask({...task, description: e.target.value})} placeholder="Szczegóły zadania..." /></div>
+          <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Opis')}</label><textarea className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm h-24 resize-none" value={task.description || ''} onChange={e => setTask({...task, description: e.target.value})} placeholder={t('Szczegóły zadania...')} /></div>
         </div>
         <div className="mt-6 flex justify-between items-center">
            {task.id && onDelete ? (
@@ -565,8 +569,8 @@ const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
            ) : <div></div>}
            
            <div className="flex gap-2">
-              <button onClick={onClose} className="px-4 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">Anuluj</button>
-              <button onClick={handleSubmit} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center gap-2 shadow-lg shadow-blue-500/30 transition"><Save size={16} /> Zapisz</button>
+              <button onClick={onClose} className="px-4 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">{t('Anuluj')}</button>
+              <button onClick={handleSubmit} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center gap-2 shadow-lg shadow-blue-500/30 transition"><Save size={16} /> {t('Zapisz')}</button>
            </div>
         </div>
       </div>
