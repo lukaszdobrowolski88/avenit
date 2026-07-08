@@ -11,6 +11,7 @@ import Sidebar, { SidebarProvider } from './components/Sidebar';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import InstallPrompt from './components/InstallPrompt';
+import AnnouncementBanner from './components/AnnouncementBanner';
 import useOffline from './hooks/useOffline';
 import Login from './modules/Login';
 import ResetPassword from './modules/ResetPassword';
@@ -338,6 +339,8 @@ export default function App() {
               <InstallPrompt />
               {/* Offline Banner */}
               <OfflineBanner />
+              {/* Ogłoszenia systemowe z platformy */}
+              <AnnouncementBanner />
               <main className="flex-1 overflow-y-auto p-4 lg:p-6 custom-scrollbar">
               <ErrorBoundary>
               <Routes>

@@ -10,6 +10,8 @@ import Invoices from './pages/Invoices.jsx';
 import Coupons from './pages/Coupons.jsx';
 import Audit from './pages/Audit.jsx';
 import Settings from './pages/Settings.jsx';
+import System from './pages/System.jsx';
+import Announcements from './pages/Announcements.jsx';
 
 export default function App() {
   const [admin, setAdmin] = useState(null);
@@ -38,6 +40,8 @@ function Shell({ admin, onLogout }) {
           <NavLink to="/plans">Plany</NavLink>
           <NavLink to="/invoices">Faktury</NavLink>
           <NavLink to="/coupons">Kupony</NavLink>
+          <NavLink to="/announcements">Ogłoszenia</NavLink>
+          <NavLink to="/system">System</NavLink>
           <NavLink to="/audit">Log audytu</NavLink>
           <NavLink to="/settings">Ustawienia</NavLink>
         </nav>
@@ -54,6 +58,8 @@ function Shell({ admin, onLogout }) {
           <Route path="/plans" element={<Plans />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/coupons" element={<Coupons />} />
+          <Route path="/announcements" element={<Announcements />} />
+          <Route path="/system" element={<System />} />
           <Route path="/audit" element={<Audit />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" />} />

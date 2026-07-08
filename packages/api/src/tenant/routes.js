@@ -4,6 +4,18 @@
 import { platformPool } from '../db.js';
 
 export default async function tenantRoutes(app) {
+  // Aktywne ogłoszenia systemowe (baner w aplikacji kościoła).
+  app.get('/api/announcements', { preHandler: app.requireUser }, async (req, reply) => {
+    const { rows } = await platformPool.query(
+      `SELECT id, title, body, level, created_at FROM platform_announcements
+        WHERE is_active
+          AND (starts_at IS NULL OR starts_at <= now())
+          AND (ends_at IS NULL OR ends_at >= now())
+        ORDER BY created_at DESC LIMIT 5`
+    );
+    return reply.send({ announcements: rows });
+  });
+
   app.get('/api/tenant/info', { preHandler: app.requireUser }, async (req, reply) => {
     const tenantId = req.tenant.id;
 
