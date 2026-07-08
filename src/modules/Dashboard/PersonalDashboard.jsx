@@ -219,7 +219,7 @@ export default function PersonalDashboard({ user }) {
               <WidgetContainer
                 key={item.widgetId}
                 widgetId={item.widgetId}
-                title={widget.name}
+                title={t(widget.name)}
                 icon={IconComponent}
                 size={item.size}
                 isCustomizing={isCustomizing}
