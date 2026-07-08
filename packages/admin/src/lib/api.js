@@ -79,6 +79,15 @@ export const api = {
   impersonate: (id, userId) => request(`/api/admin/tenants/${id}/impersonate`, { method: 'POST', body: { userId } }),
   // System / monitoring
   system: () => request('/api/admin/system'),
+  growth: () => request('/api/admin/growth'),
+  integrationsStatus: () => request('/api/admin/integrations-status'),
+  // Wyszukiwarka
+  search: (q) => request(`/api/admin/search?q=${encodeURIComponent(q)}`),
+  // E-mail
+  emailTenant: (id, body) => request(`/api/admin/tenants/${id}/email`, { method: 'POST', body }),
+  broadcastEmail: (body) => request('/api/admin/broadcast-email', { method: 'POST', body }),
+  // Reset hasła konta tenanta
+  resetUserPassword: (id, userId) => request(`/api/admin/tenants/${id}/reset-user-password`, { method: 'POST', body: { userId } }),
   // Ogłoszenia
   announcements: () => request('/api/admin/announcements'),
   createAnnouncement: (body) => request('/api/admin/announcements', { method: 'POST', body }),

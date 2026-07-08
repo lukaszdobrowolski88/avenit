@@ -3,8 +3,12 @@ import { api, formatPLN } from '../lib/api.js';
 
 export default function Dashboard() {
   const [d, setD] = useState(null);
+  const [growth, setGrowth] = useState(null);
   const [err, setErr] = useState('');
-  useEffect(() => { api.dashboard().then(setD).catch((e) => setErr(e.message)); }, []);
+  useEffect(() => {
+    api.dashboard().then(setD).catch((e) => setErr(e.message));
+    api.growth().then(setGrowth).catch(() => {});
+  }, []);
   if (err) return <div className="err">{err}</div>;
   if (!d) return <div>Ładowanie…</div>;
 
@@ -27,6 +31,13 @@ export default function Dashboard() {
         <Card label="Kończące trial (7 dni)" value={d.trialsEndingSoon} warn={d.trialsEndingSoon > 0} />
         <Card label="Nieopłacone faktury" value={unpaid} warn={unpaid > 0} />
       </div>
+
+      {growth && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+          <GrowthChart title="Nowi tenanci (12 mies.)" months={growth.months} values={growth.tenants} fmt={(v) => v} />
+          <GrowthChart title="Przychód (12 mies.)" months={growth.months} values={growth.revenue.map((v) => Math.round(v / 100))} fmt={(v) => `${v} zł`} />
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 8 }}>
         <div className="card">
@@ -54,6 +65,23 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function GrowthChart({ title, months, values, fmt }) {
+  const max = Math.max(1, ...values);
+  return (
+    <div className="card">
+      <h3 style={{ marginTop: 0, marginBottom: 16 }}>{title}</h3>
+      <div className="chart-bars">
+        {values.map((v, i) => (
+          <div key={i} className="bar" style={{ height: `${(v / max) * 100}%` }} title={`${months[i]}: ${fmt(v)}`} />
+        ))}
+      </div>
+      <div className="chart-x">
+        {months.map((m) => <span key={m}>{m.slice(5)}</span>)}
       </div>
     </div>
   );

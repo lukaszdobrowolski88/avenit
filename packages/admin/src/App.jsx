@@ -12,6 +12,7 @@ import Audit from './pages/Audit.jsx';
 import Settings from './pages/Settings.jsx';
 import System from './pages/System.jsx';
 import Announcements from './pages/Announcements.jsx';
+import GlobalSearch from './components/GlobalSearch.jsx';
 
 export default function App() {
   const [admin, setAdmin] = useState(null);
@@ -34,6 +35,7 @@ function Shell({ admin, onLogout }) {
     <div className="layout">
       <aside className="sidebar">
         <div className="brand">Avenit</div>
+        <GlobalSearch />
         <nav className="nav">
           <NavLink to="/" end>Dashboard</NavLink>
           <NavLink to="/tenants">Tenanci</NavLink>
