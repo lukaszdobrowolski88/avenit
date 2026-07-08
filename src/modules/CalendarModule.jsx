@@ -820,6 +820,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry }) => {
 
 
 export default function CalendarModule() {
+  const t = useT();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
@@ -1534,9 +1535,9 @@ export default function CalendarModule() {
           {/* Przełącznik widoku: Schedule / Day / Week / Month */}
           <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4">
             {[
-              { id: 'day', label: 'Dzień' },
-              { id: 'week', label: 'Tydzień' },
-              { id: 'month', label: 'Miesiąc' },
+              { id: 'day', label: t('Dzień') },
+              { id: 'week', label: t('Tydzień') },
+              { id: 'month', label: t('Miesiąc') },
             ].map(v => (
               <button
                 key={v.id}
@@ -1700,7 +1701,7 @@ export default function CalendarModule() {
               <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-4">
                 <CalIcon size={28} className="text-gray-400" />
               </div>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">Brak wydarzeń w tym dniu</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">{t('Brak wydarzeń w tym dniu')}</p>
               <button
                 onClick={() => {
                   const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
@@ -1809,7 +1810,7 @@ export default function CalendarModule() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onBlur={() => { if (!searchQuery) setMobileSearchExpanded(false); }}
-                placeholder="Szukaj wydarzeń..."
+                placeholder={t('Szukaj wydarzeń...')}
                 className="w-full pl-9 pr-9 py-2.5 bg-gray-100 dark:bg-gray-800 border border-accent-primary-light dark:border-accent-primary-light rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none transition"
               />
               <button
@@ -1829,9 +1830,9 @@ export default function CalendarModule() {
           {/* Przełącznik widoku */}
           <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4">
             {[
-              { id: 'day', label: 'Dzień', icon: LayoutList },
-              { id: 'week', label: 'Tydzień', icon: Columns },
-              { id: 'month', label: 'Miesiąc', icon: LayoutGrid },
+              { id: 'day', label: t('Dzień'), icon: LayoutList },
+              { id: 'week', label: t('Tydzień'), icon: Columns },
+              { id: 'month', label: t('Miesiąc'), icon: LayoutGrid },
             ].map(v => (
               <button
                 key={v.id}
@@ -1978,7 +1979,7 @@ export default function CalendarModule() {
                   <div className="w-14 h-14 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-3">
                     <CalIcon size={24} className="text-gray-400" />
                   </div>
-                  <p className="text-gray-400 dark:text-gray-500 text-sm mb-2">Brak wydarzeń</p>
+                  <p className="text-gray-400 dark:text-gray-500 text-sm mb-2">{t('Brak wydarzeń')}</p>
                   <button
                     onClick={() => {
                       const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
@@ -2118,7 +2119,7 @@ export default function CalendarModule() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-center text-gray-400 text-sm py-4">Brak wydarzeń w tym dniu</p>
+                  <p className="text-center text-gray-400 text-sm py-4">{t('Brak wydarzeń w tym dniu')}</p>
                 )}
               </div>
             </div>
@@ -2234,7 +2235,7 @@ export default function CalendarModule() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-center text-gray-400 text-sm py-4">Brak wydarzeń</p>
+                  <p className="text-center text-gray-400 text-sm py-4">{t('Brak wydarzeń')}</p>
                 )}
               </div>
                 );
@@ -2342,7 +2343,7 @@ export default function CalendarModule() {
               return (
                 <div key={d.toString()} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition min-h-[200px]">
                   {dayEvents.map(ev => <EventBadge key={ev.id} event={ev} onClick={() => handleEventClick(ev)} />)}
-                  <button onClick={() => handleAddClick(dateStr)} className="w-full mt-2 py-2 text-xs text-gray-300 hover:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg transition flex items-center justify-center gap-1"><Plus size={12}/> Dodaj</button>
+                  <button onClick={() => handleAddClick(dateStr)} className="w-full mt-2 py-2 text-xs text-gray-300 hover:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg transition flex items-center justify-center gap-1"><Plus size={12}/> {t('Dodaj')}</button>
                 </div>
               )
             })}
@@ -2374,7 +2375,7 @@ export default function CalendarModule() {
                     {dayEvents.map(ev => <EventBadge key={ev.id} event={ev} onClick={() => handleEventClick(ev)} />)}
                   </div>
                 ) : (
-                  <div className="text-xs text-gray-400 ml-13">Brak wydarzeń</div>
+                  <div className="text-xs text-gray-400 ml-13">{t('Brak wydarzeń')}</div>
                 )}
               </div>
             )
@@ -2490,7 +2491,7 @@ export default function CalendarModule() {
                          </div>
                      </div>
                  ))}
-                 {sortedEvents.length === 0 && <div className="text-center text-gray-400 py-10 text-sm lg:text-base">Brak wydarzeń w tym miesiącu</div>}
+                 {sortedEvents.length === 0 && <div className="text-center text-gray-400 py-10 text-sm lg:text-base">{t('Brak wydarzeń w tym miesiącu')}</div>}
              </div>
         </div>
       )
@@ -2510,7 +2511,7 @@ export default function CalendarModule() {
            <div className="flex items-center gap-3">
               <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-lg text-accent-primary dark:text-accent-primary-light"><CalIcon size={24} /></div>
               <div>
-                 <h1 className="text-xl font-bold text-gray-800 dark:text-white">Kalendarz</h1>
+                 <h1 className="text-xl font-bold text-gray-800 dark:text-white">{t('Kalendarz')}</h1>
                  <p className="text-xs text-gray-500 dark:text-gray-400">Zarządzanie wydarzeniami i zadaniami</p>
               </div>
            </div>
@@ -2523,7 +2524,7 @@ export default function CalendarModule() {
                  type="text"
                  value={searchQuery}
                  onChange={(e) => setSearchQuery(e.target.value)}
-                 placeholder="Szukaj wydarzeń..."
+                 placeholder={t('Szukaj wydarzeń...')}
                  className="w-full pl-10 pr-10 py-2 bg-gray-100 dark:bg-gray-700 border border-transparent focus:border-accent-primary-light dark:focus:border-accent-primary-light rounded-xl text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 transition"
                />
                {searchQuery && (
@@ -2545,10 +2546,10 @@ export default function CalendarModule() {
            {/* View switcher */}
            <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
               {[
-                { id: 'month', icon: LayoutGrid, label: 'Miesiąc' },
-                { id: 'week', icon: Columns, label: 'Tydzień' },
-                { id: 'day', icon: LayoutList, label: 'Dzień' },
-                { id: 'list', icon: List, label: 'Lista' },
+                { id: 'month', icon: LayoutGrid, label: t('Miesiąc') },
+                { id: 'week', icon: Columns, label: t('Tydzień') },
+                { id: 'day', icon: LayoutList, label: t('Dzień') },
+                { id: 'list', icon: List, label: t('Lista') },
               ].map(v => (
                 <button
                   key={v.id}
@@ -2585,7 +2586,7 @@ export default function CalendarModule() {
           </div>
 
           <div className="flex-1 p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-y-auto">
-            <h3 className="font-bold text-gray-500 uppercase text-xs mb-4 tracking-wider">Twoje Kalendarze</h3>
+            <h3 className="font-bold text-gray-500 uppercase text-xs mb-4 tracking-wider">{t('Twoje Kalendarze')}</h3>
             <div className="space-y-2">
               {Object.entries(TEAMS).map(([key, cfg]) => (
                 <label key={key} className="flex items-center gap-3 cursor-pointer group p-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition select-none">
@@ -2640,7 +2641,7 @@ export default function CalendarModule() {
             </div>
 
             <div className="mb-6">
-              <h3 className="font-bold text-gray-500 uppercase text-xs mb-3 tracking-wider">Twoje Kalendarze</h3>
+              <h3 className="font-bold text-gray-500 uppercase text-xs mb-3 tracking-wider">{t('Twoje Kalendarze')}</h3>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(TEAMS).map(([key, cfg]) => {
                   const isActive = visibleTeams.includes(key);
