@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, RefreshCw, Calendar, CheckSquare, CalendarX, Heart, Users, MessageCircle } from 'lucide-react';
+import { Settings, RefreshCw, Calendar, CheckSquare, CalendarX, Heart, Users, MessageCircle, CalendarDays, Zap } from 'lucide-react';
 
 import { useDashboardLayout } from './hooks/useDashboardLayout';
 import { useDashboardData } from './hooks/useDashboardData';
@@ -17,6 +17,8 @@ import MyAbsencesWidget from './widgets/MyAbsencesWidget';
 import MyPrayersWidget from './widgets/MyPrayersWidget';
 import OnlineUsersWidget from './widgets/OnlineUsersWidget';
 import UnreadMessagesWidget from './widgets/UnreadMessagesWidget';
+import UpcomingEventsWidget from './widgets/UpcomingEventsWidget';
+import QuickAccessWidget from './widgets/QuickAccessWidget';
 
 const WIDGET_ICONS = {
   ministry: Calendar,
@@ -25,6 +27,8 @@ const WIDGET_ICONS = {
   prayers: Heart,
   onlineUsers: Users,
   unreadMessages: MessageCircle,
+  upcomingEvents: CalendarDays,
+  quickAccess: Zap,
 };
 
 export default function PersonalDashboard({ user }) {
@@ -86,6 +90,10 @@ export default function PersonalDashboard({ user }) {
         return <OnlineUsersWidget userEmail={userEmail} />;
       case 'unreadMessages':
         return <UnreadMessagesWidget userEmail={userEmail} />;
+      case 'upcomingEvents':
+        return <UpcomingEventsWidget />;
+      case 'quickAccess':
+        return <QuickAccessWidget />;
       default:
         return null;
     }
