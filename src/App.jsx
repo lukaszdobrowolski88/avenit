@@ -13,6 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import InstallPrompt from './components/InstallPrompt';
 import AnnouncementBanner from './components/AnnouncementBanner';
 import CommandPalette from './components/CommandPalette';
+import { I18nProvider } from './i18n';
 import useOffline from './hooks/useOffline';
 import Login from './modules/Login';
 import ResetPassword from './modules/ResetPassword';
@@ -95,7 +96,7 @@ function OfflineBanner() {
   );
 }
 
-export default function App() {
+function AppInner() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [customModules, setCustomModules] = useState([]);
@@ -432,5 +433,13 @@ export default function App() {
         </CampusProvider>
       </PermissionsProvider>
     </BrowserRouter>
+  );
+}
+
+export default function App() {
+  return (
+    <I18nProvider>
+      <AppInner />
+    </I18nProvider>
   );
 }

@@ -6,6 +6,7 @@ import { useDashboardData } from './hooks/useDashboardData';
 import { WIDGET_DEFINITIONS } from './utils/layoutDefaults';
 import { hasTabAccess } from '../../utils/tabPermissions';
 import { useUserRole } from '../../hooks/useUserRole';
+import { useT } from '../../i18n';
 
 import DashboardGrid from './components/DashboardGrid';
 import WidgetContainer from './components/WidgetContainer';
@@ -34,6 +35,7 @@ const WIDGET_ICONS = {
 };
 
 export default function PersonalDashboard({ user }) {
+  const t = useT();
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
 
@@ -108,9 +110,9 @@ export default function PersonalDashboard({ user }) {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Dzień dobry';
-    if (hour < 18) return 'Witaj';
-    return 'Dobry wieczór';
+    if (hour < 12) return t('Dzień dobry');
+    if (hour < 18) return t('Witaj');
+    return t('Dobry wieczór');
   };
 
   if (loading) {
@@ -118,7 +120,7 @@ export default function PersonalDashboard({ user }) {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 dark:text-gray-400">Ładowanie pulpitu...</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('Ładowanie pulpitu...')}</p>
         </div>
       </div>
     );
@@ -152,7 +154,7 @@ export default function PersonalDashboard({ user }) {
               {getGreeting()},
             </p>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">
-              {firstName}! <span className="text-gray-400 dark:text-gray-500 font-normal">Miło Cię widzieć</span>
+              {firstName}! <span className="text-gray-400 dark:text-gray-500 font-normal">{t('Miło Cię widzieć')}</span>
             </h1>
           </div>
         </div>
@@ -163,7 +165,7 @@ export default function PersonalDashboard({ user }) {
           <button
             onClick={refresh}
             className="p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
-            title="Odśwież dane"
+            title={t('Odśwież dane')}
           >
             <RefreshCw size={18} />
           </button>
@@ -174,7 +176,7 @@ export default function PersonalDashboard({ user }) {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm"
           >
             <Settings size={18} />
-            <span className="hidden sm:inline font-medium">Dostosuj</span>
+            <span className="hidden sm:inline font-medium">{t('Dostosuj')}</span>
           </button>
 
           {/* Toggle edit mode */}
@@ -187,7 +189,7 @@ export default function PersonalDashboard({ user }) {
                   : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
-              {isCustomizing ? 'Gotowe' : 'Edytuj układ'}
+              {isCustomizing ? t('Gotowe') : t('Edytuj układ')}
             </button>
           )}
         </div>
