@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
+import MemberProfile from '../components/MemberProfile';
 import MaterialsTab from './shared/MaterialsTab';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import HouseholdManager from './Kids/components/HouseholdManager';
@@ -48,6 +49,7 @@ export default function Members() {
   // Stan modala
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [profileMember, setProfileMember] = useState(null);
   const [formData, setFormData] = useState({
     id: null,
     first_name: '',
@@ -496,7 +498,7 @@ export default function Members() {
                         {member.first_name?.[0]}{member.last_name?.[0]}
                       </div>
                       <div>
-                        <div className="font-bold text-gray-800 dark:text-gray-200">{member.first_name} {member.last_name}</div>
+                        <button onClick={() => setProfileMember(member)} className="font-bold text-gray-800 dark:text-gray-200 hover:text-accent-primary dark:hover:text-accent-primary-light transition text-left">{member.first_name} {member.last_name}</button>
                         {member.status === 'Członek' && member.membership_date && (
                           <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                             <Calendar size={12} />
@@ -574,6 +576,7 @@ export default function Members() {
 
                   <td className="p-4 pr-6 text-right">
                     <div className="flex justify-end gap-2">
+                      <button onClick={() => setProfileMember(member)} title="Zobacz profil" className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"><Eye size={18} /></button>
                       <button onClick={() => openModal(member)} className="p-2 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"><Edit2 size={18} /></button>
                       <button onClick={() => handleDelete(member.id)} className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"><Trash2 size={18} /></button>
                     </div>
@@ -829,6 +832,18 @@ export default function Members() {
           </div>
         </div>,
         document.body
+      )}
+
+      {profileMember && (
+        <MemberProfile
+          member={profileMember}
+          members={members}
+          homeGroups={homeGroups}
+          households={households}
+          getMinistryLabels={getMinistryLabels}
+          onClose={() => setProfileMember(null)}
+          onEdit={(m) => { setProfileMember(null); openModal(m); }}
+        />
       )}
     </div>
   );
