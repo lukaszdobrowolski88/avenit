@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import ProgramEditorModal from './Programs/ProgramEditorModal';
+import EventRSVP from '../components/EventRSVP';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 
 // --- MODAL POTWIERDZENIA USUNIĘCIA ---
@@ -315,7 +316,9 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
       date: event.date,
       time: event.time || '10:00',
       end_time: event.end_time || '',
-      location: event.location || ''
+      location: event.location || '',
+      registration_required: !!event.registration_required,
+      max_participants: event.max_participants ? parseInt(event.max_participants) : null
     };
 
     if (event.id) payload.id = event.id;
@@ -410,6 +413,37 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
               onChange={e => setEvent({...event, description: e.target.value})}
               placeholder="Szczegóły wydarzenia..."
             />
+          </div>
+
+          {/* Zapisy (RSVP) */}
+          <div className="pt-1">
+            <label className="flex items-center justify-between gap-3 cursor-pointer">
+              <span className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
+                <Users size={16} className="text-accent-primary" /> Zapisy na wydarzenie
+              </span>
+              <input
+                type="checkbox"
+                className="w-5 h-5 rounded accent-[color:var(--accent-primary,#6366f1)]"
+                checked={!!event.registration_required}
+                onChange={e => setEvent({...event, registration_required: e.target.checked})}
+              />
+            </label>
+            {event.registration_required && (
+              <div className="mt-3">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Limit miejsc (opcjonalnie)</label>
+                <input
+                  type="number"
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm"
+                  value={event.max_participants || ''}
+                  onChange={e => setEvent({...event, max_participants: e.target.value})}
+                  placeholder="np. 30 — puste = bez limitu"
+                />
+                {event.id && (
+                  <EventRSVP eventId={event.id} maxParticipants={event.max_participants} />
+                )}
+              </div>
+            )}
           </div>
         </div>
 
