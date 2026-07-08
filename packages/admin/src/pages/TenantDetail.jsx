@@ -62,6 +62,7 @@ export default function TenantDetail() {
         <button className="ghost" onClick={() => act(() => api.extendTrial(id, 14), 'Trial przedłużony o 14 dni')}>+14 dni trial</button>
         <ChangePlan tenantId={id} plans={plans} onDone={() => act(async () => {}, 'Zmieniono plan')} />
         <Impersonate tenantId={id} subdomain={tenant.subdomain} onError={setErr} />
+        <TenantEmail tenantId={id} tenantName={tenant.name} onDone={() => setMsg('E-mail wysłany')} onError={setErr} />
       </div>
 
       <h3>Moduły (per tenant)</h3>
@@ -118,25 +119,76 @@ function Impersonate({ tenantId, subdomain, onError }) {
     } catch (e) { onError(e.message); } finally { setLoading(false); }
   };
 
+  const [resetInfo, setResetInfo] = useState(null);
+  const resetPass = async (userId) => {
+    if (!confirm('Zresetować hasło tego konta? Zostanie wygenerowane nowe.')) return;
+    try { const r = await api.resetUserPassword(tenantId, userId); setResetInfo(r); }
+    catch (e) { onError(e.message); }
+  };
+
   return (
     <>
       <button className="ghost" onClick={openPicker}>Zaloguj się jako →</button>
       {open && (
-        <Modal title="Zaloguj się jako użytkownik" onClose={() => setOpen(false)}>
-          <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
-            Otworzy nową kartę zalogowaną jako wybrane konto w <b>{subdomain}.avenit.pl</b>. Sesja jest jednorazowa (bilet 60 s).
-          </p>
-          {users.length === 0 && <div className="muted">Ładowanie / brak kont…</div>}
-          <div style={{ maxHeight: 340, overflow: 'auto' }}>
-            {users.map((u) => (
-              <div key={u.id} className="row" style={{ justifyContent: 'space-between', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 8, opacity: u.is_active ? 1 : 0.5 }}>
-                <div>
-                  <div>{u.full_name || u.email} {u.is_super_admin && <span className="badge active" style={{ marginLeft: 6 }}>admin</span>}</div>
-                  <div className="muted" style={{ fontSize: 12 }}>{u.email} · {u.role}</div>
-                </div>
-                <button disabled={loading || !u.is_active} onClick={() => go(u.id)}>Wejdź</button>
+        <Modal title="Konta użytkowników" onClose={() => { setOpen(false); setResetInfo(null); }}>
+          {resetInfo ? (
+            <div>
+              <p>Nowe hasło dla <b>{resetInfo.email}</b>:</p>
+              <div style={{ padding: 12, background: 'var(--bg)', borderRadius: 8, fontFamily: 'monospace', fontSize: 16, margin: '10px 0', userSelect: 'all' }}>{resetInfo.password}</div>
+              <p className="muted" style={{ fontSize: 13 }}>Przekaż je użytkownikowi bezpiecznym kanałem — nie pokażemy go ponownie.</p>
+              <button onClick={() => setResetInfo(null)} style={{ marginTop: 10 }}>OK</button>
+            </div>
+          ) : (
+            <>
+              <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
+                „Wejdź" otworzy nową kartę zalogowaną jako to konto w <b>{subdomain}.avenit.pl</b> (bilet jednorazowy 60 s).
+              </p>
+              {users.length === 0 && <div className="muted">Ładowanie / brak kont…</div>}
+              <div style={{ maxHeight: 340, overflow: 'auto' }}>
+                {users.map((u) => (
+                  <div key={u.id} className="row" style={{ justifyContent: 'space-between', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 8, opacity: u.is_active ? 1 : 0.5 }}>
+                    <div>
+                      <div>{u.full_name || u.email} {u.is_super_admin && <span className="badge active" style={{ marginLeft: 6 }}>admin</span>}</div>
+                      <div className="muted" style={{ fontSize: 12 }}>{u.email} · {u.role}</div>
+                    </div>
+                    <div className="row">
+                      <button className="ghost" onClick={() => resetPass(u.id)} title="Reset hasła">🔑</button>
+                      <button disabled={loading || !u.is_active} onClick={() => go(u.id)}>Wejdź</button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </>
+          )}
+        </Modal>
+      )}
+    </>
+  );
+}
+
+function TenantEmail({ tenantId, tenantName, onDone, onError }) {
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({ subject: '', body: '' });
+  const [sending, setSending] = useState(false);
+  const send = async () => {
+    setSending(true);
+    try { await api.emailTenant(tenantId, f); setOpen(false); setF({ subject: '', body: '' }); onDone(); }
+    catch (e) { onError(e.message); } finally { setSending(false); }
+  };
+  return (
+    <>
+      <button className="ghost" onClick={() => setOpen(true)}>Wyślij e-mail</button>
+      {open && (
+        <Modal title={`E-mail do: ${tenantName}`} onClose={() => setOpen(false)}>
+          <p className="muted" style={{ fontSize: 13, marginBottom: 8 }}>Trafi do administratorów tego kościoła.</p>
+          <label>Temat</label>
+          <input value={f.subject} onChange={(e) => setF({ ...f, subject: e.target.value })} />
+          <label>Treść</label>
+          <textarea value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} rows={5}
+            style={{ width: '100%', background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 11px' }} />
+          <div className="row" style={{ marginTop: 16, justifyContent: 'flex-end' }}>
+            <button className="ghost" onClick={() => setOpen(false)}>Anuluj</button>
+            <button onClick={send} disabled={sending || !f.subject || !f.body}>{sending ? 'Wysyłanie…' : 'Wyślij'}</button>
           </div>
         </Modal>
       )}

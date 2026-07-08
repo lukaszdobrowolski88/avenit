@@ -129,6 +129,150 @@ export default async function adminRoutes(app) {
     });
   });
 
+  // ── WZROST (dashboard: wykresy czasowe) ────────────────────────────
+  app.get('/api/admin/growth', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const [tenantsByMonth, revenueByMonth] = await Promise.all([
+      platformPool.query(`
+        SELECT to_char(date_trunc('month', created_at), 'YYYY-MM') AS m, count(*)::int AS n
+          FROM tenants WHERE created_at >= date_trunc('month', now()) - interval '11 months'
+         GROUP BY 1 ORDER BY 1`),
+      platformPool.query(`
+        SELECT to_char(date_trunc('month', paid_at), 'YYYY-MM') AS m, COALESCE(sum(total),0)::bigint AS sum
+          FROM invoices WHERE status='paid' AND paid_at >= date_trunc('month', now()) - interval '11 months'
+         GROUP BY 1 ORDER BY 1`),
+    ]);
+    // Uzupełnij 12 miesięcy (zera tam, gdzie brak danych).
+    const months = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    }
+    const tMap = Object.fromEntries(tenantsByMonth.rows.map((r) => [r.m, r.n]));
+    const rMap = Object.fromEntries(revenueByMonth.rows.map((r) => [r.m, Number(r.sum)]));
+    return reply.send({
+      months,
+      tenants: months.map((m) => tMap[m] || 0),
+      revenue: months.map((m) => rMap[m] || 0),
+    });
+  });
+
+  // ── GLOBALNA WYSZUKIWARKA (tenanci + użytkownicy cross-tenant) ──────
+  app.get('/api/admin/search', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const q = String(req.query.q || '').trim();
+    if (q.length < 2) return reply.send({ tenants: [], users: [] });
+    const like = `%${q}%`;
+    const { rows: tenants } = await platformPool.query(
+      `SELECT id, name, subdomain, status FROM tenants
+        WHERE name ILIKE $1 OR subdomain ILIKE $1 OR email ILIKE $1 ORDER BY name LIMIT 10`,
+      [like]
+    );
+    // Szukaj kont po wszystkich aktywnych bazach tenantów (limit dla wydajności).
+    const { rows: activeTenants } = await platformPool.query(
+      `SELECT id, name, subdomain, db_name FROM tenants WHERE status IN ('trial','active','suspended') LIMIT 50`
+    );
+    const users = [];
+    for (const t of activeTenants) {
+      if (users.length >= 20) break;
+      try {
+        const { rows } = await getTenantPool(t.db_name).query(
+          `SELECT id, email, full_name, role FROM app_users
+            WHERE email ILIKE $1 OR full_name ILIKE $1 ORDER BY email LIMIT 5`,
+          [like]
+        );
+        for (const u of rows) {
+          users.push({ ...u, tenant: { id: t.id, name: t.name, subdomain: t.subdomain } });
+        }
+      } catch { /* pomiń bazę bez odpowiedzi */ }
+    }
+    return reply.send({ tenants, users: users.slice(0, 20) });
+  });
+
+  // ── E-MAIL DO TENANTÓW ─────────────────────────────────────────────
+  // Do administratorów jednego tenanta.
+  app.post('/api/admin/tenants/:id/email', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { subject, body, to } = req.body || {};
+    if (!subject || !body) return reply.code(400).send({ error: 'Temat i treść są wymagane' });
+    const { rows: t } = await platformPool.query(`SELECT db_name, email FROM tenants WHERE id = $1`, [req.params.id]);
+    if (!t[0]) return reply.code(404).send({ error: 'Tenant nie istnieje' });
+    let recipients = to ? [to] : [];
+    if (!recipients.length) {
+      try {
+        const { rows } = await getTenantPool(t[0].db_name).query(
+          `SELECT email FROM app_users WHERE is_active AND (is_super_admin OR role='superadmin')`
+        );
+        recipients = rows.map((r) => r.email);
+      } catch {}
+      if (!recipients.length && t[0].email) recipients = [t[0].email];
+    }
+    if (!recipients.length) return reply.code(400).send({ error: 'Brak odbiorców' });
+    const { sendEmail } = await import('../lib/email.js');
+    const html = `<div style="font-family:sans-serif;max-width:560px">${String(body).replace(/\n/g, '<br>')}</div>`;
+    await sendEmail({ to: recipients, subject, html }).catch((err) => { throw new Error(err.message); });
+    await audit(req.admin.id, 'tenant.email', 'tenant', req.params.id, { subject, recipients: recipients.length });
+    return reply.send({ ok: true, sent: recipients.length });
+  });
+
+  // Broadcast do administratorów wszystkich tenantów.
+  app.post('/api/admin/broadcast-email', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { subject, body } = req.body || {};
+    if (!subject || !body) return reply.code(400).send({ error: 'Temat i treść są wymagane' });
+    const { rows: tenants } = await platformPool.query(
+      `SELECT db_name, email FROM tenants WHERE status IN ('trial','active')`
+    );
+    const recipients = new Set();
+    for (const t of tenants) {
+      try {
+        const { rows } = await getTenantPool(t.db_name).query(
+          `SELECT email FROM app_users WHERE is_active AND (is_super_admin OR role='superadmin')`
+        );
+        rows.forEach((r) => r.email && recipients.add(r.email));
+      } catch {}
+      if (t.email) recipients.add(t.email);
+    }
+    if (!recipients.size) return reply.code(400).send({ error: 'Brak odbiorców' });
+    const { sendEmail } = await import('../lib/email.js');
+    const html = `<div style="font-family:sans-serif;max-width:560px">${String(body).replace(/\n/g, '<br>')}</div>`;
+    // Wyślij pojedynczo (BCC nie jest gwarantowane przez wszystkie bramki).
+    let sent = 0;
+    for (const email of recipients) {
+      try { await sendEmail({ to: email, subject, html }); sent++; } catch {}
+    }
+    await audit(req.admin.id, 'broadcast.email', null, null, { subject, recipients: sent });
+    return reply.send({ ok: true, sent });
+  });
+
+  // ── RESET HASŁA KONTA TENANTA ──────────────────────────────────────
+  app.post('/api/admin/tenants/:id/reset-user-password', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { userId } = req.body || {};
+    if (!userId) return reply.code(400).send({ error: 'Brak userId' });
+    const { rows: t } = await platformPool.query(`SELECT db_name FROM tenants WHERE id = $1`, [req.params.id]);
+    if (!t[0]) return reply.code(404).send({ error: 'Tenant nie istnieje' });
+    const password = crypto.randomBytes(9).toString('base64url');
+    const { rows } = await getTenantPool(t[0].db_name).query(
+      `UPDATE app_users SET password_hash = $1 WHERE id = $2 RETURNING email`,
+      [await hashPassword(password), userId]
+    );
+    if (!rows[0]) return reply.code(404).send({ error: 'Konto nie istnieje' });
+    await audit(req.admin.id, 'tenant.reset_password', 'tenant', req.params.id, { userId });
+    return reply.send({ ok: true, email: rows[0].email, password });
+  });
+
+  // ── STATUS INTEGRACJI (bez ujawniania sekretów) ────────────────────
+  app.get('/api/admin/integrations-status', { preHandler: app.requireAdmin }, async (req, reply) => {
+    return reply.send({
+      integrations: [
+        { key: 'sendgrid', label: 'SendGrid (e-mail)', configured: !!config.SENDGRID_API_KEY },
+        { key: 'resend', label: 'Resend (windykacja)', configured: !!config.RESEND_API_KEY },
+        { key: 'smsapi', label: 'SMSAPI (SMS)', configured: !!config.SMSAPI_TOKEN },
+        { key: 'vapid', label: 'Web Push (VAPID)', configured: !!config.VAPID_PUBLIC_KEY },
+        { key: 'expo', label: 'Expo Push (mobile)', configured: !!config.EXPO_ACCESS_TOKEN },
+        { key: 'p24', label: 'Przelewy24 (płatności)', configured: !!config.P24_MERCHANT_ID },
+        { key: 'mailcrypto', label: 'Szyfrowanie poczty', configured: !!config.MAIL_ENCRYPTION_SECRET },
+      ],
+    });
+  });
+
   // ── SYSTEM / MONITORING ────────────────────────────────────────────
   app.get('/api/admin/system', { preHandler: app.requireAdmin }, async (req, reply) => {
     const [ver, dbs, totals] = await Promise.all([
