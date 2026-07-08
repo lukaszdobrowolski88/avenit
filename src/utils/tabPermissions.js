@@ -10,7 +10,9 @@ export const TAB_PERMISSIONS = {
     absences: null, // Nieobecności - wszyscy
     prayers: null, // Moje modlitwy - wszyscy
     onlineUsers: null, // Kto jest online - wszyscy
-    unreadMessages: null // Nieprzeczytane wiadomości - wszyscy
+    unreadMessages: null, // Nieprzeczytane wiadomości - wszyscy
+    upcomingEvents: null, // Nadchodzące wydarzenia - wszyscy
+    quickAccess: null // Szybki dostęp - wszyscy
   },
 
   // Moduł Grupy Domowe
