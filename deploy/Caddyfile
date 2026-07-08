@@ -53,12 +53,17 @@
 		file_server
 	}
 
-	# Domena główna: placeholder „wkrótce" (docelowo strona www)
+	# Domena główna: strona www (landing) + API formularza zgłoszeniowego
 	@root host {$APP_DOMAIN}
 	handle @root {
-		root * /srv/static/landing
-		try_files {path} /index.html
-		file_server
+		handle /api/* {
+			reverse_proxy api:3001
+		}
+		handle {
+			root * /srv/static/landing
+			try_files {path} /index.html
+			file_server
+		}
 	}
 
 	# app.domena: strona logowania globalnego (email+hasło → tenant w tle)
