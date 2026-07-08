@@ -57,6 +57,22 @@ export const WIDGET_DEFINITIONS = {
     defaultSize: 'small',
     minSize: 'small',
   },
+  upcomingEvents: {
+    id: 'upcomingEvents',
+    name: 'Nadchodzące wydarzenia',
+    description: 'Najbliższe wydarzenia z kalendarza kościoła',
+    icon: 'CalendarDays',
+    defaultSize: 'medium',
+    minSize: 'small',
+  },
+  quickAccess: {
+    id: 'quickAccess',
+    name: 'Szybki dostęp',
+    description: 'Skróty do najczęściej używanych modułów',
+    icon: 'Zap',
+    defaultSize: 'medium',
+    minSize: 'small',
+  },
 };
 
 export const WIDGET_SIZES = {
@@ -85,6 +101,8 @@ export const DEFAULT_LAYOUT = [
   { widgetId: 'prayers', order: 4, size: 'medium', visible: true },
   { widgetId: 'onlineUsers', order: 5, size: 'small', visible: true },
   { widgetId: 'unreadMessages', order: 6, size: 'small', visible: true },
+  { widgetId: 'upcomingEvents', order: 7, size: 'medium', visible: true },
+  { widgetId: 'quickAccess', order: 8, size: 'medium', visible: true },
 ];
 
 export const LOCAL_STORAGE_KEY = 'dashboard_layout';
