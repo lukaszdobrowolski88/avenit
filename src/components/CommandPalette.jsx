@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Wallet, FileText, Settings, User,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useT } from '../i18n';
 
 // Globalny event do otwierania palety z dowolnego miejsca (np. przycisk w Navbarze).
 export const OPEN_EVENT = 'avenit:open-search';
@@ -117,6 +118,7 @@ const SEARCHERS = [
 ];
 
 export default function CommandPalette() {
+  const t = useT();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -176,14 +178,14 @@ export default function CommandPalette() {
   // Płaska lista wszystkich itemów (skoki + encje) do nawigacji klawiaturą.
   const flat = useMemo(() => {
     const rows = [];
-    if (moduleItems.length) rows.push({ header: query.trim() ? 'Przejdź do' : 'Sugestie' });
+    if (moduleItems.length) rows.push({ header: query.trim() ? t('Przejdź do') : t('Sugestie') });
     moduleItems.forEach((it) => rows.push({ ...it, icon: it.icon }));
     groups.forEach((g) => {
       rows.push({ header: g.category });
       g.items.forEach((it) => rows.push({ ...it, icon: g.icon }));
     });
     return rows;
-  }, [moduleItems, groups, query]);
+  }, [moduleItems, groups, query, t]);
 
   const selectable = useMemo(() => flat.filter((r) => !r.header), [flat]);
 
@@ -228,7 +230,7 @@ export default function CommandPalette() {
             value={query}
             onChange={(e) => { setQuery(e.target.value); setActive(0); }}
             onKeyDown={onKeyDown}
-            placeholder="Szukaj członków, pieśni, grup, wydarzeń…"
+            placeholder={t('Szukaj członków, pieśni, grup, wydarzeń…')}
             className="flex-1 py-3.5 bg-transparent outline-none text-gray-800 dark:text-gray-100 placeholder:text-gray-400"
           />
           <button onClick={close} className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0">
@@ -241,8 +243,8 @@ export default function CommandPalette() {
           {selectable.length === 0 && (
             <div className="px-4 py-10 text-center text-sm text-gray-400">
               {clean(query).length >= 2 && !loading
-                ? <>Brak wyników dla „{query.trim()}".</>
-                : <>Zacznij pisać, aby wyszukać w całej aplikacji.</>}
+                ? <>{t('Brak wyników')} — „{query.trim()}".</>
+                : <>{t('Zacznij pisać, aby wyszukać w całej aplikacji.')}</>}
             </div>
           )}
           {flat.map((row, i) => {
@@ -284,9 +286,9 @@ export default function CommandPalette() {
 
         {/* Stopka ze skrótami */}
         <div className="flex items-center gap-4 px-4 py-2 border-t border-gray-100 dark:border-gray-700 text-[11px] text-gray-400">
-          <span className="flex items-center gap-1"><ArrowUp size={11} /><ArrowDown size={11} /> nawigacja</span>
-          <span className="flex items-center gap-1"><CornerDownLeft size={11} /> otwórz</span>
-          <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 font-sans">Esc</kbd> zamknij</span>
+          <span className="flex items-center gap-1"><ArrowUp size={11} /><ArrowDown size={11} /> {t('nawigacja')}</span>
+          <span className="flex items-center gap-1"><CornerDownLeft size={11} /> {t('otwórz')}</span>
+          <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 font-sans">Esc</kbd> {t('zamknij')}</span>
           <span className="ml-auto hidden sm:inline">⌘K / Ctrl+K</span>
         </div>
       </div>

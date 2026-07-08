@@ -7,8 +7,11 @@ import { useMyPresence, statusLabels } from '../hooks/usePresence';
 import { MobileMenuButton } from './Sidebar';
 import { resetUserRoleCache } from '../hooks/useUserRole';
 import CampusSelector from './CampusSelector';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useT } from '../i18n';
 
 export default function Navbar({ user, darkMode, toggleTheme }) {
+  const t = useT();
   const [userProfile, setUserProfile] = useState(null);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [currentStatus, setCurrentStatus] = useState('online');
@@ -88,26 +91,29 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
         {/* Globalna wyszukiwarka (Cmd/Ctrl+K) */}
         <button
           onClick={openCommandPalette}
-          title="Szukaj (⌘K)"
+          title={`${t('Szukaj')} (⌘K)`}
           className="hidden md:flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         >
           <Search size={16} />
-          <span className="text-sm">Szukaj…</span>
+          <span className="text-sm">{t('Szukaj…')}</span>
           <kbd className="ml-2 text-[11px] font-sans px-1.5 py-0.5 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600">⌘K</kbd>
         </button>
         <button
           onClick={openCommandPalette}
-          title="Szukaj"
+          title={t('Szukaj')}
           className="md:hidden p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
         >
           <Search size={18} />
         </button>
 
+        {/* Przełącznik języka */}
+        <LanguageSwitcher />
+
         {/* Przełącznik Motywu */}
         <button
           onClick={toggleTheme}
           className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
-          title="Zmień motyw"
+          title={t('Zmień motyw')}
         >
           {darkMode ? <Sun size={18} className="lg:w-5 lg:h-5" /> : <Moon size={18} className="lg:w-5 lg:h-5" />}
         </button>

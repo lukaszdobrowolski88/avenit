@@ -7,6 +7,7 @@ import { useUserRole } from '../hooks/useUserRole';
 import { usePermissions } from '../contexts/PermissionsContext';
 import { useUnsavedChanges } from '../contexts/UnsavedChangesContext';
 import { supabase } from '../lib/supabase';
+import { useT } from '../i18n';
 
 // Komponent Tooltip zgodny z layoutem aplikacji - używa Portal
 function Tooltip({ children, text, show }) {
@@ -100,6 +101,7 @@ export function MobileMenuButton() {
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const t = useT();
   const active = location.pathname;
   const { userRole, loading: roleLoading } = useUserRole();
   const { permissions, appSettings: moduleSettings, logoUrl } = usePermissions();
@@ -361,14 +363,14 @@ export default function Sidebar() {
             };
 
             return (
-              <Tooltip key={link.path} text={link.label} show={isCollapsed && !isMobile}>
+              <Tooltip key={link.path} text={t(link.label)} show={isCollapsed && !isMobile}>
                 <Link
                   to={link.path}
                   onClick={handleLinkClick}
                   className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-xl transition-all group ${isActive ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg shadow-accent-primary-light/30 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary dark:hover:text-white'}`}
                 >
                   <link.icon size={20} className={`shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-accent-primary-light dark:group-hover:text-white transition-colors'}`} />
-                  {(isMobile || !isCollapsed) && <span className="text-sm truncate">{link.label}</span>}
+                  {(isMobile || !isCollapsed) && <span className="text-sm truncate">{t(link.label)}</span>}
                 </Link>
               </Tooltip>
             );

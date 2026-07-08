@@ -1,11 +1,24 @@
 import React from 'react';
-import { Globe, Calendar, Clock, Coins } from 'lucide-react';
+import { Globe, Calendar, Clock, Coins, Languages } from 'lucide-react';
 import { SettingsCard, SettingRow, SelectSetting } from './SettingsUI';
+import { useI18n } from '../../../i18n';
 
-// Ustawienia regionalne — strefa czasowa, formaty, waluta. app_settings (loc_*).
+// Ustawienia regionalne — język, strefa czasowa, formaty, waluta. app_settings (loc_*).
 export default function LocalizationSettings({ get, save }) {
+  const { lang, setLang, t, languages } = useI18n();
   return (
     <div className="max-w-3xl">
+      <SettingsCard title={t('Język aplikacji')} description={t('Wybierz język interfejsu aplikacji')} icon={Languages}>
+        <SettingRow label={t('Język aplikacji')} last>
+          <SelectSetting
+            value={lang}
+            onChange={(v) => setLang(v)}
+            options={languages.map((l) => ({ value: l.code, label: `${l.flag} ${l.label}` }))}
+            className="min-w-[200px]"
+          />
+        </SettingRow>
+      </SettingsCard>
+
       <SettingsCard title="Region i czas" description="Strefa czasowa i sposób wyświetlania dat." icon={Globe}>
         <SettingRow label="Strefa czasowa">
           <SelectSetting
