@@ -96,6 +96,10 @@ export const api = {
   twofaDisable: (code) => request('/api/admin/2fa/disable', { method: 'POST', body: { code } }),
   // Audit z filtrami
   auditFiltered: (params) => request(`/api/admin/audit?${new URLSearchParams(params)}`),
+  // Zgłoszenia ze strony avenit.pl
+  landingLeads: (status) => request(`/api/admin/landing-leads${status ? `?status=${status}` : ''}`),
+  updateLead: (id, body) => request(`/api/admin/landing-leads/${id}`, { method: 'PATCH', body }),
+  deleteLead: (id) => request(`/api/admin/landing-leads/${id}`, { method: 'DELETE' }),
   // Ogłoszenia
   announcements: () => request('/api/admin/announcements'),
   createAnnouncement: (body) => request('/api/admin/announcements', { method: 'POST', body }),

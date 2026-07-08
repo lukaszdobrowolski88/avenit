@@ -20,13 +20,22 @@ a { color: var(--accent2); }
 table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: 12px; overflow: hidden; }
 th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
 th { color: var(--muted); font-weight: 600; background: var(--panel2); }
-.badge { padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.badge { padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .badge.trial { background: #78350f; color: #fde68a; }
 .badge.active { background: #14532d; color: #bbf7d0; }
 .badge.suspended, .badge.cancelled { background: #7f1d1d; color: #fecaca; }
 .badge.paid { background: #14532d; color: #bbf7d0; }
 .badge.pending { background: #78350f; color: #fde68a; }
 .badge.overdue { background: #7f1d1d; color: #fecaca; }
+.badge.lead-new { background: #1e3a8a; color: #bfdbfe; }
+.badge.lead-contacted { background: #78350f; color: #fde68a; }
+.badge.lead-converted { background: #14532d; color: #bbf7d0; }
+.badge.lead-rejected { background: #7f1d1d; color: #fecaca; }
+.navbadge {
+  display: inline-block; margin-left: 8px; min-width: 20px; text-align: center;
+  background: var(--accent); color: #fff; border-radius: 999px;
+  font-size: 11px; font-weight: 700; padding: 2px 6px; vertical-align: middle;
+}
 button { background: var(--accent); color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
 button.ghost { background: var(--panel2); }
 button.danger { background: var(--red); }

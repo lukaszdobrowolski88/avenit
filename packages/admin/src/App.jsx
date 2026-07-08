@@ -12,6 +12,7 @@ import Audit from './pages/Audit.jsx';
 import Settings from './pages/Settings.jsx';
 import System from './pages/System.jsx';
 import Announcements from './pages/Announcements.jsx';
+import Leads from './pages/Leads.jsx';
 import GlobalSearch from './components/GlobalSearch.jsx';
 
 export default function App() {
@@ -31,6 +32,14 @@ export default function App() {
 
 function Shell({ admin, onLogout }) {
   const navigate = useNavigate();
+  // Licznik nowych zgłoszeń ze strony (badge w nawigacji), odświeżany co minutę.
+  const [newLeads, setNewLeads] = useState(0);
+  useEffect(() => {
+    const refresh = () => api.landingLeads('new').then((r) => setNewLeads(r.counts.new || 0)).catch(() => {});
+    refresh();
+    const t = setInterval(refresh, 60_000);
+    return () => clearInterval(t);
+  }, []);
   return (
     <div className="layout">
       <aside className="sidebar">
@@ -39,6 +48,7 @@ function Shell({ admin, onLogout }) {
         <nav className="nav">
           <NavLink to="/" end>Dashboard</NavLink>
           <NavLink to="/tenants">Tenanci</NavLink>
+          <NavLink to="/leads">Zgłoszenia{newLeads > 0 && <span className="navbadge">{newLeads}</span>}</NavLink>
           <NavLink to="/plans">Plany</NavLink>
           <NavLink to="/invoices">Faktury</NavLink>
           <NavLink to="/coupons">Kupony</NavLink>
@@ -57,6 +67,7 @@ function Shell({ admin, onLogout }) {
           <Route path="/" element={<Dashboard />} />
           <Route path="/tenants" element={<Tenants />} />
           <Route path="/tenants/:id" element={<TenantDetail />} />
+          <Route path="/leads" element={<Leads onCountsChange={(c) => setNewLeads(c.new || 0)} />} />
           <Route path="/plans" element={<Plans />} />
           <Route path="/invoices" element={<Invoices />} />
           <Route path="/coupons" element={<Coupons />} />

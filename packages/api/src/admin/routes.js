@@ -715,4 +715,45 @@ export default async function adminRoutes(app) {
     await audit(req.admin.id, 'admin.create', 'admin', rows[0].id, { email });
     return reply.send({ admin: rows[0] });
   });
+
+  // ── ZGŁOSZENIA ZE STRONY (landing_leads) ──────────────────────────
+  const LEAD_STATUSES = ['new', 'contacted', 'converted', 'rejected'];
+
+  app.get('/api/admin/landing-leads', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const status = LEAD_STATUSES.includes(req.query.status) ? req.query.status : null;
+    const { rows: leads } = await platformPool.query(
+      `SELECT id, name, email, phone, church, message, status, created_at
+         FROM landing_leads
+        WHERE ($1::text IS NULL OR status = $1)
+        ORDER BY created_at DESC LIMIT 500`,
+      [status]
+    );
+    const { rows: counts } = await platformPool.query(
+      `SELECT status, count(*)::int AS n FROM landing_leads GROUP BY status`
+    );
+    return reply.send({
+      leads,
+      counts: Object.fromEntries(counts.map((c) => [c.status, c.n])),
+    });
+  });
+
+  app.patch('/api/admin/landing-leads/:id', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const body = z.object({ status: z.enum(LEAD_STATUSES) }).safeParse(req.body);
+    if (!body.success) return reply.code(400).send({ error: 'Nieprawidłowy status' });
+    const { rows } = await platformPool.query(
+      `UPDATE landing_leads SET status = $1 WHERE id = $2
+       RETURNING id, name, email, phone, church, message, status, created_at`,
+      [body.data.status, req.params.id]
+    );
+    if (!rows[0]) return reply.code(404).send({ error: 'Zgłoszenie nie istnieje' });
+    await audit(req.admin.id, 'lead.status', 'lead', req.params.id, { status: body.data.status });
+    return reply.send({ lead: rows[0] });
+  });
+
+  app.delete('/api/admin/landing-leads/:id', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { rowCount } = await platformPool.query(`DELETE FROM landing_leads WHERE id = $1`, [req.params.id]);
+    if (!rowCount) return reply.code(404).send({ error: 'Zgłoszenie nie istnieje' });
+    await audit(req.admin.id, 'lead.delete', 'lead', req.params.id);
+    return reply.send({ ok: true });
+  });
 }
