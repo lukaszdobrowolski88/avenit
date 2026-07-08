@@ -1,9 +1,12 @@
-# Caddy — reverse proxy + TLS (on-demand, HTTP-01) + serwowanie statycznych SPA.
+# Caddy — reverse proxy + TLS on-demand (HTTP-01) + serwowanie statycznych SPA.
 # Działa z dowolnym DNS (lh.pl, Hostinger itd.) — bez wtyczki DNS. Wymaga
 # jedynie, by hosty rozwiązywały się na to IP (rekord wildcard *.{$APP_DOMAIN}).
 #
-# Certyfikaty wystawiane per-host przy pierwszym wejściu; endpoint `ask` w API
-# dopuszcza tylko znane subdomeny (admin/api/domena/tenanci).
+# JEDEN blok dla domeny głównej + wszystkich subdomen, z on_demand TLS. Dzięki
+# temu każdy host (admin/api/domena/tenanci) używa tej samej, deterministycznej
+# ścieżki wystawiania certów on-demand (gate: endpoint ask). Routing per host
+# przez matchery @admin/@apihost. Wcześniejsze nazwane bloki dostawały politykę
+# zarządzaną (proaktywną), która cicho zawodziła przy starcie.
 
 {
 	email {$ACME_EMAIL}
@@ -12,58 +15,31 @@
 	}
 }
 
-# ── Panel administracyjny: admin.domena ──────────────────────────────
-# on_demand na wszystkich blokach — cert wystawiany synchronicznie przy
-# pierwszym handshake (gate: endpoint ask). Deterministyczne, bez problemów
-# z timingiem zarządzanych certów przy starcie Caddy.
-admin.{$APP_DOMAIN} {
+{$APP_DOMAIN}, *.{$APP_DOMAIN} {
 	tls {
 		on_demand
 	}
-	handle /api/* {
-		reverse_proxy api:3001
-	}
-	handle {
-		root * /srv/admin
-		try_files {path} /index.html
-		file_server
-	}
-}
 
-# ── API dla aplikacji mobilnej: api.domena ───────────────────────────
-api.{$APP_DOMAIN} {
-	tls {
-		on_demand
+	# Panel administracyjny
+	@admin host admin.{$APP_DOMAIN}
+	handle @admin {
+		handle /api/* {
+			reverse_proxy api:3001
+		}
+		handle {
+			root * /srv/admin
+			try_files {path} /index.html
+			file_server
+		}
 	}
-	reverse_proxy api:3001
-}
 
-# ── Domena główna ────────────────────────────────────────────────────
-{$APP_DOMAIN} {
-	tls {
-		on_demand
-	}
-	handle /api/* {
+	# API dla aplikacji mobilnej (cały host proxowany do backendu)
+	@apihost host api.{$APP_DOMAIN}
+	handle @apihost {
 		reverse_proxy api:3001
 	}
-	handle /storage/* {
-		reverse_proxy api:3001
-	}
-	handle {
-		root * /srv/web
-		try_files {path} /index.html
-		file_server
-	}
-}
 
-# ── Tenanci: *.domena (certyfikat on-demand per subdomena kościoła) ───
-*.{$APP_DOMAIN} {
-	tls {
-		on_demand
-	}
-	handle /api/realtime {
-		reverse_proxy api:3001
-	}
+	# Domena główna + tenanci (subdomena kościoła) → aplikacja web
 	handle /api/* {
 		reverse_proxy api:3001
 	}
