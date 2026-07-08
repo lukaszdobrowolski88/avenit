@@ -167,6 +167,47 @@ export default async function authRoutes(app) {
     });
   });
 
+  // Wymiana jednorazowego biletu SSO (z app.<domena>) na sesję kościoła.
+  app.post('/api/auth/ticket', { preHandler: app.requireTenant }, async (req, reply) => {
+    const ticket = String(req.body?.ticket || '');
+    if (!ticket) return reply.code(400).send({ error: 'Brak biletu' });
+    const codeHash = crypto.createHash('sha256').update(ticket).digest('hex');
+    const { rows } = await req.db.query(
+      `UPDATE login_tickets SET used_at = now()
+        WHERE code_hash = $1 AND used_at IS NULL AND expires_at > now()
+        RETURNING user_id`,
+      [codeHash]
+    );
+    if (!rows[0]) return reply.code(400).send({ error: 'Link logowania wygasł lub został użyty' });
+
+    const { rows: userRows } = await req.db.query(
+      `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id
+         FROM app_users WHERE id = $1`,
+      [rows[0].user_id]
+    );
+    const user = userRows[0];
+    if (!user || !user.is_active) return reply.code(401).send({ error: 'Konto nieaktywne' });
+
+    await req.db.query(`UPDATE app_users SET last_login_at = now() WHERE id = $1`, [user.id]);
+
+    const accessToken = await signAccessToken({
+      userId: user.id,
+      authUserId: user.auth_user_id,
+      tenantSlug: req.tenant.slug,
+      role: user.role,
+      email: user.email,
+      aud: AUD_TENANT,
+    });
+    const { token: refreshToken, hash } = newRefreshToken();
+    await storeRefreshToken(req.db, 'refresh_tokens', 'user_id', user.id, hash, req.headers['user-agent']);
+    reply.setCookie('avenit_at', accessToken, cookieOpts(req));
+    reply.setCookie('avenit_rt', refreshToken, {
+      ...cookieOpts(req),
+      maxAge: config.REFRESH_TOKEN_TTL_DAYS * 24 * 3600,
+    });
+    return reply.send({ access_token: accessToken, refresh_token: refreshToken, user: publicUser(user) });
+  });
+
   app.post('/api/auth/logout', { preHandler: app.requireTenant }, async (req, reply) => {
     const token = req.body?.refresh_token || req.cookies?.avenit_rt;
     if (token) await revokeRefreshToken(req.db, 'refresh_tokens', token);

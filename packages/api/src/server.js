@@ -68,6 +68,9 @@ export async function buildServer() {
   });
 
   await app.register(authRoutes);
+  // Globalne logowanie z app.<domena> (bez kontekstu tenanta).
+  const { default: appLoginRoutes } = await import('./auth/app-login.js');
+  await app.register(appLoginRoutes);
   await app.register(dataApiRoutes);
   await app.register(storageRoutes);
 

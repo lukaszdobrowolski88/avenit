@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Avenit — logowanie</title>
-  <meta name="description" content="Zaloguj się do swojego kościoła w Avenit." />
+  <meta name="description" content="Zaloguj się do Avenit." />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -23,74 +23,141 @@
       -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
       margin-bottom: 8px;
     }
-    h1 { font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 4px; }
-    .sub { color: #94a3b8; font-size: 14px; text-align: center; margin-bottom: 24px; }
-    label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
-    .field { display: flex; align-items: stretch; border: 1px solid #334155; border-radius: 10px; overflow: hidden; background: #0f172a; }
-    .field input {
-      flex: 1; background: transparent; border: none; color: #e2e8f0; padding: 12px 14px;
-      font-size: 16px; outline: none; min-width: 0;
+    h1 { font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 24px; }
+    label { display: block; font-size: 13px; color: #94a3b8; margin: 14px 0 6px; }
+    input {
+      width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+      color: #e2e8f0; padding: 12px 14px; font-size: 16px; outline: none;
     }
-    .field .suffix { display: flex; align-items: center; padding: 0 14px; color: #64748b; background: #0b1220; font-size: 15px; white-space: nowrap; }
+    input:focus { border-color: #d97706; }
     button {
-      width: 100%; margin-top: 18px; padding: 13px; border: none; border-radius: 10px;
+      width: 100%; margin-top: 20px; padding: 13px; border: none; border-radius: 10px;
       background: #d97706; color: #fff; font-weight: 700; font-size: 16px; cursor: pointer;
       transition: opacity .2s;
     }
     button:hover { opacity: .9; }
-    .err { color: #f87171; font-size: 13px; margin-top: 10px; min-height: 18px; text-align: center; }
-    .hint { color: #64748b; font-size: 13px; text-align: center; margin-top: 18px; }
+    button:disabled { opacity: .5; cursor: default; }
+    .err { color: #f87171; font-size: 13px; margin-top: 12px; min-height: 18px; text-align: center; }
+    .hint { color: #64748b; font-size: 13px; text-align: center; margin-top: 20px; }
     .hint a { color: #f59e0b; text-decoration: none; }
+    .picker { margin-top: 8px; }
+    .church {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px; border: 1px solid #334155; border-radius: 10px; margin-top: 10px;
+      cursor: pointer; background: #0f172a; transition: border-color .2s;
+    }
+    .church:hover { border-color: #d97706; }
+    .church .arrow { color: #64748b; }
+    .back { background: #334155; margin-top: 12px; }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="logo">Avenit</div>
-    <h1>Zaloguj się do swojego kościoła</h1>
-    <div class="sub">Podaj adres swojego kościoła</div>
+    <h1 id="title">Zaloguj się</h1>
 
-    <form id="f">
-      <label for="slug">Adres kościoła</label>
-      <div class="field">
-        <input id="slug" name="slug" autocomplete="off" autocapitalize="off" autocorrect="off"
-               spellcheck="false" placeholder="np. schwro" autofocus />
-        <div class="suffix">.avenit.pl</div>
+    <!-- Formularz logowania -->
+    <form id="loginForm">
+      <label for="email">E-mail</label>
+      <input id="email" type="email" autocomplete="username" placeholder="ty@przyklad.pl" autofocus />
+      <label for="password">Hasło</label>
+      <input id="password" type="password" autocomplete="current-password" />
+      <div id="totpWrap" style="display:none">
+        <label for="totp">Kod 2FA</label>
+        <input id="totp" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" />
       </div>
-      <button type="submit">Przejdź do logowania →</button>
+      <button type="submit" id="submitBtn">Zaloguj się →</button>
       <div class="err" id="err"></div>
     </form>
+
+    <!-- Wybór kościoła (gdy konto w wielu) -->
+    <div id="pickerWrap" style="display:none">
+      <p style="color:#94a3b8;font-size:14px;text-align:center;margin-bottom:4px">
+        Twoje konto należy do kilku kościołów. Wybierz:</p>
+      <div class="picker" id="picker"></div>
+      <button class="back" id="backBtn" type="button">← Wróć</button>
+    </div>
 
     <div class="hint">Administrator platformy? <a href="https://admin.avenit.pl">Panel administracyjny</a></div>
   </div>
 
   <script>
-    var BASE_DOMAIN = 'avenit.pl';
-    var RESERVED = ['admin', 'api', 'app', 'www'];
-    var form = document.getElementById('f');
-    var input = document.getElementById('slug');
+    var loginForm = document.getElementById('loginForm');
+    var pickerWrap = document.getElementById('pickerWrap');
+    var picker = document.getElementById('picker');
     var err = document.getElementById('err');
+    var submitBtn = document.getElementById('submitBtn');
+    var totpWrap = document.getElementById('totpWrap');
+    var backBtn = document.getElementById('backBtn');
 
-    // Pamiętaj ostatnio wybrany kościół.
-    try {
-      var last = localStorage.getItem('avenit.lastChurch');
-      if (last) input.value = last;
-    } catch (e) {}
-
-    function normalize(v) {
-      return (v || '').trim().toLowerCase()
-        .replace(/^https?:\/\//, '')
-        .replace(/\.avenit\.pl.*$/, '')
-        .replace(/[^a-z0-9-]/g, '');
+    function post(body) {
+      return fetch('/api/app-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); });
     }
 
-    form.addEventListener('submit', function (e) {
+    function creds(extra) {
+      var b = {
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+      };
+      var t = document.getElementById('totp').value.trim();
+      if (t) b.totpCode = t;
+      if (extra) for (var k in extra) b[k] = extra[k];
+      return b;
+    }
+
+    function handle(res) {
+      submitBtn.disabled = false;
+      if (!res.ok) { err.textContent = (res.j && res.j.error) || 'Błąd logowania'; return; }
+      var j = res.j;
+      if (j.requires2fa) {
+        totpWrap.style.display = 'block';
+        document.getElementById('totp').focus();
+        err.textContent = 'Podaj kod z aplikacji Authenticator.';
+        return;
+      }
+      if (j.multiple) {
+        loginForm.style.display = 'none';
+        pickerWrap.style.display = 'block';
+        document.getElementById('title').textContent = 'Wybierz kościół';
+        picker.innerHTML = '';
+        j.tenants.forEach(function (t) {
+          var d = document.createElement('div');
+          d.className = 'church';
+          d.innerHTML = '<span>' + (t.name || t.slug) + '</span><span class="arrow">→</span>';
+          d.onclick = function () { chooseChurch(t.slug); };
+          picker.appendChild(d);
+        });
+        return;
+      }
+      if (j.redirect) { window.location.href = j.redirect; return; }
+      err.textContent = 'Nieoczekiwana odpowiedź serwera.';
+    }
+
+    function chooseChurch(slug) {
+      err.textContent = '';
+      post(creds({ tenant: slug })).then(handle).catch(function () {
+        err.textContent = 'Błąd połączenia.';
+      });
+    }
+
+    loginForm.addEventListener('submit', function (e) {
       e.preventDefault();
       err.textContent = '';
-      var slug = normalize(input.value);
-      if (!slug) { err.textContent = 'Wpisz adres swojego kościoła.'; return; }
-      if (RESERVED.indexOf(slug) !== -1) { err.textContent = 'Ten adres jest zarezerwowany.'; return; }
-      try { localStorage.setItem('avenit.lastChurch', slug); } catch (e) {}
-      window.location.href = 'https://' + slug + '.' + BASE_DOMAIN + '/';
+      submitBtn.disabled = true;
+      post(creds()).then(handle).catch(function () {
+        submitBtn.disabled = false; err.textContent = 'Błąd połączenia.';
+      });
+    });
+
+    backBtn.addEventListener('click', function () {
+      pickerWrap.style.display = 'none';
+      loginForm.style.display = 'block';
+      document.getElementById('title').textContent = 'Zaloguj się';
+      err.textContent = '';
     });
   </script>
 </body>

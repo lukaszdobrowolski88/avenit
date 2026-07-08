@@ -283,6 +283,17 @@ export function createApiClient({
       return { data: {}, error: null };
     },
 
+    // Wymiana jednorazowego biletu SSO (z app.<domena>) na sesję kościoła.
+    async loginWithTicket(ticket) {
+      const { res, payload } = await requestJson('/api/auth/ticket', { ticket });
+      if (!res.ok) {
+        return { data: { session: null }, error: { message: payload?.error || 'Bilet nieprawidłowy' } };
+      }
+      const next = { access_token: payload.access_token, refresh_token: payload.refresh_token, user: payload.user };
+      await saveSession(next, 'SIGNED_IN');
+      return { data: { user: payload.user, session: next }, error: null };
+    },
+
     onAuthStateChange(callback) {
       authListeners.add(callback);
       // Emituj stan początkowy (jak supabase-js INITIAL_SESSION).

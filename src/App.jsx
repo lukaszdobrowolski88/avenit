@@ -196,6 +196,17 @@ export default function App() {
 
     const initAuth = async () => {
       try {
+        // Logowanie przez bilet SSO z app.<domena> (?ticket=...) — wymień na sesję.
+        const params = new URLSearchParams(window.location.search);
+        const ticket = params.get('ticket');
+        if (ticket && supabase.auth.loginWithTicket) {
+          await supabase.auth.loginWithTicket(ticket).catch(() => {});
+          // Usuń bilet z URL (żeby nie został w historii/odświeżeniu).
+          params.delete('ticket');
+          const clean = window.location.pathname + (params.toString() ? `?${params}` : '');
+          window.history.replaceState({}, '', clean);
+        }
+
         const { data } = await supabase.auth.getSession();
         if (data?.session) {
           setSession(data.session);
