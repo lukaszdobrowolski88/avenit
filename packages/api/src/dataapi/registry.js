@@ -54,6 +54,8 @@ export const REGISTRY = {
   schedule_assignments: T('module:programs'),
   events: T('module:calendar'),
   ministry_events: T('module:calendar'),
+  // Zapisy (RSVP) — każdy zalogowany może zapisać/wypisać siebie (jak notifications/user_presence).
+  event_registrations: T(null),
   tasks: T('module:calendar'),
   user_task_comments: T(null),
 
