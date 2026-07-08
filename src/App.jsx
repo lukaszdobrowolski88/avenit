@@ -12,6 +12,7 @@ import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import InstallPrompt from './components/InstallPrompt';
 import AnnouncementBanner from './components/AnnouncementBanner';
+import CommandPalette from './components/CommandPalette';
 import useOffline from './hooks/useOffline';
 import Login from './modules/Login';
 import ResetPassword from './modules/ResetPassword';
@@ -333,6 +334,8 @@ export default function App() {
                 <Sidebar />
               <div className="flex-1 flex flex-col overflow-hidden">
                 <Navbar user={session.user} darkMode={darkMode} toggleTheme={toggleTheme} />
+                {/* Globalna wyszukiwarka (Cmd/Ctrl+K) */}
+                <CommandPalette />
                 {/* Toast Notifications - fixed positioned */}
                 <ToastNotifications />
               {/* PWA Install Prompt */}
