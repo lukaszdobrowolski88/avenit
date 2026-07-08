@@ -25,6 +25,8 @@ const schema = z.object({
   SENDGRID_API_KEY: z.string().optional(),
   MAILING_FROM_EMAIL: z.string().default('noreply@avenit.pl'),
   MAILING_FROM_NAME: z.string().default('Avenit'),
+  // Adresat powiadomień o zgłoszeniach z formularza na avenit.pl
+  LANDING_CONTACT_EMAIL: z.string().default('kontakt@avenit.pl'),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().default('noreply@avenit.pl'),
   SMSAPI_TOKEN: z.string().optional(),

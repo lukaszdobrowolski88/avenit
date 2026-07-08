@@ -71,6 +71,9 @@ export async function buildServer() {
   // Globalne logowanie z app.<domena> (bez kontekstu tenanta).
   const { default: appLoginRoutes } = await import('./auth/app-login.js');
   await app.register(appLoginRoutes);
+  // Publiczny formularz zgłoszeniowy ze strony głównej (avenit.pl).
+  const { default: landingRoutes } = await import('./landing/routes.js');
+  await app.register(landingRoutes);
   await app.register(dataApiRoutes);
   await app.register(storageRoutes);
 
