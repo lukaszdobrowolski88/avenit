@@ -73,6 +73,14 @@ export const WIDGET_DEFINITIONS = {
     defaultSize: 'medium',
     minSize: 'small',
   },
+  birthdays: {
+    id: 'birthdays',
+    name: 'Urodziny',
+    description: 'Nadchodzące urodziny członków',
+    icon: 'Cake',
+    defaultSize: 'small',
+    minSize: 'small',
+  },
 };
 
 export const WIDGET_SIZES = {
@@ -103,6 +111,7 @@ export const DEFAULT_LAYOUT = [
   { widgetId: 'unreadMessages', order: 6, size: 'small', visible: true },
   { widgetId: 'upcomingEvents', order: 7, size: 'medium', visible: true },
   { widgetId: 'quickAccess', order: 8, size: 'medium', visible: true },
+  { widgetId: 'birthdays', order: 9, size: 'small', visible: true },
 ];
 
 export const LOCAL_STORAGE_KEY = 'dashboard_layout';

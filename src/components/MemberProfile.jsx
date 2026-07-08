@@ -2,11 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, Edit2, Mail, Phone, MapPin, Home, Users, Calendar, FileText,
-  CheckCircle, CalendarClock, UserCircle2,
+  CheckCircle, CalendarClock, UserCircle2, Cake, Tag, StickyNote,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('pl-PL') : null);
+
+function ageFrom(dateStr) {
+  if (!dateStr) return null;
+  const b = new Date(dateStr);
+  if (isNaN(b.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+  return age;
+}
 
 function Row({ icon: Icon, label, children }) {
   if (!children) return null;
@@ -109,6 +120,11 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
                 </div>
               )}
             </Row>
+            <Row icon={Cake} label="Data urodzenia">
+              {member.birth_date && (
+                <span>{fmtDate(member.birth_date)}{ageFrom(member.birth_date) != null ? ` · ${ageFrom(member.birth_date)} lat` : ''}</span>
+              )}
+            </Row>
             <Row icon={Calendar} label="W kościele od">{fmtDate(member.join_date)}</Row>
             <Row icon={Calendar} label="Członek od">{member.status === 'Członek' ? fmtDate(member.membership_date) : null}</Row>
             <Row icon={FileText} label="Deklaracja członkowska">
@@ -117,6 +133,28 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
               )}
             </Row>
           </div>
+
+          {member.tags && member.tags.length > 0 && (
+            <div className="py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
+                <Tag size={14} /> Tagi
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {member.tags.map((t) => (
+                  <span key={t} className="text-xs px-2.5 py-1 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">{t}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {member.notes && (
+            <div className="py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
+                <StickyNote size={14} /> Notatki
+              </div>
+              <p className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{member.notes}</p>
+            </div>
+          )}
 
           {events.length > 0 && (
             <div className="py-3">

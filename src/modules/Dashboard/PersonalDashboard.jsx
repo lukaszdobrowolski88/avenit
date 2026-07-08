@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, RefreshCw, Calendar, CheckSquare, CalendarX, Heart, Users, MessageCircle, CalendarDays, Zap } from 'lucide-react';
+import { Settings, RefreshCw, Calendar, CheckSquare, CalendarX, Heart, Users, MessageCircle, CalendarDays, Zap, Cake } from 'lucide-react';
 
 import { useDashboardLayout } from './hooks/useDashboardLayout';
 import { useDashboardData } from './hooks/useDashboardData';
@@ -19,6 +19,7 @@ import OnlineUsersWidget from './widgets/OnlineUsersWidget';
 import UnreadMessagesWidget from './widgets/UnreadMessagesWidget';
 import UpcomingEventsWidget from './widgets/UpcomingEventsWidget';
 import QuickAccessWidget from './widgets/QuickAccessWidget';
+import BirthdaysWidget from './widgets/BirthdaysWidget';
 
 const WIDGET_ICONS = {
   ministry: Calendar,
@@ -29,6 +30,7 @@ const WIDGET_ICONS = {
   unreadMessages: MessageCircle,
   upcomingEvents: CalendarDays,
   quickAccess: Zap,
+  birthdays: Cake,
 };
 
 export default function PersonalDashboard({ user }) {
@@ -94,6 +96,8 @@ export default function PersonalDashboard({ user }) {
         return <UpcomingEventsWidget />;
       case 'quickAccess':
         return <QuickAccessWidget />;
+      case 'birthdays':
+        return <BirthdaysWidget />;
       default:
         return null;
     }
