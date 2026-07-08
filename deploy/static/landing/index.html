@@ -39,5 +39,16 @@
     <a class="cta" href="https://app.avenit.pl">Zaloguj się →</a>
     <div class="foot">© Avenit</div>
   </div>
+  <script>
+    // Wyczyść stary service worker/PWA (gdy avenit.pl serwował wcześniej apkę).
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (rs) {
+        rs.forEach(function (r) { r.unregister(); });
+      }).catch(function () {});
+      if (window.caches) caches.keys().then(function (ks) {
+        ks.forEach(function (k) { caches.delete(k); });
+      }).catch(function () {});
+    }
+  </script>
 </body>
 </html>

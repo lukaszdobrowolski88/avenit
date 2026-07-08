@@ -82,6 +82,16 @@
   </div>
 
   <script>
+    // Wyczyść stary service worker/PWA (gdy app.avenit.pl serwował wcześniej apkę).
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (rs) {
+        rs.forEach(function (r) { r.unregister(); });
+      }).catch(function () {});
+      if (window.caches) caches.keys().then(function (ks) {
+        ks.forEach(function (k) { caches.delete(k); });
+      }).catch(function () {});
+    }
+
     var loginForm = document.getElementById('loginForm');
     var pickerWrap = document.getElementById('pickerWrap');
     var picker = document.getElementById('picker');
