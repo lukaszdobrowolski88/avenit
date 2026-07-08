@@ -1,16 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, UserPlus, UserMinus, Loader2, Check } from 'lucide-react';
+import { Users, UserPlus, UserMinus, Loader2, Check, X, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useUserRole } from '../hooks/useUserRole';
+
+// Role mogące zarządzać listą zapisanych (organizatorzy).
+const MANAGER_ROLES = ['superadmin', 'rada_starszych', 'koordynator', 'lider'];
 
 // Panel zapisów (RSVP) na wydarzenie. Samodzielny — sam pobiera bieżącego
 // użytkownika i listę zapisanych. Wpinany w modal wydarzenia w kalendarzu.
 export default function EventRSVP({ eventId, maxParticipants }) {
+  const { userRole } = useUserRole();
+  const canManage = MANAGER_ROLES.includes(userRole);
+
   const [me, setMe] = useState(null);
   const [myName, setMyName] = useState('');
   const [regs, setRegs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [guests, setGuests] = useState(0);
+  const [addName, setAddName] = useState('');
+  const [addEmail, setAddEmail] = useState('');
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -57,15 +66,40 @@ export default function EventRSVP({ eventId, maxParticipants }) {
     } catch (e) { console.error('RSVP signUp error:', e); } finally { setBusy(false); }
   };
 
-  const cancel = async () => {
-    if (!myReg || busy) return;
+  const removeReg = async (id) => {
+    if (busy) return;
     setBusy(true);
     try {
-      const { error } = await supabase.from('event_registrations').delete().eq('id', myReg.id);
+      const { error } = await supabase.from('event_registrations').delete().eq('id', id);
       if (error) throw error;
       setGuests(0);
       await load();
-    } catch (e) { console.error('RSVP cancel error:', e); } finally { setBusy(false); }
+    } catch (e) { console.error('RSVP remove error:', e); } finally { setBusy(false); }
+  };
+
+  const addManual = async () => {
+    const name = addName.trim();
+    if (!name || busy) return;
+    const email = addEmail.trim() || `reczne:${name.toLowerCase().replace(/\s+/g, '-')}`;
+    setBusy(true);
+    try {
+      const { error } = await supabase
+        .from('event_registrations')
+        .insert([{ event_id: eventId, user_email: email, full_name: name, guests_count: 0 }]);
+      if (error) throw error;
+      setAddName(''); setAddEmail('');
+      await load();
+    } catch (e) { console.error('RSVP addManual error:', e); } finally { setBusy(false); }
+  };
+
+  const exportCsv = () => {
+    const rows = [['Imię i nazwisko', 'E-mail', 'Osoby towarzyszące']];
+    regs.forEach((r) => rows.push([r.full_name || '', r.user_email || '', String(r.guests_count || 0)]));
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `zapisy-wydarzenie-${eventId}.csv`; a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -75,11 +109,18 @@ export default function EventRSVP({ eventId, maxParticipants }) {
           <Users size={16} className="text-accent-primary" />
           Zapisani: {totalGoing}{cap ? ` / ${cap}` : ''}
         </div>
-        {isFull && !myReg && (
-          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-300">
-            Brak miejsc
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {isFull && !myReg && (
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-300">
+              Brak miejsc
+            </span>
+          )}
+          {canManage && regs.length > 0 && (
+            <button onClick={exportCsv} title="Eksport CSV" className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-accent-primary transition">
+              <Download size={14} /> CSV
+            </button>
+          )}
+        </div>
       </div>
 
       {cap ? (
@@ -103,7 +144,7 @@ export default function EventRSVP({ eventId, maxParticipants }) {
             <Check size={16} /> Jesteś zapisany/a{myReg.guests_count ? ` (+${myReg.guests_count})` : ''}
           </span>
           <button
-            onClick={cancel}
+            onClick={() => removeReg(myReg.id)}
             disabled={busy}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition disabled:opacity-50"
           >
@@ -142,8 +183,40 @@ export default function EventRSVP({ eventId, maxParticipants }) {
             >
               {r.full_name || r.user_email?.split('@')[0]}
               {r.guests_count ? <span className="text-accent-primary font-bold">+{r.guests_count}</span> : null}
+              {canManage && (
+                <button onClick={() => removeReg(r.id)} disabled={busy} className="ml-0.5 text-gray-400 hover:text-red-500 transition" title="Usuń z listy">
+                  <X size={12} />
+                </button>
+              )}
             </span>
           ))}
+        </div>
+      )}
+
+      {canManage && (
+        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Dopisz ręcznie</div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              value={addName}
+              onChange={(e) => setAddName(e.target.value)}
+              placeholder="Imię i nazwisko"
+              className="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+            />
+            <input
+              value={addEmail}
+              onChange={(e) => setAddEmail(e.target.value)}
+              placeholder="E-mail (opcjonalnie)"
+              className="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+            />
+            <button
+              onClick={addManual}
+              disabled={busy || !addName.trim()}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg bg-gray-800 dark:bg-gray-700 text-white hover:opacity-90 transition disabled:opacity-40"
+            >
+              <UserPlus size={15} /> Dopisz
+            </button>
+          </div>
         </div>
       )}
     </div>
