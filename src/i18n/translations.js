@@ -146,6 +146,17 @@ const en = {
   'Do': 'To',
   'Wybierz': 'Select',
   'Opcjonalnie': 'Optional',
+  // Kalendarz — chrome
+  'Dzień': 'Day',
+  'Tydzień': 'Week',
+  'Miesiąc': 'Month',
+  'Lista': 'List',
+  'Dziś': 'Today',
+  'Brak wydarzeń': 'No events',
+  'Brak wydarzeń w tym dniu': 'No events on this day',
+  'Brak wydarzeń w tym miesiącu': 'No events this month',
+  'Twoje Kalendarze': 'Your calendars',
+  'Szukaj wydarzeń...': 'Search events...',
 };
 
 const uk = {
@@ -286,6 +297,17 @@ const uk = {
   'Do': 'До',
   'Wybierz': 'Оберіть',
   'Opcjonalnie': 'Необовʼязково',
+  // Календар — інтерфейс
+  'Dzień': 'День',
+  'Tydzień': 'Тиждень',
+  'Miesiąc': 'Місяць',
+  'Lista': 'Список',
+  'Dziś': 'Сьогодні',
+  'Brak wydarzeń': 'Немає подій',
+  'Brak wydarzeń w tym dniu': 'Немає подій цього дня',
+  'Brak wydarzeń w tym miesiącu': 'Немає подій цього місяця',
+  'Twoje Kalendarze': 'Ваші календарі',
+  'Szukaj wydarzeń...': 'Пошук подій...',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };
