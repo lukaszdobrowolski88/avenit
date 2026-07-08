@@ -6124,3 +6124,15 @@ CREATE TABLE IF NOT EXISTS totp_auth_logs (
   user_agent TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Bilety logowania: jednorazowy kod do przekazania sesji z app.<domena>
+-- na subdomenę kościoła (SSO). Ważny 60 s, jednorazowy.
+CREATE TABLE IF NOT EXISTS login_tickets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+  code_hash TEXT UNIQUE NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_login_tickets_expires ON login_tickets(expires_at);

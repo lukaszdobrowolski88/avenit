@@ -39,9 +39,11 @@ migrations/_install_*.sql
 **/supabase/.temp/
 
 # Avenit — backupy, artefakty migracji, cache, storage lokalne
-backups/
-migration_*/
-storage/
+# UWAGA: wzorce zakotwiczone w roocie (/), by nie wykluczyć katalogów kodu
+# o tej samej nazwie (np. packages/api/src/storage/).
+/backups/
+/migration_*/
+/storage/
 /srv/
 *.dump
 live_schema.sql

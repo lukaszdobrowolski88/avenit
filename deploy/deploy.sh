@@ -9,6 +9,12 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
+# Wczytaj .env do środowiska skryptu (compose czyta .env sam, ale skrypt
+# potrzebuje POSTGRES_USER/PASSWORD do zbudowania DATABASE_URL dla migracji).
+set -a
+. ./.env
+set +a
+
 echo "==> Budowanie obrazów..."
 docker compose build
 

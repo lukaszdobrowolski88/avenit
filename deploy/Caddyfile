@@ -1,71 +1,70 @@
-# Caddy — reverse proxy + TLS + serwowanie statycznych SPA.
-# {$APP_DOMAIN} pochodzi z env. Wildcard TLS przez DNS-01 (Cloudflare).
+# Caddy — reverse proxy + TLS on-demand (HTTP-01) + serwowanie statycznych SPA.
+# Działa z dowolnym DNS (lh.pl, Hostinger itd.) — bez wtyczki DNS. Wymaga
+# jedynie, by hosty rozwiązywały się na to IP (rekord wildcard *.{$APP_DOMAIN}).
+#
+# JEDEN blok dla domeny głównej + wszystkich subdomen, z on_demand TLS. Dzięki
+# temu każdy host (admin/api/domena/tenanci) używa tej samej, deterministycznej
+# ścieżki wystawiania certów on-demand (gate: endpoint ask). Routing per host
+# przez matchery @admin/@apihost. Wcześniejsze nazwane bloki dostawały politykę
+# zarządzaną (proaktywną), która cicho zawodziła przy starcie.
 
 {
 	email {$ACME_EMAIL}
+	on_demand_tls {
+		ask http://api:3001/api/internal/tls-check
+	}
 }
 
-# ── Panel administracyjny: admin.domena.pl ───────────────────────────
-admin.{$APP_DOMAIN} {
+{$APP_DOMAIN}, *.{$APP_DOMAIN} {
 	tls {
-		dns cloudflare {$CLOUDFLARE_API_TOKEN}
+		on_demand
 	}
-	# /api → backend
-	handle /api/* {
+
+	# Panel administracyjny
+	@admin host admin.{$APP_DOMAIN}
+	handle @admin {
+		handle /api/* {
+			reverse_proxy api:3001
+		}
+		handle {
+			root * /srv/admin
+			try_files {path} /index.html
+			file_server
+		}
+	}
+
+	# API dla aplikacji mobilnej (cały host proxowany do backendu)
+	@apihost host api.{$APP_DOMAIN}
+	handle @apihost {
 		reverse_proxy api:3001
 	}
-	# SPA panelu
-	handle {
-		root * /srv/admin
+
+	# Domena główna: placeholder „wkrótce" (docelowo strona www)
+	@root host {$APP_DOMAIN}
+	handle @root {
+		root * /srv/static/landing
 		try_files {path} /index.html
 		file_server
 	}
-}
 
-# ── API dla aplikacji mobilnej: api.domena.pl ────────────────────────
-api.{$APP_DOMAIN} {
-	tls {
-		dns cloudflare {$CLOUDFLARE_API_TOKEN}
-	}
-	reverse_proxy api:3001
-}
-
-# ── Tenanci: *.domena.pl (każdy kościół na swojej subdomenie) ─────────
-*.{$APP_DOMAIN} {
-	tls {
-		dns cloudflare {$CLOUDFLARE_API_TOKEN}
+	# app.domena: strona logowania globalnego (email+hasło → tenant w tle)
+	@app host app.{$APP_DOMAIN}
+	handle @app {
+		handle /api/* {
+			reverse_proxy api:3001
+		}
+		handle {
+			root * /srv/static/entry
+			try_files {path} /index.html
+			file_server
+		}
 	}
 
-	# API tenanta (tenant rozpoznawany po nagłówku Host przez backend)
+	# Tenanci (subdomena kościoła) → aplikacja web
 	handle /api/* {
 		reverse_proxy api:3001
 	}
-
-	# Realtime WebSocket
-	handle /api/realtime {
-		reverse_proxy api:3001
-	}
-
-	# Publiczne pliki storage: /storage/<bucket>/<path>
-	# Backend rozpoznaje tenanta po Host i mapuje na katalog na dysku.
 	handle /storage/* {
-		reverse_proxy api:3001
-	}
-
-	# Aplikacja web (SPA)
-	handle {
-		root * /srv/web
-		try_files {path} /index.html
-		file_server
-	}
-}
-
-# ── Domena główna (landing / przekierowanie) ─────────────────────────
-{$APP_DOMAIN} {
-	tls {
-		dns cloudflare {$CLOUDFLARE_API_TOKEN}
-	}
-	handle /api/* {
 		reverse_proxy api:3001
 	}
 	handle {
