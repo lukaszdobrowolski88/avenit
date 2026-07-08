@@ -41,6 +41,9 @@ async function ensureMigrationsTable(client) {
       hash TEXT NOT NULL,
       applied_at TIMESTAMPTZ DEFAULT now()
     )`);
+  // Zgodność wstecz: bazy sprowizjonowane starszym runnerem (provisioning.js)
+  // miały _migrations bez kolumny hash — dodaj ją, by INSERT (filename, hash) nie padał.
+  await client.query(`ALTER TABLE _migrations ADD COLUMN IF NOT EXISTS hash TEXT`);
 }
 
 async function applyDir(dbName, dir) {
