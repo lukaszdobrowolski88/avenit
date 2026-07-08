@@ -12,6 +12,7 @@ import CustomDatePicker from '../components/CustomDatePicker';
 import MemberProfile from '../components/MemberProfile';
 import AttendanceTab from './AttendanceTab';
 import MaterialsTab from './shared/MaterialsTab';
+import { useT } from '../i18n';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import HouseholdManager from './Kids/components/HouseholdManager';
 import { useCampusQuery } from '../hooks/useCampusQuery';
@@ -37,6 +38,7 @@ const MINISTRY_OPTIONS = [
 // --- GŁÓWNY KOMPONENT ---
 
 export default function Members() {
+  const t = useT();
   const [activeTab, setActiveTab] = useState('members');
   const [members, setMembers] = useState([]);
   const [homeGroups, setHomeGroups] = useState([]);
@@ -455,10 +457,10 @@ export default function Members() {
       {/* TAB NAVIGATION */}
       <ResponsiveTabs
         tabs={[
-          { id: 'members', label: 'Członkowie', icon: Users },
-          { id: 'attendance', label: 'Obecność', icon: CheckCircle },
-          { id: 'households', label: 'Rodziny', icon: Home },
-          { id: 'files', label: 'Pliki', icon: FolderOpen },
+          { id: 'members', label: t('Członkowie'), icon: Users },
+          { id: 'attendance', label: t('Obecność'), icon: CheckCircle },
+          { id: 'households', label: t('Rodziny'), icon: Home },
+          { id: 'files', label: t('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}
@@ -474,17 +476,17 @@ export default function Members() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
               <input
                 className="w-full pl-10 pr-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors"
-                placeholder="Szukaj..."
+                placeholder={t('Szukaj...')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
             <div className="flex bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm p-1 rounded-xl border border-gray-200/50 dark:border-gray-700/50 gap-1">
-              <button onClick={() => setStatusFilter('all')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'all' ? 'bg-white dark:bg-gray-700 shadow text-accent-primary dark:text-accent-primary-light' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Wszyscy</button>
-              <button onClick={() => setStatusFilter('Członek')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'Członek' ? 'bg-white dark:bg-gray-700 shadow text-green-600 dark:text-green-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Członkowie</button>
-              <button onClick={() => setStatusFilter('Sympatyk')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'Sympatyk' ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Sympatycy</button>
-              <button onClick={() => setStatusFilter('Gość')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'Gość' ? 'bg-white dark:bg-gray-700 shadow text-gray-600 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Goście</button>
+              <button onClick={() => setStatusFilter('all')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'all' ? 'bg-white dark:bg-gray-700 shadow text-accent-primary dark:text-accent-primary-light' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>{t('Wszyscy')}</button>
+              <button onClick={() => setStatusFilter('Członek')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'Członek' ? 'bg-white dark:bg-gray-700 shadow text-green-600 dark:text-green-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>{t('Członkowie')}</button>
+              <button onClick={() => setStatusFilter('Sympatyk')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'Sympatyk' ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>{t('Sympatycy')}</button>
+              <button onClick={() => setStatusFilter('Gość')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${statusFilter === 'Gość' ? 'bg-white dark:bg-gray-700 shadow text-gray-600 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>{t('Goście')}</button>
             </div>
           </div>
 
@@ -492,13 +494,13 @@ export default function Members() {
             onClick={() => openModal()}
             className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center gap-2 whitespace-nowrap"
           >
-            <Plus size={18} /> Dodaj osobę
+            <Plus size={18} /> {t('Dodaj osobę')}
           </button>
         </div>
 
         {allTags.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 mb-5">
-            <span className="text-xs font-semibold text-gray-400 uppercase mr-1">Tagi:</span>
+            <span className="text-xs font-semibold text-gray-400 uppercase mr-1">{t('Tagi:')}</span>
             {allTags.map((t) => (
               <button
                 key={t}
@@ -509,7 +511,7 @@ export default function Members() {
               </button>
             ))}
             {tagFilter && (
-              <button onClick={() => setTagFilter(null)} className="text-xs text-gray-400 hover:text-red-500 ml-1">wyczyść</button>
+              <button onClick={() => setTagFilter(null)} className="text-xs text-gray-400 hover:text-red-500 ml-1">{t('wyczyść')}</button>
             )}
           </div>
         )}
@@ -519,13 +521,13 @@ export default function Members() {
           <table className="w-full text-left text-sm min-w-[800px]">
             <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
               <tr>
-                <th className="p-4 pl-6">Osoba</th>
-                <th className="p-4">Kontakt & Adres</th>
-                <th className="p-4">Rodzina</th>
-                <th className="p-4">Grupa Domowa</th>
-                <th className="p-4">Służby</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 pr-6 text-right">Akcje</th>
+                <th className="p-4 pl-6">{t('Osoba')}</th>
+                <th className="p-4">{t('Kontakt & Adres')}</th>
+                <th className="p-4">{t('Rodzina')}</th>
+                <th className="p-4">{t('Grupa Domowa')}</th>
+                <th className="p-4">{t('Służby')}</th>
+                <th className="p-4">{t('Status')}</th>
+                <th className="p-4 pr-6 text-right">{t('Akcje')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
@@ -615,7 +617,7 @@ export default function Members() {
 
                   <td className="p-4 pr-6 text-right">
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => setProfileMember(member)} title="Zobacz profil" className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"><Eye size={18} /></button>
+                      <button onClick={() => setProfileMember(member)} title={t('Zobacz profil')} className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"><Eye size={18} /></button>
                       <button onClick={() => openModal(member)} className="p-2 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"><Edit2 size={18} /></button>
                       <button onClick={() => handleDelete(member.id)} className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"><Trash2 size={18} /></button>
                     </div>

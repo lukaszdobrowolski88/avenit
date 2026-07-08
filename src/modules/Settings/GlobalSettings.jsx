@@ -8,6 +8,7 @@ import {
   Palette, Bell, Globe, CreditCard
 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
+import { useT } from '../../i18n';
 import ModuleManager from './components/ModuleManager';
 import CampusManager from './components/CampusManager';
 import ColorPresetPicker from './components/ColorPresetPicker';
@@ -925,19 +926,20 @@ export default function GlobalSettings() {
     setMessage({ type: 'success', text: 'Zapisano' });
   };
   const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
+  const t = useT();
 
   return (
     <div className="flex flex-col h-full space-y-4">
       {/* NAGŁÓWEK */}
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">Ustawienia</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">{t('Ustawienia')}</h1>
       </div>
 
       {message && <div className={`p-4 rounded-xl flex items-center gap-2 cursor-pointer ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800'}`} onClick={() => setMessage(null)}>{message.type === 'success' ? <CheckCircle size={20}/> : <AlertCircle size={20}/>} {message.text}</div>}
 
       {/* Mobile: poziome zakładki */}
       <div className="lg:hidden">
-        <ResponsiveTabs tabs={SETTINGS_NAV_FLAT} activeTab={activeTab} onChange={setActiveTab} />
+        <ResponsiveTabs tabs={SETTINGS_NAV_FLAT.map((i) => ({ ...i, label: t(i.label) }))} activeTab={activeTab} onChange={setActiveTab} />
       </div>
 
       <div className="flex gap-6 flex-1 min-h-0">
@@ -945,7 +947,7 @@ export default function GlobalSettings() {
         <nav className="hidden lg:flex flex-col w-60 shrink-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700 p-3 overflow-y-auto">
           {SETTINGS_NAV.map((section) => (
             <div key={section.group} className="mb-2">
-              <div className="px-3 pt-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{section.group}</div>
+              <div className="px-3 pt-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{t(section.group)}</div>
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const active = activeTab === item.id;
@@ -960,7 +962,7 @@ export default function GlobalSettings() {
                     }`}
                   >
                     <Icon size={18} className="shrink-0" />
-                    {item.label}
+                    {t(item.label)}
                   </button>
                 );
               })}
