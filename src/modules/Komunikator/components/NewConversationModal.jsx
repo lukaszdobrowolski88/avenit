@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Search, User, Users, Check, Loader } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
+import { useT } from '../../../i18n';
 
 export default function NewConversationModal({
   isOpen,
@@ -10,6 +11,7 @@ export default function NewConversationModal({
   onCreateGroup,
   currentUserEmail
 }) {
+  const t = useT();
   const [mode, setMode] = useState('direct'); // 'direct' | 'group'
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState([]);
@@ -88,7 +90,7 @@ export default function NewConversationModal({
       onClose();
     } catch (err) {
       console.error('Error creating conversation:', err);
-      alert('Nie udało się utworzyć rozmowy');
+      alert(t('Nie udało się utworzyć rozmowy'));
     } finally {
       setCreating(false);
     }
@@ -105,7 +107,7 @@ export default function NewConversationModal({
       onClose();
     } catch (err) {
       console.error('Error creating group:', err);
-      alert('Nie udało się utworzyć grupy');
+      alert(t('Nie udało się utworzyć grupy'));
     } finally {
       setCreating(false);
     }
@@ -164,7 +166,7 @@ export default function NewConversationModal({
               type="text"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
-              placeholder="Nazwa grupy..."
+              placeholder={t('Nazwa grupy...')}
               className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
             />
 
@@ -198,7 +200,7 @@ export default function NewConversationModal({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Szukaj użytkowników..."
+              placeholder={t('Szukaj użytkowników...')}
               className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
             />
           </div>
@@ -234,7 +236,7 @@ export default function NewConversationModal({
                     <UserAvatar user={user} size="md" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 dark:text-white truncate">
-                        {user.full_name || 'Brak nazwy'}
+                        {user.full_name || t('Brak nazwy')}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {user.email}

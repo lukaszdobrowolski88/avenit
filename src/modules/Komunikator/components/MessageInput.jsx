@@ -3,8 +3,10 @@ import { Send, Paperclip, X, Image, FileText, Loader, Reply, Mic } from 'lucide-
 import { supabase } from '../../../lib/supabase';
 import { formatFileSize, isImageFile } from '../utils/messageHelpers';
 import AudioRecorder from './AudioRecorder';
+import { useT } from '../../../i18n';
 
 const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabled = false, placeholder = 'Napisz wiadomość...', replyingTo = null, onCancelReply }, ref) {
+  const t = useT();
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -42,7 +44,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
       // Wyślij jako wiadomość z załącznikiem audio
       const voiceAttachment = {
         url: urlData.publicUrl,
-        name: 'Wiadomość głosowa',
+        name: t('Wiadomość głosowa'),
         type: mimeType,
         size: audioBlob.size,
         duration: duration,
@@ -66,7 +68,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
 
     // Limit 10 plików
     if (attachments.length + fileArray.length > 10) {
-      alert('Maksymalnie 10 załączników na wiadomość');
+      alert(t('Maksymalnie 10 załączników na wiadomość'));
       return;
     }
 
@@ -116,7 +118,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
       setAttachments(prev => [...prev, ...uploadedFiles]);
     } catch (err) {
       console.error('Error uploading files:', err);
-      alert('Błąd podczas przesyłania plików');
+      alert(t('Błąd podczas przesyłania plików'));
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -286,7 +288,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
             onClick={() => setIsRecordingVoice(true)}
             disabled={uploading || disabled}
             className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center text-gray-500 hover:text-accent-primary bg-gray-100 dark:bg-gray-800 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
-            title="Nagraj wiadomość głosową"
+            title={t('Nagraj wiadomość głosową')}
           >
             <Mic size={18} className="sm:w-5 sm:h-5" />
           </button>
@@ -298,7 +300,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
               value={content}
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
-              placeholder={placeholder}
+              placeholder={t(placeholder)}
               disabled={disabled || uploading}
               rows={1}
               className="w-full px-3 sm:px-4 py-2 h-9 sm:h-11 bg-gray-100 dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light/50 text-gray-900 dark:text-gray-100 placeholder-gray-500 disabled:opacity-50 transition-all duration-200 leading-5 sm:leading-6 text-sm sm:text-base"

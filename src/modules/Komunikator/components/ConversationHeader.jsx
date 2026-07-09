@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Users, Settings, Bell, BellOff, Trash2, Image, Search, MoreVertical, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
+import { useT } from '../../../i18n';
 
 const ministryIcons = {
   worship_team: Music,
@@ -26,6 +27,7 @@ export default function ConversationHeader({
   onOpenSearch,
   showBackButton = false
 }) {
+  const t = useT();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
@@ -56,7 +58,7 @@ export default function ConversationHeader({
 
   const getSubtitle = () => {
     if (conversation.type === 'direct') {
-      return 'Prywatna rozmowa';
+      return t('Prywatna rozmowa');
     }
 
     if (conversation.type === 'ministry') {
@@ -101,7 +103,7 @@ export default function ConversationHeader({
           <button
             onClick={onOpenSearch}
             className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 group"
-            title="Szukaj w rozmowie"
+            title={t('Szukaj w rozmowie')}
           >
             <Search size={18} className="text-gray-500 group-hover:text-accent-primary-light transition-colors" />
           </button>
@@ -111,7 +113,7 @@ export default function ConversationHeader({
           <button
             onClick={onOpenMediaGallery}
             className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 group"
-            title="Galeria mediów"
+            title={t('Galeria mediów')}
           >
             <Image size={18} className="text-gray-500 group-hover:text-accent-primary-light transition-colors" />
           </button>
@@ -121,7 +123,7 @@ export default function ConversationHeader({
           <button
             onClick={onToggleMute}
             className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 group"
-            title={conversation.muted ? 'Włącz powiadomienia' : 'Wycisz powiadomienia'}
+            title={conversation.muted ? t('Włącz powiadomienia') : t('Wycisz powiadomienia')}
           >
             {conversation.muted ? (
               <BellOff size={18} className="text-accent-secondary-light" />
@@ -135,7 +137,7 @@ export default function ConversationHeader({
           <button
             onClick={onOpenSettings}
             className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 group"
-            title="Ustawienia grupy"
+            title={t('Ustawienia grupy')}
           >
             <Settings size={18} className="text-gray-500 group-hover:text-accent-primary-light transition-colors" />
           </button>
@@ -145,7 +147,7 @@ export default function ConversationHeader({
           <button
             onClick={() => setShowDeleteConfirm(true)}
             className="p-2.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all duration-200 group"
-            title="Usuń rozmowę"
+            title={t('Usuń rozmowę')}
           >
             <Trash2 size={18} className="text-gray-500 group-hover:text-red-500 transition-colors" />
           </button>
@@ -189,7 +191,7 @@ export default function ConversationHeader({
                   className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   {conversation.muted ? <Bell size={16} /> : <BellOff size={16} />}
-                  {conversation.muted ? 'Włącz powiadomienia' : 'Wycisz'}
+                  {conversation.muted ? t('Włącz powiadomienia') : t('Wycisz')}
                 </button>
               )}
               {conversation.type !== 'direct' && onOpenSettings && (
