@@ -16,10 +16,12 @@ import EquipmentTab from '../shared/EquipmentTab';
 import { useUserRole } from '../../hooks/useUserRole';
 import { hasTabAccess } from '../../utils/tabPermissions';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
+import { useT } from '../../i18n';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
 export default function HomeGroupsModule() {
+  const t = useT();
   const { userRole, loading: roleLoading } = useUserRole();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('groups');
@@ -673,11 +675,11 @@ export default function HomeGroupsModule() {
   const availableMembers = members.filter(m => !m.group_id);
 
   const materialTypeOptions = [
-    { value: 'Dokument', label: 'Dokument' },
-    { value: 'Video', label: 'Video' },
-    { value: 'Audio', label: 'Audio' },
-    { value: 'Prezentacja', label: 'Prezentacja' },
-    { value: 'Inne', label: 'Inne' }
+    { value: 'Dokument', label: t('Dokument') },
+    { value: 'Video', label: t('Video') },
+    { value: 'Audio', label: t('Audio') },
+    { value: 'Prezentacja', label: t('Prezentacja') },
+    { value: 'Inne', label: t('Inne') }
   ];
 
   if (loading) {
@@ -700,14 +702,14 @@ export default function HomeGroupsModule() {
       {/* Tabs */}
       <ResponsiveTabs
         tabs={[
-          { id: 'groups', label: 'Grupy', icon: Users },
-          { id: 'tasks', label: 'Zadania', icon: CheckSquare },
-          { id: 'leaders', label: 'Liderzy', icon: UserPlus },
-          ...(hasTabAccess('homegroups', 'members', userRole) ? [{ id: 'members', label: 'Członkowie', icon: Users }] : []),
-          ...(hasTabAccess('homegroups', 'finances', userRole) ? [{ id: 'finances', label: 'Finanse', icon: DollarSign }] : []),
-          { id: 'events', label: 'Wydarzenia', icon: Calendar },
-          ...(hasTabAccess('homegroups', 'equipment', userRole) ? [{ id: 'equipment', label: 'Wyposażenie', icon: Package }] : []),
-          { id: 'files', label: 'Pliki', icon: FolderOpen },
+          { id: 'groups', label: t('Grupy'), icon: Users },
+          { id: 'tasks', label: t('Zadania'), icon: CheckSquare },
+          { id: 'leaders', label: t('Liderzy'), icon: UserPlus },
+          ...(hasTabAccess('homegroups', 'members', userRole) ? [{ id: 'members', label: t('Członkowie'), icon: Users }] : []),
+          ...(hasTabAccess('homegroups', 'finances', userRole) ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
+          { id: 'events', label: t('Wydarzenia'), icon: Calendar },
+          ...(hasTabAccess('homegroups', 'equipment', userRole) ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
+          { id: 'files', label: t('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}
@@ -725,7 +727,7 @@ export default function HomeGroupsModule() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Szukaj..."
+                  placeholder={t('Szukaj...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light outline-none"
@@ -849,10 +851,10 @@ export default function HomeGroupsModule() {
                     value={filterScope}
                     onChange={setFilterScope}
                     options={[
-                      { value: 'all', label: 'Wszyscy' },
-                      { value: 'mine', label: 'Moje' }
+                      { value: 'all', label: t('Wszyscy') },
+                      { value: 'mine', label: t('Moje') }
                     ]}
-                    placeholder="Zakres"
+                    placeholder={t('Zakres')}
                   />
                 </div>
 
@@ -861,11 +863,11 @@ export default function HomeGroupsModule() {
                     value={filterStatus}
                     onChange={setFilterStatus}
                     options={[
-                      { value: 'active', label: 'Otwarte' },
-                      { value: 'completed', label: 'Zakończone' },
-                      { value: 'all', label: 'Wszystkie' }
+                      { value: 'active', label: t('Otwarte') },
+                      { value: 'completed', label: t('Zakończone') },
+                      { value: 'all', label: t('Wszystkie') }
                     ]}
-                    placeholder="Status"
+                    placeholder={t('Status')}
                   />
                 </div>
               </div>
@@ -890,7 +892,7 @@ export default function HomeGroupsModule() {
                   onDrop={(e) => handleDrop(e, status)}
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">{status}</h3>
+                    <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">{t(status)}</h3>
                     <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-3 py-1 rounded-full text-xs font-bold">
                       {filteredTasks.filter(t => t.status === status).length}
                     </span>
@@ -955,11 +957,11 @@ export default function HomeGroupsModule() {
                 <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
                   <tr>
                     <th className="p-4 w-10"></th>
-                    <th className="p-4">Zadanie</th>
-                    <th className="p-4">Termin</th>
-                    <th className="p-4">Przypisane</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4 text-right">Akcje</th>
+                    <th className="p-4">{t('Zadanie')}</th>
+                    <th className="p-4">{t('Termin')}</th>
+                    <th className="p-4">{t('Przypisane')}</th>
+                    <th className="p-4">{t('Status')}</th>
+                    <th className="p-4 text-right">{t('Akcje')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
@@ -1015,7 +1017,7 @@ export default function HomeGroupsModule() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Szukaj..."
+                  placeholder={t('Szukaj...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light outline-none"
@@ -1036,10 +1038,10 @@ export default function HomeGroupsModule() {
             <table className="w-full text-left text-sm min-w-[600px]">
               <thead className="text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="p-4">Imię i nazwisko</th>
-                  <th className="p-4">Email</th>
-                  <th className="p-4">Telefon</th>
-                  <th className="p-4 text-right">Akcje</th>
+                  <th className="p-4">{t('Imię i nazwisko')}</th>
+                  <th className="p-4">{t('Email')}</th>
+                  <th className="p-4">{t('Telefon')}</th>
+                  <th className="p-4 text-right">{t('Akcje')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -1090,7 +1092,7 @@ export default function HomeGroupsModule() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Szukaj..."
+                  placeholder={t('Szukaj...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light outline-none"
@@ -1111,11 +1113,11 @@ export default function HomeGroupsModule() {
             <table className="w-full text-left text-sm min-w-[700px]">
               <thead className="text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="p-4">Imię i nazwisko</th>
-                  <th className="p-4">Email</th>
-                  <th className="p-4">Telefon</th>
-                  <th className="p-4">Grupa</th>
-                  <th className="p-4 text-right">Akcje</th>
+                  <th className="p-4">{t('Imię i nazwisko')}</th>
+                  <th className="p-4">{t('Email')}</th>
+                  <th className="p-4">{t('Telefon')}</th>
+                  <th className="p-4">{t('Grupa')}</th>
+                  <th className="p-4 text-right">{t('Akcje')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -1210,7 +1212,7 @@ export default function HomeGroupsModule() {
               {modalType === 'group' ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Nazwa grupy</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Nazwa grupy')}</label>
                     <input
                       className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={groupForm.name}
@@ -1218,7 +1220,7 @@ export default function HomeGroupsModule() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Opis')}</label>
                     <textarea
                       className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none resize-none"
                       rows={3}
@@ -1232,24 +1234,24 @@ export default function HomeGroupsModule() {
                       value={groupForm.leader_id}
                       onChange={(val) => setGroupForm({...groupForm, leader_id: val})}
                       options={[
-                        { value: '', label: 'Brak' },
+                        { value: '', label: t('Brak') },
                         ...leaders.map(l => ({ value: l.id, label: l.full_name }))
                       ]}
-                      placeholder="Wybierz lidera..."
+                      placeholder={t('Wybierz lidera...')}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Dzień spotkania</label>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Dzień spotkania')}</label>
                       <input
                         className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                         value={groupForm.meeting_day}
                         onChange={(e) => setGroupForm({...groupForm, meeting_day: e.target.value})}
-                        placeholder="np. Poniedziałek"
+                        placeholder={t('np. Poniedziałek')}
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Godzina</label>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Godzina')}</label>
                       <input
                         type="time"
                         className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
@@ -1259,7 +1261,7 @@ export default function HomeGroupsModule() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Lokalizacja</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Lokalizacja')}</label>
                     <input
                       className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={groupForm.location}
@@ -1267,7 +1269,7 @@ export default function HomeGroupsModule() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Adres</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Adres')}</label>
                     <input
                       className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={groupForm.address}
@@ -1276,7 +1278,7 @@ export default function HomeGroupsModule() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Telefon</label>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Telefon')}</label>
                       <input
                         className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                         value={groupForm.phone}
@@ -1284,7 +1286,7 @@ export default function HomeGroupsModule() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Email</label>
+                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Email')}</label>
                       <input
                         type="email"
                         className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
@@ -1297,7 +1299,7 @@ export default function HomeGroupsModule() {
               ) : (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Imię i nazwisko</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Imię i nazwisko')}</label>
                     <input
                       className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={personForm.full_name}
@@ -1305,7 +1307,7 @@ export default function HomeGroupsModule() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Email</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Email')}</label>
                     <input
                       type="email"
                       className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
@@ -1314,7 +1316,7 @@ export default function HomeGroupsModule() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Telefon</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Telefon')}</label>
                     <input
                       className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={personForm.phone}
@@ -1328,10 +1330,10 @@ export default function HomeGroupsModule() {
                         value={personForm.group_id}
                         onChange={(val) => setPersonForm({...personForm, group_id: val})}
                         options={[
-                          { value: '', label: 'Brak' },
+                          { value: '', label: t('Brak') },
                           ...groups.map(g => ({ value: g.id, label: g.name }))
                         ]}
-                        placeholder="Wybierz grupę..."
+                        placeholder={t('Wybierz grupę...')}
                       />
                     </div>
                   )}
@@ -1378,10 +1380,10 @@ export default function HomeGroupsModule() {
                     value={attachMemberId}
                     onChange={setAttachMemberId}
                     options={[
-                      { value: null, label: 'Wybierz...' },
+                      { value: null, label: t('Wybierz...') },
                       ...availableMembers.map(m => ({ value: m.id, label: m.full_name }))
                     ]}
-                    placeholder="Wybierz..."
+                    placeholder={t('Wybierz...')}
                   />
                 </div>
                 <button
@@ -1396,10 +1398,10 @@ export default function HomeGroupsModule() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
                     <tr>
-                      <th className="p-3">Imię</th>
-                      <th className="p-3">Email</th>
-                      <th className="p-3">Telefon</th>
-                      <th className="p-3">Akcja</th>
+                      <th className="p-3">{t('Imię')}</th>
+                      <th className="p-3">{t('Email')}</th>
+                      <th className="p-3">{t('Telefon')}</th>
+                      <th className="p-3">{t('Akcja')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y dark:divide-gray-700">
@@ -1448,7 +1450,7 @@ export default function HomeGroupsModule() {
               <div className="bg-accent-secondary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 space-y-2">
                 <input
                   className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white"
-                  placeholder="Nazwa"
+                  placeholder={t('Nazwa')}
                   value={materialForm.title}
                   onChange={(e) => setMaterialForm({...materialForm, title: e.target.value})}
                 />
@@ -1538,7 +1540,7 @@ export default function HomeGroupsModule() {
               </div>
               <div className="space-y-5">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tytuł zadania</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tytuł zadania')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={taskForm.title}
@@ -1546,7 +1548,7 @@ export default function HomeGroupsModule() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Opis')}</label>
                   <textarea
                     className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={taskForm.description}
@@ -1576,10 +1578,10 @@ export default function HomeGroupsModule() {
                     value={taskForm.assigned_to}
                     onChange={(val) => setTaskForm({...taskForm, assigned_to: val})}
                     options={[
-                      { value: null, label: 'Nie przypisano' },
+                      { value: null, label: t('Nie przypisano') },
                       ...leaders.map(m => ({ value: m.id, label: m.full_name }))
                     ]}
-                    placeholder="Wybierz osobę..."
+                    placeholder={t('Wybierz osobę...')}
                   />
                 </div>
                 <div>
@@ -1588,10 +1590,10 @@ export default function HomeGroupsModule() {
                     value={taskForm.group_id}
                     onChange={(val) => setTaskForm({...taskForm, group_id: val})}
                     options={[
-                      { value: null, label: 'Brak' },
+                      { value: null, label: t('Brak') },
                       ...groups.map(g => ({ value: g.id, label: g.name }))
                     ]}
-                    placeholder="Wybierz grupę..."
+                    placeholder={t('Wybierz grupę...')}
                   />
                 </div>
                 <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
@@ -1628,7 +1630,7 @@ export default function HomeGroupsModule() {
                     Zapisz zadanie, aby dodawać komentarze.
                   </div>
                 ) : loadingComments ? (
-                  <div className="text-center text-gray-400 dark:text-gray-500 text-sm">Ładowanie...</div>
+                  <div className="text-center text-gray-400 dark:text-gray-500 text-sm">{t('Ładowanie...')}</div>
                 ) : comments.length === 0 ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">
                     Brak komentarzy. Bądź pierwszy!
@@ -1650,7 +1652,7 @@ export default function HomeGroupsModule() {
                   <div className="relative">
                     <textarea
                       className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200"
-                      placeholder="Napisz komentarz..."
+                      placeholder={t('Napisz komentarz...')}
                       rows={2}
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
@@ -1685,7 +1687,7 @@ export default function HomeGroupsModule() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Data</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Data')}</label>
                 <input
                   type="date"
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -1694,7 +1696,7 @@ export default function HomeGroupsModule() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kwota (PLN)</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Kwota (PLN)')}</label>
                 <input
                   type="number"
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -1708,40 +1710,40 @@ export default function HomeGroupsModule() {
                 value={expenseForm.description}
                 onChange={(value) => setExpenseForm({...expenseForm, description: value})}
                 options={[
-                  { value: '', label: 'Wybierz pozycję' },
+                  { value: '', label: t('Wybierz pozycję') },
                   ...budgetItems.map(item => ({
                     value: item.description,
                     label: item.description
                   }))
                 ]}
-                placeholder="Wybierz pozycję"
+                placeholder={t('Wybierz pozycję')}
               />
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kontrahent</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Kontrahent')}</label>
                 <input
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   value={expenseForm.contractor}
                   onChange={(e) => setExpenseForm({...expenseForm, contractor: e.target.value})}
-                  placeholder="Nazwa firmy/osoby"
+                  placeholder={t('Nazwa firmy/osoby')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Szczegółowy opis</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Szczegółowy opis')}</label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
                   rows={2}
                   value={expenseForm.detailed_description}
                   onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
-                  placeholder="Dodatkowe informacje..."
+                  placeholder={t('Dodatkowe informacje...')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Osoba odpowiedzialna</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Osoba odpowiedzialna')}</label>
                 <input
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   value={expenseForm.responsible_person}
                   onChange={(e) => setExpenseForm({...expenseForm, responsible_person: e.target.value})}
-                  placeholder="Imię i nazwisko"
+                  placeholder={t('Imię i nazwisko')}
                 />
               </div>
             </div>
