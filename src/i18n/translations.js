@@ -419,6 +419,15 @@ const en = {
   'Filtruj po tagach...': 'Filter by tags...',
   'Wpisz nowy tag...': 'Enter a new tag...',
   'Jan Kowalski': 'John Doe',
+  // Media
+  'Zespół Medialny': 'Media Team',
+  'Foto': 'Photo',
+  'Nagłośnienie': 'Sound',
+  'SocialMedia': 'Social Media',
+  'Usuń zadanie': 'Delete task',
+  'Zapisz zadanie, aby dodawać komentarze.': 'Save the task to add comments.',
+  'Brak komentarzy. Bądź pierwszy!': 'No comments. Be the first!',
+  'Załącznik': 'Attachment',
 };
 
 const uk = {
@@ -832,6 +841,15 @@ const uk = {
   'Filtruj po tagach...': 'Фільтр за тегами...',
   'Wpisz nowy tag...': 'Введіть новий тег...',
   'Jan Kowalski': 'Іван Іваненко',
+  // Медіа
+  'Zespół Medialny': 'Медіа-команда',
+  'Foto': 'Фото',
+  'Nagłośnienie': 'Звук',
+  'SocialMedia': 'Соцмережі',
+  'Usuń zadanie': 'Видалити завдання',
+  'Zapisz zadanie, aby dodawać komentarze.': 'Збережіть завдання, щоб додавати коментарі.',
+  'Brak komentarzy. Bądź pierwszy!': 'Немає коментарів. Будьте першим!',
+  'Załącznik': 'Вкладення',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };
