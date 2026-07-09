@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Download, X, Smartphone } from 'lucide-react';
+import { useT } from '../i18n';
 
 export default function InstallPrompt() {
+  const t = useT();
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -76,21 +78,21 @@ export default function InstallPrompt() {
 
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
-              Zainstaluj aplikację
+              {t('Zainstaluj aplikację')}
             </h3>
 
             {isIOS ? (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Stuknij <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] font-medium">
+                {t('Stuknij')} <span className="inline-flex items-center px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] font-medium">
                   <svg className="w-3 h-3 mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                   </svg>
-                  Udostępnij
-                </span> a następnie "Dodaj do ekranu głównego"
+                  {t('Udostępnij')}
+                </span> {t('a następnie "Dodaj do ekranu głównego"')}
               </p>
             ) : (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Dodaj aplikację do ekranu głównego dla szybkiego dostępu
+                {t('Dodaj aplikację do ekranu głównego dla szybkiego dostępu')}
               </p>
             )}
           </div>
@@ -109,7 +111,7 @@ export default function InstallPrompt() {
             className="w-full mt-3 px-4 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:opacity-90 transition"
           >
             <Download size={16} />
-            Zainstaluj teraz
+            {t('Zainstaluj teraz')}
           </button>
         )}
       </div>
