@@ -17,6 +17,7 @@ import { useUserRole } from '../../hooks/useUserRole';
 import { hasTabAccess } from '../../utils/tabPermissions';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
+import { useT } from '../../i18n';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { PitchShifter } from 'soundtouchjs';
@@ -2030,6 +2031,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
 // --- GŁÓWNY MODUŁ ---
 
 export default function WorshipModule() {
+  const t = useT();
   const { userRole } = useUserRole();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('wall');
@@ -2514,15 +2516,15 @@ export default function WorshipModule() {
 
   // Definicja zakładek
   const tabs = [
-    { id: 'wall', label: 'Tablica', icon: MessageSquare },
-    { id: 'events', label: 'Wydarzenia', icon: Calendar },
-    { id: 'schedule', label: 'Grafik', icon: Calendar },
-    { id: 'songs', label: 'Baza Pieśni', icon: Music },
-    ...(hasTabAccess('worship', 'members', userRole) ? [{ id: 'members', label: 'Członkowie', icon: User }] : []),
-    ...(hasTabAccess('worship', 'finances', userRole) ? [{ id: 'finances', label: 'Finanse', icon: DollarSign }] : []),
-    ...(hasTabAccess('worship', 'members', userRole) ? [{ id: 'roles', label: 'Służby', icon: Users }] : []),
-    ...(hasTabAccess('worship', 'equipment', userRole) ? [{ id: 'equipment', label: 'Wyposażenie', icon: Package }] : []),
-    { id: 'files', label: 'Pliki', icon: FolderOpen },
+    { id: 'wall', label: t('Tablica'), icon: MessageSquare },
+    { id: 'events', label: t('Wydarzenia'), icon: Calendar },
+    { id: 'schedule', label: t('Grafik'), icon: Calendar },
+    { id: 'songs', label: t('Baza Pieśni'), icon: Music },
+    ...(hasTabAccess('worship', 'members', userRole) ? [{ id: 'members', label: t('Członkowie'), icon: User }] : []),
+    ...(hasTabAccess('worship', 'finances', userRole) ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
+    ...(hasTabAccess('worship', 'members', userRole) ? [{ id: 'roles', label: t('Służby'), icon: Users }] : []),
+    ...(hasTabAccess('worship', 'equipment', userRole) ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
+    { id: 'files', label: t('Pliki'), icon: FolderOpen },
   ];
 
   return (
@@ -2549,7 +2551,7 @@ export default function WorshipModule() {
       {activeTab === 'schedule' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 lg:p-6 relative z-[50] transition-colors">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
-          <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">Grafik Zespołu</h2>
+          <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">{t('Grafik Zespołu')}</h2>
         </div>
         <ScheduleTable
           programs={programs}
@@ -2569,10 +2571,10 @@ export default function WorshipModule() {
       {activeTab === 'songs' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 lg:p-6 relative z-[40] transition-colors">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
-          <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">Baza Pieśni</h2>
+          <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">{t('Baza Pieśni')}</h2>
           <div className="flex gap-2 w-full sm:w-auto">
             <button onClick={() => setShowProgramsManager(true)} className="flex-1 sm:flex-none bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary dark:hover:text-accent-primary-light transition flex items-center justify-center gap-2"><Calendar size={16}/> Programy</button>
-            <button onClick={() => setShowTagsModal(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 text-accent-primary dark:text-accent-primary-light text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-accent-primary-lighter dark:border-accent-primary-dark hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/60 dark:hover:to-accent-secondary-darkest/60 transition flex items-center justify-center gap-2"><Tag size={16}/> <span className="hidden sm:inline">Zarządzaj</span> Tagi</button>
+            <button onClick={() => setShowTagsModal(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 text-accent-primary dark:text-accent-primary-light text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-accent-primary-lighter dark:border-accent-primary-dark hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/60 dark:hover:to-accent-secondary-darkest/60 transition flex items-center justify-center gap-2"><Tag size={16}/> <span className="hidden sm:inline">{t('Zarządzaj')}</span> Tagi</button>
             <button onClick={() => { setSongForm({}); setShowSongModal(true); }} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-secondary to-accent-primary text-white text-sm px-4 lg:px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-secondary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> <span className="hidden sm:inline">Dodaj</span> Pieśń</button>
           </div>
         </div>
@@ -2581,11 +2583,11 @@ export default function WorshipModule() {
           <div className="flex flex-col md:flex-row gap-3">
             <div className="flex-1 flex items-center gap-2">
               <Search className="text-gray-400 dark:text-gray-500" size={20} />
-              <input className="w-full outline-none text-sm bg-transparent text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500" placeholder="Szukaj pieśni..." value={songFilter} onChange={e => setSongFilter(e.target.value)} />
+              <input className="w-full outline-none text-sm bg-transparent text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Szukaj pieśni...')} value={songFilter} onChange={e => setSongFilter(e.target.value)} />
             </div>
             <div className="flex gap-2 items-center">
-              <input className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400" placeholder="Filtruj po tagach..." value={tagFilter} onChange={e => setTagFilter(e.target.value)} />
-              {tagFilter && <button onClick={() => setTagFilter('')} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition">Wyczyść</button>}
+              <input className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400" placeholder={t('Filtruj po tagach...')} value={tagFilter} onChange={e => setTagFilter(e.target.value)} />
+              {tagFilter && <button onClick={() => setTagFilter('')} className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition">{t('Wyczyść')}</button>}
             </div>
           </div>
           {/* Lista wszystkich tagów z bazy - filtrowane po wpisanym tekście */}
@@ -2638,7 +2640,7 @@ export default function WorshipModule() {
                           <button
                             onClick={(e) => { e.stopPropagation(); removeTagFromSong(s.id, t); }}
                             className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
-                            title="Usuń tag"
+                            title={t('Usuń tag')}
                           >
                             <X size={12} />
                           </button>
@@ -2647,8 +2649,8 @@ export default function WorshipModule() {
                     </div>
                   </td>
                   <td className="p-4 text-right flex justify-end gap-2">
-                    <button onClick={() => setShowSongDetails(s)} className="text-gray-800 dark:text-gray-300 font-semibold px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">Szczegóły</button>
-                    <button onClick={() => setAddToProgramSong(s)} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-primary-dark dark:hover:text-accent-primary font-medium transition flex items-center gap-1" title="Dodaj do programu jako sugerowaną pieśń"><Calendar size={14}/> Do programu</button>
+                    <button onClick={() => setShowSongDetails(s)} className="text-gray-800 dark:text-gray-300 font-semibold px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">{t('Szczegóły')}</button>
+                    <button onClick={() => setAddToProgramSong(s)} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-primary-dark dark:hover:text-accent-primary font-medium transition flex items-center gap-1" title={t('Dodaj do programu jako sugerowaną pieśń')}><Calendar size={14}/> Do programu</button>
                     <button onClick={() => { setSongForm(s); setShowSongModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">Edytuj</button>
                     <button onClick={() => deleteSong(s.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">Usuń</button>
                   </td>
@@ -2664,7 +2666,7 @@ export default function WorshipModule() {
       {activeTab === 'members' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 lg:p-6 relative z-[30] transition-colors">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
-          <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">Członkowie Zespołu</h2>
+          <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">{t('Członkowie Zespołu')}</h2>
           <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', status: 'Aktywny', phone: '', email: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="w-full sm:w-auto bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> Dodaj członka</button>
         </div>
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -2775,11 +2777,11 @@ export default function WorshipModule() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię i nazwisko</label>
-                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Jan Kowalski" value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
+                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Służby / Instrumenty</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Służby / Instrumenty')}</label>
                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
                   <div className="flex flex-wrap gap-2">
                     {worshipRoles.map(role => {
@@ -2808,7 +2810,7 @@ export default function WorshipModule() {
                     })}
                   </div>
                   {worshipRoles.length === 0 && (
-                    <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-2">Brak zdefiniowanych służb. Dodaj je w zakładce "Służby".</p>
+                    <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-2">{t('Brak zdefiniowanych służb. Dodaj je w zakładce "Służby".')}</p>
                   )}
                 </div>
               </div>
@@ -2924,7 +2926,7 @@ export default function WorshipModule() {
                 value={newTagInput}
                 onChange={(e) => setNewTagInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') addNewTag(); }}
-                placeholder="Wpisz nowy tag..."
+                placeholder={t('Wpisz nowy tag...')}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
               />
               <button
@@ -2965,14 +2967,14 @@ export default function WorshipModule() {
                           <button
                             onClick={() => renameTagGlobally(tag, editingTagValue)}
                             className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-                            title="Zapisz"
+                            title={t('Zapisz')}
                           >
                             <Check size={16} />
                           </button>
                           <button
                             onClick={() => { setEditingTag(null); setEditingTagValue(''); }}
                             className="p-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition"
-                            title="Anuluj"
+                            title={t('Anuluj')}
                           >
                             <X size={16} />
                           </button>
@@ -2988,14 +2990,14 @@ export default function WorshipModule() {
                           <button
                             onClick={() => { setEditingTag(tag); setEditingTagValue(tag); }}
                             className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition"
-                            title="Edytuj nazwę"
+                            title={t('Edytuj nazwę')}
                           >
                             <Hash size={16} />
                           </button>
                           <button
                             onClick={() => deleteTagGlobally(tag)}
                             className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
-                            title="Usuń tag"
+                            title={t('Usuń tag')}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -3058,7 +3060,7 @@ export default function WorshipModule() {
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.contractor}
                     onChange={(e) => setExpenseForm({...expenseForm, contractor: e.target.value})}
-                    placeholder="Nazwa firmy/osoby"
+                    placeholder={t('Nazwa firmy/osoby')}
                   />
                 </div>
                 <div>
@@ -3067,7 +3069,7 @@ export default function WorshipModule() {
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.responsible_person}
                     onChange={(e) => setExpenseForm({...expenseForm, responsible_person: e.target.value})}
-                    placeholder="Imię i nazwisko"
+                    placeholder={t('Imię i nazwisko')}
                   />
                 </div>
               </div>
@@ -3079,7 +3081,7 @@ export default function WorshipModule() {
                   value={expenseForm.description}
                   onChange={(value) => setExpenseForm({...expenseForm, description: value})}
                   options={[
-                    { value: '', label: 'Wybierz pozycję' },
+                    { value: '', label: t('Wybierz pozycję') },
                     ...budgetItems.map(item => ({
                       value: item.description,
                       label: item.description
