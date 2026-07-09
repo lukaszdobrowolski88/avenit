@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useUserRole } from '../../hooks/useUserRole';
+import { useT } from '../../i18n';
 import {
   Heart,
   Plus,
@@ -77,6 +78,7 @@ function PrayerRequestCard({
   onMarkAnswered,
   userAvatars
 }) {
+  const t = useT();
   const [isPraying, setIsPraying] = useState(false);
   const isAuthor = request.user_email === currentUserEmail;
   const hasPrayed = request.praying_users?.includes(currentUserEmail);
@@ -90,7 +92,7 @@ function PrayerRequestCard({
   };
 
   const authorName = request.is_anonymous
-    ? 'Członek Społeczności'
+    ? t('Członek Społeczności')
     : request.user_name || request.user_email?.split('@')[0];
 
   const avatarUrl = !request.is_anonymous && userAvatars[request.user_email];
@@ -103,10 +105,10 @@ function PrayerRequestCard({
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Przed chwilą';
-    if (diffMins < 60) return `${diffMins} min temu`;
-    if (diffHours < 24) return `${diffHours} godz. temu`;
-    if (diffDays < 7) return `${diffDays} dni temu`;
+    if (diffMins < 1) return t('Przed chwilą');
+    if (diffMins < 60) return t('{n} min temu', { n: diffMins });
+    if (diffHours < 24) return t('{n} godz. temu', { n: diffHours });
+    if (diffDays < 7) return t('{n} dni temu', { n: diffDays });
     return date.toLocaleDateString('pl-PL');
   };
 
@@ -159,7 +161,7 @@ function PrayerRequestCard({
 
         {/* Badge kategorii */}
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${CATEGORIES[request.category]?.color}`}>
-          {CATEGORIES[request.category]?.icon} {CATEGORIES[request.category]?.label}
+          {CATEGORIES[request.category]?.icon} {t(CATEGORIES[request.category]?.label)}
         </span>
       </div>
 
@@ -167,7 +169,7 @@ function PrayerRequestCard({
       {request.requester_name && (
         <div className="mb-3 flex items-center gap-2 text-sm">
           <UserPlus className="w-4 h-4 text-accent-primary-light" />
-          <span className="text-gray-600 dark:text-gray-400">Modlitwa za:</span>
+          <span className="text-gray-600 dark:text-gray-400">{t('Modlitwa za:')}</span>
           <span className="font-medium text-gray-800 dark:text-gray-200">{request.requester_name}</span>
         </div>
       )}
@@ -230,7 +232,7 @@ function PrayerRequestCard({
           ) : (
             <HeartHandshake className={`w-4 h-4 ${hasPrayed ? 'fill-current' : ''}`} />
           )}
-          <span>Modlę się</span>
+          <span>{t('Modlę się')}</span>
           <span className={`
             px-2 py-0.5 rounded-full text-xs
             ${hasPrayed
@@ -249,7 +251,7 @@ function PrayerRequestCard({
               <button
                 onClick={() => onMarkAnswered(request)}
                 className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition"
-                title="Oznacz jako wysłuchaną"
+                title={t('Oznacz jako wysłuchaną')}
               >
                 <CheckCircle2 className="w-4 h-4" />
               </button>
@@ -280,6 +282,7 @@ function PrayerRequestCard({
 // ============================================
 
 function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
+  const t = useT();
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('duchowe');
   const [visibility, setVisibility] = useState('public');
@@ -338,7 +341,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Heart className="w-6 h-6" />
-              {editingRequest ? 'Edytuj intencję' : 'Nowa intencja modlitewna'}
+              {editingRequest ? t('Edytuj intencję') : t('Nowa intencja modlitewna')}
             </h2>
             <button
               onClick={onClose}
@@ -362,11 +365,11 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                 type="text"
                 value={requesterName}
                 onChange={(e) => setRequesterName(e.target.value)}
-                placeholder="Imię osoby, za którą się modlimy..."
+                placeholder={t('Imię osoby, za którą się modlimy...')}
                 className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white"
               />
             </div>
-            <p className="text-xs text-gray-400 mt-1">Zostaw puste, jeśli modlisz się za siebie</p>
+            <p className="text-xs text-gray-400 mt-1">{t('Zostaw puste, jeśli modlisz się za siebie')}</p>
           </div>
 
           {/* Treść */}
@@ -377,7 +380,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Podziel się swoją prośbą modlitewną..."
+              placeholder={t('Podziel się swoją prośbą modlitewną...')}
               rows={4}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white resize-none"
               required
@@ -432,8 +435,8 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                 />
                 <User className={`w-5 h-5 ${visibility === 'public' ? 'text-accent-primary-light' : 'text-gray-400'}`} />
                 <div>
-                  <p className="font-medium text-gray-800 dark:text-gray-200">Publiczna</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Widoczna dla wszystkich</p>
+                  <p className="font-medium text-gray-800 dark:text-gray-200">{t('Publiczna')}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('Widoczna dla wszystkich')}</p>
                 </div>
               </label>
 
@@ -454,8 +457,8 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                 />
                 <UserX className={`w-5 h-5 ${visibility === 'leaders_only' ? 'text-indigo-500' : 'text-gray-400'}`} />
                 <div>
-                  <p className="font-medium text-gray-800 dark:text-gray-200">Tylko liderzy</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Poufna prośba</p>
+                  <p className="font-medium text-gray-800 dark:text-gray-200">{t('Tylko liderzy')}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('Poufna prośba')}</p>
                 </div>
               </label>
             </div>
@@ -471,7 +474,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
             />
             <Ghost className="w-5 h-5 text-gray-500" />
             <div>
-              <p className="font-medium text-gray-800 dark:text-gray-200">Dodaj anonimowo</p>
+              <p className="font-medium text-gray-800 dark:text-gray-200">{t('Dodaj anonimowo')}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Twoje imię nie będzie widoczne dla innych
               </p>
@@ -503,8 +506,8 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                     />
                     <CheckCircle className={`w-5 h-5 ${isActive ? 'text-green-500' : 'text-gray-400'}`} />
                     <div>
-                      <p className="font-medium text-gray-800 dark:text-gray-200">Aktualna</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Nadal potrzebuję modlitwy</p>
+                      <p className="font-medium text-gray-800 dark:text-gray-200">{t('Aktualna')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('Nadal potrzebuję modlitwy')}</p>
                     </div>
                   </label>
 
@@ -524,8 +527,8 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                     />
                     <XCircle className={`w-5 h-5 ${!isActive ? 'text-gray-500' : 'text-gray-400'}`} />
                     <div>
-                      <p className="font-medium text-gray-800 dark:text-gray-200">Nieaktualna</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Nie potrzebuję już modlitwy</p>
+                      <p className="font-medium text-gray-800 dark:text-gray-200">{t('Nieaktualna')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{t('Nie potrzebuję już modlitwy')}</p>
                     </div>
                   </label>
                 </div>
@@ -541,7 +544,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                 />
                 <Star className="w-5 h-5 text-amber-500" />
                 <div>
-                  <p className="font-medium text-gray-800 dark:text-gray-200">Modlitwa wysłuchana!</p>
+                  <p className="font-medium text-gray-800 dark:text-gray-200">{t('Modlitwa wysłuchana!')}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Podziel się świadectwem z innymi
                   </p>
@@ -553,7 +556,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                   <textarea
                     value={testimony}
                     onChange={(e) => setTestimony(e.target.value)}
-                    placeholder="Opisz, jak Bóg odpowiedział na Twoją modlitwę..."
+                    placeholder={t('Opisz, jak Bóg odpowiedział na Twoją modlitwę...')}
                     rows={3}
                     className="w-full px-4 py-3 rounded-xl border border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500/50 dark:text-white resize-none"
                   />
@@ -584,7 +587,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               ) : (
                 <>
                   <Heart className="w-5 h-5" />
-                  {editingRequest ? 'Zapisz zmiany' : 'Dodaj intencję'}
+                  {editingRequest ? t('Zapisz zmiany') : t('Dodaj intencję')}
                 </>
               )}
             </button>
@@ -601,6 +604,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
 // ============================================
 
 function AnsweredModal({ isOpen, onClose, onSubmit, request, isLoading }) {
+  const t = useT();
   const [testimony, setTestimony] = useState('');
 
   useEffect(() => {
@@ -636,7 +640,7 @@ function AnsweredModal({ isOpen, onClose, onSubmit, request, isLoading }) {
             <textarea
               value={testimony}
               onChange={(e) => setTestimony(e.target.value)}
-              placeholder="Jak Bóg odpowiedział na Twoją modlitwę? (opcjonalnie)"
+              placeholder={t('Jak Bóg odpowiedział na Twoją modlitwę? (opcjonalnie)')}
               rows={4}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500/50 dark:text-white resize-none"
             />
@@ -677,6 +681,7 @@ function AnsweredModal({ isOpen, onClose, onSubmit, request, isLoading }) {
 // ============================================
 
 export default function PrayerWallModule() {
+  const t = useT();
   const { userRole, loading: roleLoading } = useUserRole();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1012,7 +1017,7 @@ export default function PrayerWallModule() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-          Centrum Modlitwy
+          {t('Centrum Modlitwy')}
         </h1>
         <button
           onClick={() => {
@@ -1021,7 +1026,7 @@ export default function PrayerWallModule() {
           }}
           className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
         >
-          <Plus size={18} /> Dodaj intencję
+          <Plus size={18} /> {t('Dodaj intencję')}
         </button>
       </div>
 
@@ -1151,7 +1156,7 @@ export default function PrayerWallModule() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Szukaj intencji..."
+                  placeholder={t('Szukaj intencji...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white"
@@ -1209,7 +1214,7 @@ export default function PrayerWallModule() {
                       onChange={(e) => setCategoryFilter(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                     >
-                      <option value="all">Wszystkie kategorie</option>
+                      <option value="all">{t('Wszystkie kategorie')}</option>
                       {Object.entries(CATEGORIES).map(([key, { label }]) => (
                         <option key={key} value={key}>{label}</option>
                       ))}
@@ -1220,9 +1225,9 @@ export default function PrayerWallModule() {
                       onChange={(e) => setActiveFilter(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                     >
-                      <option value="all">Wszystkie statusy</option>
-                      <option value="active">Aktualne</option>
-                      <option value="inactive">Nieaktualne</option>
+                      <option value="all">{t('Wszystkie statusy')}</option>
+                      <option value="active">{t('Aktualne')}</option>
+                      <option value="inactive">{t('Nieaktualne')}</option>
                     </select>
                   </div>
                 )}
@@ -1245,16 +1250,16 @@ export default function PrayerWallModule() {
                 </div>
                 <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
                   {filter === 'mine'
-                    ? 'Nie masz jeszcze żadnych intencji'
+                    ? t('Nie masz jeszcze żadnych intencji')
                     : filter === 'answered'
-                    ? 'Brak świadectw'
-                    : 'Brak intencji modlitewnych'
+                    ? t('Brak świadectw')
+                    : t('Brak intencji modlitewnych')
                   }
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 mb-6">
                   {filter === 'mine'
-                    ? 'Dodaj swoją pierwszą intencję modlitewną'
-                    : 'Bądź pierwszą osobą, która doda intencję'
+                    ? t('Dodaj swoją pierwszą intencję modlitewną')
+                    : t('Bądź pierwszą osobą, która doda intencję')
                   }
                 </p>
                 <button
