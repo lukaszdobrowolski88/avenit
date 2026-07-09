@@ -6,6 +6,7 @@ import { useCampusQuery } from '../hooks/useCampusQuery';
 import CustomSelect from '../components/CustomSelect';
 import MaterialsTab from './shared/MaterialsTab';
 import ResponsiveTabs from '../components/ResponsiveTabs';
+import { useT } from '../i18n';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -178,6 +179,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
 };
 
 const FinanceModule = () => {
+  const t = useT();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('budget');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -730,7 +732,7 @@ const FinanceModule = () => {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent mb-2">
             Finanse
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">Zarządzanie budżetem i finansami kościoła</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('Zarządzanie budżetem i finansami kościoła')}</p>
         </div>
         <div className="flex items-center gap-3">
           <CustomSelect
@@ -743,11 +745,11 @@ const FinanceModule = () => {
 
       <ResponsiveTabs
         tabs={[
-          { id: 'budget', label: 'Budżet', icon: DollarSign },
-          { id: 'income', label: 'Wpływy', icon: TrendingUp },
-          { id: 'expenses', label: 'Wydatki', icon: Receipt },
-          { id: 'reports', label: 'Raporty', icon: BarChart3 },
-          { id: 'files', label: 'Pliki', icon: FolderOpen },
+          { id: 'budget', label: t('Budżet'), icon: DollarSign },
+          { id: 'income', label: t('Wpływy'), icon: TrendingUp },
+          { id: 'expenses', label: t('Wydatki'), icon: Receipt },
+          { id: 'reports', label: t('Raporty'), icon: BarChart3 },
+          { id: 'files', label: t('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}
@@ -781,13 +783,13 @@ const FinanceModule = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Służba</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Opis kosztu</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Służba')}</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Opis kosztu')}</th>
                     <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Plan (PLN)</th>
                     <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Realizacja (PLN)</th>
                     <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">% Realizacji</th>
-                    <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Pozostało</th>
-                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Akcje</th>
+                    <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Pozostało')}</th>
+                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Akcje')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -927,21 +929,21 @@ const FinanceModule = () => {
                                             </span>
                                           </div>
                                           <div className="flex flex-col">
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Kontrahent</span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Kontrahent')}</span>
                                             <span className="text-gray-900 dark:text-white">{expense.contractor}</span>
                                           </div>
                                           <div className="flex flex-col">
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Kwota</span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Kwota')}</span>
                                             <span className="font-bold text-gray-900 dark:text-white">
                                               {expense.amount.toLocaleString('pl-PL')} zł
                                             </span>
                                           </div>
                                           <div className="flex flex-col">
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Szczegółowy opis</span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Szczegółowy opis')}</span>
                                             <span className="text-gray-900 dark:text-white text-xs">{expense.detailed_description || '-'}</span>
                                           </div>
                                           <div className="flex flex-col">
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Odpowiedzialny</span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Odpowiedzialny')}</span>
                                             <span className="text-gray-900 dark:text-white">{expense.responsible_person}</span>
                                           </div>
                                         </div>
@@ -1043,7 +1045,7 @@ const FinanceModule = () => {
 
           {/* Filtry wpływów */}
           <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase">Filtry</h3>
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase">{t('Filtry')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
               <CustomSelect
                 label="Typ"
@@ -1055,7 +1057,7 @@ const FinanceModule = () => {
                   { value: 'Darowizny', label: 'Darowizny' },
                   { value: 'Inne', label: 'Inne' }
                 ]}
-                placeholder="Wszystkie"
+                placeholder={t('Wszystkie')}
               />
               <CustomSelect
                 label="Źródło"
@@ -1065,7 +1067,7 @@ const FinanceModule = () => {
                   { value: '', label: 'Wszystkie' },
                   ...uniqueIncomeSources.map(s => ({ value: s, label: s }))
                 ]}
-                placeholder="Wszystkie"
+                placeholder={t('Wszystkie')}
               />
               <CustomSelect
                 label="Tag"
@@ -1075,7 +1077,7 @@ const FinanceModule = () => {
                   { value: '', label: 'Wszystkie' },
                   ...uniqueIncomeTags.map(t => ({ value: t, label: t }))
                 ]}
-                placeholder="Wszystkie"
+                placeholder={t('Wszystkie')}
               />
               <CustomDatePicker
                 label="Data od"
@@ -1113,11 +1115,11 @@ const FinanceModule = () => {
                   <tr className="border-b border-gray-200 dark:border-gray-700">
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Data</th>
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Typ</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Źródło</th>
-                    <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Kwota</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Notatka</th>
-                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Tagi</th>
-                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Akcje</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Źródło')}</th>
+                    <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Kwota')}</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Notatka')}</th>
+                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Tagi')}</th>
+                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Akcje')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1207,7 +1209,7 @@ const FinanceModule = () => {
 
           {/* Filtry wydatków */}
           <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase">Filtry</h3>
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase">{t('Filtry')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
               <CustomSelect
                 label="Kategoria"
@@ -1217,7 +1219,7 @@ const FinanceModule = () => {
                   { value: '', label: 'Wszystkie' },
                   ...budgetCategories
                 ]}
-                placeholder="Wszystkie"
+                placeholder={t('Wszystkie')}
               />
               <CustomSelect
                 label="Kontrahent"
@@ -1227,7 +1229,7 @@ const FinanceModule = () => {
                   { value: '', label: 'Wszystkie' },
                   ...uniqueExpenseContractors.map(c => ({ value: c, label: c }))
                 ]}
-                placeholder="Wszystkie"
+                placeholder={t('Wszystkie')}
               />
               <CustomSelect
                 label="Osoba odpowiedzialna"
@@ -1237,7 +1239,7 @@ const FinanceModule = () => {
                   { value: '', label: 'Wszystkie' },
                   ...uniqueExpenseResponsible.map(r => ({ value: r, label: r }))
                 ]}
-                placeholder="Wszystkie"
+                placeholder={t('Wszystkie')}
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1249,7 +1251,7 @@ const FinanceModule = () => {
                   { value: '', label: 'Wszystkie' },
                   ...uniqueExpenseTags.map(t => ({ value: t, label: t }))
                 ]}
-                placeholder="Wszystkie"
+                placeholder={t('Wszystkie')}
               />
               <CustomDatePicker
                 label="Data od"
@@ -1288,11 +1290,11 @@ const FinanceModule = () => {
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Data</th>
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Kategoria</th>
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Opis</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Kontrahent</th>
-                    <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Kwota</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Odpowiedzialny</th>
-                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Załączniki</th>
-                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Akcje</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Kontrahent')}</th>
+                    <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Kwota')}</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Odpowiedzialny')}</th>
+                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Załączniki')}</th>
+                    <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Akcje')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1397,7 +1399,7 @@ const FinanceModule = () => {
                     <button
                       onClick={openBalanceModal}
                       className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition"
-                      title="Edytuj stany początkowe"
+                      title={t('Edytuj stany początkowe')}
                     >
                       <Settings size={20} />
                     </button>
@@ -1423,7 +1425,7 @@ const FinanceModule = () => {
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
                       <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2">
                         <Banknote size={16} />
-                        <span className="text-xs font-medium uppercase">Gotówka</span>
+                        <span className="text-xs font-medium uppercase">{t('Gotówka')}</span>
                       </div>
                       <p className="text-xl font-bold text-gray-900 dark:text-white">{currentCashPln.toLocaleString('pl-PL')} zł</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -1449,7 +1451,7 @@ const FinanceModule = () => {
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
                       <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2">
                         <PieChart size={16} />
-                        <span className="text-xs font-medium uppercase">Budżet</span>
+                        <span className="text-xs font-medium uppercase">{t('Budżet')}</span>
                       </div>
                       <p className="text-xl font-bold text-gray-900 dark:text-white">{budgetExecution.toFixed(1)}%</p>
                       <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
@@ -1469,14 +1471,14 @@ const FinanceModule = () => {
                         <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                           <CreditCard size={18} className="text-amber-600 dark:text-amber-400" />
                           <div>
-                            <p className="text-xs text-amber-600 dark:text-amber-400">Rachunek</p>
+                            <p className="text-xs text-amber-600 dark:text-amber-400">{t('Rachunek')}</p>
                             <p className="font-bold text-gray-900 dark:text-white">{accountBalances.bank_currency.toLocaleString('pl-PL')} {accountBalances.currency_type}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
                           <Banknote size={18} className="text-cyan-600 dark:text-cyan-400" />
                           <div>
-                            <p className="text-xs text-cyan-600 dark:text-cyan-400">Gotówka</p>
+                            <p className="text-xs text-cyan-600 dark:text-cyan-400">{t('Gotówka')}</p>
                             <p className="font-bold text-gray-900 dark:text-white">{accountBalances.cash_currency.toLocaleString('pl-PL')} {accountBalances.currency_type}</p>
                           </div>
                         </div>
@@ -1544,11 +1546,11 @@ const FinanceModule = () => {
               <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded bg-green-500" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Wpływy</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('Wpływy')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded bg-red-500" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Wydatki</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('Wydatki')}</span>
                 </div>
               </div>
             </div>
@@ -1605,7 +1607,7 @@ const FinanceModule = () => {
                     })}
                   </div>
                 ) : (
-                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">Brak danych o wydatkach</p>
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak danych o wydatkach')}</p>
                 );
               })()}
             </div>
@@ -1647,7 +1649,7 @@ const FinanceModule = () => {
                     })}
                   </div>
                 ) : (
-                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">Brak danych o kontrahentach</p>
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak danych o kontrahentach')}</p>
                 );
               })()}
             </div>
@@ -1664,11 +1666,11 @@ const FinanceModule = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">Służba</th>
-                      <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">Planowany</th>
-                      <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">Zrealizowany</th>
-                      <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">Realizacja</th>
-                      <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">Pozostało</th>
+                      <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Służba')}</th>
+                      <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Planowany')}</th>
+                      <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Zrealizowany')}</th>
+                      <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Realizacja')}</th>
+                      <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Pozostało')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1718,7 +1720,7 @@ const FinanceModule = () => {
                 </table>
               </div>
             ) : (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-8">Brak pozycji budżetowych</p>
+              <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak pozycji budżetowych')}</p>
             )}
           </div>
 
@@ -1754,7 +1756,7 @@ const FinanceModule = () => {
                   })}
                 </div>
               ) : (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-8">Brak danych o wpływach</p>
+                <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak danych o wpływach')}</p>
               );
             })()}
           </div>
@@ -1773,7 +1775,7 @@ const FinanceModule = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-white/20 dark:border-gray-700">
             <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">Nowa pozycja budżetowa</h3>
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{t('Nowa pozycja budżetowa')}</h3>
               <button onClick={() => setShowBudgetModal(false)} className="text-gray-500 dark:text-gray-400">
                 <X size={24} />
               </button>
@@ -1790,7 +1792,7 @@ const FinanceModule = () => {
                   { value: 'małe Avenit', label: 'małe Avenit' },
                   { value: 'AtmosferaTeam', label: 'AtmosferaTeam' }
                 ]}
-                placeholder="Wybierz służbę"
+                placeholder={t('Wybierz służbę')}
               />
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
@@ -1799,7 +1801,7 @@ const FinanceModule = () => {
                   rows={3}
                   value={budgetForm.description}
                   onChange={(e) => setBudgetForm({...budgetForm, description: e.target.value})}
-                  placeholder="Opis kosztów"
+                  placeholder={t('Opis kosztów')}
                 />
               </div>
               <div>
@@ -1837,7 +1839,7 @@ const FinanceModule = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-white/20 dark:border-gray-700">
             <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">Nowy wpływ</h3>
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{t('Nowy wpływ')}</h3>
               <button onClick={() => setShowIncomeModal(false)} className="text-gray-500 dark:text-gray-400">
                 <X size={24} />
               </button>
@@ -1869,32 +1871,32 @@ const FinanceModule = () => {
                 ]}
               />
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Źródło</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Źródło')}</label>
                 <input
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   value={incomeForm.source}
                   onChange={(e) => setIncomeForm({...incomeForm, source: e.target.value})}
-                  placeholder="np. Kolekta niedzielna"
+                  placeholder={t('np. Kolekta niedzielna')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Notatka</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Notatka')}</label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
                   rows={2}
                   value={incomeForm.notes}
                   onChange={(e) => setIncomeForm({...incomeForm, notes: e.target.value})}
-                  placeholder="Dodatkowe informacje"
+                  placeholder={t('Dodatkowe informacje')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tagi</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tagi')}</label>
                 <div className="flex gap-2 mb-2">
                   <input
                     className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Dodaj tag"
+                    placeholder={t('Dodaj tag')}
                     onKeyPress={(e) => e.key === 'Enter' && addTag(incomeForm, setIncomeForm)}
                   />
                   <button
@@ -1944,7 +1946,7 @@ const FinanceModule = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto">
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-4xl p-6 border border-white/20 dark:border-gray-700 my-8">
             <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">Nowy wydatek</h3>
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{t('Nowy wydatek')}</h3>
               <button onClick={() => setShowExpenseModal(false)} className="text-gray-500 dark:text-gray-400">
                 <X size={24} />
               </button>
@@ -1972,21 +1974,21 @@ const FinanceModule = () => {
               {/* Wiersz 2: Kontrahent i Osoba odpowiedzialna */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kontrahent</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Kontrahent')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.contractor}
                     onChange={(e) => setExpenseForm({...expenseForm, contractor: e.target.value})}
-                    placeholder="Nazwa firmy/osoby"
+                    placeholder={t('Nazwa firmy/osoby')}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Osoba odpowiedzialna</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Osoba odpowiedzialna')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.responsible_person}
                     onChange={(e) => setExpenseForm({...expenseForm, responsible_person: e.target.value})}
-                    placeholder="Imię i nazwisko"
+                    placeholder={t('Imię i nazwisko')}
                   />
                 </div>
               </div>
@@ -1998,7 +2000,7 @@ const FinanceModule = () => {
                   value={expenseForm.category}
                   onChange={(val) => setExpenseForm({...expenseForm, category: val, description: ''})}
                   options={budgetCategories.length > 0 ? budgetCategories : [{ value: '', label: 'Najpierw dodaj pozycje budżetowe' }]}
-                  placeholder="Wybierz kategorię"
+                  placeholder={t('Wybierz kategorię')}
                 />
                 {expenseForm.category && (
                   <CustomSelect
@@ -2008,24 +2010,24 @@ const FinanceModule = () => {
                     options={budgetItems
                       .filter(item => item.category === expenseForm.category)
                       .map(item => ({ value: item.description, label: item.description }))}
-                    placeholder="Wybierz opis kosztu"
+                    placeholder={t('Wybierz opis kosztu')}
                   />
                 )}
               </div>
 
               {/* Wiersz 4: Szczegółowy opis (pełna szerokość) */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Szczegółowy opis</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Szczegółowy opis')}</label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
                   rows={2}
                   value={expenseForm.detailed_description}
                   onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
-                  placeholder="Dodatkowe informacje o wydatku..."
+                  placeholder={t('Dodatkowe informacje o wydatku...')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załączniki (opcjonalnie)</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Załączniki (opcjonalnie)')}</label>
                 <div className="space-y-2">
                   <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                     <Upload size={18} className="text-gray-400" />
@@ -2062,13 +2064,13 @@ const FinanceModule = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tagi</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tagi')}</label>
                 <div className="flex gap-2 mb-2">
                   <input
                     className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Dodaj tag"
+                    placeholder={t('Dodaj tag')}
                     onKeyPress={(e) => e.key === 'Enter' && addTag(expenseForm, setExpenseForm)}
                   />
                   <button
@@ -2169,7 +2171,7 @@ const FinanceModule = () => {
                   Waluta obca
                 </h4>
                 <div className="mb-3">
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Typ waluty</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Typ waluty')}</label>
                   <select
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={balanceForm.currency_type}
@@ -2214,7 +2216,7 @@ const FinanceModule = () => {
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-sm text-blue-700 dark:text-blue-300">
-                <p className="font-medium mb-1">💡 Wskazówka</p>
+                <p className="font-medium mb-1">{t('💡 Wskazówka')}</p>
                 <p>Wprowadź stany kont na początek roku {selectedYear}. System automatycznie doliczy wpływy i wydatki, aby pokazać aktualny stan.</p>
               </div>
 
