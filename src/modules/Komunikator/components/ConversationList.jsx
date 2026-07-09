@@ -3,6 +3,7 @@ import { Search, Plus, MessageSquare, Users, Music, Heart, Baby, Zap, UserCheck,
 import UserAvatar from './UserAvatar';
 import { formatMessageDate, truncateText, getMinistryName } from '../utils/messageHelpers';
 import { usePresence } from '../../../hooks/usePresence';
+import { useT } from '../../../i18n';
 
 const ministryIcons = {
   worship_team: Music,
@@ -27,6 +28,7 @@ export default function ConversationList({
   loading,
   currentUserEmail
 }) {
+  const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'starred' | 'archived'
 
@@ -168,7 +170,7 @@ export default function ConversationList({
 
           {conv.lastMessage ? (
             <p className={`text-xs truncate mt-0.5 ${hasUnread ? 'text-gray-600 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-              {conv.lastMessage.sender_email === currentUserEmail ? 'Ty: ' : ''}
+              {conv.lastMessage.sender_email === currentUserEmail ? t('Ty: ') : ''}
               {truncateText(conv.lastMessage.content, 40)}
             </p>
           ) : (
@@ -185,7 +187,7 @@ export default function ConversationList({
             className={`p-1.5 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-all duration-200 ${
               conv.starred ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-500'
             }`}
-            title={conv.starred ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
+            title={conv.starred ? t('Usuń z ulubionych') : t('Dodaj do ulubionych')}
           >
             <Star size={14} className={conv.starred ? 'fill-current' : ''} />
           </button>
@@ -194,7 +196,7 @@ export default function ConversationList({
             className={`p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all duration-200 ${
               conv.archived ? 'text-blue-500' : 'text-gray-400 hover:text-blue-500'
             }`}
-            title={conv.archived ? 'Przywróć z archiwum' : 'Archiwizuj'}
+            title={conv.archived ? t('Przywróć z archiwum') : t('Archiwizuj')}
           >
             <Archive size={14} />
           </button>
@@ -234,7 +236,7 @@ export default function ConversationList({
           <button
             onClick={onNewConversation}
             className="p-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all duration-200 shadow-lg shadow-accent-primary-light/30 hover:shadow-accent-primary-light/40 hover:scale-105"
-            title="Nowa rozmowa"
+            title={t('Nowa rozmowa')}
           >
             <Plus size={18} />
           </button>
@@ -247,7 +249,7 @@ export default function ConversationList({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Szukaj rozmów..."
+            placeholder={t('Szukaj rozmów...')}
             className="w-full pl-10 pr-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 backdrop-blur-sm transition-all duration-200"
           />
         </div>
@@ -294,7 +296,7 @@ export default function ConversationList({
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="w-10 h-10 border-3 border-accent-primary-lighter dark:border-accent-primary-darkest border-t-accent-primary-light rounded-full animate-spin" />
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-3">Ładowanie rozmów...</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-3">{t('Ładowanie rozmów...')}</p>
           </div>
         ) : filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
@@ -310,16 +312,16 @@ export default function ConversationList({
               )}
             </div>
             <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">
-              {searchQuery ? 'Brak wyników' : activeFilter === 'starred' ? 'Brak ulubionych' : activeFilter === 'archived' ? 'Brak archiwum' : 'Brak rozmów'}
+              {searchQuery ? t('Brak wyników') : activeFilter === 'starred' ? t('Brak ulubionych') : activeFilter === 'archived' ? t('Brak archiwum') : t('Brak rozmów')}
             </p>
             <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
               {searchQuery
-                ? `Nie znaleziono rozmów dla "${searchQuery}"`
+                ? t('Nie znaleziono rozmów dla "{q}"', { q: searchQuery })
                 : activeFilter === 'starred'
-                  ? 'Oznacz rozmowę gwiazdką, by ją tu zobaczyć'
+                  ? t('Oznacz rozmowę gwiazdką, by ją tu zobaczyć')
                   : activeFilter === 'archived'
-                    ? 'Zarchiwizowane rozmowy pojawią się tutaj'
-                    : 'Rozpocznij pierwszą rozmowę'
+                    ? t('Zarchiwizowane rozmowy pojawią się tutaj')
+                    : t('Rozpocznij pierwszą rozmowę')
               }
             </p>
             {!searchQuery && activeFilter === 'all' && (
@@ -327,15 +329,15 @@ export default function ConversationList({
                 onClick={onNewConversation}
                 className="px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm font-medium rounded-xl shadow-lg shadow-accent-primary-light/30 hover:shadow-accent-primary-light/40 hover:scale-105 transition-all duration-200"
               >
-                Rozpocznij nową rozmowę
+                {t('Rozpocznij nową rozmowę')}
               </button>
             )}
           </div>
         ) : (
           <>
-            {renderSection('Prywatne', directConversations)}
-            {renderSection('Grupy', groupConversations)}
-            {renderSection('Kanały służb', ministryConversations)}
+            {renderSection(t('Prywatne'), directConversations)}
+            {renderSection(t('Grupy'), groupConversations)}
+            {renderSection(t('Kanały służb'), ministryConversations)}
           </>
         )}
       </div>
