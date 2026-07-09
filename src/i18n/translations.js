@@ -260,6 +260,15 @@ const en = {
   'Nazwa firmy/osoby': 'Company/person name',
   'Edytuj stany początkowe': 'Edit opening balances',
   'Raporty': 'Reports',
+  // Wspólne komponenty
+  'Zainstaluj aplikację': 'Install the app',
+  'Zainstaluj teraz': 'Install now',
+  'Dodaj aplikację do ekranu głównego dla szybkiego dostępu': 'Add the app to your home screen for quick access',
+  'Stuknij': 'Tap',
+  'Udostępnij': 'Share',
+  'a następnie "Dodaj do ekranu głównego"': 'then "Add to Home Screen"',
+  'Oznacz wszystkie jako przeczytane': 'Mark all as read',
+  'Brak nowych powiadomień': 'No new notifications',
 };
 
 const uk = {
@@ -514,6 +523,15 @@ const uk = {
   'Nazwa firmy/osoby': 'Назва компанії/особи',
   'Edytuj stany początkowe': 'Редагувати початкові баланси',
   'Raporty': 'Звіти',
+  // Спільні компоненти
+  'Zainstaluj aplikację': 'Встановити застосунок',
+  'Zainstaluj teraz': 'Встановити зараз',
+  'Dodaj aplikację do ekranu głównego dla szybkiego dostępu': 'Додайте застосунок на головний екран для швидкого доступу',
+  'Stuknij': 'Торкніться',
+  'Udostępnij': 'Поділитися',
+  'a następnie "Dodaj do ekranu głównego"': 'а потім «На початковий екран»',
+  'Oznacz wszystkie jako przeczytane': 'Позначити всі як прочитані',
+  'Brak nowych powiadomień': 'Немає нових сповіщень',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };
