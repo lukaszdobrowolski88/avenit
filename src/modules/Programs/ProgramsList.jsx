@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useCampus } from '../../contexts/CampusContext';
+import { useT } from '../../i18n';
 
 import * as LucideIcons from 'lucide-react';
 
@@ -29,6 +30,7 @@ const ALL_SECTIONS = [
 ];
 
 export default function ProgramsList() {
+  const t = useT();
   const navigate = useNavigate();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const { campuses } = useCampus();
@@ -70,7 +72,7 @@ export default function ProgramsList() {
 
   const handleDelete = async (id, e) => {
     e.stopPropagation();
-    if (window.confirm('Czy na pewno chcesz usunąć ten program?')) {
+    if (window.confirm(t('Czy na pewno chcesz usunąć ten program?'))) {
       await supabase.from('programs').delete().eq('id', id);
       fetchPrograms();
     }
@@ -125,7 +127,7 @@ export default function ProgramsList() {
 
   const deleteType = async (typeId, e) => {
     e?.stopPropagation();
-    if (!window.confirm('Usunąć ten typ? Programy tego typu zachowają dane ale stracą przypisanie do typu.')) return;
+    if (!window.confirm(t('Usunąć ten typ? Programy tego typu zachowają dane ale stracą przypisanie do typu.'))) return;
     await supabase.from('program_types').delete().eq('id', typeId);
     fetchProgramTypes();
   };
@@ -189,7 +191,7 @@ export default function ProgramsList() {
                 {p.title || formatDateFull(p.date)}
               </div>
               <div className="text-xs text-gray-400 dark:text-gray-500 truncate">
-                {p.title ? formatDateFull(p.date) + ' · ' : ''}{p.schedule?.length || 0} elementów
+                {p.title ? formatDateFull(p.date) + ' · ' : ''}{p.schedule?.length || 0} {t('elementów')}
               </div>
             </div>
           </div>
@@ -198,21 +200,21 @@ export default function ProgramsList() {
               <span
                 className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-gray-100 dark:bg-gray-700/60 text-gray-600 dark:text-gray-300"
                 style={campus.color ? { background: `${campus.color}1a`, color: campus.color } : undefined}
-                title={`Kampus: ${campus.name}`}
+                title={`${t('Kampus')}: ${campus.name}`}
               >
                 <MapPin size={11} />
                 {campus.name}
               </span>
             )}
             {!campus && showCampus && p.campus_id == null && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-gray-100 dark:bg-gray-700/60 text-gray-400 dark:text-gray-500" title="Brak przypisanego kampusu">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-gray-100 dark:bg-gray-700/60 text-gray-400 dark:text-gray-500" title={t('Brak przypisanego kampusu')}>
                 <MapPin size={11} />
-                Bez kampusu
+                {t('Bez kampusu')}
               </span>
             )}
             <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
-              <button onClick={(e) => handleDuplicate(p, e)} className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition" title="Duplikuj"><Copy size={14} /></button>
-              <button onClick={(e) => handleDelete(p.id, e)} className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-lg hover:bg-red-100 transition" title="Usuń"><Trash2 size={14} /></button>
+              <button onClick={(e) => handleDuplicate(p, e)} className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition" title={t('Duplikuj')}><Copy size={14} /></button>
+              <button onClick={(e) => handleDelete(p.id, e)} className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-lg hover:bg-red-100 transition" title={t('Usuń')}><Trash2 size={14} /></button>
             </div>
           </div>
         </div>
@@ -235,14 +237,14 @@ export default function ProgramsList() {
             </div>
             <h2 className="font-bold text-gray-800 dark:text-white text-base">{type.name}</h2>
             <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
-              {upcoming.length > 0 ? `${upcoming.length} nadchodzących` : ''}
+              {upcoming.length > 0 ? t('{n} nadchodzących', { n: upcoming.length }) : ''}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={(e) => openEditType(type, e)}
               className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-700 rounded-lg transition"
-              title="Edytuj typ"
+              title={t('Edytuj typ')}
             >
               <Edit3 size={14} />
             </button>
@@ -252,7 +254,7 @@ export default function ProgramsList() {
               style={{ background: type.color || '#6366f1' }}
             >
               <Plus size={14} />
-              Nowy
+              {t('Nowy')}
             </button>
           </div>
         </div>
@@ -261,13 +263,13 @@ export default function ProgramsList() {
         <div className="p-3">
           {upcoming.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-400 dark:text-gray-500 text-sm">Brak nadchodzących programów</p>
+              <p className="text-gray-400 dark:text-gray-500 text-sm">{t('Brak nadchodzących programów')}</p>
               <button
                 onClick={() => handleNewProgram(type.id)}
                 className="mt-2 text-sm font-medium hover:underline"
                 style={{ color: type.color || '#6366f1' }}
               >
-                Utwórz pierwszy
+                {t('Utwórz pierwszy')}
               </button>
             </div>
           ) : (
@@ -295,10 +297,10 @@ export default function ProgramsList() {
         <div className="flex items-start justify-between mb-6 sm:mb-8">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent mb-1">
-              Programy
+              {t('Programy')}
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
-              Zarządzaj programami wydarzeń
+              {t('Zarządzaj programami wydarzeń')}
             </p>
           </div>
           <button
@@ -306,7 +308,7 @@ export default function ProgramsList() {
             className="flex items-center gap-2 px-4 py-2.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition text-sm font-medium"
           >
             <Plus size={16} />
-            Nowy typ
+            {t('Nowy typ')}
           </button>
         </div>
 
@@ -315,7 +317,7 @@ export default function ProgramsList() {
           <div className="relative flex-1">
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
-              placeholder="Szukaj programów..."
+              placeholder={t('Szukaj programów...')}
               className="w-full pl-11 pr-4 py-3 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400"
               value={filter}
               onChange={e => setFilter(e.target.value)}
@@ -341,7 +343,7 @@ export default function ProgramsList() {
               <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                 <Calendar size={16} />
               </div>
-              <h2 className="font-bold text-gray-600 dark:text-gray-400 text-base">Bez kategorii</h2>
+              <h2 className="font-bold text-gray-600 dark:text-gray-400 text-base">{t('Bez kategorii')}</h2>
               <span className="text-xs text-gray-400">({unassignedPrograms.filter(p => p.date >= today).length})</span>
             </div>
             <div className="grid gap-2">
@@ -358,7 +360,7 @@ export default function ProgramsList() {
               className="flex items-center gap-2 text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 hover:text-gray-600 dark:hover:text-gray-300 transition"
             >
               <History size={14} />
-              Historia ({allPastPrograms.length})
+              {t('Historia')} ({allPastPrograms.length})
               {showHistory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
             {showHistory && (
@@ -379,7 +381,7 @@ export default function ProgramsList() {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 border border-white/20 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                {typeForm.id ? 'Edytuj typ wydarzenia' : 'Nowy typ wydarzenia'}
+                {typeForm.id ? t('Edytuj typ wydarzenia') : t('Nowy typ wydarzenia')}
               </h3>
               <button onClick={() => setShowTypeModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-white"><X size={20} /></button>
             </div>
@@ -387,10 +389,10 @@ export default function ProgramsList() {
             <div className="space-y-5">
               {/* Name */}
               <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Nazwa *</label>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Nazwa *')}</label>
                 <input
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white mt-1"
-                  placeholder="np. Spotkanie modlitewne"
+                  placeholder={t('np. Spotkanie modlitewne')}
                   value={typeForm.name}
                   onChange={e => setTypeForm({ ...typeForm, name: e.target.value })}
                 />
@@ -398,7 +400,7 @@ export default function ProgramsList() {
 
               {/* Icon */}
               <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Ikona</label>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Ikona')}</label>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {iconOptions.map(icon => (
                     <button
@@ -419,7 +421,7 @@ export default function ProgramsList() {
 
               {/* Color */}
               <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Kolor</label>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Kolor')}</label>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {colorOptions.map(color => (
                     <button
@@ -434,7 +436,7 @@ export default function ProgramsList() {
 
               {/* Visible Sections */}
               <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Widoczne sekcje zespołów</label>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Widoczne sekcje zespołów')}</label>
                 <div className="space-y-1.5 mt-2">
                   {ALL_SECTIONS.map(section => {
                     const isActive = (typeForm.visible_sections || []).includes(section.key);
@@ -448,7 +450,7 @@ export default function ProgramsList() {
                             : 'bg-gray-50 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
                         }`}
                       >
-                        <span>{section.label}</span>
+                        <span>{t(section.label)}</span>
                         {isActive ? <ToggleRight size={18} className="text-green-500" /> : <ToggleLeft size={18} />}
                       </button>
                     );
@@ -463,7 +465,7 @@ export default function ProgramsList() {
                     onClick={(e) => { deleteType(typeForm.id, e); setShowTypeModal(false); }}
                     className="px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl font-medium hover:bg-red-100 transition text-sm"
                   >
-                    Usuń
+                    {t('Usuń')}
                   </button>
                 )}
                 <button
@@ -471,7 +473,7 @@ export default function ProgramsList() {
                   className="flex-1 py-3 text-white rounded-xl font-bold transition hover:shadow-lg text-sm"
                   style={{ background: typeForm.color || '#6366f1' }}
                 >
-                  {typeForm.id ? 'Zapisz zmiany' : 'Utwórz typ'}
+                  {typeForm.id ? t('Zapisz zmiany') : t('Utwórz typ')}
                 </button>
               </div>
             </div>
