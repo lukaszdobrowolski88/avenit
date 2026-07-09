@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useUnsavedChanges } from '../../contexts/UnsavedChangesContext';
+import { useT } from '../../i18n';
 import {
   Plus, Save, FileText, Presentation, Trash2, Calendar,
   ChevronDown, GripVertical, Search, X, Check,
@@ -1763,6 +1764,7 @@ const DynamicScenaSection = ({
 // --- MODAL OSTRZEŻENIA O NIEZAPISANYCH ZMIANACH ---
 
 const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
+  const t = useT();
   if (!isOpen || !document.body) return null;
 
   return createPortal(
@@ -1773,9 +1775,9 @@ const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
             <AlertTriangle size={24} className="text-accent-secondary dark:text-accent-secondary-light" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white">Niezapisane zmiany</h3>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white">{t('Niezapisane zmiany')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Masz niezapisane zmiany w programie. Co chcesz zrobić?
+              {t('Masz niezapisane zmiany w programie. Co chcesz zrobić?')}
             </p>
           </div>
         </div>
@@ -1784,13 +1786,13 @@ const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
             onClick={onDiscard}
             className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
           >
-            Opuść
+            {t('Opuść')}
           </button>
           <button
             onClick={onSave}
             className="flex-1 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center justify-center gap-2"
           >
-            <Save size={16} /> Zapisz
+            <Save size={16} /> {t('Zapisz')}
           </button>
         </div>
       </div>
@@ -2077,6 +2079,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
 // --- GŁÓWNY KOMPONENT ---
 
 export default function ProgramDetail() {
+  const t = useT();
   const navigate = useNavigate();
   const { id } = useParams();
   const isNewProgram = id === 'new';
@@ -2817,7 +2820,7 @@ export default function ProgramDetail() {
       <div className="min-h-full bg-gradient-to-br from-accent-primary-lightest via-accent-secondary-lightest to-accent-primary-lightest dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 size={48} className="animate-spin text-accent-primary mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-300">Ładowanie programu...</p>
+          <p className="text-gray-600 dark:text-gray-300">{t('Ładowanie programu...')}</p>
         </div>
       </div>
     );
@@ -2835,7 +2838,7 @@ export default function ProgramDetail() {
             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-4 hover:text-accent-primary dark:hover:text-accent-primary-light transition"
           >
             <ArrowLeft size={20} />
-            <span className="font-medium">Wróć do listy</span>
+            <span className="font-medium">{t('Wróć do listy')}</span>
           </button>
 
           <div className="bg-white/70 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-gray-200/60 dark:border-gray-700/50 p-5 lg:p-6 mb-6 lg:mb-8 relative">
@@ -2859,7 +2862,7 @@ export default function ProgramDetail() {
                   <button
                     onClick={handleSaveAsTemplate}
                     className="px-2.5 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition flex items-center gap-1"
-                    title="Zapisz jako szablon"
+                    title={t('Zapisz jako szablon')}
                   >
                     <Save size={13} />
                     Szablon
@@ -2867,7 +2870,7 @@ export default function ProgramDetail() {
                   <button
                     onClick={() => setShowTemplateModal(true)}
                     className="px-2.5 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition flex items-center gap-1"
-                    title="Wczytaj szablon"
+                    title={t('Wczytaj szablon')}
                   >
                     <FileText size={13} />
                     Wczytaj
@@ -2879,7 +2882,7 @@ export default function ProgramDetail() {
                 onClick={handleSendEmail}
                 disabled={isSending}
                 className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200 font-medium text-sm disabled:opacity-50"
-                title="Wyślij program przez e-mail"
+                title={t('Wyślij program przez e-mail')}
               >
                 {isSending ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
                 <span className="hidden sm:inline">Mail</span>
@@ -2888,7 +2891,7 @@ export default function ProgramDetail() {
                 onClick={() => setShowPrintOptions(true)}
                 disabled={isLoading}
                 className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-accent-primary bg-accent-primary-lightest hover:bg-accent-primary-lighter rounded-lg transition-colors border border-accent-primary-lighter font-medium text-sm disabled:opacity-50"
-                title="Otwórz opcje wydruku PDF"
+                title={t('Otwórz opcje wydruku PDF')}
               >
                 {isLoading ? <Loader2 size={18} className="animate-spin" /> : <FileText size={18} />}
                 <span className="hidden sm:inline">PDF</span>
@@ -2903,7 +2906,7 @@ export default function ProgramDetail() {
               <button
                 onClick={handleExportProPresenter}
                 className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors border border-purple-200 font-medium text-sm"
-                title="Eksportuj do ProPresenter"
+                title={t('Eksportuj do ProPresenter')}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
                   <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
@@ -2920,7 +2923,7 @@ export default function ProgramDetail() {
                 className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 lg:px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary-light hover:from-accent-primary-dark hover:to-accent-secondary text-white rounded-lg shadow-lg shadow-accent-primary-light/20 hover:shadow-accent-primary-light/30 transition-all font-medium text-sm"
               >
                 <Save size={18} />
-                <span className="hidden sm:inline">Zapisz</span>
+                <span className="hidden sm:inline">{t('Zapisz')}</span>
               </button>
               </div>
             </div>
@@ -2934,7 +2937,7 @@ export default function ProgramDetail() {
                 <div className="flex items-center gap-2 text-sm">
                   <Clock size={16} className="text-accent-primary-light" />
                   <span className="font-mono font-bold text-accent-primary dark:text-accent-primary-light">{formatTime(calculateTotalTime(program.schedule))}</span>
-                  <span className="text-gray-500 dark:text-gray-400">łącznie</span>
+                  <span className="text-gray-500 dark:text-gray-400">{t('łącznie')}</span>
                 </div>
                 <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -2945,7 +2948,7 @@ export default function ProgramDetail() {
                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                   <Music size={14} />
                   <span className="font-medium">{program.schedule.filter(s => s.type === 'song').length}</span>
-                  <span>pieśni</span>
+                  <span>{t('pieśni')}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2" />
@@ -2983,7 +2986,7 @@ export default function ProgramDetail() {
                       <div className="w-6"></div>
                       <div className="w-14">Czas</div>
                       <div className="flex-1">Tytuł</div>
-                      <div className="w-20 text-right">Długość</div>
+                      <div className="w-20 text-right">{t('Długość')}</div>
                     </div>
 
                     {/* Items list */}
@@ -2994,12 +2997,12 @@ export default function ProgramDetail() {
                             {program.schedule.length === 0 ? (
                               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                                 <Type size={48} className="mb-4 opacity-30" />
-                                <p className="text-sm">Brak elementów w planie</p>
-                                <p className="text-xs mt-1">Użyj przycisku "Dodaj" lub skrótów klawiszowych:</p>
+                                <p className="text-sm">{t('Brak elementów w planie')}</p>
+                                <p className="text-xs mt-1">{t('Użyj przycisku "Dodaj" lub skrótów klawiszowych:')}</p>
                                 <div className="flex gap-2 mt-3 text-xs">
                                   <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">i - Element</span>
-                                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">h - Nagłówek</span>
-                                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">s - Pieśń</span>
+                                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{t('h - Nagłówek')}</span>
+                                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{t('s - Pieśń')}</span>
                                   <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">m - Media</span>
                                 </div>
                               </div>
@@ -3037,7 +3040,7 @@ export default function ProgramDetail() {
                           onClick={() => addScheduleItem('item')}
                         >
                           <GripVertical size={16} className="opacity-0" />
-                          <span className="text-sm">Dodaj element...</span>
+                          <span className="text-sm">{t('Dodaj element...')}</span>
                         </div>
                       )}
                     </div>
@@ -3055,11 +3058,11 @@ export default function ProgramDetail() {
                       </div>
                       <div className="flex gap-1 text-[10px] text-gray-400">
                         <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">s</span>
-                        <span>pieśń</span>
+                        <span>{t('pieśń')}</span>
                         <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded ml-2">m</span>
                         <span>media</span>
                         <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded ml-2">h</span>
-                        <span>nagłówek</span>
+                        <span>{t('nagłówek')}</span>
                       </div>
                     </div>
                   </>
@@ -3071,7 +3074,7 @@ export default function ProgramDetail() {
                     <textarea
                       value={program.globalNotes || ''}
                       onChange={(e) => setProgram(prev => ({ ...prev, globalNotes: e.target.value }))}
-                      placeholder="Notatki do programu... (widoczne tylko dla organizatorów)"
+                      placeholder={t('Notatki do programu... (widoczne tylko dla organizatorów)')}
                       className="w-full min-h-[350px] px-4 py-3 bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-sm resize-none focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition text-gray-700 dark:text-gray-200 placeholder-gray-400"
                     />
                   </div>
@@ -3110,7 +3113,7 @@ export default function ProgramDetail() {
                   onClick={() => setSelectedScheduleItem(null)}
                   className="w-full py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light"
                 >
-                  ← Wróć do listy
+                  ← {t('Wróć do listy')}
                 </button>
               </div>
             )}
@@ -3119,7 +3122,7 @@ export default function ProgramDetail() {
           {isSectionVisible('zespol') && (
           <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-4 lg:p-6 mb-4 lg:mb-6 hover:shadow-xl transition relative z-50">
             <div className="flex justify-between items-center mb-4 lg:mb-6">
-              <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Zespół Uwielbienia</h3>
+              <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{t('Zespół Uwielbienia')}</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
               {(worshipRoles.length > 0
@@ -3159,7 +3162,7 @@ export default function ProgramDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-4 lg:mb-6 relative z-0">
             {isSectionVisible('atmosfera_team') && (
             <DynamicTeamSection
-              title="Atmosfera Team"
+              title={t('Atmosfera Team')}
               dataKey="atmosfera_team"
               program={program}
               setProgram={setProgram}
@@ -3172,7 +3175,7 @@ export default function ProgramDetail() {
             )}
             {isSectionVisible('produkcja') && (
             <DynamicTeamSection
-              title="MediaTeam"
+              title={t('MediaTeam')}
               dataKey="produkcja"
               program={program}
               setProgram={setProgram}
