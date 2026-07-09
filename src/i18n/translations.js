@@ -428,6 +428,9 @@ const en = {
   'Zapisz zadanie, aby dodawać komentarze.': 'Save the task to add comments.',
   'Brak komentarzy. Bądź pierwszy!': 'No comments. Be the first!',
   'Załącznik': 'Attachment',
+  // Atmosfera
+  'Przygotowanie': 'Preparation',
+  'Witanie': 'Welcoming',
 };
 
 const uk = {
@@ -850,6 +853,9 @@ const uk = {
   'Zapisz zadanie, aby dodawać komentarze.': 'Збережіть завдання, щоб додавати коментарі.',
   'Brak komentarzy. Bądź pierwszy!': 'Немає коментарів. Будьте першим!',
   'Załącznik': 'Вкладення',
+  // Атмосфера
+  'Przygotowanie': 'Підготовка',
+  'Witanie': 'Зустріч гостей',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };
