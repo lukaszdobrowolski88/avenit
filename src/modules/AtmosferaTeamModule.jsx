@@ -16,6 +16,7 @@ import { CampusBadge, useCampusBadge } from '../components/CampusBadge';
 import { useUserRole } from '../hooks/useUserRole';
 import { hasTabAccess } from '../utils/tabPermissions';
 import { useCampusQuery } from '../hooks/useCampusQuery';
+import { useT } from '../i18n';
 
 // --- UI COMPONENTS (PORTALS) ---
 
@@ -371,6 +372,7 @@ const ScheduleTable = ({ programs, team, onUpdateProgram, roles, memberRoles = [
 // --- MAIN MODULE ---
 
 export default function AtmosferaTeamModule() {
+  const t = useT();
   const { userRole } = useUserRole();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('schedule');
@@ -716,13 +718,13 @@ export default function AtmosferaTeamModule() {
       {/* TAB NAVIGATION */}
       <ResponsiveTabs
         tabs={[
-          { id: 'events', label: 'Wydarzenia', icon: Calendar },
-          { id: 'schedule', label: 'Grafik', icon: Calendar },
-          ...(hasTabAccess('atmosfera', 'members', userRole) ? [{ id: 'members', label: 'Członkowie', icon: User }] : []),
-          ...(hasTabAccess('atmosfera', 'finances', userRole) ? [{ id: 'finances', label: 'Finanse', icon: DollarSign }] : []),
-          ...(hasTabAccess('atmosfera', 'members', userRole) ? [{ id: 'roles', label: 'Służby', icon: Users }] : []),
-          ...(hasTabAccess('atmosfera', 'equipment', userRole) ? [{ id: 'equipment', label: 'Wyposażenie', icon: Package }] : []),
-          { id: 'files', label: 'Pliki', icon: FolderOpen },
+          { id: 'events', label: t('Wydarzenia'), icon: Calendar },
+          { id: 'schedule', label: t('Grafik'), icon: Calendar },
+          ...(hasTabAccess('atmosfera', 'members', userRole) ? [{ id: 'members', label: t('Członkowie'), icon: User }] : []),
+          ...(hasTabAccess('atmosfera', 'finances', userRole) ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
+          ...(hasTabAccess('atmosfera', 'members', userRole) ? [{ id: 'roles', label: t('Służby'), icon: Users }] : []),
+          ...(hasTabAccess('atmosfera', 'equipment', userRole) ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
+          { id: 'files', label: t('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}
@@ -762,7 +764,7 @@ export default function AtmosferaTeamModule() {
           <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[700px]">
             <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
-              <tr><th className="p-4">Imię i nazwisko</th><th className="p-4">Służby</th><th className="p-4">Email</th><th className="p-4">Telefon</th><th className="p-4 text-right">Akcje</th></tr>
+              <tr><th className="p-4">Imię i nazwisko</th><th className="p-4">{t('Służby')}</th><th className="p-4">Email</th><th className="p-4">Telefon</th><th className="p-4 text-right">Akcje</th></tr>
             </thead>
             <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
               {team.map(m => {
@@ -847,11 +849,11 @@ export default function AtmosferaTeamModule() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię i nazwisko</label>
-                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Jan Kowalski" value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
+                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Służby</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Służby')}</label>
                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
                   <div className="flex flex-wrap gap-2">
                     {atmosferaRoles.map(role => {
@@ -880,7 +882,7 @@ export default function AtmosferaTeamModule() {
                     })}
                   </div>
                   {atmosferaRoles.length === 0 && (
-                    <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-2">Brak zdefiniowanych służb. Dodaj je w zakładce "Służby".</p>
+                    <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-2">{t('Brak zdefiniowanych służb. Dodaj je w zakładce "Służby".')}</p>
                   )}
                 </div>
               </div>
@@ -944,7 +946,7 @@ export default function AtmosferaTeamModule() {
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.contractor}
                     onChange={(e) => setExpenseForm({...expenseForm, contractor: e.target.value})}
-                    placeholder="Nazwa firmy/osoby"
+                    placeholder={t('Nazwa firmy/osoby')}
                   />
                 </div>
                 <div>
@@ -953,7 +955,7 @@ export default function AtmosferaTeamModule() {
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.responsible_person}
                     onChange={(e) => setExpenseForm({...expenseForm, responsible_person: e.target.value})}
-                    placeholder="Imię i nazwisko"
+                    placeholder={t('Imię i nazwisko')}
                   />
                 </div>
               </div>
@@ -965,7 +967,7 @@ export default function AtmosferaTeamModule() {
                   value={expenseForm.description}
                   onChange={(value) => setExpenseForm({...expenseForm, description: value})}
                   options={[
-                    { value: '', label: 'Wybierz pozycję' },
+                    { value: '', label: t('Wybierz pozycję') },
                     ...budgetItems.map(item => ({
                       value: item.description,
                       label: item.description
