@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
+import { useT } from '../../i18n';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -40,6 +41,7 @@ function useDropdownPosition(triggerRef, isOpen) {
 
 // Custom Date Picker
 const CustomDatePicker = ({ label, value, onChange }) => {
+  const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
   const triggerRef = useRef(null);
@@ -142,11 +144,11 @@ const MINISTRY_CONFIG = {
     title: 'Zespół Uwielbienia',
     defaultType: 'proba',
     types: [
-      { value: 'proba', label: 'Próba' },
+      { value: 'proba', label: t('Próba') },
       { value: 'koncert', label: 'Koncert' },
-      { value: 'nabozesnstwo', label: 'Nabożeństwo' },
+      { value: 'nabozesnstwo', label: t('Nabożeństwo') },
       { value: 'warsztat', label: 'Warsztat' },
-      { value: 'inne', label: 'Inne' }
+      { value: 'inne', label: t('Inne') }
     ],
     color: 'purple'
   },
@@ -159,7 +161,7 @@ const MINISTRY_CONFIG = {
       { value: 'produkcja', label: 'Produkcja' },
       { value: 'szkolenie', label: 'Szkolenie' },
       { value: 'streaming', label: 'Streaming' },
-      { value: 'inne', label: 'Inne' }
+      { value: 'inne', label: t('Inne') }
     ],
     color: 'orange'
   },
@@ -169,10 +171,10 @@ const MINISTRY_CONFIG = {
     title: 'Atmosfera Team',
     defaultType: 'spotkanie',
     types: [
-      { value: 'spotkanie', label: 'Spotkanie' },
+      { value: 'spotkanie', label: t('Spotkanie') },
       { value: 'szkolenie', label: 'Szkolenie' },
-      { value: 'integracja', label: 'Integracja' },
-      { value: 'inne', label: 'Inne' }
+      { value: 'integracja', label: t('Integracja') },
+      { value: 'inne', label: t('Inne') }
     ],
     color: 'teal'
   },
@@ -182,11 +184,11 @@ const MINISTRY_CONFIG = {
     title: 'Małe Avenit',
     defaultType: 'zajecia',
     types: [
-      { value: 'zajecia', label: 'Zajęcia' },
+      { value: 'zajecia', label: t('Zajęcia') },
       { value: 'wycieczka', label: 'Wycieczka' },
       { value: 'warsztat', label: 'Warsztat' },
       { value: 'przedstawienie', label: 'Przedstawienie' },
-      { value: 'inne', label: 'Inne' }
+      { value: 'inne', label: t('Inne') }
     ],
     color: 'yellow'
   },
@@ -196,10 +198,10 @@ const MINISTRY_CONFIG = {
     title: 'Grupy Domowe',
     defaultType: 'spotkanie',
     types: [
-      { value: 'spotkanie', label: 'Spotkanie' },
-      { value: 'integracja', label: 'Integracja' },
+      { value: 'spotkanie', label: t('Spotkanie') },
+      { value: 'integracja', label: t('Integracja') },
       { value: 'szkolenie', label: 'Szkolenie' },
-      { value: 'inne', label: 'Inne' }
+      { value: 'inne', label: t('Inne') }
     ],
     color: 'blue'
   }
@@ -207,6 +209,7 @@ const MINISTRY_CONFIG = {
 
 // Funkcja do uzyskania konfiguracji dla modułu (obsługuje niestandardowe moduły)
 function getModuleConfig(ministry) {
+  const t = useT();
   // Jeśli istnieje predefiniowana konfiguracja, użyj jej
   if (MINISTRY_CONFIG[ministry]) {
     return MINISTRY_CONFIG[ministry];
@@ -219,11 +222,11 @@ function getModuleConfig(ministry) {
     title: 'Wydarzenia',
     defaultType: 'spotkanie',
     types: [
-      { value: 'spotkanie', label: 'Spotkanie' },
+      { value: 'spotkanie', label: t('Spotkanie') },
       { value: 'szkolenie', label: 'Szkolenie' },
       { value: 'warsztat', label: 'Warsztat' },
-      { value: 'wydarzenie', label: 'Wydarzenie' },
-      { value: 'inne', label: 'Inne' }
+      { value: 'wydarzenie', label: t('Wydarzenie') },
+      { value: 'inne', label: t('Inne') }
     ],
     color: 'pink'
   };
@@ -231,6 +234,7 @@ function getModuleConfig(ministry) {
 
 // Modal edycji wydarzenia
 const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
+  const t = useT();
   const [form, setForm] = useState({
     id: event?.id || null,
     title: event?.title || '',
@@ -276,38 +280,38 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł wydarzenia</label>
-            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Nazwa wydarzenia" value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Tytuł wydarzenia')}</label>
+            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Nazwa wydarzenia')} value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Opis</label>
-            <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={3} placeholder="Szczegóły wydarzenia..." value={form.description || ''} onChange={e => setForm({...form, description: e.target.value})} />
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Opis')}</label>
+            <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={3} placeholder={t('Szczegóły wydarzenia...')} value={form.description || ''} onChange={e => setForm({...form, description: e.target.value})} />
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Data')}</label>
               <CustomDatePicker value={form.start_date} onChange={val => setForm({...form, start_date: val})} />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Godzina rozpoczęcia</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Godzina rozpoczęcia')}</label>
               <input type="time" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white" value={form.start_time || ''} onChange={e => setForm({...form, start_time: e.target.value})} />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Godzina zakończenia</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Godzina zakończenia')}</label>
               <input type="time" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white" value={form.end_time || ''} onChange={e => setForm({...form, end_time: e.target.value})} />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Lokalizacja</label>
-            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Sala główna, Kościół..." value={form.location || ''} onChange={e => setForm({...form, location: e.target.value})} />
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Lokalizacja')}</label>
+            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Sala główna, Kościół...')} value={form.location || ''} onChange={e => setForm({...form, location: e.target.value})} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Max. uczestników</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Max. uczestników')}</label>
               <input type="number" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="30" value={form.max_participants || ''} onChange={e => setForm({...form, max_participants: e.target.value})} />
             </div>
             <div>
@@ -327,7 +331,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
               </button>
             ) : <div></div>}
             <div className="flex gap-3">
-              <button onClick={onClose} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Anuluj</button>
+              <button onClick={onClose} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{t('Anuluj')}</button>
               <button onClick={handleSubmit} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium flex items-center gap-2">
                 <Save size={16} /> Zapisz
               </button>
@@ -342,6 +346,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
 
 // Główny komponent EventsTab
 export default function EventsTab({ ministry, currentUserEmail: propUserEmail }) {
+  const t = useT();
   const config = getModuleConfig(ministry);
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [events, setEvents] = useState([]);
@@ -557,7 +562,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="text-3xl">{config.icon}</span>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Wydarzenia</h2>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('Wydarzenia')}</h2>
         </div>
         <button
           onClick={() => setShowModal({ id: null })}
@@ -573,7 +578,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
           <Search className="text-gray-400 dark:text-gray-500" size={20} />
           <input
             className="w-full outline-none text-sm bg-transparent text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500"
-            placeholder="Szukaj wydarzeń..."
+            placeholder={t('Szukaj wydarzeń...')}
             value={searchFilter}
             onChange={e => setSearchFilter(e.target.value)}
           />
@@ -601,8 +606,8 @@ GRANT ALL ON ${config.tableName} TO anon;`;
       ) : filteredEvents.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <Calendar size={48} className="mx-auto mb-4 opacity-50" />
-          <p className="text-lg">Brak wydarzeń</p>
-          <p className="text-sm">Kliknij "Dodaj wydarzenie" aby utworzyć pierwsze</p>
+          <p className="text-lg">{t('Brak wydarzeń')}</p>
+          <p className="text-sm">{t('Kliknij "Dodaj wydarzenie" aby utworzyć pierwsze')}</p>
         </div>
       ) : (
         <div className="space-y-8">

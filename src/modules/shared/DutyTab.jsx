@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { Plus, Trash2, X, Check, Edit2, Users, ChevronDown } from 'lucide-react';
+import { useT } from '../../i18n';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -40,6 +41,7 @@ function useDropdownPosition(triggerRef, isOpen) {
 
 // MultiSelect dla przypisywania członków do służby
 const MemberMultiSelect = ({ members, selectedIds, onChange, roleId }) => {
+  const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
@@ -123,7 +125,7 @@ const MemberMultiSelect = ({ members, selectedIds, onChange, roleId }) => {
             );
           })}
           {members.length === 0 && (
-            <div className="p-3 text-center text-gray-400 text-xs">Brak członków w zespole</div>
+            <div className="p-3 text-center text-gray-400 text-xs">{t('Brak członków w zespole')}</div>
           )}
         </div>,
         document.body
@@ -134,6 +136,7 @@ const MemberMultiSelect = ({ members, selectedIds, onChange, roleId }) => {
 
 // Główny komponent zakładki Służby dla niestandardowych modułów
 export default function DutyTab({ moduleKey, moduleName }) {
+  const t = useT();
   const [members, setMembers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [memberRoles, setMemberRoles] = useState([]);
@@ -326,7 +329,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
       {members.length === 0 ? (
         <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
           <Users size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">Brak członków w zespole</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('Brak członków w zespole')}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
             Najpierw dodaj członków w zakładce "Członkowie"
           </p>
@@ -334,8 +337,8 @@ export default function DutyTab({ moduleKey, moduleName }) {
       ) : roles.length === 0 ? (
         <div className="text-center py-12 text-gray-400 dark:text-gray-500">
           <Users size={48} className="mx-auto mb-4 opacity-50" />
-          <p className="text-lg font-medium">Brak zdefiniowanych służb</p>
-          <p className="text-sm mt-1">Dodaj pierwszą służbę, aby móc przypisywać do niej członków zespołu</p>
+          <p className="text-lg font-medium">{t('Brak zdefiniowanych służb')}</p>
+          <p className="text-sm mt-1">{t('Dodaj pierwszą służbę, aby móc przypisywać do niej członków zespołu')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -428,7 +431,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
                 </label>
                 <input
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="np. Piano, Nagłośnienie"
+                  placeholder={t('np. Piano, Nagłośnienie')}
                   value={roleForm.name}
                   onChange={e => setRoleForm({ ...roleForm, name: e.target.value })}
                 />
@@ -454,7 +457,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none"
                   rows={2}
-                  placeholder="Krótki opis służby..."
+                  placeholder={t('Krótki opis służby...')}
                   value={roleForm.description}
                   onChange={e => setRoleForm({ ...roleForm, description: e.target.value })}
                 />
