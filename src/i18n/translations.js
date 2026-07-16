@@ -431,6 +431,26 @@ const en = {
   // Atmosfera
   'Przygotowanie': 'Preparation',
   'Witanie': 'Welcoming',
+  // Kids
+  'Check-in': 'Check-in',
+  'Nauczyciele': 'Teachers',
+  'Uczniowie': 'Students',
+  'Uczeń': 'Student',
+  'Materiały': 'Materials',
+  'Dodaj grupę': 'Add group',
+  'Nowy uczeń': 'New student',
+  'Brak uczniów': 'No students',
+  'Odłącz': 'Detach',
+  'Kontakt do rodzica (opcjonalnie)': 'Parent contact (optional)',
+  'Nazwa grupy': 'Group name',
+  'Numer sali': 'Room number',
+  'Przedział wiekowy': 'Age range',
+  'Przypisz do grupy...': 'Assign to a group...',
+  'Przypisz do rodziny...': 'Assign to a family...',
+  'Rocznik': 'Year of birth',
+  'Rola': 'Role',
+  'Szukaj ucznia...': 'Search students...',
+  'Uwagi': 'Notes',
 };
 
 const uk = {
@@ -856,6 +876,26 @@ const uk = {
   // Атмосфера
   'Przygotowanie': 'Підготовка',
   'Witanie': 'Зустріч гостей',
+  // Дитяче служіння
+  'Check-in': 'Реєстрація',
+  'Nauczyciele': 'Вчителі',
+  'Uczniowie': 'Учні',
+  'Uczeń': 'Учень',
+  'Materiały': 'Матеріали',
+  'Dodaj grupę': 'Додати групу',
+  'Nowy uczeń': 'Новий учень',
+  'Brak uczniów': 'Немає учнів',
+  'Odłącz': 'Відʼєднати',
+  'Kontakt do rodzica (opcjonalnie)': 'Контакт батьків (необовʼязково)',
+  'Nazwa grupy': 'Назва групи',
+  'Numer sali': 'Номер кімнати',
+  'Przedział wiekowy': 'Віковий діапазон',
+  'Przypisz do grupy...': 'Призначити до групи...',
+  'Przypisz do rodziny...': 'Призначити до родини...',
+  'Rocznik': 'Рік народження',
+  'Rola': 'Роль',
+  'Szukaj ucznia...': 'Пошук учнів...',
+  'Uwagi': 'Примітки',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };
