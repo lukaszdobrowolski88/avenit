@@ -1115,7 +1115,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteTask = async (id) => {
-      if (confirm("Czy na pewno chcesz usunąć to zadanie?")) {
+      if (confirm(tr('Czy na pewno chcesz usunąć to zadanie?'))) {
           await supabase.from('tasks').delete().eq('id', id);
           setModals({...modals, addTask: null});
           fetchEvents();
@@ -1148,7 +1148,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('events').delete().eq('id', id);
       setModals({...modals, addEvent: null});
       fetchEvents();
@@ -1176,7 +1176,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteMlodziezowkaEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie Młodzieżówki?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie Młodzieżówki?'))) {
       await supabase.from('mlodziezowka_events').delete().eq('id', id);
       setModals({...modals, mlodziezowkaEvent: null});
       fetchEvents();
@@ -1202,7 +1202,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteWorshipEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('worship_events').delete().eq('id', id);
       setModals({...modals, worshipEvent: null});
       fetchEvents();
@@ -1228,7 +1228,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteMediaEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('media_events').delete().eq('id', id);
       setModals({...modals, mediaEvent: null});
       fetchEvents();
@@ -1254,7 +1254,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteAtmosferaEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('atmosfera_events').delete().eq('id', id);
       setModals({...modals, atmosferaEvent: null});
       fetchEvents();
@@ -1280,7 +1280,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteKidsEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('kids_events').delete().eq('id', id);
       setModals({...modals, kidsEvent: null});
       fetchEvents();
@@ -1306,7 +1306,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteHomegroupsEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('homegroups_events').delete().eq('id', id);
       setModals({...modals, homegroupsEvent: null});
       fetchEvents();

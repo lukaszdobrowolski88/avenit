@@ -606,7 +606,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
   }, [formData.key, editorKey]);
 
   const handleSubmit = async () => {
-    if (!formData.title) return alert("Podaj tytuł pieśni");
+    if (!formData.title) return alert(tr('Podaj tytuł pieśni'));
 
     // Formatuj akordy w chords_bars przed zapisem (zgodnie z wytycznymi PDF)
     // Rozmiary: główna litera = bazowy, modyfikatory = -2pt, slash/bas = -1pt, znaki przy basie = -3pt

@@ -175,7 +175,7 @@ export default function Members() {
       const { id, ...dataToSave } = formData;
 
       if (!dataToSave.first_name || !dataToSave.last_name) {
-        alert("Imię i nazwisko są wymagane");
+        alert(tr('Imię i nazwisko są wymagane'));
         setSaving(false);
         return;
       }

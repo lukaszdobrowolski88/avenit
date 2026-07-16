@@ -1689,6 +1689,9 @@ const en = {
   'zdjęcie': 'photo',
   '▶ Pokaż zaawansowane': '▶ Show advanced',
   '📎 Załącznik': '📎 Attachment',
+  'Czy na pewno chcesz usunąć to wydarzenie Młodzieżówki?': 'Are you sure you want to delete this Youth event?',
+  'Imię i nazwisko są wymagane': 'Full name is required',
+  'Podaj tytuł pieśni': 'Enter the song title',
 };
 
 const uk = {
@@ -3372,6 +3375,9 @@ const uk = {
   'zdjęcie': 'фото',
   '▶ Pokaż zaawansowane': '▶ Показати розширені',
   '📎 Załącznik': '📎 Вкладення',
+  'Czy na pewno chcesz usunąć to wydarzenie Młodzieżówki?': 'Ви впевнені, що хочете видалити цю подію молоді?',
+  'Imię i nazwisko są wymagane': 'Ім\'я та прізвище обов\'язкові',
+  'Podaj tytuł pieśni': 'Вкажіть назву пісні',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

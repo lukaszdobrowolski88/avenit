@@ -453,7 +453,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   };
 
   const handleDelete = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from(config.tableName).delete().eq('id', id);
       setShowModal(null);
       fetchEvents();
