@@ -1874,6 +1874,10 @@ const en = {
   'Włącz, aby zwiększyć bezpieczeństwo konta': 'Enable to increase account security',
   'Zeskanuj kod QR aparatem telefonu, aby dodać kalendarz do aplikacji': 'Scan the QR code with your phone camera to add the calendar to the app',
 
+  'Grupa młodsza': 'Younger group',
+  'Grupa średnia': 'Middle group',
+  'Moja służba': 'My ministry',
+  'Nieobecności': 'Absences',
 };
 
 const uk = {
@@ -3742,6 +3746,10 @@ const uk = {
   'Włącz, aby zwiększyć bezpieczeństwo konta': 'Увімкніть, щоб підвищити безпеку облікового запису',
   'Zeskanuj kod QR aparatem telefonu, aby dodać kalendarz do aplikacji': 'Відскануйте QR-код камерою телефону, щоб додати календар до застосунку',
 
+  'Grupa młodsza': 'Молодша група',
+  'Grupa średnia': 'Середня група',
+  'Moja służba': 'Моє служіння',
+  'Nieobecności': 'Відсутності',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

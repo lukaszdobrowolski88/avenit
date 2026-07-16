@@ -62,10 +62,10 @@ export default function SubscriptionInfo() {
     .filter(([, v]) => v === true)
     .map(([k]) => k);
   const featureLabels = {
-    calendar: 'Kalendarz', members: 'Członkowie', groups: 'Grupy', kids_checkin: 'Check-in dzieci',
+    calendar: 'Kalendarz', members: tr('Członkowie'), groups: 'Grupy', kids_checkin: 'Check-in dzieci',
     events: 'Wydarzenia', email: 'E-maile', finance: 'Finanse', forms: 'Formularze',
     advanced_reports: 'Raporty zaawansowane', api: 'API', white_label: 'White-label',
-    priority_support: 'Wsparcie priorytetowe', custom_domain: 'Własna domena',
+    priority_support: 'Wsparcie priorytetowe', custom_domain: tr('Własna domena'),
   };
 
   return (

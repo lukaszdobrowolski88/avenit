@@ -7,9 +7,9 @@ const MODULE_TABS = {
   dashboard: {
     label: tr('Pulpit'),
     tabs: {
-      ministry: 'Moja służba',
+      ministry: tr('Moja służba'),
       tasks: 'Moje zadania',
-      absences: 'Nieobecności',
+      absences: tr('Nieobecności'),
       prayers: 'Moje modlitwy'
     }
   },
@@ -18,7 +18,7 @@ const MODULE_TABS = {
     tabs: {
       groups: 'Grupy',
       leaders: 'Liderzy',
-      members: 'Członkowie',
+      members: tr('Członkowie'),
       finances: 'Finanse'
     }
   },
@@ -27,7 +27,7 @@ const MODULE_TABS = {
     tabs: {
       schedule: 'Grafik',
       tasks: 'Zadania',
-      members: 'Członkowie',
+      members: tr('Członkowie'),
       finances: 'Finanse'
     }
   },
@@ -45,8 +45,8 @@ const MODULE_TABS = {
     label: tr('Grupa Uwielbienia'),
     tabs: {
       schedule: 'Grafik',
-      songs: 'Baza Pieśni',
-      members: 'Członkowie',
+      songs: tr('Baza Pieśni'),
+      members: tr('Członkowie'),
       finances: 'Finanse'
     }
   },
@@ -54,7 +54,7 @@ const MODULE_TABS = {
     label: tr('Atmosfera Team'),
     tabs: {
       schedule: 'Grafik',
-      members: 'Członkowie',
+      members: tr('Członkowie'),
       finances: 'Finanse'
     }
   }

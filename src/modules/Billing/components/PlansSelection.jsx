@@ -90,19 +90,19 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
 
   const featureLabels = {
     calendar: 'Kalendarz',
-    members: 'Zarządzanie członkami',
+    members: tr('Zarządzanie członkami'),
     groups: 'Grupy domowe',
     kids_checkin: 'Check-in dzieci',
     events: 'Wydarzenia',
-    email: 'Wysyłka emaili',
-    finance: 'Moduł finansowy',
+    email: tr('Wysyłka emaili'),
+    finance: tr('Moduł finansowy'),
     forms: 'Formularze',
     basic_reports: 'Podstawowe raporty',
     advanced_reports: 'Zaawansowane raporty',
-    api: 'Dostęp do API',
+    api: tr('Dostęp do API'),
     white_label: 'White label',
     priority_support: 'Priorytetowe wsparcie',
-    custom_domain: 'Własna domena'
+    custom_domain: tr('Własna domena')
   };
 
   if (loading) {

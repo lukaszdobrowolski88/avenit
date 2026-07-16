@@ -24,18 +24,18 @@ import { tr } from '../../i18n';
 
 // Grupy nawigacji ustawień (menu po lewej).
 const SETTINGS_NAV = [
-  { group: 'Ogólne', items: [
+  { group: tr('Ogólne'), items: [
     { id: 'general', label: tr('Organizacja'), icon: Settings },
     { id: 'appearance', label: tr('Wygląd'), icon: Palette },
     { id: 'localization', label: tr('Regionalne'), icon: Globe },
     { id: 'campuses', label: tr('Lokalizacje'), icon: Building2 },
   ]},
-  { group: 'Zespół i dostęp', items: [
+  { group: tr('Zespół i dostęp'), items: [
     { id: 'users', label: tr('Użytkownicy'), icon: Users },
     { id: 'permissions', label: tr('Uprawnienia'), icon: Shield },
     { id: 'security', label: tr('Bezpieczeństwo'), icon: Shield },
   ]},
-  { group: 'Moduły', items: [
+  { group: tr('Moduły'), items: [
     { id: 'modules', label: tr('Moduły'), icon: Grid },
     { id: 'module_manager', label: tr('Zarządzanie'), icon: Layers },
     { id: 'dictionaries', label: tr('Słowniki'), icon: BookOpen },
@@ -63,7 +63,7 @@ const MODULE_TABS = {
     tabs: {
       groups: 'Grupy',
       leaders: 'Liderzy',
-      members: 'Członkowie',
+      members: tr('Członkowie'),
       finances: 'Finanse'
     }
   },
@@ -73,7 +73,7 @@ const MODULE_TABS = {
     tabs: {
       schedule: 'Grafik',
       tasks: 'Zadania',
-      members: 'Członkowie',
+      members: tr('Członkowie'),
       finances: 'Finanse'
     }
   },
@@ -93,8 +93,8 @@ const MODULE_TABS = {
     resourceKey: 'module:worship',
     tabs: {
       schedule: 'Grafik',
-      songs: 'Baza Pieśni',
-      members: 'Członkowie',
+      songs: tr('Baza Pieśni'),
+      members: tr('Członkowie'),
       finances: 'Finanse',
       wall: 'Tablica'
     }
@@ -104,7 +104,7 @@ const MODULE_TABS = {
     resourceKey: 'module:atmosfera',
     tabs: {
       schedule: 'Grafik',
-      members: 'Członkowie',
+      members: tr('Członkowie'),
       finances: 'Finanse'
     }
   },
@@ -120,15 +120,15 @@ const MODULE_TABS = {
       wall: 'Tablica',
       schedule: 'Grafik',
       series: 'Serie',
-      speakers: 'Mówcy'
+      speakers: tr('Mówcy')
     }
   },
   prayer: {
     label: tr('Centrum Modlitwy'),
     resourceKey: 'module:prayer',
     tabs: {
-      wall: 'Ściana Modlitwy',
-      leaders_requests: 'Prośby dla Liderów'
+      wall: tr('Ściana Modlitwy'),
+      leaders_requests: tr('Prośby dla Liderów')
     }
   },
   komunikator: {
@@ -137,7 +137,7 @@ const MODULE_TABS = {
     tabs: {
       direct: 'Rozmowy prywatne',
       groups: 'Grupy',
-      ministry: 'Kanały służb'
+      ministry: tr('Kanały służb')
     }
   },
   mlodziezowka: {
@@ -147,7 +147,7 @@ const MODULE_TABS = {
       events: 'Wydarzenia',
       tasks: 'Zadania',
       leaders: 'Liderzy',
-      members: 'Członkowie',
+      members: tr('Członkowie'),
       finances: 'Finanse'
     }
   },
