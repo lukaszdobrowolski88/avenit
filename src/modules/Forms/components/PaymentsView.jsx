@@ -462,7 +462,7 @@ export default function PaymentsView({ forms }) {
 
   // Eksport do CSV
   const exportToCSV = () => {
-    const headers = ['Uczestnik', 'Email', 'Formularz', 'Kwota', 'Status', 'Metoda', 'Referencja', 'Data rejestracji', 'Data płatności', 'Notatki'];
+    const headers = [tr('Uczestnik'), tr('Email'), tr('Formularz'), tr('Kwota'), tr('Status'), tr('Metoda'), tr('Referencja'), tr('Data rejestracji'), tr('Data płatności'), tr('Notatki')];
     const rows = filteredPayments.map(p => [
       p.participantName,
       p.participantEmail,

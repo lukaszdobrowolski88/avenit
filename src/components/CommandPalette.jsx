@@ -252,7 +252,7 @@ export default function CommandPalette() {
             if (row.header) {
               return (
                 <div key={`h-${i}`} className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                  {row.header}
+                  {tr(row.header)}
                 </div>
               );
             }

@@ -78,7 +78,7 @@ export default function AttendanceTab({ members = [] }) {
           <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Typ</label>
           <select value={kind} onChange={(e) => setKind(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 text-sm text-gray-900 dark:text-gray-100">
-            {KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+            {KINDS.map((k) => <option key={k} value={k}>{tr(k)}</option>)}
           </select>
         </div>
         <div className="flex-1">

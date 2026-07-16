@@ -69,7 +69,7 @@ export default function CampaignStats({ campaigns }) {
   };
 
   const exportToCSV = () => {
-    const headers = ['Nazwa', 'Data wysyłki', 'Odbiorcy', 'Wysłane', 'Dostarczone', 'Otwarte', 'Kliknięte', 'Odbite', 'Wypisani'];
+    const headers = [tr('Nazwa'), tr('Data wysyłki'), tr('Odbiorcy'), tr('Wysłane'), tr('Dostarczone'), tr('Otwarte'), tr('Kliknięte'), tr('Odbite'), tr('Wypisani')];
     const rows = filteredCampaigns.map(c => [
       c.name,
       formatDate(c.sent_at),

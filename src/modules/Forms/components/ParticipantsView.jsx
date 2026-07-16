@@ -330,7 +330,7 @@ export default function ParticipantsView({ forms }) {
 
   // Eksport do CSV
   const exportToCSV = () => {
-    const headers = ['Imię/Nazwa', 'Email', 'Telefon', 'Formularz', 'Data rejestracji', 'Kwota', 'Status płatności'];
+    const headers = [tr('Imię/Nazwa'), tr('Email'), tr('Telefon'), tr('Formularz'), tr('Data rejestracji'), tr('Kwota'), tr('Status płatności')];
     const rows = filteredParticipants.map(p => [
       p.name,
       p.email,

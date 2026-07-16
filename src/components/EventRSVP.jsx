@@ -94,7 +94,7 @@ export default function EventRSVP({ eventId, maxParticipants }) {
   };
 
   const exportCsv = () => {
-    const rows = [['Imię i nazwisko', 'E-mail', 'Osoby towarzyszące']];
+    const rows = [[tr('Imię i nazwisko'), tr('E-mail'), tr('Osoby towarzyszące')]];
     regs.forEach((r) => rows.push([r.full_name || '', r.user_email || '', String(r.guests_count || 0)]));
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
