@@ -301,7 +301,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Maksymalna liczba odpowiedzi, po której formularz zostanie zamknięty
+                  {tr('Maksymalna liczba odpowiedzi, po której formularz zostanie zamknięty')}
                 </p>
               </div>
             </div>
@@ -1067,7 +1067,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
                 {(localSettings.layout?.background?.orbs || []).length === 0 && (
                   <p className="text-xs text-gray-400 dark:text-gray-500">
-                    Orby to rozmyte, kolorowe kule w tle formularza nadające mu nowoczesny wygląd.
+                    {tr('Orby to rozmyte, kolorowe kule w tle formularza nadające mu nowoczesny wygląd.')}
                   </p>
                 )}
 

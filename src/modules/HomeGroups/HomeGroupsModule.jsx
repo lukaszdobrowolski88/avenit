@@ -1628,7 +1628,7 @@ export default function HomeGroupsModule() {
               <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
                 {!taskForm.id ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">
-                    Zapisz zadanie, aby dodawać komentarze.
+                    {tr('Zapisz zadanie, aby dodawać komentarze.')}
                   </div>
                 ) : loadingComments ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm">{t('Ładowanie...')}</div>

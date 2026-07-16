@@ -42,21 +42,21 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
     const newErrors = {};
 
     if (!form.label.trim()) {
-      newErrors.label = 'Nazwa modułu jest wymagana';
+      newErrors.label = tr('Nazwa modułu jest wymagana');
     }
 
     if (!form.key.trim()) {
-      newErrors.key = 'Klucz modułu jest wymagany';
+      newErrors.key = tr('Klucz modułu jest wymagany');
     } else if (!/^[a-z0-9_]+$/.test(form.key)) {
-      newErrors.key = 'Klucz może zawierać tylko małe litery, cyfry i podkreślniki';
+      newErrors.key = tr('Klucz może zawierać tylko małe litery, cyfry i podkreślniki');
     } else if (!isEditing && existingKeys.includes(form.key)) {
-      newErrors.key = 'Moduł z takim kluczem już istnieje';
+      newErrors.key = tr('Moduł z takim kluczem już istnieje');
     }
 
     if (!form.path.trim()) {
-      newErrors.path = 'Ścieżka jest wymagana';
+      newErrors.path = tr('Ścieżka jest wymagana');
     } else if (!form.path.startsWith('/')) {
-      newErrors.path = 'Ścieżka musi zaczynać się od /';
+      newErrors.path = tr('Ścieżka musi zaczynać się od /');
     }
 
     if (!form.icon) {

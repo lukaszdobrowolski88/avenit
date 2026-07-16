@@ -18,7 +18,7 @@ import { supabase } from '../../../lib/supabase';
 import { EMAIL_VARIABLES } from '../utils/emailVariables';
 import { tr } from '../../../i18n';
 
-export default function EmailEditor({ content, onChange, placeholder = 'Napisz treść wiadomości...' }) {
+export default function EmailEditor({ content, onChange, placeholder = tr('Napisz treść wiadomości...') }) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({

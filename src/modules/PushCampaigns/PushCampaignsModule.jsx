@@ -77,7 +77,7 @@ export default function PushCampaignsModule() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Push Kampanie')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Twórz, planuj i analizuj powiadomienia push wysyłane do web i mobile.
+          {tr('Twórz, planuj i analizuj powiadomienia push wysyłane do web i mobile.')}
         </p>
       </div>
 
@@ -122,7 +122,7 @@ export default function PushCampaignsModule() {
           ))}
           {campaigns.filter(c => c.status === 'sent').length === 0 && (
             <div className="col-span-full text-center text-gray-500 py-12">
-              Brak wysłanych kampanii. Wyślij pierwszą, aby zobaczyć statystyki.
+              {tr('Brak wysłanych kampanii. Wyślij pierwszą, aby zobaczyć statystyki.')}
             </div>
           )}
         </div>

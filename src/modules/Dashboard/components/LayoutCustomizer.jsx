@@ -47,7 +47,7 @@ export default function LayoutCustomizer({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Wybierz widoczne widgety i dostosuj ich rozmiar. Możesz również przeciągać widgety na pulpicie, aby zmienić ich kolejność.
+            {tr('Wybierz widoczne widgety i dostosuj ich rozmiar. Możesz również przeciągać widgety na pulpicie, aby zmienić ich kolejność.')}
           </p>
 
           <div className="space-y-3">

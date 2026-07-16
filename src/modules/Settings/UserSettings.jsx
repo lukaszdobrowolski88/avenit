@@ -684,7 +684,7 @@ export default function UserSettings() {
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Kody zapasowe pozwalają zalogować się, gdy nie masz dostępu do aplikacji Google Authenticator.
+                    {tr('Kody zapasowe pozwalają zalogować się, gdy nie masz dostępu do aplikacji Google Authenticator.')}
                   </p>
                 </div>
 
@@ -762,7 +762,7 @@ export default function UserSettings() {
                     <span className="font-medium text-red-800 dark:text-red-300">{t('Wyłącz 2FA')}</span>
                   </div>
                   <p className="text-xs text-red-600 dark:text-red-400 mb-3">
-                    Wprowadź kod z aplikacji Google Authenticator, aby wyłączyć uwierzytelnianie dwuskładnikowe.
+                    {tr('Wprowadź kod z aplikacji Google Authenticator, aby wyłączyć uwierzytelnianie dwuskładnikowe.')}
                   </p>
                   <div className="flex gap-2">
                     <input
@@ -799,7 +799,7 @@ export default function UserSettings() {
                     <div>
                       <p className="font-medium text-gray-700 dark:text-gray-300">{t('2FA wyłączone')}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Włącz, aby zwiększyć bezpieczeństwo konta
+                        {tr('Włącz, aby zwiększyć bezpieczeństwo konta')}
                       </p>
                     </div>
                   </div>
@@ -1006,7 +1006,7 @@ export default function UserSettings() {
                   </div>
 
                   <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-4">
-                    Zeskanuj kod QR aparatem telefonu, aby dodać kalendarz do aplikacji
+                    {tr('Zeskanuj kod QR aparatem telefonu, aby dodać kalendarz do aplikacji')}
                   </p>
 
                   <div className="flex gap-2">
@@ -1110,7 +1110,7 @@ export default function UserSettings() {
                       />
                     ) : (
                       <p className="text-gray-400 dark:text-gray-500 italic text-sm">
-                        Brak podpisu. Przejdź do zakładki HTML, aby dodać podpis.
+                        {tr('Brak podpisu. Przejdź do zakładki HTML, aby dodać podpis.')}
                       </p>
                     )}
                   </div>

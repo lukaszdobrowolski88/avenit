@@ -32,7 +32,7 @@ export default function FieldCanvas({
           {tr('Przeciągnij pola tutaj')}
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm">
-          Wybierz pole z palety po lewej stronie i przeciągnij je tutaj, aby zbudować formularz
+          {tr('Wybierz pole z palety po lewej stronie i przeciągnij je tutaj, aby zbudować formularz')}
         </p>
       </div>
     );

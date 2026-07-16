@@ -50,7 +50,7 @@ export default function TenantsList({ onSelectTenant }) {
   };
 
   const handleExtendTrial = async (tenantId) => {
-    const days = prompt('O ile dni przedłużyć trial?', '7');
+    const days = prompt(tr('O ile dni przedłużyć trial?'), '7');
     if (days) {
       await extendTrial(tenantId, parseInt(days));
       loadTenants();

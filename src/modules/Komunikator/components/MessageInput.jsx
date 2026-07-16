@@ -6,7 +6,7 @@ import AudioRecorder from './AudioRecorder';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 
-const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabled = false, placeholder = 'Napisz wiadomość...', replyingTo = null, onCancelReply }, ref) {
+const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabled = false, placeholder = tr('Napisz wiadomość...'), replyingTo = null, onCancelReply }, ref) {
   const t = useT();
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState([]);

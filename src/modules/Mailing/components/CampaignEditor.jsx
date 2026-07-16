@@ -442,7 +442,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
-                  Nazwa wewnętrzna, nie będzie widoczna dla odbiorców
+                  {tr('Nazwa wewnętrzna, nie będzie widoczna dla odbiorców')}
                 </p>
               </div>
 
@@ -464,7 +464,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
-                  Temat, który odbiorcy zobaczą w skrzynce
+                  {tr('Temat, który odbiorcy zobaczą w skrzynce')}
                 </p>
               </div>
 
@@ -714,7 +714,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
             <div className="p-6">
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-                Wyślij testową wersję emaila na wskazany adres, aby sprawdzić jak będzie wyglądać przed wysłaniem do odbiorców.
+                {tr('Wyślij testową wersję emaila na wskazany adres, aby sprawdzić jak będzie wyglądać przed wysłaniem do odbiorców.')}
               </p>
 
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

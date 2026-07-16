@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { ChevronUp, ChevronDown, Check, UserX } from 'lucide-react';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -316,7 +317,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
         <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
           <p className="text-gray-500 dark:text-gray-400">{t('Brak członków w zespole')}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Najpierw dodaj członków w zakładce "Członkowie"
+            {tr('Najpierw dodaj członków w zakładce "Członkowie"')}
           </p>
         </div>
       ) : sortedMonths.length === 0 ? (

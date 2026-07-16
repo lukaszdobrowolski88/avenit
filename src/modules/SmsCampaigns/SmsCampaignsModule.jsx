@@ -78,7 +78,7 @@ export default function SmsCampaignsModule() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('SMS Kampanie')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Twórz, planuj i analizuj kampanie SMS przez bramkę SMSAPI.pl.
+          {tr('Twórz, planuj i analizuj kampanie SMS przez bramkę SMSAPI.pl.')}
         </p>
       </div>
 
@@ -125,7 +125,7 @@ export default function SmsCampaignsModule() {
           ))}
           {campaigns.filter(c => c.status === 'sent').length === 0 && (
             <div className="col-span-full text-center text-gray-500 py-12">
-              Brak wysłanych kampanii. Wyślij pierwszą, aby zobaczyć statystyki.
+              {tr('Brak wysłanych kampanii. Wyślij pierwszą, aby zobaczyć statystyki.')}
             </div>
           )}
         </div>

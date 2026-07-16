@@ -1333,7 +1333,7 @@ function EmailSettingsEditor({ settings, onChange }) {
 
       <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          Kliknij na blok, aby edytować jego właściwości. Dwukrotne kliknięcie na tekst umożliwia edycję inline.
+          {tr('Kliknij na blok, aby edytować jego właściwości. Dwukrotne kliknięcie na tekst umożliwia edycję inline.')}
         </p>
       </div>
     </div>

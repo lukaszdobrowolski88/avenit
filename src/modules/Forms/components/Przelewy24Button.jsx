@@ -9,7 +9,7 @@ export default function Przelewy24Button({
   apiKey,
   amount,
   currency = 'PLN',
-  description = 'Płatność za formularz',
+  description = tr('Płatność za formularz'),
   sandbox = true,
   formId,
   sessionId,
@@ -197,7 +197,7 @@ export default function Przelewy24Button({
             <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
               <Check size={18} />
               <span className="text-sm font-medium">
-                Transakcja zarejestrowana! Kliknij poniżej, aby przejść do płatności.
+                {tr('Transakcja zarejestrowana! Kliknij poniżej, aby przejść do płatności.')}
               </span>
             </div>
           </div>
@@ -225,7 +225,7 @@ export default function Przelewy24Button({
 
       {!email && (
         <p className="text-xs text-center text-yellow-600 dark:text-yellow-400">
-          Wypełnij pole email w formularzu, aby móc dokonać płatności.
+          {tr('Wypełnij pole email w formularzu, aby móc dokonać płatności.')}
         </p>
       )}
     </div>

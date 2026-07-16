@@ -139,7 +139,7 @@ export default function CustomModule() {
               {tr('Ten moduł nie ma jeszcze zakładek.')}
             </p>
             <p className="text-sm text-gray-400 dark:text-gray-500">
-              Dodaj zakładki w Ustawienia → Zarządzanie → kliknij "Zakładki" przy module.
+              {tr('Dodaj zakładki w Ustawienia → Zarządzanie → kliknij "Zakładki" przy module.')}
             </p>
           </div>
         )}

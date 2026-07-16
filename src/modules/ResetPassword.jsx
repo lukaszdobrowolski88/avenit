@@ -94,7 +94,7 @@ export default function ResetPassword() {
           {tr('Ustaw hasło')}
         </h1>
         <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
-          Twoje konto zostało utworzone. Ustaw hasło, aby się zalogować.
+          {tr('Twoje konto zostało utworzone. Ustaw hasło, aby się zalogować.')}
         </p>
 
         {success ? (

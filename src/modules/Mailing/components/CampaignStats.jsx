@@ -105,7 +105,7 @@ export default function CampaignStats({ campaigns }) {
           Brak danych statystycznych
         </h3>
         <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-          Wyślij swój pierwszy mail, aby zobaczyć szczegółowe statystyki
+          {tr('Wyślij swój pierwszy mail, aby zobaczyć szczegółowe statystyki')}
         </p>
         <div className="flex items-center justify-center gap-2 text-sm text-accent-primary-light dark:text-accent-primary-light">
           <Sparkles size={14} />

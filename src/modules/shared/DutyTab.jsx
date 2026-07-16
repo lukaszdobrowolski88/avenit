@@ -332,7 +332,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
           <Users size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
           <p className="text-gray-500 dark:text-gray-400">{t('Brak członków w zespole')}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Najpierw dodaj członków w zakładce "Członkowie"
+            {tr('Najpierw dodaj członków w zakładce "Członkowie"')}
           </p>
         </div>
       ) : roles.length === 0 ? (

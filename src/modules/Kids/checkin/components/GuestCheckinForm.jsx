@@ -43,19 +43,19 @@ export default function GuestCheckinForm({
     const newErrors = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Imię jest wymagane';
+      newErrors.name = tr('Imię jest wymagane');
     }
     if (!formData.birthYear) {
       newErrors.birthYear = 'Rok urodzenia jest wymagany';
     }
     if (!formData.parentName.trim()) {
-      newErrors.parentName = 'Imię rodzica jest wymagane';
+      newErrors.parentName = tr('Imię rodzica jest wymagane');
     }
     if (!formData.parentPhone.trim()) {
       newErrors.parentPhone = 'Telefon jest wymagany';
     }
     if (!selectedLocation) {
-      newErrors.location = 'Wybierz salę';
+      newErrors.location = tr('Wybierz salę');
     }
 
     setErrors(newErrors);

@@ -120,7 +120,7 @@ export default function CurrentPlan({ onUpgrade }) {
           Brak aktywnej subskrypcji
         </h3>
         <p className="text-gray-600 dark:text-gray-400 mb-4">
-          Wybierz plan, aby korzystać z pełnych możliwości aplikacji.
+          {tr('Wybierz plan, aby korzystać z pełnych możliwości aplikacji.')}
         </p>
         <button
           onClick={onUpgrade}

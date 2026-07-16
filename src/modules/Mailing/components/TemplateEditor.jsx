@@ -156,7 +156,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
       {isSystemTemplate && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
           <p className="text-sm text-amber-700 dark:text-amber-400">
-            Szablony systemowe nie mogą być edytowane. Użyj "Duplikuj" aby stworzyć własną wersję.
+            {tr('Szablony systemowe nie mogą być edytowane. Użyj "Duplikuj" aby stworzyć własną wersję.')}
           </p>
         </div>
       )}

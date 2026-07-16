@@ -105,7 +105,7 @@ export default function CheckoutScreen({ session }) {
   if (!session) {
     return (
       <div className="p-10 text-center text-gray-500 dark:text-gray-400">
-        Brak aktywnej sesji. Przejdź do ustawień, aby utworzyć sesję.
+        {tr('Brak aktywnej sesji. Przejdź do ustawień, aby utworzyć sesję.')}
       </div>
     );
   }

@@ -759,7 +759,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
 // --- ITEM EDIT PANEL (Side panel like Planning Center) ---
 
 // Combobox z autouzupełnianiem dla osoby odpowiedzialnej
-const PersonCombobox = ({ value, onChange, members = [], placeholder = 'Wpisz imię i nazwisko...' }) => {
+const PersonCombobox = ({ value, onChange, members = [], placeholder = tr('Wpisz imię i nazwisko...') }) => {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef(null);
 
@@ -2212,7 +2212,7 @@ export default function ProgramDetail() {
   };
 
   const handleSaveAsTemplate = async () => {
-    const name = window.prompt('Podaj nazwę szablonu:', program.title || 'Nowy szablon');
+    const name = window.prompt(tr('Podaj nazwę szablonu:'), program.title || 'Nowy szablon');
     if (!name) return;
 
     try {

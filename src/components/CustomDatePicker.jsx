@@ -39,7 +39,7 @@ function useDropdownPosition(triggerRef, isOpen) {
   return coords;
 }
 
-export default function CustomDatePicker({ label, value, onChange, placeholder = 'Wybierz datę', compact = false }) {
+export default function CustomDatePicker({ label, value, onChange, placeholder = tr('Wybierz datę'), compact = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
   const triggerRef = useRef(null);

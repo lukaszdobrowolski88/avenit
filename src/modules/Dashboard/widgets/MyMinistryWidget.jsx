@@ -526,7 +526,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
             {tr('Brak oczekujących sugestii')}
           </p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Gdy ktoś Cię przypisze do służby, zobaczysz to tutaj
+            {tr('Gdy ktoś Cię przypisze do służby, zobaczysz to tutaj')}
           </p>
         </div>
       );

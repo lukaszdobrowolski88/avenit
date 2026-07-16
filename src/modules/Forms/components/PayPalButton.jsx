@@ -6,7 +6,7 @@ export default function PayPalButton({
   clientId,
   amount,
   currency = 'PLN',
-  description = 'Płatność za formularz',
+  description = tr('Płatność za formularz'),
   sandbox = true,
   onSuccess,
   onError,

@@ -13,7 +13,7 @@ export default function FieldEditor({ field, onUpdate }) {
           <span className="text-2xl">👆</span>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Wybierz pole z formularza, aby edytować jego ustawienia
+          {tr('Wybierz pole z formularza, aby edytować jego ustawienia')}
         </p>
       </div>
     );

@@ -469,7 +469,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
             Tabela nie istnieje
           </h3>
           <p className="text-yellow-700 dark:text-yellow-300 mb-4">
-            Aby korzystać z zadań w tym module, utwórz tabelę w Supabase.
+            {tr('Aby korzystać z zadań w tym module, utwórz tabelę w Supabase.')}
           </p>
           <div className="bg-gray-900 rounded-xl p-4 text-left overflow-x-auto max-h-64">
             <pre className="text-green-400 text-xs whitespace-pre">{sqlScript}</pre>
@@ -739,7 +739,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                     />
                   ) : (
                     <div className="px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500 text-sm">
-                      Brak członków. Dodaj członków w zakładce "Członkowie".
+                      {tr('Brak członków. Dodaj członków w zakładce "Członkowie".')}
                     </div>
                   )}
                 </div>
@@ -788,7 +788,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
               <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
                 {!editingTask?.id ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">
-                    Zapisz zadanie, aby dodawać komentarze.
+                    {tr('Zapisz zadanie, aby dodawać komentarze.')}
                   </div>
                 ) : loadingComments ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm">{tr('Ładowanie...')}</div>

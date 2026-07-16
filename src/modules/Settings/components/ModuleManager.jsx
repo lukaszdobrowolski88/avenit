@@ -255,7 +255,7 @@ export default function ModuleManager() {
             {tr('Zarządzanie modułami')}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Dodawaj, edytuj i zmieniaj kolejność modułów aplikacji
+            {tr('Dodawaj, edytuj i zmieniaj kolejność modułów aplikacji')}
           </p>
         </div>
         <button

@@ -241,7 +241,7 @@ export default function PersonalDashboard({ user }) {
             {tr('Brak widocznych widgetów')}
           </h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">
-            Wszystkie widgety są ukryte. Kliknij "Dostosuj", aby je włączyć.
+            {tr('Wszystkie widgety są ukryte. Kliknij "Dostosuj", aby je włączyć.')}
           </p>
           <button
             onClick={() => setShowCustomizer(true)}

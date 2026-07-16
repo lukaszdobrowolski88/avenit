@@ -72,15 +72,15 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
     const newErrors = {};
 
     if (!form.label.trim()) {
-      newErrors.label = 'Nazwa zakładki jest wymagana';
+      newErrors.label = tr('Nazwa zakładki jest wymagana');
     }
 
     if (!form.key.trim()) {
-      newErrors.key = 'Klucz zakładki jest wymagany';
+      newErrors.key = tr('Klucz zakładki jest wymagany');
     } else if (!/^[a-z0-9_]+$/.test(form.key)) {
-      newErrors.key = 'Klucz może zawierać tylko małe litery, cyfry i podkreślniki';
+      newErrors.key = tr('Klucz może zawierać tylko małe litery, cyfry i podkreślniki');
     } else if (!isEditing && existingKeys.includes(form.key)) {
-      newErrors.key = 'Zakładka z takim kluczem już istnieje';
+      newErrors.key = tr('Zakładka z takim kluczem już istnieje');
     }
 
     if (!form.icon) {

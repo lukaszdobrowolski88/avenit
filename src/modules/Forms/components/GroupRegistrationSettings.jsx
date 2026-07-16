@@ -147,7 +147,7 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
                 {tr('Przypisanie pól formularza')}
               </label>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                Określ, które pola są wypełniane przez osobę zgłaszającą, a które przez każdego uczestnika.
+                {tr('Określ, które pola są wypełniane przez osobę zgłaszającą, a które przez każdego uczestnika.')}
               </p>
               <div className="space-y-2">
                 {assignableFields.map((field) => {

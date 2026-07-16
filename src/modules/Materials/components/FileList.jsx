@@ -11,7 +11,7 @@ export default function FileList({
   onPreview,
   canDelete = false,
   getFileUrl,
-  emptyMessage = 'Brak plików w tym folderze'
+  emptyMessage = tr('Brak plików w tym folderze')
 }) {
   if (loading) {
     return (

@@ -251,7 +251,7 @@ GRANT ALL ON ${tableName} TO anon;`;
             Tabela nie istnieje
           </h3>
           <p className="text-yellow-700 dark:text-yellow-300 mb-4">
-            Aby korzystać z członków w tym module, utwórz tabelę w Supabase.
+            {tr('Aby korzystać z członków w tym module, utwórz tabelę w Supabase.')}
           </p>
           <div className="bg-gray-900 rounded-xl p-4 text-left overflow-x-auto">
             <pre className="text-green-400 text-xs whitespace-pre">{sqlScript}</pre>
@@ -381,7 +381,7 @@ GRANT ALL ON ${tableName} TO anon;`;
           <User size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
           <p className="text-gray-500 dark:text-gray-400">{tr('Brak członków')}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Kliknij "Dodaj członka" aby dodać pierwszego członka
+            {tr('Kliknij "Dodaj członka" aby dodać pierwszego członka')}
           </p>
         </div>
       )}
@@ -450,7 +450,7 @@ GRANT ALL ON ${tableName} TO anon;`;
                   </div>
                   {moduleRoles.length === 0 && (
                     <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-2">
-                      Brak zdefiniowanych służb. Dodaj je w zakładce "Służby".
+                      {tr('Brak zdefiniowanych służb. Dodaj je w zakładce "Służby".')}
                     </p>
                   )}
                 </div>

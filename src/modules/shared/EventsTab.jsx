@@ -529,7 +529,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
             Tabela nie istnieje
           </h3>
           <p className="text-yellow-700 dark:text-yellow-300 mb-4">
-            Aby korzystać z wydarzeń w tym module, utwórz tabelę w Supabase.
+            {tr('Aby korzystać z wydarzeń w tym module, utwórz tabelę w Supabase.')}
           </p>
           <div className="bg-gray-900 rounded-xl p-4 text-left overflow-x-auto">
             <pre className="text-green-400 text-xs whitespace-pre">{sqlScript}</pre>

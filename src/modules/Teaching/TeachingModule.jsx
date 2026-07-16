@@ -271,7 +271,7 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
 
       {sortedMonths.length === 0 && (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-          Brak programów nabożeństw. Dodaj programy w module "Programy".
+          {tr('Brak programów nabożeństw. Dodaj programy w module "Programy".')}
         </div>
       )}
     </div>

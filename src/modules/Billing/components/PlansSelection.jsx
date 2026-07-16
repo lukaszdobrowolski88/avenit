@@ -48,7 +48,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
       const result = await validateCoupon(couponCode, selectedPlanId, billingCycle);
       setCouponResult(result);
     } catch (err) {
-      setCouponResult({ is_valid: false, error_message: 'Błąd walidacji kuponu' });
+      setCouponResult({ is_valid: false, error_message: tr('Błąd walidacji kuponu') });
     } finally {
       setValidatingCoupon(false);
     }
