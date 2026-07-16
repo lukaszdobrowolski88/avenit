@@ -29,7 +29,7 @@ const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
           <div>
             <h3 className="text-lg font-bold text-gray-800 dark:text-white">{tr('Niezapisane zmiany')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Masz niezapisane zmiany w programie. Co chcesz zrobić?
+              {tr('Masz niezapisane zmiany w programie. Co chcesz zrobić?')}
             </p>
           </div>
         </div>
@@ -38,7 +38,7 @@ const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
             onClick={onDiscard}
             className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
           >
-            Opuść
+            {tr('Opuść')}
           </button>
           <button
             onClick={onSave}
@@ -1484,14 +1484,14 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 flex items-center gap-2"
                   >
                     <FileText size={16} className="text-accent-secondary-light" />
-                    Z załącznikami PDF
+                    {tr('Z załącznikami PDF')}
                   </button>
                   <button
                     onClick={() => handleSaveAndUploadPDF('both')}
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 flex items-center gap-2"
                   >
                     <FileText size={16} className="text-purple-500" />
-                    Teksty + załączniki pieśni
+                    {tr('Teksty + załączniki pieśni')}
                   </button>
                   <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
                   <button
@@ -1499,7 +1499,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 flex items-center gap-2"
                   >
                     <Paperclip size={16} className="text-green-500" />
-                    Z własnymi załącznikami
+                    {tr('Z własnymi załącznikami')}
                   </button>
                 </div>
               )}
@@ -1542,7 +1542,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
               <h3 className="font-bold text-lg lg:text-xl text-gray-800 dark:text-white flex items-center gap-2">
                 <div className="w-1.5 h-5 lg:h-6 bg-accent-primary dark:bg-accent-primary-light rounded-full"></div>
-                Plan szczegółowy
+                {tr('Plan szczegółowy')}
               </h3>
               <button
                 onClick={() => setProgram({...program, schedule: [...program.schedule, { id: Date.now(), element: '', person: '', details: '', songIds: [], selectedSongs: [] }]})}

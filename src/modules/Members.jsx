@@ -451,7 +451,7 @@ export default function Members() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-          Baza Członków
+          {tr('Baza Członków')}
         </h1>
       </div>
 
@@ -631,7 +631,7 @@ export default function Members() {
 
           {filteredMembers.length === 0 && (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              Brak wyników do wyświetlenia
+              {tr('Brak wyników do wyświetlenia')}
             </div>
           )}
         </div>
@@ -912,7 +912,7 @@ export default function Members() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Wybór służby automatycznie doda osobę do odpowiedniego modułu.
+                  {tr('Wybór służby automatycznie doda osobę do odpowiedniego modułu.')}
                 </p>
               </div>
 

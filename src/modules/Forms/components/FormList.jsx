@@ -20,6 +20,7 @@ import {
   Filter
 } from 'lucide-react';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 export default function FormList({
   forms,
@@ -334,7 +335,7 @@ export default function FormList({
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
                                     <Code size={16} />
-                                    Osadź na stronie
+                                    {tr('Osadź na stronie')}
                                   </button>
                                 </>
                               )}
@@ -364,7 +365,7 @@ export default function FormList({
                                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-yellow-600 dark:text-yellow-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                                   >
                                     <Lock size={16} />
-                                    Cofnij publikację
+                                    {tr('Cofnij publikację')}
                                   </button>
                                   <button
                                     onClick={() => {
@@ -388,7 +389,7 @@ export default function FormList({
                                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
                                   <Globe size={16} />
-                                  Otwórz ponownie
+                                  {tr('Otwórz ponownie')}
                                 </button>
                               )}
 
@@ -432,7 +433,7 @@ export default function FormList({
                                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                                 >
                                   <Trash2 size={16} />
-                                  Usuń
+                                  {tr('Usuń')}
                                 </button>
                               )}
                             </>
@@ -460,7 +461,7 @@ export default function FormList({
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                               >
                                 <RotateCcw size={16} />
-                                Przywróć
+                                {tr('Przywróć')}
                               </button>
 
                               <button
@@ -473,7 +474,7 @@ export default function FormList({
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                               >
                                 <Trash2 size={16} />
-                                Usuń trwale
+                                {tr('Usuń trwale')}
                               </button>
                             </>
                           )}
@@ -524,7 +525,7 @@ export default function FormList({
                       className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
                     >
                       <RotateCcw size={16} />
-                      Przywróć
+                      {tr('Przywróć')}
                     </button>
                     <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
                     <button

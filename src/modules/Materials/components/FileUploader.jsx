@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Upload, X, FileText, Image, Loader } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 // Formatowanie rozmiaru pliku
 function formatFileSize(bytes) {
@@ -156,7 +157,7 @@ export default function FileUploader({
               onClick={() => setSelectedFiles([])}
               className="text-xs text-gray-500 hover:text-red-500 transition-colors"
             >
-              Wyczyść wszystkie
+              {tr('Wyczyść wszystkie')}
             </button>
           </div>
 

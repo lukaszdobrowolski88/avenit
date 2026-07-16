@@ -1454,7 +1454,7 @@ const AudioPlayer = ({ url, name }) => {
         >
           <span className="flex items-center gap-2">
             <Users size={14} />
-            Kontrola instrumentów
+            {tr('Kontrola instrumentów')}
           </span>
           <ChevronDown size={14} className={`transform transition ${showStemControls ? 'rotate-180' : ''}`} />
         </button>
@@ -1898,7 +1898,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                         <div className="text-center py-10 text-gray-400">{tr('Ładowanie historii...')}</div>
                     ) : history.length === 0 ? (
                         <div className="text-center py-10 text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-                            Brak historii użycia tej pieśni w programach.
+                            {tr('Brak historii użycia tej pieśni w programach.')}
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -1940,7 +1940,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                         {(!song.attachments || song.attachments.length === 0) && (
                              <div className="text-center py-8 text-gray-400 text-sm italic border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
                                  <FileText size={32} className="mx-auto mb-2 opacity-50" />
-                                 Brak materiałów
+                                 {tr('Brak materiałów')}
                                  <p className="text-xs mt-1">{tr('Kliknij "Edytuj" aby dodać załączniki')}</p>
                              </div>
                         )}
@@ -2909,7 +2909,7 @@ export default function WorshipModule() {
             <div className="flex justify-between mb-6">
               <h3 className="font-bold text-xl text-gray-800 dark:text-white flex items-center gap-2">
                 <Tag size={20} className="text-accent-primary-light" />
-                Zarządzanie Tagami
+                {tr('Zarządzanie Tagami')}
               </h3>
               <button onClick={() => { setShowTagsModal(false); setEditingTag(null); setEditingTagValue(''); setNewTagInput(''); }} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition">
                 <X size={24} />
@@ -2917,7 +2917,7 @@ export default function WorshipModule() {
             </div>
 
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Dodaj nowe tagi lub edytuj/usuń istniejące. Zmiany zostaną zastosowane globalnie.
+              {tr('Dodaj nowe tagi lub edytuj/usuń istniejące. Zmiany zostaną zastosowane globalnie.')}
             </p>
 
             {/* Pole dodawania nowego tagu */}
@@ -2943,7 +2943,7 @@ export default function WorshipModule() {
             <div className="max-h-[300px] overflow-y-auto custom-scrollbar space-y-2">
               {allUniqueTags.length === 0 ? (
                 <div className="text-center py-8 text-gray-400 dark:text-gray-500">
-                  Brak tagów w bazie pieśni
+                  {tr('Brak tagów w bazie pieśni')}
                 </div>
               ) : (
                 allUniqueTags.map(tag => {

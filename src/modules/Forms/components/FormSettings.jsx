@@ -217,13 +217,13 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
         <div className="max-w-2xl mx-auto space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Wysyłanie formularza
+              {tr('Wysyłanie formularza')}
             </h2>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Tekst przycisku wysyłania
+                  {tr('Tekst przycisku wysyłania')}
                 </label>
                 <input
                   type="text"
@@ -236,7 +236,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Komunikat po wysłaniu
+                  {tr('Komunikat po wysłaniu')}
                 </label>
                 <textarea
                   value={localSettings.successMessage || ''}
@@ -271,10 +271,10 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    Pasek postępu
+                    {tr('Pasek postępu')}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Pokaż postęp wypełniania formularza
+                    {tr('Pokaż postęp wypełniania formularza')}
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -309,13 +309,13 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Wygląd
+              {tr('Wygląd')}
             </h2>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Kolor główny
+                  {tr('Kolor główny')}
                 </label>
                 <div className="flex items-center gap-3">
                   <input
@@ -419,7 +419,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               {/* Obrazek nagłówka */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Obrazek nagłówka
+                  {tr('Obrazek nagłówka')}
                 </label>
                 <input
                   ref={headerImageRef}
@@ -476,7 +476,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               {/* Obrazek tła */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Obrazek tła
+                  {tr('Obrazek tła')}
                 </label>
                 <input
                   ref={backgroundImageRef}
@@ -538,14 +538,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <Palette size={20} className="text-violet-500" />
-              Nagłówek formularza
+              {tr('Nagłówek formularza')}
             </h2>
 
             <div className="space-y-4">
               {/* Typ tła nagłówka */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Tło nagłówka
+                  {tr('Tło nagłówka')}
                 </label>
                 <div className="flex gap-2">
                   {[
@@ -833,14 +833,14 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <Layout size={20} className="text-indigo-500" />
-              Layout i tło
+              {tr('Layout i tło')}
             </h2>
 
             <div className="space-y-4">
               {/* Szerokość formularza */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Szerokość formularza
+                  {tr('Szerokość formularza')}
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -869,7 +869,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               {/* Typ tła */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Typ tła
+                  {tr('Typ tła')}
                 </label>
                 <div className="flex gap-2">
                   {[
@@ -895,7 +895,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               {(localSettings.layout?.background?.type || 'gradient') === 'solid' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Kolor tła
+                    {tr('Kolor tła')}
                   </label>
                   <div className="flex items-center gap-3">
                     <input
@@ -1173,17 +1173,17 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <DollarSign size={20} className="text-green-500" />
-              Cennik i płatności
+              {tr('Cennik i płatności')}
             </h2>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    Włącz cennik
+                    {tr('Włącz cennik')}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Pokaż podsumowanie ceny na formularzu
+                    {tr('Pokaż podsumowanie ceny na formularzu')}
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -1217,10 +1217,10 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        Wymagana płatność
+                        {tr('Wymagana płatność')}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Użytkownik musi zapłacić przed zapisem
+                        {tr('Użytkownik musi zapłacić przed zapisem')}
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -1236,7 +1236,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Metody płatności
+                      {tr('Metody płatności')}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {[
@@ -1328,7 +1328,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               Tryb testowy (Sandbox)
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              Użyj środowiska testowego PayPal
+                              {tr('Użyj środowiska testowego PayPal')}
                             </p>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -1347,7 +1347,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
                         <div>
                           <label className="block text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">
-                            Opis płatności
+                            {tr('Opis płatności')}
                           </label>
                           <input
                             type="text"
@@ -1439,7 +1439,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               Tryb testowy (Sandbox)
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              Użyj środowiska testowego P24
+                              {tr('Użyj środowiska testowego P24')}
                             </p>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -1458,7 +1458,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
                         <div>
                           <label className="block text-xs font-medium text-red-700 dark:text-red-400 mb-1">
-                            Opis płatności
+                            {tr('Opis płatności')}
                           </label>
                           <input
                             type="text"
@@ -1477,7 +1477,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                      Instrukcje płatności
+                      {tr('Instrukcje płatności')}
                     </label>
                     <textarea
                       value={localSettings.pricing?.paymentInstructions || ''}
@@ -1521,7 +1521,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <Percent size={20} className="text-orange-500" />
-              Rabaty ilościowe
+              {tr('Rabaty ilościowe')}
             </h2>
             <DiscountSettings
               settings={localSettings}

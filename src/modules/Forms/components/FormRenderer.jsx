@@ -396,7 +396,7 @@ export default function FormRenderer({
           <Check size={40} className="text-green-600 dark:text-green-400" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          Dziękujemy!
+          {tr('Dziękujemy!')}
         </h2>
         <p className="text-gray-600 dark:text-gray-400">
           {settings?.successMessage || 'Twoja odpowiedź została zapisana.'}
@@ -689,7 +689,7 @@ export default function FormRenderer({
               className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
             >
               <Plus size={18} />
-              Dodaj kolejną osobę
+              {tr('Dodaj kolejną osobę')}
             </button>
           )}
         </div>
@@ -787,7 +787,7 @@ export default function FormRenderer({
 
           {isWaitlistMode && (
             <p className="mt-3 text-sm text-orange-600 dark:text-orange-400">
-              Płatność nie jest wymagana przy zapisie na listę rezerwową. W przypadku zwolnienia miejsca skontaktujemy się z Tobą.
+              {tr('Płatność nie jest wymagana przy zapisie na listę rezerwową. W przypadku zwolnienia miejsca skontaktujemy się z Tobą.')}
             </p>
           )}
 
@@ -917,7 +917,7 @@ export default function FormRenderer({
                     </p>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    W tytule przelewu wpisz swoje imię i nazwisko.
+                    {tr('W tytule przelewu wpisz swoje imię i nazwisko.')}
                   </p>
                 </div>
               )}
@@ -926,7 +926,7 @@ export default function FormRenderer({
               {selectedPaymentMethod === 'cash' && (
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Płatność gotówką przy wejściu na wydarzenie.
+                    {tr('Płatność gotówką przy wejściu na wydarzenie.')}
                   </p>
                 </div>
               )}
@@ -951,7 +951,7 @@ export default function FormRenderer({
           <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
             <p className="text-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
               <CreditCard size={16} />
-              Wybierz metodę płatności powyżej.
+              {tr('Wybierz metodę płatności powyżej.')}
             </p>
           </div>
         )}
@@ -971,7 +971,7 @@ export default function FormRenderer({
           {isSubmitting ? (
             <>
               <Loader2 size={20} className="animate-spin" />
-              Wysyłanie...
+              {tr('Wysyłanie...')}
             </>
           ) : (
             <>

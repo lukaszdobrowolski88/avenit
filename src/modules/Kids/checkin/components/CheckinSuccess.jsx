@@ -84,7 +84,7 @@ export default function CheckinSuccess({
         </div>
         {displayCodes.length > 1 && (
           <div className="text-xs text-gray-500 dark:text-gray-500 mt-3 text-center">
-            Każdy z tych kodów może być użyty do odbioru dziecka
+            {tr('Każdy z tych kodów może być użyty do odbioru dziecka')}
           </div>
         )}
       </div>
@@ -98,7 +98,7 @@ export default function CheckinSuccess({
           {childrenNames.join(', ')}
           {isGuest && (
             <span className="ml-2 bg-amber-400 dark:bg-amber-500 text-black px-2 py-0.5 rounded text-xs font-bold align-middle">
-              GOŚĆ
+              {tr('GOŚĆ')}
             </span>
           )}
         </div>

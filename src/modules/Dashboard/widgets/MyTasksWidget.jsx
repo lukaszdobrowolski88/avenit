@@ -489,10 +489,10 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
             <CheckSquare size={32} className="text-gray-400" />
           </div>
           <p className="text-gray-500 dark:text-gray-400 font-medium">
-            Brak zadań
+            {tr('Brak zadań')}
           </p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Nie masz przypisanych zadań
+            {tr('Nie masz przypisanych zadań')}
           </p>
         </div>
 

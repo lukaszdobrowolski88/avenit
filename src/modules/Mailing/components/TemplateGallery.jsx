@@ -329,14 +329,14 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <Eye size={14} />
-                            Podgląd
+                            {tr('Podgląd')}
                           </button>
                           <button
                             onClick={() => { onSelectTemplate(template.id); setMenuOpen(null); }}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <Plus size={14} />
-                            Użyj szablonu
+                            {tr('Użyj szablonu')}
                           </button>
                           {onEditTemplate && (
                             <button
@@ -369,7 +369,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                                 className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                               >
                                 <Trash2 size={14} />
-                                Usuń
+                                {tr('Usuń')}
                               </button>
                             </>
                           )}
@@ -384,7 +384,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                   onClick={() => onSelectTemplate(template.id)}
                   className="w-full mt-3 py-2 text-sm font-medium text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 rounded-lg transition-colors"
                 >
-                  Użyj szablonu
+                  {tr('Użyj szablonu')}
                 </button>
               </div>
             </div>
@@ -405,7 +405,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
               onClick={() => setSearchQuery('')}
               className="text-sm text-accent-primary-light hover:text-accent-primary"
             >
-              Wyczyść wyszukiwanie
+              {tr('Wyczyść wyszukiwanie')}
             </button>
           )}
         </div>
@@ -573,7 +573,7 @@ function TemplatePreviewModal({
               className="group px-6 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-medium rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl flex items-center gap-2"
             >
               <Edit size={16} className="group-hover:scale-110 transition-transform" />
-              Użyj szablonu
+              {tr('Użyj szablonu')}
             </button>
           </div>
         </div>

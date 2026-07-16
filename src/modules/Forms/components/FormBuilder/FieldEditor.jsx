@@ -131,7 +131,7 @@ export default function FieldEditor({ field, onUpdate }) {
               Pole wymagane
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Użytkownik musi wypełnić to pole
+              {tr('Użytkownik musi wypełnić to pole')}
             </p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
@@ -201,7 +201,7 @@ export default function FieldEditor({ field, onUpdate }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Min. znaków
+                {tr('Min. znaków')}
               </label>
               <input
                 type="number"
@@ -214,7 +214,7 @@ export default function FieldEditor({ field, onUpdate }) {
             </div>
             <div>
               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                Max. znaków
+                {tr('Max. znaków')}
               </label>
               <input
                 type="number"
@@ -292,10 +292,10 @@ export default function FieldEditor({ field, onUpdate }) {
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Wiele plików
+                {tr('Wiele plików')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Pozwól na upload wielu plików
+                {tr('Pozwól na upload wielu plików')}
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -383,10 +383,10 @@ export default function FieldEditor({ field, onUpdate }) {
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Wiele zdjęć
+                {tr('Wiele zdjęć')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Pozwól na upload wielu zdjęć
+                {tr('Pozwól na upload wielu zdjęć')}
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -408,10 +408,10 @@ export default function FieldEditor({ field, onUpdate }) {
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Pokaż podgląd
+                {tr('Pokaż podgląd')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Wyświetl miniaturę po uploadzię
+                {tr('Wyświetl miniaturę po uploadzię')}
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -528,10 +528,10 @@ export default function FieldEditor({ field, onUpdate }) {
           <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Pokaż w podsumowaniu
+                {tr('Pokaż w podsumowaniu')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Wyświetl cenę w podsumowaniu formularza
+                {tr('Wyświetl cenę w podsumowaniu formularza')}
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -558,7 +558,7 @@ export default function FieldEditor({ field, onUpdate }) {
                   Cennik datowy
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Różne ceny w zależności od terminu zapisu
+                  {tr('Różne ceny w zależności od terminu zapisu')}
                 </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -647,7 +647,7 @@ export default function FieldEditor({ field, onUpdate }) {
                   className="w-full flex items-center justify-center gap-1 py-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-xs text-gray-500 hover:border-green-400 hover:text-green-500 transition-colors"
                 >
                   <Plus size={14} />
-                  Dodaj próg cenowy
+                  {tr('Dodaj próg cenowy')}
                 </button>
               </div>
             )}
@@ -672,7 +672,7 @@ export default function FieldEditor({ field, onUpdate }) {
               className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white"
             />
             <p className="text-xs text-gray-400 mt-1">
-              Ta wartość będzie wyświetlana w nagłówku formularza
+              {tr('Ta wartość będzie wyświetlana w nagłówku formularza')}
             </p>
           </div>
         </div>
@@ -706,10 +706,10 @@ export default function FieldEditor({ field, onUpdate }) {
           <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Pokaż pozostałe miejsca
+                {tr('Pokaż pozostałe miejsca')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Wyświetl ile miejsc zostało
+                {tr('Wyświetl ile miejsc zostało')}
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -773,7 +773,7 @@ export default function FieldEditor({ field, onUpdate }) {
                   placeholder="Bez limitu (nieograniczona lista)"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Zostaw puste aby lista rezerwowa była nieograniczona
+                  {tr('Zostaw puste aby lista rezerwowa była nieograniczona')}
                 </p>
               </div>
 
@@ -802,7 +802,7 @@ export default function FieldEditor({ field, onUpdate }) {
       {field.type === 'quantity' && (
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Ustawienia ilości
+            {tr('Ustawienia ilości')}
           </h4>
 
           <div className="grid grid-cols-2 gap-3">
@@ -834,7 +834,7 @@ export default function FieldEditor({ field, onUpdate }) {
 
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-              Domyślna wartość
+              {tr('Domyślna wartość')}
             </label>
             <input
               type="number"
@@ -853,10 +853,10 @@ export default function FieldEditor({ field, onUpdate }) {
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Wpływa na cenę
+                {tr('Wpływa na cenę')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Ilość osób mnoży cenę
+                {tr('Ilość osób mnoży cenę')}
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -881,10 +881,10 @@ export default function FieldEditor({ field, onUpdate }) {
         <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/30 rounded-lg mt-4">
           <div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Pokaż w nagłówku
+              {tr('Pokaż w nagłówku')}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Wyświetl w sekcji informacji o wydarzeniu
+              {tr('Wyświetl w sekcji informacji o wydarzeniu')}
             </p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">

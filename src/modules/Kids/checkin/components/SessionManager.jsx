@@ -191,7 +191,7 @@ export default function SessionManager({ onSessionChange }) {
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                 }`}
             >
-              Utwórz sesję
+              {tr('Utwórz sesję')}
             </button>
           </div>
         </div>
@@ -201,11 +201,11 @@ export default function SessionManager({ onSessionChange }) {
       {loading ? (
         <div className="flex items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400">
           <Loader2 size={20} className="animate-spin" />
-          Ładowanie...
+          {tr('Ładowanie...')}
         </div>
       ) : sessions.length === 0 ? (
         <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-          Brak sesji. Utwórz pierwszą sesję check-in.
+          {tr('Brak sesji. Utwórz pierwszą sesję check-in.')}
         </div>
       ) : (
         <div className="flex flex-col gap-3">

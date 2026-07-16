@@ -295,7 +295,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
             />
             {programOptions.length === 0 && (
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                Brak nadchodzących wydarzeń
+                {tr('Brak nadchodzących wydarzeń')}
               </p>
             )}
           </div>
@@ -372,7 +372,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
       ) : !isAdding && (
         <div className="text-center py-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Brak zgłoszonych nieobecności
+            {tr('Brak zgłoszonych nieobecności')}
           </p>
         </div>
       )}

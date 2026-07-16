@@ -75,7 +75,7 @@ export default function AttendanceDashboard({ session, locations }) {
       <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Lista obecności
+            {tr('Lista obecności')}
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Aktualnie obecnych: <strong className="text-accent-primary dark:text-accent-primary-light">{activeCheckins.length}</strong>
@@ -166,7 +166,7 @@ export default function AttendanceDashboard({ session, locations }) {
                         {child.name}
                         {child.isGuest && (
                           <span className="ml-1.5 bg-amber-400 dark:bg-amber-500 text-black px-1.5 py-0.5 rounded text-[10px] font-bold">
-                            GOŚĆ
+                            {tr('GOŚĆ')}
                           </span>
                         )}
                       </span>
@@ -243,7 +243,7 @@ export default function AttendanceDashboard({ session, locations }) {
                   {filteredCheckins.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-4 py-10 text-center text-gray-400 dark:text-gray-500">
-                        Brak wyników
+                        {tr('Brak wyników')}
                       </td>
                     </tr>
                   ) : (
@@ -263,7 +263,7 @@ export default function AttendanceDashboard({ session, locations }) {
                               {name}
                               {checkin.is_guest && (
                                 <span className="bg-amber-400 dark:bg-amber-500 text-black px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                  GOŚĆ
+                                  {tr('GOŚĆ')}
                                 </span>
                               )}
                             </div>
@@ -316,7 +316,7 @@ export default function AttendanceDashboard({ session, locations }) {
       {loading && (
         <div className="fixed bottom-5 right-5 bg-accent-primary text-white px-5 py-3 rounded-xl flex items-center gap-2 shadow-lg">
           <Loader2 size={18} className="animate-spin" />
-          Odświeżanie...
+          {tr('Odświeżanie...')}
         </div>
       )}
     </div>

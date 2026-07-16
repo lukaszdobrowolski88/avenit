@@ -190,7 +190,7 @@ export default function CurrentPlan({ onUpgrade }) {
       {usage && (
         <div className="p-6">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-            Wykorzystanie zasobów
+            {tr('Wykorzystanie zasobów')}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <UsageBar

@@ -279,7 +279,7 @@ export function hasTabAccess(module, tab, userRole) {
           onClick={() => setPermissions(getInitialPermissions())}
           className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
         >
-          Przywróć domyślne
+          {tr('Przywróć domyślne')}
         </button>
         <button
           onClick={savePermissions}

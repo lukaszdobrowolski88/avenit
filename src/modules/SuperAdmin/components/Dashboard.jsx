@@ -108,7 +108,7 @@ export default function Dashboard() {
           Dashboard
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Przegląd systemu Avenit
+          {tr('Przegląd systemu Avenit')}
         </p>
       </div>
 

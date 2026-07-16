@@ -20,6 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import TabEditor from './TabEditor';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Sortable Tab Item
 function SortableTabItem({ tab, onEdit, onDelete }) {
@@ -183,7 +184,7 @@ export default function TabManager({
             </div>
             <div>
               <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                Zakładki modułu
+                {tr('Zakładki modułu')}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {module.label}
@@ -206,7 +207,7 @@ export default function TabManager({
             className="w-full mb-4 p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary-light dark:hover:border-accent-primary-light dark:hover:text-accent-primary-light transition flex items-center justify-center gap-2"
           >
             <Plus size={20} />
-            Dodaj zakładkę
+            {tr('Dodaj zakładkę')}
           </button>
 
           {/* Tabs List */}
@@ -267,7 +268,7 @@ export default function TabManager({
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[170]">
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">
-              Usunąć zakładkę?
+              {tr('Usunąć zakładkę?')}
             </h4>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               Czy na pewno chcesz usunąć zakładkę "{deleteConfirm.label}"? Tej operacji nie można cofnąć.
@@ -283,7 +284,7 @@ export default function TabManager({
                 onClick={confirmDelete}
                 className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition"
               >
-                Usuń
+                {tr('Usuń')}
               </button>
             </div>
           </div>

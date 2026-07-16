@@ -5,6 +5,7 @@ import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronR
 import CustomSelect from '../../components/CustomSelect';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -534,7 +535,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
             <pre className="text-green-400 text-xs whitespace-pre">{sqlScript}</pre>
           </div>
           <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-4">
-            Skopiuj powyższy kod i wykonaj go w Supabase SQL Editor.
+            {tr('Skopiuj powyższy kod i wykonaj go w Supabase SQL Editor.')}
           </p>
           <button
             onClick={() => {
@@ -549,7 +550,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
             onClick={fetchEvents}
             className="mt-4 ml-2 px-4 py-2 bg-accent-primary text-white rounded-xl hover:bg-accent-primary transition"
           >
-            Odśwież
+            {tr('Odśwież')}
           </button>
         </div>
       </div>

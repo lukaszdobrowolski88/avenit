@@ -138,7 +138,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
           {/* Typ komponentu */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">
-              Typ zawartości
+              {tr('Typ zawartości')}
             </label>
             <div className="grid grid-cols-2 gap-2">
               {COMPONENT_TYPES.map(comp => {
@@ -171,7 +171,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
           {/* Nazwa zakładki */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              Nazwa zakładki
+              {tr('Nazwa zakładki')}
             </label>
             <input
               type="text"

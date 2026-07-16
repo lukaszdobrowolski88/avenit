@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Users, Music, Zap, Sparkles, Baby, Home, Heart, UserCheck, Shield, ChevronRight, Inbox } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { tr } from '../../../i18n';
 
 // Helper do generowania koloru z emaila
 function stringToColor(str) {
@@ -292,7 +293,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
             Wszystko przeczytane!
           </p>
           <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
-            Nie masz nowych wiadomości
+            {tr('Nie masz nowych wiadomości')}
           </p>
         </div>
       ) : (
@@ -364,7 +365,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
           className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
         >
           <MessageCircle size={16} />
-          Otwórz komunikator
+          {tr('Otwórz komunikator')}
         </button>
       )}
     </div>

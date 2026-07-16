@@ -8,6 +8,7 @@ import {
   Star,
   ArrowRight
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 const CATEGORY_ICONS = {
   events: Calendar,
@@ -111,7 +112,7 @@ export default function TemplateLibrary({ templates, onSelectTemplate }) {
             <FileText size={24} className="text-gray-400" />
           </div>
           <p className="text-gray-500 dark:text-gray-400">
-            Brak szablonów w tej kategorii
+            {tr('Brak szablonów w tej kategorii')}
           </p>
         </div>
       )}
@@ -146,7 +147,7 @@ function TemplateCard({ template, icon: Icon, onSelect }) {
           {fieldsCount} {fieldsCount === 1 ? 'pole' : 'pól'}
         </span>
         <span className="flex items-center gap-1 text-sm font-medium text-accent-primary dark:text-accent-primary-light opacity-0 group-hover:opacity-100 transition-opacity">
-          Użyj szablonu
+          {tr('Użyj szablonu')}
           <ArrowRight size={14} />
         </span>
       </div>

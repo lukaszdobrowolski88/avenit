@@ -4,6 +4,7 @@ import UserAvatar from './UserAvatar';
 import { formatMessageDate, truncateText, getMinistryName } from '../utils/messageHelpers';
 import { usePresence } from '../../../hooks/usePresence';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 const ministryIcons = {
   worship_team: Music,
@@ -175,7 +176,7 @@ export default function ConversationList({
             </p>
           ) : (
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 italic">
-              Brak wiadomości
+              {tr('Brak wiadomości')}
             </p>
           )}
         </div>

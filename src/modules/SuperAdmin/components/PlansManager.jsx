@@ -331,7 +331,7 @@ export default function PlansManager() {
             Plany subskrypcji
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Zarządzaj dostępnymi planami
+            {tr('Zarządzaj dostępnymi planami')}
           </p>
         </div>
         <button

@@ -25,7 +25,7 @@ export default function ActionButtonsBuilder({ categoryId, actions = [], onChang
       {/* Wybór kategorii */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Typ przycisków akcji
+          {tr('Typ przycisków akcji')}
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {PUSH_CATEGORIES.map(c => {
@@ -62,7 +62,7 @@ export default function ActionButtonsBuilder({ categoryId, actions = [], onChang
       {required.length > 0 && (
         <div className="space-y-3">
           <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Konfiguracja przycisków
+            {tr('Konfiguracja przycisków')}
           </div>
 
           {required.map((catAction, idx) => {

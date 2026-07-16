@@ -281,7 +281,7 @@ export default function MailSidebar({
                 onClick={handleCreateFolder}
                 className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-accent-primary-light hover:bg-accent-primary rounded-lg"
               >
-                Utwórz
+                {tr('Utwórz')}
               </button>
               <button
                 onClick={() => setShowNewFolder(false)}
@@ -345,7 +345,7 @@ export default function MailSidebar({
                       onClick={handleCreateLabel}
                       className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-accent-primary-light hover:bg-accent-primary rounded-lg"
                     >
-                      Utwórz
+                      {tr('Utwórz')}
                     </button>
                     <button
                       onClick={() => setShowNewLabel(false)}

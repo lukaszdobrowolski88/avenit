@@ -227,7 +227,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
                   onClick={handleClearSearch}
                   className="ml-2 text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 underline"
                 >
-                  Wyczyść
+                  {tr('Wyczyść')}
                 </button>
               </p>
             </div>

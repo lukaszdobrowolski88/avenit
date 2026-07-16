@@ -645,7 +645,7 @@ export default function ResponsesView({ form }) {
                           className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
                         >
                           <Banknote size={14} />
-                          Dodaj wpłatę
+                          {tr('Dodaj wpłatę')}
                         </button>
                       )}
                     </div>

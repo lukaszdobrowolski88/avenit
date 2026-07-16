@@ -3,6 +3,7 @@ import { Check, Palette, Plus, Trash2 } from 'lucide-react';
 import { COLOR_PRESETS, applyColorPreset, applyCustomColors, getCustomPreset, generateShades } from '../../../lib/colorPresets';
 import { supabase } from '../../../lib/supabase';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 export default function ColorPresetPicker({ currentPreset: initialPreset }) {
   const t = useT();
@@ -147,7 +148,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition text-sm font-medium"
         >
           <Plus size={16} />
-          Własny
+          {tr('Własny')}
         </button>
       </div>
 

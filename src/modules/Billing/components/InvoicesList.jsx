@@ -91,7 +91,7 @@ export default function InvoicesList() {
           Brak faktur
         </h3>
         <p className="text-gray-600 dark:text-gray-400">
-          Tutaj pojawią się Twoje faktury po dokonaniu pierwszej płatności.
+          {tr('Tutaj pojawią się Twoje faktury po dokonaniu pierwszej płatności.')}
         </p>
       </div>
     );

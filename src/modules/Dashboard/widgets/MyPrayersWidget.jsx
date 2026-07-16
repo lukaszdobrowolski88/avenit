@@ -108,7 +108,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
           {/* Content */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Treść intencji modlitewnej
+              {tr('Treść intencji modlitewnej')}
             </label>
             <textarea
               value={content}
@@ -148,7 +148,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
           {/* Visibility */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Widoczność
+              {tr('Widoczność')}
             </label>
             <div className="flex gap-3">
               <label className={`
@@ -209,7 +209,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
             <div>
               <p className="font-medium text-gray-800 dark:text-gray-200">{tr('Dodaj anonimowo')}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Twoje imię nie będzie widoczne dla innych
+                {tr('Twoje imię nie będzie widoczne dla innych')}
               </p>
             </div>
           </label>
@@ -278,7 +278,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                 <div>
                   <p className="font-medium text-gray-800 dark:text-gray-200">{tr('Modlitwa wysłuchana!')}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Podziel się świadectwem z innymi
+                    {tr('Podziel się świadectwem z innymi')}
                   </p>
                 </div>
               </label>
@@ -371,7 +371,7 @@ function PrayerCard({ prayer, onClick }) {
       {isAnswered && (
         <div className="absolute -top-2 -right-2 bg-gradient-to-r from-amber-400 to-yellow-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 shadow-md">
           <Star className="w-3 h-3" />
-          Świadectwo
+          {tr('Świadectwo')}
         </div>
       )}
 
@@ -420,7 +420,7 @@ function PrayerCard({ prayer, onClick }) {
         <div className="mt-3 bg-amber-50/80 dark:bg-amber-900/30 rounded-xl p-2 border border-amber-200 dark:border-amber-700/50">
           <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1 flex items-center gap-1">
             <Sparkles className="w-3 h-3" />
-            Świadectwo wysłuchania
+            {tr('Świadectwo wysłuchania')}
           </p>
           <p className="text-xs text-amber-800 dark:text-amber-300 line-clamp-2">
             {prayer.answered_testimony}
@@ -436,7 +436,7 @@ function PrayerCard({ prayer, onClick }) {
         </div>
         {isAnswered && (
           <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-            Modlitwa wysłuchana
+            {tr('Modlitwa wysłuchana')}
           </span>
         )}
       </div>
@@ -573,7 +573,7 @@ export default function MyPrayersWidget({ prayers, userEmail, onRefresh, size = 
           href="/prayer"
           className="mt-4 px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl text-sm font-medium hover:shadow-lg transition-all"
         >
-          Przejdź do Centrum Modlitwy
+          {tr('Przejdź do Centrum Modlitwy')}
         </a>
       </div>
     );

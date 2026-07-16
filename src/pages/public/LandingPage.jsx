@@ -109,13 +109,13 @@ export default function LandingPage() {
                 to="/login"
                 className="text-gray-600 dark:text-gray-300 hover:text-accent-primary transition"
               >
-                Zaloguj się
+                {tr('Zaloguj się')}
               </Link>
               <Link
                 to="/register"
                 className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:shadow-lg transition"
               >
-                Wypróbuj za darmo
+                {tr('Wypróbuj za darmo')}
               </Link>
             </div>
           </div>
@@ -130,10 +130,10 @@ export default function LandingPage() {
             14 dni za darmo, bez karty kredytowej
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
-            Nowoczesne zarządzanie
+            {tr('Nowoczesne zarządzanie')}
             <br />
             <span className="bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
-              Twoim kościołem
+              {tr('Twoim kościołem')}
             </span>
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-10">
@@ -166,7 +166,7 @@ export default function LandingPage() {
               Wszystko, czego potrzebujesz
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Kompleksowe narzędzia do zarządzania każdym aspektem działalności kościoła
+              {tr('Kompleksowe narzędzia do zarządzania każdym aspektem działalności kościoła')}
             </p>
           </div>
 
@@ -202,7 +202,7 @@ export default function LandingPage() {
               Prosty i przejrzysty cennik
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8">
-              Wybierz plan dopasowany do wielkości Twojego kościoła
+              {tr('Wybierz plan dopasowany do wielkości Twojego kościoła')}
             </p>
 
             {/* Billing toggle */}
@@ -215,7 +215,7 @@ export default function LandingPage() {
                     : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
-                Miesięcznie
+                {tr('Miesięcznie')}
               </button>
               <button
                 onClick={() => setBillingCycle('yearly')}
@@ -309,7 +309,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Co mówią nasi klienci
+              {tr('Co mówią nasi klienci')}
             </h2>
           </div>
 
@@ -371,7 +371,7 @@ export default function LandingPage() {
                 <span className="text-lg font-bold text-white">Avenit</span>
               </div>
               <p className="text-gray-400 text-sm">
-                Nowoczesne oprogramowanie do zarządzania kościołem.
+                {tr('Nowoczesne oprogramowanie do zarządzania kościołem.')}
               </p>
             </div>
 

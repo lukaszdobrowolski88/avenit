@@ -4,6 +4,7 @@ import { X, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import { WIDGET_DEFINITIONS, WIDGET_SIZES } from '../utils/layoutDefaults';
 import { hasTabAccess } from '../../../utils/tabPermissions';
 import * as Icons from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function LayoutCustomizer({
   isOpen,
@@ -129,7 +130,7 @@ export default function LayoutCustomizer({
             className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
             <RotateCcw size={16} />
-            Przywróć domyślne
+            {tr('Przywróć domyślne')}
           </button>
           <button
             onClick={onClose}

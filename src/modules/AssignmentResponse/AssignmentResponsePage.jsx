@@ -183,7 +183,7 @@ export default function AssignmentResponsePage() {
             )}
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            Już odpowiedziano
+            {tr('Już odpowiedziano')}
           </h1>
           <p className="text-gray-600">
             {isAccepted
@@ -244,7 +244,7 @@ export default function AssignmentResponsePage() {
             <Music size={32} />
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            Zaproszenie do służby
+            {tr('Zaproszenie do służby')}
           </h1>
           <p className="text-gray-600">
             {assignment?.assigned_by_name} przypisał/a Cię do służby
@@ -283,7 +283,7 @@ export default function AssignmentResponsePage() {
             className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:shadow-emerald-500/30 transition flex items-center justify-center gap-2"
           >
             <CheckCircle size={20} />
-            Akceptuję
+            {tr('Akceptuję')}
           </button>
           <button
             onClick={() => handleAction('reject', token, assignment)}

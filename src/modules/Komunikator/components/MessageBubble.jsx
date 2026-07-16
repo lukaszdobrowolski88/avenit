@@ -304,7 +304,7 @@ export default function MessageBubble({
                     className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-accent-primary-lightest hover:to-accent-secondary-lightest dark:hover:from-accent-primary-darkest/30 dark:hover:to-accent-secondary-darkest/30 transition-all duration-200"
                   >
                     <Forward size={14} className="text-gray-400" />
-                    Przekaż
+                    {tr('Przekaż')}
                   </button>
                   {/* Kopiuj */}
                   <button
@@ -350,7 +350,7 @@ export default function MessageBubble({
                       className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-200"
                     >
                       <Trash2 size={14} />
-                      Usuń
+                      {tr('Usuń')}
                     </button>
                   )}
                 </div>

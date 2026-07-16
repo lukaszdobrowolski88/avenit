@@ -108,7 +108,7 @@ export default function TenantsList({ onSelectTenant }) {
             Klienci
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Zarządzaj klientami i ich subskrypcjami
+            {tr('Zarządzaj klientami i ich subskrypcjami')}
           </p>
         </div>
       </div>
@@ -142,11 +142,11 @@ export default function TenantsList({ onSelectTenant }) {
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500">
-            Ładowanie...
+            {tr('Ładowanie...')}
           </div>
         ) : tenants.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            Brak klientów spełniających kryteria
+            {tr('Brak klientów spełniających kryteria')}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -221,7 +221,7 @@ export default function TenantsList({ onSelectTenant }) {
                                 className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 first:rounded-t-xl"
                               >
                                 <Eye size={16} />
-                                Szczegóły
+                                {tr('Szczegóły')}
                               </button>
 
                               {tenant.status === 'trial' && (
@@ -230,7 +230,7 @@ export default function TenantsList({ onSelectTenant }) {
                                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                                 >
                                   <Clock size={16} />
-                                  Przedłuż trial
+                                  {tr('Przedłuż trial')}
                                 </button>
                               )}
 
@@ -240,7 +240,7 @@ export default function TenantsList({ onSelectTenant }) {
                                   className="w-full px-4 py-2.5 text-left text-sm text-green-600 dark:text-green-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                                 >
                                   <Play size={16} />
-                                  Przywróć
+                                  {tr('Przywróć')}
                                 </button>
                               ) : tenant.status !== 'cancelled' && (
                                 <button
@@ -248,7 +248,7 @@ export default function TenantsList({ onSelectTenant }) {
                                   className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 last:rounded-b-xl"
                                 >
                                   <Pause size={16} />
-                                  Zawieś
+                                  {tr('Zawieś')}
                                 </button>
                               )}
                             </div>

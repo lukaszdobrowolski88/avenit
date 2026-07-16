@@ -1007,12 +1007,12 @@ function DropZone({ index, isActive, isDragging, onDragOver, onDrop }) {
       {isActive ? (
         <span className="text-accent-primary-light text-base font-semibold flex items-center gap-2">
           <Plus size={20} />
-          Upuść tutaj
+          {tr('Upuść tutaj')}
         </span>
       ) : (
         <span className="text-gray-400 dark:text-gray-500 text-sm flex items-center gap-1.5">
           <Plus size={16} />
-          Upuść tutaj
+          {tr('Upuść tutaj')}
         </span>
       )}
     </div>
@@ -1462,7 +1462,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
               <Edit3 size={12} />
-              Treść nagłówka
+              {tr('Treść nagłówka')}
             </label>
             <BlockTextEditor
               content={block.content}
@@ -1509,7 +1509,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
               <Edit3 size={12} />
-              Treść cytatu
+              {tr('Treść cytatu')}
             </label>
             <BlockTextEditor
               content={block.content}
@@ -1630,7 +1630,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
               <Edit3 size={12} />
-              Treść stopki
+              {tr('Treść stopki')}
             </label>
             <BlockTextEditor
               content={block.content}
@@ -1788,7 +1788,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
     <div className="space-y-3">
       <label className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
         <Palette size={12} />
-        Tło bloku
+        {tr('Tło bloku')}
       </label>
 
       {/* Podgląd aktualnego tła */}
@@ -1946,7 +1946,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
               <label className="flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400">
                 <span className="flex items-center gap-1">
                   <RotateCw size={10} />
-                  Kąt
+                  {tr('Kąt')}
                 </span>
                 <span>{gradientAngle}°</span>
               </label>
@@ -1992,7 +1992,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
             </button>
           )}
           <p className="text-[10px] text-gray-400 dark:text-gray-500">
-            ⚠️ Obrazy jako tło mogą nie wyświetlać się we wszystkich klientach email
+            {tr('⚠️ Obrazy jako tło mogą nie wyświetlać się we wszystkich klientach email')}
           </p>
         </div>
       )}
@@ -2002,7 +2002,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
         <label className="flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400 mb-1">
           <span className="flex items-center gap-1">
             <Droplet size={10} />
-            Przezroczystość
+            {tr('Przezroczystość')}
           </span>
           <span>{backgroundOpacity}%</span>
         </label>
@@ -2308,7 +2308,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
     <div className="space-y-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
       <label className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
         <Layers size={12} />
-        Cień
+        {tr('Cień')}
       </label>
 
       {/* Presety */}

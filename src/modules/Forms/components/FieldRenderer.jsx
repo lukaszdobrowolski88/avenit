@@ -340,7 +340,7 @@ export default function FieldRenderer({
           />
           {field.quantityConfig?.affectsPrice && (
             <p className="text-xs text-gray-500 mt-1">
-              Liczba osób wpływa na całkowitą cenę
+              {tr('Liczba osób wpływa na całkowitą cenę')}
             </p>
           )}
         </div>
@@ -397,7 +397,7 @@ export default function FieldRenderer({
               />
               <Upload size={24} className="mx-auto text-gray-400 mb-2" />
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Kliknij lub przeciągnij plik
+                {tr('Kliknij lub przeciągnij plik')}
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 Max. {field.fileConfig?.maxSize || 10} MB

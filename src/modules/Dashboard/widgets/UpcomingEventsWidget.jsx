@@ -74,7 +74,7 @@ export default function UpcomingEventsWidget() {
           onClick={() => navigate('/calendar')}
           className="mt-3 text-sm text-accent-primary dark:text-accent-primary-light font-medium hover:underline"
         >
-          Otwórz kalendarz
+          {tr('Otwórz kalendarz')}
         </button>
       </div>
     );
@@ -109,7 +109,7 @@ export default function UpcomingEventsWidget() {
               </div>
               {when.isSoon && (
                 <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-500 dark:bg-red-500/20 dark:text-red-300">
-                  wkrótce
+                  {tr('wkrótce')}
                 </span>
               )}
               <ChevronRight size={16} className="text-gray-300 dark:text-gray-600 group-hover:text-accent-primary-light transition-colors shrink-0" />
@@ -122,7 +122,7 @@ export default function UpcomingEventsWidget() {
         className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
       >
         <CalendarDays size={16} />
-        Pełny kalendarz
+        {tr('Pełny kalendarz')}
       </button>
     </div>
   );

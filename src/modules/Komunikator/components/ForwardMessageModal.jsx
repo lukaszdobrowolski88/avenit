@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { X, Search, Forward, Users, Music, MessageSquare } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
+import { tr } from '../../../i18n';
 
 export default function ForwardMessageModal({
   isOpen,
@@ -95,7 +96,7 @@ export default function ForwardMessageModal({
               <Forward size={18} className="text-white" />
             </div>
             <h2 className="text-lg font-bold bg-gradient-to-r from-accent-primary to-accent-secondary-light bg-clip-text text-transparent">
-              Przekaż wiadomość
+              {tr('Przekaż wiadomość')}
             </h2>
           </div>
           <button
@@ -200,7 +201,7 @@ export default function ForwardMessageModal({
             {sending ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Wysyłanie...
+                {tr('Wysyłanie...')}
               </>
             ) : (
               <>

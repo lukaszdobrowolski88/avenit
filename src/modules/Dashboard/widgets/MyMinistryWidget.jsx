@@ -151,7 +151,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
                 <div>
                   <h3 className="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
                     <div className="w-1 h-5 bg-accent-primary-light rounded-full" />
-                    Plan nabożeństwa
+                    {tr('Plan nabożeństwa')}
                   </h3>
                   <div className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden">
                     {program.schedule.map((item, idx) => (
@@ -179,7 +179,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
                   <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4">
                     <h4 className="font-bold text-purple-700 dark:text-purple-400 mb-3 flex items-center gap-2">
                       <Music size={18} />
-                      Zespół Uwielbienia
+                      {tr('Zespół Uwielbienia')}
                     </h4>
                     <div className="space-y-2">
                       {Object.entries(program.zespol).map(([key, value]) => {
@@ -263,7 +263,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4">
                     <h4 className="font-bold text-yellow-700 dark:text-yellow-400 mb-3 flex items-center gap-2">
                       <BookOpen size={18} />
-                      Szkółka Niedzielna
+                      {tr('Szkółka Niedzielna')}
                     </h4>
                     <div className="space-y-2">
                       {Object.entries(program.szkolka).map(([key, value]) => {
@@ -523,7 +523,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
             <Inbox size={32} className="text-gray-400" />
           </div>
           <p className="text-gray-500 dark:text-gray-400 font-medium">
-            Brak oczekujących sugestii
+            {tr('Brak oczekujących sugestii')}
           </p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
             Gdy ktoś Cię przypisze do służby, zobaczysz to tutaj

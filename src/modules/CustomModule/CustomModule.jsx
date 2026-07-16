@@ -96,7 +96,7 @@ export default function CustomModule() {
         <LucideIcons.AlertCircle size={48} className="mx-auto text-gray-400 mb-4" />
         <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300">{tr('Moduł nie znaleziony')}</h2>
         <p className="text-gray-500 dark:text-gray-400 mt-2">
-          Moduł nie istnieje lub został usunięty.
+          {tr('Moduł nie istnieje lub został usunięty.')}
         </p>
       </div>
     );
@@ -136,7 +136,7 @@ export default function CustomModule() {
           <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
             <LucideIcons.Layers size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <p className="text-gray-500 dark:text-gray-400 mb-2">
-              Ten moduł nie ma jeszcze zakładek.
+              {tr('Ten moduł nie ma jeszcze zakładek.')}
             </p>
             <p className="text-sm text-gray-400 dark:text-gray-500">
               Dodaj zakładki w Ustawienia → Zarządzanie → kliknij "Zakładki" przy module.
@@ -211,7 +211,7 @@ function TabContent({ tab, moduleKey, moduleName }) {
           <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
             <LucideIcons.Construction size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <p className="text-gray-500 dark:text-gray-400">
-              Ta zakładka jest w budowie. Możesz dodać tutaj własną zawartość.
+              {tr('Ta zakładka jest w budowie. Możesz dodać tutaj własną zawartość.')}
             </p>
           </div>
         </div>

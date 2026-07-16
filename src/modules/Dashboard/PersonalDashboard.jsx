@@ -21,6 +21,7 @@ import UnreadMessagesWidget from './widgets/UnreadMessagesWidget';
 import UpcomingEventsWidget from './widgets/UpcomingEventsWidget';
 import QuickAccessWidget from './widgets/QuickAccessWidget';
 import BirthdaysWidget from './widgets/BirthdaysWidget';
+import { tr } from '../../i18n';
 
 const WIDGET_ICONS = {
   ministry: Calendar,
@@ -237,7 +238,7 @@ export default function PersonalDashboard({ user }) {
             <Settings size={40} className="text-gray-400" />
           </div>
           <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
-            Brak widocznych widgetów
+            {tr('Brak widocznych widgetów')}
           </h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">
             Wszystkie widgety są ukryte. Kliknij "Dostosuj", aby je włączyć.

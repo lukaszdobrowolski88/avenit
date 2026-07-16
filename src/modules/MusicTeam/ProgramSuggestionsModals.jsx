@@ -543,7 +543,7 @@ function ProgramSongsEditor({ program, songs, onBack, onClose }) {
           <div className="text-center py-10 px-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
             <Music size={32} className="mx-auto mb-2 text-gray-300 dark:text-gray-600" />
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Brak pieśni przypisanych do tego programu.
+              {tr('Brak pieśni przypisanych do tego programu.')}
             </p>
           </div>
         ) : (

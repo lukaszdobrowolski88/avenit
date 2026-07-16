@@ -42,7 +42,7 @@ export default function AddonsSettings({ settings, onChange }) {
       <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
         <div>
           <p className="font-medium text-gray-900 dark:text-white">
-            Włącz dodatki
+            {tr('Włącz dodatki')}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Opcjonalne płatne elementy (np. posiłki, koszulki)

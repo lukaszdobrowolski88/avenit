@@ -491,7 +491,7 @@ const SongSelector = ({ songs, onSelect, suggestions = [] }) => {
                   <>
                     {suggestedSongs.length > 0 && (
                       <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800">
-                        Wszystkie pieśni
+                        {tr('Wszystkie pieśni')}
                       </div>
                     )}
                     {otherSongs.map(s => (
@@ -730,7 +730,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
                   }}
                   className="w-full mt-2 py-1.5 text-[10px] text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
                 >
-                  Usuń tonację
+                  {tr('Usuń tonację')}
                 </button>
               )}
             </div>
@@ -941,7 +941,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
               <div className="mt-4">
                 <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                   <Paperclip size={12} />
-                  Załączniki PDF do programu
+                  {tr('Załączniki PDF do programu')}
                 </label>
                 <div className="space-y-2">
                   {(item.customAttachments || []).map((att, i) => (
@@ -1123,7 +1123,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
             <div>
               <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                 <Mic2 size={12} />
-                Dodatkowe szczegóły
+                {tr('Dodatkowe szczegóły')}
               </label>
               <textarea
                 value={item.details || ''}
@@ -1142,7 +1142,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
             <div>
               <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                 <Image size={12} />
-                Typ mediów
+                {tr('Typ mediów')}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {[
@@ -1188,7 +1188,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
             <div className="bg-gradient-to-r from-blue-50 to-blue-100/30 dark:from-blue-900/20 dark:to-blue-900/10 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
               <h4 className="text-[11px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <Mic2 size={12} />
-                Zespół techniczny
+                {tr('Zespół techniczny')}
               </h4>
               <div className="space-y-3">
                 <div>
@@ -1224,7 +1224,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
               <div className="bg-gradient-to-r from-accent-primary-lightest to-accent-primary-lighter/30 dark:from-accent-primary-darkest/20 dark:to-accent-primary-darkest/10 rounded-xl p-4 border border-accent-primary-lighter/50 dark:border-accent-primary-dark/30">
                 <h4 className="text-[11px] font-bold text-accent-primary-dark dark:text-accent-primary-light uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <Music size={12} />
-                  Zespół muzyczny
+                  {tr('Zespół muzyczny')}
                 </h4>
                 <div className="space-y-3">
                   <div>
@@ -1813,7 +1813,7 @@ const TemplateModal = ({ isOpen, onClose, templates, onLoad, onDelete }) => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
             <FileText size={20} className="text-accent-primary-light" />
-            Szablony programów
+            {tr('Szablony programów')}
           </h3>
           <button
             onClick={onClose}
@@ -2054,7 +2054,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
             onClick={() => setPrintOptions(DEFAULT_PDF_OPTIONS)}
             className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
           >
-            Przywróć domyślne
+            {tr('Przywróć domyślne')}
           </button>
           <div className="flex items-center gap-2">
             <button

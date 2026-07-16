@@ -216,7 +216,7 @@ export default function CampaignStats({ campaigns }) {
         <div className="px-5 py-4 bg-gradient-to-r from-gray-50/80 to-gray-100/50 dark:from-gray-900/50 dark:to-gray-800/30 border-b border-gray-200/50 dark:border-gray-700/50">
           <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Mail size={16} className="text-accent-primary-light" />
-            Szczegóły maili
+            {tr('Szczegóły maili')}
           </h3>
         </div>
 

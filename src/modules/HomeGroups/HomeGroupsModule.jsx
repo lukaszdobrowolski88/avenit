@@ -17,6 +17,7 @@ import { useUserRole } from '../../hooks/useUserRole';
 import { hasTabAccess } from '../../utils/tabPermissions';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -738,7 +739,7 @@ export default function HomeGroupsModule() {
                 className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
-                Dodaj Grupę
+                {tr('Dodaj Grupę')}
               </button>
             </div>
           </div>
@@ -937,7 +938,7 @@ export default function HomeGroupsModule() {
                                 onClick={() => openTaskModal(task)}
                                 className="text-accent-primary dark:text-accent-primary-light text-xs font-medium"
                               >
-                                Szczegóły
+                                {tr('Szczegóły')}
                               </button>
                             </div>
                           </div>
@@ -992,7 +993,7 @@ export default function HomeGroupsModule() {
                           onClick={() => openTaskModal(task)}
                           className="text-accent-primary dark:text-accent-primary-light font-medium"
                         >
-                          Szczegóły
+                          {tr('Szczegóły')}
                         </button>
                       </td>
                     </tr>
@@ -1061,7 +1062,7 @@ export default function HomeGroupsModule() {
                         onClick={() => handleDelete(leader.id, 'leader')}
                         className="text-red-500 dark:text-red-400 font-medium hover:underline"
                       >
-                        Usuń
+                        {tr('Usuń')}
                       </button>
                     </td>
                   </tr>
@@ -1069,7 +1070,7 @@ export default function HomeGroupsModule() {
                 {filteredLeaders.length === 0 && (
                   <tr>
                     <td colSpan="4" className="p-6 text-center text-gray-400 dark:text-gray-500">
-                      Brak liderów
+                      {tr('Brak liderów')}
                     </td>
                   </tr>
                 )}
@@ -1103,7 +1104,7 @@ export default function HomeGroupsModule() {
                 className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
-                Dodaj Członka
+                {tr('Dodaj Członka')}
               </button>
             </div>
           </div>
@@ -1142,7 +1143,7 @@ export default function HomeGroupsModule() {
                         onClick={() => handleDelete(member.id, 'member')}
                         className="text-red-500 dark:text-red-400 font-medium hover:underline"
                       >
-                        Usuń
+                        {tr('Usuń')}
                       </button>
                     </td>
                   </tr>
@@ -1150,7 +1151,7 @@ export default function HomeGroupsModule() {
                 {filteredMembers.length === 0 && (
                   <tr>
                     <td colSpan="5" className="p-6 text-center text-gray-400 dark:text-gray-500">
-                      Brak członków
+                      {tr('Brak członków')}
                     </td>
                   </tr>
                 )}
@@ -1415,7 +1416,7 @@ export default function HomeGroupsModule() {
                             onClick={() => detachMemberFromGroup(m.id)}
                             className="text-red-500 dark:text-red-400 hover:underline text-xs uppercase font-bold"
                           >
-                            Odłącz
+                            {tr('Odłącz')}
                           </button>
                         </td>
                       </tr>
@@ -1423,7 +1424,7 @@ export default function HomeGroupsModule() {
                     {groupMembers.length === 0 && (
                       <tr>
                         <td colSpan="4" className="p-6 text-center text-gray-400 dark:text-gray-500">
-                          Brak członków w tej grupie
+                          {tr('Brak członków w tej grupie')}
                         </td>
                       </tr>
                     )}
@@ -1518,7 +1519,7 @@ export default function HomeGroupsModule() {
                 ))}
                 {(!currentGroup.materials || currentGroup.materials.length === 0) && (
                   <div className="text-center text-gray-400 dark:text-gray-500 py-8">
-                    Brak materiałów
+                    {tr('Brak materiałów')}
                   </div>
                 )}
               </div>
@@ -1602,7 +1603,7 @@ export default function HomeGroupsModule() {
                       onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }}
                       className="px-4 py-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                     >
-                      Usuń zadanie
+                      {tr('Usuń zadanie')}
                     </button>
                   )}
                   <button
@@ -1633,7 +1634,7 @@ export default function HomeGroupsModule() {
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm">{t('Ładowanie...')}</div>
                 ) : comments.length === 0 ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">
-                    Brak komentarzy. Bądź pierwszy!
+                    {tr('Brak komentarzy. Bądź pierwszy!')}
                   </div>
                 ) : comments.map(comment => (
                   <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">

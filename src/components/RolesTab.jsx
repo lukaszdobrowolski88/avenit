@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
 import { Plus, Trash2, X, Check, Edit2, Users, ChevronDown } from 'lucide-react';
 import { useT } from '../i18n';
+import { tr } from '../i18n';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -287,7 +288,7 @@ export default function RolesTab({ teamType, teamMembers, memberTable, onUpdate 
         <div>
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('Służby')}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Zarządzaj służbami i przypisuj do nich członków zespołu
+            {tr('Zarządzaj służbami i przypisuj do nich członków zespołu')}
           </p>
         </div>
         <button
@@ -394,7 +395,7 @@ export default function RolesTab({ teamType, teamMembers, memberTable, onUpdate 
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  Nazwa służby
+                  {tr('Nazwa służby')}
                 </label>
                 <input
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
@@ -414,7 +415,7 @@ export default function RolesTab({ teamType, teamMembers, memberTable, onUpdate 
                   onChange={e => setRoleForm({ ...roleForm, field_key: e.target.value })}
                 />
                 <p className="text-xs text-gray-400 mt-1 ml-1">
-                  Klucz używany w grafiku. Zostanie wygenerowany automatycznie jeśli nie podano.
+                  {tr('Klucz używany w grafiku. Zostanie wygenerowany automatycznie jeśli nie podano.')}
                 </p>
               </div>
               <div>

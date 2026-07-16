@@ -95,10 +95,10 @@ export default function GuestCheckinForm({
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Check-in Gościa
+          {tr('Check-in Gościa')}
         </h1>
         <p className="text-base text-gray-600 dark:text-gray-400">
-          Wprowadź dane dziecka
+          {tr('Wprowadź dane dziecka')}
         </p>
       </div>
 
@@ -107,7 +107,7 @@ export default function GuestCheckinForm({
         {/* Child name */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-            Imię i nazwisko dziecka *
+            {tr('Imię i nazwisko dziecka *')}
           </label>
           <input
             type="text"
@@ -192,7 +192,7 @@ export default function GuestCheckinForm({
         {/* Parent name */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-            Imię rodzica *
+            {tr('Imię rodzica *')}
           </label>
           <input
             type="text"
@@ -258,7 +258,7 @@ export default function GuestCheckinForm({
             className="flex-1 flex items-center justify-center gap-2 px-4 py-4 text-base font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
           >
             <ArrowLeft size={18} />
-            Wróć
+            {tr('Wróć')}
           </button>
           <button
             onClick={handleSubmit}
@@ -277,7 +277,7 @@ export default function GuestCheckinForm({
             ) : (
               <>
                 <UserPlus size={20} />
-                Zamelduj gościa
+                {tr('Zamelduj gościa')}
               </>
             )}
           </button>

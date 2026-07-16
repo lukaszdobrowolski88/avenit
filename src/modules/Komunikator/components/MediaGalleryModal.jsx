@@ -43,7 +43,7 @@ export default function MediaGalleryModal({
                 <Image size={18} className="text-white" />
               </div>
               <h2 className="text-lg font-bold bg-gradient-to-r from-accent-primary to-accent-secondary-light bg-clip-text text-transparent">
-                Galeria mediów
+                {tr('Galeria mediów')}
               </h2>
             </div>
             <button

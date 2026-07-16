@@ -515,7 +515,7 @@ export default function PaymentsView({ forms }) {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
           <CheckCircle size={12} />
-          Opłacone
+          {tr('Opłacone')}
         </span>
       );
     }
@@ -687,7 +687,7 @@ export default function PaymentsView({ forms }) {
               className="flex items-center gap-2 px-4 py-2.5 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600 transition-colors flex-shrink-0"
             >
               <Plus size={16} />
-              Dodaj wpłatę
+              {tr('Dodaj wpłatę')}
             </button>
           </div>
         </div>
@@ -728,7 +728,7 @@ export default function PaymentsView({ forms }) {
 
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Metoda płatności
+                {tr('Metoda płatności')}
               </label>
               <select
                 value={methodFilter}
@@ -803,7 +803,7 @@ export default function PaymentsView({ forms }) {
                   }}
                   className="px-3 py-2 text-sm text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition-colors"
                 >
-                  Wyczyść filtry
+                  {tr('Wyczyść filtry')}
                 </button>
               </div>
             )}
@@ -940,7 +940,7 @@ export default function PaymentsView({ forms }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Szczegóły płatności
+                {tr('Szczegóły płatności')}
               </h3>
               <button
                 onClick={() => setSelectedPayment(null)}
@@ -981,7 +981,7 @@ export default function PaymentsView({ forms }) {
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
                     >
                       <Check size={18} />
-                      Oznacz jako opłacone
+                      {tr('Oznacz jako opłacone')}
                     </button>
                   ) : (
                     <button
@@ -989,7 +989,7 @@ export default function PaymentsView({ forms }) {
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
                     >
                       <Clock size={18} />
-                      Cofnij płatność
+                      {tr('Cofnij płatność')}
                     </button>
                   )}
                 </div>
@@ -1006,7 +1006,7 @@ export default function PaymentsView({ forms }) {
 
                 <div>
                   <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    Metoda płatności
+                    {tr('Metoda płatności')}
                   </label>
                   <select
                     value={selectedPayment.method}
@@ -1065,7 +1065,7 @@ export default function PaymentsView({ forms }) {
                   {selectedPayment.paidAt && (
                     <div>
                       <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                        Data płatności
+                        {tr('Data płatności')}
                       </label>
                       <p className="text-green-600 dark:text-green-400">
                         {formatDate(selectedPayment.paidAt)}
@@ -1086,7 +1086,7 @@ export default function PaymentsView({ forms }) {
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Banknote size={20} className="text-green-500" />
-                Dodaj płatność
+                {tr('Dodaj płatność')}
               </h2>
               <button onClick={() => setShowAddModal(false)}
                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"><X size={20} /></button>
@@ -1172,7 +1172,7 @@ export default function PaymentsView({ forms }) {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                        Data płatności
+                        {tr('Data płatności')}
                       </label>
                       <input type="date" value={addPaymentDate}
                         onChange={(e) => setAddPaymentDate(e.target.value)}

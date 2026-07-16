@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowLeft, Users } from 'lucide-react';
+import { tr } from '../../../../i18n';
 
 export default function HouseholdSelection({ households, onSelect, onBack }) {
   return (
@@ -7,7 +8,7 @@ export default function HouseholdSelection({ households, onSelect, onBack }) {
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3">
-          Wybierz rodzinę
+          {tr('Wybierz rodzinę')}
         </h1>
         <p className="text-base text-gray-600 dark:text-gray-400">
           Znaleziono {households.length} rodzin z tym numerem telefonu
@@ -65,7 +66,7 @@ export default function HouseholdSelection({ households, onSelect, onBack }) {
         className="mt-8 flex items-center gap-2 px-6 py-3 text-base font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
       >
         <ArrowLeft size={18} />
-        Wróć do wyszukiwania
+        {tr('Wróć do wyszukiwania')}
       </button>
     </div>
   );

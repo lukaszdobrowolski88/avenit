@@ -192,7 +192,7 @@ function Empty({ onNew }) {
       </div>
       <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Brak kampanii push</h3>
       <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-        Dotrzyj do swojej społeczności powiadomieniami push na webie i mobile.
+        {tr('Dotrzyj do swojej społeczności powiadomieniami push na webie i mobile.')}
       </p>
       <button
         onClick={onNew}

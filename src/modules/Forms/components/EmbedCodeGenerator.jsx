@@ -99,7 +99,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Osadź formularz na stronie
+              {tr('Osadź formularz na stronie')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {formTitle || 'Formularz'}
@@ -158,7 +158,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        Szerokość
+                        {tr('Szerokość')}
                       </label>
                       <input
                         type="text"
@@ -241,7 +241,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
               <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Bezpośredni link
+                    {tr('Bezpośredni link')}
                   </span>
                   <div className="flex gap-2">
                     <button
@@ -277,7 +277,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Podgląd
+                  {tr('Podgląd')}
                 </label>
                 <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
                   {[
@@ -340,7 +340,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <div className="flex items-center justify-between">
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Formularz będzie działał na każdej stronie obsługującej iframe
+              {tr('Formularz będzie działał na każdej stronie obsługującej iframe')}
             </p>
             <button
               onClick={onClose}

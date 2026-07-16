@@ -7,6 +7,7 @@ import {
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { useTwoFactor } from '../../hooks/useTwoFactor';
 import TwoFactorSetup from '../../components/TwoFactorSetup';
+import { tr } from '../../i18n';
 
 export default function UserSettings() {
   const t = useT();
@@ -608,12 +609,12 @@ export default function UserSettings() {
                     ) : pushSubscribed ? (
                       <>
                         <BellOff size={16} />
-                        Wyłącz
+                        {tr('Wyłącz')}
                       </>
                     ) : (
                       <>
                         <Bell size={16} />
-                        Włącz
+                        {tr('Włącz')}
                       </>
                     )}
                   </button>
@@ -632,7 +633,7 @@ export default function UserSettings() {
                     className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                   >
                     <Bell size={14} />
-                    Wyślij testowe powiadomienie
+                    {tr('Wyślij testowe powiadomienie')}
                   </button>
                 )}
               </div>
@@ -679,7 +680,7 @@ export default function UserSettings() {
                       onClick={handleShowBackupCodes}
                       className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
                     >
-                      Pokaż kody
+                      {tr('Pokaż kody')}
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -807,7 +808,7 @@ export default function UserSettings() {
                     className="px-4 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition flex items-center gap-2"
                   >
                     <Shield size={16} />
-                    Włącz 2FA
+                    {tr('Włącz 2FA')}
                   </button>
                 </div>
 
@@ -1030,7 +1031,7 @@ export default function UserSettings() {
             {/* Instrukcja */}
             <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
               <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
-                Jak dodać kalendarz?
+                {tr('Jak dodać kalendarz?')}
               </p>
               <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1 list-disc list-inside">
                 <li><strong>Google Calendar:</strong> Ustawienia → Dodaj kalendarz → Z adresu URL</li>
@@ -1069,14 +1070,14 @@ export default function UserSettings() {
                   }`}
                 >
                   <Eye size={14} />
-                  Podgląd
+                  {tr('Podgląd')}
                 </button>
               </div>
             </div>
 
             <div className="space-y-4">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Możesz wkleić gotowy podpis HTML z zewnętrznego narzędzia lub edytora. Podpis będzie automatycznie dodawany na końcu wysyłanych wiadomości.
+                {tr('Możesz wkleić gotowy podpis HTML z zewnętrznego narzędzia lub edytora. Podpis będzie automatycznie dodawany na końcu wysyłanych wiadomości.')}
               </p>
 
               {signatureMode === 'html' ? (

@@ -243,7 +243,7 @@ export default function MailSettingsModal({
               {externalAccounts.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Połączone konta
+                    {tr('Połączone konta')}
                   </h3>
                   {externalAccounts.map(account => (
                     <div
@@ -364,7 +364,7 @@ export default function MailSettingsModal({
                     />
                     {editingAccountId && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Adres email nie może być zmieniony
+                        {tr('Adres email nie może być zmieniony')}
                       </p>
                     )}
                   </div>
@@ -478,7 +478,7 @@ export default function MailSettingsModal({
                   className="flex items-center gap-2 px-4 py-3 w-full border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary-light rounded-xl transition-colors"
                 >
                   <Plus size={18} />
-                  Dodaj konto zewnętrzne
+                  {tr('Dodaj konto zewnętrzne')}
                 </button>
               )}
             </div>
@@ -498,11 +498,11 @@ export default function MailSettingsModal({
                 <div className="text-center py-8">
                   <Filter size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
                   <p className="text-gray-500 dark:text-gray-400 mb-4">
-                    Brak skonfigurowanych filtrów
+                    {tr('Brak skonfigurowanych filtrów')}
                   </p>
                   <button className="flex items-center gap-2 mx-auto px-4 py-2 bg-accent-primary-light hover:bg-accent-primary text-white font-medium rounded-lg transition-colors">
                     <Plus size={16} />
-                    Utwórz filtr
+                    {tr('Utwórz filtr')}
                   </button>
                 </div>
               ) : (
@@ -512,7 +512,7 @@ export default function MailSettingsModal({
               )}
 
               <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-                Zaawansowane filtry będą dostępne wkrótce
+                {tr('Zaawansowane filtry będą dostępne wkrótce')}
               </p>
             </div>
           )}

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Save, AlertCircle } from 'lucide-react';
 import IconPicker from './IconPicker';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 export default function ModuleEditor({ module, onClose, onSave, existingKeys = [] }) {
   const t = useT();
@@ -113,7 +114,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
           {/* Nazwa modułu */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              Nazwa modułu
+              {tr('Nazwa modułu')}
             </label>
             <input
               type="text"
@@ -160,7 +161,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
           {/* Ścieżka URL */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              Ścieżka URL
+              {tr('Ścieżka URL')}
             </label>
             <input
               type="text"

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTwoFactor } from '../hooks/useTwoFactor';
 import { Shield, ArrowLeft } from 'lucide-react';
+import { tr } from '../i18n';
 
 export default function Login() {
   const t = useT();
@@ -148,7 +149,7 @@ export default function Login() {
             Weryfikacja dwuetapowa
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
-            Wprowadź kod z aplikacji Authenticator
+            {tr('Wprowadź kod z aplikacji Authenticator')}
           </p>
 
           <div className="mb-6">
@@ -195,7 +196,7 @@ export default function Login() {
             className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition flex items-center justify-center gap-2"
           >
             <ArrowLeft size={16} />
-            Powrót do logowania
+            {tr('Powrót do logowania')}
           </button>
         </form>
       </div>
@@ -290,7 +291,7 @@ export default function Login() {
               onClick={() => { setShowForgotPassword(true); setError(''); setResetEmailSent(false); }}
               className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light transition"
             >
-              Nie pamiętam hasła
+              {tr('Nie pamiętam hasła')}
             </button>
           </>
         ) : (
@@ -310,7 +311,7 @@ export default function Login() {
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Wysyłanie...
+                    {tr('Wysyłanie...')}
                   </span>
                 ) : 'Wyślij link do resetu hasła'}
               </button>
@@ -321,7 +322,7 @@ export default function Login() {
               onClick={() => { setShowForgotPassword(false); setError(''); setResetEmailSent(false); }}
               className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light transition"
             >
-              ← Powrót do logowania
+              {tr('← Powrót do logowania')}
             </button>
           </>
         )}

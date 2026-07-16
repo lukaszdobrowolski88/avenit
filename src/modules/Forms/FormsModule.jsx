@@ -200,7 +200,7 @@ export default function FormsModule({ userEmail }) {
             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <ChevronLeft size={20} />
-            Powrót do listy
+            {tr('Powrót do listy')}
           </button>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-2">
             Odpowiedzi: {viewingResponses.title}

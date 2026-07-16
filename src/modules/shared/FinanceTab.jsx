@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpense, onRefresh }) {
   const t = useT();
@@ -164,7 +165,7 @@ export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpen
                               </div>
                             ) : (
                               <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
-                                Brak wydatków w tej pozycji budżetu
+                                {tr('Brak wydatków w tej pozycji budżetu')}
                               </p>
                             )}
                           </td>

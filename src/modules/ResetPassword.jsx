@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useT } from '../i18n';
+import { tr } from '../i18n';
 
 export default function ResetPassword() {
   const t = useT();
@@ -90,7 +91,7 @@ export default function ResetPassword() {
         </div>
 
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">
-          Ustaw hasło
+          {tr('Ustaw hasło')}
         </h1>
         <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
           Twoje konto zostało utworzone. Ustaw hasło, aby się zalogować.

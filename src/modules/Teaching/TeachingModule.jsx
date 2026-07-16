@@ -398,7 +398,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
         ))}
         {speakers.length === 0 && (
           <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-            Brak mówców. Dodaj pierwszego mówcę.
+            {tr('Brak mówców. Dodaj pierwszego mówcę.')}
           </div>
         )}
       </div>
@@ -451,7 +451,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Imię i nazwisko *
+                  {tr('Imię i nazwisko *')}
                 </label>
                 <input
                   type="text"
@@ -845,7 +845,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
         })}
         {series.length === 0 && (
           <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-            Brak serii. Dodaj pierwszą serię nauczania.
+            {tr('Brak serii. Dodaj pierwszą serię nauczania.')}
           </div>
         )}
       </div>

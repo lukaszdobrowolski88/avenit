@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { Plus, Trash2, X, Check, Edit2, Users, ChevronDown } from 'lucide-react';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -309,10 +310,10 @@ export default function DutyTab({ moduleKey, moduleName }) {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-            Służby
+            {tr('Służby')}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Zarządzaj służbami i przypisuj do nich członków zespołu
+            {tr('Zarządzaj służbami i przypisuj do nich członków zespołu')}
           </p>
         </div>
         <button
@@ -427,7 +428,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  Nazwa służby
+                  {tr('Nazwa służby')}
                 </label>
                 <input
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
@@ -447,7 +448,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
                   onChange={e => setRoleForm({ ...roleForm, field_key: e.target.value })}
                 />
                 <p className="text-xs text-gray-400 mt-1 ml-1">
-                  Klucz używany w grafiku. Zostanie wygenerowany automatycznie jeśli nie podano.
+                  {tr('Klucz używany w grafiku. Zostanie wygenerowany automatycznie jeśli nie podano.')}
                 </p>
               </div>
               <div>

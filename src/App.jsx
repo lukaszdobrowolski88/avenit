@@ -92,7 +92,7 @@ function OfflineBanner() {
 
   return (
     <div className="bg-amber-500 text-white text-center py-2 px-4 text-sm font-medium">
-      Brak połączenia z internetem. Niektóre funkcje mogą być niedostępne.
+      {tr('Brak połączenia z internetem. Niektóre funkcje mogą być niedostępne.')}
     </div>
   );
 }

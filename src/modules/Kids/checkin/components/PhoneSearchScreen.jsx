@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import VirtualKeypad from './VirtualKeypad';
 import { UserPlus, RotateCcw, Loader2 } from 'lucide-react';
+import { tr } from '../../../../i18n';
 
 export default function PhoneSearchScreen({
   onHouseholdFound,
@@ -93,14 +94,14 @@ export default function PhoneSearchScreen({
               className="flex items-center gap-2 px-5 py-2.5 text-base font-medium bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition"
             >
               <RotateCcw size={18} />
-              Spróbuj ponownie
+              {tr('Spróbuj ponownie')}
             </button>
             <button
               onClick={handleGuestClick}
               className="flex items-center gap-2 px-5 py-2.5 text-base font-semibold bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
             >
               <UserPlus size={18} />
-              Dodaj jako gościa
+              {tr('Dodaj jako gościa')}
             </button>
           </div>
         </div>
@@ -113,7 +114,7 @@ export default function PhoneSearchScreen({
           className="flex items-center gap-3 px-6 py-4 text-base font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary transition"
         >
           <UserPlus size={20} className="text-accent-primary dark:text-accent-primary-light" />
-          Gość / Nowe dziecko
+          {tr('Gość / Nowe dziecko')}
         </button>
       </div>
     </div>

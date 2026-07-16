@@ -227,7 +227,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
-                  Nazwa wewnętrzna do identyfikacji szablonu
+                  {tr('Nazwa wewnętrzna do identyfikacji szablonu')}
                 </p>
               </div>
 
@@ -237,7 +237,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                   <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Edit3 size={12} className="text-white" />
                   </div>
-                  Domyślny temat wiadomości
+                  {tr('Domyślny temat wiadomości')}
                 </label>
                 <input
                   type="text"
@@ -249,7 +249,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
-                  Ten temat będzie używany jako domyślny przy tworzeniu maila z tego szablonu
+                  {tr('Ten temat będzie używany jako domyślny przy tworzeniu maila z tego szablonu')}
                 </p>
               </div>
 
@@ -293,7 +293,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                     <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                       <MousePointer size={12} className="text-white" />
                     </div>
-                    Wybierz sposób tworzenia treści
+                    {tr('Wybierz sposób tworzenia treści')}
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {Object.values(EDITOR_MODES).map(mode => {

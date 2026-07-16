@@ -1133,13 +1133,13 @@ export default function GlobalSettings() {
                 onClick={() => setSelectedUserId(null)}
                 className={`px-4 py-2 rounded-lg text-sm font-bold transition ${!selectedUserId ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
               >
-                Uprawnienia Ról
+                {tr('Uprawnienia Ról')}
               </button>
               <button
                 onClick={() => setSelectedUserId(users[0]?.id || null)}
                 className={`px-4 py-2 rounded-lg text-sm font-bold transition ${selectedUserId ? 'bg-white dark:bg-gray-700 text-accent-primary dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}
               >
-                Uprawnienia Użytkowników
+                {tr('Uprawnienia Użytkowników')}
               </button>
             </div>
 
@@ -1163,7 +1163,7 @@ export default function GlobalSettings() {
                     onClick={() => resetUserPermissionsToRole(selectedUserId)}
                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition text-sm font-bold"
                   >
-                    Przywróć z roli
+                    {tr('Przywróć z roli')}
                   </button>
                 </div>
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl mb-4">
@@ -1373,7 +1373,7 @@ export default function GlobalSettings() {
                   }}
                   className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
                 >
-                  Przywróć domyślne zakładki
+                  {tr('Przywróć domyślne zakładki')}
                 </button>
               )}
               <button
@@ -1455,7 +1455,7 @@ export default function GlobalSettings() {
               {!userForm.id && (
                 <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
                   <p className="text-sm text-blue-800 dark:text-blue-300">
-                    Użytkownik otrzyma email z linkiem do ustawienia własnego hasła.
+                    {tr('Użytkownik otrzyma email z linkiem do ustawienia własnego hasła.')}
                   </p>
                 </div>
               )}
@@ -1506,7 +1506,7 @@ export default function GlobalSettings() {
                       })}
                     </div>
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                      Użytkownik zostanie automatycznie dodany jako członek wybranych służb.
+                      {tr('Użytkownik zostanie automatycznie dodany jako członek wybranych służb.')}
                     </p>
                   </div>
                 </div>
@@ -1530,7 +1530,7 @@ export default function GlobalSettings() {
                       <div>
                         <span className="font-medium text-gray-800 dark:text-white">Wymagaj weryfikacji dwuetapowej (2FA)</span>
                         <p className="text-xs text-gray-400 dark:text-gray-500">
-                          Użytkownik będzie musiał skonfigurować 2FA przy pierwszym logowaniu
+                          {tr('Użytkownik będzie musiał skonfigurować 2FA przy pierwszym logowaniu')}
                         </p>
                       </div>
                     </label>

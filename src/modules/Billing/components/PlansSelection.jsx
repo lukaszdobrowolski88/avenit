@@ -119,10 +119,10 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
       {/* Header */}
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Wybierz plan dla swojego kościoła
+          {tr('Wybierz plan dla swojego kościoła')}
         </h2>
         <p className="text-gray-600 dark:text-gray-400">
-          Wszystkie plany zawierają 14-dniowy okres próbny
+          {tr('Wszystkie plany zawierają 14-dniowy okres próbny')}
         </p>
       </div>
 
@@ -137,7 +137,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            Miesięcznie
+            {tr('Miesięcznie')}
           </button>
           <button
             onClick={() => setBillingCycle('yearly')}

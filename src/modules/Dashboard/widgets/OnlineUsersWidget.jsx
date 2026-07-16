@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Users, Circle } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { tr } from '../../../i18n';
 
 // Helper do generowania koloru z emaila
 function stringToColor(str) {
@@ -236,7 +237,7 @@ export default function OnlineUsersWidget({ userEmail }) {
             <Users size={24} className="text-gray-400" />
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Brak aktywnych użytkowników
+            {tr('Brak aktywnych użytkowników')}
           </p>
         </div>
       ) : (

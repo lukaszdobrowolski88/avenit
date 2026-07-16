@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { tr } from '../../../../i18n';
 
 export default function LocationManager({ onLocationsChange }) {
   const [locations, setLocations] = useState([]);
@@ -218,7 +219,7 @@ export default function LocationManager({ onLocationsChange }) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Pojemność
+                {tr('Pojemność')}
               </label>
               <input
                 type="number"
@@ -231,7 +232,7 @@ export default function LocationManager({ onLocationsChange }) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Kolejność
+                {tr('Kolejność')}
               </label>
               <input
                 type="number"
@@ -268,11 +269,11 @@ export default function LocationManager({ onLocationsChange }) {
       {loading ? (
         <div className="flex items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400">
           <Loader2 size={20} className="animate-spin" />
-          Ładowanie...
+          {tr('Ładowanie...')}
         </div>
       ) : locations.length === 0 ? (
         <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-          Brak sal. Dodaj pierwszą salę dla dzieci.
+          {tr('Brak sal. Dodaj pierwszą salę dla dzieci.')}
         </div>
       ) : (
         <div className="flex flex-col gap-3">

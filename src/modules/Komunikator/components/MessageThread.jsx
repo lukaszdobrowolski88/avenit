@@ -275,10 +275,10 @@ export default function MessageThread({
           <MessageSquare size={40} className="text-accent-primary-light" />
         </div>
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-          Wybierz rozmowę
+          {tr('Wybierz rozmowę')}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-          Wybierz rozmowę z listy po lewej stronie lub rozpocznij nową konwersację
+          {tr('Wybierz rozmowę z listy po lewej stronie lub rozpocznij nową konwersację')}
         </p>
       </div>
     );
@@ -348,10 +348,10 @@ export default function MessageThread({
               <MessageSquare size={32} className="text-accent-primary-light" />
             </div>
             <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              Brak wiadomości
+              {tr('Brak wiadomości')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs">
-              Rozpocznij konwersację wysyłając pierwszą wiadomość
+              {tr('Rozpocznij konwersację wysyłając pierwszą wiadomość')}
             </p>
           </div>
         ) : (
@@ -367,7 +367,7 @@ export default function MessageThread({
                   {loading ? (
                     <span className="flex items-center gap-2">
                       <Loader size={14} className="animate-spin" />
-                      Ładowanie...
+                      {tr('Ładowanie...')}
                     </span>
                   ) : (
                     'Załaduj starsze wiadomości'

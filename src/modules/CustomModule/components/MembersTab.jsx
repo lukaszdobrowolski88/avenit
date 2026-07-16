@@ -257,7 +257,7 @@ GRANT ALL ON ${tableName} TO anon;`;
             <pre className="text-green-400 text-xs whitespace-pre">{sqlScript}</pre>
           </div>
           <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-4">
-            Skopiuj powyższy kod i wykonaj go w Supabase SQL Editor.
+            {tr('Skopiuj powyższy kod i wykonaj go w Supabase SQL Editor.')}
           </p>
           <button
             onClick={() => {
@@ -272,7 +272,7 @@ GRANT ALL ON ${tableName} TO anon;`;
             onClick={fetchMembers}
             className="mt-4 ml-2 px-4 py-2 bg-accent-primary text-white rounded-xl hover:bg-accent-primary transition"
           >
-            Odśwież
+            {tr('Odśwież')}
           </button>
         </div>
       </div>
@@ -302,7 +302,7 @@ GRANT ALL ON ${tableName} TO anon;`;
             className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium flex items-center gap-2 hover:shadow-lg hover:shadow-accent-primary-light/30 transition"
           >
             <Plus size={18} />
-            Dodaj członka
+            {tr('Dodaj członka')}
           </button>
         </div>
       </div>
@@ -405,7 +405,7 @@ GRANT ALL ON ${tableName} TO anon;`;
               {/* Imię i nazwisko */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  Imię i nazwisko
+                  {tr('Imię i nazwisko')}
                 </label>
                 <input
                   type="text"
@@ -419,7 +419,7 @@ GRANT ALL ON ${tableName} TO anon;`;
               {/* Służby / Instrumenty jako tagi */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  Służby / Instrumenty
+                  {tr('Służby / Instrumenty')}
                 </label>
                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
                   <div className="flex flex-wrap gap-2">

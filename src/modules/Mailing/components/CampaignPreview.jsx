@@ -67,10 +67,10 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-white">
-                  Podgląd wiadomości
+                  {tr('Podgląd wiadomości')}
                 </h2>
                 <p className="text-sm text-white/80">
-                  Sprawdź jak wygląda email
+                  {tr('Sprawdź jak wygląda email')}
                 </p>
               </div>
             </div>

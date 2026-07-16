@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   Loader2
 } from 'lucide-react';
+import { tr } from '../../i18n';
 
 const VIEWS = {
   OVERVIEW: 'overview',
@@ -92,16 +93,16 @@ export default function BillingModule() {
           className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6"
         >
           <ArrowLeft size={18} />
-          Wróć do planów
+          {tr('Wróć do planów')}
         </button>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-              Podsumowanie zamówienia
+              {tr('Podsumowanie zamówienia')}
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              Sprawdź szczegóły przed płatnością
+              {tr('Sprawdź szczegóły przed płatnością')}
             </p>
           </div>
 
@@ -144,7 +145,7 @@ export default function BillingModule() {
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
               <div className="flex justify-between items-center">
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  Do zapłaty
+                  {tr('Do zapłaty')}
                 </span>
                 <span className="text-2xl font-bold text-gray-900 dark:text-white">
                   {formatPrice(finalPrice)}
@@ -176,13 +177,13 @@ export default function BillingModule() {
               ) : (
                 <>
                   <CreditCard size={20} />
-                  Przejdź do płatności
+                  {tr('Przejdź do płatności')}
                 </>
               )}
             </button>
 
             <p className="text-xs text-center text-gray-500">
-              Płatność obsługiwana przez Przelewy24. Bezpieczne połączenie SSL.
+              {tr('Płatność obsługiwana przez Przelewy24. Bezpieczne połączenie SSL.')}
             </p>
           </div>
         </div>
@@ -206,10 +207,10 @@ export default function BillingModule() {
         <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <CreditCard size={24} className="text-accent-primary" />
-            Subskrypcja i płatności
+            {tr('Subskrypcja i płatności')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Zarządzaj swoim planem i przeglądaj historię płatności
+            {tr('Zarządzaj swoim planem i przeglądaj historię płatności')}
           </p>
         </div>
       )}

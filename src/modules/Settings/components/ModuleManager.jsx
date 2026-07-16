@@ -21,6 +21,7 @@ import { useModules } from '../../../hooks/useModules';
 import ModuleEditor from './ModuleEditor';
 import TabManager from './TabManager';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Sortable Module Item
 function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, tabCount }) {
@@ -84,7 +85,7 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
         className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 hover:text-accent-primary dark:hover:text-accent-primary-light rounded-lg transition flex items-center gap-1.5"
       >
         <Layers size={14} />
-        Zakładki
+        {tr('Zakładki')}
         {tabCount > 0 && (
           <span className="bg-accent-primary-light text-white text-[10px] px-1.5 py-0.5 rounded-full">
             {tabCount}
@@ -251,7 +252,7 @@ export default function ModuleManager() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-gray-800 dark:text-white">
-            Zarządzanie modułami
+            {tr('Zarządzanie modułami')}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Dodawaj, edytuj i zmieniaj kolejność modułów aplikacji
@@ -262,7 +263,7 @@ export default function ModuleManager() {
           className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition font-medium flex items-center gap-2"
         >
           <Plus size={18} />
-          Dodaj moduł
+          {tr('Dodaj moduł')}
         </button>
       </div>
 
@@ -339,7 +340,7 @@ export default function ModuleManager() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[130]">
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">
-              Usunąć moduł?
+              {tr('Usunąć moduł?')}
             </h4>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               Czy na pewno chcesz usunąć moduł "{deleteConfirm.label}"?
@@ -357,7 +358,7 @@ export default function ModuleManager() {
                 onClick={confirmDelete}
                 className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition"
               >
-                Usuń
+                {tr('Usuń')}
               </button>
             </div>
           </div>

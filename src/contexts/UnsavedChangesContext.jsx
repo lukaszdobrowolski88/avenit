@@ -34,7 +34,7 @@ const UnsavedChangesWarningModal = ({ isOpen, onClose, onSave, onDiscard }) => {
           <div>
             <h3 className="text-lg font-bold text-gray-800 dark:text-white">{tr('Niezapisane zmiany')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Masz niezapisane zmiany. Co chcesz zrobić?
+              {tr('Masz niezapisane zmiany. Co chcesz zrobić?')}
             </p>
           </div>
         </div>
@@ -43,7 +43,7 @@ const UnsavedChangesWarningModal = ({ isOpen, onClose, onSave, onDiscard }) => {
             onClick={onDiscard}
             className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition"
           >
-            Opuść bez zapisu
+            {tr('Opuść bez zapisu')}
           </button>
           <button
             onClick={onSave}

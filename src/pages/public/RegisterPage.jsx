@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 export default function RegisterPage() {
   const t = useT();
@@ -202,16 +203,16 @@ export default function RegisterPage() {
             {step === 1 ? (
               <>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Utwórz konto
+                  {tr('Utwórz konto')}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Zacznij od 14-dniowego darmowego okresu próbnego
+                  {tr('Zacznij od 14-dniowego darmowego okresu próbnego')}
                 </p>
 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Imię i nazwisko *
+                      {tr('Imię i nazwisko *')}
                     </label>
                     <div className="relative">
                       <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -245,7 +246,7 @@ export default function RegisterPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Hasło *
+                      {tr('Hasło *')}
                     </label>
                     <div className="relative">
                       <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -263,7 +264,7 @@ export default function RegisterPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Powtórz hasło *
+                      {tr('Powtórz hasło *')}
                     </label>
                     <div className="relative">
                       <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -282,16 +283,16 @@ export default function RegisterPage() {
             ) : (
               <>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Informacje o kościele
+                  {tr('Informacje o kościele')}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Podaj podstawowe dane swojego kościoła
+                  {tr('Podaj podstawowe dane swojego kościoła')}
                 </p>
 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Nazwa kościoła *
+                      {tr('Nazwa kościoła *')}
                     </label>
                     <div className="relative">
                       <Building size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -308,7 +309,7 @@ export default function RegisterPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      URL kościoła *
+                      {tr('URL kościoła *')}
                     </label>
                     <div className="flex items-center">
                       <span className="px-3 py-3 bg-gray-100 dark:bg-gray-700 border border-r-0 border-gray-200 dark:border-gray-700 rounded-l-xl text-gray-500 text-sm">
@@ -408,7 +409,7 @@ export default function RegisterPage() {
                   </>
                 ) : (
                   <>
-                    Utwórz konto
+                    {tr('Utwórz konto')}
                     <ArrowRight size={18} />
                   </>
                 )}
@@ -428,7 +429,7 @@ export default function RegisterPage() {
           <p className="mt-8 text-center text-gray-600 dark:text-gray-400">
             Masz już konto?{' '}
             <Link to="/login" className="text-accent-primary hover:underline font-medium">
-              Zaloguj się
+              {tr('Zaloguj się')}
             </Link>
           </p>
         </div>
@@ -438,7 +439,7 @@ export default function RegisterPage() {
       <div className="hidden lg:flex flex-1 bg-gradient-to-br from-accent-primary to-accent-secondary items-center justify-center p-12">
         <div className="max-w-md text-white">
           <h2 className="text-3xl font-bold mb-4">
-            Dołącz do społeczności Avenit
+            {tr('Dołącz do społeczności Avenit')}
           </h2>
           <p className="text-white/80 mb-8">
             Ponad 500 kościołów już korzysta z naszej platformy do zarządzania

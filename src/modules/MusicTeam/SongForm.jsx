@@ -1451,7 +1451,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                           title={tr('Pokaż skróty klawiszowe')}
                         >
                           <Keyboard size={12} />
-                          Skróty
+                          {tr('Skróty')}
                         </button>
                       </div>
                       <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">
@@ -1653,7 +1653,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
             onClick={handleSubmit}
             className="px-8 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-accent-primary to-accent-secondary hover:shadow-lg hover:shadow-accent-primary-light/30 transition transform hover:-translate-y-0.5"
           >
-            Zapisz Pieśń
+            {tr('Zapisz Pieśń')}
           </button>
         </div>
 

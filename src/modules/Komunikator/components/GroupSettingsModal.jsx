@@ -307,7 +307,7 @@ export default function GroupSettingsModal({
             `}
           >
             <Users size={18} />
-            Członkowie
+            {tr('Członkowie')}
           </button>
           {isAdmin && (
             <button

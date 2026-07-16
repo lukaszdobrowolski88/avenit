@@ -299,7 +299,7 @@ export default function CheckinTab() {
           onClick={() => window.location.reload()}
           className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium hover:shadow-lg transition"
         >
-          Odśwież stronę
+          {tr('Odśwież stronę')}
         </button>
       </div>
     );

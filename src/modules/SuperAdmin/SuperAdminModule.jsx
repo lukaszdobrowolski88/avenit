@@ -68,10 +68,10 @@ export default function SuperAdminModule() {
           <Shield size={32} className="text-red-500" />
         </div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Brak dostępu
+          {tr('Brak dostępu')}
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Ta sekcja jest dostępna tylko dla administratorów systemu.
+          {tr('Ta sekcja jest dostępna tylko dla administratorów systemu.')}
         </p>
       </div>
     );
@@ -94,7 +94,7 @@ export default function SuperAdminModule() {
               Kupony rabatowe
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Zarządzaj kuponami i promocjami.
+              {tr('Zarządzaj kuponami i promocjami.')}
             </p>
             {/* TODO: CouponsManager component */}
           </div>
@@ -127,7 +127,7 @@ export default function SuperAdminModule() {
               Panel Super Administratora
             </h1>
             <p className="text-sm text-white/80">
-              Avenit - Zarządzanie systemem
+              {tr('Avenit - Zarządzanie systemem')}
             </p>
           </div>
         </div>

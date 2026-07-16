@@ -60,7 +60,7 @@ export default function TemplateGallery({ onUseTemplate }) {
                 onClick={() => onUseTemplate(t)}
                 className="w-full mt-3 py-2 text-sm font-medium text-accent-primary bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 hover:bg-accent-primary-lighter rounded-lg"
               >
-                Użyj szablonu
+                {tr('Użyj szablonu')}
               </button>
             </div>
           );

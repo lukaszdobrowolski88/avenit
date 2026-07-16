@@ -205,7 +205,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
         <div>
           <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Package className="text-accent-primary-light" size={24} />
-            Wyposażenie
+            {tr('Wyposażenie')}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Łącznie: {equipment.length} przedmiotów | Wartość: {totalValue.toLocaleString('pl-PL')} zł
@@ -307,7 +307,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                     className="flex-1 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition flex items-center justify-center gap-1"
                   >
                     <Trash2 size={14} />
-                    Usuń
+                    {tr('Usuń')}
                   </button>
                 </div>
               )}
@@ -364,7 +364,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                         onClick={() => setForm(prev => ({ ...prev, photo_url: '' }))}
                         className="mt-2 text-xs text-red-500 hover:text-red-600 w-full text-center"
                       >
-                        Usuń zdjęcie
+                        {tr('Usuń zdjęcie')}
                       </button>
                     )}
                   </div>

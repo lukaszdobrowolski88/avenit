@@ -533,14 +533,14 @@ export default function ParticipantsView({ forms }) {
         return (
           <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
             <CheckCircle size={12} />
-            Opłacone
+            {tr('Opłacone')}
           </span>
         );
       case 'partial':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium">
             <AlertCircle size={12} />
-            Częściowo
+            {tr('Częściowo')}
             {paidAmount > 0 && dueAmount > 0 && (
               <span className="text-[10px] font-normal ml-0.5">
                 ({formatPrice(paidAmount, 'PLN')}/{formatPrice(dueAmount, 'PLN')})
@@ -698,7 +698,7 @@ export default function ParticipantsView({ forms }) {
 
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Status płatności
+                {tr('Status płatności')}
               </label>
               <select
                 value={paymentFilter}
@@ -714,7 +714,7 @@ export default function ParticipantsView({ forms }) {
 
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Sortuj według
+                {tr('Sortuj według')}
               </label>
               <div className="flex gap-2">
                 <select
@@ -891,7 +891,7 @@ export default function ParticipantsView({ forms }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Szczegóły uczestnika
+                {tr('Szczegóły uczestnika')}
               </h3>
               <button
                 onClick={() => setSelectedParticipant(null)}
@@ -952,7 +952,7 @@ export default function ParticipantsView({ forms }) {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                       <CreditCard size={16} />
-                      Płatność
+                      {tr('Płatność')}
                     </div>
                     {getPaymentStatusBadge(selectedParticipant.paymentStatus, selectedParticipant.paidAmount, selectedParticipant.totalAmount)}
                   </div>
@@ -980,7 +980,7 @@ export default function ParticipantsView({ forms }) {
                           className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
                         >
                           <Check size={16} />
-                          Oznacz jako opłacone
+                          {tr('Oznacz jako opłacone')}
                         </button>
                       )}
                       {selectedParticipant.paymentStatus === 'paid' && (
@@ -989,7 +989,7 @@ export default function ParticipantsView({ forms }) {
                           className="flex items-center gap-2 px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
                         >
                           <Clock size={16} />
-                          Cofnij płatność
+                          {tr('Cofnij płatność')}
                         </button>
                       )}
                     </div>
@@ -1054,7 +1054,7 @@ export default function ParticipantsView({ forms }) {
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Banknote size={20} className="text-green-500" />
-                Dodaj płatność
+                {tr('Dodaj płatność')}
               </h2>
               <button
                 onClick={() => setPaymentModal(null)}
@@ -1086,7 +1086,7 @@ export default function ParticipantsView({ forms }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Data płatności
+                  {tr('Data płatności')}
                 </label>
                 <input
                   type="date"
@@ -1109,7 +1109,7 @@ export default function ParticipantsView({ forms }) {
                 className="flex-1 py-2.5 text-sm font-medium text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
               >
                 <Check size={16} />
-                Potwierdź płatność
+                {tr('Potwierdź płatność')}
               </button>
             </div>
           </div>

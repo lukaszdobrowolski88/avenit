@@ -452,7 +452,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Mail size={12} className="text-white" />
                   </div>
-                  Temat wiadomości
+                  {tr('Temat wiadomości')}
                   <span className="text-accent-primary-light">*</span>
                 </label>
                 <input
@@ -474,7 +474,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Edit3 size={12} className="text-white" />
                   </div>
-                  Wybierz sposób tworzenia treści
+                  {tr('Wybierz sposób tworzenia treści')}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {Object.values(EDITOR_MODES).map((mode) => {
@@ -588,7 +588,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                     Podsumowanie maila
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Sprawdź szczegóły przed wysyłką
+                    {tr('Sprawdź szczegóły przed wysyłką')}
                   </p>
                 </div>
               </div>
@@ -610,7 +610,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Eye size={12} className="text-white" />
                   </div>
-                  Podgląd wiadomości
+                  {tr('Podgląd wiadomości')}
                 </h4>
                 <div className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden max-h-[300px] overflow-y-auto shadow-inner">
                   <div
@@ -636,7 +636,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   className="group flex items-center justify-center gap-2 px-6 py-3.5 border-2 border-accent-primary-light text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-xl transition-all disabled:opacity-50"
                 >
                   <Calendar size={18} />
-                  Zaplanuj wysyłkę
+                  {tr('Zaplanuj wysyłkę')}
                 </button>
                 <button
                   onClick={handleSend}
@@ -696,10 +696,10 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-white">
-                      Wyślij email testowy
+                      {tr('Wyślij email testowy')}
                     </h3>
                     <p className="text-sm text-white/80">
-                      Sprawdź przed wysyłką
+                      {tr('Sprawdź przed wysyłką')}
                     </p>
                   </div>
                 </div>
@@ -762,10 +762,10 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-white">
-                      Zaplanuj wysyłkę
+                      {tr('Zaplanuj wysyłkę')}
                     </h3>
                     <p className="text-sm text-white/80">
-                      Automatyczna wysyłka
+                      {tr('Automatyczna wysyłka')}
                     </p>
                   </div>
                 </div>
@@ -784,7 +784,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               </p>
 
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Data i godzina wysyłki
+                {tr('Data i godzina wysyłki')}
               </label>
               <input
                 type="datetime-local"

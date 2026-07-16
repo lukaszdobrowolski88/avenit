@@ -119,7 +119,7 @@ export default function AdminInvoicesList() {
           <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>
         ) : filteredInvoices.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            Brak faktur spełniających kryteria
+            {tr('Brak faktur spełniających kryteria')}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -190,7 +190,7 @@ export default function AdminInvoicesList() {
                                 className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 first:rounded-t-xl"
                               >
                                 <CheckCircle size={16} className="text-green-500" />
-                                Oznacz jako opłaconą
+                                {tr('Oznacz jako opłaconą')}
                               </button>
                             ) : null}
 
@@ -207,7 +207,7 @@ export default function AdminInvoicesList() {
                                 onClick={() => handleCancel(invoice.id)}
                                 className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 last:rounded-b-xl"
                               >
-                                Anuluj fakturę
+                                {tr('Anuluj fakturę')}
                               </button>
                             )}
                           </div>

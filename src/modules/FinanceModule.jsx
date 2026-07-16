@@ -767,13 +767,13 @@ const FinanceModule = () => {
               className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
             >
               <Plus size={18} />
-              Dodaj pozycję budżetową
+              {tr('Dodaj pozycję budżetową')}
             </button>
           </div>
 
           {loading ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              Ładowanie...
+              {tr('Ładowanie...')}
             </div>
           ) : budgetItems.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
@@ -958,7 +958,7 @@ const FinanceModule = () => {
                                   </div>
                                 ) : (
                                   <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
-                                    Brak wydatków w tej pozycji budżetu
+                                    {tr('Brak wydatków w tej pozycji budżetu')}
                                   </p>
                                 )}
                               </td>
@@ -1002,7 +1002,7 @@ const FinanceModule = () => {
                     rows.push(
                       <tr key="grand-total" className="bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/60 dark:to-accent-secondary-darkest/60 border-t-4 border-accent-primary-light dark:border-accent-primary-light font-bold text-lg">
                         <td className="py-4 px-4 text-gray-900 dark:text-white" colSpan={2}>
-                          SUMA CAŁKOWITA
+                          {tr('SUMA CAŁKOWITA')}
                         </td>
                         <td className="py-4 px-4 text-right text-gray-900 dark:text-white">
                           {grandTotalPlanned.toLocaleString('pl-PL')} zł
@@ -1040,7 +1040,7 @@ const FinanceModule = () => {
               className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
             >
               <Plus size={18} />
-              Dodaj wpływ
+              {tr('Dodaj wpływ')}
             </button>
           </div>
 
@@ -1096,14 +1096,14 @@ const FinanceModule = () => {
                 onClick={() => setIncomeFilters({ type: '', source: '', tag: '', dateFrom: '', dateTo: '' })}
                 className="mt-3 text-sm text-accent-primary dark:text-accent-primary-light hover:underline"
               >
-                Wyczyść filtry
+                {tr('Wyczyść filtry')}
               </button>
             )}
           </div>
 
           {loading ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              Ładowanie...
+              {tr('Ładowanie...')}
             </div>
           ) : filteredIncomeTransactions.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
@@ -1270,14 +1270,14 @@ const FinanceModule = () => {
                 onClick={() => setExpenseFilters({ category: '', contractor: '', responsible: '', tag: '', dateFrom: '', dateTo: '' })}
                 className="mt-3 text-sm text-accent-primary dark:text-accent-primary-light hover:underline"
               >
-                Wyczyść filtry
+                {tr('Wyczyść filtry')}
               </button>
             )}
           </div>
 
           {loading ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              Ładowanie...
+              {tr('Ładowanie...')}
             </div>
           ) : filteredExpenseTransactions.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
@@ -1496,7 +1496,7 @@ const FinanceModule = () => {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <BarChart3 size={20} className="text-accent-primary" />
-              Wpływy vs Wydatki - miesięcznie
+              {tr('Wpływy vs Wydatki - miesięcznie')}
             </h3>
             <div className="space-y-3">
               {(() => {
@@ -1660,7 +1660,7 @@ const FinanceModule = () => {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <DollarSign size={20} className="text-accent-primary" />
-              Realizacja budżetu wg służb
+              {tr('Realizacja budżetu wg służb')}
             </h3>
             {budgetItems.length > 0 ? (
               <div className="overflow-x-auto">
@@ -1729,7 +1729,7 @@ const FinanceModule = () => {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Users size={20} className="text-accent-primary" />
-              Wpływy wg typu
+              {tr('Wpływy wg typu')}
             </h3>
             {(() => {
               const typeTotals = incomeTransactions.reduce((acc, t) => {
@@ -2151,7 +2151,7 @@ const FinanceModule = () => {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                       <Banknote size={12} className="inline mr-1" />
-                      Gotówka
+                      {tr('Gotówka')}
                     </label>
                     <input
                       type="number"
@@ -2202,7 +2202,7 @@ const FinanceModule = () => {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                       <Banknote size={12} className="inline mr-1" />
-                      Gotówka walutowa
+                      {tr('Gotówka walutowa')}
                     </label>
                     <input
                       type="number"
