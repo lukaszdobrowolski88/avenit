@@ -286,7 +286,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             {section === 'compose' && (
               <>
-                <Field label="Nazwa kampanii (wewnętrznie)">
+                <Field label={tr('Nazwa kampanii (wewnętrznie)')}>
                   <input
                     value={form.name}
                     onChange={e => updateForm({ name: e.target.value })}
@@ -295,7 +295,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                   />
                 </Field>
 
-                <Field label="Tytuł" hint={`${form.title.length}/${TITLE_MAX}`}>
+                <Field label={tr('Tytuł')} hint={`${form.title.length}/${TITLE_MAX}`}>
                   <input
                     maxLength={TITLE_MAX}
                     value={form.title}
@@ -305,7 +305,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                   />
                 </Field>
 
-                <Field label="Treść" hint={`${form.body.length}/${BODY_MAX}`}>
+                <Field label={tr('Treść')} hint={`${form.body.length}/${BODY_MAX}`}>
                   <textarea
                     maxLength={BODY_MAX}
                     rows={3}
@@ -316,7 +316,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                   />
                 </Field>
 
-                <Field label="Domyślny deep link (przy tapnięciu w body)">
+                <Field label={tr('Domyślny deep link (przy tapnięciu w body)')}>
                   <input
                     value={form.link}
                     onChange={e => updateForm({ link: e.target.value })}

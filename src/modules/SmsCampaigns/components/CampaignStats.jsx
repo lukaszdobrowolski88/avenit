@@ -86,10 +86,10 @@ export default function CampaignStats({ campaign, onClose }) {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         <Stat icon={Users} label="Odbiorcy" value={total} color="gray" />
-        <Stat icon={Send} label="Wysłane" value={sent} percent={pct(sent, total)} color="blue" />
+        <Stat icon={Send} label={tr('Wysłane')} value={sent} percent={pct(sent, total)} color="blue" />
         <Stat icon={CheckCircle} label="Dostarczone" value={delivered} percent={pct(delivered, total)} color="emerald" />
         <Stat icon={CornerDownLeft} label="Odpowiedzi" value={replied} percent={pct(replied, total)} color="violet" />
-        <Stat icon={XCircle} label="Błędy" value={failed} percent={pct(failed, total)} color="red" />
+        <Stat icon={XCircle} label={tr('Błędy')} value={failed} percent={pct(failed, total)} color="red" />
         <Stat icon={DollarSign} label="Koszt" value={formatPLN(costPLN)} subtitle={`~${formatPLN(avgCost)}/SMS`} color="amber" />
       </div>
 

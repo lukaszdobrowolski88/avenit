@@ -139,7 +139,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         <div className="flex items-center gap-2 text-sm">
           <Calendar size={16} className="text-gray-400" />
           <span className={displayValue ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-            {displayValue || 'Wybierz datę'}
+            {displayValue || tr('Wybierz datę')}
           </span>
         </div>
       </div>
@@ -1529,7 +1529,7 @@ export default function MediaTeamModule() {
               {/* Wiersz 3: Pozycja budżetowa (pełna szerokość) */}
               <div>
                 <CustomSelect
-                  label="Pozycja budżetowa (opis kosztu)"
+                  label={tr('Pozycja budżetowa (opis kosztu)')}
                   value={expenseForm.description}
                   onChange={(value) => setExpenseForm({...expenseForm, description: value})}
                   options={[

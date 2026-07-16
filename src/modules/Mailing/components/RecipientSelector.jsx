@@ -127,9 +127,9 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
           checked={isSegmentSelected('all')}
           onChange={() => toggleSegment('all', null, 'Wszyscy członkowie')}
           icon={Users}
-          label="Wszyscy członkowie"
+          label={tr('Wszyscy członkowie')}
           count={totalActive}
-          description="Wyślij do wszystkich aktywnych członków"
+          description={tr('Wyślij do wszystkich aktywnych członków')}
         />
       </div>
 

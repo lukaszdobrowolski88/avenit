@@ -106,7 +106,7 @@ export default function PersonalDashboard({ user }) {
     }
   };
 
-  const displayName = userProfile?.full_name || userEmail?.split('@')[0] || 'Użytkowniku';
+  const displayName = userProfile?.full_name || userEmail?.split('@')[0] || tr('Użytkowniku');
   const firstName = displayName.split(' ')[0];
 
   const getGreeting = () => {

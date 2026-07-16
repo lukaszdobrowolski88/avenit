@@ -1309,21 +1309,21 @@ function EmailSettingsEditor({ settings, onChange }) {
       </div>
 
       <PropertyField
-        label="Kolor tła (zewnętrzny)"
+        label={tr('Kolor tła (zewnętrzny)')}
         type="color"
         value={settings.backgroundColor}
         onChange={(v) => onChange('backgroundColor', v)}
       />
 
       <PropertyField
-        label="Kolor tła treści"
+        label={tr('Kolor tła treści')}
         type="color"
         value={settings.contentBackgroundColor}
         onChange={(v) => onChange('contentBackgroundColor', v)}
       />
 
       <PropertyField
-        label="Maksymalna szerokość (px)"
+        label={tr('Maksymalna szerokość (px)')}
         type="range"
         min={400}
         max={800}
@@ -1364,7 +1364,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
       {/* Wspólne właściwości - Marginesy i Padding */}
       {block.padding !== undefined && (
         <SpacingEditor
-          label="Marginesy wewnętrzne (padding)"
+          label={tr('Marginesy wewnętrzne (padding)')}
           icon={Square}
           value={block.padding}
           onChange={(v) => handleChange('padding', v)}
@@ -1375,7 +1375,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
 
       {block.backgroundColor !== undefined && block.type !== 'button' && block.type !== 'divider' && block.type !== 'spacer' && (
         <SpacingEditor
-          label="Marginesy zewnętrzne (margin)"
+          label={tr('Marginesy zewnętrzne (margin)')}
           icon={Move}
           value={block.margin || 0}
           onChange={(v) => handleChange('margin', v)}
@@ -1398,7 +1398,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
       {/* Zaokrąglenia - tylko dla bloków z tłem */}
       {block.backgroundColor !== undefined && block.type !== 'button' && block.type !== 'divider' && block.type !== 'spacer' && (
         <PropertyField
-          label="Zaokrąglenie rogów"
+          label={tr('Zaokrąglenie rogów')}
           type="range"
           min={0}
           max={32}
@@ -1427,7 +1427,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
       )}
 
       {block.alignment !== undefined && (
-        <PropertyField label="Wyrównanie" type="alignment" value={block.alignment} onChange={(v) => handleChange('alignment', v)} onBlur={handleBlur} />
+        <PropertyField label={tr('Wyrównanie')} type="alignment" value={block.alignment} onChange={(v) => handleChange('alignment', v)} onBlur={handleBlur} />
       )}
 
       {/* Właściwości specyficzne dla typu bloku */}
@@ -1452,8 +1452,8 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
             />
           </div>
           <PropertyField label="Rozmiar czcionki bazowy" type="range" min={12} max={32} value={block.fontSize} onChange={(v) => handleChange('fontSize', v)} onBlur={handleBlur} />
-          <PropertyField label="Wysokość linii" type="range" min={1} max={2.5} step={0.1} value={block.lineHeight} onChange={(v) => handleChange('lineHeight', v)} onBlur={handleBlur} />
-          <PropertyField label="Domyślny kolor tekstu" type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Wysokość linii')} type="range" min={1} max={2.5} step={0.1} value={block.lineHeight} onChange={(v) => handleChange('lineHeight', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Domyślny kolor tekstu')} type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
         </>
       )}
 
@@ -1477,7 +1477,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               minHeight={80}
             />
           </div>
-          <PropertyField label="Poziom nagłówka" type="select" value={block.level} options={[{value: 1, label: tr('H1 - Największy')}, {value: 2, label: tr('H2 - Średni')}, {value: 3, label: 'H3 - Mniejszy'}]} onChange={(v) => handleChange('level', parseInt(v))} onBlur={handleBlur} />
+          <PropertyField label={tr('Poziom nagłówka')} type="select" value={block.level} options={[{value: 1, label: tr('H1 - Największy')}, {value: 2, label: tr('H2 - Średni')}, {value: 3, label: 'H3 - Mniejszy'}]} onChange={(v) => handleChange('level', parseInt(v))} onBlur={handleBlur} />
           <PropertyField label="Kolor tekstu" type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
         </>
       )}
@@ -1486,8 +1486,8 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
         <>
           <PropertyField label="URL obrazu" type="image" value={block.src} onChange={(v) => handleChange('src', v)} onBlur={handleBlur} />
           <PropertyField label="Tekst alternatywny" type="text" value={block.alt} onChange={(v) => handleChange('alt', v)} onBlur={handleBlur} />
-          <PropertyField label="Szerokość" type="text" value={block.width} onChange={(v) => handleChange('width', v)} onBlur={handleBlur} placeholder="100% lub 300px" />
-          <PropertyField label="Zaokrąglenie" type="range" min={0} max={30} value={block.borderRadius} onChange={(v) => handleChange('borderRadius', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Szerokość')} type="text" value={block.width} onChange={(v) => handleChange('width', v)} onBlur={handleBlur} placeholder="100% lub 300px" />
+          <PropertyField label={tr('Zaokrąglenie')} type="range" min={0} max={30} value={block.borderRadius} onChange={(v) => handleChange('borderRadius', v)} onBlur={handleBlur} />
           <PropertyField label="Link (opcjonalnie)" type="text" value={block.linkUrl} onChange={(v) => handleChange('linkUrl', v)} onBlur={handleBlur} placeholder="https://..." />
         </>
       )}
@@ -1499,8 +1499,8 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
           <PropertyField label="Kolor przycisku" type="color" value={block.backgroundColor} onChange={(v) => handleChange('backgroundColor', v)} onBlur={handleBlur} />
           <PropertyField label="Kolor tekstu" type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
           <PropertyField label="Rozmiar czcionki" type="range" min={12} max={24} value={block.fontSize} onChange={(v) => handleChange('fontSize', v)} onBlur={handleBlur} />
-          <PropertyField label="Zaokrąglenie" type="range" min={0} max={30} value={block.borderRadius} onChange={(v) => handleChange('borderRadius', v)} onBlur={handleBlur} />
-          <PropertyField label="Pełna szerokość" type="checkbox" value={block.fullWidth} onChange={(v) => handleChange('fullWidth', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Zaokrąglenie')} type="range" min={0} max={30} value={block.borderRadius} onChange={(v) => handleChange('borderRadius', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Pełna szerokość')} type="checkbox" value={block.fullWidth} onChange={(v) => handleChange('fullWidth', v)} onBlur={handleBlur} />
         </>
       )}
 
@@ -1567,13 +1567,13 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
         <>
           <PropertyField label="Styl" type="select" value={block.style} options={[{value: 'solid', label: tr('Ciągły')}, {value: 'dashed', label: 'Przerywany'}, {value: 'dotted', label: 'Kropkowany'}]} onChange={(v) => handleChange('style', v)} onBlur={handleBlur} />
           <PropertyField label="Kolor" type="color" value={block.color} onChange={(v) => handleChange('color', v)} onBlur={handleBlur} />
-          <PropertyField label="Grubość" type="range" min={1} max={5} value={block.thickness} onChange={(v) => handleChange('thickness', v)} onBlur={handleBlur} />
-          <PropertyField label="Szerokość" type="text" value={block.width} onChange={(v) => handleChange('width', v)} onBlur={handleBlur} placeholder="100% lub 200px" />
+          <PropertyField label={tr('Grubość')} type="range" min={1} max={5} value={block.thickness} onChange={(v) => handleChange('thickness', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Szerokość')} type="text" value={block.width} onChange={(v) => handleChange('width', v)} onBlur={handleBlur} placeholder="100% lub 200px" />
         </>
       )}
 
       {block.type === 'spacer' && (
-        <PropertyField label="Wysokość" type="range" min={10} max={100} value={block.height} onChange={(v) => handleChange('height', v)} onBlur={handleBlur} />
+        <PropertyField label={tr('Wysokość')} type="range" min={10} max={100} value={block.height} onChange={(v) => handleChange('height', v)} onBlur={handleBlur} />
       )}
 
       {block.type === 'columns' && (
@@ -1614,13 +1614,13 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               minHeight={150}
             />
           </div>
-          <PropertyField label="Odstęp między kolumnami" type="range" min={0} max={40} value={block.gap} onChange={(v) => handleChange('gap', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Odstęp między kolumnami')} type="range" min={0} max={40} value={block.gap} onChange={(v) => handleChange('gap', v)} onBlur={handleBlur} />
         </>
       )}
 
       {block.type === 'header' && (
         <>
-          <PropertyField label="Tytuł" type="text" value={block.title} onChange={(v) => handleChange('title', v)} onBlur={handleBlur} />
+          <PropertyField label={tr('Tytuł')} type="text" value={block.title} onChange={(v) => handleChange('title', v)} onBlur={handleBlur} />
           <PropertyField label="URL logo" type="image" value={block.logoUrl} onChange={(v) => handleChange('logoUrl', v)} onBlur={handleBlur} />
         </>
       )}
@@ -2655,7 +2655,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
               value={localValue || ''}
               onChange={(e) => { setLocalValue(e.target.value); onChange(e.target.value); }}
               onBlur={onBlur}
-              placeholder="https://... lub prześlij"
+              placeholder={tr('https://... lub prześlij')}
               className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50"
             />
             <button

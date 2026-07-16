@@ -136,7 +136,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         <div className="flex items-center gap-2 text-sm">
           <Calendar size={16} className="text-gray-400" />
           <span className={displayValue ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-            {displayValue || 'Wybierz datę'}
+            {displayValue || tr('Wybierz datę')}
           </span>
         </div>
       </div>
@@ -1660,7 +1660,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
               Akordy w taktach
               ${isTransposed ? `<span style="background: #333; color: white; padding: 2px 5px; border-radius: 3px; font-size: 7px; margin-left: 6px; text-transform: none;">transp. ${originalKey} → ${targetKey}</span>` : ''}
             </div>
-            <div style="font-family: Arial, sans-serif; font-size: 11px; line-height: 1.6; color: #000; white-space: pre-wrap;">${transposedChords || 'Brak akordów'}</div>
+            <div style="font-family: Arial, sans-serif; font-size: 11px; line-height: 1.6; color: #000; white-space: pre-wrap;">${transposedChords || tr('Brak akordów')}</div>
           </div>
         </div>
 
@@ -1744,7 +1744,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
     ? (isTransposed
         ? transposeLineToKey(song.chords_bars, originalKey, targetKey)
         : song.chords_bars)
-    : (song.chords || "Brak układu...");
+    : (song.chords || tr('Brak układu...'));
 
   // Zastosuj formatowanie rozmiaru czcionek dla akordów (14px bazowy)
   const displayChords = formatChordsWithFontSizes(transposedChords, 14);
@@ -1885,7 +1885,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                             `}</style>
                             <div
                                 className="chords-display-view whitespace-pre-wrap font-mono text-accent-primary-dark dark:text-accent-primary-light text-sm leading-relaxed"
-                                dangerouslySetInnerHTML={{ __html: displayChords || 'Brak układu...' }}
+                                dangerouslySetInnerHTML={{ __html: displayChords || tr('Brak układu...') }}
                             />
                         </div>
                     </div>
@@ -2877,7 +2877,7 @@ export default function WorshipModule() {
               fetchData();
             } catch (err) {
               console.error('Exception:', err);
-              alert(tr('Błąd: ') + (err.message || 'Nie udało się zapisać pieśni'));
+              alert(tr('Błąd: ') + (err.message || tr('Nie udało się zapisać pieśni')));
             }
           }}
           onCancel={() => setShowSongModal(false)}
@@ -3078,7 +3078,7 @@ export default function WorshipModule() {
               {/* Wiersz 3: Pozycja budżetowa (pełna szerokość) */}
               <div>
                 <CustomSelect
-                  label="Pozycja budżetowa (opis kosztu)"
+                  label={tr('Pozycja budżetowa (opis kosztu)')}
                   value={expenseForm.description}
                   onChange={(value) => setExpenseForm({...expenseForm, description: value})}
                   options={[

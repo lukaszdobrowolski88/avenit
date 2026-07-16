@@ -290,7 +290,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             {section === 'compose' && (
               <>
-                <Field label="Nazwa kampanii (wewnętrznie)">
+                <Field label={tr('Nazwa kampanii (wewnętrznie)')}>
                   <input
                     value={form.name}
                     onChange={e => updateForm({ name: e.target.value })}
@@ -316,7 +316,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                 </Field>
 
                 <Field
-                  label="Treść SMS"
+                  label={tr('Treść SMS')}
                   hint={
                     <span className="flex items-center gap-2">
                       <span className={analysis.encoding === 'unicode' ? 'text-amber-600' : 'text-emerald-600'}>

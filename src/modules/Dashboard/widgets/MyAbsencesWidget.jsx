@@ -191,7 +191,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
   };
 
   const formatEventLabel = (program) => {
-    const title = program.title || 'Nabożeństwo niedzielne';
+    const title = program.title || tr('Nabożeństwo niedzielne');
     const date = formatDate(program.date);
     return `${title}, ${date}`;
   };
@@ -329,7 +329,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
           {absences.slice(0, 5).map(absence => {
             // Znajdź program dla nieobecności, żeby wyświetlić tytuł
             const program = programs.find(p => p.id === absence.program_id);
-            const eventTitle = program?.title || 'Nabożeństwo niedzielne';
+            const eventTitle = program?.title || tr('Nabożeństwo niedzielne');
             const isFuture = new Date(absence.absence_date) >= new Date(new Date().toISOString().split('T')[0]);
 
             return (

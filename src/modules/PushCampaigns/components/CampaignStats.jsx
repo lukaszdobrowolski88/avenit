@@ -70,7 +70,7 @@ export default function CampaignStats({ campaign, onClose }) {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         <Stat icon={Users} label="Odbiorcy" value={total} color="gray" />
-        <Stat icon={Send} label="Wysłane" value={sent} percent={pct(sent, total)} color="blue" />
+        <Stat icon={Send} label={tr('Wysłane')} value={sent} percent={pct(sent, total)} color="blue" />
         <Stat icon={TrendingUp} label="Dostarczone" value={delivered} percent={pct(delivered, total)} color="indigo" />
         <Stat icon={Eye} label="Otwarte" value={opened} percent={pct(opened, total)} color="emerald" />
         <Stat icon={MousePointer} label="Akcje" value={actionClicked} percent={pct(actionClicked, total)} color="violet" />

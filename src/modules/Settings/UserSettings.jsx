@@ -289,7 +289,7 @@ export default function UserSettings() {
       setDisable2FACode('');
       setMessage({ type: 'success', text: tr('Uwierzytelnianie dwuskładnikowe zostało wyłączone.') });
     } else {
-      setMessage({ type: 'error', text: result.error || 'Nie udało się wyłączyć 2FA.' });
+      setMessage({ type: 'error', text: result.error || tr('Nie udało się wyłączyć 2FA.') });
     }
   };
 
@@ -311,7 +311,7 @@ export default function UserSettings() {
       setRegenerateCode('');
       setMessage({ type: 'success', text: 'Wygenerowano nowe kody zapasowe.' });
     } else {
-      setMessage({ type: 'error', text: result.error || 'Nie udało się wygenerować kodów.' });
+      setMessage({ type: 'error', text: result.error || tr('Nie udało się wygenerować kodów.') });
     }
   };
 
@@ -514,7 +514,7 @@ export default function UserSettings() {
               </label>
             </div>
 
-            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{formData.full_name || 'Użytkownik'}</h2>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{formData.full_name || tr('Użytkownik')}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">{formData.email}</p>
           </div>
         </div>

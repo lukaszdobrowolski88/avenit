@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Smartphone, Globe, Bell } from 'lucide-react';
 import { PUSH_CATEGORIES } from '../constants';
+import { tr } from '../../../i18n';
 
 const PLATFORMS = [
   { id: 'ios', label: 'iOS', icon: Smartphone },
@@ -62,8 +63,8 @@ function IOSMockup({ title, body, icon, actions }) {
               <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">Aplikacja</span>
               <span className="text-[10px] text-gray-500">teraz</span>
             </div>
-            <div className="text-[13px] font-semibold text-gray-900 dark:text-white mt-0.5 leading-tight">{title || 'Tytuł powiadomienia'}</div>
-            <div className="text-[12px] text-gray-700 dark:text-gray-200 mt-0.5 leading-snug">{body || 'Treść powiadomienia...'}</div>
+            <div className="text-[13px] font-semibold text-gray-900 dark:text-white mt-0.5 leading-tight">{title || tr('Tytuł powiadomienia')}</div>
+            <div className="text-[12px] text-gray-700 dark:text-gray-200 mt-0.5 leading-snug">{body || tr('Treść powiadomienia...')}</div>
           </div>
         </div>
         {actions.length > 0 && (
@@ -100,8 +101,8 @@ function AndroidMockup({ title, body, icon, bigImage, actions }) {
               <span>·</span>
               <span>teraz</span>
             </div>
-            <div className="text-[13px] font-medium text-gray-900 dark:text-white mt-0.5 leading-tight">{title || 'Tytuł powiadomienia'}</div>
-            <div className="text-[12px] text-gray-700 dark:text-gray-300 leading-snug">{body || 'Treść powiadomienia...'}</div>
+            <div className="text-[13px] font-medium text-gray-900 dark:text-white mt-0.5 leading-tight">{title || tr('Tytuł powiadomienia')}</div>
+            <div className="text-[12px] text-gray-700 dark:text-gray-300 leading-snug">{body || tr('Treść powiadomienia...')}</div>
             {bigImage && (
               <img src={bigImage} alt="" className="mt-2 rounded-md w-full max-h-32 object-cover" />
             )}
@@ -136,8 +137,8 @@ function WebMockup({ title, body, icon, actions }) {
             {icon ? <img src={icon} alt="" className="w-full h-full object-cover" /> : <Bell size={18} className="text-white" />}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[14px] font-semibold text-gray-900 dark:text-white">{title || 'Tytuł powiadomienia'}</div>
-            <div className="text-[13px] text-gray-700 dark:text-gray-300 mt-0.5">{body || 'Treść powiadomienia...'}</div>
+            <div className="text-[14px] font-semibold text-gray-900 dark:text-white">{title || tr('Tytuł powiadomienia')}</div>
+            <div className="text-[13px] text-gray-700 dark:text-gray-300 mt-0.5">{body || tr('Treść powiadomienia...')}</div>
             <div className="text-[11px] text-gray-400 mt-1">{location.host || 'twoja-domena.pl'}</div>
           </div>
         </div>

@@ -983,7 +983,7 @@ export default function GlobalSettings() {
         {/* --- TAB: ORGANIZACJA --- */}
         {activeTab === 'general' && (
           <div className="max-w-2xl">
-            <SectionHeader title="Profil organizacji" description="Podstawowe dane Twojego kościoła." />
+            <SectionHeader title="Profil organizacji" description={tr('Podstawowe dane Twojego kościoła.')} />
             {[
               { key: 'org_name', label: 'Nazwa organizacji', placeholder: tr('np. Kościół Chrześcijański') },
               { key: 'org_legal_name', label: 'Nazwa prawna', placeholder: tr('Pełna nazwa do dokumentów') },
@@ -1025,7 +1025,7 @@ export default function GlobalSettings() {
         {/* --- TAB: MODUŁY --- */}
         {activeTab === 'modules' && (
           <div className="max-w-3xl">
-            <SectionHeader title={t('Włączanie Modułów')} description="Włączaj lub ukrywaj funkcje systemu." />
+            <SectionHeader title={t('Włączanie Modułów')} description={tr('Włączaj lub ukrywaj funkcje systemu.')} />
             <div className="space-y-3">
               {/* Moduły z tabeli app_modules (nowy system) */}
               {dbModules
@@ -1079,7 +1079,7 @@ export default function GlobalSettings() {
         {activeTab === 'users' && (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <SectionHeader title={t('Użytkownicy Systemu')} description="Zarządzanie dostępem, rolami i statusem kont." />
+              <SectionHeader title={t('Użytkownicy Systemu')} description={tr('Zarządzanie dostępem, rolami i statusem kont.')} />
               <div className="flex items-center gap-2">
                 <button onClick={mergeDuplicateMembers} className="bg-accent-secondary-light text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition text-sm" title={t('Scal zduplikowanych członków w służbach')}><Layers size={16}/> Scal duplikaty</button>
                 <button onClick={() => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setShowUserModal(true); }} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition"><Plus size={18}/> Dodaj Użytkownika</button>
@@ -1125,7 +1125,7 @@ export default function GlobalSettings() {
         {/* --- TAB: UPRAWNIENIA (UNIFIED) --- */}
         {activeTab === 'permissions' && (
           <div>
-            <SectionHeader title={t('Uprawnienia')} description="Zarządzaj dostępem do modułów i zakładek według ról użytkowników oraz indywidualnych użytkowników." />
+            <SectionHeader title={t('Uprawnienia')} description={tr('Zarządzaj dostępem do modułów i zakładek według ról użytkowników oraz indywidualnych użytkowników.')} />
 
             {/* PRZEŁĄCZNIK ROL / UŻYTKOWNICY */}
             <div className="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">

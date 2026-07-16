@@ -194,13 +194,13 @@ export default function CurrentPlan({ onUpgrade }) {
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <UsageBar
-              label="Członkowie"
+              label={tr('Członkowie')}
               icon={Users}
               current={usage.members}
               limit={subscription.max_members}
             />
             <UsageBar
-              label="Użytkownicy"
+              label={tr('Użytkownicy')}
               icon={UserPlus}
               current={usage.users}
               limit={subscription.max_users}

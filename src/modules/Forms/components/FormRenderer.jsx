@@ -399,7 +399,7 @@ export default function FormRenderer({
           {tr('Dziękujemy!')}
         </h2>
         <p className="text-gray-600 dark:text-gray-400">
-          {settings?.successMessage || 'Twoja odpowiedź została zapisana.'}
+          {settings?.successMessage || tr('Twoja odpowiedź została zapisana.')}
         </p>
       </div>
     );
@@ -981,7 +981,7 @@ export default function FormRenderer({
               {pricing.enabled && totalPrice > 0 && !paymentCompleted && !isWaitlistMode && (
                 <span className="mr-2">{formatPrice(totalPrice, pricing.currency || 'PLN')} •</span>
               )}
-              {isWaitlistMode ? tr('Zapisz na listę rezerwową') : (settings?.submitButtonText || 'Wyślij')}
+              {isWaitlistMode ? tr('Zapisz na listę rezerwową') : (settings?.submitButtonText || tr('Wyślij'))}
             </>
           )}
         </button>

@@ -218,7 +218,7 @@ export default function PaymentsView({ forms }) {
             const amt = calcAmount(answers._contactPerson._addons);
             if (amt > 0) unpaid.push({
               id: `${response.id}-contact`, responseId: response.id, type: 'contact',
-              name: extractName(answers._contactPerson, form.fields) || response.respondent_name || 'Osoba zgłaszająca',
+              name: extractName(answers._contactPerson, form.fields) || response.respondent_name || tr('Osoba zgłaszająca'),
               email: extractEmail(answers._contactPerson, form.fields) || response.respondent_email,
               formTitle: form.title, amount: amt, paidAmount: answers._contactPerson._payment?.totalPaid || 0,
               currency: form.settings.pricing.currency || 'PLN'

@@ -238,7 +238,7 @@ export default function ComposeModal({
               <Edit3 size={20} className="text-white" />
             </div>
             <h2 className="text-lg font-bold text-white">
-              {draft.subject || 'Nowa wiadomość'}
+              {draft.subject || tr('Nowa wiadomość')}
             </h2>
           </div>
           <div className="flex items-center gap-2">

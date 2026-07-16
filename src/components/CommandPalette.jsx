@@ -60,7 +60,7 @@ const SEARCHERS = [
         .limit(6);
       return (data || []).map((s) => ({
         id: `song-${s.id}`,
-        label: s.title || 'Pieśń',
+        label: s.title || tr('Pieśń'),
         sub: s.artist || '',
         path: '/worship',
       }));

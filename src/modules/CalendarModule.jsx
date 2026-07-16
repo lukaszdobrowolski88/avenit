@@ -471,7 +471,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
           onClose={() => setShowDeleteConfirm(false)}
           onConfirm={handleConfirmDelete}
           title={tr('Usuń wydarzenie')}
-          message="Czy na pewno chcesz usunąć to wydarzenie? Tej operacji nie można cofnąć."
+          message={tr('Czy na pewno chcesz usunąć to wydarzenie? Tej operacji nie można cofnąć.')}
         />
       </div>
     </div>, document.body
@@ -902,7 +902,7 @@ export default function CalendarModule() {
     const { data: homegroupsEvents } = await withCampusFilter(supabase.from('homegroups_events').select('*'));
     const all = [];
 
-    prog?.forEach(p => all.push({ id: p.id, type: 'program', team: 'program', title: p.title || 'Nabożeństwo', date: new Date(p.date), raw: p }));
+    prog?.forEach(p => all.push({ id: p.id, type: 'program', team: 'program', title: p.title || tr('Nabożeństwo'), date: new Date(p.date), raw: p }));
 
     // Ogólne wydarzenia (nie-nabożeństwa)
     eventsData?.forEach(ev => {

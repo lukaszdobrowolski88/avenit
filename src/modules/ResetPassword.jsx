@@ -52,7 +52,7 @@ export default function ResetPassword() {
     });
 
     if (updateError) {
-      setError(updateError.message || 'Błąd ustawiania hasła');
+      setError(updateError.message || tr('Błąd ustawiania hasła'));
       setLoading(false);
       return;
     }

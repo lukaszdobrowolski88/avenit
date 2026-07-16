@@ -731,7 +731,7 @@ export default function Members() {
                   </h4>
 
                   <CustomDatePicker
-                    label="Data członkostwa"
+                    label={tr('Data członkostwa')}
                     value={formData.membership_date}
                     onChange={(date) => setFormData({ ...formData, membership_date: date })}
                     placeholder={tr('Wybierz datę członkostwa')}

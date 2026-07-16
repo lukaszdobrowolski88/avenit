@@ -116,7 +116,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Building2}
-          label="Wszystkich klientów"
+          label={tr('Wszystkich klientów')}
           value={stats.totalTenants}
           color="blue"
         />

@@ -595,8 +595,8 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SummaryCard label="Nazwa maila" value={formData.name} icon={FileText} />
-                <SummaryCard label="Temat wiadomości" value={formData.subject} icon={Mail} />
-                <SummaryCard label="Liczba odbiorców" value={`${totalRecipients} osób`} icon={Users} highlight />
+                <SummaryCard label={tr('Temat wiadomości')} value={formData.subject} icon={Mail} />
+                <SummaryCard label={tr('Liczba odbiorców')} value={`${totalRecipients} osób`} icon={Users} highlight />
                 <SummaryCard
                   label="Segmenty"
                   value={selectedSegments.map(s => s.name || s.type).join(', ') || 'Brak'}

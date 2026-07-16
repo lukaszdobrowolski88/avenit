@@ -52,7 +52,7 @@ export default function Login() {
       const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
       if (authError) {
-        setError(authError.message || 'Błędny e-mail lub hasło.');
+        setError(authError.message || tr('Błędny e-mail lub hasło.'));
         setLoading(false);
         return;
       }
@@ -88,7 +88,7 @@ export default function Login() {
     });
 
     if (authError || data?.requires2fa) {
-      setError(authError?.message || 'Nieprawidłowy kod weryfikacyjny');
+      setError(authError?.message || tr('Nieprawidłowy kod weryfikacyjny'));
       setLoading(false);
       return;
     }
@@ -119,7 +119,7 @@ export default function Login() {
     setLoading(false);
 
     if (resetError) {
-      setError(resetError.message || 'Błąd wysyłania emaila');
+      setError(resetError.message || tr('Błąd wysyłania emaila'));
     } else {
       setResetEmailSent(true);
     }

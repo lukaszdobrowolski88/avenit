@@ -437,7 +437,7 @@ export default function MessageView({
             <EmailHtmlContent html={message.body_html} messageId={message.id} />
           ) : (
             <pre className="whitespace-pre-wrap font-sans text-gray-700 dark:text-gray-300">
-              {message.body_text || 'Brak treści'}
+              {message.body_text || tr('Brak treści')}
             </pre>
           )}
         </div>

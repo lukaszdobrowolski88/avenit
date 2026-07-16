@@ -50,7 +50,7 @@ export default function FolderModal({
       if (err.message?.includes('unique') || err.message?.includes('duplicate')) {
         setError(tr('Folder o tej nazwie już istnieje w tym miejscu'));
       } else {
-        setError(err.message || 'Wystąpił błąd');
+        setError(err.message || tr('Wystąpił błąd'));
       }
     } finally {
       setLoading(false);

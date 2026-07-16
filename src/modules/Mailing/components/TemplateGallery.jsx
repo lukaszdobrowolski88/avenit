@@ -294,7 +294,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                         <CategoryIcon size={12} />
-                        {EXTENDED_CATEGORIES[template.category]?.label || 'Ogólne'}
+                        {EXTENDED_CATEGORIES[template.category]?.label || tr('Ogólne')}
                       </span>
                       {template.subject && (
                         <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[120px]" title={template.subject}>
@@ -458,7 +458,7 @@ function TemplatePreviewModal({
                 </h2>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-sm text-white/80">
-                    {EXTENDED_CATEGORIES[template.category]?.label || 'Ogólne'}
+                    {EXTENDED_CATEGORIES[template.category]?.label || tr('Ogólne')}
                   </span>
                   {template.is_system && (
                     <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-white/20 text-white rounded-full">

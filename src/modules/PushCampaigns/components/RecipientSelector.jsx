@@ -109,7 +109,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
             checked={isSelected('all', null)}
             onClick={() => toggleSegment('all', null, 'Wszyscy aktywni')}
             label={`Wszyscy aktywni użytkownicy (${totalActive})`}
-            description="Każdy użytkownik z włączonymi powiadomieniami push."
+            description={tr('Każdy użytkownik z włączonymi powiadomieniami push.')}
           />
         )}
 

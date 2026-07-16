@@ -70,7 +70,7 @@ export default function SubscriptionInfo() {
 
   return (
     <div className="max-w-3xl">
-      <SettingsCard icon={CreditCard} title={t('Twój plan')} description="Zarządzaniem planem zajmuje się administrator platformy.">
+      <SettingsCard icon={CreditCard} title={t('Twój plan')} description={tr('Zarządzaniem planem zajmuje się administrator platformy.')}>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-3">
@@ -94,9 +94,9 @@ export default function SubscriptionInfo() {
         </div>
       </SettingsCard>
 
-      <SettingsCard icon={Sparkles} title="Wykorzystanie" description="Zużycie limitów Twojego planu.">
-        <UsageBar label="Członkowie" used={usage.members} max={limits.members} />
-        <UsageBar label="Użytkownicy" used={usage.users} max={limits.users} />
+      <SettingsCard icon={Sparkles} title="Wykorzystanie" description={tr('Zużycie limitów Twojego planu.')}>
+        <UsageBar label={tr('Członkowie')} used={usage.members} max={limits.members} />
+        <UsageBar label={tr('Użytkownicy')} used={usage.users} max={limits.users} />
         <UsageBar label="Grupy" used={usage.groups} max={limits.groups} />
         <UsageBar label="Dzieci" used={usage.kids} max={limits.kids} />
       </SettingsCard>

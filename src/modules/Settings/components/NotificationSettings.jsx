@@ -27,7 +27,7 @@ export default function NotificationSettings({ get, save }) {
 
   return (
     <div className="max-w-3xl">
-      <SettingsCard title={t('Kanały powiadomień')} description="Jakimi kanałami wysyłamy powiadomienia." icon={Megaphone}>
+      <SettingsCard title={t('Kanały powiadomień')} description={tr('Jakimi kanałami wysyłamy powiadomienia.')} icon={Megaphone}>
         {channels.map((c, i) => (
           <SettingRow key={c.key} label={c.label} hint={c.hint} last={i === channels.length - 1}>
             <Toggle checked={bool(c.key, c.def)} onChange={setBool(c.key)} />
@@ -35,7 +35,7 @@ export default function NotificationSettings({ get, save }) {
         ))}
       </SettingsCard>
 
-      <SettingsCard title="Zdarzenia" description="Przy jakich zdarzeniach wysyłać powiadomienia." icon={Bell}>
+      <SettingsCard title="Zdarzenia" description={tr('Przy jakich zdarzeniach wysyłać powiadomienia.')} icon={Bell}>
         {events.map((e, i) => (
           <SettingRow key={e.key} label={e.label} hint={e.hint} last={i === events.length - 1}>
             <Toggle checked={bool(e.key)} onChange={setBool(e.key)} />
@@ -44,7 +44,7 @@ export default function NotificationSettings({ get, save }) {
       </SettingsCard>
 
       <SettingsCard title="Podsumowania" description="Zbiorcze powiadomienia zamiast pojedynczych.">
-        <SettingRow label="Częstotliwość podsumowań e-mail" hint="Jak często wysyłać zbiorczy przegląd" last>
+        <SettingRow label={tr('Częstotliwość podsumowań e-mail')} hint={tr('Jak często wysyłać zbiorczy przegląd')} last>
           <SelectSetting
             value={get('notif_digest') || 'off'}
             onChange={(v) => save('notif_digest', v)}

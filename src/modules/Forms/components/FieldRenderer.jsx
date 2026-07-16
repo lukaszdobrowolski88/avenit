@@ -230,7 +230,7 @@ export default function FieldRenderer({
             type="text"
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={field.placeholder || 'Wprowadź lokalizację...'}
+            placeholder={field.placeholder || tr('Wprowadź lokalizację...')}
             disabled={disabled}
             className={`${baseInputClass} pl-11`}
             maxLength={field.validation?.maxLength}

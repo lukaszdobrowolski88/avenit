@@ -432,7 +432,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
       {/* Preview Modal */}
       {showPreview && (
         <CampaignPreview
-          subject={formData.subject || 'Podgląd szablonu'}
+          subject={formData.subject || tr('Podgląd szablonu')}
           htmlContent={formData.html_content}
           onClose={() => setShowPreview(false)}
         />

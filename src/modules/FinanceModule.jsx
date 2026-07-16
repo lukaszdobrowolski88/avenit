@@ -119,7 +119,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         <div className="flex items-center gap-2 text-sm">
           <Calendar size={16} className="text-gray-400" />
           <span className={displayValue ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-            {displayValue || 'Wybierz datę'}
+            {displayValue || tr('Wybierz datę')}
           </span>
         </div>
       </div>
@@ -1061,7 +1061,7 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomSelect
-                label="Źródło"
+                label={tr('Źródło')}
                 value={incomeFilters.source}
                 onChange={(val) => setIncomeFilters({...incomeFilters, source: val})}
                 options={[
@@ -1783,7 +1783,7 @@ const FinanceModule = () => {
             </div>
             <div className="space-y-4">
               <CustomSelect
-                label="Kategoria (Służba)"
+                label={tr('Kategoria (Służba)')}
                 value={budgetForm.category}
                 onChange={(val) => setBudgetForm({...budgetForm, category: val})}
                 options={[
@@ -1847,7 +1847,7 @@ const FinanceModule = () => {
             </div>
             <div className="space-y-4">
               <CustomDatePicker
-                label="Data wpływu"
+                label={tr('Data wpływu')}
                 value={incomeForm.date}
                 onChange={(val) => setIncomeForm({...incomeForm, date: val})}
               />
@@ -1862,7 +1862,7 @@ const FinanceModule = () => {
                 />
               </div>
               <CustomSelect
-                label="Typ wpływu"
+                label={tr('Typ wpływu')}
                 value={incomeForm.type}
                 onChange={(val) => setIncomeForm({...incomeForm, type: val})}
                 options={[
@@ -1997,7 +1997,7 @@ const FinanceModule = () => {
               {/* Wiersz 3: Kategoria i Opis kosztu */}
               <div className="grid grid-cols-2 gap-4">
                 <CustomSelect
-                  label="Kategoria (powiązana z budżetem)"
+                  label={tr('Kategoria (powiązana z budżetem)')}
                   value={expenseForm.category}
                   onChange={(val) => setExpenseForm({...expenseForm, category: val, description: ''})}
                   options={budgetCategories.length > 0 ? budgetCategories : [{ value: '', label: tr('Najpierw dodaj pozycje budżetowe') }]}
@@ -2005,7 +2005,7 @@ const FinanceModule = () => {
                 />
                 {expenseForm.category && (
                   <CustomSelect
-                    label="Opis kosztu (z budżetu)"
+                    label={tr('Opis kosztu (z budżetu)')}
                     value={expenseForm.description}
                     onChange={(val) => setExpenseForm({...expenseForm, description: val})}
                     options={budgetItems

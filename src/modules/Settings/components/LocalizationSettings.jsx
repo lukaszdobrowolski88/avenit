@@ -2,6 +2,7 @@ import React from 'react';
 import { Globe, Calendar, Clock, Coins, Languages } from 'lucide-react';
 import { SettingsCard, SettingRow, SelectSetting } from './SettingsUI';
 import { useI18n } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Ustawienia regionalne — język, strefa czasowa, formaty, waluta. app_settings (loc_*).
 export default function LocalizationSettings({ get, save }) {
@@ -19,7 +20,7 @@ export default function LocalizationSettings({ get, save }) {
         </SettingRow>
       </SettingsCard>
 
-      <SettingsCard title="Region i czas" description="Strefa czasowa i sposób wyświetlania dat." icon={Globe}>
+      <SettingsCard title="Region i czas" description={tr('Strefa czasowa i sposób wyświetlania dat.')} icon={Globe}>
         <SettingRow label="Strefa czasowa">
           <SelectSetting
             value={get('loc_timezone') || 'Europe/Warsaw'}
@@ -34,7 +35,7 @@ export default function LocalizationSettings({ get, save }) {
             className="min-w-[200px]"
           />
         </SettingRow>
-        <SettingRow label="Format daty" hint="Sposób wyświetlania dat w aplikacji">
+        <SettingRow label="Format daty" hint={tr('Sposób wyświetlania dat w aplikacji')}>
           <SelectSetting
             value={get('loc_date_format') || 'dd.mm.yyyy'}
             onChange={(v) => save('loc_date_format', v)}
@@ -55,7 +56,7 @@ export default function LocalizationSettings({ get, save }) {
             ]}
           />
         </SettingRow>
-        <SettingRow label="Pierwszy dzień tygodnia" last>
+        <SettingRow label={tr('Pierwszy dzień tygodnia')} last>
           <SelectSetting
             value={get('loc_week_start') || 'monday'}
             onChange={(v) => save('loc_week_start', v)}
@@ -67,7 +68,7 @@ export default function LocalizationSettings({ get, save }) {
         </SettingRow>
       </SettingsCard>
 
-      <SettingsCard title="Waluta" description="Waluta używana w module Finanse." icon={Coins}>
+      <SettingsCard title="Waluta" description={tr('Waluta używana w module Finanse.')} icon={Coins}>
         <SettingRow label="Waluta" last>
           <SelectSetting
             value={get('loc_currency') || 'PLN'}

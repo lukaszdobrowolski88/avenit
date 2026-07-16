@@ -76,7 +76,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
 
   const handleSaveCustom = async () => {
     const id = `custom_color_preset_${Date.now()}`;
-    const label = customLabel.trim() || 'Własny';
+    const label = customLabel.trim() || tr('Własny');
     const value = JSON.stringify({ primary: customPrimary, secondary: customSecondary, label });
 
     setSaving(true);

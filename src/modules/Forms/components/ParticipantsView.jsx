@@ -192,7 +192,7 @@ export default function ParticipantsView({ forms }) {
               ...baseParticipant,
               id: `${response.id}-contact`,
               responseId: response.id,
-              name: contact.name || response.respondent_name || 'Osoba zgłaszająca',
+              name: contact.name || response.respondent_name || tr('Osoba zgłaszająca'),
               email: contact.email || response.respondent_email || '',
               phone: contact.phone,
               answers: answers._contactPerson,

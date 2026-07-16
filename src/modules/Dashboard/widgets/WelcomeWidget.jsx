@@ -3,7 +3,7 @@ import { CheckSquare, Calendar, Heart } from 'lucide-react';
 import { tr } from '../../../i18n';
 
 export default function WelcomeWidget({ userProfile, userEmail, stats }) {
-  const displayName = userProfile?.full_name || userEmail?.split('@')[0] || 'Użytkowniku';
+  const displayName = userProfile?.full_name || userEmail?.split('@')[0] || tr('Użytkowniku');
   const firstName = displayName.split(' ')[0];
 
   const getGreeting = () => {

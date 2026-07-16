@@ -158,7 +158,7 @@ export default function RegisterPage() {
 
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.message || 'Wystąpił błąd podczas rejestracji');
+      setError(err.message || tr('Wystąpił błąd podczas rejestracji'));
     } finally {
       setLoading(false);
     }

@@ -698,7 +698,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                       {/* Card content */}
                       <div className="p-4">
                         <h4 className="font-bold text-gray-800 dark:text-gray-100 text-lg mb-2 line-clamp-2 min-h-[3.5rem]">
-                          {sermon.teaching?.title || 'Bez tytułu'}
+                          {sermon.teaching?.title || tr('Bez tytułu')}
                         </h4>
 
                         {/* Speaker */}
@@ -905,12 +905,12 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
 
               <div className="grid grid-cols-2 gap-4">
                 <CustomDatePicker
-                  label="Data rozpoczęcia"
+                  label={tr('Data rozpoczęcia')}
                   value={form.start_date}
                   onChange={(val) => setForm({ ...form, start_date: val })}
                 />
                 <CustomDatePicker
-                  label="Data zakończenia"
+                  label={tr('Data zakończenia')}
                   value={form.end_date}
                   onChange={(val) => setForm({ ...form, end_date: val })}
                 />

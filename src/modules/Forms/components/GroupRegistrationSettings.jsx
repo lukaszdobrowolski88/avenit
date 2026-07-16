@@ -113,7 +113,7 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
             </label>
             <input
               type="text"
-              value={groupReg.participantLabel || 'Członek zespołu'}
+              value={groupReg.participantLabel || tr('Członek zespołu')}
               onChange={(e) => handleChange('participantLabel', e.target.value)}
               placeholder={tr('Członek zespołu')}
               className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"

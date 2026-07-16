@@ -1,9 +1,10 @@
 import React from 'react';
 import { MessageSquare } from 'lucide-react';
 import { smsAnalysis } from '../utils/smsEncoding';
+import { tr } from '../../../i18n';
 
 export default function SmsPreview({ sender, body }) {
-  const text = body || 'Treść SMS pojawi się tutaj...';
+  const text = body || tr('Treść SMS pojawi się tutaj...');
   const { encoding, parts, charCount } = smsAnalysis(body || '');
   const senderLabel = sender || 'INFO';
 

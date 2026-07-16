@@ -618,7 +618,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
         </div>
         <div className="flex-1 flex items-center gap-2">
           <span className="font-semibold text-[13px] uppercase tracking-wide text-amber-700 dark:text-amber-400">
-            {item.title || 'Nowy nagłówek'}
+            {item.title || tr('Nowy nagłówek')}
           </span>
         </div>
         <button
@@ -1967,27 +1967,27 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           {/* SEKCJE */}
           <PrintOptionsCard title="Sekcje w PDF">
             <div className="space-y-2">
-              <PrintCheckbox label="Plan szczegółowy (strona 1)" checked={printOptions.sections.schedule} onChange={v => setSection('schedule', v)} />
-              <PrintCheckbox label="Notatka do programu (na końcu strony 1)" checked={printOptions.sections.programNotes} onChange={v => setSection('programNotes', v)} disabled={!printOptions.sections.schedule} />
-              <PrintCheckbox label='Strona "Służby i Zespoły"' checked={printOptions.sections.teams} onChange={v => setSection('teams', v)} />
+              <PrintCheckbox label={tr('Plan szczegółowy (strona 1)')} checked={printOptions.sections.schedule} onChange={v => setSection('schedule', v)} />
+              <PrintCheckbox label={tr('Notatka do programu (na końcu strony 1)')} checked={printOptions.sections.programNotes} onChange={v => setSection('programNotes', v)} disabled={!printOptions.sections.schedule} />
+              <PrintCheckbox label={tr('Strona "Służby i Zespoły"')} checked={printOptions.sections.teams} onChange={v => setSection('teams', v)} />
               <div className={`pl-2 ml-2 border-l-2 border-accent-primary-lighter/60 dark:border-accent-primary-darkest space-y-1.5 ${!printOptions.sections.teams ? 'opacity-50' : ''}`}>
-                <PrintCheckbox label="Zespół Uwielbienia" checked={printOptions.sections.teamWorship} onChange={v => setSection('teamWorship', v)} disabled={!printOptions.sections.teams} sub />
+                <PrintCheckbox label={tr('Zespół Uwielbienia')} checked={printOptions.sections.teamWorship} onChange={v => setSection('teamWorship', v)} disabled={!printOptions.sections.teams} sub />
                 <PrintCheckbox label="MediaTeam"          checked={printOptions.sections.teamMedia}   onChange={v => setSection('teamMedia',   v)} disabled={!printOptions.sections.teams} sub />
                 <PrintCheckbox label="Atmosfera Team"     checked={printOptions.sections.teamAtmosfera} onChange={v => setSection('teamAtmosfera', v)} disabled={!printOptions.sections.teams} sub />
                 <PrintCheckbox label="Scena"              checked={printOptions.sections.teamScena}   onChange={v => setSection('teamScena',   v)} disabled={!printOptions.sections.teams} sub />
-                <PrintCheckbox label="Szkółka Niedzielna" checked={printOptions.sections.teamSzkolka} onChange={v => setSection('teamSzkolka', v)} disabled={!printOptions.sections.teams} sub />
+                <PrintCheckbox label={tr('Szkółka Niedzielna')} checked={printOptions.sections.teamSzkolka} onChange={v => setSection('teamSzkolka', v)} disabled={!printOptions.sections.teams} sub />
               </div>
-              <PrintCheckbox label="Pieśni z tekstami i akordami" checked={printOptions.sections.songs} onChange={v => setSection('songs', v)} />
+              <PrintCheckbox label={tr('Pieśni z tekstami i akordami')} checked={printOptions.sections.songs} onChange={v => setSection('songs', v)} />
             </div>
           </PrintOptionsCard>
 
           {/* KOLUMNY PLANU */}
           <PrintOptionsCard title={tr('Kolumny w planie szczegółowym')} className={!printOptions.sections.schedule ? 'opacity-50 pointer-events-none' : ''}>
             <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-              <PrintCheckbox label="Czas (długość)"        checked={printOptions.scheduleColumns.time}    onChange={v => setColumn('time', v)} />
+              <PrintCheckbox label={tr('Czas (długość)')}        checked={printOptions.scheduleColumns.time}    onChange={v => setColumn('time', v)} />
               <PrintCheckbox label="Osoba odpowiedzialna"  checked={printOptions.scheduleColumns.person}  onChange={v => setColumn('person', v)} />
-              <PrintCheckbox label="Szczegóły / Pieśni"    checked={printOptions.scheduleColumns.details} onChange={v => setColumn('details', v)} />
-              <PrintCheckbox label="Tonacja przy pieśni"   checked={printOptions.scheduleColumns.songKey} onChange={v => setColumn('songKey', v)} disabled={!printOptions.scheduleColumns.details} />
+              <PrintCheckbox label={tr('Szczegóły / Pieśni')}    checked={printOptions.scheduleColumns.details} onChange={v => setColumn('details', v)} />
+              <PrintCheckbox label={tr('Tonacja przy pieśni')}   checked={printOptions.scheduleColumns.songKey} onChange={v => setColumn('songKey', v)} disabled={!printOptions.scheduleColumns.details} />
             </div>
           </PrintOptionsCard>
 
@@ -2042,8 +2042,8 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           {/* NAGŁÓWEK / WYGLĄD */}
           <PrintOptionsCard title={tr('Nagłówek i wygląd')}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
-              <PrintCheckbox label="Pokaż nazwę kampusu w nagłówku"     checked={printOptions.showCampus}  onChange={v => setRoot('showCampus', v)} />
-              <PrintCheckbox label="Złote akcenty (gold)"               checked={printOptions.colorAccents} onChange={v => setRoot('colorAccents', v)} />
+              <PrintCheckbox label={tr('Pokaż nazwę kampusu w nagłówku')}     checked={printOptions.showCampus}  onChange={v => setRoot('showCampus', v)} />
+              <PrintCheckbox label={tr('Złote akcenty (gold)')}               checked={printOptions.colorAccents} onChange={v => setRoot('colorAccents', v)} />
             </div>
           </PrintOptionsCard>
         </div>
@@ -2739,7 +2739,7 @@ export default function ProgramDetail() {
         .map(item => {
           if (item.type === 'song' && item.songId) {
             const song = freshSongsMap[item.songId];
-            return `<li>🎵 ${song ? song.title : item.title || 'Pieśń'}${item.key ? ` (${item.key})` : ''}</li>`;
+            return `<li>🎵 ${song ? song.title : item.title || tr('Pieśń')}${item.key ? ` (${item.key})` : ''}</li>`;
           }
           return `<li>${item.title || item.type || 'Element'}</li>`;
         })

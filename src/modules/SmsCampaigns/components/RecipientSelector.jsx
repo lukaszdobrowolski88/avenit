@@ -146,7 +146,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
             checked={isSelected('all', null)}
             onClick={() => toggleSegment('all', null, 'Wszyscy aktywni')}
             label={`Wszyscy aktywni użytkownicy (${totalActive})`}
-            description="Każdy użytkownik z włączonym SMS i zgodą marketingową."
+            description={tr('Każdy użytkownik z włączonym SMS i zgodą marketingową.')}
           />
         )}
 

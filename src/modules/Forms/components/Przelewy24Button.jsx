@@ -86,7 +86,7 @@ export default function Przelewy24Button({
 
     } catch (err) {
       console.error('Przelewy24 registration error:', err);
-      setError(err.message || 'Błąd podczas rejestracji płatności.');
+      setError(err.message || tr('Błąd podczas rejestracji płatności.'));
       if (onError) {
         onError(err);
       }

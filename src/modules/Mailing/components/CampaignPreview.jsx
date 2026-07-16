@@ -38,14 +38,14 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
       });
 
       if (error) {
-        throw new Error(error.message || 'Błąd wysyłki');
+        throw new Error(error.message || tr('Błąd wysyłki'));
       }
 
       if (data?.success) {
         alert(`Email testowy wysłany na: ${testEmail}`);
         setShowTestForm(false);
       } else {
-        throw new Error(data?.error || 'Nie udało się wysłać');
+        throw new Error(data?.error || tr('Nie udało się wysłać'));
       }
     } catch (err) {
       console.error('Error sending test:', err);

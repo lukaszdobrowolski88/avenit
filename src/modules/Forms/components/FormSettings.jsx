@@ -432,7 +432,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   <div className="relative">
                     <img
                       src={localSettings.branding.headerImage}
-                      alt="Nagłówek"
+                      alt={tr('Nagłówek')}
                       className="w-full h-32 object-cover rounded-xl border border-gray-200 dark:border-gray-600"
                     />
                     <button
@@ -489,7 +489,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   <div className="relative">
                     <img
                       src={localSettings.branding.backgroundImage}
-                      alt="Tło"
+                      alt={tr('Tło')}
                       className="w-full h-32 object-cover rounded-xl border border-gray-200 dark:border-gray-600"
                     />
                     <button
@@ -670,7 +670,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     className="hidden" />
                   {localSettings.header?.background?.image ? (
                     <div className="relative">
-                      <img src={localSettings.header.background.image} alt="Tło nagłówka"
+                      <img src={localSettings.header.background.image} alt={tr('Tło nagłówka')}
                         className="w-full h-24 object-cover rounded-xl border border-gray-200 dark:border-gray-600" />
                       <button onClick={() => handleHeaderBgChange('image', null)}
                         className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600">

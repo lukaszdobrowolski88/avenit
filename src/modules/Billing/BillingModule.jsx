@@ -57,7 +57,7 @@ export default function BillingModule() {
       await redirectToPayment(invoice.id);
     } catch (err) {
       console.error('Error processing payment:', err);
-      setError(err.message || 'Wystąpił błąd podczas przetwarzania płatności');
+      setError(err.message || tr('Wystąpił błąd podczas przetwarzania płatności'));
     } finally {
       setProcessing(false);
     }

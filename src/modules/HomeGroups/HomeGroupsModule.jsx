@@ -525,7 +525,7 @@ export default function HomeGroupsModule() {
       const { error } = await supabase.from('home_group_task_comments').insert([{
         task_id: taskForm.id,
         content: newComment,
-        author_name: currentUserEmail || 'Użytkownik'
+        author_name: currentUserEmail || tr('Użytkownik')
       }]);
 
       if (error) throw error;
@@ -1377,7 +1377,7 @@ export default function HomeGroupsModule() {
               <div className="bg-accent-primary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 flex gap-3 items-end">
                 <div className="flex-1">
                   <CustomSelect
-                    label="Dodaj członka"
+                    label={tr('Dodaj członka')}
                     value={attachMemberId}
                     onChange={setAttachMemberId}
                     options={[
@@ -1707,7 +1707,7 @@ export default function HomeGroupsModule() {
                 />
               </div>
               <CustomSelect
-                label="Pozycja budżetowa"
+                label={tr('Pozycja budżetowa')}
                 value={expenseForm.description}
                 onChange={(value) => setExpenseForm({...expenseForm, description: value})}
                 options={[

@@ -964,7 +964,7 @@ export default function AtmosferaTeamModule() {
               {/* Wiersz 3: Pozycja budżetowa (pełna szerokość) */}
               <div>
                 <CustomSelect
-                  label="Pozycja budżetowa (opis kosztu)"
+                  label={tr('Pozycja budżetowa (opis kosztu)')}
                   value={expenseForm.description}
                   onChange={(value) => setExpenseForm({...expenseForm, description: value})}
                   options={[

@@ -38,7 +38,7 @@ export default function FieldItem({
         return (
           <input
             type="text"
-            placeholder={field.placeholder || 'Wpisz odpowiedź...'}
+            placeholder={field.placeholder || tr('Wpisz odpowiedź...')}
             disabled
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-400"
           />
@@ -47,7 +47,7 @@ export default function FieldItem({
       case 'textarea':
         return (
           <textarea
-            placeholder={field.placeholder || 'Wpisz odpowiedź...'}
+            placeholder={field.placeholder || tr('Wpisz odpowiedź...')}
             disabled
             rows={2}
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-400 resize-none"
