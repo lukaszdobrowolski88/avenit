@@ -277,7 +277,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
               {totalUnread > 99 ? '99+' : totalUnread}
             </div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
-              {totalUnread === 1 ? 'nieprzeczytana wiadomość' : 'nieprzeczytanych wiadomości'}
+              {totalUnread === 1 ? tr('nieprzeczytana wiadomość') : tr('nieprzeczytanych wiadomości')}
             </span>
           </div>
         </div>

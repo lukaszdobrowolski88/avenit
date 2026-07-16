@@ -916,7 +916,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
             <span className="px-2 py-0.5 bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light rounded-full">
               {blocks.length}
             </span>
-            {blocks.length === 1 ? 'blok' : blocks.length < 5 ? 'bloki' : 'bloków'}
+            {blocks.length === 1 ? 'blok' : blocks.length < 5 ? 'bloki' : tr('bloków')}
           </span>
           <div className="flex items-center gap-3 text-xs text-gray-400">
             <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] font-mono">⌘Z</kbd> cofnij</span>

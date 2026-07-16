@@ -1202,7 +1202,7 @@ export default function HomeGroupsModule() {
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl border border-white/20 dark:border-gray-700 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="font-bold text-2xl bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-                {editingItem ? 'Edytuj' : 'Dodaj'} {modalType === 'group' ? 'Grupę' : modalType === 'leader' ? 'Lidera' : 'Członka'}
+                {editingItem ? 'Edytuj' : 'Dodaj'} {modalType === 'group' ? tr('Grupę') : modalType === 'leader' ? 'Lidera' : tr('Członka')}
               </h3>
               <button onClick={closeModal} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                 <X size={24} />

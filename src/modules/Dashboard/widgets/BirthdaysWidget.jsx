@@ -72,7 +72,7 @@ export default function BirthdaysWidget() {
   }
 
   const whenLabel = (days, next) => {
-    if (days === 0) return 'Dziś! 🎉';
+    if (days === 0) return tr('Dziś! 🎉');
     if (days === 1) return 'Jutro';
     return `za ${days} dni · ${next.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })}`;
   };

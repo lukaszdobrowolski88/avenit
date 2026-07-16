@@ -58,7 +58,7 @@ export default function TemplateGallery({ onUseTemplate }) {
               )}
               <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 mt-1">{t.body}</p>
               <p className="text-xs text-gray-400 mt-2">
-                {a.charCount} znaków · {a.parts || 1} {(a.parts || 1) === 1 ? 'część' : 'części'} ({a.encoding})
+                {a.charCount} znaków · {a.parts || 1} {(a.parts || 1) === 1 ? tr('część') : tr('części')} ({a.encoding})
               </p>
 
               <button
@@ -139,7 +139,7 @@ function TemplateEditor({ template, onClose, onSave }) {
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none"
           />
           <p className="text-xs text-gray-500">
-            {a.charCount} znaków · {a.parts || 1} {(a.parts || 1) === 1 ? 'część' : 'części'} ({a.encoding})
+            {a.charCount} znaków · {a.parts || 1} {(a.parts || 1) === 1 ? tr('część') : tr('części')} ({a.encoding})
           </p>
         </div>
 

@@ -1060,7 +1060,7 @@ export default function GlobalSettings() {
                   </div>
                   <button onClick={() => toggleModule(mod.key, mod.value)} className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition ${mod.value === 'true' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-600 dark:text-gray-400'}`}>
                     {mod.value === 'true' ? <ToggleRight size={24}/> : <ToggleLeft size={24}/>}
-                    {mod.value === 'true' ? 'Włączony' : 'Wyłączony'}
+                    {mod.value === 'true' ? tr('Włączony') : tr('Wyłączony')}
                   </button>
                 </div>
               ))}

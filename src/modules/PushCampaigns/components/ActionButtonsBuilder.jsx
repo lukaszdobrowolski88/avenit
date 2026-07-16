@@ -95,7 +95,7 @@ export default function ActionButtonsBuilder({ categoryId, actions = [], onChang
                   {catAction.type !== 'inline_rsvp' && (
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">
-                        {catAction.type === 'deep_link' && 'Ścieżka (np. /events/123)'}
+                        {catAction.type === 'deep_link' && tr('Ścieżka (np. /events/123)')}
                         {catAction.type === 'open_form' && 'ID formularza'}
                         {catAction.type === 'external_url' && 'URL'}
                       </label>

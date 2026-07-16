@@ -157,7 +157,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
           </div>
 
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map(d => (
+            {[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => (
               <div key={d} className="text-center text-[10px] font-bold text-gray-400 uppercase">{d}</div>
             ))}
           </div>
@@ -1332,7 +1332,7 @@ const AudioPlayer = ({ url, name }) => {
   };
 
   const getPitchLabel = () => {
-    if (pitchShift === 0) return 'Oryginał';
+    if (pitchShift === 0) return tr('Oryginał');
     const sign = pitchShift > 0 ? '+' : '';
     return `${sign}${pitchShift} półton${Math.abs(pitchShift) === 1 ? '' : pitchShift >= 2 && pitchShift <= 4 ? 'y' : 'ów'}`;
   };
@@ -1992,7 +1992,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="p-2.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest hover:text-accent-primary transition"
-                                                title={att.type === 'link' ? 'Otwórz link' : 'Podgląd'}
+                                                title={att.type === 'link' ? tr('Otwórz link') : tr('Podgląd')}
                                             >
                                                 <ExternalLink size={18}/>
                                             </a>
@@ -2985,7 +2985,7 @@ export default function WorshipModule() {
                           <div className="flex-1">
                             <span className="font-medium text-gray-800 dark:text-gray-200">{tag}</span>
                             <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-                              ({songCount} {songCount === 1 ? 'pieśń' : songCount < 5 ? 'pieśni' : 'pieśni'})
+                              ({songCount} {songCount === 1 ? tr('pieśń') : songCount < 5 ? tr('pieśni') : tr('pieśni')})
                             </span>
                           </div>
                           <button

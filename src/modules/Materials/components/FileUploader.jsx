@@ -208,7 +208,7 @@ export default function FileUploader({
             ) : (
               <>
                 <Upload size={18} />
-                Prześlij {selectedFiles.length} {selectedFiles.length === 1 ? 'plik' : selectedFiles.length < 5 ? 'pliki' : 'plików'}
+                Prześlij {selectedFiles.length} {selectedFiles.length === 1 ? 'plik' : selectedFiles.length < 5 ? 'pliki' : tr('plików')}
               </>
             )}
           </button>

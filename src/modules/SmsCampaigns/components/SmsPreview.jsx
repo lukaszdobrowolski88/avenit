@@ -51,7 +51,7 @@ export default function SmsPreview({ sender, body }) {
         </span>
         <span>{charCount} znaków</span>
         <span>·</span>
-        <span>{parts || 1} {(parts || 1) === 1 ? 'część' : 'części'}</span>
+        <span>{parts || 1} {(parts || 1) === 1 ? tr('część') : tr('części')}</span>
       </div>
     </div>
   );

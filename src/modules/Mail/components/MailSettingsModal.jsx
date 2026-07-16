@@ -302,7 +302,7 @@ export default function MailSettingsModal({
                           ) : (
                             <RefreshCw size={14} />
                           )}
-                          {syncingAccount === account.id ? 'Synchronizuję...' : 'Synchronizuj'}
+                          {syncingAccount === account.id ? tr('Synchronizuję...') : 'Synchronizuj'}
                         </button>
                         <button
                           onClick={() => handleTestConnection(account)}

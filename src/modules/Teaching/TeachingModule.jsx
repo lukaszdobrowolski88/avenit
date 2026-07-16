@@ -836,7 +836,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                     </span>
                   )}
                   <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-full font-medium">
-                    {sermonsCount} {sermonsCount === 1 ? 'kazanie' : sermonsCount < 5 ? 'kazania' : 'kazań'}
+                    {sermonsCount} {sermonsCount === 1 ? 'kazanie' : sermonsCount < 5 ? 'kazania' : tr('kazań')}
                   </span>
                 </div>
               </div>

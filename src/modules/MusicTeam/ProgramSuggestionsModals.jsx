@@ -377,7 +377,7 @@ export function ProgramsSongsManagerModal({ songs, onClose }) {
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             {p.title ? formatDateFull(p.date) + ' · ' : ''}
-                            {(counts[p.id] || 0)} {counts[p.id] === 1 ? 'pieśń' : 'pieśni'} sugerowanych
+                            {(counts[p.id] || 0)} {counts[p.id] === 1 ? tr('pieśń') : tr('pieśni')} sugerowanych
                           </div>
                         </div>
                       </div>

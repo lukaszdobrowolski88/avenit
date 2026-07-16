@@ -186,7 +186,7 @@ const CustomDatePicker = ({ value, onChange }) => {
              <span className="text-sm font-bold capitalize text-gray-800 dark:text-gray-200">{viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
              <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronRight size={18} /></button>
            </div>
-           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 uppercase">{['Pn','Wt','Śr','Cz','Pt','So','Nd'].map(d => <div key={d}>{d}</div>)}</div>
+           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
            <div className="grid grid-cols-7 gap-1">
              {emptyDays.map((_, i) => <div key={`e-${i}`} />)}
              {daysArray.map(d => {
@@ -1000,7 +1000,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
               type="text"
               value={item.title || ''}
               onChange={(e) => handleChange('title', e.target.value)}
-              placeholder={item.type === 'header' ? 'Nazwa sekcji...' : 'Tytuł elementu...'}
+              placeholder={item.type === 'header' ? 'Nazwa sekcji...' : tr('Tytuł elementu...')}
               className="w-full text-base font-medium bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter dark:focus:border-accent-primary-dark text-gray-800 dark:text-white placeholder-gray-400 transition"
             />
           </>

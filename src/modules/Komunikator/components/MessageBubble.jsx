@@ -428,7 +428,7 @@ export default function MessageBubble({
           )}
           {/* Status przeczytania - tylko dla własnych wiadomości */}
           {isOwn && (
-            <span className="flex items-center" title={isRead ? `Przeczytane${readBy.length > 0 ? ` przez ${readBy.map(r => r.user_email).join(', ')}` : ''}` : 'Wysłane'}>
+            <span className="flex items-center" title={isRead ? `Przeczytane${readBy.length > 0 ? ` przez ${readBy.map(r => r.user_email).join(', ')}` : ''}` : tr('Wysłane')}>
               {isRead ? (
                 <CheckCheck size={14} className="text-blue-500" />
               ) : (

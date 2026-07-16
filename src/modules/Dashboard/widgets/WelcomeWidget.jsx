@@ -8,9 +8,9 @@ export default function WelcomeWidget({ userProfile, userEmail, stats }) {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Dzień dobry';
+    if (hour < 12) return tr('Dzień dobry');
     if (hour < 18) return 'Witaj';
-    return 'Dobry wieczór';
+    return tr('Dobry wieczór');
   };
 
   return (
@@ -50,13 +50,13 @@ export default function WelcomeWidget({ userProfile, userEmail, stats }) {
           <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <CheckSquare size={16} className="text-blue-500" />
             <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-              {stats.tasksCount} {stats.tasksCount === 1 ? 'zadanie' : 'zadań'}
+              {stats.tasksCount} {stats.tasksCount === 1 ? 'zadanie' : tr('zadań')}
             </span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
             <Calendar size={16} className="text-purple-500" />
             <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
-              {stats.upcomingServicesCount} {stats.upcomingServicesCount === 1 ? 'służba' : 'służb'}
+              {stats.upcomingServicesCount} {stats.upcomingServicesCount === 1 ? tr('służba') : tr('służb')}
             </span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 rounded-lg">

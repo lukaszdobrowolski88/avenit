@@ -348,7 +348,7 @@ function PrayerCard({ prayer, onClick }) {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Przed chwilą';
+    if (diffMins < 1) return tr('Przed chwilą');
     if (diffMins < 60) return `${diffMins} min temu`;
     if (diffHours < 24) return `${diffHours} godz. temu`;
     if (diffDays < 7) return `${diffDays} dni temu`;
@@ -481,7 +481,7 @@ export default function MyPrayersWidget({ prayers, userEmail, onRefresh, size = 
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Przed chwilą';
+    if (diffMins < 1) return tr('Przed chwilą');
     if (diffMins < 60) return `${diffMins} min temu`;
     if (diffHours < 24) return `${diffHours} godz. temu`;
     if (diffDays < 7) return `${diffDays} dni temu`;

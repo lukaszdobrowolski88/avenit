@@ -150,7 +150,7 @@ export default function CurrentPlan({ onUpgrade }) {
               {getStatusBadge(subscription.status)}
             </div>
             <p className="text-gray-600 dark:text-gray-400">
-              {subscription.billing_cycle === 'yearly' ? 'Plan roczny' : 'Plan miesięczny'}
+              {subscription.billing_cycle === 'yearly' ? 'Plan roczny' : tr('Plan miesięczny')}
             </p>
           </div>
           <div className="text-right">
@@ -162,7 +162,7 @@ export default function CurrentPlan({ onUpgrade }) {
               )}
             </div>
             <div className="text-sm text-gray-500">
-              /{subscription.billing_cycle === 'yearly' ? 'rok' : 'miesiąc'}
+              /{subscription.billing_cycle === 'yearly' ? 'rok' : tr('miesiąc')}
             </div>
           </div>
         </div>
@@ -228,7 +228,7 @@ export default function CurrentPlan({ onUpgrade }) {
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:shadow-lg transition"
         >
           <Zap size={16} />
-          {subscription.plan_slug === 'enterprise' ? 'Zarządzaj planem' : 'Ulepsz plan'}
+          {subscription.plan_slug === 'enterprise' ? tr('Zarządzaj planem') : 'Ulepsz plan'}
         </button>
         {subscription.status === 'trialing' && (
           <button

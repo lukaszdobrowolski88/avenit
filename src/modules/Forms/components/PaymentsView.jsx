@@ -468,7 +468,7 @@ export default function PaymentsView({ forms }) {
       p.participantEmail,
       p.formTitle,
       formatPrice(p.amount, p.currency),
-      p.status === 'paid' ? 'Opłacone' : 'Oczekuje',
+      p.status === 'paid' ? tr('Opłacone') : 'Oczekuje',
       getMethodName(p.method),
       p.reference || '-',
       formatDate(p.submittedAt),

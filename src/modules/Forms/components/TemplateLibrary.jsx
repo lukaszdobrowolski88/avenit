@@ -144,7 +144,7 @@ function TemplateCard({ template, icon: Icon, onSelect }) {
 
       <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          {fieldsCount} {fieldsCount === 1 ? 'pole' : 'pól'}
+          {fieldsCount} {fieldsCount === 1 ? 'pole' : tr('pól')}
         </span>
         <span className="flex items-center gap-1 text-sm font-medium text-accent-primary dark:text-accent-primary-light opacity-0 group-hover:opacity-100 transition-opacity">
           {tr('Użyj szablonu')}

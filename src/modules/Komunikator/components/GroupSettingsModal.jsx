@@ -333,7 +333,7 @@ export default function GroupSettingsModal({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={activeTab === 'members' ? 'Szukaj członków...' : 'Szukaj użytkowników...'}
+              placeholder={activeTab === 'members' ? tr('Szukaj członków...') : tr('Szukaj użytkowników...')}
               className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
             />
           </div>
@@ -375,7 +375,7 @@ export default function GroupSettingsModal({
                           onClick={() => handleToggleAdmin(participant.user_email, participant.role)}
                           disabled={saving}
                           className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition"
-                          title={participant.role === 'admin' ? 'Usuń uprawnienia admina' : 'Nadaj uprawnienia admina'}
+                          title={participant.role === 'admin' ? tr('Usuń uprawnienia admina') : 'Nadaj uprawnienia admina'}
                         >
                           <Crown
                             size={16}

@@ -83,7 +83,7 @@ export default function FolderModal({
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                {mode === 'create' ? 'Nowy folder' : 'Zmień nazwę folderu'}
+                {mode === 'create' ? 'Nowy folder' : tr('Zmień nazwę folderu')}
               </h2>
               {parentFolderName && mode === 'create' && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -141,7 +141,7 @@ export default function FolderModal({
                   {mode === 'create' ? 'Tworzenie...' : 'Zapisywanie...'}
                 </>
               ) : (
-                mode === 'create' ? 'Utwórz folder' : 'Zapisz'
+                mode === 'create' ? tr('Utwórz folder') : 'Zapisz'
               )}
             </button>
           </div>

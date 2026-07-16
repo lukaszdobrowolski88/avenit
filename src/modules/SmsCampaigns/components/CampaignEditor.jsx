@@ -71,11 +71,11 @@ export default function CampaignEditor({ campaign, template, onClose }) {
   const updateForm = (patch) => setForm(prev => ({ ...prev, ...patch }));
 
   const validate = () => {
-    if (!form.name.trim()) return 'Podaj nazwę kampanii';
-    if (!form.sender.trim()) return 'Podaj nadawcę';
+    if (!form.name.trim()) return tr('Podaj nazwę kampanii');
+    if (!form.sender.trim()) return tr('Podaj nadawcę');
     if (form.sender.length > SENDER_MAX) return `Nadawca: max ${SENDER_MAX} znaków`;
-    if (!form.body.trim()) return 'Podaj treść SMS-a';
-    if (form.send_mode === 'scheduled' && !form.scheduled_at) return 'Wybierz datę wysyłki';
+    if (!form.body.trim()) return tr('Podaj treść SMS-a');
+    if (form.send_mode === 'scheduled' && !form.scheduled_at) return tr('Wybierz datę wysyłki');
     return null;
   };
 
@@ -323,7 +323,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                         {analysis.encoding === 'unicode' ? 'Unicode' : 'GSM-7'}
                       </span>
                       <span>· {analysis.charCount} zn.</span>
-                      <span>· {analysis.parts || 1} {(analysis.parts || 1) === 1 ? 'część' : 'części'}</span>
+                      <span>· {analysis.parts || 1} {(analysis.parts || 1) === 1 ? tr('część') : tr('części')}</span>
                     </span>
                   }
                 >

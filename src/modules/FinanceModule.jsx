@@ -142,7 +142,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
           </div>
 
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map(d => (
+            {[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => (
               <div key={d} className="text-center text-[10px] font-bold text-gray-400 uppercase">{d}</div>
             ))}
           </div>
@@ -1107,7 +1107,7 @@ const FinanceModule = () => {
             </div>
           ) : filteredIncomeTransactions.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              {incomeTransactions.length === 0 ? `Brak wpływów na rok ${selectedYear}` : 'Brak wpływów pasujących do filtrów'}
+              {incomeTransactions.length === 0 ? `Brak wpływów na rok ${selectedYear}` : tr('Brak wpływów pasujących do filtrów')}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -1281,7 +1281,7 @@ const FinanceModule = () => {
             </div>
           ) : filteredExpenseTransactions.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              {expenseTransactions.length === 0 ? `Brak wydatków na rok ${selectedYear}` : 'Brak wydatków pasujących do filtrów'}
+              {expenseTransactions.length === 0 ? `Brak wydatków na rok ${selectedYear}` : tr('Brak wydatków pasujących do filtrów')}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -1500,7 +1500,7 @@ const FinanceModule = () => {
             </h3>
             <div className="space-y-3">
               {(() => {
-                const months = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'];
+                const months = [tr('Sty'), tr('Lut'), tr('Mar'), tr('Kwi'), tr('Maj'), tr('Cze'), tr('Lip'), tr('Sie'), tr('Wrz'), tr('Paź'), tr('Lis'), tr('Gru')];
                 const monthlyData = months.map((name, idx) => {
                   const monthNum = String(idx + 1).padStart(2, '0');
                   const monthStart = `${selectedYear}-${monthNum}-01`;

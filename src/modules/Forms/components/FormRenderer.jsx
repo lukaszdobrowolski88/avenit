@@ -179,7 +179,7 @@ export default function FormRenderer({
         return 'To pole jest wymagane';
       }
       if (Array.isArray(value) && value.length === 0) {
-        return 'Wybierz przynajmniej jedną opcję';
+        return tr('Wybierz przynajmniej jedną opcję');
       }
     }
 
@@ -200,9 +200,9 @@ export default function FormRenderer({
         const regex = new RegExp(field.validation.pattern);
         if (!regex.test(String(value))) {
           if (field.type === 'email') {
-            return 'Wprowadź poprawny adres email';
+            return tr('Wprowadź poprawny adres email');
           }
-          return 'Nieprawidłowy format';
+          return tr('Nieprawidłowy format');
         }
       }
     }
@@ -673,8 +673,8 @@ export default function FormRenderer({
               fields={index === 0 ? contactFields : participantFields}
               addons={addonsConfig.enabled ? addonsConfig.items : []}
               index={index}
-              label={index === 0 ? 'Osoba zgłaszająca' : (groupConfig.participantLabel || 'Członek zespołu')}
-              subtitle={index === 0 ? 'Osoba kontaktowa dla całej grupy' : null}
+              label={index === 0 ? tr('Osoba zgłaszająca') : (groupConfig.participantLabel || 'Członek zespołu')}
+              subtitle={index === 0 ? tr('Osoba kontaktowa dla całej grupy') : null}
               onUpdate={(updated) => handleParticipantUpdate(index, updated)}
               onRemove={() => removeParticipant(index)}
               canRemove={index > 0 && participants.length > (groupConfig.minParticipants || 1)}

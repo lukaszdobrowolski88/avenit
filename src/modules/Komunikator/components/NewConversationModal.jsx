@@ -271,7 +271,7 @@ export default function NewConversationModal({
               ) : (
                 <>
                   <Users size={18} />
-                  Utwórz grupę ({selectedUsers.length} {selectedUsers.length === 1 ? 'osoba' : selectedUsers.length < 5 ? 'osoby' : 'osób'})
+                  Utwórz grupę ({selectedUsers.length} {selectedUsers.length === 1 ? 'osoba' : selectedUsers.length < 5 ? 'osoby' : tr('osób')})
                 </>
               )}
             </button>

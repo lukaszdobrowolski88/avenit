@@ -338,7 +338,7 @@ export default function ParticipantsView({ forms }) {
       p.formTitle,
       new Date(p.submittedAt).toLocaleDateString('pl-PL'),
       p.totalAmount > 0 ? formatPrice(p.totalAmount, p.currency) : '-',
-      p.paymentStatus === 'paid' ? 'Opłacone' : p.paymentStatus === 'pending' ? 'Oczekuje' : '-'
+      p.paymentStatus === 'paid' ? tr('Opłacone') : p.paymentStatus === 'pending' ? 'Oczekuje' : '-'
     ]);
 
     const csvContent = [
@@ -967,7 +967,7 @@ export default function ParticipantsView({ forms }) {
                           Metoda: {selectedParticipant.paymentMethod === 'transfer' ? 'Przelew' :
                             selectedParticipant.paymentMethod === 'paypal' ? 'PayPal' :
                             selectedParticipant.paymentMethod === 'przelewy24' ? 'Przelewy24' :
-                            selectedParticipant.paymentMethod === 'cash' ? 'Gotówka' :
+                            selectedParticipant.paymentMethod === 'cash' ? tr('Gotówka') :
                             selectedParticipant.paymentMethod}
                         </p>
                       )}

@@ -519,9 +519,9 @@ export default function FieldEditor({ field, onUpdate }) {
               <option value="tiered">Cena progowa (rabaty)</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">
-              {field.priceConfig?.pricingType === 'per_person' && 'Cena zostanie pomnożona przez liczbę osób'}
-              {field.priceConfig?.pricingType === 'tiered' && 'Różne ceny w zależności od ilości osób'}
-              {field.priceConfig?.pricingType === 'fixed' && 'Taka sama cena niezależnie od ilości'}
+              {field.priceConfig?.pricingType === 'per_person' && tr('Cena zostanie pomnożona przez liczbę osób')}
+              {field.priceConfig?.pricingType === 'tiered' && tr('Różne ceny w zależności od ilości osób')}
+              {field.priceConfig?.pricingType === 'fixed' && tr('Taka sama cena niezależnie od ilości')}
             </p>
           </div>
 
@@ -667,7 +667,7 @@ export default function FieldEditor({ field, onUpdate }) {
               type={field.type.includes('date') ? 'date' : field.type.includes('time') ? 'time' : 'text'}
               value={field.defaultValue || ''}
               onChange={(e) => handleChange('defaultValue', e.target.value)}
-              placeholder={field.type === 'location' ? 'np. Sala główna, ul. Przykładowa 1' :
+              placeholder={field.type === 'location' ? tr('np. Sala główna, ul. Przykładowa 1') :
                            field.type.includes('date') ? '' : 'np. 10:00'}
               className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white"
             />

@@ -180,7 +180,7 @@ export default function MailSidebar({
                   {activeAccount?.external_email || activeAccount?.user_email || 'Konto'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {activeAccount?.account_type === 'external' ? 'Zewnętrzne' : 'Wewnętrzne'}
+                  {activeAccount?.account_type === 'external' ? tr('Zewnętrzne') : tr('Wewnętrzne')}
                 </p>
               </div>
               <ChevronDown size={16} className={`text-gray-400 transition-transform ${showAccountPicker ? 'rotate-180' : ''}`} />
@@ -214,7 +214,7 @@ export default function MailSidebar({
                           {account.external_email || account.user_email}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {account.account_type === 'external' ? 'Zewnętrzne' : 'Wewnętrzne'}
+                          {account.account_type === 'external' ? tr('Zewnętrzne') : tr('Wewnętrzne')}
                         </p>
                       </div>
                       {account.id === activeAccountId && (

@@ -128,7 +128,7 @@ const CustomDatePicker = ({ value, onChange }) => {
              <span className="text-sm font-bold capitalize text-gray-800 dark:text-white">{viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
              <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronRight size={18} /></button>
            </div>
-           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{['Pn','Wt','Śr','Cz','Pt','So','Nd'].map(d => <div key={d}>{d}</div>)}</div>
+           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
            <div className="grid grid-cols-7 gap-1">
              {emptyDays.map((_, i) => <div key={`e-${i}`} />)}
              {daysArray.map(d => {
@@ -2131,7 +2131,7 @@ export default function CalendarModule() {
             <div className="p-3">
               {/* Nagłówek dni tygodnia */}
               <div className="grid grid-cols-7 mb-2">
-                {['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map(d => (
+                {[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => (
                   <div key={d} className="text-center text-[10px] font-bold text-gray-400 uppercase py-2">
                     {d}
                   </div>
@@ -2261,13 +2261,13 @@ export default function CalendarModule() {
 
   const renderMonthView = () => {
     const dayNames = [
-      { short: 'Pn', full: 'Poniedziałek' },
-      { short: 'Wt', full: 'Wtorek' },
-      { short: 'Śr', full: 'Środa' },
-      { short: 'Cz', full: 'Czwartek' },
-      { short: 'Pt', full: 'Piątek' },
-      { short: 'So', full: 'Sobota' },
-      { short: 'Nd', full: 'Niedziela' },
+      { short: tr('Pn'), full: tr('Poniedziałek') },
+      { short: tr('Wt'), full: tr('Wtorek') },
+      { short: tr('Śr'), full: tr('Środa') },
+      { short: tr('Cz'), full: tr('Czwartek') },
+      { short: tr('Pt'), full: tr('Piątek') },
+      { short: tr('So'), full: tr('Sobota') },
+      { short: tr('Nd'), full: tr('Niedziela') },
     ];
 
     return (
@@ -2575,7 +2575,7 @@ export default function CalendarModule() {
                 <button onClick={nextMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"><ChevronRight size={16} /></button>
               </div>
             </div>
-            <div className="grid grid-cols-7 text-center text-xs text-gray-400 mb-2">{['Pon','Wt','Śr','Czw','Pt','Sob','Nd'].map(d => <div key={d} className="py-1">{d.charAt(0)}</div>)}</div>
+            <div className="grid grid-cols-7 text-center text-xs text-gray-400 mb-2">{[tr('Pon'), tr('Wt'), tr('Śr'), tr('Czw'), tr('Pt'), tr('Sob'), tr('Nd')].map(d => <div key={d} className="py-1">{d.charAt(0)}</div>)}</div>
             <div className="grid grid-cols-7 gap-1">
               {emptyDays.map((_, i) => <div key={`e-${i}`} />)}
               {daysArray.map(d => (

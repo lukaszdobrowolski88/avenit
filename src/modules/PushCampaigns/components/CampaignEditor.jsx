@@ -73,10 +73,10 @@ export default function CampaignEditor({ campaign, template, onClose }) {
   const updateForm = (patch) => setForm(prev => ({ ...prev, ...patch }));
 
   const validate = () => {
-    if (!form.name.trim()) return 'Podaj nazwę kampanii';
-    if (!form.title.trim()) return 'Podaj tytuł powiadomienia';
-    if (!form.body.trim()) return 'Podaj treść powiadomienia';
-    if (form.send_mode === 'scheduled' && !form.scheduled_at) return 'Wybierz datę wysyłki';
+    if (!form.name.trim()) return tr('Podaj nazwę kampanii');
+    if (!form.title.trim()) return tr('Podaj tytuł powiadomienia');
+    if (!form.body.trim()) return tr('Podaj treść powiadomienia');
+    if (form.send_mode === 'scheduled' && !form.scheduled_at) return tr('Wybierz datę wysyłki');
     return null;
   };
 

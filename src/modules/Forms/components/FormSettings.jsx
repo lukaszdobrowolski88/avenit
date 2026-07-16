@@ -410,7 +410,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                       }`}
                     >
-                      {pos === 'left' ? 'Po lewej' : pos === 'center' ? 'Na środku' : 'Po prawej'}
+                      {pos === 'left' ? 'Po lewej' : pos === 'center' ? tr('Na środku') : 'Po prawej'}
                     </button>
                   ))}
                 </div>

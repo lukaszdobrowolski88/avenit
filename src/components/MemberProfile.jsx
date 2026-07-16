@@ -185,7 +185,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
                   <CalendarCheck size={14} /> Frekwencja
                 </div>
                 <div className="text-sm text-gray-700 dark:text-gray-200">
-                  Ostatnie 90 dni: <b>{last90}</b> {last90 === 1 ? 'obecność' : 'obecności'} · łącznie {attendance.length}
+                  Ostatnie 90 dni: <b>{last90}</b> {last90 === 1 ? tr('obecność') : tr('obecności')} · łącznie {attendance.length}
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {attendance.slice(0, 8).map((a, i) => (

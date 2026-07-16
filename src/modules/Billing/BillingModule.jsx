@@ -114,7 +114,7 @@ export default function BillingModule() {
                   Plan {plan.name}
                 </div>
                 <div className="text-sm text-gray-500">
-                  {billingCycle === 'yearly' ? 'Rozliczenie roczne' : 'Rozliczenie miesięczne'}
+                  {billingCycle === 'yearly' ? 'Rozliczenie roczne' : tr('Rozliczenie miesięczne')}
                 </div>
               </div>
               <div className="text-right">
