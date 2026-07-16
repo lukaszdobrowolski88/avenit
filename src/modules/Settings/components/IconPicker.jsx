@@ -181,7 +181,7 @@ export default function IconPicker({ value, onChange, className = '' }) {
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                 >
-                  {category}
+                  {tr(category)}
                 </button>
               ))}
             </div>

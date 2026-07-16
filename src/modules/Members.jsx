@@ -717,7 +717,7 @@ export default function Members() {
                   <CustomSelect
                     label="Status"
                     value={formData.status}
-                    options={STATUS_OPTIONS}
+                    options={STATUS_OPTIONS.map((s) => ({ value: s, label: tr(s) }))}
                     onChange={(val) => setFormData({ ...formData, status: val })}
                   />
                 </div>

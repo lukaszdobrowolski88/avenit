@@ -1908,6 +1908,11 @@ const en = {
   'Wybierz pieśń...': 'Choose a song...',
   'Otwórz formularz': 'Open form',
   'Zewnętrzny link': 'External link',
+  'Załaduj starsze wiadomości': 'Load older messages',
+  '14 dni za darmo, bez karty kredytowej': '14 days free, no credit card',
+  'Wsparcie techniczne 24/7': '24/7 technical support',
+  'Bezpieczne przechowywanie danych (RODO)': 'Secure data storage (GDPR)',
+  'Jutro': 'Tomorrow',
 };
 
 const uk = {
@@ -3810,6 +3815,11 @@ const uk = {
   'Wybierz pieśń...': 'Виберіть пісню...',
   'Otwórz formularz': 'Відкрити форму',
   'Zewnętrzny link': 'Зовнішнє посилання',
+  'Załaduj starsze wiadomości': 'Завантажити старіші повідомлення',
+  '14 dni za darmo, bez karty kredytowej': '14 днів безкоштовно, без кредитної картки',
+  'Wsparcie techniczne 24/7': 'Технічна підтримка 24/7',
+  'Bezpieczne przechowywanie danych (RODO)': 'Безпечне зберігання даних (GDPR)',
+  'Jutro': 'Завтра',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

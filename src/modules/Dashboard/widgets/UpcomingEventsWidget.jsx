@@ -21,8 +21,8 @@ function formatWhen(dateStr, timeStr) {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const dayDiff = Math.round((d - startOfToday) / 86400000);
   let day;
-  if (dayDiff === 0) day = 'Dziś';
-  else if (dayDiff === 1) day = 'Jutro';
+  if (dayDiff === 0) day = tr('Dziś');
+  else if (dayDiff === 1) day = tr('Jutro');
   else day = d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
   const time = timeStr ? String(timeStr).slice(0, 5) : '';
   return { day, time, isSoon: dayDiff <= 1 };

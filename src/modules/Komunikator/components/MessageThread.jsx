@@ -370,7 +370,7 @@ export default function MessageThread({
                       {tr('Ładowanie...')}
                     </span>
                   ) : (
-                    'Załaduj starsze wiadomości'
+                    tr('Załaduj starsze wiadomości')
                   )}
                 </button>
               </div>
