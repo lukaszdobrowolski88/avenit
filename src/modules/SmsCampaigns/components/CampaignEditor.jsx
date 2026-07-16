@@ -201,7 +201,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
             <p className="text-xs text-gray-500">
               {recipientCount > 0 ? (
                 <>Wyśle do {recipientCount} osób · ~{formatPLN(estimatedCost)}</>
-              ) : 'Brak odbiorców z numerem'}
+              ) : tr('Brak odbiorców z numerem')}
             </p>
           </div>
         </div>

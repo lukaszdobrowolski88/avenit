@@ -819,7 +819,7 @@ export default function PaymentsView({ forms }) {
             <p className="text-gray-500 dark:text-gray-400">
               {searchQuery || selectedForm !== 'all' || statusFilter !== 'all'
                 ? tr('Brak płatności spełniających kryteria')
-                : 'Brak zarejestrowanych płatności'}
+                : tr('Brak zarejestrowanych płatności')}
             </p>
           </div>
         ) : (

@@ -444,7 +444,7 @@ export default function MailSettingsModal({
                     <p className="text-xs text-gray-500 mt-1">
                       {editingAccountId
                         ? tr('Hasło jest wymagane tylko jeśli chcesz je zmienić')
-                        : 'Dla Gmail użyj "hasła aplikacji" z ustawień konta Google'
+                        : tr('Dla Gmail użyj "hasła aplikacji" z ustawień konta Google')
                       }
                     </p>
                   </div>

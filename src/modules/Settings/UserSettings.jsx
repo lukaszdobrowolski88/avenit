@@ -590,7 +590,7 @@ export default function UserSettings() {
                           ? tr('Powiadomienia są zablokowane w ustawieniach przeglądarki')
                           : pushSubscribed
                             ? tr('Otrzymujesz powiadomienia o nowych wiadomościach')
-                            : 'Włącz, aby otrzymywać powiadomienia nawet gdy aplikacja jest zamknięta'}
+                            : tr('Włącz, aby otrzymywać powiadomienia nawet gdy aplikacja jest zamknięta')}
                       </p>
                     </div>
                   </div>

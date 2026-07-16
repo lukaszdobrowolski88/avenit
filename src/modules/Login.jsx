@@ -235,7 +235,7 @@ export default function Login() {
         <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
           {showForgotPassword
             ? tr('Podaj adres e-mail, a wyślemy Ci link do zresetowania hasła')
-            : 'Zaloguj się do Avenit'}
+            : tr('Zaloguj się do Avenit')}
         </p>
 
         <div className="mb-5">
@@ -283,7 +283,7 @@ export default function Login() {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   Logowanie...
                 </span>
-              ) : 'Zaloguj się'}
+              ) : tr('Zaloguj się')}
             </button>
 
             <button
@@ -313,7 +313,7 @@ export default function Login() {
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     {tr('Wysyłanie...')}
                   </span>
-                ) : 'Wyślij link do resetu hasła'}
+                ) : tr('Wyślij link do resetu hasła')}
               </button>
             )}
 

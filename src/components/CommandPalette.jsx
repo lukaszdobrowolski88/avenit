@@ -44,7 +44,7 @@ const SEARCHERS = [
         .limit(6);
       return (data || []).map((m) => ({
         id: `member-${m.id}`,
-        label: [m.first_name, m.last_name].filter(Boolean).join(' ') || m.email || 'Członek',
+        label: [m.first_name, m.last_name].filter(Boolean).join(' ') || m.email || tr('Członek'),
         sub: m.email || '',
         path: '/members',
       }));

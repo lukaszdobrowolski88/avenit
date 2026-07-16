@@ -673,7 +673,7 @@ export default function FormRenderer({
               fields={index === 0 ? contactFields : participantFields}
               addons={addonsConfig.enabled ? addonsConfig.items : []}
               index={index}
-              label={index === 0 ? tr('Osoba zgłaszająca') : (groupConfig.participantLabel || 'Członek zespołu')}
+              label={index === 0 ? tr('Osoba zgłaszająca') : (groupConfig.participantLabel || tr('Członek zespołu'))}
               subtitle={index === 0 ? tr('Osoba kontaktowa dla całej grupy') : null}
               onUpdate={(updated) => handleParticipantUpdate(index, updated)}
               onRemove={() => removeParticipant(index)}

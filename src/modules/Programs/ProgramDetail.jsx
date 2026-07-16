@@ -593,7 +593,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
 
   // Get song details
   const song = item.type === 'song' && item.songId ? songs.find(s => s.id === item.songId) : null;
-  const songTitle = song?.title || (item.type === 'song' ? (item.title || 'Wybierz pieśń...') : null);
+  const songTitle = song?.title || (item.type === 'song' ? (item.title || tr('Wybierz pieśń...')) : null);
   const currentKey = item.songKey || song?.key;
 
   // Header rendering
@@ -1925,9 +1925,9 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
   }));
 
   const PRESETS = [
-    { id: 'full', label: tr('Pełny'), desc: 'Plan + zespoły + pieśni', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections } } },
-    { id: 'planTeams', label: tr('Plan + zespoły'), desc: 'Bez stron pieśni', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, songs: false } } },
-    { id: 'planOnly', label: 'Sam plan', desc: 'Tylko plan szczegółowy', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, teams: false, songs: false } } },
+    { id: 'full', label: tr('Pełny'), desc: tr('Plan + zespoły + pieśni'), patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections } } },
+    { id: 'planTeams', label: tr('Plan + zespoły'), desc: tr('Bez stron pieśni'), patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, songs: false } } },
+    { id: 'planOnly', label: 'Sam plan', desc: tr('Tylko plan szczegółowy'), patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, teams: false, songs: false } } },
   ];
 
   return (

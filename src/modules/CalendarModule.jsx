@@ -1959,7 +1959,7 @@ export default function CalendarModule() {
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                               {ev.raw?.due_time
                                 ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time)
-                                : 'Cały dzień'} • {TEAMS[ev.team]?.label || 'Wydarzenie'}
+                                : tr('Cały dzień')} • {TEAMS[ev.team]?.label || 'Wydarzenie'}
                             </p>
                             {ev.raw?.location && (
                               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">

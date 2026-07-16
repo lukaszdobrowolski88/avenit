@@ -1896,6 +1896,16 @@ const en = {
   'Dostarczone': 'Delivered',
   'Odbite': 'Bounced',
   'Wypisani': 'Unsubscribed',
+  'Bez stron pieśni': 'Without song pages',
+  'Brak zarejestrowanych płatności': 'No registered payments',
+  'Brak zarejestrowanych uczestników': 'No registered participants',
+  'Cały dzień': 'All day',
+  'Dla Gmail użyj "hasła aplikacji" z ustawień konta Google': 'For Gmail use an "app password" from your Google account settings',
+  'Dziękujemy za informację. Zostałeś/aś usunięty/a z grafiku.': 'Thank you for the information. You have been removed from the schedule.',
+  'Plan + zespoły + pieśni': 'Plan + teams + songs',
+  'To przypisanie zostało już odrzucone.': 'This assignment has already been rejected.',
+  'Tylko plan szczegółowy': 'Detailed plan only',
+  'Wybierz pieśń...': 'Choose a song...',
 };
 
 const uk = {
@@ -3786,6 +3796,16 @@ const uk = {
   'Dostarczone': 'Доставлено',
   'Odbite': 'Відхилено',
   'Wypisani': 'Відписані',
+  'Bez stron pieśni': 'Без сторінок пісень',
+  'Brak zarejestrowanych płatności': 'Немає зареєстрованих платежів',
+  'Brak zarejestrowanych uczestników': 'Немає зареєстрованих учасників',
+  'Cały dzień': 'Весь день',
+  'Dla Gmail użyj "hasła aplikacji" z ustawień konta Google': 'Для Gmail використовуйте «пароль застосунку» з налаштувань облікового запису Google',
+  'Dziękujemy za informację. Zostałeś/aś usunięty/a z grafiku.': 'Дякуємо за інформацію. Вас видалено з розкладу.',
+  'Plan + zespoły + pieśni': 'План + команди + пісні',
+  'To przypisanie zostało już odrzucone.': 'Це призначення вже відхилено.',
+  'Tylko plan szczegółowy': 'Лише детальний план',
+  'Wybierz pieśń...': 'Виберіть пісню...',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

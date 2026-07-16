@@ -694,7 +694,7 @@ export default function GlobalSettings() {
         type: 'success',
         text: totalMerged > 0
           ? `Scalono ${totalMerged} zduplikowanych członków!`
-          : 'Nie znaleziono duplikatów do scalenia.'
+          : tr('Nie znaleziono duplikatów do scalenia.')
       });
     } catch (err) {
       console.error('Błąd scalania duplikatów:', err);

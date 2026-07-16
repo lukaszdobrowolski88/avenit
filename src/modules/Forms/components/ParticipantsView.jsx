@@ -747,7 +747,7 @@ export default function ParticipantsView({ forms }) {
             <p className="text-gray-500 dark:text-gray-400">
               {searchQuery || selectedForm !== 'all' || paymentFilter !== 'all'
                 ? tr('Brak uczestników spełniających kryteria')
-                : 'Brak zarejestrowanych uczestników'}
+                : tr('Brak zarejestrowanych uczestników')}
             </p>
           </div>
         ) : (
