@@ -6,8 +6,8 @@ import { tr } from '../../../i18n';
 const ACTION_TYPE_LABELS = {
   deep_link: 'Deep link (ekran w aplikacji)',
   inline_rsvp: 'Akcja inline (bez otwierania)',
-  open_form: 'Otwórz formularz',
-  external_url: 'Zewnętrzny link',
+  open_form: tr('Otwórz formularz'),
+  external_url: tr('Zewnętrzny link'),
 };
 
 export default function ActionButtonsBuilder({ categoryId, actions = [], onChange }) {

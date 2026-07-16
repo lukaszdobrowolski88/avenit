@@ -15,7 +15,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
     email: 'jan.kowalski@example.com',
     full_name: 'Jan Kowalski'
   }, 'preview', {
-    churchName: 'Twój Kościół',
+    churchName: tr('Twój Kościół'),
     baseUrl: window.location.origin
   });
 

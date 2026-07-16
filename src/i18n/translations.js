@@ -1906,6 +1906,8 @@ const en = {
   'To przypisanie zostało już odrzucone.': 'This assignment has already been rejected.',
   'Tylko plan szczegółowy': 'Detailed plan only',
   'Wybierz pieśń...': 'Choose a song...',
+  'Otwórz formularz': 'Open form',
+  'Zewnętrzny link': 'External link',
 };
 
 const uk = {
@@ -3806,6 +3808,8 @@ const uk = {
   'To przypisanie zostało już odrzucone.': 'Це призначення вже відхилено.',
   'Tylko plan szczegółowy': 'Лише детальний план',
   'Wybierz pieśń...': 'Виберіть пісню...',
+  'Otwórz formularz': 'Відкрити форму',
+  'Zewnętrzny link': 'Зовнішнє посилання',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

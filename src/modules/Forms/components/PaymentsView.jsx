@@ -504,7 +504,7 @@ export default function PaymentsView({ forms }) {
       transfer: 'Przelew bankowy',
       paypal: 'PayPal',
       przelewy24: 'Przelewy24',
-      cash: 'Gotówka',
+      cash: tr('Gotówka'),
       card: 'Karta'
     };
     return methods[method] || method;

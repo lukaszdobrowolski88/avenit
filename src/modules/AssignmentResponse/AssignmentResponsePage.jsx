@@ -25,7 +25,7 @@ export default function AssignmentResponsePage() {
     gitara_elektryczna: 'Gitara Elektryczna',
     bas: 'Gitara Basowa',
     cajon: 'Cajon/Perkusja',
-    naglospienie: 'Nagłośnienie',
+    naglospienie: tr('Nagłośnienie'),
     projekcja: 'Projekcja',
     transmisja: 'Transmisja',
     foto: 'Fotograf',
