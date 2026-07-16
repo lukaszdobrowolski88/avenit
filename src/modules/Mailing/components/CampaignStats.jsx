@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useT } from '../../../i18n';
 import {
   Send, Eye, MousePointer, AlertTriangle, UserMinus,
   TrendingUp, Calendar, Users, Download, ChevronDown,
@@ -6,6 +7,7 @@ import {
 } from 'lucide-react';
 
 export default function CampaignStats({ campaigns }) {
+  const t = useT();
   const [selectedCampaignId, setSelectedCampaignId] = useState(null);
   const [timeRange, setTimeRange] = useState('all'); // 'week', 'month', 'all'
 
@@ -106,7 +108,7 @@ export default function CampaignStats({ campaigns }) {
         </p>
         <div className="flex items-center justify-center gap-2 text-sm text-accent-primary-light dark:text-accent-primary-light">
           <Sparkles size={14} />
-          <span>Statystyki pojawią się po pierwszej wysyłce</span>
+          <span>{t('Statystyki pojawią się po pierwszej wysyłce')}</span>
         </div>
       </div>
     );
@@ -255,11 +257,11 @@ export default function CampaignStats({ campaigns }) {
                     <div className="flex items-center gap-6">
                       <div className="text-center">
                         <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{openRate}%</p>
-                        <p className="text-xs text-gray-500">Otwarcia</p>
+                        <p className="text-xs text-gray-500">{t('Otwarcia')}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{clickRate}%</p>
-                        <p className="text-xs text-gray-500">Kliknięcia</p>
+                        <p className="text-xs text-gray-500">{t('Kliknięcia')}</p>
                       </div>
                     </div>
                     <button

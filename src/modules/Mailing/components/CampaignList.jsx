@@ -5,6 +5,7 @@ import {
   TrendingUp, MousePointer, ArrowRight, Sparkles
 } from 'lucide-react';
 import { useCampaigns } from '../hooks/useCampaigns';
+import { useT } from '../../../i18n';
 
 const STATUS_CONFIG = {
   draft: {
@@ -58,6 +59,7 @@ const STATUS_CONFIG = {
 };
 
 export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats }) {
+  const t = useT();
   const [filter, setFilter] = useState('all');
   const [menuOpen, setMenuOpen] = useState(null);
   const { deleteCampaign, duplicateCampaign } = useCampaigns();
@@ -108,13 +110,13 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
           </div>
         </div>
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-          Brak maili
+          {t('Brak maili')}
         </h3>
         <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-          Stwórz swój pierwszy mail i dotrzyj do swojej społeczności
+          {t('Stwórz swój pierwszy mail i dotrzyj do swojej społeczności')}
         </p>
         <div className="flex items-center justify-center gap-2 text-sm text-accent-primary-light dark:text-accent-primary-light">
-          <span>Kliknij "Nowy mail" aby rozpocząć</span>
+          <span>{t('Kliknij "Nowy mail" aby rozpocząć')}</span>
           <ArrowRight size={14} className="animate-bounce-x" />
         </div>
       </div>
@@ -130,28 +132,28 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
           onClick={() => setFilter('all')}
           count={campaigns.length}
         >
-          Wszystkie
+          {t('Wszystkie')}
         </FilterButton>
         <FilterButton
           active={filter === 'draft'}
           onClick={() => setFilter('draft')}
           count={campaigns.filter(c => c.status === 'draft').length}
         >
-          Szkice
+          {t('Szkice')}
         </FilterButton>
         <FilterButton
           active={filter === 'scheduled'}
           onClick={() => setFilter('scheduled')}
           count={campaigns.filter(c => c.status === 'scheduled').length}
         >
-          Zaplanowane
+          {t('Zaplanowane')}
         </FilterButton>
         <FilterButton
           active={filter === 'sent'}
           onClick={() => setFilter('sent')}
           count={campaigns.filter(c => c.status === 'sent').length}
         >
-          Wysłane
+          {t('Wysłane')}
         </FilterButton>
       </div>
 
@@ -195,7 +197,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                     <button
                       onClick={(e) => { e.stopPropagation(); onEdit(campaign); }}
                       className="p-2 bg-accent-primary-light rounded-lg shadow-lg hover:scale-110 transition-transform"
-                      title="Edytuj"
+                      title={t('Edytuj')}
                     >
                       <Edit size={18} className="text-white" />
                     </button>
@@ -203,7 +205,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                       <button
                         onClick={(e) => { e.stopPropagation(); onViewStats(campaign); }}
                         className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:scale-110 transition-transform"
-                        title="Statystyki"
+                        title={t('Statystyki')}
                       >
                         <TrendingUp size={18} className="text-gray-700 dark:text-gray-300" />
                       </button>
@@ -214,7 +216,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                 {/* Badge statusu */}
                 <div className={`absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-1 rounded-lg ${status.bg} ${status.textColor} text-xs font-medium`}>
                   <StatusIcon size={12} />
-                  {status.label}
+                  {t(status.label)}
                 </div>
 
                 {/* Ikona maila jeśli brak podglądu */}
