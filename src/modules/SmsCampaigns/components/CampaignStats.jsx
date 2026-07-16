@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useT } from '../../../i18n';
 import {
   TrendingUp, Users, CheckCircle, CornerDownLeft, XCircle, ArrowLeft, Download,
   Send, DollarSign, MessageSquare,
@@ -7,6 +8,7 @@ import { supabase } from '../../../lib/supabase';
 import { formatPLN } from '../utils/smsEncoding';
 
 export default function CampaignStats({ campaign, onClose }) {
+  const t = useT();
   const [recipients, setRecipients] = useState([]);
   const [responses, setResponses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -148,7 +150,7 @@ export default function CampaignStats({ campaign, onClose }) {
         {loading ? (
           <div className="p-8 text-center text-gray-500">Ładowanie...</div>
         ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">Brak rekordów dla tego filtra.</div>
+          <div className="p-8 text-center text-gray-500">{t('Brak rekordów dla tego filtra.')}</div>
         ) : (
           <div className="overflow-auto max-h-[60vh]">
             <table className="w-full text-sm">

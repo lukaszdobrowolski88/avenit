@@ -499,6 +499,15 @@ const en = {
   'Opublikowany': 'Published',
   'Zamknięty': 'Closed',
   'Wersja robocza': 'Draft',
+  // Kampanie push / SMS
+  'Kampanie': 'Campaigns',
+  'Brak rekordów dla tego filtra.': 'No records for this filter.',
+  'Odpowiedź': 'Reply',
+  'Dostarczony': 'Delivered',
+  'Kolejka': 'Queue',
+  'Oczekuje': 'Pending',
+  'Otwarty': 'Opened',
+  'Pominięty': 'Skipped',
 };
 
 const uk = {
@@ -992,6 +1001,15 @@ const uk = {
   'Opublikowany': 'Опубліковано',
   'Zamknięty': 'Закрито',
   'Wersja robocza': 'Чернетка',
+  // Push / SMS кампанії
+  'Kampanie': 'Кампанії',
+  'Brak rekordów dla tego filtra.': 'Немає записів для цього фільтра.',
+  'Odpowiedź': 'Відповідь',
+  'Dostarczony': 'Доставлено',
+  'Kolejka': 'Черга',
+  'Oczekuje': 'Очікує',
+  'Otwarty': 'Відкрито',
+  'Pominięty': 'Пропущено',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

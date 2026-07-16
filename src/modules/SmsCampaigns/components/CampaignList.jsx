@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useSmsCampaigns } from '../hooks/useSmsCampaigns';
 import { STATUS_CONFIG } from '../constants';
+import { useT } from '../../../i18n';
 import { formatPLN } from '../utils/smsEncoding';
 
 const STATUS_ICON = {
@@ -14,6 +15,7 @@ const STATUS_ICON = {
 };
 
 export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, onRefresh }) {
+  const t = useT();
   const { deleteCampaign, duplicateCampaign, cancelCampaign } = useSmsCampaigns();
   const [filter, setFilter] = useState('all');
   const [menuOpen, setMenuOpen] = useState(null);
@@ -105,7 +107,7 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
 
                   <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-${cfg.color}-100 dark:bg-${cfg.color}-900/30 text-${cfg.color}-700 dark:text-${cfg.color}-400 mb-3`}>
                     <Icon size={11} />
-                    {cfg.label}
+                    {t(cfg.label)}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
