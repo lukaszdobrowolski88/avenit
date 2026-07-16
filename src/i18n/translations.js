@@ -482,6 +482,23 @@ const en = {
   'Kliknięte': 'Clicked',
   'Data wysyłki': 'Send date',
   'Statystyki pojawią się po pierwszej wysyłce': 'Statistics will appear after the first send',
+  // Formularze
+  'Formularze': 'Forms',
+  'Twórz formularze i zbieraj odpowiedzi': 'Create forms and collect responses',
+  'Nowy formularz': 'New form',
+  'Uczestnicy': 'Participants',
+  'Płatności': 'Payments',
+  'Brak formularzy': 'No forms',
+  'Brak zarchiwizowanych formularzy': 'No archived forms',
+  'Zarchiwizowane formularze pojawią się tutaj': 'Archived forms will appear here',
+  'Utwórz swój pierwszy formularz lub wybierz szablon': 'Create your first form or choose a template',
+  'Czy na pewno chcesz usunąć ten formularz?': 'Are you sure you want to delete this form?',
+  'Czy na pewno chcesz trwale usunąć ten formularz wraz ze wszystkimi odpowiedziami? Ta operacja jest nieodwracalna.': 'Are you sure you want to permanently delete this form and all its responses? This action is irreversible.',
+  'Ten formularz ma zapisane odpowiedzi. Czy chcesz przenieść go do archiwum?': 'This form has saved responses. Do you want to move it to the archive?',
+  'Archiwum': 'Archive',
+  'Opublikowany': 'Published',
+  'Zamknięty': 'Closed',
+  'Wersja robocza': 'Draft',
 };
 
 const uk = {
@@ -958,6 +975,23 @@ const uk = {
   'Kliknięte': 'Клікнуто',
   'Data wysyłki': 'Дата надсилання',
   'Statystyki pojawią się po pierwszej wysyłce': 'Статистика зʼявиться після першого надсилання',
+  // Форми
+  'Formularze': 'Форми',
+  'Twórz formularze i zbieraj odpowiedzi': 'Створюйте форми та збирайте відповіді',
+  'Nowy formularz': 'Нова форма',
+  'Uczestnicy': 'Учасники',
+  'Płatności': 'Платежі',
+  'Brak formularzy': 'Немає форм',
+  'Brak zarchiwizowanych formularzy': 'Немає архівованих форм',
+  'Zarchiwizowane formularze pojawią się tutaj': 'Архівовані форми зʼявляться тут',
+  'Utwórz swój pierwszy formularz lub wybierz szablon': 'Створіть першу форму або оберіть шаблон',
+  'Czy na pewno chcesz usunąć ten formularz?': 'Ви впевнені, що хочете видалити цю форму?',
+  'Czy na pewno chcesz trwale usunąć ten formularz wraz ze wszystkimi odpowiedziami? Ta operacja jest nieodwracalna.': 'Ви впевнені, що хочете назавжди видалити цю форму разом з усіма відповідями? Цю дію неможливо скасувати.',
+  'Ten formularz ma zapisane odpowiedzi. Czy chcesz przenieść go do archiwum?': 'Ця форма має збережені відповіді. Перемістити її до архіву?',
+  'Archiwum': 'Архів',
+  'Opublikowany': 'Опубліковано',
+  'Zamknięty': 'Закрито',
+  'Wersja robocza': 'Чернетка',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };
