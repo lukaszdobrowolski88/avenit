@@ -7,6 +7,7 @@ import CampaignEditor from './components/CampaignEditor';
 import CampaignStats from './components/CampaignStats';
 import TemplateGallery from './components/TemplateGallery';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import { useT } from '../../i18n';
 import { formatPLN } from './utils/smsEncoding';
 
 const TABS = [
@@ -16,6 +17,7 @@ const TABS = [
 ];
 
 export default function SmsCampaignsModule() {
+  const t = useT();
   const [tab, setTab] = useState('campaigns');
   const [view, setView] = useState({ type: 'list' });
   const [editingCampaign, setEditingCampaign] = useState(null);
@@ -79,7 +81,7 @@ export default function SmsCampaignsModule() {
         </p>
       </div>
 
-      <ResponsiveTabs tabs={TABS} activeTab={tab} onChange={setTab} />
+      <ResponsiveTabs tabs={TABS.map((x) => ({ ...x, label: t(x.label) }))} activeTab={tab} onChange={setTab} />
 
       {tab === 'campaigns' && (
         loading ? (

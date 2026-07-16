@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useT } from '../../../i18n';
 import { TrendingUp, Users, Eye, MousePointer, XCircle, ArrowLeft, Download, Send } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 export default function CampaignStats({ campaign, onClose }) {
+  const t = useT();
   const [recipients, setRecipients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -99,7 +101,7 @@ export default function CampaignStats({ campaign, onClose }) {
         {loading ? (
           <div className="p-8 text-center text-gray-500">Ładowanie...</div>
         ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">Brak rekordów dla tego filtra.</div>
+          <div className="p-8 text-center text-gray-500">{t('Brak rekordów dla tego filtra.')}</div>
         ) : (
           <div className="overflow-auto max-h-[60vh]">
             <table className="w-full text-sm">
