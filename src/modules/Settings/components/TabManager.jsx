@@ -19,9 +19,11 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TabEditor from './TabEditor';
+import { useT } from '../../../i18n';
 
 // Sortable Tab Item
 function SortableTabItem({ tab, onEdit, onDelete }) {
+  const t = useT();
   const {
     attributes,
     listeners,
@@ -73,7 +75,7 @@ function SortableTabItem({ tab, onEdit, onDelete }) {
       {/* Actions */}
       <div className="flex items-center gap-1">
         {tab.is_system ? (
-          <div className="p-2 text-gray-400" title="Zakładka systemowa">
+          <div className="p-2 text-gray-400" title={t('Zakładka systemowa')}>
             <Lock size={16} />
           </div>
         ) : (
@@ -81,14 +83,14 @@ function SortableTabItem({ tab, onEdit, onDelete }) {
             <button
               onClick={() => onEdit(tab)}
               className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
-              title="Edytuj"
+              title={t('Edytuj')}
             >
               <Pencil size={16} />
             </button>
             <button
               onClick={() => onDelete(tab)}
               className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition opacity-0 group-hover:opacity-100"
-              title="Usuń"
+              title={t('Usuń')}
             >
               <Trash2 size={16} />
             </button>
@@ -108,6 +110,7 @@ export default function TabManager({
   onDeleteTab,
   onReorderTabs
 }) {
+  const t = useT();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingTab, setEditingTab] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -231,8 +234,8 @@ export default function TabManager({
             </DndContext>
           ) : (
             <div className="text-center py-12 text-gray-400">
-              <p>Brak zakładek w tym module</p>
-              <p className="text-sm mt-1">Kliknij "Dodaj zakładkę" aby dodać pierwszą</p>
+              <p>{t('Brak zakładek w tym module')}</p>
+              <p className="text-sm mt-1">{t('Kliknij "Dodaj zakładkę" aby dodać pierwszą')}</p>
             </div>
           )}
         </div>

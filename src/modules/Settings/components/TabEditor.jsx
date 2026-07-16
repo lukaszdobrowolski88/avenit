@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen } from 'lucide-react';
 import IconPicker from './IconPicker';
+import { useT } from '../../../i18n';
 
 // Dostępne typy komponentów
 const COMPONENT_TYPES = [
@@ -17,6 +18,7 @@ const COMPONENT_TYPES = [
 ];
 
 export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, existingKeys = [] }) {
+  const t = useT();
   const isEditing = !!tab?.id;
 
   const [form, setForm] = useState({
@@ -208,7 +210,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
               <p className="mt-1 text-xs text-red-500">{errors.key}</p>
             )}
             {isEditing && tab?.is_system && (
-              <p className="mt-1 text-xs text-gray-400">Klucz zakładki systemowej nie może być zmieniony</p>
+              <p className="mt-1 text-xs text-gray-400">{t('Klucz zakładki systemowej nie może być zmieniony')}</p>
             )}
           </div>
 

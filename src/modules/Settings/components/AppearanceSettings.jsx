@@ -3,9 +3,11 @@ import { Palette, Moon, Image as ImageIcon, Upload } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { SettingsCard, SettingRow, Toggle, SelectSetting } from './SettingsUI';
 import ColorPresetPicker from './ColorPresetPicker';
+import { useT } from '../../../i18n';
 
 // Wygląd i personalizacja: logo, motyw kolorystyczny, tryb ciemny, gęstość.
 export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload }) {
+  const t = useT();
   return (
     <div className="max-w-3xl">
       <SettingsCard title="Logo organizacji" description="Wyświetlane na ekranie logowania i w menu." icon={ImageIcon}>
@@ -22,7 +24,7 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload })
             <input id="logo-upload-appearance" type="file" className="hidden" accept="image/*" onChange={onLogoUpload} />
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            <p>Zalecany format: PNG lub SVG z przezroczystym tłem.</p>
+            <p>{t('Zalecany format: PNG lub SVG z przezroczystym tłem.')}</p>
             <p className="mt-1">Kwadratowe, min. 256×256 px.</p>
           </div>
         </div>

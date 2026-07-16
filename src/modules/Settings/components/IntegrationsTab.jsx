@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Loader2, Eye, EyeOff, AlertCircle, CheckCircle, MessageSquare, Copy, ExternalLink } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { useT } from '../../../i18n';
 
 // Klucze SMSAPI w `integration_settings` (admin-only RLS).
 const SMSAPI_KEYS = [
@@ -36,6 +37,7 @@ const SMSAPI_KEYS = [
 ];
 
 export default function IntegrationsTab() {
+  const t = useT();
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState({});
@@ -126,7 +128,7 @@ export default function IntegrationsTab() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Ładowanie...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500">{t('Ładowanie...')}</div>;
 
   return (
     <div className="space-y-8 max-w-3xl">
@@ -149,7 +151,7 @@ export default function IntegrationsTab() {
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">SMSAPI.pl</h2>
-            <p className="text-xs text-gray-500">Konfiguracja bramki SMS dla modułu SMS Kampanie.</p>
+            <p className="text-xs text-gray-500">{t('Konfiguracja bramki SMS dla modułu SMS Kampanie.')}</p>
           </div>
         </div>
 
@@ -264,8 +266,8 @@ export default function IntegrationsTab() {
           {/* Test connection */}
           <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
             <div className="text-sm">
-              <p className="font-medium text-gray-900 dark:text-white">Test połączenia</p>
-              <p className="text-xs text-gray-500">Sprawdź czy edge function odpowiada i token jest skonfigurowany.</p>
+              <p className="font-medium text-gray-900 dark:text-white">{t('Test połączenia')}</p>
+              <p className="text-xs text-gray-500">{t('Sprawdź czy edge function odpowiada i token jest skonfigurowany.')}</p>
             </div>
             <button
               onClick={handleTestConnection}

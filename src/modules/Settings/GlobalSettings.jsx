@@ -213,10 +213,10 @@ export default function GlobalSettings() {
 
   // Definicja służb/zespołów z ich tabelami w bazie
   const teamDefinitions = [
-    { key: 'worship', label: 'Grupa Uwielbienia', table: 'worship_team' },
+    { key: 'worship', label: t('Grupa Uwielbienia'), table: 'worship_team' },
     { key: 'media', label: 'Media Team', table: 'media_team' },
-    { key: 'atmosfera', label: 'Atmosfera Team', table: 'atmosfera_members' },
-    { key: 'kids', label: 'Małe Avenit', table: 'kids_teachers' },
+    { key: 'atmosfera', label: t('Atmosfera Team'), table: 'atmosfera_members' },
+    { key: 'kids', label: t('Małe Avenit'), table: 'kids_teachers' },
     { key: 'homegroups', label: 'Grupy Domowe (Lider)', table: 'home_group_leaders' }
   ];
 
@@ -234,8 +234,8 @@ export default function GlobalSettings() {
     { key: 'superadmin', label: 'Super Administrator' },
     { key: 'rada_starszych', label: 'Rada Starszych' },
     { key: 'koordynator', label: 'Koordynator' },
-    { key: 'lider', label: 'Lider Służby' },
-    { key: 'czlonek', label: 'Członek' }
+    { key: 'lider', label: t('Lider Służby') },
+    { key: 'czlonek', label: t('Członek') }
   ];
 
 
@@ -988,7 +988,7 @@ export default function GlobalSettings() {
               { key: 'org_legal_name', label: 'Nazwa prawna', placeholder: 'Pełna nazwa do dokumentów' },
               { key: 'org_tax_id', label: 'NIP', placeholder: '000-000-00-00' },
               { key: 'org_email', label: 'E-mail kontaktowy', type: 'email', placeholder: 'kontakt@kosciol.pl' },
-              { key: 'org_phone', label: 'Telefon', placeholder: '+48 000 000 000' },
+              { key: 'org_phone', label: t('Telefon'), placeholder: '+48 000 000 000' },
               { key: 'org_website', label: 'Strona WWW', placeholder: 'https://...' },
             ].map((f) => (
               <div key={f.key} className="mb-4">
@@ -1003,7 +1003,7 @@ export default function GlobalSettings() {
               </div>
             ))}
             <div className="mb-4">
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">Adres</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">{t('Adres')}</label>
               <textarea
                 rows={2}
                 placeholder="Ulica, kod pocztowy, miasto"
@@ -1012,7 +1012,7 @@ export default function GlobalSettings() {
                 onBlur={(e) => { if (e.target.value !== (getSetting('org_address') || '')) saveSetting('org_address', e.target.value); }}
               />
             </div>
-            <p className="text-xs text-gray-400 mt-2">Logo i kolory ustawisz w zakładce <strong>Wygląd</strong>.</p>
+            <p className="text-xs text-gray-400 mt-2">Logo i kolory ustawisz w zakładce <strong>{t('Wygląd')}</strong>.</p>
           </div>
         )}
 
@@ -1024,7 +1024,7 @@ export default function GlobalSettings() {
         {/* --- TAB: MODUŁY --- */}
         {activeTab === 'modules' && (
           <div className="max-w-3xl">
-            <SectionHeader title="Włączanie Modułów" description="Włączaj lub ukrywaj funkcje systemu." />
+            <SectionHeader title={t('Włączanie Modułów')} description="Włączaj lub ukrywaj funkcje systemu." />
             <div className="space-y-3">
               {/* Moduły z tabeli app_modules (nowy system) */}
               {dbModules
@@ -1078,15 +1078,15 @@ export default function GlobalSettings() {
         {activeTab === 'users' && (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <SectionHeader title="Użytkownicy Systemu" description="Zarządzanie dostępem, rolami i statusem kont." />
+              <SectionHeader title={t('Użytkownicy Systemu')} description="Zarządzanie dostępem, rolami i statusem kont." />
               <div className="flex items-center gap-2">
-                <button onClick={mergeDuplicateMembers} className="bg-accent-secondary-light text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition text-sm" title="Scal zduplikowanych członków w służbach"><Layers size={16}/> Scal duplikaty</button>
+                <button onClick={mergeDuplicateMembers} className="bg-accent-secondary-light text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition text-sm" title={t('Scal zduplikowanych członków w służbach')}><Layers size={16}/> Scal duplikaty</button>
                 <button onClick={() => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setShowUserModal(true); }} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition"><Plus size={18}/> Dodaj Użytkownika</button>
               </div>
             </div>
             <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
               <table className="w-full text-sm text-left bg-white dark:bg-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4">Użytkownik</th><th className="p-4">Email</th><th className="p-4">Rola</th>{campuses.length > 0 && <th className="p-4">Lokalizacja</th>}<th className="p-4">Status</th><th className="p-4 text-right">Akcje</th></tr></thead>
+                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4">{t('Użytkownik')}</th><th className="p-4">{t('Email')}</th><th className="p-4">{t('Rola')}</th>{campuses.length > 0 && <th className="p-4">{t('Lokalizacja')}</th>}<th className="p-4">{t('Status')}</th><th className="p-4 text-right">{t('Akcje')}</th></tr></thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
                   {users.map(user => {
                     const roleLabel = definedRoles.find(r => r.key === user.role)?.label || user.role;
@@ -1124,7 +1124,7 @@ export default function GlobalSettings() {
         {/* --- TAB: UPRAWNIENIA (UNIFIED) --- */}
         {activeTab === 'permissions' && (
           <div>
-            <SectionHeader title="Uprawnienia" description="Zarządzaj dostępem do modułów i zakładek według ról użytkowników oraz indywidualnych użytkowników." />
+            <SectionHeader title={t('Uprawnienia')} description="Zarządzaj dostępem do modułów i zakładek według ról użytkowników oraz indywidualnych użytkowników." />
 
             {/* PRZEŁĄCZNIK ROL / UŻYTKOWNICY */}
             <div className="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
@@ -1147,7 +1147,7 @@ export default function GlobalSettings() {
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex-1 max-w-md">
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Wybierz użytkownika</label>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">{t('Wybierz użytkownika')}</label>
                     <CustomSelect
                       options={users.map(u => ({
                         value: u.id,
@@ -1155,7 +1155,7 @@ export default function GlobalSettings() {
                       }))}
                       value={selectedUserId}
                       onChange={(val) => setSelectedUserId(val)}
-                      placeholder="Wybierz użytkownika..."
+                      placeholder={t('Wybierz użytkownika...')}
                     />
                   </div>
                   <button
@@ -1268,8 +1268,8 @@ export default function GlobalSettings() {
                             <table className="w-full text-sm">
                               <thead>
                                 <tr className="border-b border-gray-200 dark:border-gray-600">
-                                  <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-300">Zakładka</th>
-                                  <th className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-300">Wszyscy</th>
+                                  <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-300">{t('Zakładka')}</th>
+                                  <th className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-300">{t('Wszyscy')}</th>
                                   {definedRoles.map(role => (
                                     <th key={role.key} className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-300">
                                       {role.label}
@@ -1397,11 +1397,11 @@ export default function GlobalSettings() {
         {/* --- TAB: SŁOWNIKI --- */}
         {activeTab === 'dictionaries' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <DictionaryEditor title="Statusy Członków" category="member_status" items={dictionaries} onAdd={addDict} onDelete={delDict} />
+            <DictionaryEditor title={t('Statusy Członków')} category="member_status" items={dictionaries} onAdd={addDict} onDelete={delDict} />
             <DictionaryEditor title="Role w Zespole" category="team_role" items={dictionaries} onAdd={addDict} onDelete={delDict} />
-            <DictionaryEditor title="Typy Materiałów" category="material_type" items={dictionaries} onAdd={addDict} onDelete={delDict} />
-            <DictionaryEditor title="Kategorie Pieśni" category="song_category" items={dictionaries} onAdd={addDict} onDelete={delDict} />
-            <DictionaryEditor title="Kategorie Wydarzeń" category="event_category" items={dictionaries} onAdd={addDict} onDelete={delDict} />
+            <DictionaryEditor title={t('Typy Materiałów')} category="material_type" items={dictionaries} onAdd={addDict} onDelete={delDict} />
+            <DictionaryEditor title={t('Kategorie Pieśni')} category="song_category" items={dictionaries} onAdd={addDict} onDelete={delDict} />
+            <DictionaryEditor title={t('Kategorie Wydarzeń')} category="event_category" items={dictionaries} onAdd={addDict} onDelete={delDict} />
           </div>
         )}
 
@@ -1439,13 +1439,13 @@ export default function GlobalSettings() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border border-white/20 dark:border-gray-700 max-h-[calc(100vh-2rem)] flex flex-col">
             <div className="flex justify-between items-center px-6 pt-6 pb-4 flex-shrink-0">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">Użytkownik</h3>
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{t('Użytkownik')}</h3>
               <button onClick={() => setShowUserModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"><X/></button>
             </div>
             <div className="px-6 pb-2 overflow-y-auto flex-1 min-h-0 space-y-4">
               <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Imię i nazwisko</label>
-                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="Jan Kowalski" value={userForm.full_name || ''} onChange={e => setUserForm({...userForm, full_name: e.target.value})} />
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Imię i nazwisko')}</label>
+                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={t('Jan Kowalski')} value={userForm.full_name || ''} onChange={e => setUserForm({...userForm, full_name: e.target.value})} />
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Email (Login)</label>
@@ -1460,23 +1460,23 @@ export default function GlobalSettings() {
               )}
               <div>
                 <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">Rola w systemie</label>
-                <CustomSelect options={definedRoles.filter(r => r.key !== 'superadmin').map(r => ({value: r.key, label: r.label}))} value={userForm.role} onChange={v => setUserForm({...userForm, role: v})} placeholder="Wybierz rolę..." />
+                <CustomSelect options={definedRoles.filter(r => r.key !== 'superadmin').map(r => ({value: r.key, label: r.label}))} value={userForm.role} onChange={v => setUserForm({...userForm, role: v})} placeholder={t('Wybierz rolę...')} />
               </div>
               {campuses.length > 0 && (
                 <div>
                   <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">Lokalizacja (kampus)</label>
                   <CustomSelect
-                    options={[{ value: '', label: 'Wszystkie lokalizacje (brak ograniczeń)' }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
+                    options={[{ value: '', label: t('Wszystkie lokalizacje (brak ograniczeń)') }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
                     value={userForm.campus_id ? String(userForm.campus_id) : ''}
                     onChange={v => setUserForm({ ...userForm, campus_id: v ? parseInt(v, 10) : null })}
-                    placeholder="Wybierz lokalizację..."
+                    placeholder={t('Wybierz lokalizację...')}
                   />
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">Użytkownik przypisany do lokalizacji widzi tylko dane tej lokalizacji.</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">{t('Użytkownik przypisany do lokalizacji widzi tylko dane tej lokalizacji.')}</p>
                 </div>
               )}
               {!userForm.id && (
                 <div>
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2 block">Służby / Zespoły</label>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2 block">{t('Służby / Zespoły')}</label>
                   <div className="border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 p-3">
                     <div className="flex flex-wrap gap-2">
                       {teamDefinitions.map(team => {
@@ -1512,7 +1512,7 @@ export default function GlobalSettings() {
               )}
               {!userForm.id && (
                 <div>
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2 block">Bezpieczeństwo</label>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-2 block">{t('Bezpieczeństwo')}</label>
                   <div className="border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 p-3">
                     <label className="flex items-center gap-3 cursor-pointer">
                       <div className="relative">

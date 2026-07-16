@@ -4,6 +4,7 @@ import { useTwoFactor } from '../hooks/useTwoFactor';
 import { Shield, ArrowLeft } from 'lucide-react';
 
 export default function Login() {
+  const t = useT();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -251,7 +252,7 @@ export default function Login() {
 
         {!showForgotPassword && (
           <div className="mb-6">
-            <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">Hasło</label>
+            <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{t('Hasło')}</label>
             <input
               type="password"
               className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
@@ -296,8 +297,8 @@ export default function Login() {
           <>
             {resetEmailSent ? (
               <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-center">
-                <p className="font-bold mb-1">Email został wysłany!</p>
-                <p className="text-sm">Sprawdź swoją skrzynkę i kliknij link, aby zresetować hasło.</p>
+                <p className="font-bold mb-1">{t('Email został wysłany!')}</p>
+                <p className="text-sm">{t('Sprawdź swoją skrzynkę i kliknij link, aby zresetować hasło.')}</p>
               </div>
             ) : (
               <button

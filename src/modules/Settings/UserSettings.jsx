@@ -9,6 +9,7 @@ import { useTwoFactor } from '../../hooks/useTwoFactor';
 import TwoFactorSetup from '../../components/TwoFactorSetup';
 
 export default function UserSettings() {
+  const t = useT();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -482,7 +483,7 @@ export default function UserSettings() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Mój Profil</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{t('Mój Profil')}</h1>
       </div>
 
       {message && (
@@ -529,7 +530,7 @@ export default function UserSettings() {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię i Nazwisko</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Imię i Nazwisko')}</label>
                 <input 
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-accent-primary-light dark:focus:border-accent-primary-light outline-none transition"
                   value={formData.full_name}
@@ -568,7 +569,7 @@ export default function UserSettings() {
             {!pushSupported ? (
               <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-gray-500 dark:text-gray-400">
                 <BellOff size={20} />
-                <span>Twoja przeglądarka nie obsługuje powiadomień push.</span>
+                <span>{t('Twoja przeglądarka nie obsługuje powiadomień push.')}</span>
               </div>
             ) : (
               <div className="space-y-4">
@@ -645,8 +646,8 @@ export default function UserSettings() {
                 <Shield size={24} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Uwierzytelnianie dwuskładnikowe</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Dodatkowa warstwa bezpieczeństwa dla Twojego konta</p>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('Uwierzytelnianie dwuskładnikowe')}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Dodatkowa warstwa bezpieczeństwa dla Twojego konta')}</p>
               </div>
             </div>
 
@@ -657,7 +658,7 @@ export default function UserSettings() {
                   <div className="flex items-center gap-3">
                     <ShieldCheck size={24} className="text-emerald-600 dark:text-emerald-400" />
                     <div>
-                      <p className="font-medium text-emerald-800 dark:text-emerald-300">2FA włączone</p>
+                      <p className="font-medium text-emerald-800 dark:text-emerald-300">{t('2FA włączone')}</p>
                       <p className="text-xs text-emerald-600 dark:text-emerald-400">
                         Aktywowane {twoFactorStatus.verifiedAt
                           ? new Date(twoFactorStatus.verifiedAt).toLocaleDateString('pl-PL')
@@ -757,7 +758,7 @@ export default function UserSettings() {
                 <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
                   <div className="flex items-center gap-2 mb-3">
                     <ShieldOff size={18} className="text-red-600 dark:text-red-400" />
-                    <span className="font-medium text-red-800 dark:text-red-300">Wyłącz 2FA</span>
+                    <span className="font-medium text-red-800 dark:text-red-300">{t('Wyłącz 2FA')}</span>
                   </div>
                   <p className="text-xs text-red-600 dark:text-red-400 mb-3">
                     Wprowadź kod z aplikacji Google Authenticator, aby wyłączyć uwierzytelnianie dwuskładnikowe.
@@ -795,7 +796,7 @@ export default function UserSettings() {
                   <div className="flex items-center gap-3">
                     <ShieldOff size={24} className="text-gray-400" />
                     <div>
-                      <p className="font-medium text-gray-700 dark:text-gray-300">2FA wyłączone</p>
+                      <p className="font-medium text-gray-700 dark:text-gray-300">{t('2FA wyłączone')}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         Włącz, aby zwiększyć bezpieczeństwo konta
                       </p>
@@ -811,11 +812,11 @@ export default function UserSettings() {
                 </div>
 
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  <p className="mb-2 font-medium">Jak działa 2FA?</p>
+                  <p className="mb-2 font-medium">{t('Jak działa 2FA?')}</p>
                   <ol className="list-decimal list-inside space-y-1 text-xs">
-                    <li>Zainstaluj aplikację Google Authenticator lub podobną na telefonie</li>
-                    <li>Zeskanuj kod QR lub wprowadź klucz ręcznie</li>
-                    <li>Przy każdym logowaniu wprowadź 6-cyfrowy kod z aplikacji</li>
+                    <li>{t('Zainstaluj aplikację Google Authenticator lub podobną na telefonie')}</li>
+                    <li>{t('Zeskanuj kod QR lub wprowadź klucz ręcznie')}</li>
+                    <li>{t('Przy każdym logowaniu wprowadź 6-cyfrowy kod z aplikacji')}</li>
                   </ol>
                 </div>
               </div>
@@ -853,13 +854,13 @@ export default function UserSettings() {
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {[
-                  { key: 'programs', label: 'Nabożeństwa', icon: '⛪' },
-                  { key: 'events', label: 'Wydarzenia', icon: '📅' },
-                  { key: 'tasks', label: 'Zadania', icon: '✅' },
-                  { key: 'mlodziezowka', label: 'Młodzieżówka', icon: '🎉' },
+                  { key: 'programs', label: t('Nabożeństwa'), icon: '⛪' },
+                  { key: 'events', label: t('Wydarzenia'), icon: '📅' },
+                  { key: 'tasks', label: t('Zadania'), icon: '✅' },
+                  { key: 'mlodziezowka', label: t('Młodzieżówka'), icon: '🎉' },
                   { key: 'worship', label: 'Uwielbienie', icon: '🎵' },
                   { key: 'media', label: 'Media', icon: '🎬' },
-                  { key: 'atmosfera', label: 'Atmosfera', icon: '💚' },
+                  { key: 'atmosfera', label: t('Atmosfera'), icon: '💚' },
                   { key: 'kids', label: 'Dzieci', icon: '👶' },
                   { key: 'homegroups', label: 'Grupy Domowe', icon: '🏠' }
                 ].map(item => (
@@ -920,7 +921,7 @@ export default function UserSettings() {
                     <button
                       onClick={() => setShowIcalQrCode(true)}
                       className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                      title="Pokaż kod QR"
+                      title={t('Pokaż kod QR')}
                     >
                       <QrCode size={18} />
                     </button>
@@ -958,7 +959,7 @@ export default function UserSettings() {
                     onClick={handleCreateOrResetIcal}
                     disabled={icalLoading}
                     className="px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition flex items-center gap-2"
-                    title="Resetuj token (poprzedni link przestanie działać)"
+                    title={t('Resetuj token (poprzedni link przestanie działać)')}
                   >
                     <RefreshCw size={16} />
                     Resetuj token
@@ -1086,8 +1087,8 @@ export default function UserSettings() {
                     onChange={(e) => setMailSignature(e.target.value)}
                     placeholder={`<div style="font-family: Arial, sans-serif;">
   <p style="margin: 0; color: #333;">Z pozdrowieniami,</p>
-  <p style="margin: 5px 0 0; font-weight: bold; color: #333;">Jan Kowalski</p>
-  <p style="margin: 5px 0 0; color: #666; font-size: 14px;">Kościół [Nazwa]</p>
+  <p style="margin: 5px 0 0; font-weight: bold; color: #333;">{t('Jan Kowalski')}</p>
+  <p style="margin: 5px 0 0; color: #666; font-size: 14px;">{t('Kościół [Nazwa]')}</p>
   <p style="margin: 5px 0 0; color: #666; font-size: 12px;">Tel: +48 123 456 789</p>
 </div>`}
                     rows={10}
@@ -1099,7 +1100,7 @@ export default function UserSettings() {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Podgląd podpisu</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Podgląd podpisu')}</label>
                   <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 min-h-[120px]">
                     {mailSignature ? (
                       <div
@@ -1131,12 +1132,12 @@ export default function UserSettings() {
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
               <div className="p-2 bg-red-50 dark:bg-red-900/30 rounded-xl text-red-600 dark:text-red-400"><Lock size={24} /></div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Bezpieczeństwo</h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('Bezpieczeństwo')}</h3>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nowe hasło</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Nowe hasło')}</label>
                 <div className="relative">
                   <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
                   <input 
@@ -1149,7 +1150,7 @@ export default function UserSettings() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Potwierdź hasło</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Potwierdź hasło')}</label>
                 <div className="relative">
                   <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
                   <input 

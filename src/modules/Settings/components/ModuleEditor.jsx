@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save, AlertCircle } from 'lucide-react';
 import IconPicker from './IconPicker';
+import { useT } from '../../../i18n';
 
 export default function ModuleEditor({ module, onClose, onSave, existingKeys = [] }) {
+  const t = useT();
   const isEditing = !!module?.id;
 
   const [form, setForm] = useState({
@@ -117,7 +119,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
               type="text"
               value={form.label}
               onChange={(e) => setForm({ ...form, label: e.target.value })}
-              placeholder="np. Mój nowy moduł"
+              placeholder={t('np. Mój nowy moduł')}
               className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
                 ${errors.label
                   ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
@@ -151,7 +153,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
               <p className="mt-1 text-xs text-red-500">{errors.key}</p>
             )}
             {isEditing && module?.is_system && (
-              <p className="mt-1 text-xs text-gray-400">Klucz modułu systemowego nie może być zmieniony</p>
+              <p className="mt-1 text-xs text-gray-400">{t('Klucz modułu systemowego nie może być zmieniony')}</p>
             )}
           </div>
 

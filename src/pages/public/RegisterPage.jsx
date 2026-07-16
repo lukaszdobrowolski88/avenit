@@ -14,8 +14,10 @@ import {
   Check,
   AlertCircle
 } from 'lucide-react';
+import { useT } from '../../i18n';
 
 export default function RegisterPage() {
+  const t = useT();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -182,7 +184,7 @@ export default function RegisterPage() {
               }`}>
                 {step > 1 ? <Check size={16} /> : '1'}
               </div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Konto</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('Konto')}</span>
             </div>
             <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
             <div className="flex items-center gap-2">
@@ -191,7 +193,7 @@ export default function RegisterPage() {
               }`}>
                 2
               </div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Kościół</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('Kościół')}</span>
             </div>
           </div>
 
@@ -217,7 +219,7 @@ export default function RegisterPage() {
                         type="text"
                         value={formData.fullName}
                         onChange={(e) => updateField('fullName', e.target.value)}
-                        placeholder="Jan Kowalski"
+                        placeholder={t('Jan Kowalski')}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                       />
@@ -251,7 +253,7 @@ export default function RegisterPage() {
                         type="password"
                         value={formData.password}
                         onChange={(e) => updateField('password', e.target.value)}
-                        placeholder="Minimum 8 znaków"
+                        placeholder={t('Minimum 8 znaków')}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                         minLength={8}
@@ -269,7 +271,7 @@ export default function RegisterPage() {
                         type="password"
                         value={formData.confirmPassword}
                         onChange={(e) => updateField('confirmPassword', e.target.value)}
-                        placeholder="Powtórz hasło"
+                        placeholder={t('Powtórz hasło')}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                       />
@@ -297,7 +299,7 @@ export default function RegisterPage() {
                         type="text"
                         value={formData.churchName}
                         onChange={(e) => updateField('churchName', e.target.value)}
-                        placeholder="Kościół Łaski"
+                        placeholder={t('Kościół Łaski')}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                       />
@@ -418,7 +420,7 @@ export default function RegisterPage() {
               Rejestrując się, akceptujesz{' '}
               <a href="#" className="text-accent-primary hover:underline">Regulamin</a>
               {' '}oraz{' '}
-              <a href="#" className="text-accent-primary hover:underline">Politykę prywatności</a>
+              <a href="#" className="text-accent-primary hover:underline">{t('Politykę prywatności')}</a>
             </p>
           </form>
 

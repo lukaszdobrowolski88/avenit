@@ -1,11 +1,13 @@
 import React from 'react';
 import { ShieldCheck, KeyRound, Clock, Lock } from 'lucide-react';
 import { SettingsCard, SettingRow, Toggle, SelectSetting } from './SettingsUI';
+import { useT } from '../../../i18n';
 
 // Ustawienia bezpieczeństwa organizacji. Zapisywane w app_settings (sec_*).
 // Egzekwowanie polityk (np. wymuszenie 2FA) dzieje się przy logowaniu/kontroli
 // dostępu — tu ustawiamy preferencje.
 export default function SecuritySettings({ get, save }) {
+  const t = useT();
   const bool = (k, def = false) => (get(k) ?? String(def)) === 'true';
 
   return (
@@ -19,16 +21,16 @@ export default function SecuritySettings({ get, save }) {
         </SettingRow>
       </SettingsCard>
 
-      <SettingsCard title="Hasła" description="Wymagania dla haseł użytkowników." icon={KeyRound}>
+      <SettingsCard title={t('Hasła')} description="Wymagania dla haseł użytkowników." icon={KeyRound}>
         <SettingRow label="Minimalna długość hasła">
           <SelectSetting
             value={get('sec_password_min') || '8'}
             onChange={(v) => save('sec_password_min', v)}
             options={[
-              { value: '6', label: '6 znaków' },
-              { value: '8', label: '8 znaków' },
-              { value: '10', label: '10 znaków' },
-              { value: '12', label: '12 znaków' },
+              { value: '6', label: t('6 znaków') },
+              { value: '8', label: t('8 znaków') },
+              { value: '10', label: t('10 znaków') },
+              { value: '12', label: t('12 znaków') },
             ]}
           />
         </SettingRow>

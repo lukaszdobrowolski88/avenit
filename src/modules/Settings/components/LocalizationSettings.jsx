@@ -60,7 +60,7 @@ export default function LocalizationSettings({ get, save }) {
             value={get('loc_week_start') || 'monday'}
             onChange={(v) => save('loc_week_start', v)}
             options={[
-              { value: 'monday', label: 'Poniedziałek' },
+              { value: 'monday', label: t('Poniedziałek') },
               { value: 'sunday', label: 'Niedziela' },
             ]}
           />
@@ -73,7 +73,7 @@ export default function LocalizationSettings({ get, save }) {
             value={get('loc_currency') || 'PLN'}
             onChange={(v) => save('loc_currency', v)}
             options={[
-              { value: 'PLN', label: 'Złoty (PLN)' },
+              { value: 'PLN', label: t('Złoty (PLN)') },
               { value: 'EUR', label: 'Euro (EUR)' },
               { value: 'USD', label: 'Dolar (USD)' },
               { value: 'GBP', label: 'Funt (GBP)' },

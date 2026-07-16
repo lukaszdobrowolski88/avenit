@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Plus, Edit3, Trash2, X, MapPin, GripVertical, ToggleLeft, ToggleRight } from 'lucide-react';
+import { useT } from '../../../i18n';
 
 export default function CampusManager({ onMessage }) {
+  const t = useT();
   const [campuses, setCampuses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -93,7 +95,7 @@ export default function CampusManager({ onMessage }) {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-400">Ładowanie...</div>;
+    return <div className="text-center py-8 text-gray-400">{t('Ładowanie...')}</div>;
   }
 
   return (
@@ -101,7 +103,7 @@ export default function CampusManager({ onMessage }) {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h3 className="text-lg font-bold text-gray-800 dark:text-white">Lokalizacje / Kampusy</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Zarządzaj lokalizacjami kościoła. Dane mogą być filtrowane po kampusie.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('Zarządzaj lokalizacjami kościoła. Dane mogą być filtrowane po kampusie.')}</p>
         </div>
         <button onClick={openNew} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition">
           <Plus size={18} /> Dodaj lokalizację
@@ -112,7 +114,7 @@ export default function CampusManager({ onMessage }) {
         <div className="text-center py-12 text-gray-400 dark:text-gray-500">
           <MapPin size={48} className="mx-auto mb-3 opacity-50" />
           <p className="font-medium">Brak lokalizacji</p>
-          <p className="text-sm mt-1">Dodaj pierwszą lokalizację, aby włączyć tryb multi-campus.</p>
+          <p className="text-sm mt-1">{t('Dodaj pierwszą lokalizację, aby włączyć tryb multi-campus.')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -160,12 +162,12 @@ export default function CampusManager({ onMessage }) {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Nazwa *</label>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Nazwa *')}</label>
                 <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="np. Kampus Centrum" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Adres</label>
-                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="ul. Przykładowa 1" value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} />
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Adres')}</label>
+                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={t('ul. Przykładowa 1')} value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} />
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Miasto</label>

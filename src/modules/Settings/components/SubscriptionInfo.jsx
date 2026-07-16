@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CreditCard, CheckCircle2, Sparkles } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { SettingsCard, UsageBar } from './SettingsUI';
+import { useT } from '../../../i18n';
 
 // Sekcja Subskrypcja — read-only. Plan i limity pobiera z /api/tenant/info
 // (baza platform), zużycie liczy z bazy tenanta przez Data API.
@@ -14,6 +15,7 @@ const STATUS_LABEL = {
 };
 
 export default function SubscriptionInfo() {
+  const t = useT();
   const [info, setInfo] = useState(null);
   const [usage, setUsage] = useState({});
   const [loading, setLoading] = useState(true);
@@ -46,7 +48,7 @@ export default function SubscriptionInfo() {
     })();
   }, []);
 
-  if (loading) return <div className="text-gray-500 dark:text-gray-400">Ładowanie…</div>;
+  if (loading) return <div className="text-gray-500 dark:text-gray-400">{t('Ładowanie…')}</div>;
   if (error) return <div className="text-red-500 text-sm">{error}</div>;
 
   const sub = info?.subscription;
@@ -67,7 +69,7 @@ export default function SubscriptionInfo() {
 
   return (
     <div className="max-w-3xl">
-      <SettingsCard icon={CreditCard} title="Twój plan" description="Zarządzaniem planem zajmuje się administrator platformy.">
+      <SettingsCard icon={CreditCard} title={t('Twój plan')} description="Zarządzaniem planem zajmuje się administrator platformy.">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-3">

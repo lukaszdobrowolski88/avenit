@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Check, Palette, Plus, Trash2 } from 'lucide-react';
 import { COLOR_PRESETS, applyColorPreset, applyCustomColors, getCustomPreset, generateShades } from '../../../lib/colorPresets';
 import { supabase } from '../../../lib/supabase';
+import { useT } from '../../../i18n';
 
 export default function ColorPresetPicker({ currentPreset: initialPreset }) {
+  const t = useT();
   const [currentPreset, setCurrentPreset] = useState(initialPreset || 'pink-orange');
   const [saving, setSaving] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
@@ -137,7 +139,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Kolorystyka</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Wybierz lub stwórz schemat kolorów</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('Wybierz lub stwórz schemat kolorów')}</p>
           </div>
         </div>
         <button
@@ -152,11 +154,11 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
       {/* Edytor własnego presetu */}
       {showEditor && (
         <div className="mb-6 p-5 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600">
-          <h4 className="font-semibold text-gray-800 dark:text-white mb-4">Nowy schemat kolorów</h4>
+          <h4 className="font-semibold text-gray-800 dark:text-white mb-4">{t('Nowy schemat kolorów')}</h4>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Kolor główny</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('Kolor główny')}</label>
               <div className="flex items-center gap-3">
                 <input
                   type="color"
@@ -195,14 +197,14 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
 
           {/* Podgląd gradientu */}
           <div className="mb-4">
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Podgląd</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('Podgląd')}</label>
             <div className="h-14 rounded-xl shadow-inner" style={{ background: `linear-gradient(135deg, ${customPrimary}, ${customSecondary})` }} />
           </div>
 
           {/* Podgląd generowanych odcieni */}
           <div className="mb-4 grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Odcienie główne</label>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">{t('Odcienie główne')}</label>
               <div className="flex gap-1">
                 {['lightest', 'lighter', 'light', 'DEFAULT', 'dark', 'darkest'].map(shade => {
                   const shades = generateShades(customPrimary);
@@ -229,7 +231,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
               type="text"
               value={customLabel}
               onChange={(e) => setCustomLabel(e.target.value)}
-              placeholder="Nazwa presetu (np. Mój kościół)"
+              placeholder={t('Nazwa presetu (np. Mój kościół)')}
               className="flex-1 !py-2 !px-3 text-sm"
             />
             <button
@@ -326,7 +328,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
               <button
                 onClick={(e) => { e.stopPropagation(); handleDeleteCustom(preset.key); }}
                 className="absolute top-2 right-2 w-7 h-7 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:!opacity-100 hover:bg-red-200 dark:hover:bg-red-900/50 transition"
-                title="Usuń preset"
+                title={t('Usuń preset')}
               >
                 <Trash2 size={12} />
               </button>
