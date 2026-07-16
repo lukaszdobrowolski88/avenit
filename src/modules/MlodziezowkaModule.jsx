@@ -16,6 +16,7 @@ import ResponsiveTabs from '../components/ResponsiveTabs';
 import { useUserRole } from '../hooks/useUserRole';
 import { hasTabAccess } from '../utils/tabPermissions';
 import { useCampusQuery } from '../hooks/useCampusQuery';
+import { useT } from '../i18n';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -190,6 +191,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
 };
 
 export default function MlodziezowkaModule() {
+  const t = useT();
   const { userRole } = useUserRole();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('events');
@@ -761,18 +763,18 @@ export default function MlodziezowkaModule() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary-light to-accent-secondary-light dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Młodzieżówka</h1>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary-light to-accent-secondary-light dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{t('Młodzieżówka')}</h1>
       </div>
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs
         tabs={[
-          { id: 'events', label: 'Wydarzenia', icon: Calendar },
-          { id: 'tasks', label: 'Zadania', icon: CheckSquare },
-          ...(hasTabAccess('mlodziezowka', 'leaders', userRole) ? [{ id: 'leaders', label: 'Liderzy', icon: Star }] : []),
-          ...(hasTabAccess('mlodziezowka', 'members', userRole) ? [{ id: 'members', label: 'Członkowie', icon: Users }] : []),
-          ...(hasTabAccess('mlodziezowka', 'finances', userRole) ? [{ id: 'finances', label: 'Finanse', icon: DollarSign }] : []),
-          ...(hasTabAccess('mlodziezowka', 'equipment', userRole) ? [{ id: 'equipment', label: 'Wyposażenie', icon: Package }] : []),
+          { id: 'events', label: t('Wydarzenia'), icon: Calendar },
+          { id: 'tasks', label: t('Zadania'), icon: CheckSquare },
+          ...(hasTabAccess('mlodziezowka', 'leaders', userRole) ? [{ id: 'leaders', label: t('Liderzy'), icon: Star }] : []),
+          ...(hasTabAccess('mlodziezowka', 'members', userRole) ? [{ id: 'members', label: t('Członkowie'), icon: Users }] : []),
+          ...(hasTabAccess('mlodziezowka', 'finances', userRole) ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
+          ...(hasTabAccess('mlodziezowka', 'equipment', userRole) ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}
@@ -834,7 +836,7 @@ export default function MlodziezowkaModule() {
           {events.length === 0 && (
             <div className="text-center py-12 text-gray-400 dark:text-gray-500">
               <Calendar size={48} className="mx-auto mb-4 opacity-50" />
-              <p>Brak wydarzeń</p>
+              <p>{t('Brak wydarzeń')}</p>
               <p className="text-sm mt-1">Dodaj pierwsze wydarzenie</p>
             </div>
           )}
@@ -865,8 +867,8 @@ export default function MlodziezowkaModule() {
                     value={filterScope}
                     onChange={setFilterScope}
                     options={[
-                      { value: 'all', label: 'Wszyscy' },
-                      { value: 'mine', label: 'Moje' }
+                      { value: 'all', label: t('Wszyscy') },
+                      { value: 'mine', label: t('Moje') }
                     ]}
                     placeholder="Zakres"
                   />
@@ -877,9 +879,9 @@ export default function MlodziezowkaModule() {
                     value={filterStatus}
                     onChange={setFilterStatus}
                     options={[
-                      { value: 'active', label: 'Otwarte' },
-                      { value: 'completed', label: 'Zakończone' },
-                      { value: 'all', label: 'Wszystkie' }
+                      { value: 'active', label: t('Otwarte') },
+                      { value: 'completed', label: t('Zakończone') },
+                      { value: 'all', label: t('Wszystkie') }
                     ]}
                     placeholder="Status"
                   />
@@ -896,7 +898,7 @@ export default function MlodziezowkaModule() {
                 <div key={status} className={`bg-gradient-to-br from-gray-50/80 to-gray-100/50 dark:from-gray-800/40 dark:to-gray-900/20 backdrop-blur-sm rounded-2xl border-2 p-4 transition-all ${dragOverColumn === status ? 'border-accent-secondary-light dark:border-accent-primary-light bg-accent-primary-lightest/50 dark:bg-accent-secondary-darkest/20 shadow-lg' : 'border-gray-200/50 dark:border-gray-700/50'}`}
                   onDragOver={(e) => handleDragOver(e, status)} onDragLeave={handleDragLeave} onDrop={(e) => handleDrop(e, status)}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">{status}</h3>
+                    <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">{t(status)}</h3>
                     <span className="bg-accent-primary-lighter dark:bg-accent-secondary-darkest/40 text-accent-primary dark:text-accent-secondary-light px-3 py-1 rounded-full text-xs font-bold">{filteredTasks.filter(t => t.status === status).length}</span>
                   </div>
                   <div className="space-y-3">
@@ -911,7 +913,7 @@ export default function MlodziezowkaModule() {
                               {task.assigned_to && <div className="flex items-center gap-1"><User size={14} />{leaders.find(m => m.id === task.assigned_to)?.full_name}</div>}
                             </div>
                             <div className="flex justify-end gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                              <button onClick={() => openTaskModal(task)} className="text-accent-primary dark:text-accent-secondary-light text-xs font-medium">Szczegóły</button>
+                              <button onClick={() => openTaskModal(task)} className="text-accent-primary dark:text-accent-secondary-light text-xs font-medium">{t('Szczegóły')}</button>
                             </div>
                           </div>
                         </div>
@@ -937,7 +939,7 @@ export default function MlodziezowkaModule() {
                       <td className="p-4 text-gray-600 dark:text-gray-400">{task.due_date ? new Date(task.due_date).toLocaleDateString('pl-PL') : '-'}</td>
                       <td className="p-4 text-gray-600 dark:text-gray-400">{leaders.find(m => m.id === task.assigned_to)?.full_name || '-'}</td>
                       <td className="p-4"><span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">{task.status}</span></td>
-                      <td className="p-4 text-right"><button onClick={() => openTaskModal(task)} className="text-accent-primary dark:text-accent-secondary-light font-medium">Szczegóły</button></td>
+                      <td className="p-4 text-right"><button onClick={() => openTaskModal(task)} className="text-accent-primary dark:text-accent-secondary-light font-medium">{t('Szczegóły')}</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -1080,19 +1082,19 @@ export default function MlodziezowkaModule() {
                     value={taskForm.assigned_to}
                     onChange={val => setTaskForm({...taskForm, assigned_to: val})}
                     options={[
-                      { value: null, label: 'Nie przypisano' },
+                      { value: null, label: t('Nie przypisano') },
                       ...leaders.map(m => ({ value: m.id, label: m.full_name }))
                     ]}
                     placeholder="Wybierz osobę..."
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załącznik</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Załącznik')}</label>
                   <input type="file" className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-accent-primary-lightest dark:file:bg-accent-secondary-darkest/30 file:text-accent-primary dark:file:text-accent-secondary-light hover:file:bg-accent-primary-lighter dark:hover:file:bg-accent-secondary-darkest/50" onChange={handleFileUpload} />
                   {taskForm.attachment && <div className="mt-2 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded-lg"><Paperclip size={14} />{taskForm.attachment.name}</div>}
                 </div>
                 <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
-                  {taskForm.id && <button onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }} className="px-4 py-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">Usuń zadanie</button>}
+                  {taskForm.id && <button onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }} className="px-4 py-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">{t('Usuń zadanie')}</button>}
                   <button onClick={saveTask} className="px-6 py-3 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light dark:from-accent-primary-light dark:to-accent-secondary-light text-white font-bold rounded-xl hover:shadow-lg transition">Zapisz zmiany</button>
                 </div>
               </div>
@@ -1104,7 +1106,7 @@ export default function MlodziezowkaModule() {
                 <button onClick={() => setShowTaskModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition"><X size={20} className="text-gray-500 dark:text-gray-400"/></button>
               </div>
               <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
-                {!taskForm.id ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">Zapisz zadanie, aby dodawać komentarze.</div> : loadingComments ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm">Ładowanie...</div> : comments.length === 0 ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">Brak komentarzy. Bądź pierwszy!</div> : comments.map(comment => (
+                {!taskForm.id ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">{t('Zapisz zadanie, aby dodawać komentarze.')}</div> : loadingComments ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm">{t('Ładowanie...')}</div> : comments.length === 0 ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">{t('Brak komentarzy. Bądź pierwszy!')}</div> : comments.map(comment => (
                   <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div className="flex justify-between items-start mb-1">
                       <span className="font-bold text-xs text-accent-primary dark:text-accent-secondary-light">{comment.author_name}</span>
@@ -1114,7 +1116,7 @@ export default function MlodziezowkaModule() {
                   </div>
                 ))}
               </div>
-              {taskForm.id && <div className="mt-auto"><div className="relative"><textarea className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200" placeholder="Napisz komentarz..." rows={2} value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); }}} /><button onClick={addComment} disabled={!newComment.trim()} className="absolute right-2 bottom-2 p-2 bg-accent-primary dark:bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary dark:hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed"><Send size={16} /></button></div></div>}
+              {taskForm.id && <div className="mt-auto"><div className="relative"><textarea className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200" placeholder={t('Napisz komentarz...')} rows={2} value={newComment} onChange={e => setNewComment(e.target.value)} onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); }}} /><button onClick={addComment} disabled={!newComment.trim()} className="absolute right-2 bottom-2 p-2 bg-accent-primary dark:bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary dark:hover:bg-accent-primary transition disabled:opacity-50 disabled:cursor-not-allowed"><Send size={16} /></button></div></div>}
             </div>
           </div>
         </div>,
@@ -1132,7 +1134,7 @@ export default function MlodziezowkaModule() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię i nazwisko</label>
-                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Jan Kowalski" value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
+                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1156,7 +1158,7 @@ export default function MlodziezowkaModule() {
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki</label>
-                <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={2} placeholder="Dodatkowe informacje..." value={memberForm.notes || ''} onChange={e => setMemberForm({...memberForm, notes: e.target.value})} />
+                <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={2} placeholder={t('Dodatkowe informacje...')} value={memberForm.notes || ''} onChange={e => setMemberForm({...memberForm, notes: e.target.value})} />
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
@@ -1180,12 +1182,12 @@ export default function MlodziezowkaModule() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię i nazwisko</label>
-                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Jan Kowalski" value={leaderForm.full_name} onChange={e => setLeaderForm({...leaderForm, full_name: e.target.value})} />
+                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={leaderForm.full_name} onChange={e => setLeaderForm({...leaderForm, full_name: e.target.value})} />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Rola / Odpowiedzialność</label>
-                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Główny lider, Koordynator..." value={leaderForm.role || ''} onChange={e => setLeaderForm({...leaderForm, role: e.target.value})} />
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Rola / Odpowiedzialność')}</label>
+                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Główny lider, Koordynator...')} value={leaderForm.role || ''} onChange={e => setLeaderForm({...leaderForm, role: e.target.value})} />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -1219,7 +1221,7 @@ export default function MlodziezowkaModule() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł wydarzenia</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Tytuł wydarzenia')}</label>
                 <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Spotkanie młodzieżowe" value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
               </div>
 
@@ -1249,7 +1251,7 @@ export default function MlodziezowkaModule() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Max. uczestników</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Max. uczestników')}</label>
                   <input type="number" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="30" value={eventForm.max_participants || ''} onChange={e => setEventForm({...eventForm, max_participants: e.target.value})} />
                 </div>
                 <div>
@@ -1258,10 +1260,10 @@ export default function MlodziezowkaModule() {
                     value={eventForm.event_type}
                     onChange={val => setEventForm({...eventForm, event_type: val})}
                     options={[
-                      { value: 'spotkanie', label: 'Spotkanie' },
-                      { value: 'wyjazd', label: 'Wyjazd' },
-                      { value: 'integracja', label: 'Integracja' },
-                      { value: 'inne', label: 'Inne' }
+                      { value: 'spotkanie', label: t('Spotkanie') },
+                      { value: 'wyjazd', label: t('Wyjazd') },
+                      { value: 'integracja', label: t('Integracja') },
+                      { value: 'inne', label: t('Inne') }
                     ]}
                     placeholder="Typ"
                   />
@@ -1314,7 +1316,7 @@ export default function MlodziezowkaModule() {
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.contractor}
                     onChange={(e) => setExpenseForm({...expenseForm, contractor: e.target.value})}
-                    placeholder="Nazwa firmy/osoby"
+                    placeholder={t('Nazwa firmy/osoby')}
                   />
                 </div>
                 <div>
@@ -1323,7 +1325,7 @@ export default function MlodziezowkaModule() {
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.responsible_person}
                     onChange={(e) => setExpenseForm({...expenseForm, responsible_person: e.target.value})}
-                    placeholder="Imię i nazwisko"
+                    placeholder={t('Imię i nazwisko')}
                   />
                 </div>
               </div>
@@ -1334,7 +1336,7 @@ export default function MlodziezowkaModule() {
                   value={expenseForm.description}
                   onChange={(value) => setExpenseForm({...expenseForm, description: value})}
                   options={[
-                    { value: '', label: 'Wybierz pozycję' },
+                    { value: '', label: t('Wybierz pozycję') },
                     ...budgetItems.map(item => ({
                       value: item.description,
                       label: item.description
@@ -1351,7 +1353,7 @@ export default function MlodziezowkaModule() {
                   rows={2}
                   value={expenseForm.detailed_description}
                   onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
-                  placeholder="Dodatkowe informacje o wydatku..."
+                  placeholder={t('Dodatkowe informacje o wydatku...')}
                 />
               </div>
 
@@ -1400,7 +1402,7 @@ export default function MlodziezowkaModule() {
                     className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Nowy tag..."
+                    placeholder={t('Nowy tag...')}
                     onKeyPress={(e) => e.key === 'Enter' && addExpenseTag()}
                   />
                   <button
