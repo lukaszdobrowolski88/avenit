@@ -451,6 +451,16 @@ const en = {
   'Rola': 'Role',
   'Szukaj ucznia...': 'Search students...',
   'Uwagi': 'Notes',
+  // Młodzieżówka
+  'Max. uczestników': 'Max. participants',
+  'Rola / Odpowiedzialność': 'Role / Responsibility',
+  'Tytuł wydarzenia': 'Event title',
+  'Główny lider, Koordynator...': 'Main leader, Coordinator...',
+  'Nowy tag...': 'New tag...',
+  'Integracja': 'Social',
+  'Spotkanie': 'Meeting',
+  'Wyjazd': 'Trip',
+  'Nowy wydatek - Młodzieżówka': 'New expense - Youth',
 };
 
 const uk = {
@@ -896,6 +906,16 @@ const uk = {
   'Rola': 'Роль',
   'Szukaj ucznia...': 'Пошук учнів...',
   'Uwagi': 'Примітки',
+  // Молодіжка
+  'Max. uczestników': 'Макс. учасників',
+  'Rola / Odpowiedzialność': 'Роль / Відповідальність',
+  'Tytuł wydarzenia': 'Назва події',
+  'Główny lider, Koordynator...': 'Головний лідер, Координатор...',
+  'Nowy tag...': 'Новий тег...',
+  'Integracja': 'Інтеграція',
+  'Spotkanie': 'Зустріч',
+  'Wyjazd': 'Виїзд',
+  'Nowy wydatek - Młodzieżówka': 'Нова витрата - Молодіжка',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };
