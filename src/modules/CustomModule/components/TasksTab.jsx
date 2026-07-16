@@ -6,6 +6,7 @@ import {
   Check, Paperclip, MessageSquare, Send, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import CustomSelect from '../../../components/CustomSelect';
+import { tr } from '../../../i18n';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -88,7 +89,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         <div className="flex items-center gap-2 text-sm">
           <Calendar size={16} className="text-gray-400" />
           <span className={value ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-            {value ? new Date(value).toLocaleDateString('pl-PL') : 'Wybierz datę'}
+            {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
           </span>
         </div>
       </div>
@@ -107,7 +108,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
             <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1)); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"><ChevronRight size={18} className="text-gray-600 dark:text-gray-400"/></button>
           </div>
           <div className="grid grid-cols-7 gap-1 text-center mb-2">
-            {['Pn','Wt','Śr','Cz','Pt','So','Nd'].map(d => <div key={d} className="text-[10px] font-bold text-gray-400 uppercase">{d}</div>)}
+            {[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d} className="text-[10px] font-bold text-gray-400 uppercase">{d}</div>)}
           </div>
           <div className="grid grid-cols-7 gap-1">
             {Array.from({ length: startDay }).map((_, i) => <div key={`empty-${i}`} />)}
@@ -351,7 +352,7 @@ export default function TasksTab({ moduleKey, moduleName, currentUserEmail }) {
       fetchTasks();
     } catch (err) {
       console.error('Błąd zapisu:', err);
-      alert('Błąd zapisu zadania: ' + err.message);
+      alert(tr('Błąd zapisu zadania: ') + err.message);
     }
   };
 
@@ -369,7 +370,7 @@ export default function TasksTab({ moduleKey, moduleName, currentUserEmail }) {
 
   // Usuń zadanie
   const handleDelete = async (id) => {
-    if (!confirm('Usunąć to zadanie?')) return;
+    if (!confirm(tr('Usunąć to zadanie?'))) return;
     try {
       await supabase.from(tableName).delete().eq('id', id);
       setShowModal(false);
@@ -468,13 +469,13 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
             Tabela nie istnieje
           </h3>
           <p className="text-yellow-700 dark:text-yellow-300 mb-4">
-            Aby korzystać z zadań w tym module, utwórz tabelę w Supabase.
+            {tr('Aby korzystać z zadań w tym module, utwórz tabelę w Supabase.')}
           </p>
           <div className="bg-gray-900 rounded-xl p-4 text-left overflow-x-auto max-h-64">
             <pre className="text-green-400 text-xs whitespace-pre">{sqlScript}</pre>
           </div>
           <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-4">
-            Skopiuj powyższy kod i wykonaj go w Supabase SQL Editor.
+            {tr('Skopiuj powyższy kod i wykonaj go w Supabase SQL Editor.')}
           </p>
           <button
             onClick={() => {
@@ -489,7 +490,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
             onClick={fetchTasks}
             className="mt-4 ml-2 px-4 py-2 bg-accent-primary text-white rounded-xl hover:bg-accent-primary transition"
           >
-            Odśwież
+            {tr('Odśwież')}
           </button>
         </div>
       </div>
@@ -523,8 +524,8 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                 value={filterScope}
                 onChange={setFilterScope}
                 options={[
-                  { value: 'all', label: 'Wszyscy' },
-                  { value: 'mine', label: 'Moje' }
+                  { value: 'all', label: tr('Wszyscy') },
+                  { value: 'mine', label: tr('Moje') }
                 ]}
               />
             </div>
@@ -533,9 +534,9 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                 value={filterStatus}
                 onChange={setFilterStatus}
                 options={[
-                  { value: 'active', label: 'Otwarte' },
-                  { value: 'completed', label: 'Zakończone' },
-                  { value: 'all', label: 'Wszystkie' }
+                  { value: 'active', label: tr('Otwarte') },
+                  { value: 'completed', label: tr('Zakończone') },
+                  { value: 'all', label: tr('Wszystkie') }
                 ]}
               />
             </div>
@@ -607,7 +608,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                             onClick={() => openTaskModal(task)}
                             className="text-accent-primary dark:text-accent-primary-light text-xs font-medium"
                           >
-                            Szczegóły
+                            {tr('Szczegóły')}
                           </button>
                         </div>
                       </div>
@@ -616,7 +617,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                 ))}
                 {tasksByStatus[status].length === 0 && (
                   <div className="text-center py-6 text-gray-400 text-sm">
-                    Brak zadań
+                    {tr('Brak zadań')}
                   </div>
                 )}
               </div>
@@ -632,11 +633,11 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
             <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
               <tr>
                 <th className="p-4 w-10"></th>
-                <th className="p-4">Zadanie</th>
-                <th className="p-4">Termin</th>
-                <th className="p-4">Przypisane</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-right">Akcje</th>
+                <th className="p-4">{tr('Zadanie')}</th>
+                <th className="p-4">{tr('Termin')}</th>
+                <th className="p-4">{tr('Przypisane')}</th>
+                <th className="p-4">{tr('Status')}</th>
+                <th className="p-4 text-right">{tr('Akcje')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
@@ -664,13 +665,13 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                   </td>
                   <td className="p-4 text-right">
                     <button onClick={() => openTaskModal(task)} className="text-accent-primary dark:text-accent-primary-light font-medium">
-                      Szczegóły
+                      {tr('Szczegóły')}
                     </button>
                   </td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-gray-400">Brak zadań</td>
+                  <td colSpan={6} className="p-8 text-center text-gray-400">{tr('Brak zadań')}</td>
                 </tr>
               )}
             </tbody>
@@ -692,7 +693,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
               </div>
               <div className="space-y-5">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tytuł zadania</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł zadania')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={form.title}
@@ -700,7 +701,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
                   <textarea
                     className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={form.description}
@@ -731,19 +732,19 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                       value={form.assigned_to}
                       onChange={val => setForm({...form, assigned_to: val})}
                       options={[
-                        { value: null, label: 'Nie przypisano' },
+                        { value: null, label: tr('Nie przypisano') },
                         ...members.map(m => ({ value: m.id, label: m.full_name }))
                       ]}
-                      placeholder="Wybierz osobę..."
+                      placeholder={tr('Wybierz osobę...')}
                     />
                   ) : (
                     <div className="px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-500 text-sm">
-                      Brak członków. Dodaj członków w zakładce "Członkowie".
+                      {tr('Brak członków. Dodaj członków w zakładce "Członkowie".')}
                     </div>
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załącznik</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Załącznik')}</label>
                   <input
                     type="file"
                     className="w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-accent-primary-lightest dark:file:bg-accent-primary-darkest/30 file:text-accent-primary dark:file:text-accent-primary-light hover:file:bg-accent-primary-lighter dark:hover:file:bg-accent-primary-darkest/50"
@@ -761,7 +762,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                       onClick={() => handleDelete(editingTask.id)}
                       className="px-4 py-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                     >
-                      Usuń zadanie
+                      {tr('Usuń zadanie')}
                     </button>
                   )}
                   <button
@@ -787,13 +788,13 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
               <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
                 {!editingTask?.id ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">
-                    Zapisz zadanie, aby dodawać komentarze.
+                    {tr('Zapisz zadanie, aby dodawać komentarze.')}
                   </div>
                 ) : loadingComments ? (
-                  <div className="text-center text-gray-400 dark:text-gray-500 text-sm">Ładowanie...</div>
+                  <div className="text-center text-gray-400 dark:text-gray-500 text-sm">{tr('Ładowanie...')}</div>
                 ) : comments.length === 0 ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">
-                    Brak komentarzy. Bądź pierwszy!
+                    {tr('Brak komentarzy. Bądź pierwszy!')}
                   </div>
                 ) : comments.map(comment => (
                   <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -812,7 +813,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                   <div className="relative">
                     <textarea
                       className="w-full pl-4 pr-12 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm resize-none text-gray-800 dark:text-gray-200"
-                      placeholder="Napisz komentarz..."
+                      placeholder={tr('Napisz komentarz...')}
                       rows={2}
                       value={newComment}
                       onChange={e => setNewComment(e.target.value)}

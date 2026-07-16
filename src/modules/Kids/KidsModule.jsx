@@ -19,6 +19,7 @@ import { useUserRole } from '../../hooks/useUserRole';
 import { hasTabAccess } from '../../utils/tabPermissions';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -130,7 +131,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         <div className="flex items-center gap-2 text-sm">
           <Calendar size={16} className="text-gray-400" />
           <span className={displayValue ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-            {displayValue || 'Wybierz datę'}
+            {displayValue || tr('Wybierz datę')}
           </span>
         </div>
       </div>
@@ -153,7 +154,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
           </div>
 
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map(d => (
+            {[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => (
               <div key={d} className="text-center text-[10px] font-bold text-gray-400 uppercase">{d}</div>
             ))}
           </div>
@@ -216,7 +217,7 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
   return (
     <div ref={wrapperRef} className="relative w-full h-full">
       <div className="w-full h-full min-h-[36px] px-2 py-1.5 text-xs cursor-pointer flex flex-wrap gap-1 items-center hover:bg-gray-50 dark:hover:bg-gray-800 rounded transition" onClick={()=>setIsOpen(!isOpen)}>
-        {selectedItems.length===0 ? <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span> : selectedItems.map((i,x)=><span key={x} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/60 text-accent-primary dark:text-accent-primary-lighter px-1.5 py-0.5 rounded text-[10px] border border-accent-primary-lighter dark:border-accent-primary-dark whitespace-nowrap">{i}</span>)}
+        {selectedItems.length===0 ? <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">{tr('Wybierz...')}</span> : selectedItems.map((i,x)=><span key={x} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/60 text-accent-primary dark:text-accent-primary-lighter px-1.5 py-0.5 rounded text-[10px] border border-accent-primary-lighter dark:border-accent-primary-dark whitespace-nowrap">{i}</span>)}
       </div>
       {isOpen && <div className="absolute z-[9999] left-0 top-full mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar">{options.map(p=><div key={p.id} className={`px-3 py-1.5 text-xs cursor-pointer flex items-center justify-between transition ${absentMembers.includes(p.full_name)?'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed':'hover:bg-accent-primary-lightest dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'} ${selectedItems.includes(p.full_name)?'bg-accent-primary-lightest dark:bg-gray-800 text-accent-primary dark:text-accent-primary-light font-medium':''}`} onClick={()=>t(p.full_name, absentMembers.includes(p.full_name))}><span className={absentMembers.includes(p.full_name)?'line-through':''}>{p.full_name}</span>{selectedItems.includes(p.full_name)&&!absentMembers.includes(p.full_name)&&<Check size={12}/>}</div>)}</div>}
     </div>
@@ -232,7 +233,7 @@ const AbsenceMultiSelect = ({ options, value, onChange }) => {
   return (
     <div ref={wrapperRef} className="relative w-full h-full">
       <div className="w-full h-full min-h-[36px] px-2 py-1.5 text-xs cursor-pointer flex flex-wrap gap-1 items-center hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition" onClick={()=>setIsOpen(!isOpen)}>
-        {selectedItems.length===0 ? <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span> : selectedItems.map((i,x)=><span key={x} className="bg-red-50 dark:bg-red-900/60 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded text-[10px] border border-red-100 dark:border-red-800 whitespace-nowrap flex items-center gap-1">{i}</span>)}
+        {selectedItems.length===0 ? <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">{tr('Wybierz...')}</span> : selectedItems.map((i,x)=><span key={x} className="bg-red-50 dark:bg-red-900/60 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded text-[10px] border border-red-100 dark:border-red-800 whitespace-nowrap flex items-center gap-1">{i}</span>)}
       </div>
       {isOpen && <div className="absolute z-[9999] left-0 top-full mt-1 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar">{options.map(p=><div key={p.id} className={`px-3 py-1.5 text-xs cursor-pointer flex items-center justify-between hover:bg-red-50 dark:hover:bg-red-900/30 transition ${selectedItems.includes(p.full_name)?'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-medium':'text-gray-700 dark:text-gray-300'}`} onClick={()=>t(p.full_name)}><span>{p.full_name}</span>{selectedItems.includes(p.full_name)&&<UserX size={12}/>}</div>)}</div>}
     </div>
@@ -266,7 +267,7 @@ const ScheduleTable = ({ programs, teachers, groups, onUpdateProgram }) => {
                   {/* USUNIĘTO STYLE BACKGROUND BLACK - TERAZ JEST CZYSTA KLASA */}
                   <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                     <tr>
-                      <th className="p-4 font-semibold w-24 min-w-[90px]">Data</th>
+                      <th className="p-4 font-semibold w-24 min-w-[90px]">{tr('Data')}</th>
                       <th className="p-4 font-semibold min-w-[150px] text-accent-primary dark:text-accent-primary-light">Temat lekcji</th>
                       {dynamicColumns.map(c => <th key={c.id} className="p-4 font-semibold min-w-[130px]">{c.label}</th>)}
                       <th className="p-4 font-semibold min-w-[130px] text-red-500 dark:text-red-400">Absencja</th>
@@ -428,7 +429,7 @@ export default function KidsModule() {
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Błąd przesyłania pliku: ' + error.message);
+      alert(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -454,7 +455,7 @@ export default function KidsModule() {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -491,7 +492,7 @@ export default function KidsModule() {
       fetchFinanceData();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -509,7 +510,7 @@ export default function KidsModule() {
   }
 
   const saveTeacher = async () => {
-    if (!teacherForm.full_name) return alert('Podaj imię');
+    if (!teacherForm.full_name) return alert(tr('Podaj imię'));
     try {
       if (teacherForm.id) {
         const { error } = await supabase.from('kids_teachers').update({
@@ -532,20 +533,20 @@ export default function KidsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd zapisywania nauczyciela:', err);
-      alert('Błąd zapisywania: ' + err.message);
+      alert(tr('Błąd zapisywania: ') + err.message);
     }
   };
-  const deleteTeacher = async (id) => { if (confirm('Usunąć?')) { await supabase.from('kids_teachers').delete().eq('id', id); fetchData(); } };
-  const saveGroup = async () => { if (!groupForm.name) return alert('Podaj nazwę'); const payload = { name: groupForm.name, room: groupForm.room, age_range: groupForm.age_range, teacher_ids: groupForm.teacher_ids }; try { if (groupForm.id) await supabase.from('kids_groups').update(payload).eq('id', groupForm.id); else await supabase.from('kids_groups').insert([{ ...payload, materials: [], campus_id: campusIdForInsert }]); setShowGroupModal(false); fetchData(); } catch (err) { alert(err.message); } };
-  const deleteGroup = async (id) => { if (confirm('Usunąć?')) { await supabase.from('kids_groups').delete().eq('id', id); fetchData(); } };
-  const saveGlobalStudent = async () => { if (!globalStudentForm.full_name) return alert('Podaj imię'); const payload = { full_name: globalStudentForm.full_name, birth_year: globalStudentForm.birth_year, parent_info: globalStudentForm.parent_info, notes: globalStudentForm.notes, group_id: globalStudentForm.group_id ? parseInt(globalStudentForm.group_id) : null, household_id: globalStudentForm.household_id || null }; try { if (globalStudentForm.id) await supabase.from('kids_students').update(payload).eq('id', globalStudentForm.id); else await supabase.from('kids_students').insert([{ ...payload, campus_id: campusIdForInsert }]); setShowGlobalStudentModal(false); fetchData(); } catch (err) { alert(err.message); } };
-  const deleteStudent = async (id) => { if(confirm('Usunąć?')) { await supabase.from('kids_students').delete().eq('id', id); fetchData(); } };
+  const deleteTeacher = async (id) => { if (confirm(tr('Usunąć?'))) { await supabase.from('kids_teachers').delete().eq('id', id); fetchData(); } };
+  const saveGroup = async () => { if (!groupForm.name) return alert(tr('Podaj nazwę')); const payload = { name: groupForm.name, room: groupForm.room, age_range: groupForm.age_range, teacher_ids: groupForm.teacher_ids }; try { if (groupForm.id) await supabase.from('kids_groups').update(payload).eq('id', groupForm.id); else await supabase.from('kids_groups').insert([{ ...payload, materials: [], campus_id: campusIdForInsert }]); setShowGroupModal(false); fetchData(); } catch (err) { alert(err.message); } };
+  const deleteGroup = async (id) => { if (confirm(tr('Usunąć?'))) { await supabase.from('kids_groups').delete().eq('id', id); fetchData(); } };
+  const saveGlobalStudent = async () => { if (!globalStudentForm.full_name) return alert(tr('Podaj imię')); const payload = { full_name: globalStudentForm.full_name, birth_year: globalStudentForm.birth_year, parent_info: globalStudentForm.parent_info, notes: globalStudentForm.notes, group_id: globalStudentForm.group_id ? parseInt(globalStudentForm.group_id) : null, household_id: globalStudentForm.household_id || null }; try { if (globalStudentForm.id) await supabase.from('kids_students').update(payload).eq('id', globalStudentForm.id); else await supabase.from('kids_students').insert([{ ...payload, campus_id: campusIdForInsert }]); setShowGlobalStudentModal(false); fetchData(); } catch (err) { alert(err.message); } };
+  const deleteStudent = async (id) => { if(confirm(tr('Usunąć?'))) { await supabase.from('kids_students').delete().eq('id', id); fetchData(); } };
   const openEditStudent = (s) => { setGlobalStudentForm({ id: s.id, full_name: s.full_name, birth_year: s.birth_year, parent_info: s.parent_info, notes: s.notes, group_id: s.group_id, household_id: s.household_id }); setShowGlobalStudentModal(true); };
   const attachStudentToGroup = async () => { if (!attachStudentId) return alert('Wybierz ucznia'); await supabase.from('kids_students').update({ group_id: currentGroup.id }).eq('id', attachStudentId); setAddStudentId(''); fetchData(); };
   const detachStudentFromGroup = async (studentId) => { await supabase.from('kids_students').update({ group_id: null }).eq('id', studentId); fetchData(); };
   const handleMaterialFileUpload = async (file) => { if (!file) return null; const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${file.name.split('.').pop()}`; const { error } = await supabase.storage.from('kids-materials').upload(fileName, file); if (error) throw error; const { data } = supabase.storage.from('kids-materials').getPublicUrl(fileName); return { url: data.publicUrl, name: file.name }; };
-  const addMaterial = async () => { if (!materialForm.title) return alert('Podaj nazwę'); setUploading(true); try { let attachmentData = null; if (materialForm.attachment) attachmentData = await handleMaterialFileUpload(materialForm.attachment); const newMaterial = { id: Date.now(), title: materialForm.title, type: materialForm.type, date: new Date().toISOString(), attachmentUrl: attachmentData?.url || null, attachmentName: attachmentData?.name || null }; const updatedMaterials = [...(currentGroup.materials || []), newMaterial]; await supabase.from('kids_groups').update({ materials: updatedMaterials }).eq('id', currentGroup.id); setMaterialForm({ title: '', type: 'Lekcja', attachment: null }); fetchData(); } catch (err) { alert(err.message); } finally { setUploading(false); } };
-  const deleteMaterial = async (mid) => { if(!confirm('Usunąć?')) return; const um = currentGroup.materials.filter(m => m.id !== mid); await supabase.from('kids_groups').update({ materials: um }).eq('id', currentGroup.id); fetchData(); };
+  const addMaterial = async () => { if (!materialForm.title) return alert(tr('Podaj nazwę')); setUploading(true); try { let attachmentData = null; if (materialForm.attachment) attachmentData = await handleMaterialFileUpload(materialForm.attachment); const newMaterial = { id: Date.now(), title: materialForm.title, type: materialForm.type, date: new Date().toISOString(), attachmentUrl: attachmentData?.url || null, attachmentName: attachmentData?.name || null }; const updatedMaterials = [...(currentGroup.materials || []), newMaterial]; await supabase.from('kids_groups').update({ materials: updatedMaterials }).eq('id', currentGroup.id); setMaterialForm({ title: '', type: 'Lekcja', attachment: null }); fetchData(); } catch (err) { alert(err.message); } finally { setUploading(false); } };
+  const deleteMaterial = async (mid) => { if(!confirm(tr('Usunąć?'))) return; const um = currentGroup.materials.filter(m => m.id !== mid); await supabase.from('kids_groups').update({ materials: um }).eq('id', currentGroup.id); fetchData(); };
   const handleProgramUpdate = async (id, updates) => { setPrograms(prev => prev.map(p => p.id === id ? { ...p, ...updates, szkolka: { ...p.szkolka, ...updates.szkolka } } : p)); await supabase.from('programs').update(updates).eq('id', id); };
   const filteredStudents = students.filter(s => s.full_name.toLowerCase().includes(studentFilter.toLowerCase()));
   const groupStudents = currentGroup ? students.filter(s => s.group_id === currentGroup.id) : [];
@@ -651,7 +652,7 @@ export default function KidsModule() {
             <table className="w-full text-left text-sm min-w-[600px]">
               {/* USUNIĘTO STYLE BACKGROUND BLACK - TERAZ JEST CZYSTA KLASA */}
               <thead className="text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <tr><th className="p-4">Imię i nazwisko</th><th className="p-4">Rola</th><th className="p-4">Email</th><th className="p-4 text-right">Akcje</th></tr>
+                <tr><th className="p-4">{tr('Imię i nazwisko')}</th><th className="p-4">{tr('Rola')}</th><th className="p-4">{tr('Email')}</th><th className="p-4 text-right">{tr('Akcje')}</th></tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                 {teachers.map(t => (
@@ -660,8 +661,8 @@ export default function KidsModule() {
                     <td className="p-4 text-gray-600 dark:text-gray-400">{t.role}</td>
                     <td className="p-4 text-gray-600 dark:text-gray-400">{t.email}</td>
                     <td className="p-4 text-right flex justify-end gap-2">
-                      <button onClick={() => { setTeacherForm(t); setShowTeacherModal(true); }} className="text-accent-primary dark:text-accent-primary-light font-medium">Edytuj</button>
-                      <button onClick={() => deleteTeacher(t.id)} className="text-red-500 dark:text-red-400 font-medium">Usuń</button>
+                      <button onClick={() => { setTeacherForm(t); setShowTeacherModal(true); }} className="text-accent-primary dark:text-accent-primary-light font-medium">{tr('Edytuj')}</button>
+                      <button onClick={() => deleteTeacher(t.id)} className="text-red-500 dark:text-red-400 font-medium">{tr('Usuń')}</button>
                     </td>
                   </tr>
                 ))}
@@ -690,7 +691,7 @@ export default function KidsModule() {
           <table className="w-full text-left text-sm min-w-[700px]">
              {/* USUNIĘTO STYLE BACKGROUND BLACK - TERAZ JEST CZYSTA KLASA */}
             <thead className="text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-              <tr><th className="p-4">Imię i nazwisko</th><th className="p-4">Wiek/Rocznik</th><th className="p-4">Rodzina</th><th className="p-4">Grupa</th><th className="p-4 text-right">Akcje</th></tr>
+              <tr><th className="p-4">{tr('Imię i nazwisko')}</th><th className="p-4">Wiek/Rocznik</th><th className="p-4">{tr('Rodzina')}</th><th className="p-4">{tr('Grupa')}</th><th className="p-4 text-right">{tr('Akcje')}</th></tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
               {filteredStudents.map((s) => {
@@ -711,8 +712,8 @@ export default function KidsModule() {
                   </td>
                   <td className="p-4"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${s.group_id ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>{groups.find(g => g.id === s.group_id)?.name || '-'}</span></td>
                   <td className="p-4 text-right flex justify-end gap-2">
-                    <button onClick={() => openEditStudent(s)} className="text-accent-primary dark:text-accent-primary-light font-medium hover:underline">Edytuj</button>
-                    <button onClick={() => deleteStudent(s.id)} className="text-red-500 dark:text-red-400 font-medium hover:underline">Usuń</button>
+                    <button onClick={() => openEditStudent(s)} className="text-accent-primary dark:text-accent-primary-light font-medium hover:underline">{tr('Edytuj')}</button>
+                    <button onClick={() => deleteStudent(s.id)} className="text-red-500 dark:text-red-400 font-medium hover:underline">{tr('Usuń')}</button>
                   </td>
                 </tr>
               );})}
@@ -765,10 +766,10 @@ export default function KidsModule() {
             <div className="flex justify-between mb-6"><h3 className="font-bold text-xl text-gray-800 dark:text-white">Grupa Wiekowa</h3><button onClick={() => setShowGroupModal(false)} className="text-gray-500 dark:text-gray-400"><X/></button></div>
             <div className="space-y-4">
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Nazwa grupy')} value={groupForm.name} onChange={e => setGroupForm({...groupForm, name: e.target.value})} />
-              <div><label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nauczyciele</label><TeacherMultiSelect teachers={teachers} selectedIds={groupForm.teacher_ids || []} onChange={ids => setGroupForm({...groupForm, teacher_ids: ids})} /></div>
+              <div><label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Nauczyciele')}</label><TeacherMultiSelect teachers={teachers} selectedIds={groupForm.teacher_ids || []} onChange={ids => setGroupForm({...groupForm, teacher_ids: ids})} /></div>
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Numer sali')} value={groupForm.room} onChange={e => setGroupForm({...groupForm, room: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Przedział wiekowy')} value={groupForm.age_range} onChange={e => setGroupForm({...groupForm, age_range: e.target.value})} />
-              <button onClick={saveGroup} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-4">Zapisz</button>
+              <button onClick={saveGroup} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-4">{tr('Zapisz')}</button>
             </div>
           </div>
         </div>,
@@ -785,7 +786,7 @@ export default function KidsModule() {
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Kontakt do rodzica (opcjonalnie)')} value={globalStudentForm.parent_info} onChange={e => setGlobalStudentForm({...globalStudentForm, parent_info: e.target.value})} />
               <CustomSelect options={groupOptions} value={globalStudentForm.group_id} onChange={v => setGlobalStudentForm({...globalStudentForm, group_id: v})} placeholder={t('Przypisz do grupy...')} icon={Users} />
               <textarea className="w-full p-3 rounded-xl border resize-none dark:bg-gray-900 dark:border-gray-600 dark:text-white" rows={3} placeholder={t('Uwagi')} value={globalStudentForm.notes} onChange={e => setGlobalStudentForm({...globalStudentForm, notes: e.target.value})} />
-              <button onClick={saveGlobalStudent} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-2">Zapisz</button>
+              <button onClick={saveGlobalStudent} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-2">{tr('Zapisz')}</button>
             </div>
           </div>
         </div>,
@@ -800,7 +801,7 @@ export default function KidsModule() {
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Rola')} value={teacherForm.role} onChange={e => setTeacherForm({...teacherForm, role: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Telefon')} value={teacherForm.phone} onChange={e => setTeacherForm({...teacherForm, phone: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Email')} value={teacherForm.email} onChange={e => setTeacherForm({...teacherForm, email: e.target.value})} />
-              <button onClick={saveTeacher} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-4">Zapisz</button>
+              <button onClick={saveTeacher} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-4">{tr('Zapisz')}</button>
             </div>
           </div>
         </div>,
@@ -811,12 +812,12 @@ export default function KidsModule() {
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-3xl p-6 border border-white/20 dark:border-gray-700 flex flex-col max-h-[80vh]">
             <div className="flex justify-between mb-4 pb-4 border-b dark:border-gray-700"><h3 className="font-bold text-xl text-gray-800 dark:text-white">Uczniowie: {currentGroup.name}</h3><button onClick={() => setShowGroupStudentsModal(false)} className="text-gray-500 dark:text-gray-400"><X/></button></div>
             <div className="bg-accent-primary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 flex gap-3 items-end">
-              <div className="flex-1"><label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Dodaj ucznia</label><CustomSelect options={availableStudentOptions} value={attachStudentId} onChange={setAddStudentId} placeholder="Wybierz..." icon={UserPlus} /></div>
-              <button onClick={attachStudentToGroup} className="bg-accent-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-accent-primary h-[46px]">Dodaj</button>
+              <div className="flex-1"><label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Dodaj ucznia</label><CustomSelect options={availableStudentOptions} value={attachStudentId} onChange={setAddStudentId} placeholder={tr('Wybierz...')} icon={UserPlus} /></div>
+              <button onClick={attachStudentToGroup} className="bg-accent-primary text-white px-5 py-2.5 rounded-xl font-bold hover:bg-accent-primary h-[46px]">{tr('Dodaj')}</button>
             </div>
             <div className="flex-1 overflow-y-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-3">Imię</th><th className="p-3">Wiek</th><th className="p-3">Kontakt</th><th className="p-3">Akcja</th></tr></thead>
+                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-3">{tr('Imię')}</th><th className="p-3">Wiek</th><th className="p-3">Kontakt</th><th className="p-3">{tr('Akcja')}</th></tr></thead>
                 <tbody className="divide-y dark:divide-gray-700">
                   {groupStudents.map(s => (
                     <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200">
@@ -876,7 +877,7 @@ export default function KidsModule() {
                   onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
                 />
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kwota (PLN)</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
                   <input
                     type="number"
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -890,7 +891,7 @@ export default function KidsModule() {
               {/* Wiersz 2: Kontrahent i Osoba odpowiedzialna */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kontrahent</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kontrahent')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.contractor}
@@ -899,7 +900,7 @@ export default function KidsModule() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Osoba odpowiedzialna</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Osoba odpowiedzialna')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.responsible_person}
@@ -912,7 +913,7 @@ export default function KidsModule() {
               {/* Wiersz 3: Pozycja budżetowa (pełna szerokość) */}
               <div>
                 <CustomSelect
-                  label="Pozycja budżetowa (opis kosztu)"
+                  label={tr('Pozycja budżetowa (opis kosztu)')}
                   value={expenseForm.description}
                   onChange={(value) => setExpenseForm({...expenseForm, description: value})}
                   options={[
@@ -922,28 +923,28 @@ export default function KidsModule() {
                       label: item.description
                     }))
                   ]}
-                  placeholder="Wybierz pozycję"
+                  placeholder={tr('Wybierz pozycję')}
                 />
               </div>
 
               {/* Wiersz 4: Szczegółowy opis (pełna szerokość) */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Szczegółowy opis</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Szczegółowy opis')}</label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
                   rows={2}
                   value={expenseForm.detailed_description}
                   onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
-                  placeholder="Dodatkowe informacje o wydatku..."
+                  placeholder={tr('Dodatkowe informacje o wydatku...')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załączniki (opcjonalnie)</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Załączniki (opcjonalnie)')}</label>
                 <div className="space-y-2">
                   <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                     <Upload size={18} className="text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {uploadingFile ? 'Przesyłanie...' : 'Dodaj plik(i)'}
+                      {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
                     </span>
                     <input
                       type="file"
@@ -975,13 +976,13 @@ export default function KidsModule() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tagi</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tagi')}</label>
                 <div className="flex gap-2 mb-2">
                   <input
                     className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Dodaj tag"
+                    placeholder={tr('Dodaj tag')}
                     onKeyPress={(e) => e.key === 'Enter' && addTag()}
                   />
                   <button

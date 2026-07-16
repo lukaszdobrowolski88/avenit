@@ -2,6 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
 import FieldItem from './FieldItem';
+import { tr } from '../../../../i18n';
 
 export default function FieldCanvas({
   fields,
@@ -28,10 +29,10 @@ export default function FieldCanvas({
           <Plus size={32} className="text-gray-400" />
         </div>
         <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Przeciągnij pola tutaj
+          {tr('Przeciągnij pola tutaj')}
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm">
-          Wybierz pole z palety po lewej stronie i przeciągnij je tutaj, aby zbudować formularz
+          {tr('Wybierz pole z palety po lewej stronie i przeciągnij je tutaj, aby zbudować formularz')}
         </p>
       </div>
     );

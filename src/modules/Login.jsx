@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTwoFactor } from '../hooks/useTwoFactor';
 import { Shield, ArrowLeft } from 'lucide-react';
+import { tr } from '../i18n';
 
 export default function Login() {
+  const t = useT();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,7 +52,7 @@ export default function Login() {
       const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
       if (authError) {
-        setError(authError.message || 'Błędny e-mail lub hasło.');
+        setError(authError.message || tr('Błędny e-mail lub hasło.'));
         setLoading(false);
         return;
       }
@@ -63,7 +65,7 @@ export default function Login() {
       }
       // Sukces bez 2FA - App.jsx wykryje sesję (onAuthStateChange)
     } catch (err) {
-      setError('Wystąpił błąd podczas logowania');
+      setError(tr('Wystąpił błąd podczas logowania'));
       setLoading(false);
     }
   };
@@ -71,7 +73,7 @@ export default function Login() {
   const handleVerify2FA = async e => {
     e.preventDefault();
     if (totpCode.length < 6) {
-      setError('Wprowadź 6-cyfrowy kod');
+      setError(tr('Wprowadź 6-cyfrowy kod'));
       return;
     }
 
@@ -86,7 +88,7 @@ export default function Login() {
     });
 
     if (authError || data?.requires2fa) {
-      setError(authError?.message || 'Nieprawidłowy kod weryfikacyjny');
+      setError(authError?.message || tr('Nieprawidłowy kod weryfikacyjny'));
       setLoading(false);
       return;
     }
@@ -104,7 +106,7 @@ export default function Login() {
   const handleForgotPassword = async e => {
     e.preventDefault();
     if (!email) {
-      setError('Wprowadź adres e-mail');
+      setError(tr('Wprowadź adres e-mail'));
       return;
     }
     setLoading(true);
@@ -117,7 +119,7 @@ export default function Login() {
     setLoading(false);
 
     if (resetError) {
-      setError(resetError.message || 'Błąd wysyłania emaila');
+      setError(resetError.message || tr('Błąd wysyłania emaila'));
     } else {
       setResetEmailSent(true);
     }
@@ -147,7 +149,7 @@ export default function Login() {
             Weryfikacja dwuetapowa
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
-            Wprowadź kod z aplikacji Authenticator
+            {tr('Wprowadź kod z aplikacji Authenticator')}
           </p>
 
           <div className="mb-6">
@@ -194,7 +196,7 @@ export default function Login() {
             className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition flex items-center justify-center gap-2"
           >
             <ArrowLeft size={16} />
-            Powrót do logowania
+            {tr('Powrót do logowania')}
           </button>
         </form>
       </div>
@@ -228,12 +230,12 @@ export default function Login() {
         </div>
 
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">
-          {showForgotPassword ? 'Resetuj hasło' : 'Witaj ponownie'}
+          {showForgotPassword ? tr('Resetuj hasło') : 'Witaj ponownie'}
         </h1>
         <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
           {showForgotPassword
-            ? 'Podaj adres e-mail, a wyślemy Ci link do zresetowania hasła'
-            : 'Zaloguj się do Avenit'}
+            ? tr('Podaj adres e-mail, a wyślemy Ci link do zresetowania hasła')
+            : tr('Zaloguj się do Avenit')}
         </p>
 
         <div className="mb-5">
@@ -251,7 +253,7 @@ export default function Login() {
 
         {!showForgotPassword && (
           <div className="mb-6">
-            <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">Hasło</label>
+            <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{t('Hasło')}</label>
             <input
               type="password"
               className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
@@ -281,7 +283,7 @@ export default function Login() {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   Logowanie...
                 </span>
-              ) : 'Zaloguj się'}
+              ) : tr('Zaloguj się')}
             </button>
 
             <button
@@ -289,15 +291,15 @@ export default function Login() {
               onClick={() => { setShowForgotPassword(true); setError(''); setResetEmailSent(false); }}
               className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light transition"
             >
-              Nie pamiętam hasła
+              {tr('Nie pamiętam hasła')}
             </button>
           </>
         ) : (
           <>
             {resetEmailSent ? (
               <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-center">
-                <p className="font-bold mb-1">Email został wysłany!</p>
-                <p className="text-sm">Sprawdź swoją skrzynkę i kliknij link, aby zresetować hasło.</p>
+                <p className="font-bold mb-1">{t('Email został wysłany!')}</p>
+                <p className="text-sm">{t('Sprawdź swoją skrzynkę i kliknij link, aby zresetować hasło.')}</p>
               </div>
             ) : (
               <button
@@ -309,9 +311,9 @@ export default function Login() {
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Wysyłanie...
+                    {tr('Wysyłanie...')}
                   </span>
-                ) : 'Wyślij link do resetu hasła'}
+                ) : tr('Wyślij link do resetu hasła')}
               </button>
             )}
 
@@ -320,7 +322,7 @@ export default function Login() {
               onClick={() => { setShowForgotPassword(false); setError(''); setResetEmailSent(false); }}
               className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light transition"
             >
-              ← Powrót do logowania
+              {tr('← Powrót do logowania')}
             </button>
           </>
         )}

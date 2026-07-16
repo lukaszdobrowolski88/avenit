@@ -16,6 +16,7 @@ import {
   MapPin,
   Star
 } from 'lucide-react';
+import { tr } from '../../i18n';
 
 export default function LandingPage() {
   const [plans, setPlans] = useState([]);
@@ -32,13 +33,13 @@ export default function LandingPage() {
   const features = [
     {
       icon: Users,
-      title: 'Zarządzanie członkami',
-      description: 'Kompletna baza członków z historią, grupami i kontaktami.'
+      title: tr('Zarządzanie członkami'),
+      description: tr('Kompletna baza członków z historią, grupami i kontaktami.')
     },
     {
       icon: Calendar,
       title: 'Kalendarz i wydarzenia',
-      description: 'Planuj wydarzenia, nabożeństwa i spotkania w jednym miejscu.'
+      description: tr('Planuj wydarzenia, nabożeństwa i spotkania w jednym miejscu.')
     },
     {
       icon: Baby,
@@ -48,17 +49,17 @@ export default function LandingPage() {
     {
       icon: FileText,
       title: 'Formularze online',
-      description: 'Twórz formularze zgłoszeniowe, ankiety i zbieraj dane.'
+      description: tr('Twórz formularze zgłoszeniowe, ankiety i zbieraj dane.')
     },
     {
       icon: Mail,
       title: 'Komunikacja',
-      description: 'Wysyłaj newslettery, ogłoszenia i powiadomienia do członków.'
+      description: tr('Wysyłaj newslettery, ogłoszenia i powiadomienia do członków.')
     },
     {
       icon: Shield,
-      title: 'Bezpieczeństwo',
-      description: 'Dane są szyfrowane i przechowywane zgodnie z RODO.'
+      title: tr('Bezpieczeństwo'),
+      description: tr('Dane są szyfrowane i przechowywane zgodnie z RODO.')
     }
   ];
 
@@ -66,17 +67,17 @@ export default function LandingPage() {
     {
       name: 'Pastor Jan Kowalski',
       church: 'Kościół Łaski, Warszawa',
-      text: 'Avenit zrewolucjonizowało sposób, w jaki zarządzamy naszą społecznością. Oszczędzamy godziny pracy tygodniowo!'
+      text: tr('Avenit zrewolucjonizowało sposób, w jaki zarządzamy naszą społecznością. Oszczędzamy godziny pracy tygodniowo!')
     },
     {
       name: 'Anna Nowak',
       church: 'Zbór Nowe Życie, Kraków',
-      text: 'System check-in dzieci to game changer. Rodzice czują się bezpiecznie, a my mamy pełną kontrolę.'
+      text: tr('System check-in dzieci to game changer. Rodzice czują się bezpiecznie, a my mamy pełną kontrolę.')
     },
     {
       name: 'Marek Wiśniewski',
       church: 'Kościół Baptystyczny, Poznań',
-      text: 'Intuicyjny interfejs i świetne wsparcie techniczne. Polecam każdemu kościołowi!'
+      text: tr('Intuicyjny interfejs i świetne wsparcie techniczne. Polecam każdemu kościołowi!')
     }
   ];
 
@@ -108,13 +109,13 @@ export default function LandingPage() {
                 to="/login"
                 className="text-gray-600 dark:text-gray-300 hover:text-accent-primary transition"
               >
-                Zaloguj się
+                {tr('Zaloguj się')}
               </Link>
               <Link
                 to="/register"
                 className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:shadow-lg transition"
               >
-                Wypróbuj za darmo
+                {tr('Wypróbuj za darmo')}
               </Link>
             </div>
           </div>
@@ -129,10 +130,10 @@ export default function LandingPage() {
             14 dni za darmo, bez karty kredytowej
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
-            Nowoczesne zarządzanie
+            {tr('Nowoczesne zarządzanie')}
             <br />
             <span className="bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
-              Twoim kościołem
+              {tr('Twoim kościołem')}
             </span>
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-10">
@@ -165,7 +166,7 @@ export default function LandingPage() {
               Wszystko, czego potrzebujesz
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Kompleksowe narzędzia do zarządzania każdym aspektem działalności kościoła
+              {tr('Kompleksowe narzędzia do zarządzania każdym aspektem działalności kościoła')}
             </p>
           </div>
 
@@ -201,7 +202,7 @@ export default function LandingPage() {
               Prosty i przejrzysty cennik
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8">
-              Wybierz plan dopasowany do wielkości Twojego kościoła
+              {tr('Wybierz plan dopasowany do wielkości Twojego kościoła')}
             </p>
 
             {/* Billing toggle */}
@@ -214,7 +215,7 @@ export default function LandingPage() {
                     : 'text-gray-600 dark:text-gray-400'
                 }`}
               >
-                Miesięcznie
+                {tr('Miesięcznie')}
               </button>
               <button
                 onClick={() => setBillingCycle('yearly')}
@@ -308,7 +309,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Co mówią nasi klienci
+              {tr('Co mówią nasi klienci')}
             </h2>
           </div>
 
@@ -344,7 +345,7 @@ export default function LandingPage() {
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Gotowy, aby zacząć?
+            {tr('Gotowy, aby zacząć?')}
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
             Dołącz do setek kościołów, które już korzystają z Avenit.
@@ -370,7 +371,7 @@ export default function LandingPage() {
                 <span className="text-lg font-bold text-white">Avenit</span>
               </div>
               <p className="text-gray-400 text-sm">
-                Nowoczesne oprogramowanie do zarządzania kościołem.
+                {tr('Nowoczesne oprogramowanie do zarządzania kościołem.')}
               </p>
             </div>
 
@@ -387,7 +388,7 @@ export default function LandingPage() {
               <h4 className="font-semibold text-white mb-4">Firma</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li><a href="#" className="hover:text-white transition">O nas</a></li>
-                <li><a href="#" className="hover:text-white transition">Polityka prywatności</a></li>
+                <li><a href="#" className="hover:text-white transition">{tr('Polityka prywatności')}</a></li>
                 <li><a href="#" className="hover:text-white transition">Regulamin</a></li>
               </ul>
             </div>

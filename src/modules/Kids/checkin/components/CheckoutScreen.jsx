@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useCheckin } from '../hooks/useCheckin';
 import VirtualKeypad from './VirtualKeypad';
 import { Search, Check, CheckCircle, Loader2 } from 'lucide-react';
+import { tr } from '../../../../i18n';
 
 export default function CheckoutScreen({ session }) {
   const [searchValue, setSearchValue] = useState('');
@@ -104,7 +105,7 @@ export default function CheckoutScreen({ session }) {
   if (!session) {
     return (
       <div className="p-10 text-center text-gray-500 dark:text-gray-400">
-        Brak aktywnej sesji. Przejdź do ustawień, aby utworzyć sesję.
+        {tr('Brak aktywnej sesji. Przejdź do ustawień, aby utworzyć sesję.')}
       </div>
     );
   }
@@ -114,7 +115,7 @@ export default function CheckoutScreen({ session }) {
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Checkout - Odbiór dzieci
+          {tr('Checkout - Odbiór dzieci')}
         </h1>
         <p className="text-base text-gray-600 dark:text-gray-400">
           Wpisz ostatnie 4 cyfry swojego numeru telefonu
@@ -204,7 +205,7 @@ export default function CheckoutScreen({ session }) {
                       {name}
                       {checkin.is_guest && (
                         <span className="ml-2 bg-amber-400 dark:bg-amber-500 text-black px-1.5 py-0.5 rounded text-[10px] font-bold">
-                          GOŚĆ
+                          {tr('GOŚĆ')}
                         </span>
                       )}
                     </div>
@@ -252,13 +253,13 @@ export default function CheckoutScreen({ session }) {
       {searchResults.length === 0 && searchValue && !searching && (
         <div className="mt-6 text-center p-5 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-2xl max-w-md">
           <p className="text-base text-amber-800 dark:text-amber-200 mb-4">
-            Nie znaleziono aktywnych check-inów dla tego kodu.
+            {tr('Nie znaleziono aktywnych check-inów dla tego kodu.')}
           </p>
           <button
             onClick={handleClear}
             className="px-5 py-2.5 text-base font-medium bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition"
           >
-            Spróbuj ponownie
+            {tr('Spróbuj ponownie')}
           </button>
         </div>
       )}

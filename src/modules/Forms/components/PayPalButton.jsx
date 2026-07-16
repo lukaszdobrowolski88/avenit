@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, AlertCircle, Loader2 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function PayPalButton({
   clientId,
   amount,
   currency = 'PLN',
-  description = 'Płatność za formularz',
+  description = tr('Płatność za formularz'),
   sandbox = true,
   onSuccess,
   onError,
@@ -54,7 +55,7 @@ export default function PayPalButton({
 
     script.onerror = () => {
       setLoading(false);
-      setError('Nie udało się załadować PayPal. Sprawdź połączenie z internetem.');
+      setError(tr('Nie udało się załadować PayPal. Sprawdź połączenie z internetem.'));
     };
 
     document.body.appendChild(script);
@@ -124,7 +125,7 @@ export default function PayPalButton({
         } catch (err) {
           console.error('PayPal capture error:', err);
           setPaymentStatus('error');
-          setError('Błąd podczas przetwarzania płatności.');
+          setError(tr('Błąd podczas przetwarzania płatności.'));
           if (onError) {
             onError(err);
           }
@@ -141,7 +142,7 @@ export default function PayPalButton({
       onError: (err) => {
         console.error('PayPal error:', err);
         setPaymentStatus('error');
-        setError('Wystąpił błąd podczas płatności.');
+        setError(tr('Wystąpił błąd podczas płatności.'));
         if (onError) {
           onError(err);
         }
@@ -155,7 +156,7 @@ export default function PayPalButton({
         <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
           <AlertCircle size={18} />
           <span className="text-sm font-medium">
-            PayPal nie jest skonfigurowany. Skontaktuj się z administratorem.
+            {tr('PayPal nie jest skonfigurowany. Skontaktuj się z administratorem.')}
           </span>
         </div>
       </div>
@@ -175,10 +176,10 @@ export default function PayPalButton({
           </div>
           <div>
             <p className="font-medium text-green-700 dark:text-green-400">
-              Płatność zakończona pomyślnie!
+              {tr('Płatność zakończona pomyślnie!')}
             </p>
             <p className="text-sm text-green-600 dark:text-green-500">
-              Twoja płatność została zrealizowana przez PayPal.
+              {tr('Twoja płatność została zrealizowana przez PayPal.')}
             </p>
           </div>
         </div>
@@ -191,7 +192,7 @@ export default function PayPalButton({
       <div className="space-y-3">
         <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Płatność została anulowana. Możesz spróbować ponownie.
+            {tr('Płatność została anulowana. Możesz spróbować ponownie.')}
           </p>
         </div>
         <button
@@ -202,7 +203,7 @@ export default function PayPalButton({
           }}
           className="w-full py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
         >
-          Spróbuj ponownie
+          {tr('Spróbuj ponownie')}
         </button>
       </div>
     );
@@ -231,7 +232,7 @@ export default function PayPalButton({
           }}
           className="w-full py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
         >
-          Odśwież i spróbuj ponownie
+          {tr('Odśwież i spróbuj ponownie')}
         </button>
       </div>
     );
@@ -245,7 +246,7 @@ export default function PayPalButton({
             <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c1.582 3.185-.072 5.065-3.51 5.065h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106H7.076a.641.641 0 0 1-.633-.74l.142-.9h1.538c.524 0 .968-.382 1.05-.901l1.05-6.66h2.475c4.298 0 7.664-1.747 8.648-6.797.03-.149.054-.294.077-.437-.144-.095-.296-.187-.457-.275l.256.18z"/>
           </svg>
           <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
-            Płatność PayPal
+            {tr('Płatność PayPal')}
           </span>
         </div>
         <span className="text-lg font-bold text-blue-700 dark:text-blue-400">
@@ -259,7 +260,7 @@ export default function PayPalButton({
       {loading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 size={24} className="animate-spin text-blue-500" />
-          <span className="ml-2 text-sm text-gray-500">Ładowanie PayPal...</span>
+          <span className="ml-2 text-sm text-gray-500">{tr('Ładowanie PayPal...')}</span>
         </div>
       ) : (
         <div ref={paypalRef} className="paypal-button-container" />
@@ -267,7 +268,7 @@ export default function PayPalButton({
 
       {sandbox && (
         <p className="text-xs text-center text-gray-400 dark:text-gray-500">
-          Tryb testowy - płatności nie będą prawdziwe
+          {tr('Tryb testowy - płatności nie będą prawdziwe')}
         </p>
       )}
     </div>

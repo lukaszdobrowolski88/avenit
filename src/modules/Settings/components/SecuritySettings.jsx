@@ -1,44 +1,47 @@
 import React from 'react';
 import { ShieldCheck, KeyRound, Clock, Lock } from 'lucide-react';
 import { SettingsCard, SettingRow, Toggle, SelectSetting } from './SettingsUI';
+import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Ustawienia bezpieczeństwa organizacji. Zapisywane w app_settings (sec_*).
 // Egzekwowanie polityk (np. wymuszenie 2FA) dzieje się przy logowaniu/kontroli
 // dostępu — tu ustawiamy preferencje.
 export default function SecuritySettings({ get, save }) {
+  const t = useT();
   const bool = (k, def = false) => (get(k) ?? String(def)) === 'true';
 
   return (
     <div className="max-w-3xl">
-      <SettingsCard title="Uwierzytelnianie" description="Zasady logowania dla wszystkich użytkowników." icon={ShieldCheck}>
-        <SettingRow label="Wymuś 2FA dla wszystkich" hint="Każdy użytkownik musi skonfigurować weryfikację dwuetapową">
+      <SettingsCard title="Uwierzytelnianie" description={tr('Zasady logowania dla wszystkich użytkowników.')} icon={ShieldCheck}>
+        <SettingRow label={tr('Wymuś 2FA dla wszystkich')} hint={tr('Każdy użytkownik musi skonfigurować weryfikację dwuetapową')}>
           <Toggle checked={bool('sec_force_2fa')} onChange={(v) => save('sec_force_2fa', String(v))} />
         </SettingRow>
-        <SettingRow label="Wymuś 2FA dla administratorów" hint="Konta z rolą administratora muszą mieć 2FA" last>
+        <SettingRow label={tr('Wymuś 2FA dla administratorów')} hint={tr('Konta z rolą administratora muszą mieć 2FA')} last>
           <Toggle checked={bool('sec_force_2fa_admins', true)} onChange={(v) => save('sec_force_2fa_admins', String(v))} />
         </SettingRow>
       </SettingsCard>
 
-      <SettingsCard title="Hasła" description="Wymagania dla haseł użytkowników." icon={KeyRound}>
-        <SettingRow label="Minimalna długość hasła">
+      <SettingsCard title={t('Hasła')} description={tr('Wymagania dla haseł użytkowników.')} icon={KeyRound}>
+        <SettingRow label={tr('Minimalna długość hasła')}>
           <SelectSetting
             value={get('sec_password_min') || '8'}
             onChange={(v) => save('sec_password_min', v)}
             options={[
-              { value: '6', label: '6 znaków' },
-              { value: '8', label: '8 znaków' },
-              { value: '10', label: '10 znaków' },
-              { value: '12', label: '12 znaków' },
+              { value: '6', label: t('6 znaków') },
+              { value: '8', label: t('8 znaków') },
+              { value: '10', label: t('10 znaków') },
+              { value: '12', label: t('12 znaków') },
             ]}
           />
         </SettingRow>
-        <SettingRow label="Wymagaj cyfry i wielkiej litery" hint="Silniejsze hasła" last>
+        <SettingRow label="Wymagaj cyfry i wielkiej litery" hint={tr('Silniejsze hasła')} last>
           <Toggle checked={bool('sec_password_complex')} onChange={(v) => save('sec_password_complex', String(v))} />
         </SettingRow>
       </SettingsCard>
 
-      <SettingsCard title="Sesje" description="Zarządzanie aktywnymi sesjami użytkowników." icon={Clock}>
-        <SettingRow label="Automatyczne wylogowanie" hint="Po okresie bezczynności" last>
+      <SettingsCard title="Sesje" description={tr('Zarządzanie aktywnymi sesjami użytkowników.')} icon={Clock}>
+        <SettingRow label="Automatyczne wylogowanie" hint={tr('Po okresie bezczynności')} last>
           <SelectSetting
             value={get('sec_session_timeout') || '0'}
             onChange={(v) => save('sec_session_timeout', v)}

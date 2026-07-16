@@ -58,6 +58,7 @@ function Tooltip({ children, text, show }) {
 
 // Import logo dla zwiniętego sidebara
 import sidebarLogo from '../media/schw.svg';
+import { tr } from '../i18n';
 
 // Kontekst dla mobile sidebar
 const SidebarContext = createContext({
@@ -249,27 +250,27 @@ export default function Sidebar() {
 
   // Stałe linki nawigacyjne (zawsze widoczne)
   const coreLinks = [
-    { path: '/', icon: LayoutDashboard, label: 'Pulpit', show: true },
-    { path: '/programs', icon: FileText, label: 'Programy', show: true },
-    { path: '/calendar', icon: Calendar, label: 'Kalendarz', show: true },
+    { path: '/', icon: LayoutDashboard, label: tr('Pulpit'), show: true },
+    { path: '/programs', icon: FileText, label: tr('Programy'), show: true },
+    { path: '/calendar', icon: Calendar, label: tr('Kalendarz'), show: true },
   ];
 
   // Statyczne linki modułów (fallback jeśli brak danych z bazy)
   const staticModuleLinks = [
-    { path: '/members', icon: Users, label: 'Członkowie', show: isModuleVisible('members') },
-    { path: '/worship', icon: Music, label: 'Grupa Uwielbienia', show: isModuleVisible('worship') },
-    { path: '/media', icon: Video, label: 'MediaTeam', show: isModuleVisible('media') },
-    { path: '/atmosfera', icon: HeartHandshake, label: 'Atmosfera Team', show: isModuleVisible('atmosfera') },
-    { path: '/kids', icon: Baby, label: 'Małe Avenit', show: isModuleVisible('kids') },
-    { path: '/home-groups', icon: UserCircle, label: 'Grupy domowe', show: isModuleVisible('groups') },
-    { path: '/finance', icon: DollarSign, label: 'Finanse', show: hasModuleAccess('module:finance') },
-    { path: '/teaching', icon: BookOpen, label: 'Nauczanie', show: hasModuleAccess('module:teaching') },
-    { path: '/prayer', icon: Heart, label: 'Centrum Modlitwy', show: isModuleVisible('prayer') },
-    { path: '/komunikator', icon: MessageCircle, label: 'Komunikator', show: hasModuleAccess('module:komunikator') },
-    { path: '/mlodziezowka', icon: Sparkles, label: 'Młodzieżówka', show: hasModuleAccess('module:mlodziezowka') },
-    { path: '/mailing', icon: LucideIcons.Mail, label: 'Mailing', show: hasModuleAccess('module:mailing') },
-    { path: '/push-campaigns', icon: LucideIcons.Bell, label: 'Push Kampanie', show: hasModuleAccess('module:push_campaigns') },
-    { path: '/sms-campaigns', icon: LucideIcons.MessageSquare, label: 'SMS Kampanie', show: hasModuleAccess('module:sms_campaigns') },
+    { path: '/members', icon: Users, label: tr('Członkowie'), show: isModuleVisible('members') },
+    { path: '/worship', icon: Music, label: tr('Grupa Uwielbienia'), show: isModuleVisible('worship') },
+    { path: '/media', icon: Video, label: tr('MediaTeam'), show: isModuleVisible('media') },
+    { path: '/atmosfera', icon: HeartHandshake, label: tr('Atmosfera Team'), show: isModuleVisible('atmosfera') },
+    { path: '/kids', icon: Baby, label: tr('Małe Avenit'), show: isModuleVisible('kids') },
+    { path: '/home-groups', icon: UserCircle, label: tr('Grupy domowe'), show: isModuleVisible('groups') },
+    { path: '/finance', icon: DollarSign, label: tr('Finanse'), show: hasModuleAccess('module:finance') },
+    { path: '/teaching', icon: BookOpen, label: tr('Nauczanie'), show: hasModuleAccess('module:teaching') },
+    { path: '/prayer', icon: Heart, label: tr('Centrum Modlitwy'), show: isModuleVisible('prayer') },
+    { path: '/komunikator', icon: MessageCircle, label: tr('Komunikator'), show: hasModuleAccess('module:komunikator') },
+    { path: '/mlodziezowka', icon: Sparkles, label: tr('Młodzieżówka'), show: hasModuleAccess('module:mlodziezowka') },
+    { path: '/mailing', icon: LucideIcons.Mail, label: tr('Mailing'), show: hasModuleAccess('module:mailing') },
+    { path: '/push-campaigns', icon: LucideIcons.Bell, label: tr('Push Kampanie'), show: hasModuleAccess('module:push_campaigns') },
+    { path: '/sms-campaigns', icon: LucideIcons.MessageSquare, label: tr('SMS Kampanie'), show: hasModuleAccess('module:sms_campaigns') },
   ];
 
   // Wygeneruj linki modułów z bazy danych
@@ -398,7 +399,7 @@ export default function Sidebar() {
               className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-xl transition-all w-full ${active === '/settings' ? 'bg-gray-800 dark:bg-gray-900 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'}`}
             >
               <Settings size={20} className="shrink-0" />
-              {(isMobile || !isCollapsed) && <span className="text-sm font-medium">Ustawienia</span>}
+              {(isMobile || !isCollapsed) && <span className="text-sm font-medium">{tr('Ustawienia')}</span>}
             </Link>
           </Tooltip>
         </div>
@@ -414,7 +415,7 @@ export default function Sidebar() {
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-20 w-6 h-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full shadow-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:border-accent-primary-light dark:hover:border-accent-primary transition-all z-50"
-          title={isCollapsed ? 'Rozwiń sidebar' : 'Zwiń sidebar'}
+          title={isCollapsed ? tr('Rozwiń sidebar') : tr('Zwiń sidebar')}
         >
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>

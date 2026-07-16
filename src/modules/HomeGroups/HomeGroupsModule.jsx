@@ -17,6 +17,7 @@ import { useUserRole } from '../../hooks/useUserRole';
 import { hasTabAccess } from '../../utils/tabPermissions';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -162,7 +163,7 @@ export default function HomeGroupsModule() {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -199,7 +200,7 @@ export default function HomeGroupsModule() {
       fetchFinanceData();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -219,7 +220,7 @@ export default function HomeGroupsModule() {
       if (tasksRes.data) setTasks(tasksRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
-      alert('Błąd pobierania danych: ' + error.message);
+      alert(tr('Błąd pobierania danych: ') + error.message);
     } finally {
       setLoading(false);
     }
@@ -227,7 +228,7 @@ export default function HomeGroupsModule() {
 
   const handleSaveGroup = async () => {
     if (!groupForm.name?.trim()) {
-      alert('Podaj nazwę grupy');
+      alert(tr('Podaj nazwę grupy'));
       return;
     }
 
@@ -262,13 +263,13 @@ export default function HomeGroupsModule() {
       closeModal();
     } catch (error) {
       console.error('Error saving group:', error);
-      alert('Błąd zapisywania grupy: ' + error.message);
+      alert(tr('Błąd zapisywania grupy: ') + error.message);
     }
   };
 
   const handleSavePerson = async (type) => {
     if (!personForm.full_name?.trim()) {
-      alert('Podaj imię i nazwisko');
+      alert(tr('Podaj imię i nazwisko'));
       return;
     }
 
@@ -302,12 +303,12 @@ export default function HomeGroupsModule() {
       closeModal();
     } catch (error) {
       console.error('Error saving person:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
   const handleDelete = async (id, type) => {
-    if (!confirm('Czy na pewno chcesz usunąć?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć?'))) return;
 
     try {
       const table = type === 'group' ? 'home_groups'
@@ -323,7 +324,7 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (error) {
       console.error('Error deleting:', error);
-      alert('Błąd usuwania: ' + error.message);
+      alert(tr('Błąd usuwania: ') + error.message);
     }
   };
 
@@ -402,7 +403,7 @@ export default function HomeGroupsModule() {
 
   const saveTask = async () => {
     if (!taskForm.title?.trim()) {
-      alert('Tytuł zadania jest wymagany');
+      alert(tr('Tytuł zadania jest wymagany'));
       return;
     }
 
@@ -431,12 +432,12 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd zapisywania zadania:', err);
-      alert('Błąd zapisywania zadania: ' + err.message);
+      alert(tr('Błąd zapisywania zadania: ') + err.message);
     }
   };
 
   const deleteTask = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć to zadanie?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć to zadanie?'))) return;
 
     try {
       const { error } = await supabase.from('home_group_tasks').delete().eq('id', id);
@@ -444,7 +445,7 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd usuwania zadania:', err);
-      alert('Błąd usuwania zadania: ' + err.message);
+      alert(tr('Błąd usuwania zadania: ') + err.message);
     }
   };
 
@@ -524,7 +525,7 @@ export default function HomeGroupsModule() {
       const { error } = await supabase.from('home_group_task_comments').insert([{
         task_id: taskForm.id,
         content: newComment,
-        author_name: currentUserEmail || 'Użytkownik'
+        author_name: currentUserEmail || tr('Użytkownik')
       }]);
 
       if (error) throw error;
@@ -533,7 +534,7 @@ export default function HomeGroupsModule() {
       fetchTaskComments(taskForm.id);
     } catch (err) {
       console.error('Błąd dodawania komentarza:', err);
-      alert('Błąd dodawania komentarza: ' + err.message);
+      alert(tr('Błąd dodawania komentarza: ') + err.message);
     }
   };
 
@@ -551,7 +552,7 @@ export default function HomeGroupsModule() {
   // Members modal functions
   const attachMemberToGroup = async () => {
     if (!attachMemberId) {
-      alert('Wybierz członka');
+      alert(tr('Wybierz członka'));
       return;
     }
 
@@ -566,12 +567,12 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd dodawania członka:', err);
-      alert('Błąd dodawania członka: ' + err.message);
+      alert(tr('Błąd dodawania członka: ') + err.message);
     }
   };
 
   const detachMemberFromGroup = async (memberId) => {
-    if (!confirm('Czy na pewno chcesz odłączyć członka od tej grupy?')) return;
+    if (!confirm(tr('Czy na pewno chcesz odłączyć członka od tej grupy?'))) return;
 
     try {
       const { error } = await supabase
@@ -583,14 +584,14 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd odłączania członka:', err);
-      alert('Błąd odłączania członka: ' + err.message);
+      alert(tr('Błąd odłączania członka: ') + err.message);
     }
   };
 
   // Materials functions
   const addMaterial = async () => {
     if (!materialForm.title?.trim()) {
-      alert('Podaj nazwę materiału');
+      alert(tr('Podaj nazwę materiału'));
       return;
     }
 
@@ -633,14 +634,14 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd dodawania materiału:', err);
-      alert('Błąd dodawania materiału: ' + err.message);
+      alert(tr('Błąd dodawania materiału: ') + err.message);
     } finally {
       setUploading(false);
     }
   };
 
   const deleteMaterial = async (materialId) => {
-    if (!confirm('Czy na pewno chcesz usunąć ten materiał?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć ten materiał?'))) return;
 
     try {
       const updatedMaterials = (currentGroup.materials || []).filter(m => m.id !== materialId);
@@ -654,7 +655,7 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd usuwania materiału:', err);
-      alert('Błąd usuwania materiału: ' + err.message);
+      alert(tr('Błąd usuwania materiału: ') + err.message);
     }
   };
 
@@ -738,7 +739,7 @@ export default function HomeGroupsModule() {
                 className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
-                Dodaj Grupę
+                {tr('Dodaj Grupę')}
               </button>
             </div>
           </div>
@@ -937,7 +938,7 @@ export default function HomeGroupsModule() {
                                 onClick={() => openTaskModal(task)}
                                 className="text-accent-primary dark:text-accent-primary-light text-xs font-medium"
                               >
-                                Szczegóły
+                                {tr('Szczegóły')}
                               </button>
                             </div>
                           </div>
@@ -992,7 +993,7 @@ export default function HomeGroupsModule() {
                           onClick={() => openTaskModal(task)}
                           className="text-accent-primary dark:text-accent-primary-light font-medium"
                         >
-                          Szczegóły
+                          {tr('Szczegóły')}
                         </button>
                       </td>
                     </tr>
@@ -1061,7 +1062,7 @@ export default function HomeGroupsModule() {
                         onClick={() => handleDelete(leader.id, 'leader')}
                         className="text-red-500 dark:text-red-400 font-medium hover:underline"
                       >
-                        Usuń
+                        {tr('Usuń')}
                       </button>
                     </td>
                   </tr>
@@ -1069,7 +1070,7 @@ export default function HomeGroupsModule() {
                 {filteredLeaders.length === 0 && (
                   <tr>
                     <td colSpan="4" className="p-6 text-center text-gray-400 dark:text-gray-500">
-                      Brak liderów
+                      {tr('Brak liderów')}
                     </td>
                   </tr>
                 )}
@@ -1103,7 +1104,7 @@ export default function HomeGroupsModule() {
                 className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
               >
                 <Plus size={18} />
-                Dodaj Członka
+                {tr('Dodaj Członka')}
               </button>
             </div>
           </div>
@@ -1142,7 +1143,7 @@ export default function HomeGroupsModule() {
                         onClick={() => handleDelete(member.id, 'member')}
                         className="text-red-500 dark:text-red-400 font-medium hover:underline"
                       >
-                        Usuń
+                        {tr('Usuń')}
                       </button>
                     </td>
                   </tr>
@@ -1150,7 +1151,7 @@ export default function HomeGroupsModule() {
                 {filteredMembers.length === 0 && (
                   <tr>
                     <td colSpan="5" className="p-6 text-center text-gray-400 dark:text-gray-500">
-                      Brak członków
+                      {tr('Brak członków')}
                     </td>
                   </tr>
                 )}
@@ -1201,7 +1202,7 @@ export default function HomeGroupsModule() {
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl border border-white/20 dark:border-gray-700 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="font-bold text-2xl bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-                {editingItem ? 'Edytuj' : 'Dodaj'} {modalType === 'group' ? 'Grupę' : modalType === 'leader' ? 'Lidera' : 'Członka'}
+                {editingItem ? 'Edytuj' : 'Dodaj'} {modalType === 'group' ? tr('Grupę') : modalType === 'leader' ? 'Lidera' : tr('Członka')}
               </h3>
               <button onClick={closeModal} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                 <X size={24} />
@@ -1376,7 +1377,7 @@ export default function HomeGroupsModule() {
               <div className="bg-accent-primary-lightest dark:bg-gray-800 p-4 rounded-xl mb-4 flex gap-3 items-end">
                 <div className="flex-1">
                   <CustomSelect
-                    label="Dodaj członka"
+                    label={tr('Dodaj członka')}
                     value={attachMemberId}
                     onChange={setAttachMemberId}
                     options={[
@@ -1415,7 +1416,7 @@ export default function HomeGroupsModule() {
                             onClick={() => detachMemberFromGroup(m.id)}
                             className="text-red-500 dark:text-red-400 hover:underline text-xs uppercase font-bold"
                           >
-                            Odłącz
+                            {tr('Odłącz')}
                           </button>
                         </td>
                       </tr>
@@ -1423,7 +1424,7 @@ export default function HomeGroupsModule() {
                     {groupMembers.length === 0 && (
                       <tr>
                         <td colSpan="4" className="p-6 text-center text-gray-400 dark:text-gray-500">
-                          Brak członków w tej grupie
+                          {tr('Brak członków w tej grupie')}
                         </td>
                       </tr>
                     )}
@@ -1518,7 +1519,7 @@ export default function HomeGroupsModule() {
                 ))}
                 {(!currentGroup.materials || currentGroup.materials.length === 0) && (
                   <div className="text-center text-gray-400 dark:text-gray-500 py-8">
-                    Brak materiałów
+                    {tr('Brak materiałów')}
                   </div>
                 )}
               </div>
@@ -1602,7 +1603,7 @@ export default function HomeGroupsModule() {
                       onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }}
                       className="px-4 py-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                     >
-                      Usuń zadanie
+                      {tr('Usuń zadanie')}
                     </button>
                   )}
                   <button
@@ -1627,13 +1628,13 @@ export default function HomeGroupsModule() {
               <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
                 {!taskForm.id ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">
-                    Zapisz zadanie, aby dodawać komentarze.
+                    {tr('Zapisz zadanie, aby dodawać komentarze.')}
                   </div>
                 ) : loadingComments ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm">{t('Ładowanie...')}</div>
                 ) : comments.length === 0 ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">
-                    Brak komentarzy. Bądź pierwszy!
+                    {tr('Brak komentarzy. Bądź pierwszy!')}
                   </div>
                 ) : comments.map(comment => (
                   <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -1706,7 +1707,7 @@ export default function HomeGroupsModule() {
                 />
               </div>
               <CustomSelect
-                label="Pozycja budżetowa"
+                label={tr('Pozycja budżetowa')}
                 value={expenseForm.description}
                 onChange={(value) => setExpenseForm({...expenseForm, description: value})}
                 options={[

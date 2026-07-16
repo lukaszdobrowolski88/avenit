@@ -6,6 +6,7 @@ import FormRenderer from '../components/FormRenderer';
 import { useFormResponses } from '../hooks/useFormResponses';
 import { useFormEmails } from '../hooks/useFormEmails';
 import { checkSeatAvailability } from '../utils/fieldTypes';
+import { tr } from '../../../i18n';
 
 export default function PublicFormPage() {
   const { formId } = useParams();
@@ -123,7 +124,7 @@ export default function PublicFormPage() {
       }
     } catch (err) {
       console.error('Error submitting form:', err);
-      alert('Wystąpił błąd podczas wysyłania formularza. Spróbuj ponownie.');
+      alert(tr('Wystąpił błąd podczas wysyłania formularza. Spróbuj ponownie.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -152,10 +153,10 @@ export default function PublicFormPage() {
           {error === 'not_found' && (
             <>
               <h1 className="text-xl font-bold text-gray-900 mb-2">
-                Formularz nie został znaleziony
+                {tr('Formularz nie został znaleziony')}
               </h1>
               <p className="text-gray-600">
-                Ten formularz nie istnieje lub został usunięty.
+                {tr('Ten formularz nie istnieje lub został usunięty.')}
               </p>
             </>
           )}
@@ -163,10 +164,10 @@ export default function PublicFormPage() {
           {error === 'form_not_available' && (
             <>
               <h1 className="text-xl font-bold text-gray-900 mb-2">
-                Formularz niedostępny
+                {tr('Formularz niedostępny')}
               </h1>
               <p className="text-gray-600">
-                Ten formularz nie jest obecnie dostępny do wypełnienia.
+                {tr('Ten formularz nie jest obecnie dostępny do wypełnienia.')}
               </p>
             </>
           )}
@@ -174,10 +175,10 @@ export default function PublicFormPage() {
           {error === 'form_closed' && (
             <>
               <h1 className="text-xl font-bold text-gray-900 mb-2">
-                Formularz zamknięty
+                {tr('Formularz zamknięty')}
               </h1>
               <p className="text-gray-600">
-                Ten formularz został zamknięty i nie przyjmuje już odpowiedzi.
+                {tr('Ten formularz został zamknięty i nie przyjmuje już odpowiedzi.')}
               </p>
             </>
           )}
@@ -185,10 +186,10 @@ export default function PublicFormPage() {
           {error === 'limit_reached' && (
             <>
               <h1 className="text-xl font-bold text-gray-900 mb-2">
-                Osiągnięto limit odpowiedzi
+                {tr('Osiągnięto limit odpowiedzi')}
               </h1>
               <p className="text-gray-600">
-                Ten formularz osiągnął maksymalną liczbę odpowiedzi.
+                {tr('Ten formularz osiągnął maksymalną liczbę odpowiedzi.')}
               </p>
             </>
           )}

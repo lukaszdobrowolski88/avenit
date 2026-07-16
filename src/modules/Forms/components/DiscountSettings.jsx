@@ -1,4 +1,5 @@
 import { Plus, Trash2, Percent } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function DiscountSettings({ settings, onChange }) {
   const discounts = settings?.discounts || {};
@@ -52,10 +53,10 @@ export default function DiscountSettings({ settings, onChange }) {
       <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
         <div>
           <p className="font-medium text-gray-900 dark:text-white">
-            Włącz rabaty ilościowe
+            {tr('Włącz rabaty ilościowe')}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Zniżki zależne od liczby osób
+            {tr('Zniżki zależne od liczby osób')}
           </p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
@@ -115,7 +116,7 @@ export default function DiscountSettings({ settings, onChange }) {
                   >
                     <option value="percentage">Procentowo</option>
                     <option value="fixed_per_person">Kwota/os.</option>
-                    <option value="fixed_total">Kwota łącznie</option>
+                    <option value="fixed_total">{tr('Kwota łącznie')}</option>
                   </select>
                 </div>
                 <div>
@@ -153,13 +154,13 @@ export default function DiscountSettings({ settings, onChange }) {
             className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-sm text-gray-600 dark:text-gray-400 hover:border-orange-400 hover:text-orange-500 transition-colors"
           >
             <Plus size={18} />
-            Dodaj regułę rabatową
+            {tr('Dodaj regułę rabatową')}
           </button>
 
           {rules.length > 1 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Tryb łączenia rabatów
+                {tr('Tryb łączenia rabatów')}
               </label>
               <div className="flex gap-2">
                 {[

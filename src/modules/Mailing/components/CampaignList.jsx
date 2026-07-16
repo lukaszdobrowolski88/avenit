@@ -6,10 +6,11 @@ import {
 } from 'lucide-react';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 const STATUS_CONFIG = {
   draft: {
-    label: 'Szkic',
+    label: tr('Szkic'),
     icon: FileText,
     bg: 'bg-gray-100 dark:bg-gray-700',
     textColor: 'text-gray-600 dark:text-gray-400',
@@ -17,7 +18,7 @@ const STATUS_CONFIG = {
     gradient: 'from-gray-400 to-gray-500'
   },
   scheduled: {
-    label: 'Zaplanowany',
+    label: tr('Zaplanowany'),
     icon: Clock,
     bg: 'bg-amber-100 dark:bg-amber-900/30',
     textColor: 'text-amber-700 dark:text-amber-400',
@@ -25,7 +26,7 @@ const STATUS_CONFIG = {
     gradient: 'from-amber-400 to-accent-secondary-light'
   },
   sending: {
-    label: 'Wysyłanie...',
+    label: tr('Wysyłanie...'),
     icon: Send,
     bg: 'bg-blue-100 dark:bg-blue-900/30',
     textColor: 'text-blue-700 dark:text-blue-400',
@@ -33,7 +34,7 @@ const STATUS_CONFIG = {
     gradient: 'from-blue-400 to-indigo-500'
   },
   sent: {
-    label: 'Wysłany',
+    label: tr('Wysłany'),
     icon: CheckCircle,
     bg: 'bg-emerald-100 dark:bg-emerald-900/30',
     textColor: 'text-emerald-700 dark:text-emerald-400',
@@ -41,7 +42,7 @@ const STATUS_CONFIG = {
     gradient: 'from-emerald-400 to-teal-500'
   },
   failed: {
-    label: 'Błąd',
+    label: tr('Błąd'),
     icon: XCircle,
     bg: 'bg-red-100 dark:bg-red-900/30',
     textColor: 'text-red-700 dark:text-red-400',
@@ -49,7 +50,7 @@ const STATUS_CONFIG = {
     gradient: 'from-red-400 to-rose-500'
   },
   cancelled: {
-    label: 'Anulowany',
+    label: tr('Anulowany'),
     icon: AlertCircle,
     bg: 'bg-gray-100 dark:bg-gray-700',
     textColor: 'text-gray-600 dark:text-gray-400',
@@ -76,7 +77,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
       await deleteCampaign(campaign.id);
       onRefresh?.();
     } catch (err) {
-      alert('Błąd podczas usuwania maila');
+      alert(tr('Błąd podczas usuwania maila'));
     }
     setMenuOpen(null);
   };
@@ -86,7 +87,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
       await duplicateCampaign(campaign.id);
       onRefresh?.();
     } catch (err) {
-      alert('Błąd podczas duplikowania maila');
+      alert(tr('Błąd podczas duplikowania maila'));
     }
     setMenuOpen(null);
   };
@@ -286,7 +287,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                           >
                             <Trash2 size={14} />
-                            Usuń
+                            {tr('Usuń')}
                           </button>
                         </div>
                       </>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Users, Building2, Home, UserCheck, Search, X, Check, AlertTriangle } from 'lucide-react';
 import { useRecipients } from '../hooks/useRecipients';
+import { tr } from '../../../i18n';
 
 export default function RecipientSelector({ selectedSegments = [], onChange, selectedEmails = [], onEmailsChange }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,7 +97,7 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
   if (loading) {
     return (
       <div className="text-center py-8 text-gray-500">
-        Ładowanie odbiorców...
+        {tr('Ładowanie odbiorców...')}
       </div>
     );
   }
@@ -126,9 +127,9 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
           checked={isSegmentSelected('all')}
           onChange={() => toggleSegment('all', null, 'Wszyscy członkowie')}
           icon={Users}
-          label="Wszyscy członkowie"
+          label={tr('Wszyscy członkowie')}
           count={totalActive}
-          description="Wyślij do wszystkich aktywnych członków"
+          description={tr('Wyślij do wszystkich aktywnych członków')}
         />
       </div>
 
@@ -139,7 +140,7 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
             <div>
               <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
                 <Building2 size={16} />
-                Służby
+                {tr('Służby')}
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {ministries.map(ministry => (
@@ -182,7 +183,7 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
           <div>
             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
               <UserCheck size={16} />
-              Wybierz ręcznie
+              {tr('Wybierz ręcznie')}
             </h4>
 
             {/* Wyszukiwarka */}
@@ -259,7 +260,7 @@ export default function RecipientSelector({ selectedSegments = [], onChange, sel
           <div className="text-sm">
             <p className="font-medium">{totalUnsubscribed} osób wypisanych z newslettera</p>
             <p className="text-yellow-700 dark:text-yellow-300 mt-1">
-              Te osoby nie otrzymają tej wiadomości.
+              {tr('Te osoby nie otrzymają tej wiadomości.')}
             </p>
           </div>
         </div>

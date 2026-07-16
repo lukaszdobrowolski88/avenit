@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Download, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 // Formatowanie rozmiaru pliku
 function formatFileSize(bytes) {
@@ -151,7 +152,7 @@ export default function FilePreviewModal({
                 className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-xl text-red-300 hover:text-red-200 transition-all duration-200"
               >
                 <Trash2 size={18} />
-                Usuń
+                {tr('Usuń')}
               </button>
             )}
           </div>

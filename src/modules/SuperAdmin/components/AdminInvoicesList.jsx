@@ -11,6 +11,7 @@ import {
   Calendar,
   Building2
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function AdminInvoicesList() {
   const { getInvoices, markAsPaid, cancelInvoice, loading } = useInvoices();
@@ -31,7 +32,7 @@ export default function AdminInvoicesList() {
   }, [statusFilter]);
 
   const handleMarkAsPaid = async (invoiceId) => {
-    if (confirm('Oznaczyć fakturę jako opłaconą?')) {
+    if (confirm(tr('Oznaczyć fakturę jako opłaconą?'))) {
       await markAsPaid(invoiceId);
       loadInvoices();
     }
@@ -39,7 +40,7 @@ export default function AdminInvoicesList() {
   };
 
   const handleCancel = async (invoiceId) => {
-    if (confirm('Czy na pewno anulować tę fakturę?')) {
+    if (confirm(tr('Czy na pewno anulować tę fakturę?'))) {
       await cancelInvoice(invoiceId);
       loadInvoices();
     }
@@ -48,12 +49,12 @@ export default function AdminInvoicesList() {
 
   const getStatusBadge = (status) => {
     const config = {
-      draft: { label: 'Szkic', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
-      pending: { label: 'Do zapłaty', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-      paid: { label: 'Opłacona', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-      overdue: { label: 'Zaległa', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+      draft: { label: tr('Szkic'), color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
+      pending: { label: tr('Do zapłaty'), color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
+      paid: { label: tr('Opłacona'), color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+      overdue: { label: tr('Zaległa'), color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
       cancelled: { label: 'Anulowana', color: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' },
-      refunded: { label: 'Zwrócona', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' }
+      refunded: { label: tr('Zwrócona'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' }
     };
 
     const { label, color } = config[status] || config.pending;
@@ -104,10 +105,10 @@ export default function AdminInvoicesList() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
         >
-          <option value="">Wszystkie statusy</option>
-          <option value="pending">Do zapłaty</option>
-          <option value="paid">Opłacone</option>
-          <option value="overdue">Zaległe</option>
+          <option value="">{tr('Wszystkie statusy')}</option>
+          <option value="pending">{tr('Do zapłaty')}</option>
+          <option value="paid">{tr('Opłacone')}</option>
+          <option value="overdue">{tr('Zaległe')}</option>
           <option value="cancelled">Anulowane</option>
         </select>
       </div>
@@ -115,10 +116,10 @@ export default function AdminInvoicesList() {
       {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Ładowanie...</div>
+          <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>
         ) : filteredInvoices.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            Brak faktur spełniających kryteria
+            {tr('Brak faktur spełniających kryteria')}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -127,11 +128,11 @@ export default function AdminInvoicesList() {
                 <tr className="text-left text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50">
                   <th className="px-4 py-3 font-medium">Numer</th>
                   <th className="px-4 py-3 font-medium">Klient</th>
-                  <th className="px-4 py-3 font-medium">Data</th>
-                  <th className="px-4 py-3 font-medium">Termin</th>
-                  <th className="px-4 py-3 font-medium">Kwota</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium text-right">Akcje</th>
+                  <th className="px-4 py-3 font-medium">{tr('Data')}</th>
+                  <th className="px-4 py-3 font-medium">{tr('Termin')}</th>
+                  <th className="px-4 py-3 font-medium">{tr('Kwota')}</th>
+                  <th className="px-4 py-3 font-medium">{tr('Status')}</th>
+                  <th className="px-4 py-3 font-medium text-right">{tr('Akcje')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -189,7 +190,7 @@ export default function AdminInvoicesList() {
                                 className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 first:rounded-t-xl"
                               >
                                 <CheckCircle size={16} className="text-green-500" />
-                                Oznacz jako opłaconą
+                                {tr('Oznacz jako opłaconą')}
                               </button>
                             ) : null}
 
@@ -206,7 +207,7 @@ export default function AdminInvoicesList() {
                                 onClick={() => handleCancel(invoice.id)}
                                 className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 last:rounded-b-xl"
                               >
-                                Anuluj fakturę
+                                {tr('Anuluj fakturę')}
                               </button>
                             )}
                           </div>

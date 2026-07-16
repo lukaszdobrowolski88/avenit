@@ -11,11 +11,12 @@ import RecipientSelector from './RecipientSelector';
 import ActionButtonsBuilder from './ActionButtonsBuilder';
 import ScheduleControl from './ScheduleControl';
 import PushPreview from './PushPreview';
+import { tr } from '../../../i18n';
 
 const SECTIONS = [
-  { id: 'compose', label: 'Treść' },
+  { id: 'compose', label: tr('Treść') },
   { id: 'recipients', label: 'Odbiorcy' },
-  { id: 'actions', label: 'Akcje' },
+  { id: 'actions', label: tr('Akcje') },
   { id: 'schedule', label: 'Harmonogram' },
 ];
 
@@ -72,10 +73,10 @@ export default function CampaignEditor({ campaign, template, onClose }) {
   const updateForm = (patch) => setForm(prev => ({ ...prev, ...patch }));
 
   const validate = () => {
-    if (!form.name.trim()) return 'Podaj nazwę kampanii';
-    if (!form.title.trim()) return 'Podaj tytuł powiadomienia';
-    if (!form.body.trim()) return 'Podaj treść powiadomienia';
-    if (form.send_mode === 'scheduled' && !form.scheduled_at) return 'Wybierz datę wysyłki';
+    if (!form.name.trim()) return tr('Podaj nazwę kampanii');
+    if (!form.title.trim()) return tr('Podaj tytuł powiadomienia');
+    if (!form.body.trim()) return tr('Podaj treść powiadomienia');
+    if (form.send_mode === 'scheduled' && !form.scheduled_at) return tr('Wybierz datę wysyłki');
     return null;
   };
 
@@ -109,7 +110,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
     const err = validate();
     if (err) { alert(err); return; }
     if (recipientCount === 0) {
-      if (!confirm('Brak odbiorców pasujących do segmentów. Zapisać mimo to?')) return;
+      if (!confirm(tr('Brak odbiorców pasujących do segmentów. Zapisać mimo to?'))) return;
     }
     setSaving(true);
     try {
@@ -130,7 +131,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
   const handleSendNow = async () => {
     const err = validate();
     if (err) { alert(err); return; }
-    if (recipientCount === 0) { alert('Brak odbiorców'); return; }
+    if (recipientCount === 0) { alert(tr('Brak odbiorców')); return; }
     if (!confirm(`Wysłać kampanię do ${recipientCount} odbiorców?`)) return;
 
     setSending(true);
@@ -190,10 +191,10 @@ export default function CampaignEditor({ campaign, template, onClose }) {
           </button>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {campaign?.id ? 'Edytuj kampanię' : 'Nowa kampania push'}
+              {campaign?.id ? tr('Edytuj kampanię') : 'Nowa kampania push'}
             </h2>
             <p className="text-xs text-gray-500">
-              {recipientCount > 0 ? `Wyśle do ${recipientCount} osób` : 'Brak odbiorców'}
+              {recipientCount > 0 ? `Wyśle do ${recipientCount} osób` : tr('Brak odbiorców')}
             </p>
           </div>
         </div>
@@ -238,8 +239,8 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       {showTestSend && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Wyślij test</h3>
-            <p className="text-sm text-gray-500 mb-4">Push trafi tylko do podanego adresu. Sprawdź jak wygląda na urządzeniu.</p>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{tr('Wyślij test')}</h3>
+            <p className="text-sm text-gray-500 mb-4">{tr('Push trafi tylko do podanego adresu. Sprawdź jak wygląda na urządzeniu.')}</p>
             <input
               type="email"
               value={testEmail}
@@ -248,13 +249,13 @@ export default function CampaignEditor({ campaign, template, onClose }) {
               className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm mb-4"
             />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowTestSend(false)} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">Anuluj</button>
+              <button onClick={() => setShowTestSend(false)} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">{tr('Anuluj')}</button>
               <button
                 onClick={handleTestSend}
                 disabled={sending || !testEmail}
                 className="px-4 py-1.5 text-sm bg-accent-primary text-white rounded-lg disabled:opacity-50"
               >
-                {sending ? 'Wysyłanie...' : 'Wyślij'}
+                {sending ? tr('Wysyłanie...') : tr('Wyślij')}
               </button>
             </div>
           </div>
@@ -285,7 +286,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             {section === 'compose' && (
               <>
-                <Field label="Nazwa kampanii (wewnętrznie)">
+                <Field label={tr('Nazwa kampanii (wewnętrznie)')}>
                   <input
                     value={form.name}
                     onChange={e => updateForm({ name: e.target.value })}
@@ -294,28 +295,28 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                   />
                 </Field>
 
-                <Field label="Tytuł" hint={`${form.title.length}/${TITLE_MAX}`}>
+                <Field label={tr('Tytuł')} hint={`${form.title.length}/${TITLE_MAX}`}>
                   <input
                     maxLength={TITLE_MAX}
                     value={form.title}
                     onChange={e => updateForm({ title: e.target.value })}
-                    placeholder="Tytuł powiadomienia"
+                    placeholder={tr('Tytuł powiadomienia')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium"
                   />
                 </Field>
 
-                <Field label="Treść" hint={`${form.body.length}/${BODY_MAX}`}>
+                <Field label={tr('Treść')} hint={`${form.body.length}/${BODY_MAX}`}>
                   <textarea
                     maxLength={BODY_MAX}
                     rows={3}
                     value={form.body}
                     onChange={e => updateForm({ body: e.target.value })}
-                    placeholder="Treść powiadomienia..."
+                    placeholder={tr('Treść powiadomienia...')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none"
                   />
                 </Field>
 
-                <Field label="Domyślny deep link (przy tapnięciu w body)">
+                <Field label={tr('Domyślny deep link (przy tapnięciu w body)')}>
                   <input
                     value={form.link}
                     onChange={e => updateForm({ link: e.target.value })}

@@ -11,9 +11,10 @@ import { smsAnalysis, estimateCost, formatPLN } from '../utils/smsEncoding';
 import RecipientSelector from './RecipientSelector';
 import ScheduleControl from './ScheduleControl';
 import SmsPreview from './SmsPreview';
+import { tr } from '../../../i18n';
 
 const SECTIONS = [
-  { id: 'compose', label: 'Treść' },
+  { id: 'compose', label: tr('Treść') },
   { id: 'recipients', label: 'Odbiorcy' },
   { id: 'schedule', label: 'Harmonogram' },
 ];
@@ -70,11 +71,11 @@ export default function CampaignEditor({ campaign, template, onClose }) {
   const updateForm = (patch) => setForm(prev => ({ ...prev, ...patch }));
 
   const validate = () => {
-    if (!form.name.trim()) return 'Podaj nazwę kampanii';
-    if (!form.sender.trim()) return 'Podaj nadawcę';
+    if (!form.name.trim()) return tr('Podaj nazwę kampanii');
+    if (!form.sender.trim()) return tr('Podaj nadawcę');
     if (form.sender.length > SENDER_MAX) return `Nadawca: max ${SENDER_MAX} znaków`;
-    if (!form.body.trim()) return 'Podaj treść SMS-a';
-    if (form.send_mode === 'scheduled' && !form.scheduled_at) return 'Wybierz datę wysyłki';
+    if (!form.body.trim()) return tr('Podaj treść SMS-a');
+    if (form.send_mode === 'scheduled' && !form.scheduled_at) return tr('Wybierz datę wysyłki');
     return null;
   };
 
@@ -109,7 +110,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
     const err = validate();
     if (err) { alert(err); return; }
     if (recipientCount === 0) {
-      if (!confirm('Brak odbiorców z numerem. Zapisać mimo to?')) return;
+      if (!confirm(tr('Brak odbiorców z numerem. Zapisać mimo to?'))) return;
     }
     setSaving(true);
     try {
@@ -130,7 +131,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
   const handleSendNow = async () => {
     const err = validate();
     if (err) { alert(err); return; }
-    if (recipientCount === 0) { alert('Brak odbiorców z numerem'); return; }
+    if (recipientCount === 0) { alert(tr('Brak odbiorców z numerem')); return; }
     if (!confirm(`Wysłać SMS do ${recipientCount} odbiorców? Szacunkowy koszt: ${formatPLN(estimatedCost)}.`)) return;
 
     setSending(true);
@@ -195,12 +196,12 @@ export default function CampaignEditor({ campaign, template, onClose }) {
           </button>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {campaign?.id ? 'Edytuj kampanię SMS' : 'Nowa kampania SMS'}
+              {campaign?.id ? tr('Edytuj kampanię SMS') : 'Nowa kampania SMS'}
             </h2>
             <p className="text-xs text-gray-500">
               {recipientCount > 0 ? (
                 <>Wyśle do {recipientCount} osób · ~{formatPLN(estimatedCost)}</>
-              ) : 'Brak odbiorców z numerem'}
+              ) : tr('Brak odbiorców z numerem')}
             </p>
           </div>
         </div>
@@ -244,8 +245,8 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       {showTestSend && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Wyślij test</h3>
-            <p className="text-sm text-gray-500 mb-4">SMS pójdzie tylko na podany numer. Naliczy się 1 SMS w SMSAPI.</p>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{tr('Wyślij test')}</h3>
+            <p className="text-sm text-gray-500 mb-4">{tr('SMS pójdzie tylko na podany numer. Naliczy się 1 SMS w SMSAPI.')}</p>
             <input
               type="tel"
               value={testPhone}
@@ -254,13 +255,13 @@ export default function CampaignEditor({ campaign, template, onClose }) {
               className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm mb-4 font-mono"
             />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowTestSend(false)} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">Anuluj</button>
+              <button onClick={() => setShowTestSend(false)} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">{tr('Anuluj')}</button>
               <button
                 onClick={handleTestSend}
                 disabled={sending || !testPhone}
                 className="px-4 py-1.5 text-sm bg-accent-primary text-white rounded-lg disabled:opacity-50"
               >
-                {sending ? 'Wysyłanie...' : 'Wyślij'}
+                {sending ? tr('Wysyłanie...') : tr('Wyślij')}
               </button>
             </div>
           </div>
@@ -289,7 +290,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             {section === 'compose' && (
               <>
-                <Field label="Nazwa kampanii (wewnętrznie)">
+                <Field label={tr('Nazwa kampanii (wewnętrznie)')}>
                   <input
                     value={form.name}
                     onChange={e => updateForm({ name: e.target.value })}
@@ -310,19 +311,19 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Musi być zarejestrowany w SMSAPI. Max 11 znaków alfanumerycznych.
+                    {tr('Musi być zarejestrowany w SMSAPI. Max 11 znaków alfanumerycznych.')}
                   </p>
                 </Field>
 
                 <Field
-                  label="Treść SMS"
+                  label={tr('Treść SMS')}
                   hint={
                     <span className="flex items-center gap-2">
                       <span className={analysis.encoding === 'unicode' ? 'text-amber-600' : 'text-emerald-600'}>
                         {analysis.encoding === 'unicode' ? 'Unicode' : 'GSM-7'}
                       </span>
                       <span>· {analysis.charCount} zn.</span>
-                      <span>· {analysis.parts || 1} {(analysis.parts || 1) === 1 ? 'część' : 'części'}</span>
+                      <span>· {analysis.parts || 1} {(analysis.parts || 1) === 1 ? tr('część') : tr('części')}</span>
                     </span>
                   }
                 >
@@ -331,7 +332,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                     rows={5}
                     value={form.body}
                     onChange={e => updateForm({ body: e.target.value })}
-                    placeholder="Treść SMS-a..."
+                    placeholder={tr('Treść SMS-a...')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none"
                   />
                   {analysis.parts > 3 && (

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useT } from '../i18n';
+import { tr } from '../i18n';
 
 export default function ResetPassword() {
+  const t = useT();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,12 +36,12 @@ export default function ResetPassword() {
     setError('');
 
     if (password.length < 6) {
-      setError('Hasło musi mieć minimum 6 znaków');
+      setError(tr('Hasło musi mieć minimum 6 znaków'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Hasła nie są identyczne');
+      setError(tr('Hasła nie są identyczne'));
       return;
     }
 
@@ -49,7 +52,7 @@ export default function ResetPassword() {
     });
 
     if (updateError) {
-      setError(updateError.message || 'Błąd ustawiania hasła');
+      setError(updateError.message || tr('Błąd ustawiania hasła'));
       setLoading(false);
       return;
     }
@@ -88,21 +91,21 @@ export default function ResetPassword() {
         </div>
 
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">
-          Ustaw hasło
+          {tr('Ustaw hasło')}
         </h1>
         <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
-          Twoje konto zostało utworzone. Ustaw hasło, aby się zalogować.
+          {tr('Twoje konto zostało utworzone. Ustaw hasło, aby się zalogować.')}
         </p>
 
         {success ? (
           <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-center">
-            <p className="font-bold mb-1">Hasło zostało ustawione!</p>
-            <p className="text-sm">Za chwilę zostaniesz przekierowany...</p>
+            <p className="font-bold mb-1">{t('Hasło zostało ustawione!')}</p>
+            <p className="text-sm">{t('Za chwilę zostaniesz przekierowany...')}</p>
           </div>
         ) : (
           <>
             <div className="mb-5">
-              <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">Nowe hasło</label>
+              <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{t('Nowe hasło')}</label>
               <input
                 type="password"
                 className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
@@ -110,12 +113,12 @@ export default function ResetPassword() {
                 onChange={e => setPassword(e.target.value)}
                 required
                 autoFocus
-                placeholder="Minimum 6 znaków"
+                placeholder={t('Minimum 6 znaków')}
               />
             </div>
 
             <div className="mb-6">
-              <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">Powtórz hasło</label>
+              <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{t('Powtórz hasło')}</label>
               <input
                 type="password"
                 className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
@@ -142,7 +145,7 @@ export default function ResetPassword() {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   Zapisywanie...
                 </span>
-              ) : 'Ustaw hasło'}
+              ) : tr('Ustaw hasło')}
             </button>
           </>
         )}

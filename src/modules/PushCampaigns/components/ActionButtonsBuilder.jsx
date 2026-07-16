@@ -1,12 +1,13 @@
 import React from 'react';
 import { Trash2, AlertTriangle } from 'lucide-react';
 import { PUSH_CATEGORIES, ACTION_LABEL_MAX } from '../constants';
+import { tr } from '../../../i18n';
 
 const ACTION_TYPE_LABELS = {
   deep_link: 'Deep link (ekran w aplikacji)',
   inline_rsvp: 'Akcja inline (bez otwierania)',
-  open_form: 'Otwórz formularz',
-  external_url: 'Zewnętrzny link',
+  open_form: tr('Otwórz formularz'),
+  external_url: tr('Zewnętrzny link'),
 };
 
 export default function ActionButtonsBuilder({ categoryId, actions = [], onChange }) {
@@ -24,7 +25,7 @@ export default function ActionButtonsBuilder({ categoryId, actions = [], onChang
       {/* Wybór kategorii */}
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Typ przycisków akcji
+          {tr('Typ przycisków akcji')}
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {PUSH_CATEGORIES.map(c => {
@@ -61,7 +62,7 @@ export default function ActionButtonsBuilder({ categoryId, actions = [], onChang
       {required.length > 0 && (
         <div className="space-y-3">
           <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Konfiguracja przycisków
+            {tr('Konfiguracja przycisków')}
           </div>
 
           {required.map((catAction, idx) => {
@@ -94,7 +95,7 @@ export default function ActionButtonsBuilder({ categoryId, actions = [], onChang
                   {catAction.type !== 'inline_rsvp' && (
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">
-                        {catAction.type === 'deep_link' && 'Ścieżka (np. /events/123)'}
+                        {catAction.type === 'deep_link' && tr('Ścieżka (np. /events/123)')}
                         {catAction.type === 'open_form' && 'ID formularza'}
                         {catAction.type === 'external_url' && 'URL'}
                       </label>
@@ -112,7 +113,7 @@ export default function ActionButtonsBuilder({ categoryId, actions = [], onChang
                   )}
                   {catAction.type === 'inline_rsvp' && (
                     <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Wartość RSVP</label>
+                      <label className="text-xs text-gray-500 mb-1 block">{tr('Wartość RSVP')}</label>
                       <input
                         value={action.action_value || catAction.value || ''}
                         onChange={e => updateAction(idx, { action_value: e.target.value, action_type: catAction.type, label: action.label || catAction.defaultLabel })}

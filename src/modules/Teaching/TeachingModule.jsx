@@ -13,6 +13,7 @@ import MaterialsTab from '../shared/MaterialsTab';
 import CustomDatePicker from '../../components/CustomDatePicker';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
+import { tr } from '../../i18n';
 
 // ================== TABLE SELECT COMPONENT ==================
 
@@ -192,11 +193,11 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
   };
 
   const columns = [
-    { key: 'speaker_id', label: 'Mówca', type: 'select', options: speakerOptions },
+    { key: 'speaker_id', label: tr('Mówca'), type: 'select', options: speakerOptions },
     { key: 'series_id', label: 'Seria', type: 'select', options: seriesOptions },
-    { key: 'title', label: 'Tytuł kazania', type: 'text' },
+    { key: 'title', label: tr('Tytuł kazania'), type: 'text' },
     { key: 'scripture', label: 'Fragment', type: 'text' },
-    { key: 'main_point', label: 'Główna myśl', type: 'text' },
+    { key: 'main_point', label: tr('Główna myśl'), type: 'text' },
     { key: 'notes', label: 'Notatki', type: 'text' },
   ];
 
@@ -223,7 +224,7 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
                 <table className="w-full text-left border-collapse min-w-max">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-700">
-                      <th className="p-3 font-semibold w-24 min-w-[90px]">Data</th>
+                      <th className="p-3 font-semibold w-24 min-w-[90px]">{tr('Data')}</th>
                       {columns.map(col => (
                         <th key={col.key} className="p-3 font-semibold min-w-[130px]">{col.label}</th>
                       ))}
@@ -270,7 +271,7 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
 
       {sortedMonths.length === 0 && (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-          Brak programów nabożeństw. Dodaj programy w module "Programy".
+          {tr('Brak programów nabożeństw. Dodaj programy w module "Programy".')}
         </div>
       )}
     </div>
@@ -320,13 +321,13 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
       setForm(prev => ({ ...prev, photo_url: data.publicUrl }));
     } catch (err) {
       console.error('Upload error:', err);
-      alert('Błąd przesyłania zdjęcia');
+      alert(tr('Błąd przesyłania zdjęcia'));
     }
     setUploading(false);
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return alert('Podaj imię i nazwisko mówcy');
+    if (!form.name.trim()) return alert(tr('Podaj imię i nazwisko mówcy'));
 
     if (editingSpeaker) {
       await onEdit(editingSpeaker.id, form);
@@ -339,7 +340,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
   return (
     <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Mówcy</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Mówcy')}</h2>
         <button
           onClick={openAdd}
           className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
@@ -397,7 +398,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
         ))}
         {speakers.length === 0 && (
           <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-            Brak mówców. Dodaj pierwszego mówcę.
+            {tr('Brak mówców. Dodaj pierwszego mówcę.')}
           </div>
         )}
       </div>
@@ -408,7 +409,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                {editingSpeaker ? 'Edytuj mówcę' : 'Dodaj mówcę'}
+                {editingSpeaker ? tr('Edytuj mówcę') : tr('Dodaj mówcę')}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                 <X size={20} />
@@ -445,19 +446,19 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
                   className="hidden"
                   onChange={handlePhotoUpload}
                 />
-                <span className="text-xs text-gray-400 mt-2">Kliknij aby dodać zdjęcie</span>
+                <span className="text-xs text-gray-400 mt-2">{tr('Kliknij aby dodać zdjęcie')}</span>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
-                  Imię i nazwisko *
+                  {tr('Imię i nazwisko *')}
                 </label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
-                  placeholder="Jan Kowalski"
+                  placeholder={tr('Jan Kowalski')}
                 />
               </div>
 
@@ -483,7 +484,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
                   onChange={(e) => setForm({ ...form, bio: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white resize-none"
-                  placeholder="Krótki opis mówcy..."
+                  placeholder={tr('Krótki opis mówcy...')}
                 />
               </div>
             </div>
@@ -567,7 +568,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
       setForm(prev => ({ ...prev, graphics: [...prev.graphics, ...uploadedFiles] }));
     } catch (err) {
       console.error('Upload error:', err);
-      alert('Błąd przesyłania pliku');
+      alert(tr('Błąd przesyłania pliku'));
     }
     setUploading(false);
   };
@@ -577,7 +578,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return alert('Podaj nazwę serii');
+    if (!form.name.trim()) return alert(tr('Podaj nazwę serii'));
 
     if (editingSeries) {
       await onEdit(editingSeries.id, form);
@@ -697,7 +698,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                       {/* Card content */}
                       <div className="p-4">
                         <h4 className="font-bold text-gray-800 dark:text-gray-100 text-lg mb-2 line-clamp-2 min-h-[3.5rem]">
-                          {sermon.teaching?.title || 'Bez tytułu'}
+                          {sermon.teaching?.title || tr('Bez tytułu')}
                         </h4>
 
                         {/* Speaker */}
@@ -752,8 +753,8 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
             ) : (
               <div className="text-center py-12 text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
                 <BookOpen size={40} className="mx-auto mb-3 opacity-50" />
-                <p>Brak kazań przypisanych do tej serii</p>
-                <p className="text-sm mt-1">Przypisz kazania w zakładce "Grafik"</p>
+                <p>{tr('Brak kazań przypisanych do tej serii')}</p>
+                <p className="text-sm mt-1">{tr('Przypisz kazania w zakładce "Grafik"')}</p>
               </div>
             )}
           </div>
@@ -835,7 +836,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                     </span>
                   )}
                   <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded-full font-medium">
-                    {sermonsCount} {sermonsCount === 1 ? 'kazanie' : sermonsCount < 5 ? 'kazania' : 'kazań'}
+                    {sermonsCount} {sermonsCount === 1 ? 'kazanie' : sermonsCount < 5 ? 'kazania' : tr('kazań')}
                   </span>
                 </div>
               </div>
@@ -844,7 +845,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
         })}
         {series.length === 0 && (
           <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-            Brak serii. Dodaj pierwszą serię nauczania.
+            {tr('Brak serii. Dodaj pierwszą serię nauczania.')}
           </div>
         )}
       </div>
@@ -855,7 +856,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                {editingSeries ? 'Edytuj serię' : 'Dodaj serię'}
+                {editingSeries ? tr('Edytuj serię') : tr('Dodaj serię')}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                 <X size={20} />
@@ -898,18 +899,18 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white resize-none"
-                  placeholder="Krótki opis serii..."
+                  placeholder={tr('Krótki opis serii...')}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <CustomDatePicker
-                  label="Data rozpoczęcia"
+                  label={tr('Data rozpoczęcia')}
                   value={form.start_date}
                   onChange={(val) => setForm({ ...form, start_date: val })}
                 />
                 <CustomDatePicker
-                  label="Data zakończenia"
+                  label={tr('Data zakończenia')}
                   value={form.end_date}
                   onChange={(val) => setForm({ ...form, end_date: val })}
                 />
@@ -934,7 +935,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                 </div>
                 <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-accent-primary-light transition">
                   <ImageIcon size={20} className="text-gray-400" />
-                  <span className="text-sm text-gray-500">{uploading ? 'Przesyłanie...' : 'Dodaj grafiki'}</span>
+                  <span className="text-sm text-gray-500">{uploading ? tr('Przesyłanie...') : 'Dodaj grafiki'}</span>
                   <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
                 </label>
               </div>
@@ -1016,40 +1017,40 @@ export default function TeachingModule() {
   // SPEAKERS CRUD
   const addSpeaker = async (data) => {
     const { error } = await supabase.from('teaching_speakers').insert([data]);
-    if (error) { alert('Błąd: ' + error.message); return; }
+    if (error) { alert(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const editSpeaker = async (id, data) => {
     const { error } = await supabase.from('teaching_speakers').update(data).eq('id', id);
-    if (error) { alert('Błąd: ' + error.message); return; }
+    if (error) { alert(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const deleteSpeaker = async (id) => {
-    if (!confirm('Usunąć tego mówcę?')) return;
+    if (!confirm(tr('Usunąć tego mówcę?'))) return;
     const { error } = await supabase.from('teaching_speakers').delete().eq('id', id);
-    if (error) { alert('Błąd: ' + error.message); return; }
+    if (error) { alert(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   // SERIES CRUD
   const addSeries = async (data) => {
     const { error } = await supabase.from('teaching_series').insert([data]);
-    if (error) { alert('Błąd: ' + error.message); return; }
+    if (error) { alert(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const editSeries = async (id, data) => {
     const { error } = await supabase.from('teaching_series').update(data).eq('id', id);
-    if (error) { alert('Błąd: ' + error.message); return; }
+    if (error) { alert(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const deleteSeries = async (id) => {
-    if (!confirm('Usunąć tę serię?')) return;
+    if (!confirm(tr('Usunąć tę serię?'))) return;
     const { error } = await supabase.from('teaching_series').delete().eq('id', id);
-    if (error) { alert('Błąd: ' + error.message); return; }
+    if (error) { alert(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
@@ -1088,11 +1089,11 @@ export default function TeachingModule() {
       {/* TAB NAVIGATION */}
       <ResponsiveTabs
         tabs={[
-          { id: 'wall', label: 'Tablica', icon: MessageSquare },
-          { id: 'schedule', label: 'Grafik', icon: Calendar },
+          { id: 'wall', label: tr('Tablica'), icon: MessageSquare },
+          { id: 'schedule', label: tr('Grafik'), icon: Calendar },
           { id: 'series', label: 'Serie', icon: BookOpen },
-          ...(hasTabAccess('teaching', 'speakers', userRole) ? [{ id: 'speakers', label: 'Mówcy', icon: Users }] : []),
-          { id: 'files', label: 'Pliki', icon: FolderOpen },
+          ...(hasTabAccess('teaching', 'speakers', userRole) ? [{ id: 'speakers', label: tr('Mówcy'), icon: Users }] : []),
+          { id: 'files', label: tr('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Folder, FolderPlus } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function FolderModal({
   isOpen,
@@ -28,7 +29,7 @@ export default function FolderModal({
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError('Nazwa folderu nie może być pusta');
+      setError(tr('Nazwa folderu nie może być pusta'));
       return;
     }
 
@@ -47,9 +48,9 @@ export default function FolderModal({
     } catch (err) {
       console.error('Folder operation error:', err);
       if (err.message?.includes('unique') || err.message?.includes('duplicate')) {
-        setError('Folder o tej nazwie już istnieje w tym miejscu');
+        setError(tr('Folder o tej nazwie już istnieje w tym miejscu'));
       } else {
-        setError(err.message || 'Wystąpił błąd');
+        setError(err.message || tr('Wystąpił błąd'));
       }
     } finally {
       setLoading(false);
@@ -82,7 +83,7 @@ export default function FolderModal({
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                {mode === 'create' ? 'Nowy folder' : 'Zmień nazwę folderu'}
+                {mode === 'create' ? 'Nowy folder' : tr('Zmień nazwę folderu')}
               </h2>
               {parentFolderName && mode === 'create' && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -110,7 +111,7 @@ export default function FolderModal({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Wpisz nazwę folderu..."
+              placeholder={tr('Wpisz nazwę folderu...')}
               className="w-full px-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 transition-all duration-200"
               disabled={loading}
             />
@@ -140,7 +141,7 @@ export default function FolderModal({
                   {mode === 'create' ? 'Tworzenie...' : 'Zapisywanie...'}
                 </>
               ) : (
-                mode === 'create' ? 'Utwórz folder' : 'Zapisz'
+                mode === 'create' ? tr('Utwórz folder') : 'Zapisz'
               )}
             </button>
           </div>

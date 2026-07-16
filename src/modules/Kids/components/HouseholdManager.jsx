@@ -5,6 +5,7 @@ import {
   Plus, Search, Trash2, X, Edit2, Phone, Mail, Users,
   User, ChevronDown, ChevronUp, Check, Loader2, Home
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function HouseholdManager() {
   const [households, setHouseholds] = useState([]);
@@ -191,12 +192,12 @@ export default function HouseholdManager() {
       resetForm();
     } catch (err) {
       console.error('Error saving household:', err);
-      alert('Błąd podczas zapisywania rodziny');
+      alert(tr('Błąd podczas zapisywania rodziny'));
     }
   };
 
   const handleDelete = async (householdId) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę rodzinę? Uczniowie nie zostaną usunięci, ale stracą powiązanie z rodziną.')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę rodzinę? Uczniowie nie zostaną usunięci, ale stracą powiązanie z rodziną.'))) return;
 
     try {
       // First, unlink students
@@ -216,7 +217,7 @@ export default function HouseholdManager() {
       await fetchData();
     } catch (err) {
       console.error('Error deleting household:', err);
-      alert('Błąd podczas usuwania rodziny');
+      alert(tr('Błąd podczas usuwania rodziny'));
     }
   };
 
@@ -266,7 +267,7 @@ export default function HouseholdManager() {
       setAssignStudentModal(null);
     } catch (err) {
       console.error('Error assigning student:', err);
-      alert('Błąd podczas przypisywania ucznia');
+      alert(tr('Błąd podczas przypisywania ucznia'));
     }
   };
 
@@ -308,9 +309,9 @@ export default function HouseholdManager() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Rodziny</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Rodziny')}</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Zarządzaj rodzinami i kontaktami rodziców
+            {tr('Zarządzaj rodzinami i kontaktami rodziców')}
           </p>
         </div>
         <button
@@ -321,7 +322,7 @@ export default function HouseholdManager() {
           className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
         >
           <Plus size={18} />
-          Dodaj rodzinę
+          {tr('Dodaj rodzinę')}
         </button>
       </div>
 
@@ -357,7 +358,7 @@ export default function HouseholdManager() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-900">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                {editingHousehold ? 'Edytuj rodzinę' : 'Dodaj rodzinę'}
+                {editingHousehold ? tr('Edytuj rodzinę') : tr('Dodaj rodzinę')}
               </h3>
               <button
                 onClick={resetForm}
@@ -394,7 +395,7 @@ export default function HouseholdManager() {
                     className={inputClasses}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Ostatnie 4 cyfry będą używane do wyszukiwania przy check-in
+                    {tr('Ostatnie 4 cyfry będą używane do wyszukiwania przy check-in')}
                   </p>
                 </div>
                 <div>
@@ -405,7 +406,7 @@ export default function HouseholdManager() {
                     type="text"
                     value={formData.address}
                     onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                    placeholder="np. ul. Przykładowa 1, Wrocław"
+                    placeholder={tr('np. ul. Przykładowa 1, Wrocław')}
                     className={inputClasses}
                   />
                 </div>
@@ -415,7 +416,7 @@ export default function HouseholdManager() {
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Kontakty rodziców / opiekunów
+                    {tr('Kontakty rodziców / opiekunów')}
                   </label>
                   <button
                     type="button"
@@ -445,7 +446,7 @@ export default function HouseholdManager() {
                               onChange={(e) => handleContactChange(index, 'is_primary', e.target.checked)}
                               className="rounded border-gray-300 dark:border-gray-600 text-accent-primary focus:ring-accent-primary-light"
                             />
-                            Główny
+                            {tr('Główny')}
                           </label>
                           {formData.contacts.length > 1 && (
                             <button
@@ -463,7 +464,7 @@ export default function HouseholdManager() {
                         {/* Wybór członka z listy */}
                         <div className="md:col-span-2">
                           <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                            Wybierz z listy członków
+                            {tr('Wybierz z listy członków')}
                           </label>
                           <select
                             value={contact.member_id || ''}
@@ -496,7 +497,7 @@ export default function HouseholdManager() {
                             }}
                             className={inputClasses}
                           >
-                            <option value="">-- Wybierz członka --</option>
+                            <option value="">{tr('-- Wybierz członka --')}</option>
                             {members.map(m => (
                               <option key={m.id} value={m.id}>
                                 {m.first_name} {m.last_name} {m.phone ? `(${m.phone})` : ''}
@@ -510,7 +511,7 @@ export default function HouseholdManager() {
                           <>
                             <div>
                               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                                Imię i nazwisko
+                                {tr('Imię i nazwisko')}
                               </label>
                               <div className="px-4 py-3 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white">
                                 {contact.full_name}
@@ -558,7 +559,7 @@ export default function HouseholdManager() {
                             onChange={(e) => handleContactChange(index, 'can_pickup', e.target.checked)}
                             className="rounded border-gray-300 dark:border-gray-600 text-accent-primary focus:ring-accent-primary-light"
                           />
-                          Może odbierać dzieci
+                          {tr('Może odbierać dzieci')}
                         </label>
                       </div>
                     </div>
@@ -592,7 +593,7 @@ export default function HouseholdManager() {
                 onClick={handleSave}
                 className="px-5 py-2.5 text-base font-medium bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition"
               >
-                {editingHousehold ? 'Zapisz zmiany' : 'Dodaj rodzinę'}
+                {editingHousehold ? 'Zapisz zmiany' : tr('Dodaj rodzinę')}
               </button>
             </div>
           </div>
@@ -618,7 +619,7 @@ export default function HouseholdManager() {
             <div className="p-4">
               {unassignedStudents.length === 0 ? (
                 <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                  Wszyscy uczniowie są już przypisani do rodzin
+                  {tr('Wszyscy uczniowie są już przypisani do rodzin')}
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -653,11 +654,11 @@ export default function HouseholdManager() {
       {loading ? (
         <div className="flex items-center justify-center gap-3 py-20 text-gray-500 dark:text-gray-400">
           <Loader2 size={24} className="animate-spin" />
-          Ładowanie...
+          {tr('Ładowanie...')}
         </div>
       ) : filteredHouseholds.length === 0 ? (
         <div className="text-center py-20 text-gray-500 dark:text-gray-400">
-          {searchTerm ? 'Brak wyników wyszukiwania' : 'Brak rodzin. Dodaj pierwszą rodzinę.'}
+          {searchTerm ? tr('Brak wyników wyszukiwania') : tr('Brak rodzin. Dodaj pierwszą rodzinę.')}
         </div>
       ) : (
         <div className="space-y-4">
@@ -756,7 +757,7 @@ export default function HouseholdManager() {
                                     </span>
                                     {contact.is_primary && (
                                       <span className="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded text-xs">
-                                        Główny
+                                        {tr('Główny')}
                                       </span>
                                     )}
                                   </div>
@@ -778,7 +779,7 @@ export default function HouseholdManager() {
                               </div>
                               {contact.can_pickup && (
                                 <span className="text-xs text-green-600 dark:text-green-400">
-                                  Może odbierać
+                                  {tr('Może odbierać')}
                                 </span>
                               )}
                             </div>
@@ -827,7 +828,7 @@ export default function HouseholdManager() {
                               <button
                                 onClick={() => handleUnassignStudent(student.id)}
                                 className="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition"
-                                title="Usuń powiązanie"
+                                title={tr('Usuń powiązanie')}
                               >
                                 <X size={16} />
                               </button>
@@ -845,7 +846,7 @@ export default function HouseholdManager() {
                     {household.members?.length > 0 && (
                       <div>
                         <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                          Członkowie kościoła
+                          {tr('Członkowie kościoła')}
                         </h4>
                         <div className="grid gap-2">
                           {household.members.map(member => (

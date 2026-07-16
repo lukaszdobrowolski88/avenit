@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { tr } from '../../../i18n';
 
 export default function Przelewy24Button({
   merchantId,
@@ -8,7 +9,7 @@ export default function Przelewy24Button({
   apiKey,
   amount,
   currency = 'PLN',
-  description = 'Płatność za formularz',
+  description = tr('Płatność za formularz'),
   sandbox = true,
   formId,
   sessionId,
@@ -39,12 +40,12 @@ export default function Przelewy24Button({
   // Rejestracja transakcji w Przelewy24
   const registerTransaction = async () => {
     if (!merchantId || !crcKey) {
-      setError('Brak konfiguracji Przelewy24. Skontaktuj się z administratorem.');
+      setError(tr('Brak konfiguracji Przelewy24. Skontaktuj się z administratorem.'));
       return;
     }
 
     if (!email) {
-      setError('Podaj adres email przed dokonaniem płatności.');
+      setError(tr('Podaj adres email przed dokonaniem płatności.'));
       return;
     }
 
@@ -85,7 +86,7 @@ export default function Przelewy24Button({
 
     } catch (err) {
       console.error('Przelewy24 registration error:', err);
-      setError(err.message || 'Błąd podczas rejestracji płatności.');
+      setError(err.message || tr('Błąd podczas rejestracji płatności.'));
       if (onError) {
         onError(err);
       }
@@ -115,7 +116,7 @@ export default function Przelewy24Button({
         <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
           <AlertCircle size={18} />
           <span className="text-sm font-medium">
-            Przelewy24 nie jest skonfigurowany. Skontaktuj się z administratorem.
+            {tr('Przelewy24 nie jest skonfigurowany. Skontaktuj się z administratorem.')}
           </span>
         </div>
       </div>
@@ -143,7 +144,7 @@ export default function Przelewy24Button({
           }}
           className="w-full py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:underline"
         >
-          Spróbuj ponownie
+          {tr('Spróbuj ponownie')}
         </button>
       </div>
     );
@@ -179,14 +180,14 @@ export default function Przelewy24Button({
           {loading ? (
             <>
               <Loader2 size={20} className="animate-spin" />
-              Przygotowuję płatność...
+              {tr('Przygotowuję płatność...')}
             </>
           ) : (
             <>
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
               </svg>
-              Zapłać przez Przelewy24
+              {tr('Zapłać przez Przelewy24')}
             </>
           )}
         </button>
@@ -196,7 +197,7 @@ export default function Przelewy24Button({
             <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
               <Check size={18} />
               <span className="text-sm font-medium">
-                Transakcja zarejestrowana! Kliknij poniżej, aby przejść do płatności.
+                {tr('Transakcja zarejestrowana! Kliknij poniżej, aby przejść do płatności.')}
               </span>
             </div>
           </div>
@@ -207,24 +208,24 @@ export default function Przelewy24Button({
               hover:from-red-600 hover:to-red-700 transition-all"
           >
             <ExternalLink size={18} />
-            Przejdź do płatności Przelewy24
+            {tr('Przejdź do płatności Przelewy24')}
           </button>
 
           <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-            Zostaniesz przekierowany na stronę Przelewy24
+            {tr('Zostaniesz przekierowany na stronę Przelewy24')}
           </p>
         </div>
       )}
 
       {sandbox && (
         <p className="text-xs text-center text-gray-400 dark:text-gray-500">
-          Tryb testowy - płatności nie będą prawdziwe
+          {tr('Tryb testowy - płatności nie będą prawdziwe')}
         </p>
       )}
 
       {!email && (
         <p className="text-xs text-center text-yellow-600 dark:text-yellow-400">
-          Wypełnij pole email w formularzu, aby móc dokonać płatności.
+          {tr('Wypełnij pole email w formularzu, aby móc dokonać płatności.')}
         </p>
       )}
     </div>

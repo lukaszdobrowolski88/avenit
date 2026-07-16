@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Globe, Check } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { tr } from '../i18n';
 
 // Kompaktowy przełącznik języka (globus + menu). Do navbara.
 export default function LanguageSwitcher() {
@@ -20,7 +21,7 @@ export default function LanguageSwitcher() {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        title="Język / Language"
+        title={tr('Język / Language')}
         className="flex items-center gap-1.5 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
       >
         <Globe size={18} className="lg:w-5 lg:h-5" />

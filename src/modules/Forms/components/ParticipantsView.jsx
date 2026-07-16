@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
+import { tr } from '../../../i18n';
 
 export default function ParticipantsView({ forms }) {
   const [participants, setParticipants] = useState([]);
@@ -191,7 +192,7 @@ export default function ParticipantsView({ forms }) {
               ...baseParticipant,
               id: `${response.id}-contact`,
               responseId: response.id,
-              name: contact.name || response.respondent_name || 'Osoba zgłaszająca',
+              name: contact.name || response.respondent_name || tr('Osoba zgłaszająca'),
               email: contact.email || response.respondent_email || '',
               phone: contact.phone,
               answers: answers._contactPerson,
@@ -329,7 +330,7 @@ export default function ParticipantsView({ forms }) {
 
   // Eksport do CSV
   const exportToCSV = () => {
-    const headers = ['Imię/Nazwa', 'Email', 'Telefon', 'Formularz', 'Data rejestracji', 'Kwota', 'Status płatności'];
+    const headers = [tr('Imię/Nazwa'), tr('Email'), tr('Telefon'), tr('Formularz'), tr('Data rejestracji'), tr('Kwota'), tr('Status płatności')];
     const rows = filteredParticipants.map(p => [
       p.name,
       p.email,
@@ -337,7 +338,7 @@ export default function ParticipantsView({ forms }) {
       p.formTitle,
       new Date(p.submittedAt).toLocaleDateString('pl-PL'),
       p.totalAmount > 0 ? formatPrice(p.totalAmount, p.currency) : '-',
-      p.paymentStatus === 'paid' ? 'Opłacone' : p.paymentStatus === 'pending' ? 'Oczekuje' : '-'
+      p.paymentStatus === 'paid' ? tr('Opłacone') : p.paymentStatus === 'pending' ? 'Oczekuje' : '-'
     ]);
 
     const csvContent = [
@@ -417,7 +418,7 @@ export default function ParticipantsView({ forms }) {
       }
     } catch (error) {
       console.error('Error updating payment status:', error);
-      alert('Wystąpił błąd podczas aktualizacji statusu płatności');
+      alert(tr('Wystąpił błąd podczas aktualizacji statusu płatności'));
     }
   };
 
@@ -512,7 +513,7 @@ export default function ParticipantsView({ forms }) {
       setPaymentDate(new Date().toISOString().split('T')[0]);
     } catch (error) {
       console.error('Error adding payment:', error);
-      alert('Wystąpił błąd podczas dodawania płatności');
+      alert(tr('Wystąpił błąd podczas dodawania płatności'));
     }
   };
 
@@ -532,14 +533,14 @@ export default function ParticipantsView({ forms }) {
         return (
           <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
             <CheckCircle size={12} />
-            Opłacone
+            {tr('Opłacone')}
           </span>
         );
       case 'partial':
         return (
           <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium">
             <AlertCircle size={12} />
-            Częściowo
+            {tr('Częściowo')}
             {paidAmount > 0 && dueAmount > 0 && (
               <span className="text-[10px] font-normal ml-0.5">
                 ({formatPrice(paidAmount, 'PLN')}/{formatPrice(dueAmount, 'PLN')})
@@ -582,7 +583,7 @@ export default function ParticipantsView({ forms }) {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Wszystkich uczestników</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Wszystkich uczestników')}</p>
             </div>
           </div>
         </div>
@@ -594,7 +595,7 @@ export default function ParticipantsView({ forms }) {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.paid}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Opłaconych</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Opłaconych')}</p>
             </div>
           </div>
         </div>
@@ -606,7 +607,7 @@ export default function ParticipantsView({ forms }) {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pending}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Oczekuje na płatność</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Oczekuje na płatność')}</p>
             </div>
           </div>
         </div>
@@ -620,7 +621,7 @@ export default function ParticipantsView({ forms }) {
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatPrice(stats.totalRevenue, 'PLN')}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Otrzymane wpłaty</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Otrzymane wpłaty')}</p>
             </div>
           </div>
         </div>
@@ -636,7 +637,7 @@ export default function ParticipantsView({ forms }) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Szukaj uczestnika (imię, email, telefon)..."
+              placeholder={tr('Szukaj uczestnika (imię, email, telefon)...')}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
             />
           </div>
@@ -661,7 +662,7 @@ export default function ParticipantsView({ forms }) {
             <button
               onClick={fetchAllParticipants}
               className="p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-              title="Odśwież"
+              title={tr('Odśwież')}
             >
               <RefreshCw size={18} />
             </button>
@@ -697,23 +698,23 @@ export default function ParticipantsView({ forms }) {
 
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Status płatności
+                {tr('Status płatności')}
               </label>
               <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
                 className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
               >
-                <option value="all">Wszystkie</option>
-                <option value="paid">Opłacone</option>
-                <option value="pending">Oczekujące</option>
-                <option value="none">Bez płatności</option>
+                <option value="all">{tr('Wszystkie')}</option>
+                <option value="paid">{tr('Opłacone')}</option>
+                <option value="pending">{tr('Oczekujące')}</option>
+                <option value="none">{tr('Bez płatności')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                Sortuj według
+                {tr('Sortuj według')}
               </label>
               <div className="flex gap-2">
                 <select
@@ -721,10 +722,10 @@ export default function ParticipantsView({ forms }) {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
                 >
-                  <option value="date">Data</option>
-                  <option value="name">Imię</option>
+                  <option value="date">{tr('Data')}</option>
+                  <option value="name">{tr('Imię')}</option>
                   <option value="form">Formularz</option>
-                  <option value="amount">Kwota</option>
+                  <option value="amount">{tr('Kwota')}</option>
                 </select>
                 <button
                   onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
@@ -745,8 +746,8 @@ export default function ParticipantsView({ forms }) {
             <Users size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <p className="text-gray-500 dark:text-gray-400">
               {searchQuery || selectedForm !== 'all' || paymentFilter !== 'all'
-                ? 'Brak uczestników spełniających kryteria'
-                : 'Brak zarejestrowanych uczestników'}
+                ? tr('Brak uczestników spełniających kryteria')
+                : tr('Brak zarejestrowanych uczestników')}
             </p>
           </div>
         ) : (
@@ -860,7 +861,7 @@ export default function ParticipantsView({ forms }) {
                               setPaymentAmount(String(participant.totalAmount));
                             }}
                             className="p-2 text-green-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                            title="Dodaj płatność"
+                            title={tr('Dodaj płatność')}
                           >
                             <Banknote size={18} />
                           </button>
@@ -890,7 +891,7 @@ export default function ParticipantsView({ forms }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Szczegóły uczestnika
+                {tr('Szczegóły uczestnika')}
               </h3>
               <button
                 onClick={() => setSelectedParticipant(null)}
@@ -951,7 +952,7 @@ export default function ParticipantsView({ forms }) {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                       <CreditCard size={16} />
-                      Płatność
+                      {tr('Płatność')}
                     </div>
                     {getPaymentStatusBadge(selectedParticipant.paymentStatus, selectedParticipant.paidAmount, selectedParticipant.totalAmount)}
                   </div>
@@ -966,7 +967,7 @@ export default function ParticipantsView({ forms }) {
                           Metoda: {selectedParticipant.paymentMethod === 'transfer' ? 'Przelew' :
                             selectedParticipant.paymentMethod === 'paypal' ? 'PayPal' :
                             selectedParticipant.paymentMethod === 'przelewy24' ? 'Przelewy24' :
-                            selectedParticipant.paymentMethod === 'cash' ? 'Gotówka' :
+                            selectedParticipant.paymentMethod === 'cash' ? tr('Gotówka') :
                             selectedParticipant.paymentMethod}
                         </p>
                       )}
@@ -979,7 +980,7 @@ export default function ParticipantsView({ forms }) {
                           className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
                         >
                           <Check size={16} />
-                          Oznacz jako opłacone
+                          {tr('Oznacz jako opłacone')}
                         </button>
                       )}
                       {selectedParticipant.paymentStatus === 'paid' && (
@@ -988,7 +989,7 @@ export default function ParticipantsView({ forms }) {
                           className="flex items-center gap-2 px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-medium hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
                         >
                           <Clock size={16} />
-                          Cofnij płatność
+                          {tr('Cofnij płatność')}
                         </button>
                       )}
                     </div>
@@ -1053,7 +1054,7 @@ export default function ParticipantsView({ forms }) {
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
               <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <Banknote size={20} className="text-green-500" />
-                Dodaj płatność
+                {tr('Dodaj płatność')}
               </h2>
               <button
                 onClick={() => setPaymentModal(null)}
@@ -1085,7 +1086,7 @@ export default function ParticipantsView({ forms }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Data płatności
+                  {tr('Data płatności')}
                 </label>
                 <input
                   type="date"
@@ -1108,7 +1109,7 @@ export default function ParticipantsView({ forms }) {
                 className="flex-1 py-2.5 text-sm font-medium text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
               >
                 <Check size={16} />
-                Potwierdź płatność
+                {tr('Potwierdź płatność')}
               </button>
             </div>
           </div>

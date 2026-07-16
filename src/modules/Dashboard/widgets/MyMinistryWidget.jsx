@@ -6,6 +6,7 @@ import { useScheduleAssignments } from '../../../hooks/useScheduleAssignments';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { tr } from '../../../i18n';
 
 const ROLE_ICONS = {
   'Zespół': Music,
@@ -31,21 +32,21 @@ const ROLE_LABELS = {
   bas: 'Bas',
   wokale: 'Wokale',
   cajon: 'Cajon',
-  naglosnienie: 'Nagłośnienie',
+  naglosnienie: tr('Nagłośnienie'),
   propresenter: 'ProPresenter',
   social: 'Social Media',
   host: 'Host',
   przygotowanie: 'Przygotowanie',
   witanie: 'Witanie',
-  mlodsza: 'Grupa młodsza',
-  srednia: 'Grupa średnia',
+  mlodsza: tr('Grupa młodsza'),
+  srednia: tr('Grupa średnia'),
   starsza: 'Grupa starsza',
   prowadzenie: 'Prowadzenie',
   czytanie: 'Czytanie',
   kazanie: 'Kazanie',
   modlitwa: 'Modlitwa',
   wieczerza: 'Wieczerza',
-  ogloszenia: 'Ogłoszenia',
+  ogloszenia: tr('Ogłoszenia'),
 };
 
 const PROGRAM_ELEMENTS = ['Wstęp', 'Uwielbienie', 'Modlitwa', 'Czytanie', 'Kazanie', 'Wieczerza', 'Uwielbienie / Kolekta', 'Ogłoszenia', 'Zakończenie'];
@@ -124,7 +125,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
               <Music size={24} className="text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Program nabożeństwa</h2>
+              <h2 className="text-xl font-bold text-white">{tr('Program nabożeństwa')}</h2>
               {program && (
                 <p className="text-white/80 text-sm">
                   {new Date(program.date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -150,7 +151,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
                 <div>
                   <h3 className="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
                     <div className="w-1 h-5 bg-accent-primary-light rounded-full" />
-                    Plan nabożeństwa
+                    {tr('Plan nabożeństwa')}
                   </h3>
                   <div className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden">
                     {program.schedule.map((item, idx) => (
@@ -178,7 +179,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
                   <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4">
                     <h4 className="font-bold text-purple-700 dark:text-purple-400 mb-3 flex items-center gap-2">
                       <Music size={18} />
-                      Zespół Uwielbienia
+                      {tr('Zespół Uwielbienia')}
                     </h4>
                     <div className="space-y-2">
                       {Object.entries(program.zespol).map(([key, value]) => {
@@ -262,7 +263,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4">
                     <h4 className="font-bold text-yellow-700 dark:text-yellow-400 mb-3 flex items-center gap-2">
                       <BookOpen size={18} />
-                      Szkółka Niedzielna
+                      {tr('Szkółka Niedzielna')}
                     </h4>
                     <div className="space-y-2">
                       {Object.entries(program.szkolka).map(([key, value]) => {
@@ -417,10 +418,10 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
             {isPast ? <History size={32} className="text-gray-400" /> : <Calendar size={32} className="text-gray-400" />}
           </div>
           <p className="text-gray-500 dark:text-gray-400 font-medium">
-            {isPast ? 'Brak historii służb' : 'Brak nadchodzących służb'}
+            {isPast ? tr('Brak historii służb') : tr('Brak nadchodzących służb')}
           </p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            {isPast ? 'Historia pojawi się po zakończeniu służb' : 'Nie jesteś przypisany do żadnego programu'}
+            {isPast ? tr('Historia pojawi się po zakończeniu służb') : tr('Nie jesteś przypisany do żadnego programu')}
           </p>
         </div>
       );
@@ -522,10 +523,10 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
             <Inbox size={32} className="text-gray-400" />
           </div>
           <p className="text-gray-500 dark:text-gray-400 font-medium">
-            Brak oczekujących sugestii
+            {tr('Brak oczekujących sugestii')}
           </p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Gdy ktoś Cię przypisze do służby, zobaczysz to tutaj
+            {tr('Gdy ktoś Cię przypisze do służby, zobaczysz to tutaj')}
           </p>
         </div>
       );
@@ -603,7 +604,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
           }`}
         >
           <Clock size={14} />
-          <span className="hidden sm:inline">Nadchodzące</span>
+          <span className="hidden sm:inline">{tr('Nadchodzące')}</span>
           <span className="sm:hidden">Nowe</span>
           {upcomingMinistry?.length > 0 && (
             <span className="px-1.5 py-0.5 text-xs rounded-full bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">

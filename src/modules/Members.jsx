@@ -17,6 +17,7 @@ import ResponsiveTabs from '../components/ResponsiveTabs';
 import HouseholdManager from './Kids/components/HouseholdManager';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useCampus } from '../contexts/CampusContext';
+import { tr } from '../i18n';
 
 // --- STAŁE DANE ---
 
@@ -28,10 +29,10 @@ const STATUS_OPTIONS = [
 
 const MINISTRY_OPTIONS = [
   { key: 'media_team', label: 'Media Team', table: 'media_team' },
-  { key: 'atmosfera_team', label: 'Atmosfera Team', table: 'atmosfera_members' },
-  { key: 'worship_team', label: 'Grupa Uwielbienia', table: 'worship_team' },
+  { key: 'atmosfera_team', label: tr('Atmosfera Team'), table: 'atmosfera_members' },
+  { key: 'worship_team', label: tr('Grupa Uwielbienia'), table: 'worship_team' },
   { key: 'home_groups', label: 'Grupy Domowe', table: 'home_group_members' },
-  { key: 'kids_ministry', label: 'Małe Avenit', table: 'kids_teachers' },
+  { key: 'kids_ministry', label: tr('Małe Avenit'), table: 'kids_teachers' },
   { key: 'administration', label: 'Administracja', table: null }
 ];
 
@@ -174,7 +175,7 @@ export default function Members() {
       const { id, ...dataToSave } = formData;
 
       if (!dataToSave.first_name || !dataToSave.last_name) {
-        alert("Imię i nazwisko są wymagane");
+        alert(tr('Imię i nazwisko są wymagane'));
         setSaving(false);
         return;
       }
@@ -216,7 +217,7 @@ export default function Members() {
           .eq('id', id);
         if (error) {
           console.error('Supabase update error:', error);
-          alert('Błąd zapisu: ' + (error.message || JSON.stringify(error)));
+          alert(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
           setSaving(false);
           return;
         }
@@ -226,7 +227,7 @@ export default function Members() {
           .insert([dataToSave]);
         if (error) {
           console.error('Supabase insert error:', error);
-          alert('Błąd zapisu: ' + (error.message || JSON.stringify(error)));
+          alert(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
           setSaving(false);
           return;
         }
@@ -239,14 +240,14 @@ export default function Members() {
       fetchData();
     } catch (error) {
       console.error('Błąd zapisu:', error);
-      alert('Wystąpił błąd podczas zapisywania.');
+      alert(tr('Wystąpił błąd podczas zapisywania.'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć tego członka?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tego członka?'))) return;
 
     try {
       // Pobierz dane członka przed usunięciem
@@ -327,12 +328,12 @@ export default function Members() {
     if (!file) return;
 
     if (file.type !== 'application/pdf') {
-      alert('Proszę wybrać plik PDF');
+      alert(tr('Proszę wybrać plik PDF'));
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('Plik jest za duży. Maksymalny rozmiar to 10MB');
+      alert(tr('Plik jest za duży. Maksymalny rozmiar to 10MB'));
       return;
     }
 
@@ -357,7 +358,7 @@ export default function Members() {
       }));
     } catch (error) {
       console.error('Błąd uploadu:', error);
-      alert('Błąd podczas przesyłania pliku');
+      alert(tr('Błąd podczas przesyłania pliku'));
     } finally {
       setUploading(false);
     }
@@ -441,7 +442,7 @@ export default function Members() {
     return (
       <div className="p-10 text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary dark:border-accent-primary-light mx-auto"></div>
-        <div className="mt-4 text-gray-600 dark:text-gray-400">Ładowanie bazy członków...</div>
+        <div className="mt-4 text-gray-600 dark:text-gray-400">{tr('Ładowanie bazy członków...')}</div>
       </div>
     );
   }
@@ -450,7 +451,7 @@ export default function Members() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-          Baza Członków
+          {tr('Baza Członków')}
         </h1>
       </div>
 
@@ -600,7 +601,7 @@ export default function Members() {
                     <div className="flex flex-col gap-1.5">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(member.status)}`}>
                         {member.status === 'Członek' ? <CheckCircle size={12} /> : member.status === 'Sympatyk' ? <Users size={12} /> : <XCircle size={12} />}
-                        {member.status || 'Gość'}
+                        {tr(member.status || 'Gość')}
                       </span>
                       {member.status === 'Członek' && member.membership_declaration_url && (
                         <a
@@ -630,7 +631,7 @@ export default function Members() {
 
           {filteredMembers.length === 0 && (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              Brak wyników do wyświetlenia
+              {tr('Brak wyników do wyświetlenia')}
             </div>
           )}
         </div>
@@ -674,7 +675,7 @@ export default function Members() {
               {/* Imię i Nazwisko */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię *</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię *')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={formData.first_name}
@@ -693,7 +694,7 @@ export default function Members() {
 
               {/* Kontakt */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Email</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Email')}</label>
                 <input
                   className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                   type="email"
@@ -704,7 +705,7 @@ export default function Members() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Telefon</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={formData.phone}
@@ -716,7 +717,7 @@ export default function Members() {
                   <CustomSelect
                     label="Status"
                     value={formData.status}
-                    options={STATUS_OPTIONS}
+                    options={STATUS_OPTIONS.map((s) => ({ value: s, label: tr(s) }))}
                     onChange={(val) => setFormData({ ...formData, status: val })}
                   />
                 </div>
@@ -730,19 +731,19 @@ export default function Members() {
                   </h4>
 
                   <CustomDatePicker
-                    label="Data członkostwa"
+                    label={tr('Data członkostwa')}
                     value={formData.membership_date}
                     onChange={(date) => setFormData({ ...formData, membership_date: date })}
-                    placeholder="Wybierz datę członkostwa"
+                    placeholder={tr('Wybierz datę członkostwa')}
                   />
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Deklaracja członkostwa (PDF)</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Deklaracja członkostwa (PDF)')}</label>
                     {formData.membership_declaration_url ? (
                       <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                         <FileText size={24} className="text-accent-primary-light" />
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Deklaracja załączona</p>
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{tr('Deklaracja załączona')}</p>
                           <a
                             href={formData.membership_declaration_url}
                             target="_blank"
@@ -767,7 +768,7 @@ export default function Members() {
                           ) : (
                             <>
                               <Upload size={24} className="text-gray-400 mb-2" />
-                              <p className="text-sm text-gray-500 dark:text-gray-400">Kliknij, aby dodać plik PDF</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Kliknij, aby dodać plik PDF')}</p>
                             </>
                           )}
                         </div>
@@ -809,7 +810,7 @@ export default function Members() {
 
               {/* Tagi */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tagi</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tagi')}</label>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {(formData.tags || []).map((t) => (
                     <span key={t} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">
@@ -822,7 +823,7 @@ export default function Members() {
                 </div>
                 <input
                   className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
-                  placeholder="Wpisz tag i naciśnij Enter (np. nowy, do odwiedzenia)"
+                  placeholder={tr('Wpisz tag i naciśnij Enter (np. nowy, do odwiedzenia)')}
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -840,7 +841,7 @@ export default function Members() {
 
               {/* Notatki */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki (widoczne dla zespołu)</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatki (widoczne dla zespołu)')}</label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100 h-24 resize-none"
                   placeholder="Notatki duszpasterskie, historia kontaktu…"
@@ -852,7 +853,7 @@ export default function Members() {
               {/* Rodzina (Household) */}
               <CustomSelect
                 label="Rodzina (do Check-in)"
-                placeholder="Wybierz rodzinę..."
+                placeholder={tr('Wybierz rodzinę...')}
                 value={formData.household_id}
                 onChange={(val) => setFormData({ ...formData, household_id: val })}
                 options={[{ id: '', family_name: 'Brak', phone_last_four: '' }, ...households]}
@@ -864,7 +865,7 @@ export default function Members() {
               {/* Grupa Domowa */}
               <CustomSelect
                 label="Grupa Domowa"
-                placeholder="Wybierz grupę..."
+                placeholder={tr('Wybierz grupę...')}
                 value={formData.home_group_id}
                 onChange={(val) => setFormData({ ...formData, home_group_id: val })}
                 options={[{ id: '', name: 'Brak' }, ...homeGroups]}
@@ -877,17 +878,17 @@ export default function Members() {
               {campuses.length > 0 && (
                 <CustomSelect
                   label="Lokalizacja"
-                  placeholder="Wybierz lokalizację..."
+                  placeholder={tr('Wybierz lokalizację...')}
                   value={formData.campus_id ? String(formData.campus_id) : ''}
                   onChange={(val) => setFormData({ ...formData, campus_id: val ? parseInt(val, 10) : null })}
-                  options={[{ value: '', label: 'Brak' }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
+                  options={[{ value: '', label: tr('Brak') }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
                   icon={MapPin}
                 />
               )}
 
               {/* Służby */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Służby</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Służby')}</label>
                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
                   <div className="flex flex-wrap gap-2">
                     {MINISTRY_OPTIONS.map(ministry => {
@@ -911,12 +912,12 @@ export default function Members() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Wybór służby automatycznie doda osobę do odpowiedniego modułu.
+                  {tr('Wybór służby automatycznie doda osobę do odpowiedniego modułu.')}
                 </p>
               </div>
 
               <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
-                <button onClick={() => setShowModal(false)} className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">Anuluj</button>
+                <button onClick={() => setShowModal(false)} className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
                 <button
                   onClick={handleSave}
                   disabled={saving}

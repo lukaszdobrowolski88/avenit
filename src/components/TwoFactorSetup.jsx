@@ -14,6 +14,7 @@ import {
   QrCode
 } from 'lucide-react';
 import { useTwoFactor } from '../hooks/useTwoFactor';
+import { tr } from '../i18n';
 
 // Komponent do generowania QR code (używa zewnętrznego API)
 function QRCodeDisplay({ url, size = 200 }) {
@@ -167,7 +168,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
 
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  {isRequired ? 'Skonfiguruj weryfikację dwuetapową' : 'Dodaj dodatkową ochronę'}
+                  {isRequired ? tr('Skonfiguruj weryfikację dwuetapową') : tr('Dodaj dodatkową ochronę')}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
                   Weryfikacja dwuetapowa dodaje dodatkową warstwę bezpieczeństwa.
@@ -184,7 +185,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                     <div className="w-5 h-5 bg-emerald-100 dark:bg-emerald-900/30 rounded flex items-center justify-center">
                       <Check size={12} className="text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    Telefon z aplikacją Authenticator
+                    {tr('Telefon z aplikacją Authenticator')}
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-5 h-5 bg-emerald-100 dark:bg-emerald-900/30 rounded flex items-center justify-center">
@@ -204,7 +205,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                   <Loader2 size={20} className="animate-spin" />
                 ) : (
                   <>
-                    Rozpocznij konfigurację
+                    {tr('Rozpocznij konfigurację')}
                     <ChevronRight size={20} />
                   </>
                 )}
@@ -215,7 +216,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                   onClick={onClose}
                   className="w-full text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition"
                 >
-                  Wyloguj się
+                  {tr('Wyloguj się')}
                 </button>
               )}
             </div>
@@ -229,7 +230,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                   Zeskanuj kod QR
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Otwórz aplikację Authenticator i zeskanuj poniższy kod
+                  {tr('Otwórz aplikację Authenticator i zeskanuj poniższy kod')}
                 </p>
               </div>
 
@@ -270,7 +271,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
             <div className="space-y-6">
               <div className="text-center">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  Wprowadź kod weryfikacyjny
+                  {tr('Wprowadź kod weryfikacyjny')}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
                   Wpisz 6-cyfrowy kod z aplikacji Authenticator
@@ -321,10 +322,10 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                   <Check size={32} className="text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  2FA zostało włączone!
+                  {tr('2FA zostało włączone!')}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
-                  Zapisz kody zapasowe na wypadek utraty dostępu do aplikacji
+                  {tr('Zapisz kody zapasowe na wypadek utraty dostępu do aplikacji')}
                 </p>
               </div>
 
@@ -332,8 +333,8 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                 <div className="flex items-start gap-3">
                   <AlertCircle size={20} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-amber-800 dark:text-amber-300">
-                    <p className="font-semibold mb-1">Ważne!</p>
-                    <p>Te kody pozwolą Ci zalogować się, jeśli stracisz dostęp do telefonu. Każdy kod można użyć tylko raz.</p>
+                    <p className="font-semibold mb-1">{tr('Ważne!')}</p>
+                    <p>{tr('Te kody pozwolą Ci zalogować się, jeśli stracisz dostęp do telefonu. Każdy kod można użyć tylko raz.')}</p>
                   </div>
                 </div>
               </div>

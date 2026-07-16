@@ -2,20 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckSquare, List, LayoutGrid, Clock, CheckCircle, Circle, Plus, X, Save, Calendar, ChevronLeft, ChevronRight, Trash2, Lock, Users, Video, User } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { tr } from '../../../i18n';
 
 const STATUS_CONFIG = {
   todo: {
-    label: 'Do zrobienia',
+    label: tr('Do zrobienia'),
     color: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
     icon: Circle,
   },
   in_progress: {
-    label: 'W trakcie',
+    label: tr('W trakcie'),
     color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300',
     icon: Clock,
   },
   done: {
-    label: 'Gotowe',
+    label: tr('Gotowe'),
     color: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300',
     icon: CheckCircle,
   },
@@ -113,7 +114,7 @@ const CustomDatePicker = ({ value, onChange }) => {
       <div ref={triggerRef} onClick={() => setIsOpen(!isOpen)} className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center gap-2 cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary-light transition">
         <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
-          {value ? new Date(value).toLocaleDateString('pl-PL') : 'Wybierz datę'}
+          {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
         </span>
       </div>
       {isOpen && coords.width > 0 && document.body && createPortal(
@@ -123,7 +124,7 @@ const CustomDatePicker = ({ value, onChange }) => {
              <span className="text-sm font-bold capitalize text-gray-800 dark:text-white">{viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
              <button type="button" onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1)); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronRight size={18} /></button>
            </div>
-           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 uppercase">{['Pn','Wt','Śr','Cz','Pt','So','Nd'].map(d => <div key={d}>{d}</div>)}</div>
+           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
            <div className="grid grid-cols-7 gap-1">
              {emptyDays.map((_, i) => <div key={`e-${i}`} />)}
              {daysArray.map(d => {
@@ -264,7 +265,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
       onClose();
     } catch (error) {
       console.error('Error saving task:', error);
-      alert('Błąd zapisu: ' + error.message);
+      alert(tr('Błąd zapisu: ') + error.message);
     } finally {
       setSaving(false);
     }
@@ -272,7 +273,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
 
   const handleDelete = async () => {
     if (!task.id) return;
-    if (!confirm('Czy na pewno chcesz usunąć to zadanie?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć to zadanie?'))) return;
 
     try {
       const source = task.source || 'personal';
@@ -290,7 +291,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
       onClose();
     } catch (error) {
       console.error('Error deleting task:', error);
-      alert('Błąd usuwania: ' + error.message);
+      alert(tr('Błąd usuwania: ') + error.message);
     }
   };
 
@@ -323,24 +324,24 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tytuł</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł')}</label>
               <input
                 autoFocus
                 className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
                 value={task.title}
                 onChange={e => setTask({...task, title: e.target.value})}
-                placeholder="Co jest do zrobienia?"
+                placeholder={tr('Co jest do zrobienia?')}
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Termin</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Termin')}</label>
               <CustomDatePicker value={task.due_date} onChange={v => setTask({...task, due_date: v})} />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Status</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Status')}</label>
               <div className="grid grid-cols-3 gap-2">
                 {Object.entries(STATUS_CONFIG).map(([key, config]) => {
                   const Icon = config.icon;
@@ -364,12 +365,12 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
               <textarea
                 className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white text-sm h-24 resize-none focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
                 value={task.description || ''}
                 onChange={e => setTask({...task, description: e.target.value})}
-                placeholder="Szczegóły zadania..."
+                placeholder={tr('Szczegóły zadania...')}
               />
             </div>
 
@@ -388,7 +389,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
                     {task.is_private && <Lock size={12} className="text-white" />}
                   </div>
                   <div className="flex-1">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Prywatne</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{tr('Prywatne')}</span>
                     <p className="text-xs text-gray-400 dark:text-gray-500">Tylko Ty widzisz to zadanie</p>
                   </div>
                   <Lock size={18} className={task.is_private ? 'text-accent-primary' : 'text-gray-400 dark:text-gray-500'} />
@@ -488,10 +489,10 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
             <CheckSquare size={32} className="text-gray-400" />
           </div>
           <p className="text-gray-500 dark:text-gray-400 font-medium">
-            Brak zadań
+            {tr('Brak zadań')}
           </p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Nie masz przypisanych zadań
+            {tr('Nie masz przypisanych zadań')}
           </p>
         </div>
 

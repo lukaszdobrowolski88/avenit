@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Search, MessageSquare } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { formatMessageDate, truncateText } from '../utils/messageHelpers';
+import { tr } from '../../../i18n';
 
 export default function SearchModal({
   isOpen,
@@ -85,7 +86,7 @@ export default function SearchModal({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Szukaj wiadomości..."
+            placeholder={tr('Szukaj wiadomości...')}
             className="flex-1 bg-transparent border-0 focus:outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 text-lg"
           />
           <button
@@ -110,15 +111,15 @@ export default function SearchModal({
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center mb-4">
                 <Search size={28} className="text-accent-primary-light" />
               </div>
-              <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Wyszukaj wiadomości</p>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">Wpisz co najmniej 2 znaki, aby rozpocząć wyszukiwanie</p>
+              <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">{tr('Wyszukaj wiadomości')}</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">{tr('Wpisz co najmniej 2 znaki, aby rozpocząć wyszukiwanie')}</p>
             </div>
           ) : results.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center mb-4">
                 <MessageSquare size={28} className="text-gray-400" />
               </div>
-              <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Brak wyników</p>
+              <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">{tr('Brak wyników')}</p>
               <p className="text-gray-500 dark:text-gray-400 text-sm">Nie znaleziono wiadomości dla "{searchQuery}"</p>
             </div>
           ) : (

@@ -20,6 +20,7 @@ import { useCampus } from '../../contexts/CampusContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { tr } from '../../i18n';
 
 const PROGRAM_ELEMENTS = [
   'Wstęp', 'Uwielbienie', 'Modlitwa', 'Czytanie', 'Kazanie',
@@ -31,8 +32,8 @@ const MUSICAL_KEYS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G
 // Item types for schedule - inspired by Planning Center
 const ITEM_TYPES = {
   item: { label: 'Element', icon: Type, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800' },
-  header: { label: 'Nagłówek', icon: MoreHorizontal, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
-  song: { label: 'Pieśń', icon: Music, color: 'text-accent-primary dark:text-accent-primary-light', bg: 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30' },
+  header: { label: tr('Nagłówek'), icon: MoreHorizontal, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
+  song: { label: tr('Pieśń'), icon: Music, color: 'text-accent-primary dark:text-accent-primary-light', bg: 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30' },
   media: { label: 'Media', icon: Image, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/30' },
 };
 
@@ -166,7 +167,7 @@ const CustomDatePicker = ({ value, onChange }) => {
       >
         <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
-          {value ? new Date(value).toLocaleDateString('pl-PL') : 'Wybierz datę'}
+          {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
         </span>
       </div>
 
@@ -185,7 +186,7 @@ const CustomDatePicker = ({ value, onChange }) => {
              <span className="text-sm font-bold capitalize text-gray-800 dark:text-gray-200">{viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
              <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-300"><ChevronRight size={18} /></button>
            </div>
-           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 uppercase">{['Pn','Wt','Śr','Cz','Pt','So','Nd'].map(d => <div key={d}>{d}</div>)}</div>
+           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
            <div className="grid grid-cols-7 gap-1">
              {emptyDays.map((_, i) => <div key={`e-${i}`} />)}
              {daysArray.map(d => {
@@ -367,7 +368,7 @@ const MultiSelect = ({ label, options, value, onChange, absentMembers = [] }) =>
               </div>
             );
           })}
-          {options.length === 0 && <div className="p-3 text-center text-gray-400 text-xs">Brak członków w bazie</div>}
+          {options.length === 0 && <div className="p-3 text-center text-gray-400 text-xs">{tr('Brak członków w bazie')}</div>}
         </div>,
         document.body
       )}
@@ -442,7 +443,7 @@ const SongSelector = ({ songs, onSelect, suggestions = [] }) => {
               <input
                 autoFocus
                 className="bg-transparent outline-none text-sm w-full text-gray-700 dark:text-gray-200 placeholder-gray-400"
-                placeholder="Szukaj..."
+                placeholder={tr('Szukaj...')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -450,7 +451,7 @@ const SongSelector = ({ songs, onSelect, suggestions = [] }) => {
           </div>
           <div className="overflow-y-auto flex-1 max-h-64 custom-scrollbar">
             {suggestedSongs.length === 0 && otherSongs.length === 0 ? (
-              <div className="p-3 text-xs text-gray-400 text-center">Brak wyników</div>
+              <div className="p-3 text-xs text-gray-400 text-center">{tr('Brak wyników')}</div>
             ) : (
               <>
                 {suggestedSongs.length > 0 && (
@@ -490,7 +491,7 @@ const SongSelector = ({ songs, onSelect, suggestions = [] }) => {
                   <>
                     {suggestedSongs.length > 0 && (
                       <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-800">
-                        Wszystkie pieśni
+                        {tr('Wszystkie pieśni')}
                       </div>
                     )}
                     {otherSongs.map(s => (
@@ -592,7 +593,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
 
   // Get song details
   const song = item.type === 'song' && item.songId ? songs.find(s => s.id === item.songId) : null;
-  const songTitle = song?.title || (item.type === 'song' ? (item.title || 'Wybierz pieśń...') : null);
+  const songTitle = song?.title || (item.type === 'song' ? (item.title || tr('Wybierz pieśń...')) : null);
   const currentKey = item.songKey || song?.key;
 
   // Header rendering
@@ -617,7 +618,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
         </div>
         <div className="flex-1 flex items-center gap-2">
           <span className="font-semibold text-[13px] uppercase tracking-wide text-amber-700 dark:text-amber-400">
-            {item.title || 'Nowy nagłówek'}
+            {item.title || tr('Nowy nagłówek')}
           </span>
         </div>
         <button
@@ -692,7 +693,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
                 ? 'bg-gradient-to-r from-accent-primary-lighter to-accent-primary-lightest dark:from-accent-primary-darkest/40 dark:to-accent-primary-darkest/20 text-accent-primary-dark dark:text-accent-primary-lighter border-accent-primary-lighter/50 dark:border-accent-primary-dark/50 hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-accent-primary-lighter dark:hover:border-accent-primary'
               }`}
-            title="Zmień tonację"
+            title={tr('Zmień tonację')}
           >
             {currentKey || '?'}
           </button>
@@ -700,7 +701,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
           {/* Key picker dropdown */}
           {showKeyPicker && (
             <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-2 min-w-[200px]">
-              <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 px-2 py-1 mb-1">Wybierz tonację</div>
+              <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 px-2 py-1 mb-1">{tr('Wybierz tonację')}</div>
               <div className="grid grid-cols-6 gap-1">
                 {MUSICAL_KEYS.map(k => (
                   <button
@@ -729,7 +730,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
                   }}
                   className="w-full mt-2 py-1.5 text-[10px] text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
                 >
-                  Usuń tonację
+                  {tr('Usuń tonację')}
                 </button>
               )}
             </div>
@@ -758,7 +759,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
 // --- ITEM EDIT PANEL (Side panel like Planning Center) ---
 
 // Combobox z autouzupełnianiem dla osoby odpowiedzialnej
-const PersonCombobox = ({ value, onChange, members = [], placeholder = 'Wpisz imię i nazwisko...' }) => {
+const PersonCombobox = ({ value, onChange, members = [], placeholder = tr('Wpisz imię i nazwisko...') }) => {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef(null);
 
@@ -814,7 +815,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
   const IconComponent = itemType.icon;
 
   const tabs = [
-    { id: 'details', label: 'Szczegóły', icon: Info },
+    { id: 'details', label: tr('Szczegóły'), icon: Info },
     ...(item.type === 'media' ? [{ id: 'media', label: 'Media', icon: Image }] : []),
     { id: 'notes', label: 'Notatki', icon: NoteIcon },
   ];
@@ -839,7 +840,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
   // Timing options
   const timingOptions = [
     { value: 'before', label: 'Przed', icon: '◀' },
-    { value: 'during', label: 'W trakcie', icon: '●' },
+    { value: 'during', label: tr('W trakcie'), icon: '●' },
     { value: 'after', label: 'Po', icon: '▶' },
   ];
 
@@ -862,14 +863,14 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
           <button
             onClick={() => onDelete(item.id)}
             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition"
-            title="Usuń element"
+            title={tr('Usuń element')}
           >
             <Trash2 size={16} />
           </button>
           <button
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition"
-            title="Zamknij"
+            title={tr('Zamknij')}
           >
             <X size={16} />
           </button>
@@ -880,7 +881,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
       <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
         {item.type === 'song' ? (
           <>
-            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Pieśń</label>
+            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{tr('Pieśń')}</label>
             {selectedSong ? (
               <div className="flex items-center gap-3 bg-gradient-to-r from-accent-primary-lightest to-accent-primary-lighter/30 dark:from-accent-primary-darkest/20 dark:to-accent-primary-darkest/10 border border-accent-primary-lighter/60 dark:border-accent-primary-dark/40 rounded-xl px-4 py-3">
                 <Music size={18} className="text-accent-primary dark:text-accent-primary-light shrink-0" />
@@ -891,7 +892,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                 <button
                   onClick={() => onUpdate({ ...item, songId: null, songKey: null, title: '' })}
                   className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition shrink-0"
-                  title="Zmień pieśń"
+                  title={tr('Zmień pieśń')}
                 >
                   <X size={14} />
                 </button>
@@ -940,7 +941,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
               <div className="mt-4">
                 <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                   <Paperclip size={12} />
-                  Załączniki PDF do programu
+                  {tr('Załączniki PDF do programu')}
                 </label>
                 <div className="space-y-2">
                   {(item.customAttachments || []).map((att, i) => (
@@ -970,7 +971,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                         const file = e.target.files?.[0];
                         if (!file) return;
                         if (file.size > 10 * 1024 * 1024) {
-                          alert('Plik jest za duży (max 10MB)');
+                          alert(tr('Plik jest za duży (max 10MB)'));
                           return;
                         }
                         try {
@@ -982,7 +983,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                           handleChange('customAttachments', [...(item.customAttachments || []), newAtt]);
                         } catch (err) {
                           console.error('Upload error:', err);
-                          alert('Błąd uploadu pliku');
+                          alert(tr('Błąd uploadu pliku'));
                         }
                         e.target.value = '';
                       }}
@@ -994,12 +995,12 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
           </>
         ) : (
           <>
-            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Tytuł</label>
+            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{tr('Tytuł')}</label>
             <input
               type="text"
               value={item.title || ''}
               onChange={(e) => handleChange('title', e.target.value)}
-              placeholder={item.type === 'header' ? 'Nazwa sekcji...' : 'Tytuł elementu...'}
+              placeholder={item.type === 'header' ? 'Nazwa sekcji...' : tr('Tytuł elementu...')}
               className="w-full text-base font-medium bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter dark:focus:border-accent-primary-dark text-gray-800 dark:text-white placeholder-gray-400 transition"
             />
           </>
@@ -1039,7 +1040,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
 
           {/* Timing */}
           <div>
-            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Kiedy wyświetlić</label>
+            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{tr('Kiedy wyświetlić')}</label>
             <div className="grid grid-cols-3 gap-2">
               {timingOptions.map(opt => (
                 <button
@@ -1095,7 +1096,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
               <textarea
                 value={item.notes || ''}
                 onChange={(e) => handleChange('notes', e.target.value)}
-                placeholder="Dodaj notatki dotyczące tego elementu..."
+                placeholder={tr('Dodaj notatki dotyczące tego elementu...')}
                 rows={6}
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80 rounded-xl text-sm resize-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter dark:focus:border-accent-primary-dark outline-none transition"
               />
@@ -1115,14 +1116,14 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                 value={item.person}
                 onChange={(val) => handleChange('person', val)}
                 members={worshipTeam}
-                placeholder="Wpisz imię i nazwisko..."
+                placeholder={tr('Wpisz imię i nazwisko...')}
               />
             </div>
 
             <div>
               <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                 <Mic2 size={12} />
-                Dodatkowe szczegóły
+                {tr('Dodatkowe szczegóły')}
               </label>
               <textarea
                 value={item.details || ''}
@@ -1141,12 +1142,12 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
             <div>
               <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
                 <Image size={12} />
-                Typ mediów
+                {tr('Typ mediów')}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: 'video', label: 'Wideo', icon: '🎬' },
-                  { value: 'presentation', label: 'Prezentacja', icon: '📊' },
+                  { value: 'presentation', label: tr('Prezentacja'), icon: '📊' },
                   { value: 'image', label: 'Obraz', icon: '🖼️' },
                   { value: 'countdown', label: 'Odliczanie', icon: '⏱️' },
                 ].map(opt => (
@@ -1168,7 +1169,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">URL / Ścieżka do pliku</label>
+              <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{tr('URL / Ścieżka do pliku')}</label>
               <input
                 type="text"
                 value={item.mediaUrl || ''}
@@ -1187,17 +1188,17 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
             <div className="bg-gradient-to-r from-blue-50 to-blue-100/30 dark:from-blue-900/20 dark:to-blue-900/10 rounded-xl p-4 border border-blue-200/50 dark:border-blue-800/30">
               <h4 className="text-[11px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <Mic2 size={12} />
-                Zespół techniczny
+                {tr('Zespół techniczny')}
               </h4>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[10px] font-medium text-blue-600/70 dark:text-blue-400/70 mb-1.5">Audio / Nagłośnienie</label>
+                  <label className="block text-[10px] font-medium text-blue-600/70 dark:text-blue-400/70 mb-1.5">{tr('Audio / Nagłośnienie')}</label>
                   <select
                     value={item.teamAssignments?.audio || ''}
                     onChange={(e) => handleTeamAssignment('audio', e.target.value)}
                     className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-blue-200/80 dark:border-blue-700/50 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition"
                   >
-                    <option value="">— Wybierz osobę —</option>
+                    <option value="">{tr('— Wybierz osobę —')}</option>
                     {mediaTeam.map(member => (
                       <option key={member.id} value={member.full_name}>{member.full_name}</option>
                     ))}
@@ -1210,7 +1211,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                     onChange={(e) => handleTeamAssignment('visual', e.target.value)}
                     className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-blue-200/80 dark:border-blue-700/50 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition"
                   >
-                    <option value="">— Wybierz osobę —</option>
+                    <option value="">{tr('— Wybierz osobę —')}</option>
                     {mediaTeam.map(member => (
                       <option key={member.id} value={member.full_name}>{member.full_name}</option>
                     ))}
@@ -1223,15 +1224,15 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
               <div className="bg-gradient-to-r from-accent-primary-lightest to-accent-primary-lighter/30 dark:from-accent-primary-darkest/20 dark:to-accent-primary-darkest/10 rounded-xl p-4 border border-accent-primary-lighter/50 dark:border-accent-primary-dark/30">
                 <h4 className="text-[11px] font-bold text-accent-primary-dark dark:text-accent-primary-light uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <Music size={12} />
-                  Zespół muzyczny
+                  {tr('Zespół muzyczny')}
                 </h4>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-[10px] font-medium text-accent-primary/70 dark:text-accent-primary-light/70 mb-1.5">Konfiguracja zespołu</label>
+                    <label className="block text-[10px] font-medium text-accent-primary/70 dark:text-accent-primary-light/70 mb-1.5">{tr('Konfiguracja zespołu')}</label>
                     <div className="grid grid-cols-3 gap-1.5">
                       {[
-                        { value: '', label: 'Cały' },
-                        { value: 'full', label: 'Pełny' },
+                        { value: '', label: tr('Cały') },
+                        { value: 'full', label: tr('Pełny') },
                         { value: 'acoustic', label: 'Akust.' },
                         { value: 'minimal', label: 'Minimal.' },
                       ].map(opt => (
@@ -1251,13 +1252,13 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-medium text-accent-primary/70 dark:text-accent-primary-light/70 mb-1.5">Wokalista prowadzący</label>
+                    <label className="block text-[10px] font-medium text-accent-primary/70 dark:text-accent-primary-light/70 mb-1.5">{tr('Wokalista prowadzący')}</label>
                     <select
                       value={item.teamAssignments?.vocals || ''}
                       onChange={(e) => handleTeamAssignment('vocals', e.target.value)}
                       className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-accent-primary-lighter/80 dark:border-accent-primary-dark/50 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
                     >
-                      <option value="">— Wybierz osobę —</option>
+                      <option value="">{tr('— Wybierz osobę —')}</option>
                       {worshipTeam.map(member => (
                         <option key={member.id} value={member.full_name}>{member.full_name}</option>
                       ))}
@@ -1306,8 +1307,8 @@ const AddItemDropdown = ({ onAdd }) => {
 
   const items = [
     { type: 'item', label: 'Element', icon: Type, shortcut: 'i' },
-    { type: 'header', label: 'Nagłówek', icon: MoreHorizontal, shortcut: 'h' },
-    { type: 'song', label: 'Pieśń', icon: Music, shortcut: 's' },
+    { type: 'header', label: tr('Nagłówek'), icon: MoreHorizontal, shortcut: 'h' },
+    { type: 'song', label: tr('Pieśń'), icon: Music, shortcut: 's' },
     { type: 'media', label: 'Media', icon: Image, shortcut: 'm' },
   ];
 
@@ -1324,7 +1325,7 @@ const AddItemDropdown = ({ onAdd }) => {
 
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
-          <div className="p-2 text-xs font-medium text-gray-400 uppercase">Przeciągnij lub kliknij</div>
+          <div className="p-2 text-xs font-medium text-gray-400 uppercase">{tr('Przeciągnij lub kliknij')}</div>
           {items.map(item => (
             <button
               key={item.type}
@@ -1526,7 +1527,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Szkółka Niedzielna</h3>
+        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{tr('Szkółka Niedzielna')}</h3>
       </div>
       <div className="space-y-4">
         <div>
@@ -1553,7 +1554,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
         ) : (
           <>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Młodsza</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupa Młodsza')}</label>
               <input
                 className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.mlodsza || ''}
@@ -1561,7 +1562,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Średnia</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupa Średnia')}</label>
               <input
                 className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.srednia || ''}
@@ -1620,7 +1621,7 @@ const DynamicScenaSection = ({
         { key: 'prowadzenie', label: 'Prowadzenie', roleId: null, source: 'mc' },
         { key: 'modlitwa', label: 'Modlitwa', roleId: null, source: 'mc' },
         { key: 'wieczerza', label: 'Wieczerza', roleId: null, source: 'mc' },
-        { key: 'ogloszenia', label: 'Ogłoszenia', roleId: null, source: 'mc' }
+        { key: 'ogloszenia', label: tr('Ogłoszenia'), roleId: null, source: 'mc' }
       ];
 
   const kazanieField = { key: 'kazanie', label: 'Kazanie', source: 'teaching' };
@@ -1812,7 +1813,7 @@ const TemplateModal = ({ isOpen, onClose, templates, onLoad, onDelete }) => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
             <FileText size={20} className="text-accent-primary-light" />
-            Szablony programów
+            {tr('Szablony programów')}
           </h3>
           <button
             onClick={onClose}
@@ -1826,7 +1827,7 @@ const TemplateModal = ({ isOpen, onClose, templates, onLoad, onDelete }) => {
           {templates.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
               <FileText size={48} className="mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Brak zapisanych szablonów</p>
+              <p className="text-sm">{tr('Brak zapisanych szablonów')}</p>
               <p className="text-xs mt-1">Zapisz aktualny plan jako szablon</p>
             </div>
           ) : (
@@ -1924,9 +1925,9 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
   }));
 
   const PRESETS = [
-    { id: 'full', label: 'Pełny', desc: 'Plan + zespoły + pieśni', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections } } },
-    { id: 'planTeams', label: 'Plan + zespoły', desc: 'Bez stron pieśni', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, songs: false } } },
-    { id: 'planOnly', label: 'Sam plan', desc: 'Tylko plan szczegółowy', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, teams: false, songs: false } } },
+    { id: 'full', label: tr('Pełny'), desc: tr('Plan + zespoły + pieśni'), patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections } } },
+    { id: 'planTeams', label: tr('Plan + zespoły'), desc: tr('Bez stron pieśni'), patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, songs: false } } },
+    { id: 'planOnly', label: 'Sam plan', desc: tr('Tylko plan szczegółowy'), patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, teams: false, songs: false } } },
   ];
 
   return (
@@ -1936,7 +1937,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
         <div className="flex justify-between items-start px-6 pt-6 pb-4 flex-shrink-0 border-b border-gray-100 dark:border-gray-700">
           <div>
             <h3 className="font-bold text-xl text-gray-800 dark:text-white">Opcje wydruku PDF</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Dopasuj zawartość i wygląd generowanego pliku.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{tr('Dopasuj zawartość i wygląd generowanego pliku.')}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-white transition" aria-label="Zamknij">
             <X size={22} />
@@ -1966,32 +1967,32 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           {/* SEKCJE */}
           <PrintOptionsCard title="Sekcje w PDF">
             <div className="space-y-2">
-              <PrintCheckbox label="Plan szczegółowy (strona 1)" checked={printOptions.sections.schedule} onChange={v => setSection('schedule', v)} />
-              <PrintCheckbox label="Notatka do programu (na końcu strony 1)" checked={printOptions.sections.programNotes} onChange={v => setSection('programNotes', v)} disabled={!printOptions.sections.schedule} />
-              <PrintCheckbox label='Strona "Służby i Zespoły"' checked={printOptions.sections.teams} onChange={v => setSection('teams', v)} />
+              <PrintCheckbox label={tr('Plan szczegółowy (strona 1)')} checked={printOptions.sections.schedule} onChange={v => setSection('schedule', v)} />
+              <PrintCheckbox label={tr('Notatka do programu (na końcu strony 1)')} checked={printOptions.sections.programNotes} onChange={v => setSection('programNotes', v)} disabled={!printOptions.sections.schedule} />
+              <PrintCheckbox label={tr('Strona "Służby i Zespoły"')} checked={printOptions.sections.teams} onChange={v => setSection('teams', v)} />
               <div className={`pl-2 ml-2 border-l-2 border-accent-primary-lighter/60 dark:border-accent-primary-darkest space-y-1.5 ${!printOptions.sections.teams ? 'opacity-50' : ''}`}>
-                <PrintCheckbox label="Zespół Uwielbienia" checked={printOptions.sections.teamWorship} onChange={v => setSection('teamWorship', v)} disabled={!printOptions.sections.teams} sub />
+                <PrintCheckbox label={tr('Zespół Uwielbienia')} checked={printOptions.sections.teamWorship} onChange={v => setSection('teamWorship', v)} disabled={!printOptions.sections.teams} sub />
                 <PrintCheckbox label="MediaTeam"          checked={printOptions.sections.teamMedia}   onChange={v => setSection('teamMedia',   v)} disabled={!printOptions.sections.teams} sub />
                 <PrintCheckbox label="Atmosfera Team"     checked={printOptions.sections.teamAtmosfera} onChange={v => setSection('teamAtmosfera', v)} disabled={!printOptions.sections.teams} sub />
                 <PrintCheckbox label="Scena"              checked={printOptions.sections.teamScena}   onChange={v => setSection('teamScena',   v)} disabled={!printOptions.sections.teams} sub />
-                <PrintCheckbox label="Szkółka Niedzielna" checked={printOptions.sections.teamSzkolka} onChange={v => setSection('teamSzkolka', v)} disabled={!printOptions.sections.teams} sub />
+                <PrintCheckbox label={tr('Szkółka Niedzielna')} checked={printOptions.sections.teamSzkolka} onChange={v => setSection('teamSzkolka', v)} disabled={!printOptions.sections.teams} sub />
               </div>
-              <PrintCheckbox label="Pieśni z tekstami i akordami" checked={printOptions.sections.songs} onChange={v => setSection('songs', v)} />
+              <PrintCheckbox label={tr('Pieśni z tekstami i akordami')} checked={printOptions.sections.songs} onChange={v => setSection('songs', v)} />
             </div>
           </PrintOptionsCard>
 
           {/* KOLUMNY PLANU */}
-          <PrintOptionsCard title="Kolumny w planie szczegółowym" className={!printOptions.sections.schedule ? 'opacity-50 pointer-events-none' : ''}>
+          <PrintOptionsCard title={tr('Kolumny w planie szczegółowym')} className={!printOptions.sections.schedule ? 'opacity-50 pointer-events-none' : ''}>
             <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-              <PrintCheckbox label="Czas (długość)"        checked={printOptions.scheduleColumns.time}    onChange={v => setColumn('time', v)} />
+              <PrintCheckbox label={tr('Czas (długość)')}        checked={printOptions.scheduleColumns.time}    onChange={v => setColumn('time', v)} />
               <PrintCheckbox label="Osoba odpowiedzialna"  checked={printOptions.scheduleColumns.person}  onChange={v => setColumn('person', v)} />
-              <PrintCheckbox label="Szczegóły / Pieśni"    checked={printOptions.scheduleColumns.details} onChange={v => setColumn('details', v)} />
-              <PrintCheckbox label="Tonacja przy pieśni"   checked={printOptions.scheduleColumns.songKey} onChange={v => setColumn('songKey', v)} disabled={!printOptions.scheduleColumns.details} />
+              <PrintCheckbox label={tr('Szczegóły / Pieśni')}    checked={printOptions.scheduleColumns.details} onChange={v => setColumn('details', v)} />
+              <PrintCheckbox label={tr('Tonacja przy pieśni')}   checked={printOptions.scheduleColumns.songKey} onChange={v => setColumn('songKey', v)} disabled={!printOptions.scheduleColumns.details} />
             </div>
           </PrintOptionsCard>
 
           {/* STRONY PIEŚNI */}
-          <PrintOptionsCard title="Strony pieśni" className={!printOptions.sections.songs ? 'opacity-50 pointer-events-none' : ''}>
+          <PrintOptionsCard title={tr('Strony pieśni')} className={!printOptions.sections.songs ? 'opacity-50 pointer-events-none' : ''}>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-4">
               <PrintCheckbox label="Tekst"   checked={printOptions.songDetails.lyrics} onChange={v => setSongDt('lyrics', v)} />
               <PrintCheckbox label="Akordy"  checked={printOptions.songDetails.chords} onChange={v => setSongDt('chords', v)} />
@@ -2001,7 +2002,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           </PrintOptionsCard>
 
           {/* UKŁAD STRONY */}
-          <PrintOptionsCard title="Układ strony">
+          <PrintOptionsCard title={tr('Układ strony')}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <label className="block">
                 <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wider font-semibold">Format</span>
@@ -2039,10 +2040,10 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           </PrintOptionsCard>
 
           {/* NAGŁÓWEK / WYGLĄD */}
-          <PrintOptionsCard title="Nagłówek i wygląd">
+          <PrintOptionsCard title={tr('Nagłówek i wygląd')}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
-              <PrintCheckbox label="Pokaż nazwę kampusu w nagłówku"     checked={printOptions.showCampus}  onChange={v => setRoot('showCampus', v)} />
-              <PrintCheckbox label="Złote akcenty (gold)"               checked={printOptions.colorAccents} onChange={v => setRoot('colorAccents', v)} />
+              <PrintCheckbox label={tr('Pokaż nazwę kampusu w nagłówku')}     checked={printOptions.showCampus}  onChange={v => setRoot('showCampus', v)} />
+              <PrintCheckbox label={tr('Złote akcenty (gold)')}               checked={printOptions.colorAccents} onChange={v => setRoot('colorAccents', v)} />
             </div>
           </PrintOptionsCard>
         </div>
@@ -2053,7 +2054,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
             onClick={() => setPrintOptions(DEFAULT_PDF_OPTIONS)}
             className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
           >
-            Przywróć domyślne
+            {tr('Przywróć domyślne')}
           </button>
           <div className="flex items-center gap-2">
             <button
@@ -2211,7 +2212,7 @@ export default function ProgramDetail() {
   };
 
   const handleSaveAsTemplate = async () => {
-    const name = window.prompt('Podaj nazwę szablonu:', program.title || 'Nowy szablon');
+    const name = window.prompt(tr('Podaj nazwę szablonu:'), program.title || 'Nowy szablon');
     if (!name) return;
 
     try {
@@ -2229,11 +2230,11 @@ export default function ProgramDetail() {
         .insert([templateData]);
 
       if (error) throw error;
-      alert('Szablon został zapisany!');
+      alert(tr('Szablon został zapisany!'));
       fetchTemplates();
     } catch (err) {
       console.error('Błąd zapisywania szablonu:', err);
-      alert('Nie udało się zapisać szablonu.');
+      alert(tr('Nie udało się zapisać szablonu.'));
     }
   };
 
@@ -2247,7 +2248,7 @@ export default function ProgramDetail() {
   };
 
   const handleDeleteTemplate = async (templateId) => {
-    if (!window.confirm('Czy na pewno chcesz usunąć ten szablon?')) return;
+    if (!window.confirm(tr('Czy na pewno chcesz usunąć ten szablon?'))) return;
     try {
       await supabase.from('program_templates').delete().eq('id', templateId);
       fetchTemplates();
@@ -2466,7 +2467,7 @@ export default function ProgramDetail() {
     }
 
     if (result.error) {
-      alert('Błąd zapisu: ' + result.error.message);
+      alert(tr('Błąd zapisu: ') + result.error.message);
       return;
     }
 
@@ -2597,7 +2598,7 @@ export default function ProgramDetail() {
 
   const handleSaveAndUploadPDF = async (customOptions = null) => {
     if (!program || !program.date) {
-      alert('Najpierw wybierz lub utwórz program.');
+      alert(tr('Najpierw wybierz lub utwórz program.'));
       return;
     }
 
@@ -2632,13 +2633,13 @@ export default function ProgramDetail() {
       const result = await savePDFToSupabase(program, freshSongsMap, teamRolesForPDF, optionsToUse);
 
       if (result.success) {
-        alert('PDF został pobrany i zapisany w chmurze!');
+        alert(tr('PDF został pobrany i zapisany w chmurze!'));
       } else {
-        alert('PDF pobrany na dysk, ale wystąpił błąd zapisu w chmurze.');
+        alert(tr('PDF pobrany na dysk, ale wystąpił błąd zapisu w chmurze.'));
       }
     } catch (error) {
       console.error('Critical error saving PDF:', error);
-      alert('Wystąpił błąd podczas generowania PDF.');
+      alert(tr('Wystąpił błąd podczas generowania PDF.'));
     } finally {
       setIsLoading(false);
     }
@@ -2665,13 +2666,13 @@ export default function ProgramDetail() {
 
   const handleExportProPresenter = async () => {
     if (!program || !program.schedule || program.schedule.length === 0) {
-      alert('Brak elementów w programie do eksportu.');
+      alert(tr('Brak elementów w programie do eksportu.'));
       return;
     }
 
     const songItems = program.schedule.filter(item => item.type === 'song' && item.songId);
     if (songItems.length === 0) {
-      alert('Brak pieśni w programie. Eksport ProPresenter wymaga co najmniej jednej pieśni.');
+      alert(tr('Brak pieśni w programie. Eksport ProPresenter wymaga co najmniej jednej pieśni.'));
       return;
     }
 
@@ -2691,20 +2692,20 @@ export default function ProgramDetail() {
       }
     } catch (err) {
       console.error('Błąd eksportu do ProPresenter:', err);
-      alert('Wystąpił błąd podczas eksportu do ProPresenter.');
+      alert(tr('Wystąpił błąd podczas eksportu do ProPresenter.'));
     }
   };
 
   const handleSendEmail = async () => {
     if (!program || !program.date) {
-      alert('Najpierw wybierz lub utwórz program.');
+      alert(tr('Najpierw wybierz lub utwórz program.'));
       return;
     }
 
     const recipients = getAllRecipients(program, worshipTeam);
 
     if (recipients.length === 0) {
-      alert('Brak adresów e-mail do wysyłki. Upewnij się, że członkowie zespołu mają przypisane adresy e-mail.');
+      alert(tr('Brak adresów e-mail do wysyłki. Upewnij się, że członkowie zespołu mają przypisane adresy e-mail.'));
       return;
     }
 
@@ -2738,7 +2739,7 @@ export default function ProgramDetail() {
         .map(item => {
           if (item.type === 'song' && item.songId) {
             const song = freshSongsMap[item.songId];
-            return `<li>🎵 ${song ? song.title : item.title || 'Pieśń'}${item.key ? ` (${item.key})` : ''}</li>`;
+            return `<li>🎵 ${song ? song.title : item.title || tr('Pieśń')}${item.key ? ` (${item.key})` : ''}</li>`;
           }
           return `<li>${item.title || item.type || 'Element'}</li>`;
         })
@@ -2766,10 +2767,10 @@ export default function ProgramDetail() {
         throw error;
       }
 
-      alert('Program został wysłany!');
+      alert(tr('Program został wysłany!'));
     } catch (error) {
       console.error('Error sending email:', error);
-      alert('Wystąpił błąd podczas wysyłania.');
+      alert(tr('Wystąpił błąd podczas wysyłania.'));
     } finally {
       setIsSending(false);
     }
@@ -2847,7 +2848,7 @@ export default function ProgramDetail() {
                 type="text"
                 value={program.title || ''}
                 onChange={(e) => setProgram({...program, title: e.target.value})}
-                placeholder={isNewProgram ? 'Nazwa programu (np. Nabożeństwo niedzielne)' : 'Nabożeństwo niedzielne'}
+                placeholder={isNewProgram ? tr('Nazwa programu (np. Nabożeństwo niedzielne)') : tr('Nabożeństwo niedzielne')}
                 className="text-xl lg:text-2xl font-bold bg-transparent border-none outline-none text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 w-full"
               />
             </div>
@@ -2942,7 +2943,7 @@ export default function ProgramDetail() {
                 <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                   <span className="font-medium">{program.schedule.length}</span>
-                  <span>elementów</span>
+                  <span>{tr('elementów')}</span>
                 </div>
                 <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -2985,7 +2986,7 @@ export default function ProgramDetail() {
                     <div className="hidden lg:flex items-center gap-2 px-4 py-2 border-b border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                       <div className="w-6"></div>
                       <div className="w-14">Czas</div>
-                      <div className="flex-1">Tytuł</div>
+                      <div className="flex-1">{tr('Tytuł')}</div>
                       <div className="w-20 text-right">{t('Długość')}</div>
                     </div>
 
@@ -3168,7 +3169,7 @@ export default function ProgramDetail() {
               setProgram={setProgram}
               roles={atmosferaRoles}
               teamMembers={atmosferaTeam}
-              fallbackFields={[{ key: 'przygotowanie', label: 'Przygotowanie' }, { key: 'witanie', label: 'Witanie' }]}
+              fallbackFields={[{ key: 'przygotowanie', label: tr('Przygotowanie') }, { key: 'witanie', label: tr('Witanie') }]}
               absentList={absentList}
               memberRoles={atmosferaMemberRoles}
             />
@@ -3181,7 +3182,7 @@ export default function ProgramDetail() {
               setProgram={setProgram}
               roles={mediaRoles}
               teamMembers={mediaTeam}
-              fallbackFields={[{ key: 'naglosnienie', label: 'Nagłośnienie' }, { key: 'propresenter', label: 'ProPresenter' }, { key: 'social', label: 'Social Media' }, { key: 'host', label: 'Host wydarzenia' }]}
+              fallbackFields={[{ key: 'naglosnienie', label: tr('Nagłośnienie') }, { key: 'propresenter', label: 'ProPresenter' }, { key: 'social', label: 'Social Media' }, { key: 'host', label: 'Host wydarzenia' }]}
               absentList={absentList}
               memberRoles={mediaMemberRoles}
             />

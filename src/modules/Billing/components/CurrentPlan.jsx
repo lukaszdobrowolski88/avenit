@@ -14,6 +14,7 @@ import {
   Clock,
   Zap
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function CurrentPlan({ onUpgrade }) {
   const [tenant, setTenant] = useState(null);
@@ -51,7 +52,7 @@ export default function CurrentPlan({ onUpgrade }) {
     const config = {
       trialing: { label: 'Trial', icon: Clock, color: 'blue' },
       active: { label: 'Aktywna', icon: CheckCircle, color: 'green' },
-      past_due: { label: 'Zaległa płatność', icon: AlertTriangle, color: 'red' },
+      past_due: { label: tr('Zaległa płatność'), icon: AlertTriangle, color: 'red' },
       suspended: { label: 'Zawieszona', icon: AlertTriangle, color: 'red' },
       cancelled: { label: 'Anulowana', icon: AlertTriangle, color: 'gray' }
     };
@@ -119,7 +120,7 @@ export default function CurrentPlan({ onUpgrade }) {
           Brak aktywnej subskrypcji
         </h3>
         <p className="text-gray-600 dark:text-gray-400 mb-4">
-          Wybierz plan, aby korzystać z pełnych możliwości aplikacji.
+          {tr('Wybierz plan, aby korzystać z pełnych możliwości aplikacji.')}
         </p>
         <button
           onClick={onUpgrade}
@@ -149,7 +150,7 @@ export default function CurrentPlan({ onUpgrade }) {
               {getStatusBadge(subscription.status)}
             </div>
             <p className="text-gray-600 dark:text-gray-400">
-              {subscription.billing_cycle === 'yearly' ? 'Plan roczny' : 'Plan miesięczny'}
+              {subscription.billing_cycle === 'yearly' ? 'Plan roczny' : tr('Plan miesięczny')}
             </p>
           </div>
           <div className="text-right">
@@ -161,7 +162,7 @@ export default function CurrentPlan({ onUpgrade }) {
               )}
             </div>
             <div className="text-sm text-gray-500">
-              /{subscription.billing_cycle === 'yearly' ? 'rok' : 'miesiąc'}
+              /{subscription.billing_cycle === 'yearly' ? 'rok' : tr('miesiąc')}
             </div>
           </div>
         </div>
@@ -189,17 +190,17 @@ export default function CurrentPlan({ onUpgrade }) {
       {usage && (
         <div className="p-6">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-            Wykorzystanie zasobów
+            {tr('Wykorzystanie zasobów')}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <UsageBar
-              label="Członkowie"
+              label={tr('Członkowie')}
               icon={Users}
               current={usage.members}
               limit={subscription.max_members}
             />
             <UsageBar
-              label="Użytkownicy"
+              label={tr('Użytkownicy')}
               icon={UserPlus}
               current={usage.users}
               limit={subscription.max_users}
@@ -227,7 +228,7 @@ export default function CurrentPlan({ onUpgrade }) {
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg font-medium hover:shadow-lg transition"
         >
           <Zap size={16} />
-          {subscription.plan_slug === 'enterprise' ? 'Zarządzaj planem' : 'Ulepsz plan'}
+          {subscription.plan_slug === 'enterprise' ? tr('Zarządzaj planem') : 'Ulepsz plan'}
         </button>
         {subscription.status === 'trialing' && (
           <button

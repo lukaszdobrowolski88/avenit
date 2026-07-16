@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../../lib/supabase';
 import { Plus, Search, Trash2, X, User, Mail, Phone, Check, Edit2 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function MembersTab({ moduleKey, moduleName }) {
   const [members, setMembers] = useState([]);
@@ -165,13 +166,13 @@ export default function MembersTab({ moduleKey, moduleName }) {
       fetchModuleRoles();
     } catch (err) {
       console.error('Błąd zapisu:', err);
-      alert('Błąd zapisu członka: ' + err.message);
+      alert(tr('Błąd zapisu członka: ') + err.message);
     }
   };
 
   // Usuń członka
   const handleDelete = async (id) => {
-    if (!confirm('Usunąć tego członka?')) return;
+    if (!confirm(tr('Usunąć tego członka?'))) return;
     try {
       // Usuń przypisania do służb
       await supabase
@@ -250,13 +251,13 @@ GRANT ALL ON ${tableName} TO anon;`;
             Tabela nie istnieje
           </h3>
           <p className="text-yellow-700 dark:text-yellow-300 mb-4">
-            Aby korzystać z członków w tym module, utwórz tabelę w Supabase.
+            {tr('Aby korzystać z członków w tym module, utwórz tabelę w Supabase.')}
           </p>
           <div className="bg-gray-900 rounded-xl p-4 text-left overflow-x-auto">
             <pre className="text-green-400 text-xs whitespace-pre">{sqlScript}</pre>
           </div>
           <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-4">
-            Skopiuj powyższy kod i wykonaj go w Supabase SQL Editor.
+            {tr('Skopiuj powyższy kod i wykonaj go w Supabase SQL Editor.')}
           </p>
           <button
             onClick={() => {
@@ -271,7 +272,7 @@ GRANT ALL ON ${tableName} TO anon;`;
             onClick={fetchMembers}
             className="mt-4 ml-2 px-4 py-2 bg-accent-primary text-white rounded-xl hover:bg-accent-primary transition"
           >
-            Odśwież
+            {tr('Odśwież')}
           </button>
         </div>
       </div>
@@ -290,7 +291,7 @@ GRANT ALL ON ${tableName} TO anon;`;
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Szukaj..."
+              placeholder={tr('Szukaj...')}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
               className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-sm focus:border-accent-primary-light outline-none"
@@ -301,7 +302,7 @@ GRANT ALL ON ${tableName} TO anon;`;
             className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium flex items-center gap-2 hover:shadow-lg hover:shadow-accent-primary-light/30 transition"
           >
             <Plus size={18} />
-            Dodaj członka
+            {tr('Dodaj członka')}
           </button>
         </div>
       </div>
@@ -378,9 +379,9 @@ GRANT ALL ON ${tableName} TO anon;`;
       ) : (
         <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
           <User size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">Brak członków</p>
+          <p className="text-gray-500 dark:text-gray-400">{tr('Brak członków')}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Kliknij "Dodaj członka" aby dodać pierwszego członka
+            {tr('Kliknij "Dodaj członka" aby dodać pierwszego członka')}
           </p>
         </div>
       )}
@@ -391,7 +392,7 @@ GRANT ALL ON ${tableName} TO anon;`;
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-white/20 dark:border-gray-700">
             <div className="flex justify-between mb-6">
               <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                {editingMember ? 'Edytuj członka' : 'Nowy członek'}
+                {editingMember ? tr('Edytuj członka') : tr('Nowy członek')}
               </h3>
               <button
                 onClick={() => setShowModal(false)}
@@ -404,21 +405,21 @@ GRANT ALL ON ${tableName} TO anon;`;
               {/* Imię i nazwisko */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  Imię i nazwisko
+                  {tr('Imię i nazwisko')}
                 </label>
                 <input
                   type="text"
                   value={form.full_name}
                   onChange={(e) => setForm({ ...form, full_name: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="Jan Kowalski"
+                  placeholder={tr('Jan Kowalski')}
                 />
               </div>
 
               {/* Służby / Instrumenty jako tagi */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  Służby / Instrumenty
+                  {tr('Służby / Instrumenty')}
                 </label>
                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
                   <div className="flex flex-wrap gap-2">
@@ -449,7 +450,7 @@ GRANT ALL ON ${tableName} TO anon;`;
                   </div>
                   {moduleRoles.length === 0 && (
                     <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-2">
-                      Brak zdefiniowanych służb. Dodaj je w zakładce "Służby".
+                      {tr('Brak zdefiniowanych służb. Dodaj je w zakładce "Służby".')}
                     </p>
                   )}
                 </div>

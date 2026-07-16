@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CalendarX, Plus, X, Trash2, ChevronDown } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { tr } from '../../../i18n';
 
 // ============================================
 // CUSTOM DROPDOWN COMPONENT
@@ -190,7 +191,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
   };
 
   const formatEventLabel = (program) => {
-    const title = program.title || 'Nabożeństwo niedzielne';
+    const title = program.title || tr('Nabożeństwo niedzielne');
     const date = formatDate(program.date);
     return `${title}, ${date}`;
   };
@@ -232,7 +233,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
   };
 
   const handleDelete = async (absence) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę nieobecność?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę nieobecność?'))) return;
 
     try {
       // 1. Usuń nieobecność z bazy
@@ -264,7 +265,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
           className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary-light dark:hover:text-accent-primary-light transition-colors"
         >
           <Plus size={18} />
-          <span className="font-medium">Zgłoś nieobecność</span>
+          <span className="font-medium">{tr('Zgłoś nieobecność')}</span>
         </button>
       )}
 
@@ -272,7 +273,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
       {isAdding && (
         <form onSubmit={handleSubmit} className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 space-y-3">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="font-medium text-gray-800 dark:text-white">Zgłoś nieobecność</h4>
+            <h4 className="font-medium text-gray-800 dark:text-white">{tr('Zgłoś nieobecność')}</h4>
             <button
               type="button"
               onClick={() => setIsAdding(false)}
@@ -294,7 +295,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
             />
             {programOptions.length === 0 && (
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                Brak nadchodzących wydarzeń
+                {tr('Brak nadchodzących wydarzeń')}
               </p>
             )}
           </div>
@@ -306,7 +307,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
             <textarea
               value={formData.note}
               onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
-              placeholder="Powód nieobecności..."
+              placeholder={tr('Powód nieobecności...')}
               rows={2}
               className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-primary-light resize-none"
             />
@@ -317,7 +318,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
             disabled={saving || !formData.program_id}
             className="w-full py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? 'Zapisywanie...' : 'Zgłoś nieobecność'}
+            {saving ? 'Zapisywanie...' : tr('Zgłoś nieobecność')}
           </button>
         </form>
       )}
@@ -328,7 +329,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
           {absences.slice(0, 5).map(absence => {
             // Znajdź program dla nieobecności, żeby wyświetlić tytuł
             const program = programs.find(p => p.id === absence.program_id);
-            const eventTitle = program?.title || 'Nabożeństwo niedzielne';
+            const eventTitle = program?.title || tr('Nabożeństwo niedzielne');
             const isFuture = new Date(absence.absence_date) >= new Date(new Date().toISOString().split('T')[0]);
 
             return (
@@ -371,7 +372,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
       ) : !isAdding && (
         <div className="text-center py-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Brak zgłoszonych nieobecności
+            {tr('Brak zgłoszonych nieobecności')}
           </p>
         </div>
       )}

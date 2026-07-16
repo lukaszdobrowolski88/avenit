@@ -3,6 +3,7 @@ import { X, Search, User, Users, Check, Loader } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 export default function NewConversationModal({
   isOpen,
@@ -214,7 +215,7 @@ export default function NewConversationModal({
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              Nie znaleziono użytkowników
+              {tr('Nie znaleziono użytkowników')}
             </div>
           ) : (
             <div className="space-y-1">
@@ -270,7 +271,7 @@ export default function NewConversationModal({
               ) : (
                 <>
                   <Users size={18} />
-                  Utwórz grupę ({selectedUsers.length} {selectedUsers.length === 1 ? 'osoba' : selectedUsers.length < 5 ? 'osoby' : 'osób'})
+                  Utwórz grupę ({selectedUsers.length} {selectedUsers.length === 1 ? 'osoba' : selectedUsers.length < 5 ? 'osoby' : tr('osób')})
                 </>
               )}
             </button>

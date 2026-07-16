@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useT } from '../i18n';
+import { tr } from '../i18n';
 
 // Globalny event do otwierania palety z dowolnego miejsca (np. przycisk w Navbarze).
 export const OPEN_EVENT = 'avenit:open-search';
@@ -16,16 +17,16 @@ export function openCommandPalette() {
 
 // Szybkie skoki do modułów — zawsze dostępny, uniwersalny podzbiór.
 const MODULES = [
-  { label: 'Pulpit', path: '/', icon: LayoutDashboard, keywords: 'dashboard start główna' },
-  { label: 'Programy', path: '/programs', icon: CalendarDays, keywords: 'nabożeństwa plan' },
-  { label: 'Kalendarz', path: '/calendar', icon: CalendarIcon, keywords: 'wydarzenia terminy' },
-  { label: 'Członkowie', path: '/members', icon: Users, keywords: 'osoby ludzie baza' },
+  { label: tr('Pulpit'), path: '/', icon: LayoutDashboard, keywords: 'dashboard start główna' },
+  { label: tr('Programy'), path: '/programs', icon: CalendarDays, keywords: 'nabożeństwa plan' },
+  { label: tr('Kalendarz'), path: '/calendar', icon: CalendarIcon, keywords: 'wydarzenia terminy' },
+  { label: tr('Członkowie'), path: '/members', icon: Users, keywords: 'osoby ludzie baza' },
   { label: 'Uwielbienie', path: '/worship', icon: Music, keywords: 'pieśni śpiewnik zespół' },
-  { label: 'Grupy domowe', path: '/home-groups', icon: Home, keywords: 'komórki spotkania' },
-  { label: 'Finanse', path: '/finance', icon: Wallet, keywords: 'ofiary budżet kasa' },
-  { label: 'Formularze', path: '/forms', icon: FileText, keywords: 'zapisy ankiety' },
-  { label: 'Ustawienia', path: '/settings', icon: Settings, keywords: 'konfiguracja profil kościoła' },
-  { label: 'Mój profil', path: '/profile', icon: User, keywords: 'konto ustawienia hasło' },
+  { label: tr('Grupy domowe'), path: '/home-groups', icon: Home, keywords: 'komórki spotkania' },
+  { label: tr('Finanse'), path: '/finance', icon: Wallet, keywords: 'ofiary budżet kasa' },
+  { label: tr('Formularze'), path: '/forms', icon: FileText, keywords: 'zapisy ankiety' },
+  { label: tr('Ustawienia'), path: '/settings', icon: Settings, keywords: 'konfiguracja profil kościoła' },
+  { label: tr('Mój profil'), path: '/profile', icon: User, keywords: 'konto ustawienia hasło' },
 ];
 
 // Usuwa znaki specjalne ILIKE i przecinki (składnia or() rozdziela po przecinku).
@@ -43,7 +44,7 @@ const SEARCHERS = [
         .limit(6);
       return (data || []).map((m) => ({
         id: `member-${m.id}`,
-        label: [m.first_name, m.last_name].filter(Boolean).join(' ') || m.email || 'Członek',
+        label: [m.first_name, m.last_name].filter(Boolean).join(' ') || m.email || tr('Członek'),
         sub: m.email || '',
         path: '/members',
       }));
@@ -59,7 +60,7 @@ const SEARCHERS = [
         .limit(6);
       return (data || []).map((s) => ({
         id: `song-${s.id}`,
-        label: s.title || 'Pieśń',
+        label: s.title || tr('Pieśń'),
         sub: s.artist || '',
         path: '/worship',
       }));
@@ -251,7 +252,7 @@ export default function CommandPalette() {
             if (row.header) {
               return (
                 <div key={`h-${i}`} className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                  {row.header}
+                  {tr(row.header)}
                 </div>
               );
             }

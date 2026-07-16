@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, Sparkles, MessageSquare, Save, X, Loader2 } from 'l
 import { useSmsTemplates } from '../hooks/useSmsTemplates';
 import { SENDER_MAX, BODY_MAX } from '../constants';
 import { smsAnalysis } from '../utils/smsEncoding';
+import { tr } from '../../../i18n';
 
 export default function TemplateGallery({ onUseTemplate }) {
   const { templates, loading, createTemplate, updateTemplate, deleteTemplate } = useSmsTemplates();
@@ -12,12 +13,12 @@ export default function TemplateGallery({ onUseTemplate }) {
   const handleNew = () => { setEditing(null); setShowEditor(true); };
   const handleEdit = (t) => { setEditing(t); setShowEditor(true); };
   const handleDelete = async (t) => {
-    if (t.is_system) { alert('Nie można usunąć szablonu systemowego.'); return; }
+    if (t.is_system) { alert(tr('Nie można usunąć szablonu systemowego.')); return; }
     if (!confirm(`Usunąć szablon "${t.name}"?`)) return;
     try { await deleteTemplate(t.id); } catch (e) { alert(e.message); }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Ładowanie...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>;
 
   return (
     <div>
@@ -57,14 +58,14 @@ export default function TemplateGallery({ onUseTemplate }) {
               )}
               <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 mt-1">{t.body}</p>
               <p className="text-xs text-gray-400 mt-2">
-                {a.charCount} znaków · {a.parts || 1} {(a.parts || 1) === 1 ? 'część' : 'części'} ({a.encoding})
+                {a.charCount} znaków · {a.parts || 1} {(a.parts || 1) === 1 ? tr('część') : tr('części')} ({a.encoding})
               </p>
 
               <button
                 onClick={() => onUseTemplate(t)}
                 className="w-full mt-3 py-2 text-sm font-medium text-accent-primary bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 hover:bg-accent-primary-lighter rounded-lg"
               >
-                Użyj szablonu
+                {tr('Użyj szablonu')}
               </button>
             </div>
           );
@@ -98,7 +99,7 @@ function TemplateEditor({ template, onClose, onSave }) {
   const a = smsAnalysis(form.body);
 
   const handleSave = async () => {
-    if (!form.name || !form.body) { alert('Wypełnij wszystkie pola'); return; }
+    if (!form.name || !form.body) { alert(tr('Wypełnij wszystkie pola')); return; }
     setSaving(true);
     try { await onSave(form); } finally { setSaving(false); }
   };
@@ -126,24 +127,24 @@ function TemplateEditor({ template, onClose, onSave }) {
             value={form.default_sender}
             maxLength={SENDER_MAX}
             onChange={e => setForm(f => ({ ...f, default_sender: e.target.value }))}
-            placeholder="Domyślny nadawca (opcjonalnie)"
+            placeholder={tr('Domyślny nadawca (opcjonalnie)')}
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono"
           />
           <textarea
             value={form.body}
             maxLength={BODY_MAX}
             onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-            placeholder="Treść SMS-a..."
+            placeholder={tr('Treść SMS-a...')}
             rows={4}
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none"
           />
           <p className="text-xs text-gray-500">
-            {a.charCount} znaków · {a.parts || 1} {(a.parts || 1) === 1 ? 'część' : 'części'} ({a.encoding})
+            {a.charCount} znaków · {a.parts || 1} {(a.parts || 1) === 1 ? tr('część') : tr('części')} ({a.encoding})
           </p>
         </div>
 
         <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">Anuluj</button>
+          <button onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">{tr('Anuluj')}</button>
           <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-accent-primary text-white rounded-lg disabled:opacity-50">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             Zapisz

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { CheckCircle, XCircle, Loader2, AlertCircle, Calendar, User, Music } from 'lucide-react';
+import { tr } from '../../i18n';
 
 export default function AssignmentResponsePage() {
   const [searchParams] = useSearchParams();
@@ -24,7 +25,7 @@ export default function AssignmentResponsePage() {
     gitara_elektryczna: 'Gitara Elektryczna',
     bas: 'Gitara Basowa',
     cajon: 'Cajon/Perkusja',
-    naglospienie: 'Nagłośnienie',
+    naglospienie: tr('Nagłośnienie'),
     projekcja: 'Projekcja',
     transmisja: 'Transmisja',
     foto: 'Fotograf',
@@ -80,7 +81,7 @@ export default function AssignmentResponsePage() {
         setLoading(false);
       } catch (err) {
         console.error('Error:', err);
-        setError('Wystąpił błąd podczas przetwarzania');
+        setError(tr('Wystąpił błąd podczas przetwarzania'));
         setLoading(false);
       }
     };
@@ -129,7 +130,7 @@ export default function AssignmentResponsePage() {
       setAssignment(prev => ({ ...prev, status: newStatus }));
     } catch (err) {
       console.error('Error handling action:', err);
-      setError('Wystąpił błąd podczas zapisywania odpowiedzi');
+      setError(tr('Wystąpił błąd podczas zapisywania odpowiedzi'));
     }
   };
 
@@ -162,7 +163,7 @@ export default function AssignmentResponsePage() {
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Błąd</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">{tr('Błąd')}</h1>
           <p className="text-gray-600">{error}</p>
         </div>
       </div>
@@ -182,12 +183,12 @@ export default function AssignmentResponsePage() {
             )}
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            Już odpowiedziano
+            {tr('Już odpowiedziano')}
           </h1>
           <p className="text-gray-600">
             {isAccepted
-              ? 'To przypisanie zostało już zaakceptowane.'
-              : 'To przypisanie zostało już odrzucone.'}
+              ? tr('To przypisanie zostało już zaakceptowane.')
+              : tr('To przypisanie zostało już odrzucone.')}
           </p>
         </div>
       </div>
@@ -211,8 +212,8 @@ export default function AssignmentResponsePage() {
           </h1>
           <p className="text-gray-600">
             {isAccepted
-              ? 'Dziękujemy za potwierdzenie. Jesteś zapisany/a do służby!'
-              : 'Dziękujemy za informację. Zostałeś/aś usunięty/a z grafiku.'}
+              ? tr('Dziękujemy za potwierdzenie. Jesteś zapisany/a do służby!')
+              : tr('Dziękujemy za informację. Zostałeś/aś usunięty/a z grafiku.')}
           </p>
 
           <div className="mt-6 p-4 bg-gray-50 rounded-xl text-left">
@@ -243,7 +244,7 @@ export default function AssignmentResponsePage() {
             <Music size={32} />
           </div>
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            Zaproszenie do służby
+            {tr('Zaproszenie do służby')}
           </h1>
           <p className="text-gray-600">
             {assignment?.assigned_by_name} przypisał/a Cię do służby
@@ -254,14 +255,14 @@ export default function AssignmentResponsePage() {
           <div className="flex items-center gap-3 mb-3">
             <Calendar className="text-accent-primary" size={20} />
             <div>
-              <p className="text-sm text-gray-500">Data</p>
+              <p className="text-sm text-gray-500">{tr('Data')}</p>
               <p className="font-medium text-gray-800">{formatDate(program?.date)}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 mb-3">
             <Music className="text-accent-primary" size={20} />
             <div>
-              <p className="text-sm text-gray-500">Służba</p>
+              <p className="text-sm text-gray-500">{tr('Służba')}</p>
               <p className="font-medium text-gray-800">{roleNames[assignment?.role_key] || assignment?.role_key}</p>
             </div>
           </div>
@@ -282,7 +283,7 @@ export default function AssignmentResponsePage() {
             className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:shadow-emerald-500/30 transition flex items-center justify-center gap-2"
           >
             <CheckCircle size={20} />
-            Akceptuję
+            {tr('Akceptuję')}
           </button>
           <button
             onClick={() => handleAction('reject', token, assignment)}

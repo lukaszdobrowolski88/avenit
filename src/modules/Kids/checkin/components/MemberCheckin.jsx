@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getSuggestedLocation, formatAge, formatAgeRange } from '../utils/ageCalculator';
 import { ArrowLeft, Check, Loader2, AlertTriangle } from 'lucide-react';
+import { tr } from '../../../../i18n';
 
 export default function MemberCheckin({
   household,
@@ -136,7 +137,7 @@ export default function MemberCheckin({
                       onChange={(e) => handleLocationChange(child.id, e.target.value)}
                       className="w-full px-4 py-3 text-base border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white cursor-pointer focus:border-accent-primary-light dark:focus:border-accent-primary-light focus:outline-none transition"
                     >
-                      <option value="">Wybierz salę...</option>
+                      <option value="">{tr('Wybierz salę...')}</option>
                       {locations.map((loc) => (
                         <option key={loc.id} value={loc.id}>
                           {loc.name}
@@ -166,7 +167,7 @@ export default function MemberCheckin({
           className="flex-1 flex items-center justify-center gap-2 px-4 py-4 text-base font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
         >
           <ArrowLeft size={18} />
-          Wróć
+          {tr('Wróć')}
         </button>
         <button
           onClick={handleCheckin}

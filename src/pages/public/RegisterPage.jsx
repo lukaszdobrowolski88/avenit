@@ -14,8 +14,11 @@ import {
   Check,
   AlertCircle
 } from 'lucide-react';
+import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 export default function RegisterPage() {
+  const t = useT();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -56,15 +59,15 @@ export default function RegisterPage() {
 
   const validateStep1 = () => {
     if (!formData.email || !formData.password || !formData.fullName) {
-      setError('Wypełnij wszystkie wymagane pola');
+      setError(tr('Wypełnij wszystkie wymagane pola'));
       return false;
     }
     if (formData.password.length < 8) {
-      setError('Hasło musi mieć minimum 8 znaków');
+      setError(tr('Hasło musi mieć minimum 8 znaków'));
       return false;
     }
     if (formData.password !== formData.confirmPassword) {
-      setError('Hasła nie są identyczne');
+      setError(tr('Hasła nie są identyczne'));
       return false;
     }
     setError(null);
@@ -73,11 +76,11 @@ export default function RegisterPage() {
 
   const validateStep2 = () => {
     if (!formData.churchName || !formData.churchSlug) {
-      setError('Podaj nazwę kościoła');
+      setError(tr('Podaj nazwę kościoła'));
       return false;
     }
     if (formData.churchSlug.length < 3) {
-      setError('Slug musi mieć minimum 3 znaki');
+      setError(tr('Slug musi mieć minimum 3 znaki'));
       return false;
     }
     setError(null);
@@ -155,7 +158,7 @@ export default function RegisterPage() {
 
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.message || 'Wystąpił błąd podczas rejestracji');
+      setError(err.message || tr('Wystąpił błąd podczas rejestracji'));
     } finally {
       setLoading(false);
     }
@@ -182,7 +185,7 @@ export default function RegisterPage() {
               }`}>
                 {step > 1 ? <Check size={16} /> : '1'}
               </div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Konto</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('Konto')}</span>
             </div>
             <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
             <div className="flex items-center gap-2">
@@ -191,7 +194,7 @@ export default function RegisterPage() {
               }`}>
                 2
               </div>
-              <span className="text-sm text-gray-600 dark:text-gray-400">Kościół</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{t('Kościół')}</span>
             </div>
           </div>
 
@@ -200,16 +203,16 @@ export default function RegisterPage() {
             {step === 1 ? (
               <>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Utwórz konto
+                  {tr('Utwórz konto')}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Zacznij od 14-dniowego darmowego okresu próbnego
+                  {tr('Zacznij od 14-dniowego darmowego okresu próbnego')}
                 </p>
 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Imię i nazwisko *
+                      {tr('Imię i nazwisko *')}
                     </label>
                     <div className="relative">
                       <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -217,7 +220,7 @@ export default function RegisterPage() {
                         type="text"
                         value={formData.fullName}
                         onChange={(e) => updateField('fullName', e.target.value)}
-                        placeholder="Jan Kowalski"
+                        placeholder={t('Jan Kowalski')}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                       />
@@ -243,7 +246,7 @@ export default function RegisterPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Hasło *
+                      {tr('Hasło *')}
                     </label>
                     <div className="relative">
                       <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -251,7 +254,7 @@ export default function RegisterPage() {
                         type="password"
                         value={formData.password}
                         onChange={(e) => updateField('password', e.target.value)}
-                        placeholder="Minimum 8 znaków"
+                        placeholder={t('Minimum 8 znaków')}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                         minLength={8}
@@ -261,7 +264,7 @@ export default function RegisterPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Powtórz hasło *
+                      {tr('Powtórz hasło *')}
                     </label>
                     <div className="relative">
                       <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -269,7 +272,7 @@ export default function RegisterPage() {
                         type="password"
                         value={formData.confirmPassword}
                         onChange={(e) => updateField('confirmPassword', e.target.value)}
-                        placeholder="Powtórz hasło"
+                        placeholder={t('Powtórz hasło')}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                       />
@@ -280,16 +283,16 @@ export default function RegisterPage() {
             ) : (
               <>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Informacje o kościele
+                  {tr('Informacje o kościele')}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Podaj podstawowe dane swojego kościoła
+                  {tr('Podaj podstawowe dane swojego kościoła')}
                 </p>
 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Nazwa kościoła *
+                      {tr('Nazwa kościoła *')}
                     </label>
                     <div className="relative">
                       <Building size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -297,7 +300,7 @@ export default function RegisterPage() {
                         type="text"
                         value={formData.churchName}
                         onChange={(e) => updateField('churchName', e.target.value)}
-                        placeholder="Kościół Łaski"
+                        placeholder={t('Kościół Łaski')}
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light focus:border-transparent"
                         required
                       />
@@ -306,7 +309,7 @@ export default function RegisterPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      URL kościoła *
+                      {tr('URL kościoła *')}
                     </label>
                     <div className="flex items-center">
                       <span className="px-3 py-3 bg-gray-100 dark:bg-gray-700 border border-r-0 border-gray-200 dark:border-gray-700 rounded-l-xl text-gray-500 text-sm">
@@ -406,7 +409,7 @@ export default function RegisterPage() {
                   </>
                 ) : (
                   <>
-                    Utwórz konto
+                    {tr('Utwórz konto')}
                     <ArrowRight size={18} />
                   </>
                 )}
@@ -418,7 +421,7 @@ export default function RegisterPage() {
               Rejestrując się, akceptujesz{' '}
               <a href="#" className="text-accent-primary hover:underline">Regulamin</a>
               {' '}oraz{' '}
-              <a href="#" className="text-accent-primary hover:underline">Politykę prywatności</a>
+              <a href="#" className="text-accent-primary hover:underline">{t('Politykę prywatności')}</a>
             </p>
           </form>
 
@@ -426,7 +429,7 @@ export default function RegisterPage() {
           <p className="mt-8 text-center text-gray-600 dark:text-gray-400">
             Masz już konto?{' '}
             <Link to="/login" className="text-accent-primary hover:underline font-medium">
-              Zaloguj się
+              {tr('Zaloguj się')}
             </Link>
           </p>
         </div>
@@ -436,7 +439,7 @@ export default function RegisterPage() {
       <div className="hidden lg:flex flex-1 bg-gradient-to-br from-accent-primary to-accent-secondary items-center justify-center p-12">
         <div className="max-w-md text-white">
           <h2 className="text-3xl font-bold mb-4">
-            Dołącz do społeczności Avenit
+            {tr('Dołącz do społeczności Avenit')}
           </h2>
           <p className="text-white/80 mb-8">
             Ponad 500 kościołów już korzysta z naszej platformy do zarządzania
@@ -444,10 +447,10 @@ export default function RegisterPage() {
           </p>
           <ul className="space-y-4">
             {[
-              '14 dni za darmo, bez karty kredytowej',
-              'Pełna funkcjonalność od pierwszego dnia',
-              'Wsparcie techniczne 24/7',
-              'Bezpieczne przechowywanie danych (RODO)'
+              tr('14 dni za darmo, bez karty kredytowej'),
+              tr('Pełna funkcjonalność od pierwszego dnia'),
+              tr('Wsparcie techniczne 24/7'),
+              tr('Bezpieczne przechowywanie danych (RODO)')
             ].map((item, i) => (
               <li key={i} className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Users, UserPlus, UserMinus, Loader2, Check, X, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useUserRole } from '../hooks/useUserRole';
+import { tr } from '../i18n';
 
 // Role mogące zarządzać listą zapisanych (organizatorzy).
 const MANAGER_ROLES = ['superadmin', 'rada_starszych', 'koordynator', 'lider'];
@@ -93,7 +94,7 @@ export default function EventRSVP({ eventId, maxParticipants }) {
   };
 
   const exportCsv = () => {
-    const rows = [['Imię i nazwisko', 'E-mail', 'Osoby towarzyszące']];
+    const rows = [[tr('Imię i nazwisko'), tr('E-mail'), tr('Osoby towarzyszące')]];
     regs.forEach((r) => rows.push([r.full_name || '', r.user_email || '', String(r.guests_count || 0)]));
     const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
@@ -137,7 +138,7 @@ export default function EventRSVP({ eventId, maxParticipants }) {
           <Loader2 size={16} className="animate-spin" /> Ładowanie…
         </div>
       ) : !me ? (
-        <p className="text-sm text-gray-400 py-1">Zaloguj się, aby się zapisać.</p>
+        <p className="text-sm text-gray-400 py-1">{tr('Zaloguj się, aby się zapisać.')}</p>
       ) : myReg ? (
         <div className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
@@ -184,7 +185,7 @@ export default function EventRSVP({ eventId, maxParticipants }) {
               {r.full_name || r.user_email?.split('@')[0]}
               {r.guests_count ? <span className="text-accent-primary font-bold">+{r.guests_count}</span> : null}
               {canManage && (
-                <button onClick={() => removeReg(r.id)} disabled={busy} className="ml-0.5 text-gray-400 hover:text-red-500 transition" title="Usuń z listy">
+                <button onClick={() => removeReg(r.id)} disabled={busy} className="ml-0.5 text-gray-400 hover:text-red-500 transition" title={tr('Usuń z listy')}>
                   <X size={12} />
                 </button>
               )}
@@ -195,12 +196,12 @@ export default function EventRSVP({ eventId, maxParticipants }) {
 
       {canManage && (
         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Dopisz ręcznie</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">{tr('Dopisz ręcznie')}</div>
           <div className="flex items-center gap-2 flex-wrap">
             <input
               value={addName}
               onChange={(e) => setAddName(e.target.value)}
-              placeholder="Imię i nazwisko"
+              placeholder={tr('Imię i nazwisko')}
               className="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
             />
             <input

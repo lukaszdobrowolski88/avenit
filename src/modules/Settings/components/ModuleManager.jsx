@@ -20,9 +20,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { useModules } from '../../../hooks/useModules';
 import ModuleEditor from './ModuleEditor';
 import TabManager from './TabManager';
+import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Sortable Module Item
 function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, tabCount }) {
+  const t = useT();
   const {
     attributes,
     listeners,
@@ -82,7 +85,7 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
         className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 hover:text-accent-primary dark:hover:text-accent-primary-light rounded-lg transition flex items-center gap-1.5"
       >
         <Layers size={14} />
-        Zakładki
+        {tr('Zakładki')}
         {tabCount > 0 && (
           <span className="bg-accent-primary-light text-white text-[10px] px-1.5 py-0.5 rounded-full">
             {tabCount}
@@ -98,7 +101,7 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
             ? 'text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'
             : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
         }`}
-        title={module.is_enabled ? 'Wyłącz moduł' : 'Włącz moduł'}
+        title={module.is_enabled ? tr('Wyłącz moduł') : tr('Włącz moduł')}
       >
         {module.is_enabled ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
       </button>
@@ -106,14 +109,14 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
       {/* Actions */}
       <div className="flex items-center gap-1">
         {module.is_system && (
-          <div className="p-2 text-gray-400" title="Moduł systemowy">
+          <div className="p-2 text-gray-400" title={t('Moduł systemowy')}>
             <Lock size={16} />
           </div>
         )}
         <button
           onClick={() => onEdit(module)}
           className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
-          title="Edytuj"
+          title={t('Edytuj')}
         >
           <Pencil size={16} />
         </button>
@@ -121,7 +124,7 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
           <button
             onClick={() => onDelete(module)}
             className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition opacity-0 group-hover:opacity-100"
-            title="Usuń"
+            title={t('Usuń')}
           >
             <Trash2 size={16} />
           </button>
@@ -135,6 +138,7 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
 const CORE_MODULE_KEYS = ['dashboard', 'programs', 'calendar'];
 
 export default function ModuleManager() {
+  const t = useT();
   const {
     modules,
     tabs,
@@ -236,7 +240,7 @@ export default function ModuleManager() {
   if (error) {
     return (
       <div className="p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400">
-        <p className="font-medium">Błąd ładowania modułów</p>
+        <p className="font-medium">{t('Błąd ładowania modułów')}</p>
         <p className="text-sm mt-1">{error}</p>
       </div>
     );
@@ -248,10 +252,10 @@ export default function ModuleManager() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-gray-800 dark:text-white">
-            Zarządzanie modułami
+            {tr('Zarządzanie modułami')}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Dodawaj, edytuj i zmieniaj kolejność modułów aplikacji
+            {tr('Dodawaj, edytuj i zmieniaj kolejność modułów aplikacji')}
           </p>
         </div>
         <button
@@ -259,14 +263,14 @@ export default function ModuleManager() {
           className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition font-medium flex items-center gap-2"
         >
           <Plus size={18} />
-          Dodaj moduł
+          {tr('Dodaj moduł')}
         </button>
       </div>
 
       {/* Info Banner */}
       <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
         <p className="text-sm text-amber-800 dark:text-amber-300">
-          <strong>Wskazówka:</strong> Przeciągnij moduły, aby zmienić ich kolejność w menu bocznym.
+          <strong>{t('Wskazówka:')}</strong> Przeciągnij moduły, aby zmienić ich kolejność w menu bocznym.
           Moduły systemowe (z ikoną kłódki) nie mogą być usunięte, ale można je wyłączyć.
         </p>
       </div>
@@ -300,8 +304,8 @@ export default function ModuleManager() {
       ) : (
         <div className="text-center py-12 text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
           <Layers size={48} className="mx-auto mb-4 opacity-50" />
-          <p>Brak modułów</p>
-          <p className="text-sm mt-1">Kliknij "Dodaj moduł" aby dodać pierwszy</p>
+          <p>{t('Brak modułów')}</p>
+          <p className="text-sm mt-1">{t('Kliknij "Dodaj moduł" aby dodać pierwszy')}</p>
         </div>
       )}
 
@@ -336,7 +340,7 @@ export default function ModuleManager() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[130]">
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">
-              Usunąć moduł?
+              {tr('Usunąć moduł?')}
             </h4>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               Czy na pewno chcesz usunąć moduł "{deleteConfirm.label}"?
@@ -354,7 +358,7 @@ export default function ModuleManager() {
                 onClick={confirmDelete}
                 className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition"
               >
-                Usuń
+                {tr('Usuń')}
               </button>
             </div>
           </div>

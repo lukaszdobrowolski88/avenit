@@ -4,10 +4,11 @@ import {
   X, Settings, User, Server, Filter, FileText, Plus,
   Trash2, Edit2, Check, AlertCircle, Loader2, Eye, EyeOff, Star, RefreshCw
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 const TABS = [
-  { id: 'accounts', label: 'Konta zewnętrzne', icon: Server },
-  { id: 'filters', label: 'Filtry', icon: Filter }
+  { id: 'accounts', label: tr('Konta zewnętrzne'), icon: Server },
+  { id: 'filters', label: tr('Filtry'), icon: Filter }
 ];
 
 export default function MailSettingsModal({
@@ -115,7 +116,7 @@ export default function MailSettingsModal({
       setSyncStatus({
         accountId: account.id,
         success: result?.success,
-        message: result?.message || (result?.success ? `Pobrano ${result?.saved || 0} nowych wiadomości` : 'Błąd synchronizacji')
+        message: result?.message || (result?.success ? `Pobrano ${result?.saved || 0} nowych wiadomości` : tr('Błąd synchronizacji'))
       });
     } catch (err) {
       setSyncStatus({ accountId: account.id, success: false, message: err.message });
@@ -221,7 +222,7 @@ export default function MailSettingsModal({
                 <div className="flex items-start gap-3">
                   <AlertCircle size={20} className="text-blue-500 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-700 dark:text-blue-300">
-                    <p className="font-medium mb-1">Informacja o kontach zewnętrznych</p>
+                    <p className="font-medium mb-1">{tr('Informacja o kontach zewnętrznych')}</p>
                     <p>
                       Możesz połączyć zewnętrzne konta email (Gmail, Outlook, inne) aby odbierać
                       i wysyłać wiadomości bezpośrednio z tej aplikacji. Wymaga to podania
@@ -242,7 +243,7 @@ export default function MailSettingsModal({
               {externalAccounts.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Połączone konta
+                    {tr('Połączone konta')}
                   </h3>
                   {externalAccounts.map(account => (
                     <div
@@ -271,7 +272,7 @@ export default function MailSettingsModal({
                         )}
                         {connectionStatus?.accountId === account.id && (
                           <span className={`text-xs ${connectionStatus.success ? 'text-green-500' : 'text-red-500'}`}>
-                            {connectionStatus.success ? 'Połączono' : 'Błąd połączenia'}
+                            {connectionStatus.success ? tr('Połączono') : tr('Błąd połączenia')}
                           </span>
                         )}
                         {!account.system_default && (
@@ -293,7 +294,7 @@ export default function MailSettingsModal({
                         <button
                           onClick={() => handleSyncMail(account)}
                           disabled={syncingAccount === account.id}
-                          title="Synchronizuj pocztę"
+                          title={tr('Synchronizuj pocztę')}
                           className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-50"
                         >
                           {syncingAccount === account.id ? (
@@ -301,7 +302,7 @@ export default function MailSettingsModal({
                           ) : (
                             <RefreshCw size={14} />
                           )}
-                          {syncingAccount === account.id ? 'Synchronizuję...' : 'Synchronizuj'}
+                          {syncingAccount === account.id ? tr('Synchronizuję...') : 'Synchronizuj'}
                         </button>
                         <button
                           onClick={() => handleTestConnection(account)}
@@ -316,7 +317,7 @@ export default function MailSettingsModal({
                         </button>
                         <button
                           onClick={() => {
-                            if (confirm('Czy na pewno usunąć to konto?')) {
+                            if (confirm(tr('Czy na pewno usunąć to konto?'))) {
                               onDeleteAccount(account.id);
                             }
                           }}
@@ -334,7 +335,7 @@ export default function MailSettingsModal({
                       {/* Connection status message */}
                       {connectionStatus?.accountId === account.id && (
                         <div className={`mt-2 text-xs ${connectionStatus.success ? 'text-green-600' : 'text-red-500'}`}>
-                          {connectionStatus.message || (connectionStatus.success ? 'Połączenie OK' : 'Błąd połączenia')}
+                          {connectionStatus.message || (connectionStatus.success ? tr('Połączenie OK') : tr('Błąd połączenia'))}
                         </div>
                       )}
                     </div>
@@ -346,7 +347,7 @@ export default function MailSettingsModal({
               {showAccountForm ? (
                 <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl space-y-4">
                   <h3 className="font-medium text-gray-800 dark:text-white">
-                    {editingAccountId ? 'Edytuj konto' : 'Dodaj konto zewnętrzne'}
+                    {editingAccountId ? 'Edytuj konto' : tr('Dodaj konto zewnętrzne')}
                   </h3>
 
                   <div>
@@ -363,7 +364,7 @@ export default function MailSettingsModal({
                     />
                     {editingAccountId && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Adres email nie może być zmieniony
+                        {tr('Adres email nie może być zmieniony')}
                       </p>
                     )}
                   </div>
@@ -422,14 +423,14 @@ export default function MailSettingsModal({
 
                   <div>
                     <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      {editingAccountId ? 'Nowe hasło (pozostaw puste aby nie zmieniać)' : 'Hasło aplikacji'}
+                      {editingAccountId ? tr('Nowe hasło (pozostaw puste aby nie zmieniać)') : tr('Hasło aplikacji')}
                     </label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={accountForm.password}
                         onChange={(e) => setAccountForm(prev => ({ ...prev, password: e.target.value }))}
-                        placeholder={editingAccountId ? 'Wpisz nowe hasło lub pozostaw puste' : 'Hasło lub hasło aplikacji'}
+                        placeholder={editingAccountId ? tr('Wpisz nowe hasło lub pozostaw puste') : tr('Hasło lub hasło aplikacji')}
                         className="w-full px-3 py-2 pr-10 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent-primary-light"
                       />
                       <button
@@ -442,8 +443,8 @@ export default function MailSettingsModal({
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
                       {editingAccountId
-                        ? 'Hasło jest wymagane tylko jeśli chcesz je zmienić'
-                        : 'Dla Gmail użyj "hasła aplikacji" z ustawień konta Google'
+                        ? tr('Hasło jest wymagane tylko jeśli chcesz je zmienić')
+                        : tr('Dla Gmail użyj "hasła aplikacji" z ustawień konta Google')
                       }
                     </p>
                   </div>
@@ -477,7 +478,7 @@ export default function MailSettingsModal({
                   className="flex items-center gap-2 px-4 py-3 w-full border-2 border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary-light rounded-xl transition-colors"
                 >
                   <Plus size={18} />
-                  Dodaj konto zewnętrzne
+                  {tr('Dodaj konto zewnętrzne')}
                 </button>
               )}
             </div>
@@ -497,11 +498,11 @@ export default function MailSettingsModal({
                 <div className="text-center py-8">
                   <Filter size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
                   <p className="text-gray-500 dark:text-gray-400 mb-4">
-                    Brak skonfigurowanych filtrów
+                    {tr('Brak skonfigurowanych filtrów')}
                   </p>
                   <button className="flex items-center gap-2 mx-auto px-4 py-2 bg-accent-primary-light hover:bg-accent-primary text-white font-medium rounded-lg transition-colors">
                     <Plus size={16} />
-                    Utwórz filtr
+                    {tr('Utwórz filtr')}
                   </button>
                 </div>
               ) : (
@@ -511,7 +512,7 @@ export default function MailSettingsModal({
               )}
 
               <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-                Zaawansowane filtry będą dostępne wkrótce
+                {tr('Zaawansowane filtry będą dostępne wkrótce')}
               </p>
             </div>
           )}

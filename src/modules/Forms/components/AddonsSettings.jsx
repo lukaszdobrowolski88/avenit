@@ -1,4 +1,5 @@
 import { Plus, Trash2, Package } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function AddonsSettings({ settings, onChange }) {
   const addons = settings?.addons || {};
@@ -41,7 +42,7 @@ export default function AddonsSettings({ settings, onChange }) {
       <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
         <div>
           <p className="font-medium text-gray-900 dark:text-white">
-            Włącz dodatki
+            {tr('Włącz dodatki')}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Opcjonalne płatne elementy (np. posiłki, koszulki)
@@ -101,7 +102,7 @@ export default function AddonsSettings({ settings, onChange }) {
                   type="text"
                   value={item.description || ''}
                   onChange={(e) => updateItem(index, 'description', e.target.value)}
-                  placeholder="Krótki opis dodatku"
+                  placeholder={tr('Krótki opis dodatku')}
                   className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                 />
               </div>
@@ -129,8 +130,8 @@ export default function AddonsSettings({ settings, onChange }) {
                     onChange={(e) => updateItem(index, 'scope', e.target.value)}
                     className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                   >
-                    <option value="per_person">Za osobę</option>
-                    <option value="per_registration">Za rejestrację</option>
+                    <option value="per_person">{tr('Za osobę')}</option>
+                    <option value="per_registration">{tr('Za rejestrację')}</option>
                   </select>
                 </div>
               </div>

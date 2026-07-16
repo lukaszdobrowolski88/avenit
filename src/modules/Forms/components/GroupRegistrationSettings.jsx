@@ -1,4 +1,5 @@
 import { Users, GripVertical } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function GroupRegistrationSettings({ settings, fields, onChange }) {
   const groupReg = settings?.groupRegistration || {};
@@ -58,10 +59,10 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
       <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
         <div>
           <p className="font-medium text-gray-900 dark:text-white">
-            Włącz rejestrację grupową
+            {tr('Włącz rejestrację grupową')}
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Pozwól na rejestrację wielu osób jednocześnie
+            {tr('Pozwól na rejestrację wielu osób jednocześnie')}
           </p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
@@ -80,7 +81,7 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Min. uczestników
+                {tr('Min. uczestników')}
               </label>
               <input
                 type="number"
@@ -93,7 +94,7 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Max. uczestników
+                {tr('Max. uczestników')}
               </label>
               <input
                 type="number"
@@ -112,9 +113,9 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
             </label>
             <input
               type="text"
-              value={groupReg.participantLabel || 'Członek zespołu'}
+              value={groupReg.participantLabel || tr('Członek zespołu')}
               onChange={(e) => handleChange('participantLabel', e.target.value)}
-              placeholder="Członek zespołu"
+              placeholder={tr('Członek zespołu')}
               className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
             />
           </div>
@@ -125,7 +126,7 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
                 Wymagaj osoby kontaktowej
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Osoba zgłaszająca wypełnia osobną sekcję
+                {tr('Osoba zgłaszająca wypełnia osobną sekcję')}
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -143,10 +144,10 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
           {assignableFields.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Przypisanie pól formularza
+                {tr('Przypisanie pól formularza')}
               </label>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                Określ, które pola są wypełniane przez osobę zgłaszającą, a które przez każdego uczestnika.
+                {tr('Określ, które pola są wypełniane przez osobę zgłaszającą, a które przez każdego uczestnika.')}
               </p>
               <div className="space-y-2">
                 {assignableFields.map((field) => {
@@ -165,7 +166,7 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
                         onChange={(e) => toggleFieldAssignment(field.id, e.target.value)}
                         className="text-xs px-2 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300"
                       >
-                        <option value="contact">Osoba zgłaszająca</option>
+                        <option value="contact">{tr('Osoba zgłaszająca')}</option>
                         <option value="participant">Per uczestnik</option>
                         <option value="both">Oba</option>
                         <option value="none">Nie przypisane</option>

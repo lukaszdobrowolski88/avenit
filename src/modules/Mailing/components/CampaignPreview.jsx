@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Monitor, Smartphone, Send, Loader, Eye, Mail, User, Sparkles } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { personalizeHtml } from '../utils/emailVariables';
+import { tr } from '../../../i18n';
 
 export default function CampaignPreview({ subject, htmlContent, onClose }) {
   const [viewMode, setViewMode] = useState('desktop'); // 'desktop' | 'mobile'
@@ -14,7 +15,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
     email: 'jan.kowalski@example.com',
     full_name: 'Jan Kowalski'
   }, 'preview', {
-    churchName: 'Twój Kościół',
+    churchName: tr('Twój Kościół'),
     baseUrl: window.location.origin
   });
 
@@ -37,14 +38,14 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
       });
 
       if (error) {
-        throw new Error(error.message || 'Błąd wysyłki');
+        throw new Error(error.message || tr('Błąd wysyłki'));
       }
 
       if (data?.success) {
         alert(`Email testowy wysłany na: ${testEmail}`);
         setShowTestForm(false);
       } else {
-        throw new Error(data?.error || 'Nie udało się wysłać');
+        throw new Error(data?.error || tr('Nie udało się wysłać'));
       }
     } catch (err) {
       console.error('Error sending test:', err);
@@ -66,10 +67,10 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-white">
-                  Podgląd wiadomości
+                  {tr('Podgląd wiadomości')}
                 </h2>
                 <p className="text-sm text-white/80">
-                  Sprawdź jak wygląda email
+                  {tr('Sprawdź jak wygląda email')}
                 </p>
               </div>
             </div>
@@ -156,7 +157,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
               <Mail size={14} className="text-gray-500 dark:text-gray-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Temat wiadomości</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{tr('Temat wiadomości')}</p>
               <p className="font-semibold text-gray-900 dark:text-white truncate">{subject}</p>
             </div>
           </div>
@@ -172,7 +173,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
               <div className="space-y-1.5 text-xs">
                 <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                   <span className="text-gray-400 dark:text-gray-500 w-10">Od:</span>
-                  <span className="font-medium">Twój Kościół</span>
+                  <span className="font-medium">{tr('Twój Kościół')}</span>
                   <span className="text-gray-400">&lt;newsletter@kosciol.pl&gt;</span>
                 </p>
                 <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">

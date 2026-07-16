@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { tr } from '../../../../i18n';
 
 export default function LocationManager({ onLocationsChange }) {
   const [locations, setLocations] = useState([]);
@@ -101,7 +102,7 @@ export default function LocationManager({ onLocationsChange }) {
       fetchLocations();
     } catch (err) {
       console.error('Error saving location:', err);
-      alert('Błąd podczas zapisywania sali');
+      alert(tr('Błąd podczas zapisywania sali'));
     }
   };
 
@@ -125,7 +126,7 @@ export default function LocationManager({ onLocationsChange }) {
   };
 
   const handleDelete = async (locationId) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę salę?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę salę?'))) return;
 
     try {
       const { error } = await supabase
@@ -138,7 +139,7 @@ export default function LocationManager({ onLocationsChange }) {
       setLocations(prev => prev.filter(l => l.id !== locationId));
     } catch (err) {
       console.error('Error deleting location:', err);
-      alert('Nie można usunąć sali - może być używana w check-inach');
+      alert(tr('Nie można usunąć sali - może być używana w check-inach'));
     }
   };
 
@@ -218,7 +219,7 @@ export default function LocationManager({ onLocationsChange }) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Pojemność
+                {tr('Pojemność')}
               </label>
               <input
                 type="number"
@@ -231,7 +232,7 @@ export default function LocationManager({ onLocationsChange }) {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                Kolejność
+                {tr('Kolejność')}
               </label>
               <input
                 type="number"
@@ -258,7 +259,7 @@ export default function LocationManager({ onLocationsChange }) {
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                 }`}
             >
-              {editingId ? 'Zapisz zmiany' : 'Dodaj salę'}
+              {editingId ? 'Zapisz zmiany' : tr('Dodaj salę')}
             </button>
           </div>
         </div>
@@ -268,11 +269,11 @@ export default function LocationManager({ onLocationsChange }) {
       {loading ? (
         <div className="flex items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400">
           <Loader2 size={20} className="animate-spin" />
-          Ładowanie...
+          {tr('Ładowanie...')}
         </div>
       ) : locations.length === 0 ? (
         <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-          Brak sal. Dodaj pierwszą salę dla dzieci.
+          {tr('Brak sal. Dodaj pierwszą salę dla dzieci.')}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -332,7 +333,7 @@ export default function LocationManager({ onLocationsChange }) {
                       : 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/60'
                     }`}
                 >
-                  {location.is_active ? 'Wyłącz' : 'Włącz'}
+                  {location.is_active ? tr('Wyłącz') : tr('Włącz')}
                 </button>
                 <button
                   onClick={() => handleDelete(location.id)}

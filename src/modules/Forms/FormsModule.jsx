@@ -20,6 +20,7 @@ import PaymentsView from './components/PaymentsView';
 import EmbedCodeGenerator from './components/EmbedCodeGenerator';
 import { BUILT_IN_TEMPLATES, DEFAULT_FORM_SETTINGS } from './utils/fieldTypes';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 export default function FormsModule({ userEmail }) {
   const t = useT();
@@ -114,7 +115,7 @@ export default function FormsModule({ userEmail }) {
   };
 
   const handleDeleteForm = async (formId) => {
-    if (window.confirm('Czy na pewno chcesz usunąć ten formularz? Wszystkie odpowiedzi zostaną usunięte.')) {
+    if (window.confirm(tr('Czy na pewno chcesz usunąć ten formularz? Wszystkie odpowiedzi zostaną usunięte.'))) {
       await deleteForm(formId);
     }
   };
@@ -199,7 +200,7 @@ export default function FormsModule({ userEmail }) {
             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <ChevronLeft size={20} />
-            Powrót do listy
+            {tr('Powrót do listy')}
           </button>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-2">
             Odpowiedzi: {viewingResponses.title}
@@ -213,10 +214,10 @@ export default function FormsModule({ userEmail }) {
   }
 
   const tabs = [
-    { id: 'forms', label: 'Formularze', icon: FileText },
-    { id: 'participants', label: 'Uczestnicy', icon: Users },
-    { id: 'payments', label: 'Płatności', icon: CreditCard },
-    { id: 'templates', label: 'Szablony', icon: LayoutTemplate }
+    { id: 'forms', label: tr('Formularze'), icon: FileText },
+    { id: 'participants', label: tr('Uczestnicy'), icon: Users },
+    { id: 'payments', label: tr('Płatności'), icon: CreditCard },
+    { id: 'templates', label: tr('Szablony'), icon: LayoutTemplate }
   ];
 
   return (

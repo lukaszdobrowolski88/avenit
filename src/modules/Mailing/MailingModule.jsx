@@ -9,11 +9,12 @@ import TemplateEditor from './components/TemplateEditor';
 import CampaignStats from './components/CampaignStats';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 const TABS = [
-  { id: 'campaigns', label: 'Maile', icon: Mail },
-  { id: 'templates', label: 'Szablony', icon: FileText },
-  { id: 'stats', label: 'Statystyki', icon: BarChart3 }
+  { id: 'campaigns', label: tr('Maile'), icon: Mail },
+  { id: 'templates', label: tr('Szablony'), icon: FileText },
+  { id: 'stats', label: tr('Statystyki'), icon: BarChart3 }
 ];
 
 export default function MailingModule() {
@@ -118,7 +119,7 @@ export default function MailingModule() {
         {loading && activeTab === 'campaigns' ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader className="w-10 h-10 text-accent-primary-light animate-spin" />
-            <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Ładowanie maili...</p>
+            <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">{tr('Ładowanie maili...')}</p>
           </div>
         ) : (
           <>

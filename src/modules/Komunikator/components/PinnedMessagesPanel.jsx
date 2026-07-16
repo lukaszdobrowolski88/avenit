@@ -2,6 +2,7 @@ import React from 'react';
 import { Pin, X, ChevronDown, ChevronUp } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { formatMessageTime, truncateText } from '../utils/messageHelpers';
+import { tr } from '../../../i18n';
 
 export default function PinnedMessagesPanel({
   pinnedMessages,
@@ -25,7 +26,7 @@ export default function PinnedMessagesPanel({
             <Pin size={12} className="text-white fill-white" />
           </div>
           <span className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">
-            Przypięte wiadomości
+            {tr('Przypięte wiadomości')}
           </span>
           <span className="px-1.5 py-0.5 bg-yellow-200/50 dark:bg-yellow-800/50 rounded-full text-xs font-bold text-yellow-700 dark:text-yellow-400">
             {pinnedMessages.length}
@@ -67,7 +68,7 @@ export default function PinnedMessagesPanel({
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                  {truncateText(pin.message?.content || (pin.message?.attachments?.length > 0 ? '📎 Załącznik' : ''), 60)}
+                  {truncateText(pin.message?.content || (pin.message?.attachments?.length > 0 ? tr('📎 Załącznik') : ''), 60)}
                 </p>
               </div>
 

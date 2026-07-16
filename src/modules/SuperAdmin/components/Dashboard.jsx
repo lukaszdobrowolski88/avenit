@@ -13,6 +13,7 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function Dashboard() {
   const { getTenants } = useTenants();
@@ -107,7 +108,7 @@ export default function Dashboard() {
           Dashboard
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Przegląd systemu Avenit
+          {tr('Przegląd systemu Avenit')}
         </p>
       </div>
 
@@ -115,7 +116,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Building2}
-          label="Wszystkich klientów"
+          label={tr('Wszystkich klientów')}
           value={stats.totalTenants}
           color="blue"
         />
@@ -158,7 +159,7 @@ export default function Dashboard() {
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {stats.invoiceStats.paid}
               </div>
-              <div className="text-sm text-gray-500">Opłaconych</div>
+              <div className="text-sm text-gray-500">{tr('Opłaconych')}</div>
               <div className="text-xs text-green-600 dark:text-green-400">
                 {formatPrice(stats.invoiceStats.totalRevenue)}
               </div>
@@ -167,7 +168,7 @@ export default function Dashboard() {
               <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
                 {stats.invoiceStats.pending}
               </div>
-              <div className="text-sm text-gray-500">Oczekujących</div>
+              <div className="text-sm text-gray-500">{tr('Oczekujących')}</div>
               <div className="text-xs text-yellow-600 dark:text-yellow-400">
                 {formatPrice(stats.invoiceStats.pendingRevenue)}
               </div>
@@ -176,7 +177,7 @@ export default function Dashboard() {
               <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                 {stats.invoiceStats.overdue}
               </div>
-              <div className="text-sm text-gray-500">Zaległych</div>
+              <div className="text-sm text-gray-500">{tr('Zaległych')}</div>
               <div className="text-xs text-red-600 dark:text-red-400">
                 {formatPrice(stats.invoiceStats.overdueRevenue)}
               </div>
@@ -198,7 +199,7 @@ export default function Dashboard() {
                   <th className="pb-3 font-medium">Plan</th>
                   <th className="pb-3 font-medium text-center">Aktywnych</th>
                   <th className="pb-3 font-medium text-center">W trialu</th>
-                  <th className="pb-3 font-medium text-center">Miesięcznych</th>
+                  <th className="pb-3 font-medium text-center">{tr('Miesięcznych')}</th>
                   <th className="pb-3 font-medium text-center">Rocznych</th>
                   <th className="pb-3 font-medium text-right">MRR</th>
                 </tr>

@@ -7,6 +7,7 @@ import CustomSelect from '../components/CustomSelect';
 import MaterialsTab from './shared/MaterialsTab';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import { useT } from '../i18n';
+import { tr } from '../i18n';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -118,7 +119,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         <div className="flex items-center gap-2 text-sm">
           <Calendar size={16} className="text-gray-400" />
           <span className={displayValue ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-            {displayValue || 'Wybierz datę'}
+            {displayValue || tr('Wybierz datę')}
           </span>
         </div>
       </div>
@@ -141,7 +142,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
           </div>
 
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map(d => (
+            {[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => (
               <div key={d} className="text-center text-[10px] font-bold text-gray-400 uppercase">{d}</div>
             ))}
           </div>
@@ -358,10 +359,10 @@ const FinanceModule = () => {
 
       setAccountBalances(balanceData);
       setShowBalanceModal(false);
-      alert('Stan kont zapisany pomyślnie');
+      alert(tr('Stan kont zapisany pomyślnie'));
     } catch (error) {
       console.error('Error saving balances:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -434,7 +435,7 @@ const FinanceModule = () => {
 
   const saveBudgetItem = async () => {
     if (!budgetForm.category || !budgetForm.planned_amount) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -469,12 +470,12 @@ const FinanceModule = () => {
       fetchBudgetItems();
     } catch (error) {
       console.error('Error saving budget item:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
   const deleteBudgetItem = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę pozycję budżetową?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę pozycję budżetową?'))) return;
 
     try {
       const { error } = await supabase
@@ -486,13 +487,13 @@ const FinanceModule = () => {
       fetchBudgetItems();
     } catch (error) {
       console.error('Error deleting budget item:', error);
-      alert('Błąd usuwania: ' + error.message);
+      alert(tr('Błąd usuwania: ') + error.message);
     }
   };
 
   const saveIncome = async () => {
     if (!incomeForm.date || !incomeForm.amount || !incomeForm.source) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -531,12 +532,12 @@ const FinanceModule = () => {
       fetchIncomeTransactions();
     } catch (error) {
       console.error('Error saving income:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
   const deleteIncome = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć ten wpływ?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć ten wpływ?'))) return;
 
     try {
       const { error } = await supabase
@@ -548,7 +549,7 @@ const FinanceModule = () => {
       fetchIncomeTransactions();
     } catch (error) {
       console.error('Error deleting income:', error);
-      alert('Błąd usuwania: ' + error.message);
+      alert(tr('Błąd usuwania: ') + error.message);
     }
   };
 
@@ -587,7 +588,7 @@ const FinanceModule = () => {
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Błąd przesyłania pliku: ' + error.message);
+      alert(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -602,7 +603,7 @@ const FinanceModule = () => {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.category || !expenseForm.description || !expenseForm.responsible_person) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -647,12 +648,12 @@ const FinanceModule = () => {
       fetchExpenseTransactions();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
   const deleteExpense = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć ten wydatek?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć ten wydatek?'))) return;
 
     try {
       const { error } = await supabase
@@ -664,7 +665,7 @@ const FinanceModule = () => {
       fetchExpenseTransactions();
     } catch (error) {
       console.error('Error deleting expense:', error);
-      alert('Błąd usuwania: ' + error.message);
+      alert(tr('Błąd usuwania: ') + error.message);
     }
   };
 
@@ -766,13 +767,13 @@ const FinanceModule = () => {
               className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
             >
               <Plus size={18} />
-              Dodaj pozycję budżetową
+              {tr('Dodaj pozycję budżetową')}
             </button>
           </div>
 
           {loading ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              Ładowanie...
+              {tr('Ładowanie...')}
             </div>
           ) : budgetItems.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
@@ -886,14 +887,14 @@ const FinanceModule = () => {
                                     setShowBudgetModal(true);
                                   }}
                                   className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
-                                  title="Edytuj"
+                                  title={tr('Edytuj')}
                                 >
                                   <Edit2 size={16} />
                                 </button>
                                 <button
                                   onClick={() => deleteBudgetItem(item.id)}
                                   className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                                  title="Usuń"
+                                  title={tr('Usuń')}
                                 >
                                   <Trash2 size={16} />
                                 </button>
@@ -923,7 +924,7 @@ const FinanceModule = () => {
                                           className="grid grid-cols-5 gap-3 text-sm py-2 px-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
                                         >
                                           <div className="flex flex-col">
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Data</span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{tr('Data')}</span>
                                             <span className="text-gray-900 dark:text-white">
                                               {new Date(expense.payment_date).toLocaleDateString('pl-PL')}
                                             </span>
@@ -957,7 +958,7 @@ const FinanceModule = () => {
                                   </div>
                                 ) : (
                                   <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
-                                    Brak wydatków w tej pozycji budżetu
+                                    {tr('Brak wydatków w tej pozycji budżetu')}
                                   </p>
                                 )}
                               </td>
@@ -1001,7 +1002,7 @@ const FinanceModule = () => {
                     rows.push(
                       <tr key="grand-total" className="bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/60 dark:to-accent-secondary-darkest/60 border-t-4 border-accent-primary-light dark:border-accent-primary-light font-bold text-lg">
                         <td className="py-4 px-4 text-gray-900 dark:text-white" colSpan={2}>
-                          SUMA CAŁKOWITA
+                          {tr('SUMA CAŁKOWITA')}
                         </td>
                         <td className="py-4 px-4 text-right text-gray-900 dark:text-white">
                           {grandTotalPlanned.toLocaleString('pl-PL')} zł
@@ -1039,7 +1040,7 @@ const FinanceModule = () => {
               className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
             >
               <Plus size={18} />
-              Dodaj wpływ
+              {tr('Dodaj wpływ')}
             </button>
           </div>
 
@@ -1052,19 +1053,19 @@ const FinanceModule = () => {
                 value={incomeFilters.type}
                 onChange={(val) => setIncomeFilters({...incomeFilters, type: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   { value: 'Kolekta', label: 'Kolekta' },
                   { value: 'Darowizny', label: 'Darowizny' },
-                  { value: 'Inne', label: 'Inne' }
+                  { value: 'Inne', label: tr('Inne') }
                 ]}
                 placeholder={t('Wszystkie')}
               />
               <CustomSelect
-                label="Źródło"
+                label={tr('Źródło')}
                 value={incomeFilters.source}
                 onChange={(val) => setIncomeFilters({...incomeFilters, source: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   ...uniqueIncomeSources.map(s => ({ value: s, label: s }))
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1074,7 +1075,7 @@ const FinanceModule = () => {
                 value={incomeFilters.tag}
                 onChange={(val) => setIncomeFilters({...incomeFilters, tag: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   ...uniqueIncomeTags.map(t => ({ value: t, label: t }))
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1095,25 +1096,25 @@ const FinanceModule = () => {
                 onClick={() => setIncomeFilters({ type: '', source: '', tag: '', dateFrom: '', dateTo: '' })}
                 className="mt-3 text-sm text-accent-primary dark:text-accent-primary-light hover:underline"
               >
-                Wyczyść filtry
+                {tr('Wyczyść filtry')}
               </button>
             )}
           </div>
 
           {loading ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              Ładowanie...
+              {tr('Ładowanie...')}
             </div>
           ) : filteredIncomeTransactions.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              {incomeTransactions.length === 0 ? `Brak wpływów na rok ${selectedYear}` : 'Brak wpływów pasujących do filtrów'}
+              {incomeTransactions.length === 0 ? `Brak wpływów na rok ${selectedYear}` : tr('Brak wpływów pasujących do filtrów')}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Data</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{tr('Data')}</th>
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Typ</th>
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Źródło')}</th>
                     <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Kwota')}</th>
@@ -1170,14 +1171,14 @@ const FinanceModule = () => {
                               setShowIncomeModal(true);
                             }}
                             className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
-                            title="Edytuj"
+                            title={tr('Edytuj')}
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => deleteIncome(transaction.id)}
                             className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                            title="Usuń"
+                            title={tr('Usuń')}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -1216,7 +1217,7 @@ const FinanceModule = () => {
                 value={expenseFilters.category}
                 onChange={(val) => setExpenseFilters({...expenseFilters, category: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   ...budgetCategories
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1226,7 +1227,7 @@ const FinanceModule = () => {
                 value={expenseFilters.contractor}
                 onChange={(val) => setExpenseFilters({...expenseFilters, contractor: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   ...uniqueExpenseContractors.map(c => ({ value: c, label: c }))
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1236,7 +1237,7 @@ const FinanceModule = () => {
                 value={expenseFilters.responsible}
                 onChange={(val) => setExpenseFilters({...expenseFilters, responsible: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   ...uniqueExpenseResponsible.map(r => ({ value: r, label: r }))
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1248,7 +1249,7 @@ const FinanceModule = () => {
                 value={expenseFilters.tag}
                 onChange={(val) => setExpenseFilters({...expenseFilters, tag: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   ...uniqueExpenseTags.map(t => ({ value: t, label: t }))
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1269,27 +1270,27 @@ const FinanceModule = () => {
                 onClick={() => setExpenseFilters({ category: '', contractor: '', responsible: '', tag: '', dateFrom: '', dateTo: '' })}
                 className="mt-3 text-sm text-accent-primary dark:text-accent-primary-light hover:underline"
               >
-                Wyczyść filtry
+                {tr('Wyczyść filtry')}
               </button>
             )}
           </div>
 
           {loading ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              Ładowanie...
+              {tr('Ładowanie...')}
             </div>
           ) : filteredExpenseTransactions.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              {expenseTransactions.length === 0 ? `Brak wydatków na rok ${selectedYear}` : 'Brak wydatków pasujących do filtrów'}
+              {expenseTransactions.length === 0 ? `Brak wydatków na rok ${selectedYear}` : tr('Brak wydatków pasujących do filtrów')}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Data</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Kategoria</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Opis</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{tr('Data')}</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{tr('Kategoria')}</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{tr('Opis')}</th>
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Kontrahent')}</th>
                     <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Kwota')}</th>
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Odpowiedzialny')}</th>
@@ -1351,14 +1352,14 @@ const FinanceModule = () => {
                               setShowExpenseModal(true);
                             }}
                             className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
-                            title="Edytuj"
+                            title={tr('Edytuj')}
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => deleteExpense(transaction.id)}
                             className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                            title="Usuń"
+                            title={tr('Usuń')}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -1495,11 +1496,11 @@ const FinanceModule = () => {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <BarChart3 size={20} className="text-accent-primary" />
-              Wpływy vs Wydatki - miesięcznie
+              {tr('Wpływy vs Wydatki - miesięcznie')}
             </h3>
             <div className="space-y-3">
               {(() => {
-                const months = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'];
+                const months = [tr('Sty'), tr('Lut'), tr('Mar'), tr('Kwi'), tr('Maj'), tr('Cze'), tr('Lip'), tr('Sie'), tr('Wrz'), tr('Paź'), tr('Lis'), tr('Gru')];
                 const monthlyData = months.map((name, idx) => {
                   const monthNum = String(idx + 1).padStart(2, '0');
                   const monthStart = `${selectedYear}-${monthNum}-01`;
@@ -1659,7 +1660,7 @@ const FinanceModule = () => {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <DollarSign size={20} className="text-accent-primary" />
-              Realizacja budżetu wg służb
+              {tr('Realizacja budżetu wg służb')}
             </h3>
             {budgetItems.length > 0 ? (
               <div className="overflow-x-auto">
@@ -1728,7 +1729,7 @@ const FinanceModule = () => {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Users size={20} className="text-accent-primary" />
-              Wpływy wg typu
+              {tr('Wpływy wg typu')}
             </h3>
             {(() => {
               const typeTotals = incomeTransactions.reduce((acc, t) => {
@@ -1782,20 +1783,20 @@ const FinanceModule = () => {
             </div>
             <div className="space-y-4">
               <CustomSelect
-                label="Kategoria (Służba)"
+                label={tr('Kategoria (Służba)')}
                 value={budgetForm.category}
                 onChange={(val) => setBudgetForm({...budgetForm, category: val})}
                 options={[
-                  { value: 'Grupa Uwielbienia', label: 'Grupa Uwielbienia' },
-                  { value: 'MediaTeam', label: 'MediaTeam' },
-                  { value: 'Grupy domowe', label: 'Grupy domowe' },
-                  { value: 'małe Avenit', label: 'małe Avenit' },
+                  { value: 'Grupa Uwielbienia', label: tr('Grupa Uwielbienia') },
+                  { value: 'MediaTeam', label: tr('MediaTeam') },
+                  { value: 'Grupy domowe', label: tr('Grupy domowe') },
+                  { value: 'małe Avenit', label: tr('małe Avenit') },
                   { value: 'AtmosferaTeam', label: 'AtmosferaTeam' }
                 ]}
                 placeholder={t('Wybierz służbę')}
               />
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
                   rows={3}
@@ -1846,12 +1847,12 @@ const FinanceModule = () => {
             </div>
             <div className="space-y-4">
               <CustomDatePicker
-                label="Data wpływu"
+                label={tr('Data wpływu')}
                 value={incomeForm.date}
                 onChange={(val) => setIncomeForm({...incomeForm, date: val})}
               />
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kwota (PLN)</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
                 <input
                   type="number"
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -1861,13 +1862,13 @@ const FinanceModule = () => {
                 />
               </div>
               <CustomSelect
-                label="Typ wpływu"
+                label={tr('Typ wpływu')}
                 value={incomeForm.type}
                 onChange={(val) => setIncomeForm({...incomeForm, type: val})}
                 options={[
                   { value: 'Kolekta', label: 'Kolekta' },
                   { value: 'Darowizny', label: 'Darowizny' },
-                  { value: 'Inne', label: 'Inne' }
+                  { value: 'Inne', label: tr('Inne') }
                 ]}
               />
               <div>
@@ -1960,7 +1961,7 @@ const FinanceModule = () => {
                   onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
                 />
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kwota (PLN)</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
                   <input
                     type="number"
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -1996,15 +1997,15 @@ const FinanceModule = () => {
               {/* Wiersz 3: Kategoria i Opis kosztu */}
               <div className="grid grid-cols-2 gap-4">
                 <CustomSelect
-                  label="Kategoria (powiązana z budżetem)"
+                  label={tr('Kategoria (powiązana z budżetem)')}
                   value={expenseForm.category}
                   onChange={(val) => setExpenseForm({...expenseForm, category: val, description: ''})}
-                  options={budgetCategories.length > 0 ? budgetCategories : [{ value: '', label: 'Najpierw dodaj pozycje budżetowe' }]}
+                  options={budgetCategories.length > 0 ? budgetCategories : [{ value: '', label: tr('Najpierw dodaj pozycje budżetowe') }]}
                   placeholder={t('Wybierz kategorię')}
                 />
                 {expenseForm.category && (
                   <CustomSelect
-                    label="Opis kosztu (z budżetu)"
+                    label={tr('Opis kosztu (z budżetu)')}
                     value={expenseForm.description}
                     onChange={(val) => setExpenseForm({...expenseForm, description: val})}
                     options={budgetItems
@@ -2032,7 +2033,7 @@ const FinanceModule = () => {
                   <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                     <Upload size={18} className="text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {uploadingFile ? 'Przesyłanie...' : 'Dodaj plik(i)'}
+                      {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
                     </span>
                     <input
                       type="file"
@@ -2150,7 +2151,7 @@ const FinanceModule = () => {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                       <Banknote size={12} className="inline mr-1" />
-                      Gotówka
+                      {tr('Gotówka')}
                     </label>
                     <input
                       type="number"
@@ -2178,7 +2179,7 @@ const FinanceModule = () => {
                     onChange={(e) => setBalanceForm({...balanceForm, currency_type: e.target.value})}
                   >
                     <option value="EUR">EUR - Euro</option>
-                    <option value="USD">USD - Dolar amerykański</option>
+                    <option value="USD">{tr('USD - Dolar amerykański')}</option>
                     <option value="GBP">GBP - Funt brytyjski</option>
                     <option value="CHF">CHF - Frank szwajcarski</option>
                   </select>
@@ -2201,7 +2202,7 @@ const FinanceModule = () => {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">
                       <Banknote size={12} className="inline mr-1" />
-                      Gotówka walutowa
+                      {tr('Gotówka walutowa')}
                     </label>
                     <input
                       type="number"

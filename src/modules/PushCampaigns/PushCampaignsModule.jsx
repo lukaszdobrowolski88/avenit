@@ -8,11 +8,12 @@ import CampaignStats from './components/CampaignStats';
 import TemplateGallery from './components/TemplateGallery';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 const TABS = [
-  { id: 'campaigns', label: 'Kampanie', icon: Bell },
-  { id: 'templates', label: 'Szablony', icon: FileText },
-  { id: 'stats', label: 'Statystyki', icon: BarChart3 },
+  { id: 'campaigns', label: tr('Kampanie'), icon: Bell },
+  { id: 'templates', label: tr('Szablony'), icon: FileText },
+  { id: 'stats', label: tr('Statystyki'), icon: BarChart3 },
 ];
 
 export default function PushCampaignsModule() {
@@ -74,9 +75,9 @@ export default function PushCampaignsModule() {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Push Kampanie</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Push Kampanie')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Twórz, planuj i analizuj powiadomienia push wysyłane do web i mobile.
+          {tr('Twórz, planuj i analizuj powiadomienia push wysyłane do web i mobile.')}
         </p>
       </div>
 
@@ -84,7 +85,7 @@ export default function PushCampaignsModule() {
 
       {tab === 'campaigns' && (
         loading ? (
-          <div className="p-8 text-center text-gray-500">Ładowanie...</div>
+          <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>
         ) : (
           <CampaignList
             campaigns={campaigns}
@@ -121,7 +122,7 @@ export default function PushCampaignsModule() {
           ))}
           {campaigns.filter(c => c.status === 'sent').length === 0 && (
             <div className="col-span-full text-center text-gray-500 py-12">
-              Brak wysłanych kampanii. Wyślij pierwszą, aby zobaczyć statystyki.
+              {tr('Brak wysłanych kampanii. Wyślij pierwszą, aby zobaczyć statystyki.')}
             </div>
           )}
         </div>

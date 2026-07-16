@@ -10,6 +10,7 @@ import AttendanceDashboard from './components/AttendanceDashboard';
 import SessionManager from './components/SessionManager';
 import LocationManager from './components/LocationManager';
 import { UserCheck, UserPlus, LogOut, ClipboardList, Settings } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 const MODES = {
   CHECKIN: 'checkin',
@@ -140,11 +141,11 @@ export default function CheckinTab() {
   }, []);
 
   const navItems = [
-    { id: MODES.CHECKIN, icon: UserCheck, label: 'Check-in' },
-    { id: MODES.GUEST, icon: UserPlus, label: 'Gość' },
+    { id: MODES.CHECKIN, icon: UserCheck, label: tr('Check-in') },
+    { id: MODES.GUEST, icon: UserPlus, label: tr('Gość') },
     { id: MODES.CHECKOUT, icon: LogOut, label: 'Checkout' },
-    { id: MODES.ATTENDANCE, icon: ClipboardList, label: 'Lista obecności' },
-    { id: MODES.SETTINGS, icon: Settings, label: 'Ustawienia' }
+    { id: MODES.ATTENDANCE, icon: ClipboardList, label: tr('Lista obecności') },
+    { id: MODES.SETTINGS, icon: Settings, label: tr('Ustawienia') }
   ];
 
   const renderNav = () => (
@@ -292,13 +293,13 @@ export default function CheckinTab() {
   if (error) {
     return (
       <div className="p-10 text-center text-red-600 dark:text-red-400">
-        <h2 className="text-xl font-bold mb-2">Wystąpił błąd</h2>
+        <h2 className="text-xl font-bold mb-2">{tr('Wystąpił błąd')}</h2>
         <p className="mb-4">{error}</p>
         <button
           onClick={() => window.location.reload()}
           className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium hover:shadow-lg transition"
         >
-          Odśwież stronę
+          {tr('Odśwież stronę')}
         </button>
       </div>
     );

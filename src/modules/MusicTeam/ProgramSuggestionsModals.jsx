@@ -15,6 +15,7 @@ import {
   useSortable, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { tr } from '../../i18n';
 
 const KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
@@ -112,9 +113,9 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
       }]);
       if (error) {
         if (error.code === '23505') {
-          alert('Ta pieśń jest już przypisana do tego programu.');
+          alert(tr('Ta pieśń jest już przypisana do tego programu.'));
         } else {
-          alert('Błąd zapisu: ' + error.message);
+          alert(tr('Błąd zapisu: ') + error.message);
         }
         setSaving(false);
         return;
@@ -122,7 +123,7 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
       onSaved?.();
       onClose();
     } catch (err) {
-      alert('Błąd: ' + err.message);
+      alert(tr('Błąd: ') + err.message);
       setSaving(false);
     }
   };
@@ -159,9 +160,9 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
             </div>
             <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 max-h-56 overflow-y-auto custom-scrollbar">
               {loading ? (
-                <div className="p-6 text-center text-sm text-gray-400">Ładowanie...</div>
+                <div className="p-6 text-center text-sm text-gray-400">{tr('Ładowanie...')}</div>
               ) : filtered.length === 0 ? (
-                <div className="p-6 text-center text-sm text-gray-400">Brak nadchodzących programów</div>
+                <div className="p-6 text-center text-sm text-gray-400">{tr('Brak nadchodzących programów')}</div>
               ) : (
                 filtered.map(p => {
                   const isSelected = selectedProgramId === p.id;
@@ -196,7 +197,7 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
                         </div>
                       </div>
                       {alreadyAdded ? (
-                        <span className="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 shrink-0">Już dodana</span>
+                        <span className="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 shrink-0">{tr('Już dodana')}</span>
                       ) : isSelected ? (
                         <Check size={18} className="text-accent-primary shrink-0" />
                       ) : null}
@@ -234,7 +235,7 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
             </label>
             <textarea
               className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm min-h-[70px] resize-y focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
-              placeholder="Opcjonalna notatka, np. fragment, zwrotka, kiedy zaśpiewać..."
+              placeholder={tr('Opcjonalna notatka, np. fragment, zwrotka, kiedy zaśpiewać...')}
               value={note}
               onChange={e => setNote(e.target.value)}
             />
@@ -343,9 +344,9 @@ export function ProgramsSongsManagerModal({ songs, onClose }) {
             </div>
             <div className="px-6 pb-6 overflow-y-auto custom-scrollbar flex-1">
               {loading ? (
-                <div className="p-10 text-center text-sm text-gray-400">Ładowanie...</div>
+                <div className="p-10 text-center text-sm text-gray-400">{tr('Ładowanie...')}</div>
               ) : filtered.length === 0 ? (
-                <div className="p-10 text-center text-sm text-gray-400">Brak nadchodzących programów</div>
+                <div className="p-10 text-center text-sm text-gray-400">{tr('Brak nadchodzących programów')}</div>
               ) : (
                 <div className="grid gap-2">
                   {filtered.map(p => {
@@ -376,7 +377,7 @@ export function ProgramsSongsManagerModal({ songs, onClose }) {
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             {p.title ? formatDateFull(p.date) + ' · ' : ''}
-                            {(counts[p.id] || 0)} {counts[p.id] === 1 ? 'pieśń' : 'pieśni'} sugerowanych
+                            {(counts[p.id] || 0)} {counts[p.id] === 1 ? tr('pieśń') : tr('pieśni')} sugerowanych
                           </div>
                         </div>
                       </div>
@@ -479,7 +480,7 @@ function ProgramSongsEditor({ program, songs, onBack, onClose }) {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Usunąć pieśń z propozycji?')) return;
+    if (!confirm(tr('Usunąć pieśń z propozycji?'))) return;
     setItems(prev => prev.filter(i => i.id !== id));
     await supabase.from('program_song_suggestions').delete().eq('id', id);
   };
@@ -496,9 +497,9 @@ function ProgramSongsEditor({ program, songs, onBack, onClose }) {
     }]).select().single();
     if (error) {
       if (error.code === '23505') {
-        alert('Ta pieśń jest już przypisana do tego programu.');
+        alert(tr('Ta pieśń jest już przypisana do tego programu.'));
       } else {
-        alert('Błąd: ' + error.message);
+        alert(tr('Błąd: ') + error.message);
       }
       return;
     }
@@ -516,7 +517,7 @@ function ProgramSongsEditor({ program, songs, onBack, onClose }) {
           <button
             onClick={onBack}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400 shrink-0"
-            title="Wróć do listy programów"
+            title={tr('Wróć do listy programów')}
           >
             <ChevronLeft size={20} />
           </button>
@@ -537,12 +538,12 @@ function ProgramSongsEditor({ program, songs, onBack, onClose }) {
 
       <div className="px-6 pb-6 overflow-y-auto custom-scrollbar flex-1">
         {loading ? (
-          <div className="p-10 text-center text-sm text-gray-400">Ładowanie...</div>
+          <div className="p-10 text-center text-sm text-gray-400">{tr('Ładowanie...')}</div>
         ) : items.length === 0 ? (
           <div className="text-center py-10 px-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
             <Music size={32} className="mx-auto mb-2 text-gray-300 dark:text-gray-600" />
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Brak pieśni przypisanych do tego programu.
+              {tr('Brak pieśni przypisanych do tego programu.')}
             </p>
           </div>
         ) : (
@@ -617,7 +618,7 @@ function SortableSuggestionRow({
         <span className="text-accent-primary dark:text-accent-primary-light font-bold text-xs w-6 shrink-0">{index + 1}.</span>
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">
-            {song?.title || <span className="italic text-gray-400">[pieśń usunięta]</span>}
+            {song?.title || <span className="italic text-gray-400">{tr('[pieśń usunięta]')}</span>}
           </div>
           {song?.author && (
             <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{song.author}</div>
@@ -635,14 +636,14 @@ function SortableSuggestionRow({
           <button
             onClick={onStartEditNote}
             className={`p-1.5 rounded-lg transition ${item.note ? 'text-accent-secondary bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/20 hover:bg-accent-secondary-lighter' : 'text-gray-300 dark:text-gray-600 hover:text-accent-secondary-light hover:bg-accent-secondary-lightest dark:hover:bg-accent-secondary-darkest/20'}`}
-            title={item.note ? 'Edytuj notatkę' : 'Dodaj notatkę'}
+            title={item.note ? tr('Edytuj notatkę') : tr('Dodaj notatkę')}
           >
             <StickyNote size={14} />
           </button>
           <button
             onClick={onDelete}
             className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
-            title="Usuń"
+            title={tr('Usuń')}
           >
             <Trash2 size={14} />
           </button>
@@ -707,7 +708,7 @@ function SongPickerInline({ songs, onPick, onCancel }) {
         <input
           autoFocus
           className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400"
-          placeholder="Szukaj pieśni..."
+          placeholder={tr('Szukaj pieśni...')}
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
@@ -717,7 +718,7 @@ function SongPickerInline({ songs, onPick, onCancel }) {
       </div>
       <div className="max-h-56 overflow-y-auto custom-scrollbar">
         {filtered.length === 0 ? (
-          <div className="p-4 text-center text-xs text-gray-400">Brak pieśni</div>
+          <div className="p-4 text-center text-xs text-gray-400">{tr('Brak pieśni')}</div>
         ) : (
           filtered.map(s => (
             <button

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatPLN } from '../utils/smsEncoding';
+import { tr } from '../../../i18n';
 
 export default function CampaignStats({ campaign, onClose }) {
   const t = useT();
@@ -85,10 +86,10 @@ export default function CampaignStats({ campaign, onClose }) {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         <Stat icon={Users} label="Odbiorcy" value={total} color="gray" />
-        <Stat icon={Send} label="Wysłane" value={sent} percent={pct(sent, total)} color="blue" />
+        <Stat icon={Send} label={tr('Wysłane')} value={sent} percent={pct(sent, total)} color="blue" />
         <Stat icon={CheckCircle} label="Dostarczone" value={delivered} percent={pct(delivered, total)} color="emerald" />
         <Stat icon={CornerDownLeft} label="Odpowiedzi" value={replied} percent={pct(replied, total)} color="violet" />
-        <Stat icon={XCircle} label="Błędy" value={failed} percent={pct(failed, total)} color="red" />
+        <Stat icon={XCircle} label={tr('Błędy')} value={failed} percent={pct(failed, total)} color="red" />
         <Stat icon={DollarSign} label="Koszt" value={formatPLN(costPLN)} subtitle={`~${formatPLN(avgCost)}/SMS`} color="amber" />
       </div>
 
@@ -148,7 +149,7 @@ export default function CampaignStats({ campaign, onClose }) {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Ładowanie...</div>
+          <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-gray-500">{t('Brak rekordów dla tego filtra.')}</div>
         ) : (
@@ -156,14 +157,14 @@ export default function CampaignStats({ campaign, onClose }) {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
                 <tr>
-                  <Th>Telefon</Th>
-                  <Th>Email</Th>
-                  <Th>Status</Th>
+                  <Th>{tr('Telefon')}</Th>
+                  <Th>{tr('Email')}</Th>
+                  <Th>{tr('Status')}</Th>
                   <Th>Wariant</Th>
                   <Th>Dostarczone</Th>
-                  <Th>Odpowiedź</Th>
+                  <Th>{tr('Odpowiedź')}</Th>
                   <Th>Pkt</Th>
-                  <Th>Błąd</Th>
+                  <Th>{tr('Błąd')}</Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -206,13 +207,13 @@ function Stat({ icon: Icon, label, value, percent, subtitle, color }) {
 
 function StatusPill({ status }) {
   const map = {
-    pending:    { label: 'Oczekuje',    color: 'gray' },
-    queued:     { label: 'Kolejka',     color: 'gray' },
-    sent:       { label: 'Wysłany',     color: 'blue' },
-    delivered:  { label: 'Dostarczony', color: 'emerald' },
-    replied:    { label: 'Odpowiedź',   color: 'violet' },
-    failed:     { label: 'Błąd',        color: 'red' },
-    suppressed: { label: 'Pominięty',   color: 'amber' },
+    pending:    { label: tr('Oczekuje'),    color: 'gray' },
+    queued:     { label: tr('Kolejka'),     color: 'gray' },
+    sent:       { label: tr('Wysłany'),     color: 'blue' },
+    delivered:  { label: tr('Dostarczony'), color: 'emerald' },
+    replied:    { label: tr('Odpowiedź'),   color: 'violet' },
+    failed:     { label: tr('Błąd'),        color: 'red' },
+    suppressed: { label: tr('Pominięty'),   color: 'amber' },
   };
   const c = map[status] || { label: status, color: 'gray' };
   return (

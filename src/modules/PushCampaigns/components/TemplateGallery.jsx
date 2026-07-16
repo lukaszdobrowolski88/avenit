@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Sparkles, Bell, Save, X, Loader2 } from 'lucide-react';
 import { usePushTemplates } from '../hooks/usePushTemplates';
 import { PUSH_CATEGORIES } from '../constants';
+import { tr } from '../../../i18n';
 
 export default function TemplateGallery({ onUseTemplate }) {
   const { templates, loading, createTemplate, updateTemplate, deleteTemplate } = usePushTemplates();
@@ -11,12 +12,12 @@ export default function TemplateGallery({ onUseTemplate }) {
   const handleNew = () => { setEditing(null); setShowEditor(true); };
   const handleEdit = (t) => { setEditing(t); setShowEditor(true); };
   const handleDelete = async (t) => {
-    if (t.is_system) { alert('Nie można usunąć szablonu systemowego.'); return; }
+    if (t.is_system) { alert(tr('Nie można usunąć szablonu systemowego.')); return; }
     if (!confirm(`Usunąć szablon "${t.name}"?`)) return;
     try { await deleteTemplate(t.id); } catch (e) { alert(e.message); }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Ładowanie...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>;
 
   return (
     <div>
@@ -59,7 +60,7 @@ export default function TemplateGallery({ onUseTemplate }) {
                 onClick={() => onUseTemplate(t)}
                 className="w-full mt-3 py-2 text-sm font-medium text-accent-primary bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 hover:bg-accent-primary-lighter rounded-lg"
               >
-                Użyj szablonu
+                {tr('Użyj szablonu')}
               </button>
             </div>
           );
@@ -94,7 +95,7 @@ function TemplateEditor({ template, onClose, onSave }) {
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!form.name || !form.title || !form.body) { alert('Wypełnij wszystkie pola'); return; }
+    if (!form.name || !form.title || !form.body) { alert(tr('Wypełnij wszystkie pola')); return; }
     setSaving(true);
     try { await onSave(form); } finally { setSaving(false); }
   };
@@ -121,13 +122,13 @@ function TemplateEditor({ template, onClose, onSave }) {
           <input
             value={form.title}
             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            placeholder="Tytuł powiadomienia"
+            placeholder={tr('Tytuł powiadomienia')}
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium"
           />
           <textarea
             value={form.body}
             onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-            placeholder="Treść..."
+            placeholder={tr('Treść...')}
             rows={3}
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none"
           />
@@ -141,7 +142,7 @@ function TemplateEditor({ template, onClose, onSave }) {
         </div>
 
         <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">Anuluj</button>
+          <button onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">{tr('Anuluj')}</button>
           <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-accent-primary text-white rounded-lg disabled:opacity-50">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             Zapisz

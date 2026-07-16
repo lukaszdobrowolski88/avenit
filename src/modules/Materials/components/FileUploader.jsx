@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Upload, X, FileText, Image, Loader } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 // Formatowanie rozmiaru pliku
 function formatFileSize(bytes) {
@@ -136,7 +137,7 @@ export default function FileUploader({
 
           <div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {isDragging ? 'Upuść pliki tutaj' : 'Przeciągnij pliki lub kliknij, aby wybrać'}
+              {isDragging ? tr('Upuść pliki tutaj') : tr('Przeciągnij pliki lub kliknij, aby wybrać')}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Maksymalny rozmiar pliku: {formatFileSize(maxFileSize)}
@@ -156,7 +157,7 @@ export default function FileUploader({
               onClick={() => setSelectedFiles([])}
               className="text-xs text-gray-500 hover:text-red-500 transition-colors"
             >
-              Wyczyść wszystkie
+              {tr('Wyczyść wszystkie')}
             </button>
           </div>
 
@@ -207,7 +208,7 @@ export default function FileUploader({
             ) : (
               <>
                 <Upload size={18} />
-                Prześlij {selectedFiles.length} {selectedFiles.length === 1 ? 'plik' : selectedFiles.length < 5 ? 'pliki' : 'plików'}
+                Prześlij {selectedFiles.length} {selectedFiles.length === 1 ? 'plik' : selectedFiles.length < 5 ? 'pliki' : tr('plików')}
               </>
             )}
           </button>

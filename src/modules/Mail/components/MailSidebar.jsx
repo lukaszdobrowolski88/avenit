@@ -4,6 +4,7 @@ import {
   Folder, Plus, ChevronDown, ChevronRight, Tag, Settings,
   Mail, MoreVertical, Edit2, Palette, X, User, Globe
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 // Mapowanie typów na ikony
 const FOLDER_TYPE_ICONS = {
@@ -179,7 +180,7 @@ export default function MailSidebar({
                   {activeAccount?.external_email || activeAccount?.user_email || 'Konto'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {activeAccount?.account_type === 'external' ? 'Zewnętrzne' : 'Wewnętrzne'}
+                  {activeAccount?.account_type === 'external' ? tr('Zewnętrzne') : tr('Wewnętrzne')}
                 </p>
               </div>
               <ChevronDown size={16} className={`text-gray-400 transition-transform ${showAccountPicker ? 'rotate-180' : ''}`} />
@@ -213,7 +214,7 @@ export default function MailSidebar({
                           {account.external_email || account.user_email}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {account.account_type === 'external' ? 'Zewnętrzne' : 'Wewnętrzne'}
+                          {account.account_type === 'external' ? tr('Zewnętrzne') : tr('Wewnętrzne')}
                         </p>
                       </div>
                       {account.id === activeAccountId && (
@@ -235,7 +236,7 @@ export default function MailSidebar({
           className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-semibold rounded-xl shadow-lg shadow-accent-primary-light/25 transition-all"
         >
           <Mail size={20} />
-          <span>Nowa wiadomość</span>
+          <span>{tr('Nowa wiadomość')}</span>
         </button>
       </div>
 
@@ -280,7 +281,7 @@ export default function MailSidebar({
                 onClick={handleCreateFolder}
                 className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-accent-primary-light hover:bg-accent-primary rounded-lg"
               >
-                Utwórz
+                {tr('Utwórz')}
               </button>
               <button
                 onClick={() => setShowNewFolder(false)}
@@ -344,7 +345,7 @@ export default function MailSidebar({
                       onClick={handleCreateLabel}
                       className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-accent-primary-light hover:bg-accent-primary rounded-lg"
                     >
-                      Utwórz
+                      {tr('Utwórz')}
                     </button>
                     <button
                       onClick={() => setShowNewLabel(false)}
@@ -401,11 +402,11 @@ export default function MailSidebar({
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   <Edit2 size={14} />
-                  <span>Zmień nazwę</span>
+                  <span>{tr('Zmień nazwę')}</span>
                 </button>
                 <button
                   onClick={() => {
-                    if (confirm('Czy na pewno usunąć folder?')) {
+                    if (confirm(tr('Czy na pewno usunąć folder?'))) {
                       onDeleteFolder(contextMenu.item.id);
                     }
                     setContextMenu(null);
@@ -413,7 +414,7 @@ export default function MailSidebar({
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
                   <Trash2 size={14} />
-                  <span>Usuń</span>
+                  <span>{tr('Usuń')}</span>
                 </button>
               </>
             )}
@@ -438,7 +439,7 @@ export default function MailSidebar({
                 <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
                 <button
                   onClick={() => {
-                    if (confirm('Czy na pewno usunąć etykietę?')) {
+                    if (confirm(tr('Czy na pewno usunąć etykietę?'))) {
                       onDeleteLabel(contextMenu.item.id);
                     }
                     setContextMenu(null);
@@ -446,7 +447,7 @@ export default function MailSidebar({
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
                   <Trash2 size={14} />
-                  <span>Usuń</span>
+                  <span>{tr('Usuń')}</span>
                 </button>
               </>
             )}

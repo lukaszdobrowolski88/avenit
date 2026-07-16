@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Upload, X, File, MapPin, Calendar, Clock, DollarSign, Users, ImageIcon, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
+import { tr } from '../../../i18n';
 
 export default function FieldRenderer({
   field,
@@ -66,7 +67,7 @@ export default function FieldRenderer({
       }
     } catch (err) {
       console.error('Upload error:', err);
-      alert('Błąd podczas przesyłania pliku');
+      alert(tr('Błąd podczas przesyłania pliku'));
     } finally {
       setUploadProgress(null);
     }
@@ -229,7 +230,7 @@ export default function FieldRenderer({
             type="text"
             value={value || ''}
             onChange={(e) => onChange(e.target.value)}
-            placeholder={field.placeholder || 'Wprowadź lokalizację...'}
+            placeholder={field.placeholder || tr('Wprowadź lokalizację...')}
             disabled={disabled}
             className={`${baseInputClass} pl-11`}
             maxLength={field.validation?.maxLength}
@@ -287,7 +288,7 @@ export default function FieldRenderer({
                 {formatPrice(displayPrice, priceConfig.currency || 'PLN')}
               </p>
               {priceConfig.pricingType === 'per_person' && (
-                <p className="text-xs text-gray-500">za osobę</p>
+                <p className="text-xs text-gray-500">{tr('za osobę')}</p>
               )}
             </div>
           </div>
@@ -339,7 +340,7 @@ export default function FieldRenderer({
           />
           {field.quantityConfig?.affectsPrice && (
             <p className="text-xs text-gray-500 mt-1">
-              Liczba osób wpływa na całkowitą cenę
+              {tr('Liczba osób wpływa na całkowitą cenę')}
             </p>
           )}
         </div>
@@ -396,7 +397,7 @@ export default function FieldRenderer({
               />
               <Upload size={24} className="mx-auto text-gray-400 mb-2" />
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Kliknij lub przeciągnij plik
+                {tr('Kliknij lub przeciągnij plik')}
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 Max. {field.fileConfig?.maxSize || 10} MB
@@ -477,7 +478,7 @@ export default function FieldRenderer({
           }
         } catch (err) {
           console.error('Image upload error:', err);
-          alert('Błąd podczas przesyłania obrazu');
+          alert(tr('Błąd podczas przesyłania obrazu'));
         } finally {
           setUploadProgress(null);
         }
@@ -536,7 +537,7 @@ export default function FieldRenderer({
                 <ImageIcon size={28} className="text-accent-primary-light" />
               </div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Kliknij, aby dodać {multipleImages ? 'zdjęcia' : 'zdjęcie'}
+                Kliknij, aby dodać {multipleImages ? tr('zdjęcia') : tr('zdjęcie')}
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 Max. {imageConfig.maxSize || 5} MB • JPG, PNG, WEBP, GIF

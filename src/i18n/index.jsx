@@ -15,8 +15,32 @@ function readInitialLang() {
 
 const I18nContext = createContext({ lang: DEFAULT_LANG, setLang: () => {}, t: (k) => k });
 
+// Rdzeń tłumaczenia — wspólny dla hooka t() i globalnej funkcji tr().
+function translate(lang, key, vars) {
+  const dict = TRANSLATIONS[lang] || {};
+  let out = (lang === 'pl' ? key : (dict[key] ?? key));
+  if (vars) {
+    for (const [k, v] of Object.entries(vars)) {
+      out = out.replaceAll(`{${k}}`, String(v));
+    }
+  }
+  return out;
+}
+
+// Bieżący język w zmiennej modułowej — synchronizowany przez I18nProvider.
+// Pozwala używać tr('klucz') bez hooka; reaktywność zapewnia AppInner,
+// który konsumuje kontekst i przerenderowuje drzewo przy zmianie języka.
+let _lang = DEFAULT_LANG;
+try { _lang = readInitialLang(); } catch { /* ignore */ }
+
+// Globalna funkcja tłumacząca (bez hooka) — do użycia w dowolnym komponencie.
+export function tr(key, vars) {
+  return translate(_lang, key, vars);
+}
+
 export function I18nProvider({ children }) {
   const [lang, setLangState] = useState(readInitialLang);
+  _lang = lang; // synchronizuj zmienną modułową dla tr()
 
   useEffect(() => {
     try { document.documentElement.lang = lang; } catch { /* ignore */ }
@@ -29,16 +53,7 @@ export function I18nProvider({ children }) {
   }, []);
 
   // t(key, vars?) — zwraca tłumaczenie lub polski klucz (fallback). Obsługuje {zmienne}.
-  const t = useCallback((key, vars) => {
-    const dict = TRANSLATIONS[lang] || {};
-    let out = (lang === 'pl' ? key : (dict[key] ?? key));
-    if (vars) {
-      for (const [k, v] of Object.entries(vars)) {
-        out = out.replaceAll(`{${k}}`, String(v));
-      }
-    }
-    return out;
-  }, [lang]);
+  const t = useCallback((key, vars) => translate(lang, key, vars), [lang]);
 
   const value = useMemo(() => ({ lang, setLang, t, languages: LANGUAGES }), [lang, setLang, t]);
 

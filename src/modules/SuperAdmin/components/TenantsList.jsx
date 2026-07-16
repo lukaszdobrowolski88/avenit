@@ -14,6 +14,7 @@ import {
   Eye,
   Edit
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function TenantsList({ onSelectTenant }) {
   const { getTenants, suspendTenant, resumeTenant, extendTrial, loading } = useTenants();
@@ -35,7 +36,7 @@ export default function TenantsList({ onSelectTenant }) {
   }, [searchQuery, statusFilter]);
 
   const handleSuspend = async (tenantId) => {
-    if (confirm('Czy na pewno chcesz zawiesić tego klienta?')) {
+    if (confirm(tr('Czy na pewno chcesz zawiesić tego klienta?'))) {
       await suspendTenant(tenantId);
       loadTenants();
     }
@@ -49,7 +50,7 @@ export default function TenantsList({ onSelectTenant }) {
   };
 
   const handleExtendTrial = async (tenantId) => {
-    const days = prompt('O ile dni przedłużyć trial?', '7');
+    const days = prompt(tr('O ile dni przedłużyć trial?'), '7');
     if (days) {
       await extendTrial(tenantId, parseInt(days));
       loadTenants();
@@ -107,7 +108,7 @@ export default function TenantsList({ onSelectTenant }) {
             Klienci
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Zarządzaj klientami i ich subskrypcjami
+            {tr('Zarządzaj klientami i ich subskrypcjami')}
           </p>
         </div>
       </div>
@@ -129,11 +130,11 @@ export default function TenantsList({ onSelectTenant }) {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light"
         >
-          <option value="">Wszystkie statusy</option>
+          <option value="">{tr('Wszystkie statusy')}</option>
           <option value="trial">Trial</option>
           <option value="active">Aktywny</option>
           <option value="suspended">Zawieszony</option>
-          <option value="cancelled">Anulowany</option>
+          <option value="cancelled">{tr('Anulowany')}</option>
         </select>
       </div>
 
@@ -141,11 +142,11 @@ export default function TenantsList({ onSelectTenant }) {
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-gray-500">
-            Ładowanie...
+            {tr('Ładowanie...')}
           </div>
         ) : tenants.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            Brak klientów spełniających kryteria
+            {tr('Brak klientów spełniających kryteria')}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -153,11 +154,11 @@ export default function TenantsList({ onSelectTenant }) {
               <thead>
                 <tr className="text-left text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50">
                   <th className="px-4 py-3 font-medium">Klient</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">{tr('Status')}</th>
                   <th className="px-4 py-3 font-medium">Plan</th>
                   <th className="px-4 py-3 font-medium">Cena</th>
                   <th className="px-4 py-3 font-medium">Data rejestracji</th>
-                  <th className="px-4 py-3 font-medium text-right">Akcje</th>
+                  <th className="px-4 py-3 font-medium text-right">{tr('Akcje')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -220,7 +221,7 @@ export default function TenantsList({ onSelectTenant }) {
                                 className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 first:rounded-t-xl"
                               >
                                 <Eye size={16} />
-                                Szczegóły
+                                {tr('Szczegóły')}
                               </button>
 
                               {tenant.status === 'trial' && (
@@ -229,7 +230,7 @@ export default function TenantsList({ onSelectTenant }) {
                                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                                 >
                                   <Clock size={16} />
-                                  Przedłuż trial
+                                  {tr('Przedłuż trial')}
                                 </button>
                               )}
 
@@ -239,7 +240,7 @@ export default function TenantsList({ onSelectTenant }) {
                                   className="w-full px-4 py-2.5 text-left text-sm text-green-600 dark:text-green-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
                                 >
                                   <Play size={16} />
-                                  Przywróć
+                                  {tr('Przywróć')}
                                 </button>
                               ) : tenant.status !== 'cancelled' && (
                                 <button
@@ -247,7 +248,7 @@ export default function TenantsList({ onSelectTenant }) {
                                   className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 last:rounded-b-xl"
                                 >
                                   <Pause size={16} />
-                                  Zawieś
+                                  {tr('Zawieś')}
                                 </button>
                               )}
                             </div>

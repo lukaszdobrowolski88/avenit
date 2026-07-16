@@ -2,6 +2,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Trash2, Copy, Asterisk } from 'lucide-react';
 import { FIELD_TYPES } from '../../utils/fieldTypes';
+import { tr } from '../../../../i18n';
 
 export default function FieldItem({
   field,
@@ -37,7 +38,7 @@ export default function FieldItem({
         return (
           <input
             type="text"
-            placeholder={field.placeholder || 'Wpisz odpowiedź...'}
+            placeholder={field.placeholder || tr('Wpisz odpowiedź...')}
             disabled
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-400"
           />
@@ -46,7 +47,7 @@ export default function FieldItem({
       case 'textarea':
         return (
           <textarea
-            placeholder={field.placeholder || 'Wpisz odpowiedź...'}
+            placeholder={field.placeholder || tr('Wpisz odpowiedź...')}
             disabled
             rows={2}
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-400 resize-none"
@@ -105,7 +106,7 @@ export default function FieldItem({
       case 'file':
         return (
           <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-center">
-            <p className="text-sm text-gray-400">Przeciągnij plik lub kliknij</p>
+            <p className="text-sm text-gray-400">{tr('Przeciągnij plik lub kliknij')}</p>
           </div>
         );
 
@@ -169,7 +170,7 @@ export default function FieldItem({
               onDuplicate(field.id);
             }}
             className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-            title="Duplikuj"
+            title={tr('Duplikuj')}
           >
             <Copy size={16} />
           </button>
@@ -179,7 +180,7 @@ export default function FieldItem({
               onRemove(field.id);
             }}
             className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-            title="Usuń"
+            title={tr('Usuń')}
           >
             <Trash2 size={16} />
           </button>

@@ -12,16 +12,17 @@ import EmailEditor from './EmailEditor';
 import DragDropEmailBuilder from './DragDropEmailBuilder';
 import RecipientSelector from './RecipientSelector';
 import CampaignPreview from './CampaignPreview';
+import { tr } from '../../../i18n';
 
 const STEPS = [
   { id: 'basics', label: 'Podstawy', icon: FileText },
-  { id: 'content', label: 'Treść', icon: Edit3 },
+  { id: 'content', label: tr('Treść'), icon: Edit3 },
   { id: 'recipients', label: 'Odbiorcy', icon: Users },
   { id: 'summary', label: 'Podsumowanie', icon: CheckCircle }
 ];
 
 const EDITOR_MODES = {
-  dragdrop: { id: 'dragdrop', label: 'Kreator wizualny', icon: MousePointer, description: 'Przeciągnij i upuść gotowe elementy' },
+  dragdrop: { id: 'dragdrop', label: 'Kreator wizualny', icon: MousePointer, description: tr('Przeciągnij i upuść gotowe elementy') },
   richtext: { id: 'richtext', label: 'Edytor tekstu', icon: Edit3, description: 'Klasyczny edytor z formatowaniem' },
   html: { id: 'html', label: 'Kod HTML', icon: Code, description: 'Dla zaawansowanych - edytuj surowy HTML' }
 };
@@ -174,14 +175,14 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
       onSave?.();
     } catch (err) {
       console.error('Error saving campaign:', err);
-      alert('Błąd podczas zapisywania maila');
+      alert(tr('Błąd podczas zapisywania maila'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleSend = async () => {
-    if (!confirm('Czy na pewno chcesz wysłać tego maila? Ta operacja jest nieodwracalna.')) {
+    if (!confirm(tr('Czy na pewno chcesz wysłać tego maila? Ta operacja jest nieodwracalna.'))) {
       return;
     }
 
@@ -249,7 +250,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
       }
     } catch (err) {
       console.error('Error sending campaign:', err);
-      alert('Błąd podczas wysyłania maila');
+      alert(tr('Błąd podczas wysyłania maila'));
     } finally {
       setSaving(false);
     }
@@ -257,7 +258,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
   const handleTestSend = async () => {
     if (!testEmail || !testEmail.includes('@')) {
-      alert('Wprowadź poprawny adres email');
+      alert(tr('Wprowadź poprawny adres email'));
       return;
     }
 
@@ -290,7 +291,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
         setShowTestSend(false);
       }
     } catch (err) {
-      alert('Błąd podczas wysyłania testowego emaila');
+      alert(tr('Błąd podczas wysyłania testowego emaila'));
     } finally {
       setSaving(false);
     }
@@ -298,7 +299,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
   const handleSchedule = async () => {
     if (!formData.scheduled_at) {
-      alert('Wybierz datę i godzinę wysyłki');
+      alert(tr('Wybierz datę i godzinę wysyłki'));
       return;
     }
 
@@ -308,7 +309,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
       alert(`Mail zaplanowany na: ${new Date(formData.scheduled_at).toLocaleString('pl-PL')}`);
       setShowSchedule(false);
     } catch (err) {
-      alert('Błąd podczas planowania maila');
+      alert(tr('Błąd podczas planowania maila'));
     } finally {
       setSaving(false);
     }
@@ -353,7 +354,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
           <button
             onClick={() => setShowTestSend(true)}
             className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
-            title="Wyślij email testowy"
+            title={tr('Wyślij email testowy')}
           >
             <TestTube size={16} />
             <span className="hidden sm:inline">Test</span>
@@ -363,7 +364,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
             className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
           >
             <Eye size={16} />
-            <span className="hidden sm:inline">Podgląd</span>
+            <span className="hidden sm:inline">{tr('Podgląd')}</span>
           </button>
           <button
             onClick={() => handleSave('draft')}
@@ -371,7 +372,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
             className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all disabled:opacity-50"
           >
             {saving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
-            <span className="hidden sm:inline">Zapisz</span>
+            <span className="hidden sm:inline">{tr('Zapisz')}</span>
           </button>
         </div>
       </div>
@@ -441,7 +442,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
-                  Nazwa wewnętrzna, nie będzie widoczna dla odbiorców
+                  {tr('Nazwa wewnętrzna, nie będzie widoczna dla odbiorców')}
                 </p>
               </div>
 
@@ -451,7 +452,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Mail size={12} className="text-white" />
                   </div>
-                  Temat wiadomości
+                  {tr('Temat wiadomości')}
                   <span className="text-accent-primary-light">*</span>
                 </label>
                 <input
@@ -463,7 +464,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
-                  Temat, który odbiorcy zobaczą w skrzynce
+                  {tr('Temat, który odbiorcy zobaczą w skrzynce')}
                 </p>
               </div>
 
@@ -473,7 +474,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Edit3 size={12} className="text-white" />
                   </div>
-                  Wybierz sposób tworzenia treści
+                  {tr('Wybierz sposób tworzenia treści')}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {Object.values(EDITOR_MODES).map((mode) => {
@@ -540,7 +541,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 <EmailEditor
                   content={formData.html_content}
                   onChange={(html) => setFormData(prev => ({ ...prev, html_content: html }))}
-                  placeholder="Napisz treść wiadomości..."
+                  placeholder={tr('Napisz treść wiadomości...')}
                 />
               </div>
             )}
@@ -587,15 +588,15 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                     Podsumowanie maila
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Sprawdź szczegóły przed wysyłką
+                    {tr('Sprawdź szczegóły przed wysyłką')}
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SummaryCard label="Nazwa maila" value={formData.name} icon={FileText} />
-                <SummaryCard label="Temat wiadomości" value={formData.subject} icon={Mail} />
-                <SummaryCard label="Liczba odbiorców" value={`${totalRecipients} osób`} icon={Users} highlight />
+                <SummaryCard label={tr('Temat wiadomości')} value={formData.subject} icon={Mail} />
+                <SummaryCard label={tr('Liczba odbiorców')} value={`${totalRecipients} osób`} icon={Users} highlight />
                 <SummaryCard
                   label="Segmenty"
                   value={selectedSegments.map(s => s.name || s.type).join(', ') || 'Brak'}
@@ -609,7 +610,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Eye size={12} className="text-white" />
                   </div>
-                  Podgląd wiadomości
+                  {tr('Podgląd wiadomości')}
                 </h4>
                 <div className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden max-h-[300px] overflow-y-auto shadow-inner">
                   <div
@@ -635,7 +636,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   className="group flex items-center justify-center gap-2 px-6 py-3.5 border-2 border-accent-primary-light text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-xl transition-all disabled:opacity-50"
                 >
                   <Calendar size={18} />
-                  Zaplanuj wysyłkę
+                  {tr('Zaplanuj wysyłkę')}
                 </button>
                 <button
                   onClick={handleSend}
@@ -695,10 +696,10 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-white">
-                      Wyślij email testowy
+                      {tr('Wyślij email testowy')}
                     </h3>
                     <p className="text-sm text-white/80">
-                      Sprawdź przed wysyłką
+                      {tr('Sprawdź przed wysyłką')}
                     </p>
                   </div>
                 </div>
@@ -713,7 +714,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
             <div className="p-6">
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-                Wyślij testową wersję emaila na wskazany adres, aby sprawdzić jak będzie wyglądać przed wysłaniem do odbiorców.
+                {tr('Wyślij testową wersję emaila na wskazany adres, aby sprawdzić jak będzie wyglądać przed wysłaniem do odbiorców.')}
               </p>
 
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -761,10 +762,10 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-white">
-                      Zaplanuj wysyłkę
+                      {tr('Zaplanuj wysyłkę')}
                     </h3>
                     <p className="text-sm text-white/80">
-                      Automatyczna wysyłka
+                      {tr('Automatyczna wysyłka')}
                     </p>
                   </div>
                 </div>
@@ -783,7 +784,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               </p>
 
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Data i godzina wysyłki
+                {tr('Data i godzina wysyłki')}
               </label>
               <input
                 type="datetime-local"

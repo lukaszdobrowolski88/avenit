@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Folder, FolderOpen, ChevronRight, ChevronDown, Plus, Edit2, Trash2, MoreVertical } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 function FolderItem({ folder, level = 0, selectedId, onSelect, onCreateFolder, onRenameFolder, onDeleteFolder, canEdit }) {
   const [isExpanded, setIsExpanded] = useState(level === 0);
@@ -96,7 +97,7 @@ function FolderItem({ folder, level = 0, selectedId, onSelect, onCreateFolder, o
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
                   <Edit2 size={14} />
-                  Zmień nazwę
+                  {tr('Zmień nazwę')}
                 </button>
                 <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
                 <button
@@ -104,7 +105,7 @@ function FolderItem({ folder, level = 0, selectedId, onSelect, onCreateFolder, o
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
                 >
                   <Trash2 size={14} />
-                  Usuń
+                  {tr('Usuń')}
                 </button>
               </div>
             )}

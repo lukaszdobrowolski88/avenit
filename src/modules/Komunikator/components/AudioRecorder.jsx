@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, Square, Send, X, Loader, Pause, Play } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
   const [isRecording, setIsRecording] = useState(true); // Automatycznie zaczynamy nagrywanie
@@ -96,7 +97,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
 
     } catch (err) {
       console.error('Error starting recording:', err);
-      alert('Nie można uzyskać dostępu do mikrofonu. Sprawdź uprawnienia przeglądarki.');
+      alert(tr('Nie można uzyskać dostępu do mikrofonu. Sprawdź uprawnienia przeglądarki.'));
     }
   };
 
@@ -177,7 +178,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
       handleCancel();
     } catch (err) {
       console.error('Error sending voice message:', err);
-      alert('Błąd podczas wysyłania wiadomości głosowej');
+      alert(tr('Błąd podczas wysyłania wiadomości głosowej'));
     } finally {
       setIsSending(false);
     }
@@ -311,8 +312,8 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
           <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/80 dark:bg-gray-800/80 rounded-lg">
             <Mic size={14} className="sm:w-4 sm:h-4 text-accent-primary-light flex-shrink-0" />
             <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
-              <span className="hidden sm:inline">Wiadomość głosowa</span>
-              <span className="sm:hidden">Głosowa</span>
+              <span className="hidden sm:inline">{tr('Wiadomość głosowa')}</span>
+              <span className="sm:hidden">{tr('Głosowa')}</span>
             </span>
             <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-mono flex-shrink-0">
               {formatTime(recordingTime)}

@@ -9,6 +9,7 @@ import { resetUserRoleCache } from '../hooks/useUserRole';
 import CampusSelector from './CampusSelector';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useT } from '../i18n';
+import { tr } from '../i18n';
 
 export default function Navbar({ user, darkMode, toggleTheme }) {
   const t = useT();
@@ -189,7 +190,7 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
             <div className="absolute right-0 top-full pt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-[1000]">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Konto</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">{tr('Konto')}</p>
                 </div>
                 <a href="/profile" className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary transition-colors cursor-pointer">
                   <UserIcon size={16}/> Mój Profil

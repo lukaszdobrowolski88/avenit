@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save, AlertCircle } from 'lucide-react';
 import IconPicker from './IconPicker';
+import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 export default function ModuleEditor({ module, onClose, onSave, existingKeys = [] }) {
+  const t = useT();
   const isEditing = !!module?.id;
 
   const [form, setForm] = useState({
@@ -39,21 +42,21 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
     const newErrors = {};
 
     if (!form.label.trim()) {
-      newErrors.label = 'Nazwa modułu jest wymagana';
+      newErrors.label = tr('Nazwa modułu jest wymagana');
     }
 
     if (!form.key.trim()) {
-      newErrors.key = 'Klucz modułu jest wymagany';
+      newErrors.key = tr('Klucz modułu jest wymagany');
     } else if (!/^[a-z0-9_]+$/.test(form.key)) {
-      newErrors.key = 'Klucz może zawierać tylko małe litery, cyfry i podkreślniki';
+      newErrors.key = tr('Klucz może zawierać tylko małe litery, cyfry i podkreślniki');
     } else if (!isEditing && existingKeys.includes(form.key)) {
-      newErrors.key = 'Moduł z takim kluczem już istnieje';
+      newErrors.key = tr('Moduł z takim kluczem już istnieje');
     }
 
     if (!form.path.trim()) {
-      newErrors.path = 'Ścieżka jest wymagana';
+      newErrors.path = tr('Ścieżka jest wymagana');
     } else if (!form.path.startsWith('/')) {
-      newErrors.path = 'Ścieżka musi zaczynać się od /';
+      newErrors.path = tr('Ścieżka musi zaczynać się od /');
     }
 
     if (!form.icon) {
@@ -89,7 +92,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h3 className="font-bold text-xl bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
-            {isEditing ? 'Edytuj moduł' : 'Nowy moduł'}
+            {isEditing ? tr('Edytuj moduł') : tr('Nowy moduł')}
           </h3>
           <button
             onClick={onClose}
@@ -111,13 +114,13 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
           {/* Nazwa modułu */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              Nazwa modułu
+              {tr('Nazwa modułu')}
             </label>
             <input
               type="text"
               value={form.label}
               onChange={(e) => setForm({ ...form, label: e.target.value })}
-              placeholder="np. Mój nowy moduł"
+              placeholder={t('np. Mój nowy moduł')}
               className={`w-full px-4 py-3 border rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 transition
                 ${errors.label
                   ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20'
@@ -151,14 +154,14 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
               <p className="mt-1 text-xs text-red-500">{errors.key}</p>
             )}
             {isEditing && module?.is_system && (
-              <p className="mt-1 text-xs text-gray-400">Klucz modułu systemowego nie może być zmieniony</p>
+              <p className="mt-1 text-xs text-gray-400">{t('Klucz modułu systemowego nie może być zmieniony')}</p>
             )}
           </div>
 
           {/* Ścieżka URL */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              Ścieżka URL
+              {tr('Ścieżka URL')}
             </label>
             <input
               type="text"
@@ -207,7 +210,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
             className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition font-medium flex items-center gap-2 disabled:opacity-50"
           >
             <Save size={16} />
-            {saving ? 'Zapisuję...' : 'Zapisz'}
+            {saving ? tr('Zapisuję...') : 'Zapisz'}
           </button>
         </div>
       </div>

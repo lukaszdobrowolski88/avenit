@@ -1,5 +1,6 @@
 import { DollarSign } from 'lucide-react';
 import { formatPrice } from '../utils/fieldTypes';
+import { tr } from '../../../i18n';
 
 export default function PriceBreakdown({ breakdown, currency = 'PLN', isWaitlist = false }) {
   if (!breakdown || breakdown.grandTotal === 0) return null;
@@ -80,7 +81,7 @@ export default function PriceBreakdown({ breakdown, currency = 'PLN', isWaitlist
           {appliedDiscounts.length > 0 && (
             <>
               <div className="border-t border-green-200 dark:border-green-700 pt-2 flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Suma częściowa</span>
+                <span className="text-gray-600 dark:text-gray-400">{tr('Suma częściowa')}</span>
                 <span className="text-gray-900 dark:text-white font-medium">
                   {formatPrice(subtotal, currency)}
                 </span>
@@ -104,7 +105,7 @@ export default function PriceBreakdown({ breakdown, currency = 'PLN', isWaitlist
       {/* Suma końcowa */}
       <div className={`flex items-center justify-between ${hasDetails ? 'pt-3 border-t border-green-200 dark:border-green-700' : ''}`}>
         <span className="text-base font-semibold text-gray-900 dark:text-white">
-          {isWaitlist ? 'Wartość' : 'Do zapłaty'}
+          {isWaitlist ? tr('Wartość') : tr('Do zapłaty')}
         </span>
         <div className="text-right">
           {isWaitlist && (

@@ -8,6 +8,7 @@ import { useTemplates, TEMPLATE_CATEGORIES } from '../hooks/useTemplates';
 import DragDropEmailBuilder from './DragDropEmailBuilder';
 import EmailEditor from './EmailEditor';
 import CampaignPreview from './CampaignPreview';
+import { tr } from '../../../i18n';
 
 const CATEGORY_ICONS = {
   general: FileText,
@@ -25,22 +26,22 @@ const CATEGORY_ICONS = {
 const EXTENDED_CATEGORIES = {
   ...TEMPLATE_CATEGORIES,
   welcome: { label: 'Powitalne' },
-  holiday: { label: 'Świąteczne' },
+  holiday: { label: tr('Świąteczne') },
   invitation: { label: 'Zaproszenia' },
-  ministry: { label: 'Służby' },
+  ministry: { label: tr('Służby') },
   worship: { label: 'Uwielbienie' },
   study: { label: 'Studium' }
 };
 
 const EDITOR_MODES = {
-  dragdrop: { id: 'dragdrop', label: 'Kreator wizualny', icon: MousePointer, description: 'Przeciągnij i upuść gotowe elementy' },
+  dragdrop: { id: 'dragdrop', label: 'Kreator wizualny', icon: MousePointer, description: tr('Przeciągnij i upuść gotowe elementy') },
   richtext: { id: 'richtext', label: 'Edytor tekstu', icon: Edit3, description: 'Klasyczny edytor z formatowaniem' },
   html: { id: 'html', label: 'Kod HTML', icon: Code, description: 'Dla zaawansowanych - edytuj surowy HTML' }
 };
 
 const STEPS = [
   { id: 'info', label: 'Informacje', icon: FileText },
-  { id: 'content', label: 'Treść', icon: Edit3 }
+  { id: 'content', label: tr('Treść'), icon: Edit3 }
 ];
 
 export default function TemplateEditor({ template, onClose, onSave }) {
@@ -78,7 +79,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      alert('Podaj nazwę szablonu');
+      alert(tr('Podaj nazwę szablonu'));
       setCurrentStep(0);
       return;
     }
@@ -95,7 +96,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
       onSave?.();
     } catch (err) {
       console.error('Error saving template:', err);
-      alert('Błąd podczas zapisywania szablonu');
+      alert(tr('Błąd podczas zapisywania szablonu'));
     } finally {
       setSaving(false);
     }
@@ -123,7 +124,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
             <ArrowLeft size={20} className="text-gray-500" />
           </button>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-            {template?.id ? (isSystemTemplate ? 'Podgląd szablonu' : 'Edytuj szablon') : 'Nowy szablon'}
+            {template?.id ? (isSystemTemplate ? tr('Podgląd szablonu') : 'Edytuj szablon') : 'Nowy szablon'}
           </h1>
         </div>
 
@@ -134,7 +135,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
               className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
             >
               <Eye size={18} />
-              <span className="hidden sm:inline">Podgląd</span>
+              <span className="hidden sm:inline">{tr('Podgląd')}</span>
             </button>
           )}
 
@@ -155,7 +156,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
       {isSystemTemplate && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
           <p className="text-sm text-amber-700 dark:text-amber-400">
-            Szablony systemowe nie mogą być edytowane. Użyj "Duplikuj" aby stworzyć własną wersję.
+            {tr('Szablony systemowe nie mogą być edytowane. Użyj "Duplikuj" aby stworzyć własną wersję.')}
           </p>
         </div>
       )}
@@ -220,13 +221,13 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="np. Newsletter miesięczny"
+                  placeholder={tr('np. Newsletter miesięczny')}
                   disabled={isReadOnly}
                   className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all text-gray-900 dark:text-white placeholder-gray-400 disabled:opacity-50"
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
-                  Nazwa wewnętrzna do identyfikacji szablonu
+                  {tr('Nazwa wewnętrzna do identyfikacji szablonu')}
                 </p>
               </div>
 
@@ -236,19 +237,19 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                   <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                     <Edit3 size={12} className="text-white" />
                   </div>
-                  Domyślny temat wiadomości
+                  {tr('Domyślny temat wiadomości')}
                 </label>
                 <input
                   type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                  placeholder="np. Aktualności z kościoła"
+                  placeholder={tr('np. Aktualności z kościoła')}
                   disabled={isReadOnly}
                   className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all text-gray-900 dark:text-white placeholder-gray-400 disabled:opacity-50"
                 />
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-gray-400" />
-                  Ten temat będzie używany jako domyślny przy tworzeniu maila z tego szablonu
+                  {tr('Ten temat będzie używany jako domyślny przy tworzeniu maila z tego szablonu')}
                 </p>
               </div>
 
@@ -292,7 +293,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                     <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
                       <MousePointer size={12} className="text-white" />
                     </div>
-                    Wybierz sposób tworzenia treści
+                    {tr('Wybierz sposób tworzenia treści')}
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {Object.values(EDITOR_MODES).map(mode => {
@@ -431,7 +432,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
       {/* Preview Modal */}
       {showPreview && (
         <CampaignPreview
-          subject={formData.subject || 'Podgląd szablonu'}
+          subject={formData.subject || tr('Podgląd szablonu')}
           htmlContent={formData.html_content}
           onClose={() => setShowPreview(false)}
         />

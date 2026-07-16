@@ -7,6 +7,7 @@ import FileList from './components/FileList';
 import FileUploader from './components/FileUploader';
 import FolderModal from './components/FolderModal';
 import FilePreviewModal from './components/FilePreviewModal';
+import { tr } from '../../i18n';
 
 export default function MaterialsModule({ ministryKey = null, canEdit = false }) {
   // State
@@ -93,7 +94,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   }, [editingFolder, parentFolderForNew, createFolder, renameFolder]);
 
   const handleDeleteFolder = useCallback(async (folderId) => {
-    if (window.confirm('Czy na pewno chcesz usunąć ten folder i wszystkie pliki w nim zawarte?')) {
+    if (window.confirm(tr('Czy na pewno chcesz usunąć ten folder i wszystkie pliki w nim zawarte?'))) {
       await deleteFolder(folderId);
     }
   }, [deleteFolder]);
@@ -135,7 +136,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
             <FolderOpen className="text-white" size={20} />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Materiały</h1>
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{tr('Materiały')}</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">Pliki i dokumenty</p>
           </div>
         </div>
@@ -146,7 +147,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
             <input
               type="text"
-              placeholder="Szukaj plików..."
+              placeholder={tr('Szukaj plików...')}
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
               className="w-full pl-10 pr-10 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
@@ -226,7 +227,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
                   onClick={handleClearSearch}
                   className="ml-2 text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 underline"
                 >
-                  Wyczyść
+                  {tr('Wyczyść')}
                 </button>
               </p>
             </div>

@@ -5,6 +5,7 @@ import {
   Sparkles, Heart, Gift, Bell, Users, Church, BookOpen, Music
 } from 'lucide-react';
 import { useTemplates, TEMPLATE_CATEGORIES } from '../hooks/useTemplates';
+import { tr } from '../../../i18n';
 
 const CATEGORY_ICONS = {
   general: FileText,
@@ -21,12 +22,12 @@ const CATEGORY_ICONS = {
 
 const EXTENDED_CATEGORIES = {
   ...TEMPLATE_CATEGORIES,
-  welcome: { label: 'Powitalne', description: 'Szablony powitalne dla nowych członków' },
-  holiday: { label: 'Świąteczne', description: 'Szablony na święta i okazje specjalne' },
+  welcome: { label: 'Powitalne', description: tr('Szablony powitalne dla nowych członków') },
+  holiday: { label: tr('Świąteczne'), description: tr('Szablony na święta i okazje specjalne') },
   invitation: { label: 'Zaproszenia', description: 'Zaproszenia na wydarzenia' },
-  ministry: { label: 'Służby', description: 'Komunikacja służb kościelnych' },
-  worship: { label: 'Uwielbienie', description: 'Materiały zespołu uwielbienia' },
-  study: { label: 'Studium', description: 'Materiały do studium biblijnego' }
+  ministry: { label: tr('Służby'), description: tr('Komunikacja służb kościelnych') },
+  worship: { label: 'Uwielbienie', description: tr('Materiały zespołu uwielbienia') },
+  study: { label: 'Studium', description: tr('Materiały do studium biblijnego') }
 };
 
 export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCreateTemplate }) {
@@ -75,7 +76,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
 
   const handleDelete = async (template) => {
     if (template.is_system) {
-      alert('Nie można usunąć szablonu systemowego');
+      alert(tr('Nie można usunąć szablonu systemowego'));
       return;
     }
     if (!confirm(`Czy na pewno chcesz usunąć szablon "${template.name}"?`)) return;
@@ -83,7 +84,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
     try {
       await deleteTemplate(template.id);
     } catch (err) {
-      alert('Błąd podczas usuwania szablonu');
+      alert(tr('Błąd podczas usuwania szablonu'));
     }
     setMenuOpen(null);
   };
@@ -92,7 +93,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
     try {
       await duplicateTemplate(template.id);
     } catch (err) {
-      alert('Błąd podczas duplikowania szablonu');
+      alert(tr('Błąd podczas duplikowania szablonu'));
     }
     setMenuOpen(null);
   };
@@ -142,7 +143,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Szukaj szablonów..."
+            placeholder={tr('Szukaj szablonów...')}
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 transition-all"
           />
           {searchQuery && (
@@ -217,7 +218,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
               <FileText className="w-7 h-7 text-white" />
             </div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Nowy szablon</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Stwórz własny szablon</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Stwórz własny szablon')}</p>
           </button>
         )}
 
@@ -248,14 +249,14 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                     <button
                       onClick={(e) => { e.stopPropagation(); setPreviewTemplate(template); }}
                       className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:scale-110 transition-transform"
-                      title="Podgląd"
+                      title={tr('Podgląd')}
                     >
                       <Eye size={18} className="text-gray-700 dark:text-gray-300" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onSelectTemplate(template.id); }}
                       className="p-2 bg-accent-primary-light rounded-lg shadow-lg hover:scale-110 transition-transform"
-                      title="Użyj szablonu"
+                      title={tr('Użyj szablonu')}
                     >
                       <Edit size={18} className="text-white" />
                     </button>
@@ -293,7 +294,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                         <CategoryIcon size={12} />
-                        {EXTENDED_CATEGORIES[template.category]?.label || 'Ogólne'}
+                        {EXTENDED_CATEGORIES[template.category]?.label || tr('Ogólne')}
                       </span>
                       {template.subject && (
                         <span className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[120px]" title={template.subject}>
@@ -328,14 +329,14 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <Eye size={14} />
-                            Podgląd
+                            {tr('Podgląd')}
                           </button>
                           <button
                             onClick={() => { onSelectTemplate(template.id); setMenuOpen(null); }}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <Plus size={14} />
-                            Użyj szablonu
+                            {tr('Użyj szablonu')}
                           </button>
                           {onEditTemplate && (
                             <button
@@ -351,7 +352,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <Star size={14} className={isFavorite ? 'fill-amber-500 text-amber-500' : ''} />
-                            {isFavorite ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
+                            {isFavorite ? tr('Usuń z ulubionych') : 'Dodaj do ulubionych'}
                           </button>
                           <button
                             onClick={() => handleDuplicate(template)}
@@ -368,7 +369,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                                 className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                               >
                                 <Trash2 size={14} />
-                                Usuń
+                                {tr('Usuń')}
                               </button>
                             </>
                           )}
@@ -383,7 +384,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                   onClick={() => onSelectTemplate(template.id)}
                   className="w-full mt-3 py-2 text-sm font-medium text-accent-primary dark:text-accent-primary-light bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 rounded-lg transition-colors"
                 >
-                  Użyj szablonu
+                  {tr('Użyj szablonu')}
                 </button>
               </div>
             </div>
@@ -397,14 +398,14 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
             <FileText className="w-8 h-8 text-gray-400" />
           </div>
           <p className="text-gray-500 dark:text-gray-400 mb-2">
-            {showFavoritesOnly ? 'Brak ulubionych szablonów' : 'Brak szablonów w tej kategorii'}
+            {showFavoritesOnly ? tr('Brak ulubionych szablonów') : tr('Brak szablonów w tej kategorii')}
           </p>
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
               className="text-sm text-accent-primary-light hover:text-accent-primary"
             >
-              Wyczyść wyszukiwanie
+              {tr('Wyczyść wyszukiwanie')}
             </button>
           )}
         </div>
@@ -457,7 +458,7 @@ function TemplatePreviewModal({
                 </h2>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-sm text-white/80">
-                    {EXTENDED_CATEGORIES[template.category]?.label || 'Ogólne'}
+                    {EXTENDED_CATEGORIES[template.category]?.label || tr('Ogólne')}
                   </span>
                   {template.is_system && (
                     <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-white/20 text-white rounded-full">
@@ -506,7 +507,7 @@ function TemplatePreviewModal({
                     ? 'bg-white text-amber-500'
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
-                title={isFavorite ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
+                title={isFavorite ? tr('Usuń z ulubionych') : 'Dodaj do ulubionych'}
               >
                 <Star size={18} className={isFavorite ? 'fill-amber-500' : ''} />
               </button>
@@ -546,7 +547,7 @@ function TemplatePreviewModal({
                 </html>
               `}
               className="w-full h-full min-h-[500px] border-0"
-              title="Podgląd szablonu"
+              title={tr('Podgląd szablonu')}
             />
           </div>
         </div>
@@ -572,7 +573,7 @@ function TemplatePreviewModal({
               className="group px-6 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-medium rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl flex items-center gap-2"
             >
               <Edit size={16} className="group-hover:scale-110 transition-transform" />
-              Użyj szablonu
+              {tr('Użyj szablonu')}
             </button>
           </div>
         </div>

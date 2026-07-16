@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getSuggestedLocation, calculateAge, formatAgeRange } from '../utils/ageCalculator';
 import { ArrowLeft, UserPlus, Loader2, Check } from 'lucide-react';
+import { tr } from '../../../../i18n';
 
 export default function GuestCheckinForm({
   locations,
@@ -42,19 +43,19 @@ export default function GuestCheckinForm({
     const newErrors = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Imię jest wymagane';
+      newErrors.name = tr('Imię jest wymagane');
     }
     if (!formData.birthYear) {
       newErrors.birthYear = 'Rok urodzenia jest wymagany';
     }
     if (!formData.parentName.trim()) {
-      newErrors.parentName = 'Imię rodzica jest wymagane';
+      newErrors.parentName = tr('Imię rodzica jest wymagane');
     }
     if (!formData.parentPhone.trim()) {
       newErrors.parentPhone = 'Telefon jest wymagany';
     }
     if (!selectedLocation) {
-      newErrors.location = 'Wybierz salę';
+      newErrors.location = tr('Wybierz salę');
     }
 
     setErrors(newErrors);
@@ -94,10 +95,10 @@ export default function GuestCheckinForm({
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Check-in Gościa
+          {tr('Check-in Gościa')}
         </h1>
         <p className="text-base text-gray-600 dark:text-gray-400">
-          Wprowadź dane dziecka
+          {tr('Wprowadź dane dziecka')}
         </p>
       </div>
 
@@ -106,7 +107,7 @@ export default function GuestCheckinForm({
         {/* Child name */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-            Imię i nazwisko dziecka *
+            {tr('Imię i nazwisko dziecka *')}
           </label>
           <input
             type="text"
@@ -131,7 +132,7 @@ export default function GuestCheckinForm({
               onChange={(e) => handleChange('birthYear', e.target.value)}
               className={inputClasses(errors.birthYear)}
             >
-              <option value="">Wybierz...</option>
+              <option value="">{tr('Wybierz...')}</option>
               {yearOptions.map(year => (
                 <option key={year} value={year}>{year}</option>
               ))}
@@ -160,7 +161,7 @@ export default function GuestCheckinForm({
             onChange={(e) => setSelectedLocation(e.target.value)}
             className={inputClasses(errors.location)}
           >
-            <option value="">Wybierz salę...</option>
+            <option value="">{tr('Wybierz salę...')}</option>
             {locations.map((loc) => (
               <option key={loc.id} value={loc.id}>
                 {loc.name}
@@ -191,7 +192,7 @@ export default function GuestCheckinForm({
         {/* Parent name */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-            Imię rodzica *
+            {tr('Imię rodzica *')}
           </label>
           <input
             type="text"
@@ -244,7 +245,7 @@ export default function GuestCheckinForm({
           <textarea
             value={formData.notes}
             onChange={(e) => handleChange('notes', e.target.value)}
-            placeholder="Dodatkowe informacje..."
+            placeholder={tr('Dodatkowe informacje...')}
             rows={2}
             className={`${inputClasses(false)} resize-vertical min-h-[60px]`}
           />
@@ -257,7 +258,7 @@ export default function GuestCheckinForm({
             className="flex-1 flex items-center justify-center gap-2 px-4 py-4 text-base font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
           >
             <ArrowLeft size={18} />
-            Wróć
+            {tr('Wróć')}
           </button>
           <button
             onClick={handleSubmit}
@@ -276,7 +277,7 @@ export default function GuestCheckinForm({
             ) : (
               <>
                 <UserPlus size={20} />
-                Zamelduj gościa
+                {tr('Zamelduj gościa')}
               </>
             )}
           </button>

@@ -10,6 +10,7 @@ import {
   Loader2,
   ExternalLink
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function InvoicesList() {
   const [invoices, setInvoices] = useState([]);
@@ -41,7 +42,7 @@ export default function InvoicesList() {
       await redirectToPayment(invoiceId);
     } catch (err) {
       console.error('Error initiating payment:', err);
-      alert('Wystąpił błąd podczas inicjowania płatności. Spróbuj ponownie.');
+      alert(tr('Wystąpił błąd podczas inicjowania płatności. Spróbuj ponownie.'));
     } finally {
       setPayingInvoice(null);
     }
@@ -52,7 +53,7 @@ export default function InvoicesList() {
     if (pdfUrl) {
       window.open(pdfUrl, '_blank');
     } else {
-      alert('PDF faktury nie jest jeszcze dostępny.');
+      alert(tr('PDF faktury nie jest jeszcze dostępny.'));
     }
   };
 
@@ -77,7 +78,7 @@ export default function InvoicesList() {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
         <Loader2 size={32} className="animate-spin mx-auto text-accent-primary-light mb-4" />
-        <p className="text-gray-600 dark:text-gray-400">Ładowanie faktur...</p>
+        <p className="text-gray-600 dark:text-gray-400">{tr('Ładowanie faktur...')}</p>
       </div>
     );
   }
@@ -90,7 +91,7 @@ export default function InvoicesList() {
           Brak faktur
         </h3>
         <p className="text-gray-600 dark:text-gray-400">
-          Tutaj pojawią się Twoje faktury po dokonaniu pierwszej płatności.
+          {tr('Tutaj pojawią się Twoje faktury po dokonaniu pierwszej płatności.')}
         </p>
       </div>
     );
@@ -111,10 +112,10 @@ export default function InvoicesList() {
             <tr className="text-left text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50">
               <th className="px-6 py-3 font-medium">Numer</th>
               <th className="px-6 py-3 font-medium">Data wystawienia</th>
-              <th className="px-6 py-3 font-medium">Termin płatności</th>
-              <th className="px-6 py-3 font-medium">Kwota</th>
-              <th className="px-6 py-3 font-medium">Status</th>
-              <th className="px-6 py-3 font-medium text-right">Akcje</th>
+              <th className="px-6 py-3 font-medium">{tr('Termin płatności')}</th>
+              <th className="px-6 py-3 font-medium">{tr('Kwota')}</th>
+              <th className="px-6 py-3 font-medium">{tr('Status')}</th>
+              <th className="px-6 py-3 font-medium text-right">{tr('Akcje')}</th>
             </tr>
           </thead>
           <tbody>

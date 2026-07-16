@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Check, Search, Loader2, CalendarCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import CustomDatePicker from '../components/CustomDatePicker';
+import { tr } from '../i18n';
 
 const KINDS = ['nabożeństwo', 'spotkanie', 'grupa domowa', 'wydarzenie'];
 
@@ -70,14 +71,14 @@ export default function AttendanceTab({ members = [] }) {
     <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6">
       <div className="flex flex-col md:flex-row md:items-end gap-4 mb-5">
         <div className="w-full md:w-48">
-          <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Data</label>
+          <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">{tr('Data')}</label>
           <CustomDatePicker value={date} onChange={setDate} />
         </div>
         <div className="w-full md:w-56">
           <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Typ</label>
           <select value={kind} onChange={(e) => setKind(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 text-sm text-gray-900 dark:text-gray-100">
-            {KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+            {KINDS.map((k) => <option key={k} value={k}>{tr(k)}</option>)}
           </select>
         </div>
         <div className="flex-1">
@@ -96,7 +97,7 @@ export default function AttendanceTab({ members = [] }) {
         </div>
         <div className="flex gap-2">
           <button onClick={() => markAll(true)} className="text-xs px-3 py-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-300 font-medium hover:bg-green-100 transition">Zaznacz wszystkich</button>
-          <button onClick={() => markAll(false)} className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium hover:bg-gray-200 transition">Wyczyść</button>
+          <button onClick={() => markAll(false)} className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium hover:bg-gray-200 transition">{tr('Wyczyść')}</button>
         </div>
       </div>
 
@@ -123,7 +124,7 @@ export default function AttendanceTab({ members = [] }) {
               </button>
             );
           })}
-          {filtered.length === 0 && <div className="col-span-full text-center text-sm text-gray-400 py-6">Brak osób</div>}
+          {filtered.length === 0 && <div className="col-span-full text-center text-sm text-gray-400 py-6">{tr('Brak osób')}</div>}
         </div>
       )}
     </section>

@@ -3,6 +3,7 @@ import { ArrowLeft, Users, Settings, Bell, BellOff, Trash2, Image, Search, MoreV
 import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 const ministryIcons = {
   worship_team: Music,
@@ -209,7 +210,7 @@ export default function ConversationHeader({
                   className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
                 >
                   <Trash2 size={16} />
-                  Usuń rozmowę
+                  {tr('Usuń rozmowę')}
                 </button>
               )}
             </div>
@@ -225,10 +226,10 @@ export default function ConversationHeader({
               <Trash2 size={24} className="text-red-500" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Usuń rozmowę
+              {tr('Usuń rozmowę')}
             </h3>
             <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">
-              Czy na pewno chcesz usunąć tę rozmowę? Wszystkie wiadomości zostaną trwale usunięte.
+              {tr('Czy na pewno chcesz usunąć tę rozmowę? Wszystkie wiadomości zostaną trwale usunięte.')}
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -244,7 +245,7 @@ export default function ConversationHeader({
                 }}
                 className="px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg shadow-red-500/30"
               >
-                Usuń
+                {tr('Usuń')}
               </button>
             </div>
           </div>

@@ -19,9 +19,12 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TabEditor from './TabEditor';
+import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Sortable Tab Item
 function SortableTabItem({ tab, onEdit, onDelete }) {
+  const t = useT();
   const {
     attributes,
     listeners,
@@ -73,7 +76,7 @@ function SortableTabItem({ tab, onEdit, onDelete }) {
       {/* Actions */}
       <div className="flex items-center gap-1">
         {tab.is_system ? (
-          <div className="p-2 text-gray-400" title="Zakładka systemowa">
+          <div className="p-2 text-gray-400" title={t('Zakładka systemowa')}>
             <Lock size={16} />
           </div>
         ) : (
@@ -81,14 +84,14 @@ function SortableTabItem({ tab, onEdit, onDelete }) {
             <button
               onClick={() => onEdit(tab)}
               className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
-              title="Edytuj"
+              title={t('Edytuj')}
             >
               <Pencil size={16} />
             </button>
             <button
               onClick={() => onDelete(tab)}
               className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition opacity-0 group-hover:opacity-100"
-              title="Usuń"
+              title={t('Usuń')}
             >
               <Trash2 size={16} />
             </button>
@@ -108,6 +111,7 @@ export default function TabManager({
   onDeleteTab,
   onReorderTabs
 }) {
+  const t = useT();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingTab, setEditingTab] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -180,7 +184,7 @@ export default function TabManager({
             </div>
             <div>
               <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                Zakładki modułu
+                {tr('Zakładki modułu')}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {module.label}
@@ -203,7 +207,7 @@ export default function TabManager({
             className="w-full mb-4 p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-accent-primary-light hover:text-accent-primary-light dark:hover:border-accent-primary-light dark:hover:text-accent-primary-light transition flex items-center justify-center gap-2"
           >
             <Plus size={20} />
-            Dodaj zakładkę
+            {tr('Dodaj zakładkę')}
           </button>
 
           {/* Tabs List */}
@@ -231,8 +235,8 @@ export default function TabManager({
             </DndContext>
           ) : (
             <div className="text-center py-12 text-gray-400">
-              <p>Brak zakładek w tym module</p>
-              <p className="text-sm mt-1">Kliknij "Dodaj zakładkę" aby dodać pierwszą</p>
+              <p>{t('Brak zakładek w tym module')}</p>
+              <p className="text-sm mt-1">{t('Kliknij "Dodaj zakładkę" aby dodać pierwszą')}</p>
             </div>
           )}
         </div>
@@ -264,7 +268,7 @@ export default function TabManager({
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[170]">
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <h4 className="font-bold text-lg text-gray-800 dark:text-white mb-2">
-              Usunąć zakładkę?
+              {tr('Usunąć zakładkę?')}
             </h4>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               Czy na pewno chcesz usunąć zakładkę "{deleteConfirm.label}"? Tej operacji nie można cofnąć.
@@ -280,7 +284,7 @@ export default function TabManager({
                 onClick={confirmDelete}
                 className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition"
               >
-                Usuń
+                {tr('Usuń')}
               </button>
             </div>
           </div>

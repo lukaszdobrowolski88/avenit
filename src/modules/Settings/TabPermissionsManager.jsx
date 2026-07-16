@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Check, X } from 'lucide-react';
+import { tr } from '../../i18n';
 
 // Definicja modułów i ich zakładek
 const MODULE_TABS = {
   dashboard: {
-    label: 'Pulpit',
+    label: tr('Pulpit'),
     tabs: {
-      ministry: 'Moja służba',
+      ministry: tr('Moja służba'),
       tasks: 'Moje zadania',
-      absences: 'Nieobecności',
+      absences: tr('Nieobecności'),
       prayers: 'Moje modlitwy'
     }
   },
@@ -17,7 +18,7 @@ const MODULE_TABS = {
     tabs: {
       groups: 'Grupy',
       leaders: 'Liderzy',
-      members: 'Członkowie',
+      members: tr('Członkowie'),
       finances: 'Finanse'
     }
   },
@@ -26,12 +27,12 @@ const MODULE_TABS = {
     tabs: {
       schedule: 'Grafik',
       tasks: 'Zadania',
-      members: 'Członkowie',
+      members: tr('Członkowie'),
       finances: 'Finanse'
     }
   },
   kids: {
-    label: 'Małe Avenit',
+    label: tr('Małe Avenit'),
     tabs: {
       schedule: 'Grafik',
       groups: 'Grupy',
@@ -41,19 +42,19 @@ const MODULE_TABS = {
     }
   },
   worship: {
-    label: 'Grupa Uwielbienia',
+    label: tr('Grupa Uwielbienia'),
     tabs: {
       schedule: 'Grafik',
-      songs: 'Baza Pieśni',
-      members: 'Członkowie',
+      songs: tr('Baza Pieśni'),
+      members: tr('Członkowie'),
       finances: 'Finanse'
     }
   },
   atmosfera: {
-    label: 'Atmosfera Team',
+    label: tr('Atmosfera Team'),
     tabs: {
       schedule: 'Grafik',
-      members: 'Członkowie',
+      members: tr('Członkowie'),
       finances: 'Finanse'
     }
   }
@@ -149,7 +150,7 @@ export function hasTabAccess(module, tab, userRole) {
 
     // W przeglądarce nie możemy bezpośrednio zapisać pliku,
     // więc pokazujemy komunikat, że zmiany wymagają restartu
-    alert('Uprawnienia zaktualizowane. Odśwież stronę, aby zmiany weszły w życie.');
+    alert(tr('Uprawnienia zaktualizowane. Odśwież stronę, aby zmiany weszły w życie.'));
     window.location.reload();
   };
 
@@ -210,8 +211,8 @@ export function hasTabAccess(module, tab, userRole) {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-600">
-                      <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-300">Zakładka</th>
-                      <th className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-300">Wszyscy</th>
+                      <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-300">{tr('Zakładka')}</th>
+                      <th className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-300">{tr('Wszyscy')}</th>
                       {roles.map(role => (
                         <th key={role.key} className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-300">
                           {role.label}
@@ -278,7 +279,7 @@ export function hasTabAccess(module, tab, userRole) {
           onClick={() => setPermissions(getInitialPermissions())}
           className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
         >
-          Przywróć domyślne
+          {tr('Przywróć domyślne')}
         </button>
         <button
           onClick={savePermissions}

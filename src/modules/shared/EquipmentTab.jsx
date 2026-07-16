@@ -5,15 +5,18 @@ import {
   Plus, Search, Trash2, X, Edit2, Package, Camera, User,
   DollarSign, Hash, Upload, AlertTriangle
 } from 'lucide-react';
+import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 const CONDITIONS = [
-  { value: 'nowy', label: 'Nowy', color: 'green' },
+  { value: 'nowy', label: tr('Nowy'), color: 'green' },
   { value: 'dobry', label: 'Dobry', color: 'blue' },
   { value: 'uszkodzony', label: 'Uszkodzony', color: 'yellow' },
   { value: 'do_naprawy', label: 'Do naprawy', color: 'red' }
 ];
 
 export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = false }) {
+  const t = useT();
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -74,7 +77,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       setForm(prev => ({ ...prev, photo_url: data.publicUrl }));
     } catch (err) {
       console.error('Upload error:', err);
-      alert('Błąd przesyłania zdjęcia: ' + err.message);
+      alert(tr('Błąd przesyłania zdjęcia: ') + err.message);
     }
     setUploading(false);
   };
@@ -113,7 +116,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      alert('Podaj nazwę wyposażenia');
+      alert(tr('Podaj nazwę wyposażenia'));
       return;
     }
 
@@ -148,12 +151,12 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       fetchEquipment();
     } catch (err) {
       console.error('Save error:', err);
-      alert('Błąd zapisywania: ' + err.message);
+      alert(tr('Błąd zapisywania: ') + err.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć ten przedmiot?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć ten przedmiot?'))) return;
 
     try {
       const { error } = await supabase
@@ -164,7 +167,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       fetchEquipment();
     } catch (err) {
       console.error('Delete error:', err);
-      alert('Błąd usuwania: ' + err.message);
+      alert(tr('Błąd usuwania: ') + err.message);
     }
   };
 
@@ -202,7 +205,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
         <div>
           <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Package className="text-accent-primary-light" size={24} />
-            Wyposażenie
+            {tr('Wyposażenie')}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Łącznie: {equipment.length} przedmiotów | Wartość: {totalValue.toLocaleString('pl-PL')} zł
@@ -215,7 +218,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Szukaj..."
+              placeholder={t('Szukaj...')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full sm:w-48 pl-9 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light text-gray-700 dark:text-gray-200"
@@ -229,7 +232,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
               className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2 whitespace-nowrap font-medium"
             >
               <Plus size={18} />
-              <span className="hidden sm:inline">Dodaj</span>
+              <span className="hidden sm:inline">{t('Dodaj')}</span>
             </button>
           )}
         </div>
@@ -239,7 +242,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       {filteredEquipment.length === 0 ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           <Package size={48} className="mx-auto mb-4 opacity-30" />
-          <p className="text-lg font-medium">Brak wyposażenia</p>
+          <p className="text-lg font-medium">{t('Brak wyposażenia')}</p>
           <p className="text-sm mt-1">Dodaj pierwszy przedmiot do listy</p>
         </div>
       ) : (
@@ -304,7 +307,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                     className="flex-1 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition flex items-center justify-center gap-1"
                   >
                     <Trash2 size={14} />
-                    Usuń
+                    {tr('Usuń')}
                   </button>
                 </div>
               )}
@@ -321,7 +324,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
           <div className="relative bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-gray-900 px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between z-10">
               <h3 className="text-lg lg:text-xl font-bold text-gray-800 dark:text-gray-100">
-                {editingItem ? 'Edytuj wyposażenie' : 'Dodaj wyposażenie'}
+                {editingItem ? tr('Edytuj wyposażenie') : tr('Dodaj wyposażenie')}
               </h3>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
                 <X size={20} className="text-gray-500" />
@@ -331,7 +334,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
             <div className="p-4 lg:p-6 space-y-4">
               {/* Photo upload */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Zdjęcie</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('Zdjęcie')}</label>
                 <div className="flex items-center gap-4">
                   <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center flex-shrink-0">
                     {form.photo_url ? (
@@ -354,14 +357,14 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                       className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
                     >
                       <Upload size={16} />
-                      {uploading ? 'Przesyłanie...' : 'Wybierz zdjęcie'}
+                      {uploading ? tr('Przesyłanie...') : tr('Wybierz zdjęcie')}
                     </button>
                     {form.photo_url && (
                       <button
                         onClick={() => setForm(prev => ({ ...prev, photo_url: '' }))}
                         className="mt-2 text-xs text-red-500 hover:text-red-600 w-full text-center"
                       >
-                        Usuń zdjęcie
+                        {tr('Usuń zdjęcie')}
                       </button>
                     )}
                   </div>
@@ -370,7 +373,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
 
               {/* Name */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Nazwa *</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Nazwa *')}</label>
                 <input
                   type="text"
                   value={form.name}
@@ -382,7 +385,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
 
               {/* Description */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Opis')}</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
@@ -395,7 +398,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
               {/* Quantity & Value */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Ilość</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Ilość')}</label>
                   <input
                     type="number"
                     min="1"
@@ -405,7 +408,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Wartość (zł)</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Wartość (zł)')}</label>
                   <input
                     type="number"
                     min="0"
@@ -419,13 +422,13 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
 
               {/* Responsible person */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Osoba odpowiedzialna</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Osoba odpowiedzialna')}</label>
                 <input
                   type="text"
                   value={form.responsible_person}
                   onChange={(e) => setForm(prev => ({ ...prev, responsible_person: e.target.value }))}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light text-gray-700 dark:text-gray-200"
-                  placeholder="Imię i nazwisko"
+                  placeholder={t('Imię i nazwisko')}
                 />
               </div>
 

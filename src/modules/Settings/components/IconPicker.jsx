@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import * as Icons from 'lucide-react';
 import { Search, X, ChevronDown } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 // Popularne ikony pogrupowane
 const ICON_CATEGORIES = {
@@ -129,7 +130,7 @@ export default function IconPicker({ value, onChange, className = '' }) {
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white">
             <IconComponent size={20} />
           </div>
-          <span className="text-sm text-gray-700 dark:text-gray-200">{value || 'Wybierz ikonę'}</span>
+          <span className="text-sm text-gray-700 dark:text-gray-200">{value || tr('Wybierz ikonę')}</span>
         </div>
         <ChevronDown size={18} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -180,7 +181,7 @@ export default function IconPicker({ value, onChange, className = '' }) {
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                 >
-                  {category}
+                  {tr(category)}
                 </button>
               ))}
             </div>

@@ -4,6 +4,7 @@ import { X, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import { WIDGET_DEFINITIONS, WIDGET_SIZES } from '../utils/layoutDefaults';
 import { hasTabAccess } from '../../../utils/tabPermissions';
 import * as Icons from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function LayoutCustomizer({
   isOpen,
@@ -46,7 +47,7 @@ export default function LayoutCustomizer({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Wybierz widoczne widgety i dostosuj ich rozmiar. Możesz również przeciągać widgety na pulpicie, aby zmienić ich kolejność.
+            {tr('Wybierz widoczne widgety i dostosuj ich rozmiar. Możesz również przeciągać widgety na pulpicie, aby zmienić ich kolejność.')}
           </p>
 
           <div className="space-y-3">
@@ -111,7 +112,7 @@ export default function LayoutCustomizer({
                           ? 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400'
                           : 'hover:bg-green-100 dark:hover:bg-green-900/30 text-gray-400 hover:text-green-600'
                       }`}
-                      title={item.visible ? 'Ukryj widget' : 'Pokaż widget'}
+                      title={item.visible ? 'Ukryj widget' : tr('Pokaż widget')}
                     >
                       {item.visible ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -129,7 +130,7 @@ export default function LayoutCustomizer({
             className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
           >
             <RotateCcw size={16} />
-            Przywróć domyślne
+            {tr('Przywróć domyślne')}
           </button>
           <button
             onClick={onClose}

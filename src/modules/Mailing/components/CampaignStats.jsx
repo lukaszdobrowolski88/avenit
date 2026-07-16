@@ -5,6 +5,7 @@ import {
   TrendingUp, Calendar, Users, Download, ChevronDown,
   BarChart3, Sparkles, Mail
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function CampaignStats({ campaigns }) {
   const t = useT();
@@ -68,7 +69,7 @@ export default function CampaignStats({ campaigns }) {
   };
 
   const exportToCSV = () => {
-    const headers = ['Nazwa', 'Data wysyłki', 'Odbiorcy', 'Wysłane', 'Dostarczone', 'Otwarte', 'Kliknięte', 'Odbite', 'Wypisani'];
+    const headers = [tr('Nazwa'), tr('Data wysyłki'), tr('Odbiorcy'), tr('Wysłane'), tr('Dostarczone'), tr('Otwarte'), tr('Kliknięte'), tr('Odbite'), tr('Wypisani')];
     const rows = filteredCampaigns.map(c => [
       c.name,
       formatDate(c.sent_at),
@@ -104,7 +105,7 @@ export default function CampaignStats({ campaigns }) {
           Brak danych statystycznych
         </h3>
         <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
-          Wyślij swój pierwszy mail, aby zobaczyć szczegółowe statystyki
+          {tr('Wyślij swój pierwszy mail, aby zobaczyć szczegółowe statystyki')}
         </p>
         <div className="flex items-center justify-center gap-2 text-sm text-accent-primary-light dark:text-accent-primary-light">
           <Sparkles size={14} />
@@ -171,7 +172,7 @@ export default function CampaignStats({ campaigns }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard
           icon={Send}
-          label="Wysłane"
+          label={tr('Wysłane')}
           value={overallStats.totalSent}
           color="blue"
         />
@@ -191,7 +192,7 @@ export default function CampaignStats({ campaigns }) {
         />
         <StatCard
           icon={MousePointer}
-          label="Kliknięte"
+          label={tr('Kliknięte')}
           value={overallStats.totalClicked}
           subValue={`${overallStats.clickRate}%`}
           color="pink"
@@ -215,7 +216,7 @@ export default function CampaignStats({ campaigns }) {
         <div className="px-5 py-4 bg-gradient-to-r from-gray-50/80 to-gray-100/50 dark:from-gray-900/50 dark:to-gray-800/30 border-b border-gray-200/50 dark:border-gray-700/50">
           <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Mail size={16} className="text-accent-primary-light" />
-            Szczegóły maili
+            {tr('Szczegóły maili')}
           </h3>
         </div>
 
@@ -284,12 +285,12 @@ export default function CampaignStats({ campaigns }) {
                 {isExpanded && (
                   <div className="mt-5 pt-5 border-t border-gray-200/50 dark:border-gray-700/50">
                     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                      <MiniStat label="Wysłane" value={campaign.sent_count || 0} color="blue" />
+                      <MiniStat label={tr('Wysłane')} value={campaign.sent_count || 0} color="blue" />
                       <MiniStat label="Dostarczone" value={campaign.delivered_count || 0} color="emerald" />
                       <MiniStat label="Otwarte" value={campaign.opened_count || 0} color="purple" />
-                      <MiniStat label="Kliknięte" value={campaign.clicked_count || 0} color="pink" />
+                      <MiniStat label={tr('Kliknięte')} value={campaign.clicked_count || 0} color="pink" />
                       <MiniStat label="Odbite" value={campaign.bounced_count || 0} color="amber" />
-                      <MiniStat label="Błędy" value={campaign.failed_count || 0} color="red" />
+                      <MiniStat label={tr('Błędy')} value={campaign.failed_count || 0} color="red" />
                       <MiniStat label="Wypisani" value={campaign.unsubscribed_count || 0} color="gray" />
                     </div>
 
@@ -299,7 +300,7 @@ export default function CampaignStats({ campaigns }) {
                         <div
                           className="bg-gradient-to-r from-emerald-400 to-green-500 transition-all duration-500"
                           style={{ width: `${(campaign.opened_count || 0) / (campaign.total_recipients || 1) * 100}%` }}
-                          title="Otwarte"
+                          title={tr('Otwarte')}
                         />
                         <div
                           className="bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-500"

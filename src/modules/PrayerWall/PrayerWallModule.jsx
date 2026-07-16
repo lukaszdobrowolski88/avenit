@@ -25,17 +25,18 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+import { tr } from '../../i18n';
 
 // ============================================
 // KONFIGURACJA KATEGORII
 // ============================================
 
 const CATEGORIES = {
-  zdrowie: { label: 'Zdrowie', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: '❤️' },
-  rodzina: { label: 'Rodzina', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: '👨‍👩‍👧‍👦' },
-  finanse: { label: 'Finanse', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: '💰' },
-  duchowe: { label: 'Duchowe', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: '🙏' },
-  inne: { label: 'Inne', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', icon: '✨' }
+  zdrowie: { label: tr('Zdrowie'), color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: '❤️' },
+  rodzina: { label: tr('Rodzina'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: '👨‍👩‍👧‍👦' },
+  finanse: { label: tr('Finanse'), color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: '💰' },
+  duchowe: { label: tr('Duchowe'), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: '🙏' },
+  inne: { label: tr('Inne'), color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', icon: '✨' }
 };
 
 // ============================================
@@ -127,7 +128,7 @@ function PrayerRequestCard({
       {isAnswered && (
         <div className="absolute -top-3 -right-3 bg-gradient-to-r from-amber-400 to-yellow-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 shadow-md">
           <Star className="w-3 h-3" />
-          Świadectwo
+          {tr('Świadectwo')}
         </div>
       )}
 
@@ -194,7 +195,7 @@ function PrayerRequestCard({
         <div className="bg-amber-50/80 dark:bg-amber-900/30 rounded-xl p-3 mb-4 border border-amber-200 dark:border-amber-700/50">
           <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1 flex items-center gap-1">
             <Sparkles className="w-3 h-3" />
-            Świadectwo wysłuchania
+            {tr('Świadectwo wysłuchania')}
           </p>
           <p className="text-sm text-amber-800 dark:text-amber-300">
             {request.answered_testimony}
@@ -206,7 +207,7 @@ function PrayerRequestCard({
       {isAuthor && request.visibility === 'leaders_only' && (
         <div className="mb-3">
           <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2 py-1 rounded-full">
-            🔒 Tylko dla liderów
+            {tr('🔒 Tylko dla liderów')}
           </span>
         </div>
       )}
@@ -259,14 +260,14 @@ function PrayerRequestCard({
             <button
               onClick={() => onEdit(request)}
               className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
-              title="Edytuj"
+              title={tr('Edytuj')}
             >
               <Pencil className="w-4 h-4" />
             </button>
             <button
               onClick={() => onDelete(request.id)}
               className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-              title="Usuń"
+              title={tr('Usuń')}
             >
               <X className="w-4 h-4" />
             </button>
@@ -375,7 +376,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
           {/* Treść */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Treść intencji modlitewnej
+              {tr('Treść intencji modlitewnej')}
             </label>
             <textarea
               value={content}
@@ -415,7 +416,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
           {/* Widoczność */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-              Widoczność
+              {tr('Widoczność')}
             </label>
             <div className="flex gap-3">
               <label className={`
@@ -476,7 +477,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
             <div>
               <p className="font-medium text-gray-800 dark:text-gray-200">{t('Dodaj anonimowo')}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Twoje imię nie będzie widoczne dla innych
+                {tr('Twoje imię nie będzie widoczne dla innych')}
               </p>
             </div>
           </label>
@@ -546,7 +547,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                 <div>
                   <p className="font-medium text-gray-800 dark:text-gray-200">{t('Modlitwa wysłuchana!')}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Podziel się świadectwem z innymi
+                    {tr('Podziel się świadectwem z innymi')}
                   </p>
                 </div>
               </label>
@@ -629,10 +630,10 @@ function AnsweredModal({ isOpen, onClose, onSubmit, request, isLoading }) {
               <Sparkles className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-              Chwała Bogu!
+              {tr('Chwała Bogu!')}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mt-1">
-              Podziel się świadectwem wysłuchania modlitwy
+              {tr('Podziel się świadectwem wysłuchania modlitwy')}
             </p>
           </div>
 
@@ -663,7 +664,7 @@ function AnsweredModal({ isOpen, onClose, onSubmit, request, isLoading }) {
                 ) : (
                   <>
                     <Star className="w-5 h-5" />
-                    Potwierdź
+                    {tr('Potwierdź')}
                   </>
                 )}
               </button>
@@ -791,7 +792,7 @@ export default function PrayerWallModule() {
 
     } catch (err) {
       console.error('Błąd pobierania prośb:', err);
-      setError('Nie udało się pobrać prośb modlitewnych');
+      setError(tr('Nie udało się pobrać prośb modlitewnych'));
     } finally {
       setLoading(false);
     }
@@ -944,7 +945,7 @@ export default function PrayerWallModule() {
       fetchRequests();
     } catch (err) {
       console.error('Błąd zapisywania:', err);
-      setError('Nie udało się zapisać prośby');
+      setError(tr('Nie udało się zapisać prośby'));
     } finally {
       setIsSubmitting(false);
     }
@@ -952,7 +953,7 @@ export default function PrayerWallModule() {
 
   // Usuń prośbę
   const handleDelete = async (requestId) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę intencję?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę intencję?'))) return;
 
     try {
       const { error } = await supabase
@@ -964,7 +965,7 @@ export default function PrayerWallModule() {
       fetchRequests();
     } catch (err) {
       console.error('Błąd usuwania:', err);
-      setError('Nie udało się usunąć prośby');
+      setError(tr('Nie udało się usunąć prośby'));
     }
   };
 
@@ -987,7 +988,7 @@ export default function PrayerWallModule() {
       fetchRequests();
     } catch (err) {
       console.error('Błąd aktualizacji statusu:', err);
-      setError('Nie udało się zaktualizować statusu');
+      setError(tr('Nie udało się zaktualizować statusu'));
     } finally {
       setIsSubmitting(false);
     }
@@ -1073,7 +1074,7 @@ export default function PrayerWallModule() {
                 }`}
               >
                 <Sparkles className="w-4 h-4" />
-                Świadectwa
+                {tr('Świadectwa')}
               </button>
             </div>
 
@@ -1205,7 +1206,7 @@ export default function PrayerWallModule() {
                             : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                         }`}
                       >
-                        Świadectwa
+                        {tr('Świadectwa')}
                       </button>
                     </div>
 
@@ -1270,7 +1271,7 @@ export default function PrayerWallModule() {
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium rounded-xl hover:from-accent-primary hover:to-accent-secondary transition-all"
                 >
                   <Plus className="w-5 h-5" />
-                  Dodaj intencję
+                  {tr('Dodaj intencję')}
                 </button>
               </div>
             ) : (

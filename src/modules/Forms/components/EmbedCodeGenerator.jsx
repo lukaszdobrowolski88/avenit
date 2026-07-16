@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Copy, Check, Code, ExternalLink, Monitor, Smartphone, Tablet, X } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose }) {
   const [copied, setCopied] = useState(null);
@@ -78,7 +79,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
     { id: 'iframe', label: 'Iframe', icon: Code, description: 'Prosty kod do osadzenia' },
     { id: 'js', label: 'JavaScript', icon: Code, description: 'Dynamiczne osadzenie z auto-resize' },
     { id: 'wordpress', label: 'WordPress', icon: Code, description: 'Shortcode dla WordPress' },
-    { id: 'link', label: 'Link', icon: ExternalLink, description: 'Bezpośredni link do formularza' }
+    { id: 'link', label: 'Link', icon: ExternalLink, description: tr('Bezpośredni link do formularza') }
   ];
 
   const getCurrentCode = () => {
@@ -98,7 +99,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Osadź formularz na stronie
+              {tr('Osadź formularz na stronie')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {formTitle || 'Formularz'}
@@ -157,7 +158,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        Szerokość
+                        {tr('Szerokość')}
                       </label>
                       <input
                         type="text"
@@ -183,9 +184,9 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                   </div>
                   <div className="flex gap-2 mt-2">
                     {[
-                      { label: 'Mały', width: '400px', height: '400' },
-                      { label: 'Średni', width: '100%', height: '600' },
-                      { label: 'Duży', width: '100%', height: '800' }
+                      { label: tr('Mały'), width: '400px', height: '400' },
+                      { label: tr('Średni'), width: '100%', height: '600' },
+                      { label: tr('Duży'), width: '100%', height: '800' }
                     ].map((preset) => (
                       <button
                         key={preset.label}
@@ -240,7 +241,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
               <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Bezpośredni link
+                    {tr('Bezpośredni link')}
                   </span>
                   <div className="flex gap-2">
                     <button
@@ -276,7 +277,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Podgląd
+                  {tr('Podgląd')}
                 </label>
                 <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
                   {[
@@ -312,7 +313,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                   <iframe
                     src={formUrl}
                     className="w-full h-full border-0"
-                    title="Podgląd formularza"
+                    title={tr('Podgląd formularza')}
                   />
                 </div>
               </div>
@@ -326,8 +327,8 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                   <ol className="text-sm text-blue-600 dark:text-blue-300 space-y-1 list-decimal list-inside">
                     <li>Pobierz i zainstaluj plugin Avenit Forms</li>
                     <li>Aktywuj plugin w panelu WordPress</li>
-                    <li>Wklej shortcode na dowolnej stronie lub w poście</li>
-                    <li>Formularz pojawi się automatycznie</li>
+                    <li>{tr('Wklej shortcode na dowolnej stronie lub w poście')}</li>
+                    <li>{tr('Formularz pojawi się automatycznie')}</li>
                   </ol>
                 </div>
               )}
@@ -339,7 +340,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
           <div className="flex items-center justify-between">
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Formularz będzie działał na każdej stronie obsługującej iframe
+              {tr('Formularz będzie działał na każdej stronie obsługującej iframe')}
             </p>
             <button
               onClick={onClose}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { printLabels } from '../utils/labelGenerator';
 import { CheckCircle, Printer, Check } from 'lucide-react';
+import { tr } from '../../../../i18n';
 
 export default function CheckinSuccess({
   checkins,
@@ -65,7 +66,7 @@ export default function CheckinSuccess({
       {/* Security codes */}
       <div className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-6 sm:px-10 py-5 rounded-2xl mb-6">
         <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-          {displayCodes.length > 1 ? 'Kody bezpieczeństwa (ostatnie 4 cyfry telefonu)' : 'Kod bezpieczeństwa'}
+          {displayCodes.length > 1 ? tr('Kody bezpieczeństwa (ostatnie 4 cyfry telefonu)') : tr('Kod bezpieczeństwa')}
         </div>
         <div className="flex flex-wrap justify-center gap-3">
           {displayCodes.map((codeInfo, index) => (
@@ -83,7 +84,7 @@ export default function CheckinSuccess({
         </div>
         {displayCodes.length > 1 && (
           <div className="text-xs text-gray-500 dark:text-gray-500 mt-3 text-center">
-            Każdy z tych kodów może być użyty do odbioru dziecka
+            {tr('Każdy z tych kodów może być użyty do odbioru dziecka')}
           </div>
         )}
       </div>
@@ -97,7 +98,7 @@ export default function CheckinSuccess({
           {childrenNames.join(', ')}
           {isGuest && (
             <span className="ml-2 bg-amber-400 dark:bg-amber-500 text-black px-2 py-0.5 rounded text-xs font-bold align-middle">
-              GOŚĆ
+              {tr('GOŚĆ')}
             </span>
           )}
         </div>
@@ -106,7 +107,7 @@ export default function CheckinSuccess({
       {/* Print info */}
       <div className="flex items-center gap-2 mb-8 text-gray-500 dark:text-gray-400">
         <Printer size={20} />
-        <span>Etykiety zostały wysłane do drukarki</span>
+        <span>{tr('Etykiety zostały wysłane do drukarki')}</span>
       </div>
 
       {/* Actions */}

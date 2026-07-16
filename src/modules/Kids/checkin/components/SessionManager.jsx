@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, getCachedUser } from '../../../../lib/supabase';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { tr } from '../../../../i18n';
 
 export default function SessionManager({ onSessionChange }) {
   const [sessions, setSessions] = useState([]);
@@ -62,7 +63,7 @@ export default function SessionManager({ onSessionChange }) {
       if (onSessionChange) onSessionChange(data);
     } catch (err) {
       console.error('Error creating session:', err);
-      alert('Błąd podczas tworzenia sesji');
+      alert(tr('Błąd podczas tworzenia sesji'));
     }
   };
 
@@ -90,7 +91,7 @@ export default function SessionManager({ onSessionChange }) {
   };
 
   const handleDelete = async (sessionId) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę sesję?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę sesję?'))) return;
 
     try {
       const { error } = await supabase
@@ -103,7 +104,7 @@ export default function SessionManager({ onSessionChange }) {
       setSessions(prev => prev.filter(s => s.id !== sessionId));
     } catch (err) {
       console.error('Error deleting session:', err);
-      alert('Błąd podczas usuwania sesji');
+      alert(tr('Błąd podczas usuwania sesji'));
     }
   };
 
@@ -134,7 +135,7 @@ export default function SessionManager({ onSessionChange }) {
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="np. Nabożeństwo niedzielne"
+                placeholder={tr('np. Nabożeństwo niedzielne')}
                 className={inputClasses}
               />
             </div>
@@ -190,7 +191,7 @@ export default function SessionManager({ onSessionChange }) {
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                 }`}
             >
-              Utwórz sesję
+              {tr('Utwórz sesję')}
             </button>
           </div>
         </div>
@@ -200,11 +201,11 @@ export default function SessionManager({ onSessionChange }) {
       {loading ? (
         <div className="flex items-center justify-center gap-3 py-10 text-gray-500 dark:text-gray-400">
           <Loader2 size={20} className="animate-spin" />
-          Ładowanie...
+          {tr('Ładowanie...')}
         </div>
       ) : sessions.length === 0 ? (
         <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-          Brak sesji. Utwórz pierwszą sesję check-in.
+          {tr('Brak sesji. Utwórz pierwszą sesję check-in.')}
         </div>
       ) : (
         <div className="flex flex-col gap-3">

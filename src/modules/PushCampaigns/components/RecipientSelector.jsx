@@ -4,13 +4,14 @@ import {
   AlertTriangle, Plus, Minus
 } from 'lucide-react';
 import { useRecipientsSource, ROLE_OPTIONS } from '../../shared/recipients';
+import { tr } from '../../../i18n';
 
 const SEGMENT_GROUPS = [
-  { id: 'all', label: 'Wszyscy', icon: Users },
+  { id: 'all', label: tr('Wszyscy'), icon: Users },
   { id: 'campus', label: 'Campus', icon: MapPin },
-  { id: 'ministry', label: 'Służba', icon: Sparkles },
+  { id: 'ministry', label: tr('Służba'), icon: Sparkles },
   { id: 'home_group', label: 'Grupa domowa', icon: Home },
-  { id: 'role', label: 'Rola', icon: Shield },
+  { id: 'role', label: tr('Rola'), icon: Shield },
   { id: 'custom_email', label: 'Wybrane', icon: UserCheck },
 ];
 
@@ -64,7 +65,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
   const searchResults = useMemo(() => searchUsers(search), [search, searchUsers]);
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-500">Ładowanie...</div>;
+    return <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>;
   }
 
   return (
@@ -73,7 +74,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
       <div className="bg-gradient-to-r from-accent-primary-lightest/30 to-accent-secondary-lightest/30 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl p-4 flex items-center justify-between">
         <div>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">{recipientCount}</div>
-          <div className="text-xs text-gray-600 dark:text-gray-400">odbiorców (po deduplikacji + opt-outach)</div>
+          <div className="text-xs text-gray-600 dark:text-gray-400">{tr('odbiorców (po deduplikacji + opt-outach)')}</div>
         </div>
         {unsubscribed.length > 0 && (
           <div className="text-xs text-gray-500 flex items-center gap-1.5">
@@ -108,13 +109,13 @@ export default function RecipientSelector({ segments = [], onChange }) {
             checked={isSelected('all', null)}
             onClick={() => toggleSegment('all', null, 'Wszyscy aktywni')}
             label={`Wszyscy aktywni użytkownicy (${totalActive})`}
-            description="Każdy użytkownik z włączonymi powiadomieniami push."
+            description={tr('Każdy użytkownik z włączonymi powiadomieniami push.')}
           />
         )}
 
         {activeGroup === 'campus' && (
           <div className="space-y-1">
-            {campuses.length === 0 && <Empty>Brak skonfigurowanych campusów.</Empty>}
+            {campuses.length === 0 && <Empty>{tr('Brak skonfigurowanych campusów.')}</Empty>}
             {campuses.map(c => (
               <SegmentRow
                 key={c.id}
@@ -131,7 +132,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
 
         {activeGroup === 'ministry' && (
           <div className="space-y-1">
-            {ministries.length === 0 && <Empty>Brak danych o służbach.</Empty>}
+            {ministries.length === 0 && <Empty>{tr('Brak danych o służbach.')}</Empty>}
             {ministries.map(m => (
               <SegmentRow
                 key={m.id}
@@ -252,7 +253,7 @@ function SegmentRow({ checked, excluded, onClick, onExcludeClick, label, count, 
       {onExcludeClick && (
         <button
           onClick={onExcludeClick}
-          title="Wyklucz tę grupę"
+          title={tr('Wyklucz tę grupę')}
           className={`p-1 rounded ${excluded ? 'bg-red-100 dark:bg-red-900/40 text-red-600' : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
         >
           <Minus size={14} />

@@ -2,21 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen } from 'lucide-react';
 import IconPicker from './IconPicker';
+import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Dostępne typy komponentów
 const COMPONENT_TYPES = [
-  { key: 'empty', label: 'Pusta zakładka', icon: Layers, description: 'Pusta strona do przyszłej rozbudowy' },
-  { key: 'events', label: 'Wydarzenia', icon: Calendar, description: 'Lista wydarzeń z kalendarzem' },
-  { key: 'tasks', label: 'Zadania', icon: CheckSquare, description: 'Tablica kanban z zadaniami' },
-  { key: 'finance', label: 'Finanse', icon: DollarSign, description: 'Przychody i wydatki' },
-  { key: 'members', label: 'Członkowie', icon: Users, description: 'Lista członków zespołu' },
-  { key: 'wall', label: 'Tablica', icon: MessageSquare, description: 'Tablica z wpisami i komentarzami' },
-  { key: 'schedule', label: 'Grafik', icon: CalendarDays, description: 'Harmonogram służb na wydarzenia' },
-  { key: 'duty', label: 'Służby', icon: UserCog, description: 'Zarządzanie służbami i przypisaniami' },
-  { key: 'materials', label: 'Materiały', icon: FolderOpen, description: 'Pliki i dokumenty do pobrania' }
+  { key: 'empty', label: tr('Pusta zakładka'), icon: Layers, description: tr('Pusta strona do przyszłej rozbudowy') },
+  { key: 'events', label: tr('Wydarzenia'), icon: Calendar, description: tr('Lista wydarzeń z kalendarzem') },
+  { key: 'tasks', label: tr('Zadania'), icon: CheckSquare, description: 'Tablica kanban z zadaniami' },
+  { key: 'finance', label: tr('Finanse'), icon: DollarSign, description: 'Przychody i wydatki' },
+  { key: 'members', label: tr('Członkowie'), icon: Users, description: tr('Lista członków zespołu') },
+  { key: 'wall', label: tr('Tablica'), icon: MessageSquare, description: 'Tablica z wpisami i komentarzami' },
+  { key: 'schedule', label: tr('Grafik'), icon: CalendarDays, description: tr('Harmonogram służb na wydarzenia') },
+  { key: 'duty', label: tr('Służby'), icon: UserCog, description: tr('Zarządzanie służbami i przypisaniami') },
+  { key: 'materials', label: tr('Materiały'), icon: FolderOpen, description: 'Pliki i dokumenty do pobrania' }
 ];
 
 export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, existingKeys = [] }) {
+  const t = useT();
   const isEditing = !!tab?.id;
 
   const [form, setForm] = useState({
@@ -69,15 +72,15 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
     const newErrors = {};
 
     if (!form.label.trim()) {
-      newErrors.label = 'Nazwa zakładki jest wymagana';
+      newErrors.label = tr('Nazwa zakładki jest wymagana');
     }
 
     if (!form.key.trim()) {
-      newErrors.key = 'Klucz zakładki jest wymagany';
+      newErrors.key = tr('Klucz zakładki jest wymagany');
     } else if (!/^[a-z0-9_]+$/.test(form.key)) {
-      newErrors.key = 'Klucz może zawierać tylko małe litery, cyfry i podkreślniki';
+      newErrors.key = tr('Klucz może zawierać tylko małe litery, cyfry i podkreślniki');
     } else if (!isEditing && existingKeys.includes(form.key)) {
-      newErrors.key = 'Zakładka z takim kluczem już istnieje';
+      newErrors.key = tr('Zakładka z takim kluczem już istnieje');
     }
 
     if (!form.icon) {
@@ -113,7 +116,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center shrink-0">
           <h3 className="font-bold text-xl bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
-            {isEditing ? 'Edytuj zakładkę' : 'Nowa zakładka'}
+            {isEditing ? tr('Edytuj zakładkę') : tr('Nowa zakładka')}
           </h3>
           <button
             onClick={onClose}
@@ -135,7 +138,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
           {/* Typ komponentu */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">
-              Typ zawartości
+              {tr('Typ zawartości')}
             </label>
             <div className="grid grid-cols-2 gap-2">
               {COMPONENT_TYPES.map(comp => {
@@ -168,7 +171,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
           {/* Nazwa zakładki */}
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
-              Nazwa zakładki
+              {tr('Nazwa zakładki')}
             </label>
             <input
               type="text"
@@ -208,7 +211,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
               <p className="mt-1 text-xs text-red-500">{errors.key}</p>
             )}
             {isEditing && tab?.is_system && (
-              <p className="mt-1 text-xs text-gray-400">Klucz zakładki systemowej nie może być zmieniony</p>
+              <p className="mt-1 text-xs text-gray-400">{t('Klucz zakładki systemowej nie może być zmieniony')}</p>
             )}
           </div>
 
@@ -241,7 +244,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
             className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition font-medium flex items-center gap-2 disabled:opacity-50"
           >
             <Save size={16} />
-            {saving ? 'Zapisuję...' : 'Zapisz'}
+            {saving ? tr('Zapisuję...') : 'Zapisz'}
           </button>
         </div>
       </div>

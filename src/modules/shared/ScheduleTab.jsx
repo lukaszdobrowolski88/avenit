@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { ChevronUp, ChevronDown, Check, UserX } from 'lucide-react';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
+import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -41,6 +43,7 @@ function useDropdownPosition(triggerRef, isOpen) {
 
 // Multi-select dla tabeli grafiku
 const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
+  const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
@@ -73,7 +76,7 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">{t('Wybierz...')}</span>
         ) : (
           selectedItems.map((item, idx) => (
             <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-1.5 py-0.5 rounded text-[10px] border border-accent-primary-lighter dark:border-accent-primary-dark whitespace-nowrap">
@@ -122,6 +125,7 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
 
 // Główny komponent grafiku
 export default function ScheduleTab({ moduleKey, moduleName }) {
+  const t = useT();
   const { getCampus } = useCampusBadge();
   const [programs, setPrograms] = useState([]);
   const [members, setMembers] = useState([]);
@@ -275,7 +279,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   // Kolumny na podstawie służb
   const columns = roles.length > 0
     ? roles.map(role => ({ key: role.field_key, label: role.name, roleId: role.id }))
-    : [{ key: 'osoba', label: 'Osoba', roleId: null }];
+    : [{ key: 'osoba', label: t('Osoba'), roleId: null }];
 
   // Filtrowanie członków według służby
   const getMembersForRole = (roleId) => {
@@ -311,14 +315,14 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
 
       {members.length === 0 ? (
         <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
-          <p className="text-gray-500 dark:text-gray-400">Brak członków w zespole</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('Brak członków w zespole')}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Najpierw dodaj członków w zakładce "Członkowie"
+            {tr('Najpierw dodaj członków w zakładce "Członkowie"')}
           </p>
         </div>
       ) : sortedMonths.length === 0 ? (
         <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
-          <p className="text-gray-500 dark:text-gray-400">Brak programów</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('Brak programów')}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
             Dodaj programy w module "Programy"
           </p>
@@ -342,7 +346,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                     <table className="w-full text-left border-collapse min-w-max">
                       <thead>
                         <tr className="bg-gray-50/50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400 uppercase">
-                          <th className="p-3 font-semibold w-24 min-w-[90px]">Data</th>
+                          <th className="p-3 font-semibold w-24 min-w-[90px]">{t('Data')}</th>
                           {columns.map(col => (
                             <th key={col.key} className="p-3 font-semibold min-w-[130px]">{col.label}</th>
                           ))}

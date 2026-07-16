@@ -7,8 +7,10 @@ import {
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { useTwoFactor } from '../../hooks/useTwoFactor';
 import TwoFactorSetup from '../../components/TwoFactorSetup';
+import { tr } from '../../i18n';
 
 export default function UserSettings() {
+  const t = useT();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -177,12 +179,12 @@ export default function UserSettings() {
       setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
       await updateProfileData({ avatar_url: publicUrl });
       
-      setMessage({ type: 'success', text: 'Zdjęcie profilowe zaktualizowane!' });
+      setMessage({ type: 'success', text: tr('Zdjęcie profilowe zaktualizowane!') });
       // Przeładowanie strony, aby odświeżyć avatar w Sidebarze
       setTimeout(() => window.location.reload(), 1000);
 
     } catch (err) {
-      setMessage({ type: 'error', text: 'Błąd wysyłania zdjęcia.' });
+      setMessage({ type: 'error', text: tr('Błąd wysyłania zdjęcia.') });
     }
     setSaving(false);
   };
@@ -219,9 +221,9 @@ export default function UserSettings() {
     setSaving(true);
     try {
       await updateProfileData();
-      setMessage({ type: 'success', text: 'Dane zapisane pomyślnie.' });
+      setMessage({ type: 'success', text: tr('Dane zapisane pomyślnie.') });
     } catch (err) {
-      setMessage({ type: 'error', text: 'Nie udało się zapisać danych.' });
+      setMessage({ type: 'error', text: tr('Nie udało się zapisać danych.') });
     }
     setSaving(false);
   };
@@ -262,7 +264,7 @@ export default function UserSettings() {
 
       setMessage({ type: 'success', text: 'Podpis email zapisany.' });
     } catch (err) {
-      setMessage({ type: 'error', text: 'Nie udało się zapisać podpisu.' });
+      setMessage({ type: 'error', text: tr('Nie udało się zapisać podpisu.') });
     }
     setSavingSignature(false);
   };
@@ -272,12 +274,12 @@ export default function UserSettings() {
     setShow2FASetup(false);
     const status = await checkTwoFactorStatus(formData.email);
     setTwoFactorStatus(status);
-    setMessage({ type: 'success', text: 'Uwierzytelnianie dwuskładnikowe zostało włączone!' });
+    setMessage({ type: 'success', text: tr('Uwierzytelnianie dwuskładnikowe zostało włączone!') });
   };
 
   const handleDisable2FA = async () => {
     if (!disable2FACode || disable2FACode.length !== 6) {
-      setMessage({ type: 'error', text: 'Wprowadź 6-cyfrowy kod weryfikacyjny.' });
+      setMessage({ type: 'error', text: tr('Wprowadź 6-cyfrowy kod weryfikacyjny.') });
       return;
     }
 
@@ -285,9 +287,9 @@ export default function UserSettings() {
     if (result.success) {
       setTwoFactorStatus({ enabled: false, verifiedAt: null });
       setDisable2FACode('');
-      setMessage({ type: 'success', text: 'Uwierzytelnianie dwuskładnikowe zostało wyłączone.' });
+      setMessage({ type: 'success', text: tr('Uwierzytelnianie dwuskładnikowe zostało wyłączone.') });
     } else {
-      setMessage({ type: 'error', text: result.error || 'Nie udało się wyłączyć 2FA.' });
+      setMessage({ type: 'error', text: result.error || tr('Nie udało się wyłączyć 2FA.') });
     }
   };
 
@@ -299,7 +301,7 @@ export default function UserSettings() {
 
   const handleRegenerateBackupCodes = async () => {
     if (!regenerateCode || regenerateCode.length !== 6) {
-      setMessage({ type: 'error', text: 'Wprowadź 6-cyfrowy kod weryfikacyjny.' });
+      setMessage({ type: 'error', text: tr('Wprowadź 6-cyfrowy kod weryfikacyjny.') });
       return;
     }
 
@@ -309,7 +311,7 @@ export default function UserSettings() {
       setRegenerateCode('');
       setMessage({ type: 'success', text: 'Wygenerowano nowe kody zapasowe.' });
     } else {
-      setMessage({ type: 'error', text: result.error || 'Nie udało się wygenerować kodów.' });
+      setMessage({ type: 'error', text: result.error || tr('Nie udało się wygenerować kodów.') });
     }
   };
 
@@ -385,7 +387,7 @@ export default function UserSettings() {
 
         if (!error) {
           setIcalSubscription({ ...icalSubscription, token: newToken, export_preferences: icalPreferences });
-          setMessage({ type: 'success', text: 'Token kalendarza został zresetowany. Poprzedni link przestał działać.' });
+          setMessage({ type: 'success', text: tr('Token kalendarza został zresetowany. Poprzedni link przestał działać.') });
         } else {
           throw error;
         }
@@ -403,13 +405,13 @@ export default function UserSettings() {
 
         if (!error && data) {
           setIcalSubscription(data);
-          setMessage({ type: 'success', text: 'Subskrypcja kalendarza została utworzona!' });
+          setMessage({ type: 'success', text: tr('Subskrypcja kalendarza została utworzona!') });
         } else {
           throw error;
         }
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Nie udało się utworzyć/zresetować subskrypcji.' });
+      setMessage({ type: 'error', text: tr('Nie udało się utworzyć/zresetować subskrypcji.') });
     }
     setIcalLoading(false);
   };
@@ -432,7 +434,7 @@ export default function UserSettings() {
         throw error;
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Nie udało się zapisać preferencji.' });
+      setMessage({ type: 'error', text: tr('Nie udało się zapisać preferencji.') });
     }
     setIcalLoading(false);
   };
@@ -459,17 +461,17 @@ export default function UserSettings() {
   const handleChangePassword = async () => {
     setMessage(null);
     if (passData.newPassword !== passData.confirmPassword) {
-      return setMessage({ type: 'error', text: 'Hasła nie są identyczne.' });
+      return setMessage({ type: 'error', text: tr('Hasła nie są identyczne.') });
     }
     if (passData.newPassword.length < 6) {
-      return setMessage({ type: 'error', text: 'Hasło musi mieć min. 6 znaków.' });
+      return setMessage({ type: 'error', text: tr('Hasło musi mieć min. 6 znaków.') });
     }
 
     setSaving(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: passData.newPassword });
       if (error) throw error;
-      setMessage({ type: 'success', text: 'Hasło zostało zmienione.' });
+      setMessage({ type: 'success', text: tr('Hasło zostało zmienione.') });
       setPassData({ newPassword: '', confirmPassword: '' });
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
@@ -482,7 +484,7 @@ export default function UserSettings() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Mój Profil</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{t('Mój Profil')}</h1>
       </div>
 
       {message && (
@@ -512,7 +514,7 @@ export default function UserSettings() {
               </label>
             </div>
 
-            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{formData.full_name || 'Użytkownik'}</h2>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{formData.full_name || tr('Użytkownik')}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">{formData.email}</p>
           </div>
         </div>
@@ -529,7 +531,7 @@ export default function UserSettings() {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię i Nazwisko</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Imię i Nazwisko')}</label>
                 <input 
                   className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-accent-primary-light dark:focus:border-accent-primary-light outline-none transition"
                   value={formData.full_name}
@@ -568,7 +570,7 @@ export default function UserSettings() {
             {!pushSupported ? (
               <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-gray-500 dark:text-gray-400">
                 <BellOff size={20} />
-                <span>Twoja przeglądarka nie obsługuje powiadomień push.</span>
+                <span>{t('Twoja przeglądarka nie obsługuje powiadomień push.')}</span>
               </div>
             ) : (
               <div className="space-y-4">
@@ -581,14 +583,14 @@ export default function UserSettings() {
                     )}
                     <div>
                       <p className="font-medium text-gray-800 dark:text-gray-200">
-                        {pushSubscribed ? 'Powiadomienia włączone' : 'Powiadomienia wyłączone'}
+                        {pushSubscribed ? tr('Powiadomienia włączone') : tr('Powiadomienia wyłączone')}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {pushPermission === 'denied'
-                          ? 'Powiadomienia są zablokowane w ustawieniach przeglądarki'
+                          ? tr('Powiadomienia są zablokowane w ustawieniach przeglądarki')
                           : pushSubscribed
-                            ? 'Otrzymujesz powiadomienia o nowych wiadomościach'
-                            : 'Włącz, aby otrzymywać powiadomienia nawet gdy aplikacja jest zamknięta'}
+                            ? tr('Otrzymujesz powiadomienia o nowych wiadomościach')
+                            : tr('Włącz, aby otrzymywać powiadomienia nawet gdy aplikacja jest zamknięta')}
                       </p>
                     </div>
                   </div>
@@ -607,12 +609,12 @@ export default function UserSettings() {
                     ) : pushSubscribed ? (
                       <>
                         <BellOff size={16} />
-                        Wyłącz
+                        {tr('Wyłącz')}
                       </>
                     ) : (
                       <>
                         <Bell size={16} />
-                        Włącz
+                        {tr('Włącz')}
                       </>
                     )}
                   </button>
@@ -621,7 +623,7 @@ export default function UserSettings() {
                 {pushError && (
                   <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
                     <AlertCircle size={16} />
-                    {typeof pushError === 'string' ? pushError : 'Wystąpił błąd'}
+                    {typeof pushError === 'string' ? pushError : tr('Wystąpił błąd')}
                   </div>
                 )}
 
@@ -631,7 +633,7 @@ export default function UserSettings() {
                     className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                   >
                     <Bell size={14} />
-                    Wyślij testowe powiadomienie
+                    {tr('Wyślij testowe powiadomienie')}
                   </button>
                 )}
               </div>
@@ -645,8 +647,8 @@ export default function UserSettings() {
                 <Shield size={24} />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Uwierzytelnianie dwuskładnikowe</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Dodatkowa warstwa bezpieczeństwa dla Twojego konta</p>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('Uwierzytelnianie dwuskładnikowe')}</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Dodatkowa warstwa bezpieczeństwa dla Twojego konta')}</p>
               </div>
             </div>
 
@@ -657,7 +659,7 @@ export default function UserSettings() {
                   <div className="flex items-center gap-3">
                     <ShieldCheck size={24} className="text-emerald-600 dark:text-emerald-400" />
                     <div>
-                      <p className="font-medium text-emerald-800 dark:text-emerald-300">2FA włączone</p>
+                      <p className="font-medium text-emerald-800 dark:text-emerald-300">{t('2FA włączone')}</p>
                       <p className="text-xs text-emerald-600 dark:text-emerald-400">
                         Aktywowane {twoFactorStatus.verifiedAt
                           ? new Date(twoFactorStatus.verifiedAt).toLocaleDateString('pl-PL')
@@ -678,11 +680,11 @@ export default function UserSettings() {
                       onClick={handleShowBackupCodes}
                       className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
                     >
-                      Pokaż kody
+                      {tr('Pokaż kody')}
                     </button>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Kody zapasowe pozwalają zalogować się, gdy nie masz dostępu do aplikacji Google Authenticator.
+                    {tr('Kody zapasowe pozwalają zalogować się, gdy nie masz dostępu do aplikacji Google Authenticator.')}
                   </p>
                 </div>
 
@@ -757,10 +759,10 @@ export default function UserSettings() {
                 <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
                   <div className="flex items-center gap-2 mb-3">
                     <ShieldOff size={18} className="text-red-600 dark:text-red-400" />
-                    <span className="font-medium text-red-800 dark:text-red-300">Wyłącz 2FA</span>
+                    <span className="font-medium text-red-800 dark:text-red-300">{t('Wyłącz 2FA')}</span>
                   </div>
                   <p className="text-xs text-red-600 dark:text-red-400 mb-3">
-                    Wprowadź kod z aplikacji Google Authenticator, aby wyłączyć uwierzytelnianie dwuskładnikowe.
+                    {tr('Wprowadź kod z aplikacji Google Authenticator, aby wyłączyć uwierzytelnianie dwuskładnikowe.')}
                   </p>
                   <div className="flex gap-2">
                     <input
@@ -784,7 +786,7 @@ export default function UserSettings() {
                 {twoFactorError && (
                   <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
                     <AlertCircle size={16} />
-                    {typeof twoFactorError === 'string' ? twoFactorError : 'Wystąpił błąd'}
+                    {typeof twoFactorError === 'string' ? twoFactorError : tr('Wystąpił błąd')}
                   </div>
                 )}
               </div>
@@ -795,9 +797,9 @@ export default function UserSettings() {
                   <div className="flex items-center gap-3">
                     <ShieldOff size={24} className="text-gray-400" />
                     <div>
-                      <p className="font-medium text-gray-700 dark:text-gray-300">2FA wyłączone</p>
+                      <p className="font-medium text-gray-700 dark:text-gray-300">{t('2FA wyłączone')}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Włącz, aby zwiększyć bezpieczeństwo konta
+                        {tr('Włącz, aby zwiększyć bezpieczeństwo konta')}
                       </p>
                     </div>
                   </div>
@@ -806,16 +808,16 @@ export default function UserSettings() {
                     className="px-4 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition flex items-center gap-2"
                   >
                     <Shield size={16} />
-                    Włącz 2FA
+                    {tr('Włącz 2FA')}
                   </button>
                 </div>
 
                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                  <p className="mb-2 font-medium">Jak działa 2FA?</p>
+                  <p className="mb-2 font-medium">{t('Jak działa 2FA?')}</p>
                   <ol className="list-decimal list-inside space-y-1 text-xs">
-                    <li>Zainstaluj aplikację Google Authenticator lub podobną na telefonie</li>
-                    <li>Zeskanuj kod QR lub wprowadź klucz ręcznie</li>
-                    <li>Przy każdym logowaniu wprowadź 6-cyfrowy kod z aplikacji</li>
+                    <li>{t('Zainstaluj aplikację Google Authenticator lub podobną na telefonie')}</li>
+                    <li>{t('Zeskanuj kod QR lub wprowadź klucz ręcznie')}</li>
+                    <li>{t('Przy każdym logowaniu wprowadź 6-cyfrowy kod z aplikacji')}</li>
                   </ol>
                 </div>
               </div>
@@ -853,13 +855,13 @@ export default function UserSettings() {
 
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {[
-                  { key: 'programs', label: 'Nabożeństwa', icon: '⛪' },
-                  { key: 'events', label: 'Wydarzenia', icon: '📅' },
-                  { key: 'tasks', label: 'Zadania', icon: '✅' },
-                  { key: 'mlodziezowka', label: 'Młodzieżówka', icon: '🎉' },
+                  { key: 'programs', label: t('Nabożeństwa'), icon: '⛪' },
+                  { key: 'events', label: t('Wydarzenia'), icon: '📅' },
+                  { key: 'tasks', label: t('Zadania'), icon: '✅' },
+                  { key: 'mlodziezowka', label: t('Młodzieżówka'), icon: '🎉' },
                   { key: 'worship', label: 'Uwielbienie', icon: '🎵' },
                   { key: 'media', label: 'Media', icon: '🎬' },
-                  { key: 'atmosfera', label: 'Atmosfera', icon: '💚' },
+                  { key: 'atmosfera', label: t('Atmosfera'), icon: '💚' },
                   { key: 'kids', label: 'Dzieci', icon: '👶' },
                   { key: 'homegroups', label: 'Grupy Domowe', icon: '🏠' }
                 ].map(item => (
@@ -920,7 +922,7 @@ export default function UserSettings() {
                     <button
                       onClick={() => setShowIcalQrCode(true)}
                       className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                      title="Pokaż kod QR"
+                      title={t('Pokaż kod QR')}
                     >
                       <QrCode size={18} />
                     </button>
@@ -958,7 +960,7 @@ export default function UserSettings() {
                     onClick={handleCreateOrResetIcal}
                     disabled={icalLoading}
                     className="px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition flex items-center gap-2"
-                    title="Resetuj token (poprzedni link przestanie działać)"
+                    title={t('Resetuj token (poprzedni link przestanie działać)')}
                   >
                     <RefreshCw size={16} />
                     Resetuj token
@@ -1004,7 +1006,7 @@ export default function UserSettings() {
                   </div>
 
                   <p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-4">
-                    Zeskanuj kod QR aparatem telefonu, aby dodać kalendarz do aplikacji
+                    {tr('Zeskanuj kod QR aparatem telefonu, aby dodać kalendarz do aplikacji')}
                   </p>
 
                   <div className="flex gap-2">
@@ -1029,7 +1031,7 @@ export default function UserSettings() {
             {/* Instrukcja */}
             <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
               <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-2">
-                Jak dodać kalendarz?
+                {tr('Jak dodać kalendarz?')}
               </p>
               <ul className="text-xs text-blue-600 dark:text-blue-400 space-y-1 list-disc list-inside">
                 <li><strong>Google Calendar:</strong> Ustawienia → Dodaj kalendarz → Z adresu URL</li>
@@ -1068,14 +1070,14 @@ export default function UserSettings() {
                   }`}
                 >
                   <Eye size={14} />
-                  Podgląd
+                  {tr('Podgląd')}
                 </button>
               </div>
             </div>
 
             <div className="space-y-4">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Możesz wkleić gotowy podpis HTML z zewnętrznego narzędzia lub edytora. Podpis będzie automatycznie dodawany na końcu wysyłanych wiadomości.
+                {tr('Możesz wkleić gotowy podpis HTML z zewnętrznego narzędzia lub edytora. Podpis będzie automatycznie dodawany na końcu wysyłanych wiadomości.')}
               </p>
 
               {signatureMode === 'html' ? (
@@ -1086,8 +1088,8 @@ export default function UserSettings() {
                     onChange={(e) => setMailSignature(e.target.value)}
                     placeholder={`<div style="font-family: Arial, sans-serif;">
   <p style="margin: 0; color: #333;">Z pozdrowieniami,</p>
-  <p style="margin: 5px 0 0; font-weight: bold; color: #333;">Jan Kowalski</p>
-  <p style="margin: 5px 0 0; color: #666; font-size: 14px;">Kościół [Nazwa]</p>
+  <p style="margin: 5px 0 0; font-weight: bold; color: #333;">{t('Jan Kowalski')}</p>
+  <p style="margin: 5px 0 0; color: #666; font-size: 14px;">{t('Kościół [Nazwa]')}</p>
   <p style="margin: 5px 0 0; color: #666; font-size: 12px;">Tel: +48 123 456 789</p>
 </div>`}
                     rows={10}
@@ -1099,7 +1101,7 @@ export default function UserSettings() {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Podgląd podpisu</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Podgląd podpisu')}</label>
                   <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 min-h-[120px]">
                     {mailSignature ? (
                       <div
@@ -1108,7 +1110,7 @@ export default function UserSettings() {
                       />
                     ) : (
                       <p className="text-gray-400 dark:text-gray-500 italic text-sm">
-                        Brak podpisu. Przejdź do zakładki HTML, aby dodać podpis.
+                        {tr('Brak podpisu. Przejdź do zakładki HTML, aby dodać podpis.')}
                       </p>
                     )}
                   </div>
@@ -1131,12 +1133,12 @@ export default function UserSettings() {
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-8 transition-colors duration-300">
             <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
               <div className="p-2 bg-red-50 dark:bg-red-900/30 rounded-xl text-red-600 dark:text-red-400"><Lock size={24} /></div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Bezpieczeństwo</h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('Bezpieczeństwo')}</h3>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nowe hasło</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Nowe hasło')}</label>
                 <div className="relative">
                   <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
                   <input 
@@ -1149,7 +1151,7 @@ export default function UserSettings() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Potwierdź hasło</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Potwierdź hasło')}</label>
                 <div className="relative">
                   <Key size={18} className="absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"/>
                   <input 

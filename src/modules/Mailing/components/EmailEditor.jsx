@@ -16,8 +16,9 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { EMAIL_VARIABLES } from '../utils/emailVariables';
+import { tr } from '../../../i18n';
 
-export default function EmailEditor({ content, onChange, placeholder = 'Napisz treść wiadomości...' }) {
+export default function EmailEditor({ content, onChange, placeholder = tr('Napisz treść wiadomości...') }) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -84,7 +85,7 @@ export default function EmailEditor({ content, onChange, placeholder = 'Napisz t
         editor?.chain().focus().setImage({ src: urlData.publicUrl }).run();
       } catch (err) {
         console.error('Error uploading image:', err);
-        alert('Błąd podczas przesyłania obrazu');
+        alert(tr('Błąd podczas przesyłania obrazu'));
       }
     };
 
@@ -112,7 +113,7 @@ export default function EmailEditor({ content, onChange, placeholder = 'Napisz t
   if (!editor) {
     return (
       <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-        <div className="p-4 text-center text-gray-500">Ładowanie edytora...</div>
+        <div className="p-4 text-center text-gray-500">{tr('Ładowanie edytora...')}</div>
       </div>
     );
   }
@@ -140,14 +141,14 @@ export default function EmailEditor({ content, onChange, placeholder = 'Napisz t
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             active={editor.isActive('underline')}
-            title="Podkreślenie"
+            title={tr('Podkreślenie')}
           >
             <UnderlineIcon size={16} />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleStrike().run()}
             active={editor.isActive('strike')}
-            title="Przekreślenie"
+            title={tr('Przekreślenie')}
           >
             <Strikethrough size={16} />
           </ToolbarButton>
@@ -165,21 +166,21 @@ export default function EmailEditor({ content, onChange, placeholder = 'Napisz t
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             active={editor.isActive('heading', { level: 1 })}
-            title="Nagłówek 1"
+            title={tr('Nagłówek 1')}
           >
             <Heading1 size={16} />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             active={editor.isActive('heading', { level: 2 })}
-            title="Nagłówek 2"
+            title={tr('Nagłówek 2')}
           >
             <Heading2 size={16} />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             active={editor.isActive('heading', { level: 3 })}
-            title="Nagłówek 3"
+            title={tr('Nagłówek 3')}
           >
             <Heading3 size={16} />
           </ToolbarButton>
@@ -190,21 +191,21 @@ export default function EmailEditor({ content, onChange, placeholder = 'Napisz t
           <ToolbarButton
             onClick={() => editor.chain().focus().setTextAlign('left').run()}
             active={editor.isActive({ textAlign: 'left' })}
-            title="Wyrównaj do lewej"
+            title={tr('Wyrównaj do lewej')}
           >
             <AlignLeft size={16} />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().setTextAlign('center').run()}
             active={editor.isActive({ textAlign: 'center' })}
-            title="Wyśrodkuj"
+            title={tr('Wyśrodkuj')}
           >
             <AlignCenter size={16} />
           </ToolbarButton>
           <ToolbarButton
             onClick={() => editor.chain().focus().setTextAlign('right').run()}
             active={editor.isActive({ textAlign: 'right' })}
-            title="Wyrównaj do prawej"
+            title={tr('Wyrównaj do prawej')}
           >
             <AlignRight size={16} />
           </ToolbarButton>
@@ -255,7 +256,7 @@ export default function EmailEditor({ content, onChange, placeholder = 'Napisz t
 
         {/* Variables dropdown */}
         <div className="relative group">
-          <ToolbarButton title="Wstaw zmienną">
+          <ToolbarButton title={tr('Wstaw zmienną')}>
             <Code size={16} />
             <span className="text-xs ml-1">{'{{x}}'}</span>
           </ToolbarButton>

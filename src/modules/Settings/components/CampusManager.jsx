@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Plus, Edit3, Trash2, X, MapPin, GripVertical, ToggleLeft, ToggleRight } from 'lucide-react';
+import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 export default function CampusManager({ onMessage }) {
+  const t = useT();
   const [campuses, setCampuses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -41,7 +44,7 @@ export default function CampusManager({ onMessage }) {
         .update({ name: form.name, address: form.address, city: form.city, timezone: form.timezone, is_active: form.is_active })
         .eq('id', form.id);
       if (error) {
-        onMessage?.({ type: 'error', text: 'Błąd zapisu: ' + error.message });
+        onMessage?.({ type: 'error', text: tr('Błąd zapisu: ') + error.message });
         return;
       }
     } else {
@@ -50,7 +53,7 @@ export default function CampusManager({ onMessage }) {
         .from('campuses')
         .insert({ name: form.name, address: form.address, city: form.city, timezone: form.timezone, is_active: form.is_active, sort_order: maxSort });
       if (error) {
-        onMessage?.({ type: 'error', text: 'Błąd zapisu: ' + error.message });
+        onMessage?.({ type: 'error', text: tr('Błąd zapisu: ') + error.message });
         return;
       }
     }
@@ -64,10 +67,10 @@ export default function CampusManager({ onMessage }) {
     if (!window.confirm(`Usunąć lokalizację "${campus.name}"? Powiązane rekordy stracą przypisanie do lokalizacji.`)) return;
     const { error } = await supabase.from('campuses').delete().eq('id', campus.id);
     if (error) {
-      onMessage?.({ type: 'error', text: 'Błąd usuwania: ' + error.message });
+      onMessage?.({ type: 'error', text: tr('Błąd usuwania: ') + error.message });
       return;
     }
-    onMessage?.({ type: 'success', text: 'Lokalizacja usunięta.' });
+    onMessage?.({ type: 'success', text: tr('Lokalizacja usunięta.') });
     fetchCampuses();
   };
 
@@ -93,7 +96,7 @@ export default function CampusManager({ onMessage }) {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-400">Ładowanie...</div>;
+    return <div className="text-center py-8 text-gray-400">{t('Ładowanie...')}</div>;
   }
 
   return (
@@ -101,7 +104,7 @@ export default function CampusManager({ onMessage }) {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h3 className="text-lg font-bold text-gray-800 dark:text-white">Lokalizacje / Kampusy</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Zarządzaj lokalizacjami kościoła. Dane mogą być filtrowane po kampusie.</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('Zarządzaj lokalizacjami kościoła. Dane mogą być filtrowane po kampusie.')}</p>
         </div>
         <button onClick={openNew} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition">
           <Plus size={18} /> Dodaj lokalizację
@@ -112,7 +115,7 @@ export default function CampusManager({ onMessage }) {
         <div className="text-center py-12 text-gray-400 dark:text-gray-500">
           <MapPin size={48} className="mx-auto mb-3 opacity-50" />
           <p className="font-medium">Brak lokalizacji</p>
-          <p className="text-sm mt-1">Dodaj pierwszą lokalizację, aby włączyć tryb multi-campus.</p>
+          <p className="text-sm mt-1">{t('Dodaj pierwszą lokalizację, aby włączyć tryb multi-campus.')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -155,17 +158,17 @@ export default function CampusManager({ onMessage }) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 border border-white/20 dark:border-gray-700">
             <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{form.id ? 'Edytuj lokalizację' : 'Nowa lokalizacja'}</h3>
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{form.id ? tr('Edytuj lokalizację') : 'Nowa lokalizacja'}</h3>
               <button onClick={() => setShowModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"><X /></button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Nazwa *</label>
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Nazwa *')}</label>
                 <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="np. Kampus Centrum" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Adres</label>
-                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder="ul. Przykładowa 1" value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} />
+                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">{t('Adres')}</label>
+                <input className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white" placeholder={t('ul. Przykładowa 1')} value={form.address || ''} onChange={e => setForm({ ...form, address: e.target.value })} />
               </div>
               <div>
                 <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1">Miasto</label>

@@ -18,6 +18,7 @@ import useMediaGallery from '../hooks/useMediaGallery';
 import useMessageSearch from '../hooks/useMessageSearch';
 import { usePresence } from '../../../hooks/usePresence';
 import { groupMessagesByDate } from '../utils/messageHelpers';
+import { tr } from '../../../i18n';
 
 export default function MessageThread({
   conversation,
@@ -274,10 +275,10 @@ export default function MessageThread({
           <MessageSquare size={40} className="text-accent-primary-light" />
         </div>
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">
-          Wybierz rozmowę
+          {tr('Wybierz rozmowę')}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-          Wybierz rozmowę z listy po lewej stronie lub rozpocznij nową konwersację
+          {tr('Wybierz rozmowę z listy po lewej stronie lub rozpocznij nową konwersację')}
         </p>
       </div>
     );
@@ -301,8 +302,8 @@ export default function MessageThread({
             <div className="w-20 h-20 bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 rounded-2xl flex items-center justify-center shadow-lg shadow-accent-primary-light/20">
               <Upload size={36} className="text-accent-primary" />
             </div>
-            <p className="text-xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary-light bg-clip-text text-transparent">Upuść pliki tutaj</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Maksymalnie 10 plików, do 10MB każdy</p>
+            <p className="text-xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary-light bg-clip-text text-transparent">{tr('Upuść pliki tutaj')}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Maksymalnie 10 plików, do 10MB każdy')}</p>
           </div>
         </div>
       )}
@@ -339,7 +340,7 @@ export default function MessageThread({
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center">
               <Loader size={24} className="animate-spin text-accent-primary" />
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Ładowanie wiadomości...</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Ładowanie wiadomości...')}</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
@@ -347,10 +348,10 @@ export default function MessageThread({
               <MessageSquare size={32} className="text-accent-primary-light" />
             </div>
             <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              Brak wiadomości
+              {tr('Brak wiadomości')}
             </h3>
             <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs">
-              Rozpocznij konwersację wysyłając pierwszą wiadomość
+              {tr('Rozpocznij konwersację wysyłając pierwszą wiadomość')}
             </p>
           </div>
         ) : (
@@ -366,10 +367,10 @@ export default function MessageThread({
                   {loading ? (
                     <span className="flex items-center gap-2">
                       <Loader size={14} className="animate-spin" />
-                      Ładowanie...
+                      {tr('Ładowanie...')}
                     </span>
                   ) : (
-                    'Załaduj starsze wiadomości'
+                    tr('Załaduj starsze wiadomości')
                   )}
                 </button>
               </div>

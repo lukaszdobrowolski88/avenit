@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react';
 import FieldRenderer from './FieldRenderer';
 import AddonSelector from './AddonSelector';
+import { tr } from '../../../i18n';
 
 export default function ParticipantForm({
   participant,
@@ -35,7 +36,7 @@ export default function ParticipantForm({
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-            {index === 0 && label === 'Osoba zgłaszająca' ? label : `${label || 'Członek zespołu'} ${index + 1}`}
+            {index === 0 && label === 'Osoba zgłaszająca' ? label : `${label || tr('Członek zespołu')} ${index + 1}`}
           </h3>
           {subtitle && (
             <p className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</p>
@@ -46,7 +47,7 @@ export default function ParticipantForm({
             type="button"
             onClick={onRemove}
             className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-            title="Usuń uczestnika"
+            title={tr('Usuń uczestnika')}
           >
             <Trash2 size={18} />
           </button>

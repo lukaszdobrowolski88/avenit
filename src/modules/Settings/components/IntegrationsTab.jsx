@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Loader2, Eye, EyeOff, AlertCircle, CheckCircle, MessageSquare, Copy, ExternalLink } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Klucze SMSAPI w `integration_settings` (admin-only RLS).
 const SMSAPI_KEYS = [
@@ -9,12 +11,12 @@ const SMSAPI_KEYS = [
     label: 'Personal Access Token',
     description: 'OAuth token z panelu SMSAPI (Bearer). Generuj w: ssl.smsapi.pl/react/oauth/manage',
     secret: true,
-    placeholder: 'np. eyJ0eXAi... (wklej cały token)',
+    placeholder: tr('np. eyJ0eXAi... (wklej cały token)'),
   },
   {
     key: 'smsapi_default_sender',
-    label: 'Domyślny nadawca (Sender ID)',
-    description: 'Zarejestrowany w SMSAPI. Max 11 znaków alfanumerycznych.',
+    label: tr('Domyślny nadawca (Sender ID)'),
+    description: tr('Zarejestrowany w SMSAPI. Max 11 znaków alfanumerycznych.'),
     secret: false,
     placeholder: 'np. Avenit',
     maxLength: 11,
@@ -22,7 +24,7 @@ const SMSAPI_KEYS = [
   {
     key: 'smsapi_api_url',
     label: 'URL bramki SMSAPI',
-    description: 'Zostaw default lub podmień na sandbox/inny region.',
+    description: tr('Zostaw default lub podmień na sandbox/inny region.'),
     secret: false,
     placeholder: 'https://api.smsapi.pl',
   },
@@ -31,11 +33,12 @@ const SMSAPI_KEYS = [
     label: 'Webhook MO secret',
     description: 'Sekret w URL webhooka MO (incoming SMS / RSVP).',
     secret: true,
-    placeholder: 'losowy ciąg, np. 32 znaki',
+    placeholder: tr('losowy ciąg, np. 32 znaki'),
   },
 ];
 
 export default function IntegrationsTab() {
+  const t = useT();
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState({});
@@ -122,11 +125,11 @@ export default function IntegrationsTab() {
       await navigator.clipboard.writeText(url);
       setMessage({ type: 'success', text: 'Skopiowano URL webhooka' });
     } catch {
-      setMessage({ type: 'error', text: 'Nie udało się skopiować' });
+      setMessage({ type: 'error', text: tr('Nie udało się skopiować') });
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Ładowanie...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500">{t('Ładowanie...')}</div>;
 
   return (
     <div className="space-y-8 max-w-3xl">
@@ -149,7 +152,7 @@ export default function IntegrationsTab() {
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">SMSAPI.pl</h2>
-            <p className="text-xs text-gray-500">Konfiguracja bramki SMS dla modułu SMS Kampanie.</p>
+            <p className="text-xs text-gray-500">{t('Konfiguracja bramki SMS dla modułu SMS Kampanie.')}</p>
           </div>
         </div>
 
@@ -180,7 +183,7 @@ export default function IntegrationsTab() {
                     <button
                       onClick={() => setRevealed(r => ({ ...r, [meta.key]: !r[meta.key] }))}
                       className="p-1.5 text-gray-400 hover:text-gray-600 rounded"
-                      title={isRevealed ? 'Ukryj' : 'Pokaż'}
+                      title={isRevealed ? 'Ukryj' : tr('Pokaż')}
                     >
                       {isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -226,7 +229,7 @@ export default function IntegrationsTab() {
                       onClick={() => setEdits(p => ({ ...p, [meta.key]: '' }))}
                       className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
                     >
-                      {isSet ? 'Zmień' : 'Ustaw'}
+                      {isSet ? tr('Zmień') : 'Ustaw'}
                     </button>
                   </div>
                 )}
@@ -264,8 +267,8 @@ export default function IntegrationsTab() {
           {/* Test connection */}
           <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
             <div className="text-sm">
-              <p className="font-medium text-gray-900 dark:text-white">Test połączenia</p>
-              <p className="text-xs text-gray-500">Sprawdź czy edge function odpowiada i token jest skonfigurowany.</p>
+              <p className="font-medium text-gray-900 dark:text-white">{t('Test połączenia')}</p>
+              <p className="text-xs text-gray-500">{t('Sprawdź czy edge function odpowiada i token jest skonfigurowany.')}</p>
             </div>
             <button
               onClick={handleTestConnection}

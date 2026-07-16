@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, ChevronDown, ChevronUp, FileText } from 'lucide-react';
+import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpense, onRefresh }) {
+  const t = useT();
   const [expandedItems, setExpandedItems] = useState({});
 
   const toggleExpand = (itemId) => {
@@ -49,8 +52,8 @@ export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpen
 
       {budgetItems.length === 0 ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-          <p className="mb-4">Brak pozycji budżetowych dla tej służby</p>
-          <p className="text-sm">Dodaj pozycje budżetowe w module Finanse</p>
+          <p className="mb-4">{t('Brak pozycji budżetowych dla tej służby')}</p>
+          <p className="text-sm">{t('Dodaj pozycje budżetowe w module Finanse')}</p>
         </div>
       ) : (
         <>
@@ -58,11 +61,11 @@ export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpen
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Opis kosztu</th>
+                  <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Opis kosztu')}</th>
                   <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Plan (PLN)</th>
                   <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Wykorzystano (PLN)</th>
                   <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">% Realizacji</th>
-                  <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Pozostało</th>
+                  <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Pozostało')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -126,29 +129,29 @@ export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpen
                                       className="grid grid-cols-5 gap-3 text-sm py-2 px-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
                                     >
                                       <div className="flex flex-col">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Data</span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Data')}</span>
                                         <span className="text-gray-900 dark:text-white">
                                           {new Date(expense.payment_date).toLocaleDateString('pl-PL')}
                                         </span>
                                       </div>
                                       <div className="flex flex-col">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Kontrahent</span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Kontrahent')}</span>
                                         <span className="text-gray-900 dark:text-white">{expense.contractor}</span>
                                       </div>
                                       <div className="flex flex-col">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Kwota</span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Kwota')}</span>
                                         <span className="font-bold text-gray-900 dark:text-white">
                                           {expense.amount.toLocaleString('pl-PL')} zł
                                         </span>
                                       </div>
                                       <div className="flex flex-col">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Szczegółowy opis</span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Szczegółowy opis')}</span>
                                         <span className="text-gray-900 dark:text-white text-xs">
                                           {expense.detailed_description || '-'}
                                         </span>
                                       </div>
                                       <div className="flex flex-col">
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Odpowiedzialny</span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{t('Odpowiedzialny')}</span>
                                         <span className="text-gray-900 dark:text-white">{expense.responsible_person}</span>
                                       </div>
                                     </div>
@@ -162,7 +165,7 @@ export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpen
                               </div>
                             ) : (
                               <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
-                                Brak wydatków w tej pozycji budżetu
+                                {tr('Brak wydatków w tej pozycji budżetu')}
                               </p>
                             )}
                           </td>
@@ -179,7 +182,7 @@ export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpen
           <div className="mt-6 p-4 bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 rounded-xl">
             <div className="grid grid-cols-4 gap-4 text-center">
               <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Plan całkowity</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('Plan całkowity')}</div>
                 <div className="text-xl font-bold text-gray-900 dark:text-white">
                   {totalPlanned.toLocaleString('pl-PL')} zł
                 </div>
@@ -197,7 +200,7 @@ export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpen
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Pozostało</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('Pozostało')}</div>
                 <div className={`text-xl font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {totalRemaining.toLocaleString('pl-PL')} zł
                 </div>

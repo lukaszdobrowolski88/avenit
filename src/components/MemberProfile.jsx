@@ -5,6 +5,7 @@ import {
   CheckCircle, CalendarClock, UserCircle2, Cake, Tag, StickyNote, CalendarCheck,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { tr } from '../i18n';
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('pl-PL') : null);
 
@@ -107,7 +108,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
               <h2 className="text-xl font-bold text-gray-800 dark:text-white truncate">{member.first_name} {member.last_name}</h2>
               <div className="mt-1 flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200">
-                  <CheckCircle size={12} /> {member.status || 'Gość'}
+                  <CheckCircle size={12} /> {tr(member.status || 'Gość')}
                 </span>
                 {ministryLabels.map((label, i) => (
                   <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-300">
@@ -144,11 +145,11 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
                 <span>{fmtDate(member.birth_date)}{ageFrom(member.birth_date) != null ? ` · ${ageFrom(member.birth_date)} lat` : ''}</span>
               )}
             </Row>
-            <Row icon={Calendar} label="W kościele od">{fmtDate(member.join_date)}</Row>
+            <Row icon={Calendar} label={tr('W kościele od')}>{fmtDate(member.join_date)}</Row>
             <Row icon={Calendar} label="Członek od">{member.status === 'Członek' ? fmtDate(member.membership_date) : null}</Row>
-            <Row icon={FileText} label="Deklaracja członkowska">
+            <Row icon={FileText} label={tr('Deklaracja członkowska')}>
               {member.membership_declaration_url && (
-                <a href={member.membership_declaration_url} target="_blank" rel="noopener noreferrer" className="text-accent-primary dark:text-accent-primary-light hover:underline">Otwórz dokument</a>
+                <a href={member.membership_declaration_url} target="_blank" rel="noopener noreferrer" className="text-accent-primary dark:text-accent-primary-light hover:underline">{tr('Otwórz dokument')}</a>
               )}
             </Row>
           </div>
@@ -184,7 +185,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
                   <CalendarCheck size={14} /> Frekwencja
                 </div>
                 <div className="text-sm text-gray-700 dark:text-gray-200">
-                  Ostatnie 90 dni: <b>{last90}</b> {last90 === 1 ? 'obecność' : 'obecności'} · łącznie {attendance.length}
+                  Ostatnie 90 dni: <b>{last90}</b> {last90 === 1 ? tr('obecność') : tr('obecności')} · łącznie {attendance.length}
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {attendance.slice(0, 8).map((a, i) => (
@@ -218,7 +219,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
 
         {/* Stopka */}
         <div className="flex justify-end gap-2 p-4 border-t border-gray-100 dark:border-gray-800">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">Zamknij</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">{tr('Zamknij')}</button>
           {onEdit && (
             <button onClick={() => onEdit(member)} className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition">
               <Edit2 size={15} /> Edytuj

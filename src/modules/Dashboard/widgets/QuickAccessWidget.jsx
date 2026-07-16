@@ -2,17 +2,18 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDays, ClipboardList, Users, Heart, MessageCircle, Home, Wallet, Search } from 'lucide-react';
 import { openCommandPalette } from '../../../components/CommandPalette';
+import { tr } from '../../../i18n';
 
 // Skróty do najczęściej używanych miejsc aplikacji.
 const ACTIONS = [
-  { label: 'Kalendarz', icon: CalendarDays, to: '/calendar', color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' },
-  { label: 'Programy', icon: ClipboardList, to: '/programs', color: 'text-blue-500 bg-blue-50 dark:bg-blue-500/10' },
-  { label: 'Członkowie', icon: Users, to: '/members', color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10' },
+  { label: tr('Kalendarz'), icon: CalendarDays, to: '/calendar', color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' },
+  { label: tr('Programy'), icon: ClipboardList, to: '/programs', color: 'text-blue-500 bg-blue-50 dark:bg-blue-500/10' },
+  { label: tr('Członkowie'), icon: Users, to: '/members', color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10' },
   { label: 'Modlitwa', icon: Heart, to: '/prayer', color: 'text-rose-500 bg-rose-50 dark:bg-rose-500/10' },
-  { label: 'Komunikator', icon: MessageCircle, to: '/komunikator', color: 'text-violet-500 bg-violet-50 dark:bg-violet-500/10' },
-  { label: 'Grupy', icon: Home, to: '/home-groups', color: 'text-amber-500 bg-amber-50 dark:bg-amber-500/10' },
-  { label: 'Finanse', icon: Wallet, to: '/finance', color: 'text-teal-500 bg-teal-50 dark:bg-teal-500/10' },
-  { label: 'Szukaj', icon: Search, action: openCommandPalette, color: 'text-gray-500 bg-gray-100 dark:bg-gray-700/50' },
+  { label: tr('Komunikator'), icon: MessageCircle, to: '/komunikator', color: 'text-violet-500 bg-violet-50 dark:bg-violet-500/10' },
+  { label: tr('Grupy'), icon: Home, to: '/home-groups', color: 'text-amber-500 bg-amber-50 dark:bg-amber-500/10' },
+  { label: tr('Finanse'), icon: Wallet, to: '/finance', color: 'text-teal-500 bg-teal-50 dark:bg-teal-500/10' },
+  { label: tr('Szukaj'), icon: Search, action: openCommandPalette, color: 'text-gray-500 bg-gray-100 dark:bg-gray-700/50' },
 ];
 
 export default function QuickAccessWidget() {

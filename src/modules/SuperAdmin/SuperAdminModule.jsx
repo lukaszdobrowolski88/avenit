@@ -14,6 +14,7 @@ import {
   Shield,
   Loader2
 } from 'lucide-react';
+import { tr } from '../../i18n';
 
 const TABS = {
   DASHBOARD: 'dashboard',
@@ -44,7 +45,7 @@ export default function SuperAdminModule() {
     { id: TABS.INVOICES, icon: CreditCard, label: 'Faktury' },
     { id: TABS.PLANS, icon: Package, label: 'Plany' },
     { id: TABS.COUPONS, icon: Tag, label: 'Kupony' },
-    { id: TABS.SETTINGS, icon: Settings, label: 'Ustawienia' }
+    { id: TABS.SETTINGS, icon: Settings, label: tr('Ustawienia') }
   ];
 
   const handleSelectTenant = (tenant) => {
@@ -67,10 +68,10 @@ export default function SuperAdminModule() {
           <Shield size={32} className="text-red-500" />
         </div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Brak dostępu
+          {tr('Brak dostępu')}
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Ta sekcja jest dostępna tylko dla administratorów systemu.
+          {tr('Ta sekcja jest dostępna tylko dla administratorów systemu.')}
         </p>
       </div>
     );
@@ -93,7 +94,7 @@ export default function SuperAdminModule() {
               Kupony rabatowe
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Zarządzaj kuponami i promocjami.
+              {tr('Zarządzaj kuponami i promocjami.')}
             </p>
             {/* TODO: CouponsManager component */}
           </div>
@@ -126,7 +127,7 @@ export default function SuperAdminModule() {
               Panel Super Administratora
             </h1>
             <p className="text-sm text-white/80">
-              Avenit - Zarządzanie systemem
+              {tr('Avenit - Zarządzanie systemem')}
             </p>
           </div>
         </div>

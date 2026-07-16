@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Monitor, Smartphone } from 'lucide-react';
 import FormRenderer from './FormRenderer';
+import { tr } from '../../../i18n';
 
 export default function FormPreview({
   title,
@@ -13,7 +14,7 @@ export default function FormPreview({
 
   const handlePreviewSubmit = (answers) => {
     console.log('Preview submit:', answers);
-    alert('To jest tylko podgląd. Formularz nie został wysłany.');
+    alert(tr('To jest tylko podgląd. Formularz nie został wysłany.'));
   };
 
   return (
@@ -22,7 +23,7 @@ export default function FormPreview({
         <div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-4">
             <h2 className="font-semibold text-gray-900 dark:text-white">
-              Podgląd formularza
+              {tr('Podgląd formularza')}
             </h2>
 
             <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { Plus, Trash2, X, Check, Edit2, Users, ChevronDown } from 'lucide-react';
+import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -40,6 +42,7 @@ function useDropdownPosition(triggerRef, isOpen) {
 
 // MultiSelect dla przypisywania członków do służby
 const MemberMultiSelect = ({ members, selectedIds, onChange, roleId }) => {
+  const t = useT();
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
@@ -123,7 +126,7 @@ const MemberMultiSelect = ({ members, selectedIds, onChange, roleId }) => {
             );
           })}
           {members.length === 0 && (
-            <div className="p-3 text-center text-gray-400 text-xs">Brak członków w zespole</div>
+            <div className="p-3 text-center text-gray-400 text-xs">{t('Brak członków w zespole')}</div>
           )}
         </div>,
         document.body
@@ -134,6 +137,7 @@ const MemberMultiSelect = ({ members, selectedIds, onChange, roleId }) => {
 
 // Główny komponent zakładki Służby dla niestandardowych modułów
 export default function DutyTab({ moduleKey, moduleName }) {
+  const t = useT();
   const [members, setMembers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [memberRoles, setMemberRoles] = useState([]);
@@ -215,7 +219,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
   };
 
   const saveRole = async () => {
-    if (!roleForm.name.trim()) return alert('Podaj nazwę służby');
+    if (!roleForm.name.trim()) return alert(tr('Podaj nazwę służby'));
 
     // Generuj field_key z nazwy jeśli nie podano
     const fieldKey = roleForm.field_key.trim() || roleForm.name.toLowerCase()
@@ -242,18 +246,18 @@ export default function DutyTab({ moduleKey, moduleName }) {
       setRoleForm({ id: null, name: '', field_key: '', description: '' });
       fetchData();
     } catch (err) {
-      alert('Błąd zapisu: ' + err.message);
+      alert(tr('Błąd zapisu: ') + err.message);
     }
   };
 
   const deleteRole = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę służbę? Spowoduje to usunięcie wszystkich przypisań.')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę służbę? Spowoduje to usunięcie wszystkich przypisań.'))) return;
 
     try {
       await supabase.from('team_roles').delete().eq('id', id);
       fetchData();
     } catch (err) {
-      alert('Błąd usuwania: ' + err.message);
+      alert(tr('Błąd usuwania: ') + err.message);
     }
   };
 
@@ -283,7 +287,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
       fetchData();
     } catch (err) {
       console.error('Błąd aktualizacji przypisań:', err);
-      alert('Błąd aktualizacji: ' + err.message);
+      alert(tr('Błąd aktualizacji: ') + err.message);
     }
   };
 
@@ -306,10 +310,10 @@ export default function DutyTab({ moduleKey, moduleName }) {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-            Służby
+            {tr('Służby')}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Zarządzaj służbami i przypisuj do nich członków zespołu
+            {tr('Zarządzaj służbami i przypisuj do nich członków zespołu')}
           </p>
         </div>
         <button
@@ -326,16 +330,16 @@ export default function DutyTab({ moduleKey, moduleName }) {
       {members.length === 0 ? (
         <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
           <Users size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">Brak członków w zespole</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('Brak członków w zespole')}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Najpierw dodaj członków w zakładce "Członkowie"
+            {tr('Najpierw dodaj członków w zakładce "Członkowie"')}
           </p>
         </div>
       ) : roles.length === 0 ? (
         <div className="text-center py-12 text-gray-400 dark:text-gray-500">
           <Users size={48} className="mx-auto mb-4 opacity-50" />
-          <p className="text-lg font-medium">Brak zdefiniowanych służb</p>
-          <p className="text-sm mt-1">Dodaj pierwszą służbę, aby móc przypisywać do niej członków zespołu</p>
+          <p className="text-lg font-medium">{t('Brak zdefiniowanych służb')}</p>
+          <p className="text-sm mt-1">{t('Dodaj pierwszą służbę, aby móc przypisywać do niej członków zespołu')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -412,7 +416,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-white/20 dark:border-gray-700">
             <div className="flex justify-between mb-6">
               <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                {roleForm.id ? 'Edytuj służbę' : 'Nowa służba'}
+                {roleForm.id ? tr('Edytuj służbę') : tr('Nowa służba')}
               </h3>
               <button
                 onClick={() => setShowRoleModal(false)}
@@ -424,11 +428,11 @@ export default function DutyTab({ moduleKey, moduleName }) {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">
-                  Nazwa służby
+                  {tr('Nazwa służby')}
                 </label>
                 <input
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="np. Piano, Nagłośnienie"
+                  placeholder={t('np. Piano, Nagłośnienie')}
                   value={roleForm.name}
                   onChange={e => setRoleForm({ ...roleForm, name: e.target.value })}
                 />
@@ -444,7 +448,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
                   onChange={e => setRoleForm({ ...roleForm, field_key: e.target.value })}
                 />
                 <p className="text-xs text-gray-400 mt-1 ml-1">
-                  Klucz używany w grafiku. Zostanie wygenerowany automatycznie jeśli nie podano.
+                  {tr('Klucz używany w grafiku. Zostanie wygenerowany automatycznie jeśli nie podano.')}
                 </p>
               </div>
               <div>
@@ -454,7 +458,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none"
                   rows={2}
-                  placeholder="Krótki opis służby..."
+                  placeholder={t('Krótki opis służby...')}
                   value={roleForm.description}
                   onChange={e => setRoleForm({ ...roleForm, description: e.target.value })}
                 />

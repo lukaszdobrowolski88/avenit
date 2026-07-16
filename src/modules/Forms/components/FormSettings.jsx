@@ -7,6 +7,7 @@ import DragDropEmailBuilder from '../../Mailing/components/DragDropEmailBuilder'
 import GroupRegistrationSettings from './GroupRegistrationSettings';
 import AddonsSettings from './AddonsSettings';
 import DiscountSettings from './DiscountSettings';
+import { tr } from '../../../i18n';
 
 export default function FormSettings({ settings, fields, onUpdate, onClose }) {
   const [localSettings, setLocalSettings] = useState(settings || {});
@@ -216,31 +217,31 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
         <div className="max-w-2xl mx-auto space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Wysyłanie formularza
+              {tr('Wysyłanie formularza')}
             </h2>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Tekst przycisku wysyłania
+                  {tr('Tekst przycisku wysyłania')}
                 </label>
                 <input
                   type="text"
                   value={localSettings.submitButtonText || ''}
                   onChange={(e) => handleChange('submitButtonText', e.target.value)}
-                  placeholder="Wyślij"
+                  placeholder={tr('Wyślij')}
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Komunikat po wysłaniu
+                  {tr('Komunikat po wysłaniu')}
                 </label>
                 <textarea
                   value={localSettings.successMessage || ''}
                   onChange={(e) => handleChange('successMessage', e.target.value)}
-                  placeholder="Dziękujemy za wypełnienie formularza!"
+                  placeholder={tr('Dziękujemy za wypełnienie formularza!')}
                   rows={3}
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light resize-none"
                 />
@@ -270,10 +271,10 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    Pasek postępu
+                    {tr('Pasek postępu')}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Pokaż postęp wypełniania formularza
+                    {tr('Pokaż postęp wypełniania formularza')}
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -300,7 +301,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Maksymalna liczba odpowiedzi, po której formularz zostanie zamknięty
+                  {tr('Maksymalna liczba odpowiedzi, po której formularz zostanie zamknięty')}
                 </p>
               </div>
             </div>
@@ -308,13 +309,13 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Wygląd
+              {tr('Wygląd')}
             </h2>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Kolor główny
+                  {tr('Kolor główny')}
                 </label>
                 <div className="flex items-center gap-3">
                   <input
@@ -409,7 +410,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                       }`}
                     >
-                      {pos === 'left' ? 'Po lewej' : pos === 'center' ? 'Na środku' : 'Po prawej'}
+                      {pos === 'left' ? 'Po lewej' : pos === 'center' ? tr('Na środku') : 'Po prawej'}
                     </button>
                   ))}
                 </div>
@@ -418,7 +419,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               {/* Obrazek nagłówka */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Obrazek nagłówka
+                  {tr('Obrazek nagłówka')}
                 </label>
                 <input
                   ref={headerImageRef}
@@ -431,7 +432,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   <div className="relative">
                     <img
                       src={localSettings.branding.headerImage}
-                      alt="Nagłówek"
+                      alt={tr('Nagłówek')}
                       className="w-full h-32 object-cover rounded-xl border border-gray-200 dark:border-gray-600"
                     />
                     <button
@@ -452,7 +453,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     ) : (
                       <>
                         <Upload size={24} />
-                        <span className="text-sm">Dodaj obrazek nagłówka</span>
+                        <span className="text-sm">{tr('Dodaj obrazek nagłówka')}</span>
                       </>
                     )}
                   </button>
@@ -475,7 +476,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               {/* Obrazek tła */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Obrazek tła
+                  {tr('Obrazek tła')}
                 </label>
                 <input
                   ref={backgroundImageRef}
@@ -488,7 +489,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   <div className="relative">
                     <img
                       src={localSettings.branding.backgroundImage}
-                      alt="Tło"
+                      alt={tr('Tło')}
                       className="w-full h-32 object-cover rounded-xl border border-gray-200 dark:border-gray-600"
                     />
                     <button
@@ -509,7 +510,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     ) : (
                       <>
                         <Upload size={24} />
-                        <span className="text-sm">Dodaj obrazek tła</span>
+                        <span className="text-sm">{tr('Dodaj obrazek tła')}</span>
                       </>
                     )}
                   </button>
@@ -537,18 +538,18 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <Palette size={20} className="text-violet-500" />
-              Nagłówek formularza
+              {tr('Nagłówek formularza')}
             </h2>
 
             <div className="space-y-4">
               {/* Typ tła nagłówka */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Tło nagłówka
+                  {tr('Tło nagłówka')}
                 </label>
                 <div className="flex gap-2">
                   {[
-                    { id: 'solid', label: 'Kolor' },
+                    { id: 'solid', label: tr('Kolor') },
                     { id: 'gradient', label: 'Gradient' },
                     { id: 'image', label: 'Grafika' }
                   ].map((type) => (
@@ -570,7 +571,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               {/* Kolor solid */}
               {(localSettings.header?.background?.type || 'solid') === 'solid' && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Kolor</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Kolor')}</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
@@ -593,7 +594,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Od</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Od')}</label>
                       <div className="flex items-center gap-2">
                         <input type="color" value={localSettings.header?.background?.gradient?.from || '#3b82f6'}
                           onChange={(e) => handleHeaderGradientChange('from', e.target.value)}
@@ -604,7 +605,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Do</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Do')}</label>
                       <div className="flex items-center gap-2">
                         <input type="color" value={localSettings.header?.background?.gradient?.to || '#8b5cf6'}
                           onChange={(e) => handleHeaderGradientChange('to', e.target.value)}
@@ -645,9 +646,9 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   <div className="flex flex-wrap gap-2">
                     {[
                       { from: '#3b82f6', to: '#8b5cf6', label: 'Niebiesko-fioletowy' },
-                      { from: '#ec4899', to: '#f97316', label: 'Różowo-pomarańczowy' },
+                      { from: '#ec4899', to: '#f97316', label: tr('Różowo-pomarańczowy') },
                       { from: '#10b981', to: '#3b82f6', label: 'Zielono-niebieski' },
-                      { from: '#f59e0b', to: '#ef4444', label: 'Złoto-czerwony' },
+                      { from: '#f59e0b', to: '#ef4444', label: tr('Złoto-czerwony') },
                       { from: '#1e293b', to: '#334155', label: 'Ciemny' },
                       { from: '#6366f1', to: '#ec4899', label: 'Indigo-pink' }
                     ].map((preset, i) => (
@@ -669,7 +670,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     className="hidden" />
                   {localSettings.header?.background?.image ? (
                     <div className="relative">
-                      <img src={localSettings.header.background.image} alt="Tło nagłówka"
+                      <img src={localSettings.header.background.image} alt={tr('Tło nagłówka')}
                         className="w-full h-24 object-cover rounded-xl border border-gray-200 dark:border-gray-600" />
                       <button onClick={() => handleHeaderBgChange('image', null)}
                         className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600">
@@ -683,7 +684,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       {uploadingImage === 'headerBg' ? (
                         <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
                       ) : (
-                        <><Upload size={20} /><span className="text-xs">Dodaj grafikę tła</span></>
+                        <><Upload size={20} /><span className="text-xs">{tr('Dodaj grafikę tła')}</span></>
                       )}
                     </button>
                   )}
@@ -721,7 +722,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               {/* Rozmiar tytułu */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rozmiar tytułu</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('Rozmiar tytułu')}</label>
                 <div className="flex gap-2">
                   {[
                     { id: 'lg', label: 'S' }, { id: 'xl', label: 'M' },
@@ -739,9 +740,9 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               {/* Wyrównanie */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Wyrównanie</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('Wyrównanie')}</label>
                 <div className="flex gap-2">
-                  {[{ id: 'left', label: 'Do lewej' }, { id: 'center', label: 'Na środku' }].map((a) => (
+                  {[{ id: 'left', label: 'Do lewej' }, { id: 'center', label: tr('Na środku') }].map((a) => (
                     <button key={a.id}
                       onClick={() => handleHeaderChange('titleAlign', a.id)}
                       className={`flex-1 py-2 rounded-xl text-sm border transition-colors ${
@@ -769,9 +770,9 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               {/* Zaokrąglenie */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Zaokrąglenie</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('Zaokrąglenie')}</label>
                 <div className="flex gap-2">
-                  {[{ id: 'none', label: 'Brak' }, { id: 'md', label: 'Małe' }, { id: 'xl', label: 'Średnie' }, { id: '2xl', label: 'Duże' }, { id: '3xl', label: 'Bardzo duże' }].map((r) => (
+                  {[{ id: 'none', label: tr('Brak') }, { id: 'md', label: tr('Małe') }, { id: 'xl', label: tr('Średnie') }, { id: '2xl', label: tr('Duże') }, { id: '3xl', label: tr('Bardzo duże') }].map((r) => (
                     <button key={r.id}
                       onClick={() => handleHeaderChange('borderRadius', r.id)}
                       className={`flex-1 py-2 rounded-xl text-xs border transition-colors ${
@@ -784,9 +785,9 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               {/* Cień */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cień</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('Cień')}</label>
                 <div className="flex gap-2">
-                  {[{ id: 'none', label: 'Brak' }, { id: 'sm', label: 'Mały' }, { id: 'md', label: 'Średni' }, { id: 'lg', label: 'Duży' }].map((s) => (
+                  {[{ id: 'none', label: tr('Brak') }, { id: 'sm', label: tr('Mały') }, { id: 'md', label: tr('Średni') }, { id: 'lg', label: tr('Duży') }].map((s) => (
                     <button key={s.id}
                       onClick={() => handleHeaderChange('shadow', s.id)}
                       className={`flex-1 py-2 rounded-xl text-xs border transition-colors ${
@@ -807,7 +808,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 </label>
               </div>
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <span className="text-sm text-gray-700 dark:text-gray-300">Linia oddzielająca info</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{tr('Linia oddzielająca info')}</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" checked={localSettings.header?.showDivider !== false}
                     onChange={(e) => handleHeaderChange('showDivider', e.target.checked)} className="sr-only peer" />
@@ -816,7 +817,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               </div>
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Pokaż info o wydarzeniu</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{tr('Pokaż info o wydarzeniu')}</span>
                   <p className="text-xs text-gray-400">Cena, miejsca, data, lokalizacja</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -832,19 +833,19 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <Layout size={20} className="text-indigo-500" />
-              Layout i tło
+              {tr('Layout i tło')}
             </h2>
 
             <div className="space-y-4">
               {/* Szerokość formularza */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Szerokość formularza
+                  {tr('Szerokość formularza')}
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    { id: 'sm', label: 'Wąski', desc: '480px' },
-                    { id: 'md', label: 'Średni', desc: '576px' },
+                    { id: 'sm', label: tr('Wąski'), desc: '480px' },
+                    { id: 'md', label: tr('Średni'), desc: '576px' },
                     { id: 'lg', label: 'Szeroki', desc: '672px' },
                     { id: 'xl', label: 'Bardzo szeroki', desc: '768px' },
                     { id: '2xl', label: 'Maksymalny', desc: '896px' }
@@ -868,11 +869,11 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               {/* Typ tła */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Typ tła
+                  {tr('Typ tła')}
                 </label>
                 <div className="flex gap-2">
                   {[
-                    { id: 'solid', label: 'Kolor' },
+                    { id: 'solid', label: tr('Kolor') },
                     { id: 'gradient', label: 'Gradient' }
                   ].map((type) => (
                     <button
@@ -894,7 +895,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               {(localSettings.layout?.background?.type || 'gradient') === 'solid' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Kolor tła
+                    {tr('Kolor tła')}
                   </label>
                   <div className="flex items-center gap-3">
                     <input
@@ -918,7 +919,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 <div className="space-y-3">
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Od</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Od')}</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -952,7 +953,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Do</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Do')}</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -1016,11 +1017,11 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Presety</label>
                     <div className="flex flex-wrap gap-2">
                       {[
-                        { from: '#fdf2f8', via: '#ffffff', to: '#fff7ed', label: 'Różowo-pomarańczowy' },
+                        { from: '#fdf2f8', via: '#ffffff', to: '#fff7ed', label: tr('Różowo-pomarańczowy') },
                         { from: '#eff6ff', via: '#ffffff', to: '#f0fdf4', label: 'Niebiesko-zielony' },
                         { from: '#faf5ff', via: '#ffffff', to: '#fef2f2', label: 'Fioletowo-czerwony' },
                         { from: '#f0f9ff', via: '#e0f2fe', to: '#f0f9ff', label: 'Niebieski' },
-                        { from: '#fefce8', via: '#ffffff', to: '#fefce8', label: 'Ciepły żółty' },
+                        { from: '#fefce8', via: '#ffffff', to: '#fefce8', label: tr('Ciepły żółty') },
                         { from: '#f8fafc', via: '#f1f5f9', to: '#f8fafc', label: 'Szary' }
                       ].map((preset, i) => (
                         <button
@@ -1066,7 +1067,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
                 {(localSettings.layout?.background?.orbs || []).length === 0 && (
                   <p className="text-xs text-gray-400 dark:text-gray-500">
-                    Orby to rozmyte, kolorowe kule w tle formularza nadające mu nowoczesny wygląd.
+                    {tr('Orby to rozmyte, kolorowe kule w tle formularza nadające mu nowoczesny wygląd.')}
                   </p>
                 )}
 
@@ -1172,17 +1173,17 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <DollarSign size={20} className="text-green-500" />
-              Cennik i płatności
+              {tr('Cennik i płatności')}
             </h2>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    Włącz cennik
+                    {tr('Włącz cennik')}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Pokaż podsumowanie ceny na formularzu
+                    {tr('Pokaż podsumowanie ceny na formularzu')}
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -1207,7 +1208,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       onChange={(e) => handlePricingChange('currency', e.target.value)}
                       className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                     >
-                      <option value="PLN">PLN (zł)</option>
+                      <option value="PLN">{tr('PLN (zł)')}</option>
                       <option value="EUR">EUR (€)</option>
                       <option value="USD">USD ($)</option>
                     </select>
@@ -1216,10 +1217,10 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        Wymagana płatność
+                        {tr('Wymagana płatność')}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Użytkownik musi zapłacić przed zapisem
+                        {tr('Użytkownik musi zapłacić przed zapisem')}
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -1235,12 +1236,12 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Metody płatności
+                      {tr('Metody płatności')}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {[
                         { id: 'transfer', label: 'Przelew bankowy', icon: CreditCard },
-                        { id: 'cash', label: 'Gotówka', icon: DollarSign },
+                        { id: 'cash', label: tr('Gotówka'), icon: DollarSign },
                         { id: 'paypal', label: 'PayPal', icon: CreditCard },
                         { id: 'przelewy24', label: 'Przelewy24', icon: CreditCard }
                       ].map((method) => {
@@ -1305,7 +1306,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               ...(localSettings.pricing?.paypal || {}),
                               clientId: e.target.value
                             })}
-                            placeholder="Twój PayPal Client ID"
+                            placeholder={tr('Twój PayPal Client ID')}
                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                           />
                           <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
@@ -1327,7 +1328,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               Tryb testowy (Sandbox)
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              Użyj środowiska testowego PayPal
+                              {tr('Użyj środowiska testowego PayPal')}
                             </p>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -1346,7 +1347,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
                         <div>
                           <label className="block text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">
-                            Opis płatności
+                            {tr('Opis płatności')}
                           </label>
                           <input
                             type="text"
@@ -1355,7 +1356,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               ...(localSettings.pricing?.paypal || {}),
                               description: e.target.value
                             })}
-                            placeholder="np. Opłata za wydarzenie"
+                            placeholder={tr('np. Opłata za wydarzenie')}
                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                           />
                         </div>
@@ -1384,7 +1385,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               ...(localSettings.pricing?.przelewy24 || {}),
                               merchantId: e.target.value
                             })}
-                            placeholder="Twój Merchant ID"
+                            placeholder={tr('Twój Merchant ID')}
                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-red-200 dark:border-red-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                           />
                         </div>
@@ -1438,7 +1439,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               Tryb testowy (Sandbox)
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              Użyj środowiska testowego P24
+                              {tr('Użyj środowiska testowego P24')}
                             </p>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -1457,7 +1458,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
                         <div>
                           <label className="block text-xs font-medium text-red-700 dark:text-red-400 mb-1">
-                            Opis płatności
+                            {tr('Opis płatności')}
                           </label>
                           <input
                             type="text"
@@ -1466,7 +1467,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               ...(localSettings.pricing?.przelewy24 || {}),
                               description: e.target.value
                             })}
-                            placeholder="np. Opłata za wydarzenie"
+                            placeholder={tr('np. Opłata za wydarzenie')}
                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-red-200 dark:border-red-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                           />
                         </div>
@@ -1476,12 +1477,12 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                      Instrukcje płatności
+                      {tr('Instrukcje płatności')}
                     </label>
                     <textarea
                       value={localSettings.pricing?.paymentInstructions || ''}
                       onChange={(e) => handlePricingChange('paymentInstructions', e.target.value)}
-                      placeholder="Dodatkowe informacje dotyczące płatności..."
+                      placeholder={tr('Dodatkowe informacje dotyczące płatności...')}
                       rows={3}
                       className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light resize-none"
                     />
@@ -1520,7 +1521,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <Percent size={20} className="text-orange-500" />
-              Rabaty ilościowe
+              {tr('Rabaty ilościowe')}
             </h2>
             <DiscountSettings
               settings={localSettings}
@@ -2088,7 +2089,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     value={localSettings.emails?.[editingTemplate.type]?.customHtml || editingTemplate.template.html_content}
                     onChange={(e) => handleEmailTypeChange(editingTemplate.type, 'customHtml', e.target.value)}
                     className="w-full h-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg font-mono text-sm text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
-                    placeholder="Wprowadź kod HTML szablonu..."
+                    placeholder={tr('Wprowadź kod HTML szablonu...')}
                   />
                 </div>
               </div>

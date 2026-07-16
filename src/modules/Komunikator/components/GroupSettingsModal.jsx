@@ -3,6 +3,7 @@ import { X, Search, UserPlus, UserMinus, Crown, Loader, Users, Trash2, LogOut, E
 import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
+import { tr } from '../../../i18n';
 
 // Ikony dla kanałów służb
 const ministryIcons = {
@@ -122,7 +123,7 @@ export default function GroupSettingsModal({
       setAllUsers(prev => prev.filter(u => u.email !== email));
     } catch (err) {
       console.error('Error adding participant:', err);
-      alert('Nie udało się dodać uczestnika');
+      alert(tr('Nie udało się dodać uczestnika'));
     } finally {
       setSaving(false);
     }
@@ -131,7 +132,7 @@ export default function GroupSettingsModal({
   // Usuń uczestnika
   const handleRemoveParticipant = async (email) => {
     if (email === currentUserEmail) {
-      if (!window.confirm('Czy na pewno chcesz opuścić tę grupę?')) return;
+      if (!window.confirm(tr('Czy na pewno chcesz opuścić tę grupę?'))) return;
     } else {
       if (!window.confirm(`Czy na pewno chcesz usunąć tego uczestnika?`)) return;
     }
@@ -152,7 +153,7 @@ export default function GroupSettingsModal({
       onUpdate?.();
     } catch (err) {
       console.error('Error removing participant:', err);
-      alert('Nie udało się usunąć uczestnika');
+      alert(tr('Nie udało się usunąć uczestnika'));
     } finally {
       setSaving(false);
     }
@@ -173,7 +174,7 @@ export default function GroupSettingsModal({
       onUpdate?.();
     } catch (err) {
       console.error('Error changing role:', err);
-      alert('Nie udało się zmienić roli');
+      alert(tr('Nie udało się zmienić roli'));
     } finally {
       setSaving(false);
     }
@@ -199,7 +200,7 @@ export default function GroupSettingsModal({
       onUpdate?.();
     } catch (err) {
       console.error('Error updating name:', err);
-      alert('Nie udało się zmienić nazwy');
+      alert(tr('Nie udało się zmienić nazwy'));
     } finally {
       setSaving(false);
     }
@@ -213,7 +214,7 @@ export default function GroupSettingsModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            {isMinistryChannel ? 'Ustawienia kanału' : 'Ustawienia grupy'}
+            {isMinistryChannel ? tr('Ustawienia kanału') : 'Ustawienia grupy'}
           </h2>
           <button
             onClick={onClose}
@@ -280,7 +281,7 @@ export default function GroupSettingsModal({
                     <button
                       onClick={() => setEditingName(true)}
                       className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
-                      title="Zmień nazwę"
+                      title={tr('Zmień nazwę')}
                     >
                       <Edit2 size={14} className="text-gray-500" />
                     </button>
@@ -288,7 +289,7 @@ export default function GroupSettingsModal({
                 </div>
               )}
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {isMinistryChannel ? 'Kanał służby • ' : ''}{participants.length} uczestników
+                {isMinistryChannel ? tr('Kanał służby • ') : ''}{participants.length} uczestników
               </p>
             </div>
           </div>
@@ -306,7 +307,7 @@ export default function GroupSettingsModal({
             `}
           >
             <Users size={18} />
-            Członkowie
+            {tr('Członkowie')}
           </button>
           {isAdmin && (
             <button
@@ -332,7 +333,7 @@ export default function GroupSettingsModal({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={activeTab === 'members' ? 'Szukaj członków...' : 'Szukaj użytkowników...'}
+              placeholder={activeTab === 'members' ? tr('Szukaj członków...') : tr('Szukaj użytkowników...')}
               className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
             />
           </div>
@@ -374,7 +375,7 @@ export default function GroupSettingsModal({
                           onClick={() => handleToggleAdmin(participant.user_email, participant.role)}
                           disabled={saving}
                           className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition"
-                          title={participant.role === 'admin' ? 'Usuń uprawnienia admina' : 'Nadaj uprawnienia admina'}
+                          title={participant.role === 'admin' ? tr('Usuń uprawnienia admina') : 'Nadaj uprawnienia admina'}
                         >
                           <Crown
                             size={16}
@@ -385,7 +386,7 @@ export default function GroupSettingsModal({
                           onClick={() => handleRemoveParticipant(participant.user_email)}
                           disabled={saving}
                           className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition text-red-500"
-                          title="Usuń z grupy"
+                          title={tr('Usuń z grupy')}
                         >
                           <UserMinus size={16} />
                         </button>
@@ -396,7 +397,7 @@ export default function GroupSettingsModal({
                         onClick={() => handleRemoveParticipant(currentUserEmail)}
                         disabled={saving}
                         className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition text-red-500"
-                        title="Opuść grupę"
+                        title={tr('Opuść grupę')}
                       >
                         <LogOut size={16} />
                       </button>
@@ -413,7 +414,7 @@ export default function GroupSettingsModal({
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                {searchQuery ? 'Nie znaleziono użytkowników' : 'Wszyscy użytkownicy są już w grupie'}
+                {searchQuery ? tr('Nie znaleziono użytkowników') : tr('Wszyscy użytkownicy są już w grupie')}
               </div>
             ) : (
               <div className="space-y-1">

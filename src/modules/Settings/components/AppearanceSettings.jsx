@@ -3,12 +3,15 @@ import { Palette, Moon, Image as ImageIcon, Upload } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { SettingsCard, SettingRow, Toggle, SelectSetting } from './SettingsUI';
 import ColorPresetPicker from './ColorPresetPicker';
+import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Wygląd i personalizacja: logo, motyw kolorystyczny, tryb ciemny, gęstość.
 export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload }) {
+  const t = useT();
   return (
     <div className="max-w-3xl">
-      <SettingsCard title="Logo organizacji" description="Wyświetlane na ekranie logowania i w menu." icon={ImageIcon}>
+      <SettingsCard title="Logo organizacji" description={tr('Wyświetlane na ekranie logowania i w menu.')} icon={ImageIcon}>
         <div className="flex gap-6 items-center">
           <div className="w-32 h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl flex items-center justify-center bg-gray-50 dark:bg-gray-700 relative overflow-hidden group shrink-0">
             {logoUrl
@@ -22,7 +25,7 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload })
             <input id="logo-upload-appearance" type="file" className="hidden" accept="image/*" onChange={onLogoUpload} />
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            <p>Zalecany format: PNG lub SVG z przezroczystym tłem.</p>
+            <p>{t('Zalecany format: PNG lub SVG z przezroczystym tłem.')}</p>
             <p className="mt-1">Kwadratowe, min. 256×256 px.</p>
           </div>
         </div>
@@ -32,8 +35,8 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload })
         <ColorPresetPicker currentPreset={get('color_preset') || 'pink-orange'} />
       </SettingsCard>
 
-      <SettingsCard title="Interfejs" description="Domyślny wygląd dla nowych użytkowników." icon={Moon}>
-        <SettingRow label="Domyślny motyw" hint="Jasny, ciemny lub zgodny z systemem">
+      <SettingsCard title="Interfejs" description={tr('Domyślny wygląd dla nowych użytkowników.')} icon={Moon}>
+        <SettingRow label={tr('Domyślny motyw')} hint="Jasny, ciemny lub zgodny z systemem">
           <SelectSetting
             value={get('appearance_theme') || 'system'}
             onChange={(v) => save('appearance_theme', v)}
@@ -44,7 +47,7 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload })
             ]}
           />
         </SettingRow>
-        <SettingRow label="Kompaktowy widok" hint="Mniejsze odstępy, więcej treści na ekranie" last>
+        <SettingRow label="Kompaktowy widok" hint={tr('Mniejsze odstępy, więcej treści na ekranie')} last>
           <Toggle checked={(get('appearance_compact') ?? 'false') === 'true'} onChange={(v) => save('appearance_compact', String(v))} />
         </SettingRow>
       </SettingsCard>

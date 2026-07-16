@@ -14,6 +14,7 @@ import ProgramEditorModal from './Programs/ProgramEditorModal';
 import EventRSVP from '../components/EventRSVP';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
+import { tr } from '../i18n';
 
 // --- MODAL POTWIERDZENIA USUNIĘCIA ---
 
@@ -55,13 +56,13 @@ const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, title, message }) => {
 // --- KONFIGURACJA ZESPOŁÓW I DANYCH ---
 
 const TEAMS = {
-  program: { label: 'Nabożeństwa', color: 'pink', icon: Music },
+  program: { label: tr('Nabożeństwa'), color: 'pink', icon: Music },
   media: { label: 'Media Team', color: 'orange', icon: Video },
-  atmosfera: { label: 'Atmosfera', color: 'teal', icon: HeartHandshake },
-  worship: { label: 'Zespół Uwielbienia', color: 'purple', icon: Music },
-  kids: { label: 'Małe Avenit', color: 'yellow', icon: Baby },
+  atmosfera: { label: tr('Atmosfera'), color: 'teal', icon: HeartHandshake },
+  worship: { label: tr('Zespół Uwielbienia'), color: 'purple', icon: Music },
+  kids: { label: tr('Małe Avenit'), color: 'yellow', icon: Baby },
   groups: { label: 'Grupy Domowe', color: 'blue', icon: Home },
-  mlodziezowka: { label: 'Młodzieżówka', color: 'rose', icon: Users },
+  mlodziezowka: { label: tr('Młodzieżówka'), color: 'rose', icon: Users },
 };
 
 // --- HELPERY UI ---
@@ -117,7 +118,7 @@ const CustomDatePicker = ({ value, onChange }) => {
       <div ref={triggerRef} onClick={() => setIsOpen(!isOpen)} className="w-full h-[42px] px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center gap-2 cursor-pointer hover:border-accent-primary-light transition">
         <CalIcon size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
-          {value ? new Date(value).toLocaleDateString('pl-PL') : 'Wybierz datę'}
+          {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
         </span>
       </div>
       {isOpen && coords.width > 0 && document.body && createPortal(
@@ -127,7 +128,7 @@ const CustomDatePicker = ({ value, onChange }) => {
              <span className="text-sm font-bold capitalize text-gray-800 dark:text-white">{viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
              <button onClick={(e) => { e.stopPropagation(); setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1))); }} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronRight size={18} /></button>
            </div>
-           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{['Pn','Wt','Śr','Cz','Pt','So','Nd'].map(d => <div key={d}>{d}</div>)}</div>
+           <div className="grid grid-cols-7 gap-1 text-center mb-2 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase">{[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => <div key={d}>{d}</div>)}</div>
            <div className="grid grid-cols-7 gap-1">
              {emptyDays.map((_, i) => <div key={`e-${i}`} />)}
              {daysArray.map(d => {
@@ -222,12 +223,12 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
 
 // Lista służb do wyboru przy dodawaniu wydarzenia
 const MINISTRY_CALENDARS = [
-  { key: 'worship', icon: '🎵', title: 'Zespół Uwielbienia', color: 'from-purple-500 to-indigo-500', description: 'Próby, koncerty, nabożeństwa' },
+  { key: 'worship', icon: '🎵', title: tr('Zespół Uwielbienia'), color: 'from-purple-500 to-indigo-500', description: tr('Próby, koncerty, nabożeństwa') },
   { key: 'media', icon: '🎬', title: 'Media Team', color: 'from-accent-secondary-light to-red-500', description: 'Produkcje, streaming, szkolenia' },
   { key: 'atmosfera', icon: '💚', title: 'Atmosfera Team', color: 'from-teal-500 to-green-500', description: 'Spotkania, integracje' },
-  { key: 'kids', icon: '👶', title: 'Małe Avenit', color: 'from-yellow-500 to-amber-500', description: 'Zajęcia, warsztaty, wycieczki' },
+  { key: 'kids', icon: '👶', title: tr('Małe Avenit'), color: 'from-yellow-500 to-amber-500', description: tr('Zajęcia, warsztaty, wycieczki') },
   { key: 'homegroups', icon: '🏠', title: 'Grupy Domowe', color: 'from-blue-500 to-cyan-500', description: 'Spotkania grupowe' },
-  { key: 'mlodziezowka', icon: '🎉', title: 'Młodzieżówka', color: 'from-accent-primary-light to-rose-500', description: 'Wydarzenia młodzieżowe' }
+  { key: 'mlodziezowka', icon: '🎉', title: tr('Młodzieżówka'), color: 'from-accent-primary-light to-rose-500', description: tr('Wydarzenia młodzieżowe') }
 ];
 
 const ModalSelectEventCategory = ({ date, categories, onClose, onSelectCategory, onSelectMinistry }) => {
@@ -256,8 +257,8 @@ const ModalSelectEventCategory = ({ date, categories, onClose, onSelectCategory,
               <Music size={24} />
             </div>
             <div className="text-left flex-1">
-              <div className="font-bold text-gray-800 dark:text-white">Nabożeństwo</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Pełny program z pieśniami i służbami</div>
+              <div className="font-bold text-gray-800 dark:text-white">{tr('Nabożeństwo')}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{tr('Pełny program z pieśniami i służbami')}</div>
             </div>
           </button>
 
@@ -310,7 +311,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
   }, [initialEvent, category]);
 
   const handleSubmit = async () => {
-    if (!event.title) return alert('Podaj tytuł wydarzenia');
+    if (!event.title) return alert(tr('Podaj tytuł wydarzenia'));
 
     const payload = {
       title: event.title,
@@ -382,7 +383,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
               <CustomTimePicker
                 value={event.time}
                 onChange={v => setEvent({...event, time: v})}
-                placeholder="Wybierz"
+                placeholder={tr('Wybierz')}
               />
             </div>
             <div>
@@ -390,7 +391,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
               <CustomTimePicker
                 value={event.end_time || ''}
                 onChange={v => setEvent({...event, end_time: v})}
-                placeholder="Opcjonalnie"
+                placeholder={tr('Opcjonalnie')}
               />
             </div>
           </div>
@@ -469,8 +470,8 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
           isOpen={showDeleteConfirm}
           onClose={() => setShowDeleteConfirm(false)}
           onConfirm={handleConfirmDelete}
-          title="Usuń wydarzenie"
-          message="Czy na pewno chcesz usunąć to wydarzenie? Tej operacji nie można cofnąć."
+          title={tr('Usuń wydarzenie')}
+          message={tr('Czy na pewno chcesz usunąć to wydarzenie? Tej operacji nie można cofnąć.')}
         />
       </div>
     </div>, document.body
@@ -508,7 +509,7 @@ const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
   };
 
   const handleSubmit = () => {
-    if (!task.title) return alert('Podaj tytuł');
+    if (!task.title) return alert(tr('Podaj tytuł'));
 
     const dateStr = task.due_date;
     const timeStr = task.due_time || '00:00';
@@ -558,8 +559,8 @@ const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
             <CustomDatePicker value={task.due_date} onChange={handleDateChange} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina rozpoczęcia')}</label><CustomTimePicker value={task.due_time} onChange={v => setTask({...task, due_time: v})} placeholder="Od" /></div>
-             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina zakończenia')}</label><CustomTimePicker value={task.end_time} onChange={v => setTask({...task, end_time: v})} placeholder="Do" /></div>
+             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina rozpoczęcia')}</label><CustomTimePicker value={task.due_time} onChange={v => setTask({...task, due_time: v})} placeholder={tr('Od')} /></div>
+             <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Godzina zakończenia')}</label><CustomTimePicker value={task.end_time} onChange={v => setTask({...task, end_time: v})} placeholder={tr('Do')} /></div>
           </div>
           <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Opis')}</label><textarea className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white text-sm h-24 resize-none" value={task.description || ''} onChange={e => setTask({...task, description: e.target.value})} placeholder={t('Szczegóły zadania...')} /></div>
         </div>
@@ -618,25 +619,25 @@ const EventBadge = ({ event, onClick }) => {
 const MINISTRY_EVENT_CONFIG = {
   mlodziezowka: {
     icon: '🎉',
-    title: 'Młodzieżówka',
+    title: tr('Młodzieżówka'),
     defaultType: 'spotkanie',
     types: [
-      { value: 'spotkanie', label: 'Spotkanie' },
-      { value: 'wyjazd', label: 'Wyjazd' },
-      { value: 'integracja', label: 'Integracja' },
-      { value: 'inne', label: 'Inne' }
+      { value: 'spotkanie', label: tr('Spotkanie') },
+      { value: 'wyjazd', label: tr('Wyjazd') },
+      { value: 'integracja', label: tr('Integracja') },
+      { value: 'inne', label: tr('Inne') }
     ]
   },
   worship: {
     icon: '🎵',
-    title: 'Zespół Uwielbienia',
+    title: tr('Zespół Uwielbienia'),
     defaultType: 'proba',
     types: [
-      { value: 'proba', label: 'Próba' },
+      { value: 'proba', label: tr('Próba') },
       { value: 'koncert', label: 'Koncert' },
-      { value: 'nabozesnstwo', label: 'Nabożeństwo' },
+      { value: 'nabozesnstwo', label: tr('Nabożeństwo') },
       { value: 'warsztat', label: 'Warsztat' },
-      { value: 'inne', label: 'Inne' }
+      { value: 'inne', label: tr('Inne') }
     ]
   },
   media: {
@@ -647,7 +648,7 @@ const MINISTRY_EVENT_CONFIG = {
       { value: 'produkcja', label: 'Produkcja' },
       { value: 'szkolenie', label: 'Szkolenie' },
       { value: 'streaming', label: 'Streaming' },
-      { value: 'inne', label: 'Inne' }
+      { value: 'inne', label: tr('Inne') }
     ]
   },
   atmosfera: {
@@ -655,22 +656,22 @@ const MINISTRY_EVENT_CONFIG = {
     title: 'Atmosfera Team',
     defaultType: 'spotkanie',
     types: [
-      { value: 'spotkanie', label: 'Spotkanie' },
+      { value: 'spotkanie', label: tr('Spotkanie') },
       { value: 'szkolenie', label: 'Szkolenie' },
-      { value: 'integracja', label: 'Integracja' },
-      { value: 'inne', label: 'Inne' }
+      { value: 'integracja', label: tr('Integracja') },
+      { value: 'inne', label: tr('Inne') }
     ]
   },
   kids: {
     icon: '👶',
-    title: 'Małe Avenit',
+    title: tr('Małe Avenit'),
     defaultType: 'zajecia',
     types: [
-      { value: 'zajecia', label: 'Zajęcia' },
+      { value: 'zajecia', label: tr('Zajęcia') },
       { value: 'wycieczka', label: 'Wycieczka' },
       { value: 'warsztat', label: 'Warsztat' },
       { value: 'przedstawienie', label: 'Przedstawienie' },
-      { value: 'inne', label: 'Inne' }
+      { value: 'inne', label: tr('Inne') }
     ]
   },
   homegroups: {
@@ -678,10 +679,10 @@ const MINISTRY_EVENT_CONFIG = {
     title: 'Grupy Domowe',
     defaultType: 'spotkanie',
     types: [
-      { value: 'spotkanie', label: 'Spotkanie' },
-      { value: 'integracja', label: 'Integracja' },
+      { value: 'spotkanie', label: tr('Spotkanie') },
+      { value: 'integracja', label: tr('Integracja') },
       { value: 'szkolenie', label: 'Szkolenie' },
-      { value: 'inne', label: 'Inne' }
+      { value: 'inne', label: tr('Inne') }
     ]
   }
 };
@@ -703,7 +704,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry }) => {
 
   const handleSubmit = async () => {
     if (!eventForm.title.trim()) {
-      alert('Tytuł wydarzenia jest wymagany');
+      alert(tr('Tytuł wydarzenia jest wymagany'));
       return;
     }
 
@@ -744,38 +745,38 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry }) => {
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tytuł</label>
-            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Nazwa wydarzenia" value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
+            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł')}</label>
+            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Nazwa wydarzenia')} value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
-            <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={3} placeholder="Szczegóły wydarzenia..." value={eventForm.description || ''} onChange={e => setEventForm({...eventForm, description: e.target.value})} />
+            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
+            <textarea className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 resize-none" rows={3} placeholder={tr('Szczegóły wydarzenia...')} value={eventForm.description || ''} onChange={e => setEventForm({...eventForm, description: e.target.value})} />
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Data</label>
+              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Data')}</label>
               <CustomDatePicker value={eventForm.start_date} onChange={val => setEventForm({...eventForm, start_date: val})} />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Początek</label>
-              <CustomTimePicker value={eventForm.event_time || ''} onChange={v => setEventForm({...eventForm, event_time: v})} placeholder="Od" />
+              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Początek')}</label>
+              <CustomTimePicker value={eventForm.event_time || ''} onChange={v => setEventForm({...eventForm, event_time: v})} placeholder={tr('Od')} />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Koniec</label>
-              <CustomTimePicker value={eventForm.end_time || ''} onChange={v => setEventForm({...eventForm, end_time: v})} placeholder="Do" />
+              <CustomTimePicker value={eventForm.end_time || ''} onChange={v => setEventForm({...eventForm, end_time: v})} placeholder={tr('Do')} />
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Lokalizacja</label>
-            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Sala główna, Kościół..." value={eventForm.location || ''} onChange={e => setEventForm({...eventForm, location: e.target.value})} />
+            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Lokalizacja')}</label>
+            <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Sala główna, Kościół...')} value={eventForm.location || ''} onChange={e => setEventForm({...eventForm, location: e.target.value})} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Maks. osób</label>
+              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Maks. osób')}</label>
               <input type="number" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="30" value={eventForm.max_participants || ''} onChange={e => setEventForm({...eventForm, max_participants: e.target.value})} />
             </div>
             <div>
@@ -795,7 +796,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry }) => {
               </button>
             ) : <div></div>}
             <div className="flex gap-3">
-              <button onClick={onClose} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Anuluj</button>
+              <button onClick={onClose} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
               <button onClick={handleSubmit} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium flex items-center gap-2">
                 <Save size={16} /> Zapisz
               </button>
@@ -807,7 +808,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry }) => {
           isOpen={showDeleteConfirm}
           onClose={() => setShowDeleteConfirm(false)}
           onConfirm={handleConfirmDelete}
-          title="Usuń wydarzenie"
+          title={tr('Usuń wydarzenie')}
           message={`Czy na pewno chcesz usunąć to wydarzenie z ${config.title}? Tej operacji nie można cofnąć.`}
         />
       </div>
@@ -901,7 +902,7 @@ export default function CalendarModule() {
     const { data: homegroupsEvents } = await withCampusFilter(supabase.from('homegroups_events').select('*'));
     const all = [];
 
-    prog?.forEach(p => all.push({ id: p.id, type: 'program', team: 'program', title: p.title || 'Nabożeństwo', date: new Date(p.date), raw: p }));
+    prog?.forEach(p => all.push({ id: p.id, type: 'program', team: 'program', title: p.title || tr('Nabożeństwo'), date: new Date(p.date), raw: p }));
 
     // Ogólne wydarzenia (nie-nabożeństwa)
     eventsData?.forEach(ev => {
@@ -1114,7 +1115,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteTask = async (id) => {
-      if (confirm("Czy na pewno chcesz usunąć to zadanie?")) {
+      if (confirm(tr('Czy na pewno chcesz usunąć to zadanie?'))) {
           await supabase.from('tasks').delete().eq('id', id);
           setModals({...modals, addTask: null});
           fetchEvents();
@@ -1147,7 +1148,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('events').delete().eq('id', id);
       setModals({...modals, addEvent: null});
       fetchEvents();
@@ -1175,7 +1176,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteMlodziezowkaEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie Młodzieżówki?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie Młodzieżówki?'))) {
       await supabase.from('mlodziezowka_events').delete().eq('id', id);
       setModals({...modals, mlodziezowkaEvent: null});
       fetchEvents();
@@ -1201,7 +1202,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteWorshipEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('worship_events').delete().eq('id', id);
       setModals({...modals, worshipEvent: null});
       fetchEvents();
@@ -1227,7 +1228,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteMediaEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('media_events').delete().eq('id', id);
       setModals({...modals, mediaEvent: null});
       fetchEvents();
@@ -1253,7 +1254,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteAtmosferaEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('atmosfera_events').delete().eq('id', id);
       setModals({...modals, atmosferaEvent: null});
       fetchEvents();
@@ -1279,7 +1280,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteKidsEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('kids_events').delete().eq('id', id);
       setModals({...modals, kidsEvent: null});
       fetchEvents();
@@ -1305,7 +1306,7 @@ export default function CalendarModule() {
   };
 
   const handleDeleteHomegroupsEvent = async (id) => {
-    if (confirm("Czy na pewno chcesz usunąć to wydarzenie?")) {
+    if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
       await supabase.from('homegroups_events').delete().eq('id', id);
       setModals({...modals, homegroupsEvent: null});
       fetchEvents();
@@ -1351,7 +1352,7 @@ export default function CalendarModule() {
       }]).select().single();
 
       if (error) {
-        alert('Błąd tworzenia nabożeństwa: ' + error.message);
+        alert(tr('Błąd tworzenia nabożeństwa: ') + error.message);
         return;
       }
 
@@ -1958,7 +1959,7 @@ export default function CalendarModule() {
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                               {ev.raw?.due_time
                                 ? (ev.raw?.end_time ? `${ev.raw.due_time} - ${ev.raw.end_time}` : ev.raw.due_time)
-                                : 'Cały dzień'} • {TEAMS[ev.team]?.label || 'Wydarzenie'}
+                                : tr('Cały dzień')} • {TEAMS[ev.team]?.label || 'Wydarzenie'}
                             </p>
                             {ev.raw?.location && (
                               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
@@ -2130,7 +2131,7 @@ export default function CalendarModule() {
             <div className="p-3">
               {/* Nagłówek dni tygodnia */}
               <div className="grid grid-cols-7 mb-2">
-                {['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map(d => (
+                {[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => (
                   <div key={d} className="text-center text-[10px] font-bold text-gray-400 uppercase py-2">
                     {d}
                   </div>
@@ -2260,13 +2261,13 @@ export default function CalendarModule() {
 
   const renderMonthView = () => {
     const dayNames = [
-      { short: 'Pn', full: 'Poniedziałek' },
-      { short: 'Wt', full: 'Wtorek' },
-      { short: 'Śr', full: 'Środa' },
-      { short: 'Cz', full: 'Czwartek' },
-      { short: 'Pt', full: 'Piątek' },
-      { short: 'So', full: 'Sobota' },
-      { short: 'Nd', full: 'Niedziela' },
+      { short: tr('Pn'), full: tr('Poniedziałek') },
+      { short: tr('Wt'), full: tr('Wtorek') },
+      { short: tr('Śr'), full: tr('Środa') },
+      { short: tr('Cz'), full: tr('Czwartek') },
+      { short: tr('Pt'), full: tr('Piątek') },
+      { short: tr('So'), full: tr('Sobota') },
+      { short: tr('Nd'), full: tr('Niedziela') },
     ];
 
     return (
@@ -2512,7 +2513,7 @@ export default function CalendarModule() {
               <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-lg text-accent-primary dark:text-accent-primary-light"><CalIcon size={24} /></div>
               <div>
                  <h1 className="text-xl font-bold text-gray-800 dark:text-white">{t('Kalendarz')}</h1>
-                 <p className="text-xs text-gray-500 dark:text-gray-400">Zarządzanie wydarzeniami i zadaniami</p>
+                 <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Zarządzanie wydarzeniami i zadaniami')}</p>
               </div>
            </div>
 
@@ -2574,7 +2575,7 @@ export default function CalendarModule() {
                 <button onClick={nextMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"><ChevronRight size={16} /></button>
               </div>
             </div>
-            <div className="grid grid-cols-7 text-center text-xs text-gray-400 mb-2">{['Pon','Wt','Śr','Czw','Pt','Sob','Nd'].map(d => <div key={d} className="py-1">{d.charAt(0)}</div>)}</div>
+            <div className="grid grid-cols-7 text-center text-xs text-gray-400 mb-2">{[tr('Pon'), tr('Wt'), tr('Śr'), tr('Czw'), tr('Pt'), tr('Sob'), tr('Nd')].map(d => <div key={d} className="py-1">{d.charAt(0)}</div>)}</div>
             <div className="grid grid-cols-7 gap-1">
               {emptyDays.map((_, i) => <div key={`e-${i}`} />)}
               {daysArray.map(d => (

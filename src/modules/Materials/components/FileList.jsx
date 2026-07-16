@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileText, Inbox } from 'lucide-react';
 import FileCard from './FileCard';
+import { tr } from '../../../i18n';
 
 export default function FileList({
   files,
@@ -10,7 +11,7 @@ export default function FileList({
   onPreview,
   canDelete = false,
   getFileUrl,
-  emptyMessage = 'Brak plików w tym folderze'
+  emptyMessage = tr('Brak plików w tym folderze')
 }) {
   if (loading) {
     return (
@@ -37,7 +38,7 @@ export default function FileList({
           <Inbox size={32} className="text-gray-400" />
         </div>
         <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          Brak plików
+          {tr('Brak plików')}
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
           {emptyMessage}

@@ -4,6 +4,7 @@ import UserAvatar from './UserAvatar';
 import { formatMessageTime, formatFileSize, isImageFile, getFileIcon } from '../utils/messageHelpers';
 import { REACTION_EMOJIS } from '../hooks/useReactions';
 import AudioPlayer from './AudioPlayer';
+import { tr } from '../../../i18n';
 
 export default function MessageBubble({
   message,
@@ -67,7 +68,7 @@ export default function MessageBubble({
   };
 
   const handleDelete = () => {
-    if (window.confirm('Czy na pewno chcesz usunąć tę wiadomość?')) {
+    if (window.confirm(tr('Czy na pewno chcesz usunąć tę wiadomość?'))) {
       onDelete?.(message.id);
     }
     setShowMenu(false);
@@ -238,7 +239,7 @@ export default function MessageBubble({
                 {message.forwarded_from && (
                   <div className={`flex items-center gap-1.5 mb-2 text-xs ${isOwn ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
                     <Forward size={12} className="opacity-70" />
-                    <span className="italic">Przekazana wiadomość</span>
+                    <span className="italic">{tr('Przekazana wiadomość')}</span>
                   </div>
                 )}
 
@@ -257,7 +258,7 @@ export default function MessageBubble({
                       {replyToMessage.sender?.full_name || replyToMessage.sender_email}
                     </p>
                     <p className={`text-xs line-clamp-2 ${isOwn ? 'text-white/70' : 'text-gray-600 dark:text-gray-400'}`}>
-                      {replyToMessage.content || (replyToMessage.attachments?.length > 0 ? '📎 Załącznik' : '')}
+                      {replyToMessage.content || (replyToMessage.attachments?.length > 0 ? tr('📎 Załącznik') : '')}
                     </p>
                   </div>
                 )}
@@ -303,7 +304,7 @@ export default function MessageBubble({
                     className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-accent-primary-lightest hover:to-accent-secondary-lightest dark:hover:from-accent-primary-darkest/30 dark:hover:to-accent-secondary-darkest/30 transition-all duration-200"
                   >
                     <Forward size={14} className="text-gray-400" />
-                    Przekaż
+                    {tr('Przekaż')}
                   </button>
                   {/* Kopiuj */}
                   <button
@@ -349,7 +350,7 @@ export default function MessageBubble({
                       className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-200"
                     >
                       <Trash2 size={14} />
-                      Usuń
+                      {tr('Usuń')}
                     </button>
                   )}
                 </div>
@@ -427,7 +428,7 @@ export default function MessageBubble({
           )}
           {/* Status przeczytania - tylko dla własnych wiadomości */}
           {isOwn && (
-            <span className="flex items-center" title={isRead ? `Przeczytane${readBy.length > 0 ? ` przez ${readBy.map(r => r.user_email).join(', ')}` : ''}` : 'Wysłane'}>
+            <span className="flex items-center" title={isRead ? `Przeczytane${readBy.length > 0 ? ` przez ${readBy.map(r => r.user_email).join(', ')}` : ''}` : tr('Wysłane')}>
               {isRead ? (
                 <CheckCheck size={14} className="text-blue-500" />
               ) : (

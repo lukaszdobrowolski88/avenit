@@ -26,6 +26,7 @@ import { useFormResponses } from '../hooks/useFormResponses';
 import { exportToCSV, exportToJSON, formatAnswerForExport } from '../utils/exportUtils';
 import { formatPrice } from '../utils/fieldTypes';
 import { supabase } from '../../../lib/supabase';
+import { tr } from '../../../i18n';
 
 export default function ResponsesView({ form }) {
   const [selectedParticipant, setSelectedParticipant] = useState(null);
@@ -129,7 +130,7 @@ export default function ResponsesView({ form }) {
           result.push({
             id: `${response.id}-contact`,
             responseId: response.id,
-            name: contact.name || response.respondent_name || 'Osoba zgłaszająca',
+            name: contact.name || response.respondent_name || tr('Osoba zgłaszająca'),
             email: contact.email || response.respondent_email || '',
             phone: contact.phone,
             answers: answers._contactPerson,
@@ -214,14 +215,14 @@ export default function ResponsesView({ form }) {
   }, [participants]);
 
   const handleDeleteResponse = async (responseId) => {
-    if (window.confirm('Czy na pewno chcesz usunąć tę odpowiedź?')) {
+    if (window.confirm(tr('Czy na pewno chcesz usunąć tę odpowiedź?'))) {
       await deleteResponse(responseId);
       setSelectedParticipant(null);
     }
   };
 
   const handleDeleteAll = async () => {
-    if (window.confirm('Czy na pewno chcesz usunąć wszystkie odpowiedzi? Ta operacja jest nieodwracalna.')) {
+    if (window.confirm(tr('Czy na pewno chcesz usunąć wszystkie odpowiedzi? Ta operacja jest nieodwracalna.'))) {
       await deleteAllResponses();
     }
   };
@@ -280,7 +281,7 @@ export default function ResponsesView({ form }) {
       setPaymentDate(new Date().toISOString().split('T')[0]);
     } catch (error) {
       console.error('Error adding payment:', error);
-      alert('Wystąpił błąd podczas dodawania płatności');
+      alert(tr('Wystąpił błąd podczas dodawania płatności'));
     }
   };
 
@@ -294,11 +295,11 @@ export default function ResponsesView({ form }) {
   const getPaymentStatusBadge = (status, paidAmt, dueAmt) => {
     switch (status) {
       case 'paid':
-        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium"><CheckCircle size={12} />Opłacone</span>);
+        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium"><CheckCircle size={12} />{tr('Opłacone')}</span>);
       case 'partial':
         return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium"><AlertCircle size={12} />Częściowo{paidAmt > 0 && dueAmt > 0 && <span className="text-[10px] font-normal ml-0.5">({formatPrice(paidAmt, 'PLN')}/{formatPrice(dueAmt, 'PLN')})</span>}</span>);
       case 'pending':
-        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium"><Clock size={12} />Oczekuje</span>);
+        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium"><Clock size={12} />{tr('Oczekuje')}</span>);
       default:
         return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full text-xs font-medium">-</span>);
     }
@@ -321,7 +322,7 @@ export default function ResponsesView({ form }) {
           <FileText size={32} className="text-gray-400" />
         </div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">Brak odpowiedzi</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Ten formularz nie otrzymał jeszcze żadnych odpowiedzi</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Ten formularz nie otrzymał jeszcze żadnych odpowiedzi')}</p>
       </div>
     );
   }
@@ -336,7 +337,7 @@ export default function ResponsesView({ form }) {
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
-            <p className="text-xs text-gray-500">Wszystkich uczestników</p>
+            <p className="text-xs text-gray-500">{tr('Wszystkich uczestników')}</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
@@ -345,7 +346,7 @@ export default function ResponsesView({ form }) {
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.paid}</p>
-            <p className="text-xs text-gray-500">Opłaconych</p>
+            <p className="text-xs text-gray-500">{tr('Opłaconych')}</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
@@ -354,7 +355,7 @@ export default function ResponsesView({ form }) {
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pending}</p>
-            <p className="text-xs text-gray-500">Oczekuje na płatność</p>
+            <p className="text-xs text-gray-500">{tr('Oczekuje na płatność')}</p>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-3">
@@ -363,7 +364,7 @@ export default function ResponsesView({ form }) {
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatPrice(stats.totalRevenue, form?.settings?.pricing?.currency || 'PLN')}</p>
-            <p className="text-xs text-gray-500">Otrzymane wpłaty</p>
+            <p className="text-xs text-gray-500">{tr('Otrzymane wpłaty')}</p>
           </div>
         </div>
       </div>
@@ -376,7 +377,7 @@ export default function ResponsesView({ form }) {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Szukaj uczestnika (imię, email, telefon)..."
+            placeholder={tr('Szukaj uczestnika (imię, email, telefon)...')}
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
           />
         </div>
@@ -411,10 +412,10 @@ export default function ResponsesView({ form }) {
       {showFilters && (
         <div className="flex flex-wrap gap-2 mb-4">
           {[
-            { id: 'all', label: 'Wszystkie' },
-            { id: 'paid', label: 'Opłacone' },
-            { id: 'partial', label: 'Częściowe' },
-            { id: 'pending', label: 'Oczekujące' }
+            { id: 'all', label: tr('Wszystkie') },
+            { id: 'paid', label: tr('Opłacone') },
+            { id: 'partial', label: tr('Częściowe') },
+            { id: 'pending', label: tr('Oczekujące') }
           ].map((f) => (
             <button key={f.id} onClick={() => setPaymentFilter(f.id)}
               className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
@@ -437,10 +438,10 @@ export default function ResponsesView({ form }) {
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Uczestnik</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Kontakt</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Kwota</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Akcje</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{tr('Data')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{tr('Kwota')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{tr('Status')}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{tr('Akcje')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -494,16 +495,16 @@ export default function ResponsesView({ form }) {
                     <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                       {p.totalAmount > 0 && (p.status === 'pending' || p.status === 'partial') && (
                         <button onClick={() => { setPaymentModal({ participantId: p.id, amount: p.totalAmount, currency: p.currency, name: p.name }); setPaymentAmount(String(p.totalAmount - (p.paidAmount || 0))); }}
-                          className="p-2 text-green-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors" title="Dodaj płatność">
+                          className="p-2 text-green-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors" title={tr('Dodaj płatność')}>
                           <Banknote size={16} />
                         </button>
                       )}
                       <button onClick={() => setSelectedParticipant(p)}
-                        className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="Szczegóły">
+                        className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title={tr('Szczegóły')}>
                         <Eye size={16} />
                       </button>
                       <button onClick={() => handleDeleteResponse(p.responseId)}
-                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Usuń">
+                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title={tr('Usuń')}>
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -612,7 +613,7 @@ export default function ResponsesView({ form }) {
                 <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Płatność</span>
+                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tr('Płatność')}</span>
                       {getPaymentStatusBadge(sp.status, sp.paidAmount, sp.totalAmount)}
                     </div>
                     <div className="flex items-end justify-between">
@@ -644,7 +645,7 @@ export default function ResponsesView({ form }) {
                           className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors"
                         >
                           <Banknote size={14} />
-                          Dodaj wpłatę
+                          {tr('Dodaj wpłatę')}
                         </button>
                       )}
                     </div>
@@ -670,7 +671,7 @@ export default function ResponsesView({ form }) {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2"><Banknote size={20} className="text-green-500" />Dodaj płatność</h2>
+              <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2"><Banknote size={20} className="text-green-500" />{tr('Dodaj płatność')}</h2>
               <button onClick={() => setPaymentModal(null)} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg"><X size={20} /></button>
             </div>
             <div className="p-4 space-y-4">
@@ -684,14 +685,14 @@ export default function ResponsesView({ form }) {
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Data płatności</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('Data płatności')}</label>
                 <input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)}
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
               </div>
             </div>
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
-              <button onClick={() => setPaymentModal(null)} className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 transition-colors">Anuluj</button>
-              <button onClick={addPayment} className="flex-1 py-2.5 text-sm font-medium text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2"><Check size={16} />Potwierdź</button>
+              <button onClick={() => setPaymentModal(null)} className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 transition-colors">{tr('Anuluj')}</button>
+              <button onClick={addPayment} className="flex-1 py-2.5 text-sm font-medium text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2"><Check size={16} />{tr('Potwierdź')}</button>
             </div>
           </div>
         </div>

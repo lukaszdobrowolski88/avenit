@@ -7,6 +7,7 @@ import ParticipantForm from './ParticipantForm';
 import AddonSelector from './AddonSelector';
 import PriceBreakdown from './PriceBreakdown';
 import { calculateTotalPrice, calculatePriceBreakdown, formatPrice, checkSeatAvailability } from '../utils/fieldTypes';
+import { tr } from '../../../i18n';
 
 export default function FormRenderer({
   title,
@@ -178,7 +179,7 @@ export default function FormRenderer({
         return 'To pole jest wymagane';
       }
       if (Array.isArray(value) && value.length === 0) {
-        return 'Wybierz przynajmniej jedną opcję';
+        return tr('Wybierz przynajmniej jedną opcję');
       }
     }
 
@@ -199,9 +200,9 @@ export default function FormRenderer({
         const regex = new RegExp(field.validation.pattern);
         if (!regex.test(String(value))) {
           if (field.type === 'email') {
-            return 'Wprowadź poprawny adres email';
+            return tr('Wprowadź poprawny adres email');
           }
-          return 'Nieprawidłowy format';
+          return tr('Nieprawidłowy format');
         }
       }
     }
@@ -395,10 +396,10 @@ export default function FormRenderer({
           <Check size={40} className="text-green-600 dark:text-green-400" />
         </div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          Dziękujemy!
+          {tr('Dziękujemy!')}
         </h2>
         <p className="text-gray-600 dark:text-gray-400">
-          {settings?.successMessage || 'Twoja odpowiedź została zapisana.'}
+          {settings?.successMessage || tr('Twoja odpowiedź została zapisana.')}
         </p>
       </div>
     );
@@ -451,7 +452,7 @@ export default function FormRenderer({
       {settings?.showProgressBar && fields.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-            <span>Postęp</span>
+            <span>{tr('Postęp')}</span>
             <span>{completedFields} z {fields.length}</span>
           </div>
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -672,8 +673,8 @@ export default function FormRenderer({
               fields={index === 0 ? contactFields : participantFields}
               addons={addonsConfig.enabled ? addonsConfig.items : []}
               index={index}
-              label={index === 0 ? 'Osoba zgłaszająca' : (groupConfig.participantLabel || 'Członek zespołu')}
-              subtitle={index === 0 ? 'Osoba kontaktowa dla całej grupy' : null}
+              label={index === 0 ? tr('Osoba zgłaszająca') : (groupConfig.participantLabel || tr('Członek zespołu'))}
+              subtitle={index === 0 ? tr('Osoba kontaktowa dla całej grupy') : null}
               onUpdate={(updated) => handleParticipantUpdate(index, updated)}
               onRemove={() => removeParticipant(index)}
               canRemove={index > 0 && participants.length > (groupConfig.minParticipants || 1)}
@@ -688,7 +689,7 @@ export default function FormRenderer({
               className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl text-sm font-medium text-gray-600 dark:text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors"
             >
               <Plus size={18} />
-              Dodaj kolejną osobę
+              {tr('Dodaj kolejną osobę')}
             </button>
           )}
         </div>
@@ -786,7 +787,7 @@ export default function FormRenderer({
 
           {isWaitlistMode && (
             <p className="mt-3 text-sm text-orange-600 dark:text-orange-400">
-              Płatność nie jest wymagana przy zapisie na listę rezerwową. W przypadku zwolnienia miejsca skontaktujemy się z Tobą.
+              {tr('Płatność nie jest wymagana przy zapisie na listę rezerwową. W przypadku zwolnienia miejsca skontaktujemy się z Tobą.')}
             </p>
           )}
 
@@ -843,7 +844,7 @@ export default function FormRenderer({
                     }`}
                   >
                     <DollarSign size={20} className="text-green-600" />
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Gotówka (na miejscu)</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{tr('Gotówka (na miejscu)')}</span>
                   </button>
                 )}
 
@@ -916,7 +917,7 @@ export default function FormRenderer({
                     </p>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    W tytule przelewu wpisz swoje imię i nazwisko.
+                    {tr('W tytule przelewu wpisz swoje imię i nazwisko.')}
                   </p>
                 </div>
               )}
@@ -925,7 +926,7 @@ export default function FormRenderer({
               {selectedPaymentMethod === 'cash' && (
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Płatność gotówką przy wejściu na wydarzenie.
+                    {tr('Płatność gotówką przy wejściu na wydarzenie.')}
                   </p>
                 </div>
               )}
@@ -950,7 +951,7 @@ export default function FormRenderer({
           <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
             <p className="text-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
               <CreditCard size={16} />
-              Wybierz metodę płatności powyżej.
+              {tr('Wybierz metodę płatności powyżej.')}
             </p>
           </div>
         )}
@@ -970,7 +971,7 @@ export default function FormRenderer({
           {isSubmitting ? (
             <>
               <Loader2 size={20} className="animate-spin" />
-              Wysyłanie...
+              {tr('Wysyłanie...')}
             </>
           ) : (
             <>
@@ -980,7 +981,7 @@ export default function FormRenderer({
               {pricing.enabled && totalPrice > 0 && !paymentCompleted && !isWaitlistMode && (
                 <span className="mr-2">{formatPrice(totalPrice, pricing.currency || 'PLN')} •</span>
               )}
-              {isWaitlistMode ? 'Zapisz na listę rezerwową' : (settings?.submitButtonText || 'Wyślij')}
+              {isWaitlistMode ? tr('Zapisz na listę rezerwową') : (settings?.submitButtonText || tr('Wyślij'))}
             </>
           )}
         </button>

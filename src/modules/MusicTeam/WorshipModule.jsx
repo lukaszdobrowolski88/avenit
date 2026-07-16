@@ -21,6 +21,7 @@ import { useT } from '../../i18n';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { PitchShifter } from 'soundtouchjs';
+import { tr } from '../../i18n';
 
 
 // Hook to calculate dropdown position with smart positioning (up/down)
@@ -135,7 +136,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         <div className="flex items-center gap-2 text-sm">
           <Calendar size={16} className="text-gray-400" />
           <span className={displayValue ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-            {displayValue || 'Wybierz datę'}
+            {displayValue || tr('Wybierz datę')}
           </span>
         </div>
       </div>
@@ -156,7 +157,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
           </div>
 
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'].map(d => (
+            {[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => (
               <div key={d} className="text-center text-[10px] font-bold text-gray-400 uppercase">{d}</div>
             ))}
           </div>
@@ -777,7 +778,7 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [], getAss
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">{tr('Wybierz...')}</span>
         ) : (
           selectedItems.map((item, idx) => (
             <span key={idx} className={`px-1.5 py-0.5 rounded text-[10px] border whitespace-nowrap ${getItemStyles(item)}`}>
@@ -860,7 +861,7 @@ const AbsenceMultiSelect = ({ options, value, onChange }) => {
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">{tr('Wybierz...')}</span>
         ) : (
           selectedItems.map((item, idx) => (
             <span key={idx} className="bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded text-[10px] border border-red-100 dark:border-red-800 whitespace-nowrap flex items-center gap-1">
@@ -1068,7 +1069,7 @@ const ScheduleTable = ({ programs, worshipTeam, onUpdateProgram, roles, memberRo
                 <table className="w-full text-left border-collapse min-w-max">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-700">
-                      <th className="p-3 font-semibold w-24 min-w-[90px]">Data</th>
+                      <th className="p-3 font-semibold w-24 min-w-[90px]">{tr('Data')}</th>
                       {columns.map(col => (
                         <th key={col.key} className="p-3 font-semibold min-w-[130px]">{col.label}</th>
                       ))}
@@ -1331,7 +1332,7 @@ const AudioPlayer = ({ url, name }) => {
   };
 
   const getPitchLabel = () => {
-    if (pitchShift === 0) return 'Oryginał';
+    if (pitchShift === 0) return tr('Oryginał');
     const sign = pitchShift > 0 ? '+' : '';
     return `${sign}${pitchShift} półton${Math.abs(pitchShift) === 1 ? '' : pitchShift >= 2 && pitchShift <= 4 ? 'y' : 'ów'}`;
   };
@@ -1365,7 +1366,7 @@ const AudioPlayer = ({ url, name }) => {
     { key: 'vocals', label: 'Wokal', icon: MicIcon, color: 'pink' },
     { key: 'drums', label: 'Perkusja', icon: DrumIcon, color: 'orange' },
     { key: 'bass', label: 'Bas', icon: BassIcon, color: 'purple' },
-    { key: 'other', label: 'Inne', icon: GuitarIcon, color: 'blue' }
+    { key: 'other', label: tr('Inne'), icon: GuitarIcon, color: 'blue' }
   ];
 
   return (
@@ -1453,7 +1454,7 @@ const AudioPlayer = ({ url, name }) => {
         >
           <span className="flex items-center gap-2">
             <Users size={14} />
-            Kontrola instrumentów
+            {tr('Kontrola instrumentów')}
           </span>
           <ChevronDown size={14} className={`transform transition ${showStemControls ? 'rotate-180' : ''}`} />
         </button>
@@ -1659,7 +1660,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
               Akordy w taktach
               ${isTransposed ? `<span style="background: #333; color: white; padding: 2px 5px; border-radius: 3px; font-size: 7px; margin-left: 6px; text-transform: none;">transp. ${originalKey} → ${targetKey}</span>` : ''}
             </div>
-            <div style="font-family: Arial, sans-serif; font-size: 11px; line-height: 1.6; color: #000; white-space: pre-wrap;">${transposedChords || 'Brak akordów'}</div>
+            <div style="font-family: Arial, sans-serif; font-size: 11px; line-height: 1.6; color: #000; white-space: pre-wrap;">${transposedChords || tr('Brak akordów')}</div>
           </div>
         </div>
 
@@ -1724,7 +1725,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
         doc.save(fileName);
       } catch (error) {
         console.error('Błąd generowania PDF:', error);
-        alert('Nie udało się wygenerować PDF');
+        alert(tr('Nie udało się wygenerować PDF'));
         if (document.body.contains(container)) {
           document.body.removeChild(container);
         }
@@ -1743,7 +1744,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
     ? (isTransposed
         ? transposeLineToKey(song.chords_bars, originalKey, targetKey)
         : song.chords_bars)
-    : (song.chords || "Brak układu...");
+    : (song.chords || tr('Brak układu...'));
 
   // Zastosuj formatowanie rozmiaru czcionek dla akordów (14px bazowy)
   const displayChords = formatChordsWithFontSizes(transposedChords, 14);
@@ -1884,7 +1885,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                             `}</style>
                             <div
                                 className="chords-display-view whitespace-pre-wrap font-mono text-accent-primary-dark dark:text-accent-primary-light text-sm leading-relaxed"
-                                dangerouslySetInnerHTML={{ __html: displayChords || 'Brak układu...' }}
+                                dangerouslySetInnerHTML={{ __html: displayChords || tr('Brak układu...') }}
                             />
                         </div>
                     </div>
@@ -1894,10 +1895,10 @@ function SongDetailsModal({ song, onClose, onEdit }) {
             {activeTab === 'history' && (
                 <div className="space-y-4">
                     {loadingHistory ? (
-                        <div className="text-center py-10 text-gray-400">Ładowanie historii...</div>
+                        <div className="text-center py-10 text-gray-400">{tr('Ładowanie historii...')}</div>
                     ) : history.length === 0 ? (
                         <div className="text-center py-10 text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-                            Brak historii użycia tej pieśni w programach.
+                            {tr('Brak historii użycia tej pieśni w programach.')}
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -1939,8 +1940,8 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                         {(!song.attachments || song.attachments.length === 0) && (
                              <div className="text-center py-8 text-gray-400 text-sm italic border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
                                  <FileText size={32} className="mx-auto mb-2 opacity-50" />
-                                 Brak materiałów
-                                 <p className="text-xs mt-1">Kliknij "Edytuj" aby dodać załączniki</p>
+                                 {tr('Brak materiałów')}
+                                 <p className="text-xs mt-1">{tr('Kliknij "Edytuj" aby dodać załączniki')}</p>
                              </div>
                         )}
 
@@ -1991,7 +1992,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="p-2.5 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest hover:text-accent-primary transition"
-                                                title={att.type === 'link' ? 'Otwórz link' : 'Podgląd'}
+                                                title={att.type === 'link' ? tr('Otwórz link') : tr('Podgląd')}
                                             >
                                                 <ExternalLink size={18}/>
                                             </a>
@@ -2187,7 +2188,7 @@ export default function WorshipModule() {
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Błąd przesyłania pliku: ' + error.message);
+      alert(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -2213,7 +2214,7 @@ export default function WorshipModule() {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -2250,7 +2251,7 @@ export default function WorshipModule() {
       fetchFinanceData();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -2343,7 +2344,7 @@ export default function WorshipModule() {
       fetchData();
       fetchWorshipRoles(); // Odśwież przypisania
     } catch (err) {
-      alert('Błąd: ' + err.message);
+      alert(tr('Błąd: ') + err.message);
     }
   };
 
@@ -2364,14 +2365,14 @@ export default function WorshipModule() {
   };
 
   const deleteMember = async (id) => {
-    if(confirm('Usunąć?')) {
+    if(confirm(tr('Usunąć?'))) {
       await supabase.from('worship_team').delete().eq('id', id);
       fetchData();
     }
   };
 
   const deleteSong = async (id) => {
-    if(confirm('Usunąć pieśń?')) {
+    if(confirm(tr('Usunąć pieśń?'))) {
       await supabase.from('songs').delete().eq('id', id);
       fetchData();
     }
@@ -2530,7 +2531,7 @@ export default function WorshipModule() {
   return (
     <div className="space-y-4 lg:space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Grupa Uwielbienia</h1>
+        <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{tr('Grupa Uwielbienia')}</h1>
       </div>
 
       {/* TAB NAVIGATION */}
@@ -2575,7 +2576,7 @@ export default function WorshipModule() {
           <div className="flex gap-2 w-full sm:w-auto">
             <button onClick={() => setShowProgramsManager(true)} className="flex-1 sm:flex-none bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary dark:hover:text-accent-primary-light transition flex items-center justify-center gap-2"><Calendar size={16}/> Programy</button>
             <button onClick={() => setShowTagsModal(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 text-accent-primary dark:text-accent-primary-light text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-accent-primary-lighter dark:border-accent-primary-dark hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/60 dark:hover:to-accent-secondary-darkest/60 transition flex items-center justify-center gap-2"><Tag size={16}/> <span className="hidden sm:inline">{t('Zarządzaj')}</span> Tagi</button>
-            <button onClick={() => { setSongForm({}); setShowSongModal(true); }} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-secondary to-accent-primary text-white text-sm px-4 lg:px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-secondary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> <span className="hidden sm:inline">Dodaj</span> Pieśń</button>
+            <button onClick={() => { setSongForm({}); setShowSongModal(true); }} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-secondary to-accent-primary text-white text-sm px-4 lg:px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-secondary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> <span className="hidden sm:inline">{tr('Dodaj')}</span> Pieśń</button>
           </div>
         </div>
         
@@ -2593,7 +2594,7 @@ export default function WorshipModule() {
           {/* Lista wszystkich tagów z bazy - filtrowane po wpisanym tekście */}
           {allUniqueTags.length > 0 && (
             <div className="flex gap-2 flex-wrap items-center">
-              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Tagi:</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{tr('Tagi:')}</span>
               {allUniqueTags
                 .filter(tag => !tagFilter || tag.toLowerCase().includes(tagFilter.toLowerCase()))
                 .map(tag => (
@@ -2617,12 +2618,12 @@ export default function WorshipModule() {
           <table className="w-full text-left text-sm align-middle">
             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="p-4">Tytuł</th>
+                <th className="p-4">{tr('Tytuł')}</th>
                 <th className="p-4">Autor</th>
                 <th className="p-4">Tonacja</th>
                 <th className="p-4">Tempo</th>
-                <th className="p-4">Tagi</th>
-                <th className="p-4 text-right">Akcje</th>
+                <th className="p-4">{tr('Tagi')}</th>
+                <th className="p-4 text-right">{tr('Akcje')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -2651,8 +2652,8 @@ export default function WorshipModule() {
                   <td className="p-4 text-right flex justify-end gap-2">
                     <button onClick={() => setShowSongDetails(s)} className="text-gray-800 dark:text-gray-300 font-semibold px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">{t('Szczegóły')}</button>
                     <button onClick={() => setAddToProgramSong(s)} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-primary-dark dark:hover:text-accent-primary font-medium transition flex items-center gap-1" title={t('Dodaj do programu jako sugerowaną pieśń')}><Calendar size={14}/> Do programu</button>
-                    <button onClick={() => { setSongForm(s); setShowSongModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">Edytuj</button>
-                    <button onClick={() => deleteSong(s.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">Usuń</button>
+                    <button onClick={() => { setSongForm(s); setShowSongModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">{tr('Edytuj')}</button>
+                    <button onClick={() => deleteSong(s.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">{tr('Usuń')}</button>
                   </td>
                 </tr>
               ))}
@@ -2674,12 +2675,12 @@ export default function WorshipModule() {
           <table className="w-full text-left text-sm min-w-[800px]">
             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="p-4">Imię i nazwisko</th>
-                <th className="p-4">Służby</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Telefon</th>
-                <th className="p-4">Email</th>
-                <th className="p-4 text-right">Akcje</th>
+                <th className="p-4">{tr('Imię i nazwisko')}</th>
+                <th className="p-4">{tr('Służby')}</th>
+                <th className="p-4">{tr('Status')}</th>
+                <th className="p-4">{tr('Telefon')}</th>
+                <th className="p-4">{tr('Email')}</th>
+                <th className="p-4 text-right">{tr('Akcje')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -2705,8 +2706,8 @@ export default function WorshipModule() {
                     <td className="p-4 text-gray-600 dark:text-gray-400">{m.phone}</td>
                     <td className="p-4 text-gray-600 dark:text-gray-400">{m.email}</td>
                     <td className="p-4 text-right flex justify-end gap-2">
-                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">Edytuj</button>
-                      <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">Usuń</button>
+                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">{tr('Edytuj')}</button>
+                      <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">{tr('Usuń')}</button>
                     </td>
                   </tr>
                 );
@@ -2771,12 +2772,12 @@ export default function WorshipModule() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-white/20 dark:border-gray-700">
             <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{memberForm.id ? 'Edytuj członka' : 'Nowy członek'}</h3>
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{memberForm.id ? tr('Edytuj członka') : tr('Nowy członek')}</h3>
               <button onClick={() => setShowMemberModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400"><X size={20}/></button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię i nazwisko</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
                 <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
               </div>
 
@@ -2817,18 +2818,18 @@ export default function WorshipModule() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Telefon</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
                   <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="+48 123 456 789" value={memberForm.phone} onChange={e => setMemberForm({...memberForm, phone: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Email</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Email')}</label>
                   <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="jan@example.com" value={memberForm.email} onChange={e => setMemberForm({...memberForm, email: e.target.value})} />
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => setShowMemberModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Anuluj</button>
-                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">Zapisz</button>
+                <button onClick={() => setShowMemberModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
+                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">{tr('Zapisz')}</button>
               </div>
             </div>
           </div>
@@ -2868,7 +2869,7 @@ export default function WorshipModule() {
 
               if (error) {
                 console.error('Supabase error:', error);
-                alert('Błąd zapisu: ' + (error.message || JSON.stringify(error)));
+                alert(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
                 return;
               }
 
@@ -2876,7 +2877,7 @@ export default function WorshipModule() {
               fetchData();
             } catch (err) {
               console.error('Exception:', err);
-              alert('Błąd: ' + (err.message || 'Nie udało się zapisać pieśni'));
+              alert(tr('Błąd: ') + (err.message || tr('Nie udało się zapisać pieśni')));
             }
           }}
           onCancel={() => setShowSongModal(false)}
@@ -2908,7 +2909,7 @@ export default function WorshipModule() {
             <div className="flex justify-between mb-6">
               <h3 className="font-bold text-xl text-gray-800 dark:text-white flex items-center gap-2">
                 <Tag size={20} className="text-accent-primary-light" />
-                Zarządzanie Tagami
+                {tr('Zarządzanie Tagami')}
               </h3>
               <button onClick={() => { setShowTagsModal(false); setEditingTag(null); setEditingTagValue(''); setNewTagInput(''); }} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white transition">
                 <X size={24} />
@@ -2916,7 +2917,7 @@ export default function WorshipModule() {
             </div>
 
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Dodaj nowe tagi lub edytuj/usuń istniejące. Zmiany zostaną zastosowane globalnie.
+              {tr('Dodaj nowe tagi lub edytuj/usuń istniejące. Zmiany zostaną zastosowane globalnie.')}
             </p>
 
             {/* Pole dodawania nowego tagu */}
@@ -2942,7 +2943,7 @@ export default function WorshipModule() {
             <div className="max-h-[300px] overflow-y-auto custom-scrollbar space-y-2">
               {allUniqueTags.length === 0 ? (
                 <div className="text-center py-8 text-gray-400 dark:text-gray-500">
-                  Brak tagów w bazie pieśni
+                  {tr('Brak tagów w bazie pieśni')}
                 </div>
               ) : (
                 allUniqueTags.map(tag => {
@@ -2984,7 +2985,7 @@ export default function WorshipModule() {
                           <div className="flex-1">
                             <span className="font-medium text-gray-800 dark:text-gray-200">{tag}</span>
                             <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-                              ({songCount} {songCount === 1 ? 'pieśń' : songCount < 5 ? 'pieśni' : 'pieśni'})
+                              ({songCount} {songCount === 1 ? tr('pieśń') : songCount < 5 ? tr('pieśni') : tr('pieśni')})
                             </span>
                           </div>
                           <button
@@ -3041,7 +3042,7 @@ export default function WorshipModule() {
                   onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
                 />
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kwota (PLN)</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
                   <input
                     type="number"
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -3055,7 +3056,7 @@ export default function WorshipModule() {
               {/* Wiersz 2: Kontrahent i Osoba odpowiedzialna */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kontrahent</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kontrahent')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.contractor}
@@ -3064,7 +3065,7 @@ export default function WorshipModule() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Osoba odpowiedzialna</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Osoba odpowiedzialna')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.responsible_person}
@@ -3077,7 +3078,7 @@ export default function WorshipModule() {
               {/* Wiersz 3: Pozycja budżetowa (pełna szerokość) */}
               <div>
                 <CustomSelect
-                  label="Pozycja budżetowa (opis kosztu)"
+                  label={tr('Pozycja budżetowa (opis kosztu)')}
                   value={expenseForm.description}
                   onChange={(value) => setExpenseForm({...expenseForm, description: value})}
                   options={[
@@ -3087,28 +3088,28 @@ export default function WorshipModule() {
                       label: item.description
                     }))
                   ]}
-                  placeholder="Wybierz pozycję"
+                  placeholder={tr('Wybierz pozycję')}
                 />
               </div>
 
               {/* Wiersz 4: Szczegółowy opis (pełna szerokość) */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Szczegółowy opis</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Szczegółowy opis')}</label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
                   rows={2}
                   value={expenseForm.detailed_description}
                   onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
-                  placeholder="Dodatkowe informacje o wydatku..."
+                  placeholder={tr('Dodatkowe informacje o wydatku...')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załączniki (opcjonalnie)</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Załączniki (opcjonalnie)')}</label>
                 <div className="space-y-2">
                   <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                     <Upload size={18} className="text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {uploadingFile ? 'Przesyłanie...' : 'Dodaj plik(i)'}
+                      {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
                     </span>
                     <input
                       type="file"
@@ -3140,13 +3141,13 @@ export default function WorshipModule() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tagi</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tagi')}</label>
                 <div className="flex gap-2 mb-2">
                   <input
                     className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Dodaj tag"
+                    placeholder={tr('Dodaj tag')}
                     onKeyPress={(e) => e.key === 'Enter' && addTag()}
                   />
                   <button

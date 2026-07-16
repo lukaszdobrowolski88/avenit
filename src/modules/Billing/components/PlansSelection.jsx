@@ -8,6 +8,7 @@ import {
   Tag,
   Loader2
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function PlansSelection({ onSelectPlan, onCancel }) {
   const [plans, setPlans] = useState([]);
@@ -47,7 +48,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
       const result = await validateCoupon(couponCode, selectedPlanId, billingCycle);
       setCouponResult(result);
     } catch (err) {
-      setCouponResult({ is_valid: false, error_message: 'Błąd walidacji kuponu' });
+      setCouponResult({ is_valid: false, error_message: tr('Błąd walidacji kuponu') });
     } finally {
       setValidatingCoupon(false);
     }
@@ -89,26 +90,26 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
 
   const featureLabels = {
     calendar: 'Kalendarz',
-    members: 'Zarządzanie członkami',
+    members: tr('Zarządzanie członkami'),
     groups: 'Grupy domowe',
     kids_checkin: 'Check-in dzieci',
     events: 'Wydarzenia',
-    email: 'Wysyłka emaili',
-    finance: 'Moduł finansowy',
+    email: tr('Wysyłka emaili'),
+    finance: tr('Moduł finansowy'),
     forms: 'Formularze',
     basic_reports: 'Podstawowe raporty',
     advanced_reports: 'Zaawansowane raporty',
-    api: 'Dostęp do API',
+    api: tr('Dostęp do API'),
     white_label: 'White label',
     priority_support: 'Priorytetowe wsparcie',
-    custom_domain: 'Własna domena'
+    custom_domain: tr('Własna domena')
   };
 
   if (loading) {
     return (
       <div className="p-8 text-center">
         <Loader2 size={32} className="animate-spin mx-auto text-accent-primary-light mb-4" />
-        <p className="text-gray-600 dark:text-gray-400">Ładowanie planów...</p>
+        <p className="text-gray-600 dark:text-gray-400">{tr('Ładowanie planów...')}</p>
       </div>
     );
   }
@@ -118,10 +119,10 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
       {/* Header */}
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Wybierz plan dla swojego kościoła
+          {tr('Wybierz plan dla swojego kościoła')}
         </h2>
         <p className="text-gray-600 dark:text-gray-400">
-          Wszystkie plany zawierają 14-dniowy okres próbny
+          {tr('Wszystkie plany zawierają 14-dniowy okres próbny')}
         </p>
       </div>
 
@@ -136,7 +137,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            Miesięcznie
+            {tr('Miesięcznie')}
           </button>
           <button
             onClick={() => setBillingCycle('yearly')}
@@ -210,13 +211,13 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
                 {/* Limits */}
                 <div className="space-y-2 mb-6 text-sm">
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Członkowie:</span>
+                    <span>{tr('Członkowie:')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
                       {plan.max_members === -1 ? 'Bez limitu' : plan.max_members}
                     </span>
                   </div>
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Użytkownicy:</span>
+                    <span>{tr('Użytkownicy:')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
                       {plan.max_users === -1 ? 'Bez limitu' : plan.max_users}
                     </span>
