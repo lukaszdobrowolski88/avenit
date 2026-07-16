@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { formatFileSize, isImageFile } from '../utils/messageHelpers';
 import AudioRecorder from './AudioRecorder';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabled = false, placeholder = 'Napisz wiadomość...', replyingTo = null, onCancelReply }, ref) {
   const t = useT();
@@ -195,7 +196,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
               Odpowiadasz na wiadomość od {replyingTo.sender?.full_name || replyingTo.sender_email}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-              {replyingTo.content || (replyingTo.attachments?.length > 0 ? '📎 Załącznik' : '')}
+              {replyingTo.content || (replyingTo.attachments?.length > 0 ? tr('📎 Załącznik') : '')}
             </p>
           </div>
           <button

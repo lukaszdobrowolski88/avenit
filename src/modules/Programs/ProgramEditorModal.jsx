@@ -223,7 +223,7 @@ const CustomDatePicker = ({ value, onChange }) => {
       >
         <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
-          {value ? new Date(value).toLocaleDateString('pl-PL') : 'Wybierz datę'}
+          {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
         </span>
       </div>
 

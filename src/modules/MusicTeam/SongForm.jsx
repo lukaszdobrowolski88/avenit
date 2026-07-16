@@ -1088,7 +1088,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
         <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-700">
           <div>
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-              {formData.id ? 'Edycja Pieśni' : 'Nowa Pieśń'}
+              {formData.id ? tr('Edycja Pieśni') : tr('Nowa Pieśń')}
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Uzupełnij szczegóły utworu')}</p>
           </div>
@@ -1511,7 +1511,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                 >
                   <Upload size={32} className={isDragOver ? 'text-accent-primary-light' : 'text-gray-400'} />
                   <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                    {uploadingFile ? 'Przesyłanie...' : isDragOver ? 'Upuść plik tutaj' : 'Kliknij lub przeciągnij plik'}
+                    {uploadingFile ? tr('Przesyłanie...') : isDragOver ? tr('Upuść plik tutaj') : tr('Kliknij lub przeciągnij plik')}
                   </span>
                   <span className="text-xs text-gray-400">PDF, JPG, PNG, MP3, DOC, .pro / .pro6 / .pro6pl / .pro7 (max 10MB)</span>
                   <input

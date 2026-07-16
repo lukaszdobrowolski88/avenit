@@ -168,7 +168,7 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
 
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  {isRequired ? 'Skonfiguruj weryfikację dwuetapową' : 'Dodaj dodatkową ochronę'}
+                  {isRequired ? tr('Skonfiguruj weryfikację dwuetapową') : tr('Dodaj dodatkową ochronę')}
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm">
                   Weryfikacja dwuetapowa dodaje dodatkową warstwę bezpieczeństwa.

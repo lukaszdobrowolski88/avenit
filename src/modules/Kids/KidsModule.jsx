@@ -944,7 +944,7 @@ export default function KidsModule() {
                   <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                     <Upload size={18} className="text-gray-400" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {uploadingFile ? 'Przesyłanie...' : 'Dodaj plik(i)'}
+                      {uploadingFile ? tr('Przesyłanie...') : 'Dodaj plik(i)'}
                     </span>
                     <input
                       type="file"

@@ -167,7 +167,7 @@ const CustomDatePicker = ({ value, onChange }) => {
       >
         <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-gray-700 dark:text-gray-200 font-medium text-sm">
-          {value ? new Date(value).toLocaleDateString('pl-PL') : 'Wybierz datę'}
+          {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
         </span>
       </div>
 
@@ -2848,7 +2848,7 @@ export default function ProgramDetail() {
                 type="text"
                 value={program.title || ''}
                 onChange={(e) => setProgram({...program, title: e.target.value})}
-                placeholder={isNewProgram ? 'Nazwa programu (np. Nabożeństwo niedzielne)' : 'Nabożeństwo niedzielne'}
+                placeholder={isNewProgram ? tr('Nazwa programu (np. Nabożeństwo niedzielne)') : tr('Nabożeństwo niedzielne')}
                 className="text-xl lg:text-2xl font-bold bg-transparent border-none outline-none text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 w-full"
               />
             </div>

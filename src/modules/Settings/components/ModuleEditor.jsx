@@ -92,7 +92,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h3 className="font-bold text-xl bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
-            {isEditing ? 'Edytuj moduł' : 'Nowy moduł'}
+            {isEditing ? tr('Edytuj moduł') : tr('Nowy moduł')}
           </h3>
           <button
             onClick={onClose}
@@ -210,7 +210,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
             className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition font-medium flex items-center gap-2 disabled:opacity-50"
           >
             <Save size={16} />
-            {saving ? 'Zapisuję...' : 'Zapisz'}
+            {saving ? tr('Zapisuję...') : 'Zapisz'}
           </button>
         </div>
       </div>

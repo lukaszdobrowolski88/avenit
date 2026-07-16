@@ -191,10 +191,10 @@ export default function CampaignEditor({ campaign, template, onClose }) {
           </button>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {campaign?.id ? 'Edytuj kampanię' : 'Nowa kampania push'}
+              {campaign?.id ? tr('Edytuj kampanię') : 'Nowa kampania push'}
             </h2>
             <p className="text-xs text-gray-500">
-              {recipientCount > 0 ? `Wyśle do ${recipientCount} osób` : 'Brak odbiorców'}
+              {recipientCount > 0 ? `Wyśle do ${recipientCount} osób` : tr('Brak odbiorców')}
             </p>
           </div>
         </div>
@@ -255,7 +255,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                 disabled={sending || !testEmail}
                 className="px-4 py-1.5 text-sm bg-accent-primary text-white rounded-lg disabled:opacity-50"
               >
-                {sending ? 'Wysyłanie...' : 'Wyślij'}
+                {sending ? tr('Wysyłanie...') : tr('Wyślij')}
               </button>
             </div>
           </div>

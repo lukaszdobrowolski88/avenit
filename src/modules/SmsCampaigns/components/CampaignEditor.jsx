@@ -196,7 +196,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
           </button>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {campaign?.id ? 'Edytuj kampanię SMS' : 'Nowa kampania SMS'}
+              {campaign?.id ? tr('Edytuj kampanię SMS') : 'Nowa kampania SMS'}
             </h2>
             <p className="text-xs text-gray-500">
               {recipientCount > 0 ? (
@@ -261,7 +261,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                 disabled={sending || !testPhone}
                 className="px-4 py-1.5 text-sm bg-accent-primary text-white rounded-lg disabled:opacity-50"
               >
-                {sending ? 'Wysyłanie...' : 'Wyślij'}
+                {sending ? tr('Wysyłanie...') : tr('Wyślij')}
               </button>
             </div>
           </div>

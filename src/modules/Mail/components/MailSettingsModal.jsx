@@ -116,7 +116,7 @@ export default function MailSettingsModal({
       setSyncStatus({
         accountId: account.id,
         success: result?.success,
-        message: result?.message || (result?.success ? `Pobrano ${result?.saved || 0} nowych wiadomości` : 'Błąd synchronizacji')
+        message: result?.message || (result?.success ? `Pobrano ${result?.saved || 0} nowych wiadomości` : tr('Błąd synchronizacji'))
       });
     } catch (err) {
       setSyncStatus({ accountId: account.id, success: false, message: err.message });
@@ -272,7 +272,7 @@ export default function MailSettingsModal({
                         )}
                         {connectionStatus?.accountId === account.id && (
                           <span className={`text-xs ${connectionStatus.success ? 'text-green-500' : 'text-red-500'}`}>
-                            {connectionStatus.success ? 'Połączono' : 'Błąd połączenia'}
+                            {connectionStatus.success ? tr('Połączono') : tr('Błąd połączenia')}
                           </span>
                         )}
                         {!account.system_default && (
@@ -335,7 +335,7 @@ export default function MailSettingsModal({
                       {/* Connection status message */}
                       {connectionStatus?.accountId === account.id && (
                         <div className={`mt-2 text-xs ${connectionStatus.success ? 'text-green-600' : 'text-red-500'}`}>
-                          {connectionStatus.message || (connectionStatus.success ? 'Połączenie OK' : 'Błąd połączenia')}
+                          {connectionStatus.message || (connectionStatus.success ? tr('Połączenie OK') : tr('Błąd połączenia'))}
                         </div>
                       )}
                     </div>
@@ -347,7 +347,7 @@ export default function MailSettingsModal({
               {showAccountForm ? (
                 <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl space-y-4">
                   <h3 className="font-medium text-gray-800 dark:text-white">
-                    {editingAccountId ? 'Edytuj konto' : 'Dodaj konto zewnętrzne'}
+                    {editingAccountId ? 'Edytuj konto' : tr('Dodaj konto zewnętrzne')}
                   </h3>
 
                   <div>
@@ -423,14 +423,14 @@ export default function MailSettingsModal({
 
                   <div>
                     <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      {editingAccountId ? 'Nowe hasło (pozostaw puste aby nie zmieniać)' : 'Hasło aplikacji'}
+                      {editingAccountId ? tr('Nowe hasło (pozostaw puste aby nie zmieniać)') : tr('Hasło aplikacji')}
                     </label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={accountForm.password}
                         onChange={(e) => setAccountForm(prev => ({ ...prev, password: e.target.value }))}
-                        placeholder={editingAccountId ? 'Wpisz nowe hasło lub pozostaw puste' : 'Hasło lub hasło aplikacji'}
+                        placeholder={editingAccountId ? tr('Wpisz nowe hasło lub pozostaw puste') : tr('Hasło lub hasło aplikacji')}
                         className="w-full px-3 py-2 pr-10 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-accent-primary-light"
                       />
                       <button
@@ -443,7 +443,7 @@ export default function MailSettingsModal({
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
                       {editingAccountId
-                        ? 'Hasło jest wymagane tylko jeśli chcesz je zmienić'
+                        ? tr('Hasło jest wymagane tylko jeśli chcesz je zmienić')
                         : 'Dla Gmail użyj "hasła aplikacji" z ustawień konta Google'
                       }
                     </p>

@@ -352,7 +352,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <Star size={14} className={isFavorite ? 'fill-amber-500 text-amber-500' : ''} />
-                            {isFavorite ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
+                            {isFavorite ? tr('Usuń z ulubionych') : 'Dodaj do ulubionych'}
                           </button>
                           <button
                             onClick={() => handleDuplicate(template)}
@@ -398,7 +398,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
             <FileText className="w-8 h-8 text-gray-400" />
           </div>
           <p className="text-gray-500 dark:text-gray-400 mb-2">
-            {showFavoritesOnly ? 'Brak ulubionych szablonów' : 'Brak szablonów w tej kategorii'}
+            {showFavoritesOnly ? tr('Brak ulubionych szablonów') : tr('Brak szablonów w tej kategorii')}
           </p>
           {searchQuery && (
             <button
@@ -507,7 +507,7 @@ function TemplatePreviewModal({
                     ? 'bg-white text-amber-500'
                     : 'bg-white/20 text-white hover:bg-white/30'
                 }`}
-                title={isFavorite ? 'Usuń z ulubionych' : 'Dodaj do ulubionych'}
+                title={isFavorite ? tr('Usuń z ulubionych') : 'Dodaj do ulubionych'}
               >
                 <Star size={18} className={isFavorite ? 'fill-amber-500' : ''} />
               </button>

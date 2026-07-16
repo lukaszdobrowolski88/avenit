@@ -258,7 +258,7 @@ export default function MessageBubble({
                       {replyToMessage.sender?.full_name || replyToMessage.sender_email}
                     </p>
                     <p className={`text-xs line-clamp-2 ${isOwn ? 'text-white/70' : 'text-gray-600 dark:text-gray-400'}`}>
-                      {replyToMessage.content || (replyToMessage.attachments?.length > 0 ? '📎 Załącznik' : '')}
+                      {replyToMessage.content || (replyToMessage.attachments?.length > 0 ? tr('📎 Załącznik') : '')}
                     </p>
                   </div>
                 )}

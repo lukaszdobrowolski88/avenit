@@ -409,7 +409,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                {editingSpeaker ? 'Edytuj mówcę' : 'Dodaj mówcę'}
+                {editingSpeaker ? tr('Edytuj mówcę') : tr('Dodaj mówcę')}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                 <X size={20} />
@@ -856,7 +856,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
           <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-                {editingSeries ? 'Edytuj serię' : 'Dodaj serię'}
+                {editingSeries ? tr('Edytuj serię') : tr('Dodaj serię')}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                 <X size={20} />
@@ -935,7 +935,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                 </div>
                 <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-accent-primary-light transition">
                   <ImageIcon size={20} className="text-gray-400" />
-                  <span className="text-sm text-gray-500">{uploading ? 'Przesyłanie...' : 'Dodaj grafiki'}</span>
+                  <span className="text-sm text-gray-500">{uploading ? tr('Przesyłanie...') : 'Dodaj grafiki'}</span>
                   <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
                 </label>
               </div>

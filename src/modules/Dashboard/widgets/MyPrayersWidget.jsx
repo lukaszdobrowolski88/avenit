@@ -74,7 +74,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Heart className="w-6 h-6" />
-              {editingRequest ? 'Edytuj intencję' : 'Nowa intencja modlitewna'}
+              {editingRequest ? tr('Edytuj intencję') : 'Nowa intencja modlitewna'}
             </h2>
             <button
               onClick={onClose}
@@ -319,7 +319,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               ) : (
                 <>
                   <Heart className="w-5 h-5" />
-                  {editingRequest ? 'Zapisz zmiany' : 'Dodaj intencję'}
+                  {editingRequest ? 'Zapisz zmiany' : tr('Dodaj intencję')}
                 </>
               )}
             </button>

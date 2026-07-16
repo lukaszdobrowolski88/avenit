@@ -87,7 +87,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
         <div className="flex items-center gap-2 text-sm">
           <Calendar size={16} className="text-gray-400" />
           <span className={value ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}>
-            {value ? new Date(value).toLocaleDateString('pl-PL') : 'Wybierz datę'}
+            {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
           </span>
         </div>
       </div>

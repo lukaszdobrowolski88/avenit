@@ -114,7 +114,7 @@ const CustomDatePicker = ({ value, onChange }) => {
       <div ref={triggerRef} onClick={() => setIsOpen(!isOpen)} className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl flex items-center gap-2 cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary-light transition">
         <Calendar size={16} className="text-accent-primary dark:text-accent-primary-light" />
         <span className="text-sm text-gray-700 dark:text-gray-200 font-medium">
-          {value ? new Date(value).toLocaleDateString('pl-PL') : 'Wybierz datę'}
+          {value ? new Date(value).toLocaleDateString('pl-PL') : tr('Wybierz datę')}
         </span>
       </div>
       {isOpen && coords.width > 0 && document.body && createPortal(

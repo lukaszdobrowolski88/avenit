@@ -137,7 +137,7 @@ export default function FileUploader({
 
           <div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {isDragging ? 'Upuść pliki tutaj' : 'Przeciągnij pliki lub kliknij, aby wybrać'}
+              {isDragging ? tr('Upuść pliki tutaj') : tr('Przeciągnij pliki lub kliknij, aby wybrać')}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Maksymalny rozmiar pliku: {formatFileSize(maxFileSize)}

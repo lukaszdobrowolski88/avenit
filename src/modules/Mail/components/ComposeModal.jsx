@@ -245,7 +245,7 @@ export default function ComposeModal({
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
               className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-              title={isFullscreen ? 'Zmniejsz' : 'Pełny ekran'}
+              title={isFullscreen ? 'Zmniejsz' : tr('Pełny ekran')}
             >
               {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
             </button>

@@ -415,7 +415,7 @@ export default function Sidebar() {
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-20 w-6 h-6 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full shadow-md flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light hover:border-accent-primary-light dark:hover:border-accent-primary transition-all z-50"
-          title={isCollapsed ? 'Rozwiń sidebar' : 'Zwiń sidebar'}
+          title={isCollapsed ? tr('Rozwiń sidebar') : tr('Zwiń sidebar')}
         >
           {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>

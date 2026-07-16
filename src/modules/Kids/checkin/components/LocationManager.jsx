@@ -259,7 +259,7 @@ export default function LocationManager({ onLocationsChange }) {
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                 }`}
             >
-              {editingId ? 'Zapisz zmiany' : 'Dodaj salę'}
+              {editingId ? 'Zapisz zmiany' : tr('Dodaj salę')}
             </button>
           </div>
         </div>
@@ -333,7 +333,7 @@ export default function LocationManager({ onLocationsChange }) {
                       : 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/60'
                     }`}
                 >
-                  {location.is_active ? 'Wyłącz' : 'Włącz'}
+                  {location.is_active ? tr('Wyłącz') : tr('Włącz')}
                 </button>
                 <button
                   onClick={() => handleDelete(location.id)}

@@ -636,7 +636,7 @@ function SortableSuggestionRow({
           <button
             onClick={onStartEditNote}
             className={`p-1.5 rounded-lg transition ${item.note ? 'text-accent-secondary bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/20 hover:bg-accent-secondary-lighter' : 'text-gray-300 dark:text-gray-600 hover:text-accent-secondary-light hover:bg-accent-secondary-lightest dark:hover:bg-accent-secondary-darkest/20'}`}
-            title={item.note ? 'Edytuj notatkę' : 'Dodaj notatkę'}
+            title={item.note ? tr('Edytuj notatkę') : tr('Dodaj notatkę')}
           >
             <StickyNote size={14} />
           </button>

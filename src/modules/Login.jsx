@@ -230,11 +230,11 @@ export default function Login() {
         </div>
 
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">
-          {showForgotPassword ? 'Resetuj hasło' : 'Witaj ponownie'}
+          {showForgotPassword ? tr('Resetuj hasło') : 'Witaj ponownie'}
         </h1>
         <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
           {showForgotPassword
-            ? 'Podaj adres e-mail, a wyślemy Ci link do zresetowania hasła'
+            ? tr('Podaj adres e-mail, a wyślemy Ci link do zresetowania hasła')
             : 'Zaloguj się do Avenit'}
         </p>
 

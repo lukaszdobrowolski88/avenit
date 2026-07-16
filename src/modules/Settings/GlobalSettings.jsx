@@ -1041,12 +1041,12 @@ export default function GlobalSettings() {
                       const newValue = !mod.is_enabled;
                       await supabase.from('app_modules').update({ is_enabled: newValue }).eq('id', mod.id);
                       setDbModules(prev => prev.map(m => m.id === mod.id ? { ...m, is_enabled: newValue } : m));
-                      setMessage({ type: 'success', text: `Moduł ${mod.label} ${newValue ? 'włączony' : 'wyłączony'}` });
+                      setMessage({ type: 'success', text: `Moduł ${mod.label} ${newValue ? tr('włączony') : tr('wyłączony')}` });
                     }}
                     className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition ${mod.is_enabled ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-600 dark:text-gray-400'}`}
                   >
                     {mod.is_enabled ? <ToggleRight size={24}/> : <ToggleLeft size={24}/>}
-                    {mod.is_enabled ? 'Włączony' : 'Wyłączony'}
+                    {mod.is_enabled ? tr('Włączony') : tr('Wyłączony')}
                   </button>
                 </div>
               ))}
@@ -1260,7 +1260,7 @@ export default function GlobalSettings() {
                     {isExpanded && (
                       <div className="p-6 bg-white dark:bg-gray-700">
                         <h4 className="text-sm font-bold text-gray-600 dark:text-gray-300 mb-4 uppercase tracking-wide">
-                          {selectedUserId ? 'Dostęp do zakładek' : 'Widoczność zakładek'}
+                          {selectedUserId ? tr('Dostęp do zakładek') : tr('Widoczność zakładek')}
                         </h4>
 
                         {!selectedUserId ? (

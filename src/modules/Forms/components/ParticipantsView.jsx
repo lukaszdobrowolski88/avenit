@@ -746,7 +746,7 @@ export default function ParticipantsView({ forms }) {
             <Users size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <p className="text-gray-500 dark:text-gray-400">
               {searchQuery || selectedForm !== 'all' || paymentFilter !== 'all'
-                ? 'Brak uczestników spełniających kryteria'
+                ? tr('Brak uczestników spełniających kryteria')
                 : 'Brak zarejestrowanych uczestników'}
             </p>
           </div>

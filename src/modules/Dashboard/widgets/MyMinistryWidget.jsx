@@ -418,10 +418,10 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
             {isPast ? <History size={32} className="text-gray-400" /> : <Calendar size={32} className="text-gray-400" />}
           </div>
           <p className="text-gray-500 dark:text-gray-400 font-medium">
-            {isPast ? 'Brak historii służb' : 'Brak nadchodzących służb'}
+            {isPast ? tr('Brak historii służb') : tr('Brak nadchodzących służb')}
           </p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            {isPast ? 'Historia pojawi się po zakończeniu służb' : 'Nie jesteś przypisany do żadnego programu'}
+            {isPast ? tr('Historia pojawi się po zakończeniu służb') : tr('Nie jesteś przypisany do żadnego programu')}
           </p>
         </div>
       );

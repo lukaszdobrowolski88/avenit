@@ -981,7 +981,7 @@ export default function FormRenderer({
               {pricing.enabled && totalPrice > 0 && !paymentCompleted && !isWaitlistMode && (
                 <span className="mr-2">{formatPrice(totalPrice, pricing.currency || 'PLN')} •</span>
               )}
-              {isWaitlistMode ? 'Zapisz na listę rezerwową' : (settings?.submitButtonText || 'Wyślij')}
+              {isWaitlistMode ? tr('Zapisz na listę rezerwową') : (settings?.submitButtonText || 'Wyślij')}
             </>
           )}
         </button>

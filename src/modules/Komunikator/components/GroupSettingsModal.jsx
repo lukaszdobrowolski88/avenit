@@ -214,7 +214,7 @@ export default function GroupSettingsModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            {isMinistryChannel ? 'Ustawienia kanału' : 'Ustawienia grupy'}
+            {isMinistryChannel ? tr('Ustawienia kanału') : 'Ustawienia grupy'}
           </h2>
           <button
             onClick={onClose}
@@ -289,7 +289,7 @@ export default function GroupSettingsModal({
                 </div>
               )}
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {isMinistryChannel ? 'Kanał służby • ' : ''}{participants.length} uczestników
+                {isMinistryChannel ? tr('Kanał służby • ') : ''}{participants.length} uczestników
               </p>
             </div>
           </div>
@@ -414,7 +414,7 @@ export default function GroupSettingsModal({
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                {searchQuery ? 'Nie znaleziono użytkowników' : 'Wszyscy użytkownicy są już w grupie'}
+                {searchQuery ? tr('Nie znaleziono użytkowników') : tr('Wszyscy użytkownicy są już w grupie')}
               </div>
             ) : (
               <div className="space-y-1">

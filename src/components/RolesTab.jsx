@@ -383,7 +383,7 @@ export default function RolesTab({ teamType, teamMembers, memberTable, onUpdate 
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-white/20 dark:border-gray-700">
             <div className="flex justify-between mb-6">
               <h3 className="font-bold text-xl text-gray-800 dark:text-white">
-                {roleForm.id ? 'Edytuj służbę' : 'Nowa służba'}
+                {roleForm.id ? tr('Edytuj służbę') : tr('Nowa służba')}
               </h3>
               <button
                 onClick={() => setShowRoleModal(false)}

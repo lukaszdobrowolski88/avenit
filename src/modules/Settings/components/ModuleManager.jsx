@@ -101,7 +101,7 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
             ? 'text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'
             : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
         }`}
-        title={module.is_enabled ? 'Wyłącz moduł' : 'Włącz moduł'}
+        title={module.is_enabled ? tr('Wyłącz moduł') : tr('Włącz moduł')}
       >
         {module.is_enabled ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
       </button>

@@ -66,7 +66,7 @@ export default function CheckinSuccess({
       {/* Security codes */}
       <div className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 px-6 sm:px-10 py-5 rounded-2xl mb-6">
         <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-          {displayCodes.length > 1 ? 'Kody bezpieczeństwa (ostatnie 4 cyfry telefonu)' : 'Kod bezpieczeństwa'}
+          {displayCodes.length > 1 ? tr('Kody bezpieczeństwa (ostatnie 4 cyfry telefonu)') : tr('Kod bezpieczeństwa')}
         </div>
         <div className="flex flex-wrap justify-center gap-3">
           {displayCodes.map((codeInfo, index) => (

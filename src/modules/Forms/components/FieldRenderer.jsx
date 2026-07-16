@@ -537,7 +537,7 @@ export default function FieldRenderer({
                 <ImageIcon size={28} className="text-accent-primary-light" />
               </div>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Kliknij, aby dodać {multipleImages ? 'zdjęcia' : 'zdjęcie'}
+                Kliknij, aby dodać {multipleImages ? tr('zdjęcia') : tr('zdjęcie')}
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 Max. {imageConfig.maxSize || 5} MB • JPG, PNG, WEBP, GIF

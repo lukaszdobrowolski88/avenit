@@ -318,7 +318,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
             disabled={saving || !formData.program_id}
             className="w-full py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? 'Zapisywanie...' : 'Zgłoś nieobecność'}
+            {saving ? 'Zapisywanie...' : tr('Zgłoś nieobecność')}
           </button>
         </form>
       )}

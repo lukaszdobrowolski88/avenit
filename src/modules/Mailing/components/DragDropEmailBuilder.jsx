@@ -847,7 +847,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                       <Plus size={32} strokeWidth={1.5} className={dragState.isDragging ? 'text-white' : 'text-gray-400'} />
                     </div>
                     <p className={`font-semibold text-base mb-1 transition-colors ${dragState.isDragging ? 'text-accent-primary dark:text-accent-primary-light' : ''}`}>
-                      {dragState.isDragging ? 'Upuść tutaj!' : 'Przeciągnij elementy tutaj'}
+                      {dragState.isDragging ? tr('Upuść tutaj!') : tr('Przeciągnij elementy tutaj')}
                     </p>
                     <p className="text-sm text-gray-400">{tr('lub wybierz gotową sekcję z panelu po lewej')}</p>
                   </div>
@@ -933,7 +933,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
             <div className="p-1.5 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-lg">
               <Settings size={14} className="text-white" />
             </div>
-            {selectedBlock ? 'Właściwości bloku' : 'Ustawienia emaila'}
+            {selectedBlock ? tr('Właściwości bloku') : 'Ustawienia emaila'}
           </h3>
           {selectedBlock && (
             <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
@@ -2384,7 +2384,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
-            {showAdvanced ? '▼ Ukryj zaawansowane' : '▶ Pokaż zaawansowane'}
+            {showAdvanced ? '▼ Ukryj zaawansowane' : tr('▶ Pokaż zaawansowane')}
           </button>
 
           {showAdvanced && (

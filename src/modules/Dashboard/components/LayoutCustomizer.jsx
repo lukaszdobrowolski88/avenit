@@ -112,7 +112,7 @@ export default function LayoutCustomizer({
                           ? 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-400'
                           : 'hover:bg-green-100 dark:hover:bg-green-900/30 text-gray-400 hover:text-green-600'
                       }`}
-                      title={item.visible ? 'Ukryj widget' : 'Pokaż widget'}
+                      title={item.visible ? 'Ukryj widget' : tr('Pokaż widget')}
                     >
                       {item.visible ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>

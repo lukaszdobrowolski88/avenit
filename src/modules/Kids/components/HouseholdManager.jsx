@@ -358,7 +358,7 @@ export default function HouseholdManager() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-900">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                {editingHousehold ? 'Edytuj rodzinę' : 'Dodaj rodzinę'}
+                {editingHousehold ? tr('Edytuj rodzinę') : tr('Dodaj rodzinę')}
               </h3>
               <button
                 onClick={resetForm}
@@ -593,7 +593,7 @@ export default function HouseholdManager() {
                 onClick={handleSave}
                 className="px-5 py-2.5 text-base font-medium bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition"
               >
-                {editingHousehold ? 'Zapisz zmiany' : 'Dodaj rodzinę'}
+                {editingHousehold ? 'Zapisz zmiany' : tr('Dodaj rodzinę')}
               </button>
             </div>
           </div>
@@ -658,7 +658,7 @@ export default function HouseholdManager() {
         </div>
       ) : filteredHouseholds.length === 0 ? (
         <div className="text-center py-20 text-gray-500 dark:text-gray-400">
-          {searchTerm ? 'Brak wyników wyszukiwania' : 'Brak rodzin. Dodaj pierwszą rodzinę.'}
+          {searchTerm ? tr('Brak wyników wyszukiwania') : tr('Brak rodzin. Dodaj pierwszą rodzinę.')}
         </div>
       ) : (
         <div className="space-y-4">

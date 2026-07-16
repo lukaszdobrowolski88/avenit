@@ -68,7 +68,7 @@ export default function PinnedMessagesPanel({
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                  {truncateText(pin.message?.content || (pin.message?.attachments?.length > 0 ? '📎 Załącznik' : ''), 60)}
+                  {truncateText(pin.message?.content || (pin.message?.attachments?.length > 0 ? tr('📎 Załącznik') : ''), 60)}
                 </p>
               </div>
 

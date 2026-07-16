@@ -158,7 +158,7 @@ export default function CampusManager({ onMessage }) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 border border-white/20 dark:border-gray-700">
             <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{form.id ? 'Edytuj lokalizację' : 'Nowa lokalizacja'}</h3>
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{form.id ? tr('Edytuj lokalizację') : 'Nowa lokalizacja'}</h3>
               <button onClick={() => setShowModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"><X /></button>
             </div>
             <div className="space-y-4">

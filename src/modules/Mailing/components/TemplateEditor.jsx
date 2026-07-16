@@ -124,7 +124,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
             <ArrowLeft size={20} className="text-gray-500" />
           </button>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-            {template?.id ? (isSystemTemplate ? 'Podgląd szablonu' : 'Edytuj szablon') : 'Nowy szablon'}
+            {template?.id ? (isSystemTemplate ? tr('Podgląd szablonu') : 'Edytuj szablon') : 'Nowy szablon'}
           </h1>
         </div>
 

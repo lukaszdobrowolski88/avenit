@@ -324,7 +324,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
           <div className="relative bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-gray-900 px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between z-10">
               <h3 className="text-lg lg:text-xl font-bold text-gray-800 dark:text-gray-100">
-                {editingItem ? 'Edytuj wyposażenie' : 'Dodaj wyposażenie'}
+                {editingItem ? tr('Edytuj wyposażenie') : tr('Dodaj wyposażenie')}
               </h3>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
                 <X size={20} className="text-gray-500" />
@@ -357,7 +357,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
                       className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2"
                     >
                       <Upload size={16} />
-                      {uploading ? 'Przesyłanie...' : 'Wybierz zdjęcie'}
+                      {uploading ? tr('Przesyłanie...') : tr('Wybierz zdjęcie')}
                     </button>
                     {form.photo_url && (
                       <button

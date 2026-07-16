@@ -583,13 +583,13 @@ export default function UserSettings() {
                     )}
                     <div>
                       <p className="font-medium text-gray-800 dark:text-gray-200">
-                        {pushSubscribed ? 'Powiadomienia włączone' : 'Powiadomienia wyłączone'}
+                        {pushSubscribed ? tr('Powiadomienia włączone') : tr('Powiadomienia wyłączone')}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {pushPermission === 'denied'
-                          ? 'Powiadomienia są zablokowane w ustawieniach przeglądarki'
+                          ? tr('Powiadomienia są zablokowane w ustawieniach przeglądarki')
                           : pushSubscribed
-                            ? 'Otrzymujesz powiadomienia o nowych wiadomościach'
+                            ? tr('Otrzymujesz powiadomienia o nowych wiadomościach')
                             : 'Włącz, aby otrzymywać powiadomienia nawet gdy aplikacja jest zamknięta'}
                       </p>
                     </div>

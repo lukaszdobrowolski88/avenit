@@ -187,7 +187,7 @@ export default function AssignmentResponsePage() {
           </h1>
           <p className="text-gray-600">
             {isAccepted
-              ? 'To przypisanie zostało już zaakceptowane.'
+              ? tr('To przypisanie zostało już zaakceptowane.')
               : 'To przypisanie zostało już odrzucone.'}
           </p>
         </div>
@@ -212,7 +212,7 @@ export default function AssignmentResponsePage() {
           </h1>
           <p className="text-gray-600">
             {isAccepted
-              ? 'Dziękujemy za potwierdzenie. Jesteś zapisany/a do służby!'
+              ? tr('Dziękujemy za potwierdzenie. Jesteś zapisany/a do służby!')
               : 'Dziękujemy za informację. Zostałeś/aś usunięty/a z grafiku.'}
           </p>
 

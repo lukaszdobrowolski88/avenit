@@ -818,7 +818,7 @@ export default function PaymentsView({ forms }) {
             <CreditCard size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <p className="text-gray-500 dark:text-gray-400">
               {searchQuery || selectedForm !== 'all' || statusFilter !== 'all'
-                ? 'Brak płatności spełniających kryteria'
+                ? tr('Brak płatności spełniających kryteria')
                 : 'Brak zarejestrowanych płatności'}
             </p>
           </div>

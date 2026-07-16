@@ -1,4 +1,5 @@
 import { formatPrice } from '../utils/fieldTypes';
+import { tr } from '../../../i18n';
 
 export default function AddonSelector({ addons, selectedAddons, onChange, currency = 'PLN' }) {
   if (!addons || addons.length === 0) return null;
@@ -28,7 +29,7 @@ export default function AddonSelector({ addons, selectedAddons, onChange, curren
                   {addon.name}
                 </span>
                 <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 ml-2 flex-shrink-0">
-                  {addon.price > 0 ? formatPrice(addon.price, currency) : 'Bezpłatne'}
+                  {addon.price > 0 ? formatPrice(addon.price, currency) : tr('Bezpłatne')}
                   {addon.scope === 'per_person' && addon.price > 0 && (
                     <span className="text-xs font-normal text-gray-500"> /os.</span>
                   )}

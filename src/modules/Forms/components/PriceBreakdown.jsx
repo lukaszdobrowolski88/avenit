@@ -105,7 +105,7 @@ export default function PriceBreakdown({ breakdown, currency = 'PLN', isWaitlist
       {/* Suma końcowa */}
       <div className={`flex items-center justify-between ${hasDetails ? 'pt-3 border-t border-green-200 dark:border-green-700' : ''}`}>
         <span className="text-base font-semibold text-gray-900 dark:text-white">
-          {isWaitlist ? 'Wartość' : 'Do zapłaty'}
+          {isWaitlist ? tr('Wartość') : tr('Do zapłaty')}
         </span>
         <div className="text-right">
           {isWaitlist && (

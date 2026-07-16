@@ -183,7 +183,7 @@ export default function IntegrationsTab() {
                     <button
                       onClick={() => setRevealed(r => ({ ...r, [meta.key]: !r[meta.key] }))}
                       className="p-1.5 text-gray-400 hover:text-gray-600 rounded"
-                      title={isRevealed ? 'Ukryj' : 'Pokaż'}
+                      title={isRevealed ? 'Ukryj' : tr('Pokaż')}
                     >
                       {isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -229,7 +229,7 @@ export default function IntegrationsTab() {
                       onClick={() => setEdits(p => ({ ...p, [meta.key]: '' }))}
                       className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600"
                     >
-                      {isSet ? 'Zmień' : 'Ustaw'}
+                      {isSet ? tr('Zmień') : 'Ustaw'}
                     </button>
                   </div>
                 )}
