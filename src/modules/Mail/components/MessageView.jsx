@@ -199,7 +199,7 @@ export default function MessageView({
     return (
       <div className="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
         <div className="w-8 h-8 border-3 border-accent-primary-light border-t-transparent rounded-full animate-spin mb-4" />
-        <p>Ładowanie wiadomości...</p>
+        <p>{tr('Ładowanie wiadomości...')}</p>
       </div>
     );
   }
@@ -208,7 +208,7 @@ export default function MessageView({
     return (
       <div className="h-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400">
         <Mail size={48} className="mb-4 opacity-30" />
-        <p>Wybierz wiadomość do podglądu</p>
+        <p>{tr('Wybierz wiadomość do podglądu')}</p>
       </div>
     );
   }
@@ -247,7 +247,7 @@ export default function MessageView({
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
           <Forward size={16} />
-          <span className="hidden sm:inline">Przekaż</span>
+          <span className="hidden sm:inline">{tr('Przekaż')}</span>
         </button>
 
         <div className="flex-1" />
@@ -270,7 +270,7 @@ export default function MessageView({
               setShowMoveMenu(!showMoveMenu);
             }}
             className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            title="Przenieś"
+            title={tr('Przenieś')}
           >
             <FolderInput size={18} />
           </button>
@@ -450,7 +450,7 @@ export default function MessageView({
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
         >
           <Reply size={16} />
-          <span>Kliknij, aby odpowiedzieć</span>
+          <span>{tr('Kliknij, aby odpowiedzieć')}</span>
         </button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, AlertCircle, Loader2 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function PayPalButton({
   clientId,
@@ -259,7 +260,7 @@ export default function PayPalButton({
       {loading ? (
         <div className="flex items-center justify-center py-8">
           <Loader2 size={24} className="animate-spin text-blue-500" />
-          <span className="ml-2 text-sm text-gray-500">Ładowanie PayPal...</span>
+          <span className="ml-2 text-sm text-gray-500">{tr('Ładowanie PayPal...')}</span>
         </div>
       ) : (
         <div ref={paypalRef} className="paypal-button-container" />

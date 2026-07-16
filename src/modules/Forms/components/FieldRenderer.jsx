@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Upload, X, File, MapPin, Calendar, Clock, DollarSign, Users, ImageIcon, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
+import { tr } from '../../../i18n';
 
 export default function FieldRenderer({
   field,
@@ -287,7 +288,7 @@ export default function FieldRenderer({
                 {formatPrice(displayPrice, priceConfig.currency || 'PLN')}
               </p>
               {priceConfig.pricingType === 'per_person' && (
-                <p className="text-xs text-gray-500">za osobę</p>
+                <p className="text-xs text-gray-500">{tr('za osobę')}</p>
               )}
             </div>
           </div>

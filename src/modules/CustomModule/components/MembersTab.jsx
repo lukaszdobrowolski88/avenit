@@ -379,7 +379,7 @@ GRANT ALL ON ${tableName} TO anon;`;
       ) : (
         <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
           <User size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">Brak członków</p>
+          <p className="text-gray-500 dark:text-gray-400">{tr('Brak członków')}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
             Kliknij "Dodaj członka" aby dodać pierwszego członka
           </p>

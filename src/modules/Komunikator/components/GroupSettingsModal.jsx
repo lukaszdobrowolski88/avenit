@@ -3,6 +3,7 @@ import { X, Search, UserPlus, UserMinus, Crown, Loader, Users, Trash2, LogOut, E
 import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
+import { tr } from '../../../i18n';
 
 // Ikony dla kanałów służb
 const ministryIcons = {
@@ -280,7 +281,7 @@ export default function GroupSettingsModal({
                     <button
                       onClick={() => setEditingName(true)}
                       className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
-                      title="Zmień nazwę"
+                      title={tr('Zmień nazwę')}
                     >
                       <Edit2 size={14} className="text-gray-500" />
                     </button>
@@ -385,7 +386,7 @@ export default function GroupSettingsModal({
                           onClick={() => handleRemoveParticipant(participant.user_email)}
                           disabled={saving}
                           className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition text-red-500"
-                          title="Usuń z grupy"
+                          title={tr('Usuń z grupy')}
                         >
                           <UserMinus size={16} />
                         </button>
@@ -396,7 +397,7 @@ export default function GroupSettingsModal({
                         onClick={() => handleRemoveParticipant(currentUserEmail)}
                         disabled={saving}
                         className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition text-red-500"
-                        title="Opuść grupę"
+                        title={tr('Opuść grupę')}
                       >
                         <LogOut size={16} />
                       </button>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Folder, FolderPlus } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function FolderModal({
   isOpen,
@@ -110,7 +111,7 @@ export default function FolderModal({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Wpisz nazwę folderu..."
+              placeholder={tr('Wpisz nazwę folderu...')}
               className="w-full px-4 py-2.5 bg-white/70 dark:bg-gray-800/70 border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 transition-all duration-200"
               disabled={loading}
             />

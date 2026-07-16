@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, getCachedUser } from '../../../../lib/supabase';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { tr } from '../../../../i18n';
 
 export default function SessionManager({ onSessionChange }) {
   const [sessions, setSessions] = useState([]);
@@ -134,7 +135,7 @@ export default function SessionManager({ onSessionChange }) {
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="np. Nabożeństwo niedzielne"
+                placeholder={tr('np. Nabożeństwo niedzielne')}
                 className={inputClasses}
               />
             </div>

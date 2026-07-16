@@ -144,7 +144,7 @@ export default function CheckinTab() {
     { id: MODES.CHECKIN, icon: UserCheck, label: tr('Check-in') },
     { id: MODES.GUEST, icon: UserPlus, label: tr('Gość') },
     { id: MODES.CHECKOUT, icon: LogOut, label: 'Checkout' },
-    { id: MODES.ATTENDANCE, icon: ClipboardList, label: 'Lista obecności' },
+    { id: MODES.ATTENDANCE, icon: ClipboardList, label: tr('Lista obecności') },
     { id: MODES.SETTINGS, icon: Settings, label: tr('Ustawienia') }
   ];
 

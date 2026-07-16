@@ -427,7 +427,7 @@ const MUSIC_SECTIONS = [
   { label: 'Solo', getTemplate: () => `<div>[SOLO]</div><div>${createBar()}${createBar()}${createBar()}${createLastBar()}</div>`, isHtml: true },
   { label: 'Outro', getTemplate: () => `<div>[OUTRO]</div><div>${createBar()}${createBar()}${createBar()}${createLastBar()}</div>`, isHtml: true },
   { label: 'Pusty Takt', getTemplate: () => `${createLastBar()}`, isHtml: true },
-  { label: 'Podwójny Takt', getTemplate: () => `${createLastDoubleBar()}`, isHtml: true },
+  { label: tr('Podwójny Takt'), getTemplate: () => `${createLastDoubleBar()}`, isHtml: true },
   { label: '4 Takty', getTemplate: () => `<div>${createBar()}${createBar()}${createBar()}${createLastBar()}</div>`, isHtml: true },
 ];
 
@@ -501,7 +501,7 @@ const TagMultiSelect = ({ label, options, value = [], onChange }) => {
                 onChange={(e) => setCustomTag(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onClick={(e) => e.stopPropagation()}
-                placeholder="Dodaj własny tag..."
+                placeholder={tr('Dodaj własny tag...')}
                 className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none focus:border-accent-primary-light"
               />
               <button
@@ -1090,7 +1090,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
               {formData.id ? 'Edycja Pieśni' : 'Nowa Pieśń'}
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Uzupełnij szczegóły utworu</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Uzupełnij szczegóły utworu')}</p>
           </div>
           <button onClick={onCancel} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">
             <X size={24} />
@@ -1131,7 +1131,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tytuł')}</label>
                   <input 
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
-                    placeholder="Np. Jak wielki jest Bóg"
+                    placeholder={tr('Np. Jak wielki jest Bóg')}
                     value={formData.title}
                     onChange={e => setFormData({...formData, title: e.target.value})}
                   />
@@ -1199,7 +1199,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full min-h-[500px]">
                  {/* KOLUMNA 1: CZYSTY TEKST */}
                  <div className="flex flex-col h-full">
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tekst Pieśni (Lyrics)</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tekst Pieśni (Lyrics)')}</label>
                     <textarea
                       className="flex-1 w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition resize-none font-mono text-sm leading-relaxed"
                       placeholder="Wpisz tekst tutaj..."
@@ -1229,7 +1229,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                           onClick={handleRedo}
                           disabled={historyIndex >= chordsHistory.length - 1}
                           className="w-7 h-7 flex items-center justify-center bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                          title="Ponów (Ctrl+Y)"
+                          title={tr('Ponów (Ctrl+Y)')}
                         >
                           <Redo2 size={14} />
                         </button>
@@ -1243,7 +1243,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                             value={editorKey}
                             onChange={(e) => setEditorKey(e.target.value)}
                             className="h-6 px-2 text-[11px] font-bold bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/30 border border-accent-secondary-lighter dark:border-accent-secondary-dark rounded text-accent-secondary dark:text-accent-secondary-light cursor-pointer focus:outline-none focus:ring-1 focus:ring-accent-secondary-light"
-                            title="Wybierz tonację"
+                            title={tr('Wybierz tonację')}
                           >
                             <option value="">Tonacja</option>
                             {KEYS.map((k) => (
@@ -1378,7 +1378,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertBarAtCursor(); }}
                           className="px-2.5 py-1 bg-accent-secondary-lightest dark:bg-accent-secondary-darkest/30 hover:bg-accent-secondary-lighter dark:hover:bg-accent-secondary-darkest/50 text-accent-secondary dark:text-accent-secondary-light text-[11px] font-bold rounded-md border border-accent-secondary-lighter dark:border-accent-secondary-dark transition font-mono"
-                          title="Takt ze stałą szerokością (jeśli w takcie - dodaje po nim)"
+                          title={tr('Takt ze stałą szerokością (jeśli w takcie - dodaje po nim)')}
                         >
                           |takt|
                         </button>
@@ -1413,7 +1413,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         <button
                           onMouseDown={(e) => { e.preventDefault(); insertTextAtCursor('×2'); }}
                           className="px-2.5 py-1 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 text-[11px] font-bold rounded-md border border-red-200 dark:border-red-800 transition font-mono"
-                          title="Znak powtórzenia"
+                          title={tr('Znak powtórzenia')}
                         >
                           ×2
                         </button>
@@ -1436,7 +1436,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                       className="flex-1 w-full px-4 py-3 border-x border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:ring-inset min-h-[300px] overflow-auto font-mono"
                       style={{ lineHeight: chordsLineHeight, fontSize: `${chordsFontSize}px`, whiteSpace: 'pre-wrap' }}
                       suppressContentEditableWarning
-                      data-placeholder="Wpisz chwyty tutaj... | = takt ze stałą szerokością, Tab = spacja"
+                      data-placeholder={tr('Wpisz chwyty tutaj... | = takt ze stałą szerokością, Tab = spacja')}
                     />
 
                     {/* STOPKA Z INFORMACJAMI */}
@@ -1448,7 +1448,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                         <button
                           onClick={() => setShowShortcutsHelp(!showShortcutsHelp)}
                           className="flex items-center gap-1 px-2 py-0.5 text-[10px] text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition"
-                          title="Pokaż skróty klawiszowe"
+                          title={tr('Pokaż skróty klawiszowe')}
                         >
                           <Keyboard size={12} />
                           Skróty
@@ -1463,21 +1463,21 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                     {showShortcutsHelp && (
                       <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-t-0 border-blue-200 dark:border-blue-800 rounded-b-xl">
                         <div className="flex justify-between items-start mb-2">
-                          <h4 className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase">Skróty klawiszowe i formatowanie</h4>
+                          <h4 className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase">{tr('Skróty klawiszowe i formatowanie')}</h4>
                           <button onClick={() => setShowShortcutsHelp(false)} className="text-blue-400 hover:text-blue-600">
                             <X size={14} />
                           </button>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1 text-[11px]">
-                          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Takt (stała szerokość)</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">|</kbd></div>
+                          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{tr('Takt (stała szerokość)')}</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">|</kbd></div>
                           <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Duża spacja ({TAB_SIZE} znaków)</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Tab</kbd></div>
                           <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Mała spacja ({SMALL_TAB_SIZE} znaki)</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Shift+Tab</kbd></div>
                           <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Pogrubienie</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Ctrl+B</kbd></div>
                           <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Kursywa</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Ctrl+I</kbd></div>
-                          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">Cofnij / Ponów</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Ctrl+Z / Y</kbd></div>
+                          <div className="flex justify-between"><span className="text-gray-600 dark:text-gray-400">{tr('Cofnij / Ponów')}</span><kbd className="bg-white dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300 font-mono border border-gray-200 dark:border-gray-600">Ctrl+Z / Y</kbd></div>
                         </div>
                         <div className="mt-3 pt-2 border-t border-blue-200 dark:border-blue-700">
-                          <p className="text-[11px] text-blue-700 dark:text-blue-300 font-medium mb-1">Stałe takty (jak w Pages):</p>
+                          <p className="text-[11px] text-blue-700 dark:text-blue-300 font-medium mb-1">{tr('Stałe takty (jak w Pages):')}</p>
                           <p className="text-[10px] text-gray-600 dark:text-gray-400">
                             Każdy takt ma stałą szerokość {BAR_WIDTH}px. Tekst wpisany w takcie (nawet z różnymi rozmiarami czcionki)
                             nie przesuwa następnych kresek. Użyj przycisków sekcji lub klawisza | aby dodać takty.
@@ -1563,8 +1563,8 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                 {(!formData.attachments || formData.attachments.length === 0) ? (
                   <div className="text-center py-12 text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
                     <FileText size={40} className="mx-auto mb-3 opacity-50" />
-                    <p>Brak załączników</p>
-                    <p className="text-sm mt-1">Dodaj pliki lub linki powyżej</p>
+                    <p>{tr('Brak załączników')}</p>
+                    <p className="text-sm mt-1">{tr('Dodaj pliki lub linki powyżej')}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1625,7 +1625,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
                             <button
                               onClick={() => removeAttachment(idx)}
                               className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
-                              title="Usuń załącznik"
+                              title={tr('Usuń załącznik')}
                             >
                               <Trash2 size={16} />
                             </button>

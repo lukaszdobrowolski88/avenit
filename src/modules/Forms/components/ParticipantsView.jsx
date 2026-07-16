@@ -583,7 +583,7 @@ export default function ParticipantsView({ forms }) {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Wszystkich uczestników</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Wszystkich uczestników')}</p>
             </div>
           </div>
         </div>
@@ -595,7 +595,7 @@ export default function ParticipantsView({ forms }) {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.paid}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Opłaconych</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Opłaconych')}</p>
             </div>
           </div>
         </div>
@@ -607,7 +607,7 @@ export default function ParticipantsView({ forms }) {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pending}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Oczekuje na płatność</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Oczekuje na płatność')}</p>
             </div>
           </div>
         </div>
@@ -621,7 +621,7 @@ export default function ParticipantsView({ forms }) {
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatPrice(stats.totalRevenue, 'PLN')}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Otrzymane wpłaty</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Otrzymane wpłaty')}</p>
             </div>
           </div>
         </div>
@@ -637,7 +637,7 @@ export default function ParticipantsView({ forms }) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Szukaj uczestnika (imię, email, telefon)..."
+              placeholder={tr('Szukaj uczestnika (imię, email, telefon)...')}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
             />
           </div>
@@ -662,7 +662,7 @@ export default function ParticipantsView({ forms }) {
             <button
               onClick={fetchAllParticipants}
               className="p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-              title="Odśwież"
+              title={tr('Odśwież')}
             >
               <RefreshCw size={18} />
             </button>
@@ -706,9 +706,9 @@ export default function ParticipantsView({ forms }) {
                 className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
               >
                 <option value="all">{tr('Wszystkie')}</option>
-                <option value="paid">Opłacone</option>
-                <option value="pending">Oczekujące</option>
-                <option value="none">Bez płatności</option>
+                <option value="paid">{tr('Opłacone')}</option>
+                <option value="pending">{tr('Oczekujące')}</option>
+                <option value="none">{tr('Bez płatności')}</option>
               </select>
             </div>
 
@@ -861,7 +861,7 @@ export default function ParticipantsView({ forms }) {
                               setPaymentAmount(String(participant.totalAmount));
                             }}
                             className="p-2 text-green-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                            title="Dodaj płatność"
+                            title={tr('Dodaj płatność')}
                           >
                             <Banknote size={18} />
                           </button>

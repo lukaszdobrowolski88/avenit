@@ -32,7 +32,7 @@ const MUSICAL_KEYS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G
 // Item types for schedule - inspired by Planning Center
 const ITEM_TYPES = {
   item: { label: 'Element', icon: Type, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800' },
-  header: { label: 'Nagłówek', icon: MoreHorizontal, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
+  header: { label: tr('Nagłówek'), icon: MoreHorizontal, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
   song: { label: tr('Pieśń'), icon: Music, color: 'text-accent-primary dark:text-accent-primary-light', bg: 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30' },
   media: { label: 'Media', icon: Image, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/30' },
 };
@@ -368,7 +368,7 @@ const MultiSelect = ({ label, options, value, onChange, absentMembers = [] }) =>
               </div>
             );
           })}
-          {options.length === 0 && <div className="p-3 text-center text-gray-400 text-xs">Brak członków w bazie</div>}
+          {options.length === 0 && <div className="p-3 text-center text-gray-400 text-xs">{tr('Brak członków w bazie')}</div>}
         </div>,
         document.body
       )}
@@ -693,7 +693,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
                 ? 'bg-gradient-to-r from-accent-primary-lighter to-accent-primary-lightest dark:from-accent-primary-darkest/40 dark:to-accent-primary-darkest/20 text-accent-primary-dark dark:text-accent-primary-lighter border-accent-primary-lighter/50 dark:border-accent-primary-dark/50 hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 hover:border-accent-primary-lighter dark:hover:border-accent-primary'
               }`}
-            title="Zmień tonację"
+            title={tr('Zmień tonację')}
           >
             {currentKey || '?'}
           </button>
@@ -701,7 +701,7 @@ const ScheduleItem = ({ item, index, isSelected, onSelect, onDelete, songs, onUp
           {/* Key picker dropdown */}
           {showKeyPicker && (
             <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl p-2 min-w-[200px]">
-              <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 px-2 py-1 mb-1">Wybierz tonację</div>
+              <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 px-2 py-1 mb-1">{tr('Wybierz tonację')}</div>
               <div className="grid grid-cols-6 gap-1">
                 {MUSICAL_KEYS.map(k => (
                   <button
@@ -863,7 +863,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
           <button
             onClick={() => onDelete(item.id)}
             className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition"
-            title="Usuń element"
+            title={tr('Usuń element')}
           >
             <Trash2 size={16} />
           </button>
@@ -892,7 +892,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                 <button
                   onClick={() => onUpdate({ ...item, songId: null, songKey: null, title: '' })}
                   className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition shrink-0"
-                  title="Zmień pieśń"
+                  title={tr('Zmień pieśń')}
                 >
                   <X size={14} />
                 </button>
@@ -1040,7 +1040,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
 
           {/* Timing */}
           <div>
-            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Kiedy wyświetlić</label>
+            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{tr('Kiedy wyświetlić')}</label>
             <div className="grid grid-cols-3 gap-2">
               {timingOptions.map(opt => (
                 <button
@@ -1096,7 +1096,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
               <textarea
                 value={item.notes || ''}
                 onChange={(e) => handleChange('notes', e.target.value)}
-                placeholder="Dodaj notatki dotyczące tego elementu..."
+                placeholder={tr('Dodaj notatki dotyczące tego elementu...')}
                 rows={6}
                 className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200/80 dark:border-gray-700/80 rounded-xl text-sm resize-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-lighter dark:focus:border-accent-primary-dark outline-none transition"
               />
@@ -1116,7 +1116,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                 value={item.person}
                 onChange={(val) => handleChange('person', val)}
                 members={worshipTeam}
-                placeholder="Wpisz imię i nazwisko..."
+                placeholder={tr('Wpisz imię i nazwisko...')}
               />
             </div>
 
@@ -1169,7 +1169,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">URL / Ścieżka do pliku</label>
+              <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{tr('URL / Ścieżka do pliku')}</label>
               <input
                 type="text"
                 value={item.mediaUrl || ''}
@@ -1192,13 +1192,13 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
               </h4>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[10px] font-medium text-blue-600/70 dark:text-blue-400/70 mb-1.5">Audio / Nagłośnienie</label>
+                  <label className="block text-[10px] font-medium text-blue-600/70 dark:text-blue-400/70 mb-1.5">{tr('Audio / Nagłośnienie')}</label>
                   <select
                     value={item.teamAssignments?.audio || ''}
                     onChange={(e) => handleTeamAssignment('audio', e.target.value)}
                     className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-blue-200/80 dark:border-blue-700/50 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition"
                   >
-                    <option value="">— Wybierz osobę —</option>
+                    <option value="">{tr('— Wybierz osobę —')}</option>
                     {mediaTeam.map(member => (
                       <option key={member.id} value={member.full_name}>{member.full_name}</option>
                     ))}
@@ -1211,7 +1211,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                     onChange={(e) => handleTeamAssignment('visual', e.target.value)}
                     className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-blue-200/80 dark:border-blue-700/50 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition"
                   >
-                    <option value="">— Wybierz osobę —</option>
+                    <option value="">{tr('— Wybierz osobę —')}</option>
                     {mediaTeam.map(member => (
                       <option key={member.id} value={member.full_name}>{member.full_name}</option>
                     ))}
@@ -1228,11 +1228,11 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                 </h4>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-[10px] font-medium text-accent-primary/70 dark:text-accent-primary-light/70 mb-1.5">Konfiguracja zespołu</label>
+                    <label className="block text-[10px] font-medium text-accent-primary/70 dark:text-accent-primary-light/70 mb-1.5">{tr('Konfiguracja zespołu')}</label>
                     <div className="grid grid-cols-3 gap-1.5">
                       {[
-                        { value: '', label: 'Cały' },
-                        { value: 'full', label: 'Pełny' },
+                        { value: '', label: tr('Cały') },
+                        { value: 'full', label: tr('Pełny') },
                         { value: 'acoustic', label: 'Akust.' },
                         { value: 'minimal', label: 'Minimal.' },
                       ].map(opt => (
@@ -1252,13 +1252,13 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-medium text-accent-primary/70 dark:text-accent-primary-light/70 mb-1.5">Wokalista prowadzący</label>
+                    <label className="block text-[10px] font-medium text-accent-primary/70 dark:text-accent-primary-light/70 mb-1.5">{tr('Wokalista prowadzący')}</label>
                     <select
                       value={item.teamAssignments?.vocals || ''}
                       onChange={(e) => handleTeamAssignment('vocals', e.target.value)}
                       className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-accent-primary-lighter/80 dark:border-accent-primary-dark/50 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
                     >
-                      <option value="">— Wybierz osobę —</option>
+                      <option value="">{tr('— Wybierz osobę —')}</option>
                       {worshipTeam.map(member => (
                         <option key={member.id} value={member.full_name}>{member.full_name}</option>
                       ))}
@@ -1307,7 +1307,7 @@ const AddItemDropdown = ({ onAdd }) => {
 
   const items = [
     { type: 'item', label: 'Element', icon: Type, shortcut: 'i' },
-    { type: 'header', label: 'Nagłówek', icon: MoreHorizontal, shortcut: 'h' },
+    { type: 'header', label: tr('Nagłówek'), icon: MoreHorizontal, shortcut: 'h' },
     { type: 'song', label: tr('Pieśń'), icon: Music, shortcut: 's' },
     { type: 'media', label: 'Media', icon: Image, shortcut: 'm' },
   ];
@@ -1325,7 +1325,7 @@ const AddItemDropdown = ({ onAdd }) => {
 
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden">
-          <div className="p-2 text-xs font-medium text-gray-400 uppercase">Przeciągnij lub kliknij</div>
+          <div className="p-2 text-xs font-medium text-gray-400 uppercase">{tr('Przeciągnij lub kliknij')}</div>
           {items.map(item => (
             <button
               key={item.type}
@@ -1527,7 +1527,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Szkółka Niedzielna</h3>
+        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{tr('Szkółka Niedzielna')}</h3>
       </div>
       <div className="space-y-4">
         <div>
@@ -1554,7 +1554,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
         ) : (
           <>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Młodsza</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupa Młodsza')}</label>
               <input
                 className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.mlodsza || ''}
@@ -1562,7 +1562,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Średnia</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupa Średnia')}</label>
               <input
                 className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.srednia || ''}
@@ -1621,7 +1621,7 @@ const DynamicScenaSection = ({
         { key: 'prowadzenie', label: 'Prowadzenie', roleId: null, source: 'mc' },
         { key: 'modlitwa', label: 'Modlitwa', roleId: null, source: 'mc' },
         { key: 'wieczerza', label: 'Wieczerza', roleId: null, source: 'mc' },
-        { key: 'ogloszenia', label: 'Ogłoszenia', roleId: null, source: 'mc' }
+        { key: 'ogloszenia', label: tr('Ogłoszenia'), roleId: null, source: 'mc' }
       ];
 
   const kazanieField = { key: 'kazanie', label: 'Kazanie', source: 'teaching' };
@@ -1827,7 +1827,7 @@ const TemplateModal = ({ isOpen, onClose, templates, onLoad, onDelete }) => {
           {templates.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
               <FileText size={48} className="mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Brak zapisanych szablonów</p>
+              <p className="text-sm">{tr('Brak zapisanych szablonów')}</p>
               <p className="text-xs mt-1">Zapisz aktualny plan jako szablon</p>
             </div>
           ) : (
@@ -1925,8 +1925,8 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
   }));
 
   const PRESETS = [
-    { id: 'full', label: 'Pełny', desc: 'Plan + zespoły + pieśni', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections } } },
-    { id: 'planTeams', label: 'Plan + zespoły', desc: 'Bez stron pieśni', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, songs: false } } },
+    { id: 'full', label: tr('Pełny'), desc: 'Plan + zespoły + pieśni', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections } } },
+    { id: 'planTeams', label: tr('Plan + zespoły'), desc: 'Bez stron pieśni', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, songs: false } } },
     { id: 'planOnly', label: 'Sam plan', desc: 'Tylko plan szczegółowy', patch: { sections: { ...DEFAULT_PDF_OPTIONS.sections, teams: false, songs: false } } },
   ];
 
@@ -1937,7 +1937,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
         <div className="flex justify-between items-start px-6 pt-6 pb-4 flex-shrink-0 border-b border-gray-100 dark:border-gray-700">
           <div>
             <h3 className="font-bold text-xl text-gray-800 dark:text-white">Opcje wydruku PDF</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Dopasuj zawartość i wygląd generowanego pliku.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{tr('Dopasuj zawartość i wygląd generowanego pliku.')}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-white transition" aria-label="Zamknij">
             <X size={22} />
@@ -1982,7 +1982,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           </PrintOptionsCard>
 
           {/* KOLUMNY PLANU */}
-          <PrintOptionsCard title="Kolumny w planie szczegółowym" className={!printOptions.sections.schedule ? 'opacity-50 pointer-events-none' : ''}>
+          <PrintOptionsCard title={tr('Kolumny w planie szczegółowym')} className={!printOptions.sections.schedule ? 'opacity-50 pointer-events-none' : ''}>
             <div className="grid grid-cols-2 gap-y-2 gap-x-4">
               <PrintCheckbox label="Czas (długość)"        checked={printOptions.scheduleColumns.time}    onChange={v => setColumn('time', v)} />
               <PrintCheckbox label="Osoba odpowiedzialna"  checked={printOptions.scheduleColumns.person}  onChange={v => setColumn('person', v)} />
@@ -1992,7 +1992,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           </PrintOptionsCard>
 
           {/* STRONY PIEŚNI */}
-          <PrintOptionsCard title="Strony pieśni" className={!printOptions.sections.songs ? 'opacity-50 pointer-events-none' : ''}>
+          <PrintOptionsCard title={tr('Strony pieśni')} className={!printOptions.sections.songs ? 'opacity-50 pointer-events-none' : ''}>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-4">
               <PrintCheckbox label="Tekst"   checked={printOptions.songDetails.lyrics} onChange={v => setSongDt('lyrics', v)} />
               <PrintCheckbox label="Akordy"  checked={printOptions.songDetails.chords} onChange={v => setSongDt('chords', v)} />
@@ -2002,7 +2002,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           </PrintOptionsCard>
 
           {/* UKŁAD STRONY */}
-          <PrintOptionsCard title="Układ strony">
+          <PrintOptionsCard title={tr('Układ strony')}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <label className="block">
                 <span className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 block uppercase tracking-wider font-semibold">Format</span>
@@ -2040,7 +2040,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
           </PrintOptionsCard>
 
           {/* NAGŁÓWEK / WYGLĄD */}
-          <PrintOptionsCard title="Nagłówek i wygląd">
+          <PrintOptionsCard title={tr('Nagłówek i wygląd')}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
               <PrintCheckbox label="Pokaż nazwę kampusu w nagłówku"     checked={printOptions.showCampus}  onChange={v => setRoot('showCampus', v)} />
               <PrintCheckbox label="Złote akcenty (gold)"               checked={printOptions.colorAccents} onChange={v => setRoot('colorAccents', v)} />

@@ -1790,7 +1790,7 @@ const FinanceModule = () => {
                   { value: 'Grupa Uwielbienia', label: tr('Grupa Uwielbienia') },
                   { value: 'MediaTeam', label: tr('MediaTeam') },
                   { value: 'Grupy domowe', label: tr('Grupy domowe') },
-                  { value: 'małe Avenit', label: 'małe Avenit' },
+                  { value: 'małe Avenit', label: tr('małe Avenit') },
                   { value: 'AtmosferaTeam', label: 'AtmosferaTeam' }
                 ]}
                 placeholder={t('Wybierz służbę')}
@@ -2000,7 +2000,7 @@ const FinanceModule = () => {
                   label="Kategoria (powiązana z budżetem)"
                   value={expenseForm.category}
                   onChange={(val) => setExpenseForm({...expenseForm, category: val, description: ''})}
-                  options={budgetCategories.length > 0 ? budgetCategories : [{ value: '', label: 'Najpierw dodaj pozycje budżetowe' }]}
+                  options={budgetCategories.length > 0 ? budgetCategories : [{ value: '', label: tr('Najpierw dodaj pozycje budżetowe') }]}
                   placeholder={t('Wybierz kategorię')}
                 />
                 {expenseForm.category && (
@@ -2179,7 +2179,7 @@ const FinanceModule = () => {
                     onChange={(e) => setBalanceForm({...balanceForm, currency_type: e.target.value})}
                   >
                     <option value="EUR">EUR - Euro</option>
-                    <option value="USD">USD - Dolar amerykański</option>
+                    <option value="USD">{tr('USD - Dolar amerykański')}</option>
                     <option value="GBP">GBP - Funt brytyjski</option>
                     <option value="CHF">CHF - Frank szwajcarski</option>
                   </select>

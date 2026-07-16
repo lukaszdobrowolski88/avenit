@@ -258,7 +258,7 @@ const ModalSelectEventCategory = ({ date, categories, onClose, onSelectCategory,
             </div>
             <div className="text-left flex-1">
               <div className="font-bold text-gray-800 dark:text-white">{tr('Nabożeństwo')}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Pełny program z pieśniami i służbami</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">{tr('Pełny program z pieśniami i służbami')}</div>
             </div>
           </button>
 
@@ -760,7 +760,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry }) => {
               <CustomDatePicker value={eventForm.start_date} onChange={val => setEventForm({...eventForm, start_date: val})} />
             </div>
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Początek</label>
+              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Początek')}</label>
               <CustomTimePicker value={eventForm.event_time || ''} onChange={v => setEventForm({...eventForm, event_time: v})} placeholder={tr('Od')} />
             </div>
             <div>
@@ -776,7 +776,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Maks. osób</label>
+              <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Maks. osób')}</label>
               <input type="number" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="30" value={eventForm.max_participants || ''} onChange={e => setEventForm({...eventForm, max_participants: e.target.value})} />
             </div>
             <div>
@@ -2513,7 +2513,7 @@ export default function CalendarModule() {
               <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-lg text-accent-primary dark:text-accent-primary-light"><CalIcon size={24} /></div>
               <div>
                  <h1 className="text-xl font-bold text-gray-800 dark:text-white">{t('Kalendarz')}</h1>
-                 <p className="text-xs text-gray-500 dark:text-gray-400">Zarządzanie wydarzeniami i zadaniami</p>
+                 <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Zarządzanie wydarzeniami i zadaniami')}</p>
               </div>
            </div>
 

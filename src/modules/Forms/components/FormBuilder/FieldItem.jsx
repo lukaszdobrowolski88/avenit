@@ -106,7 +106,7 @@ export default function FieldItem({
       case 'file':
         return (
           <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-center">
-            <p className="text-sm text-gray-400">Przeciągnij plik lub kliknij</p>
+            <p className="text-sm text-gray-400">{tr('Przeciągnij plik lub kliknij')}</p>
           </div>
         );
 

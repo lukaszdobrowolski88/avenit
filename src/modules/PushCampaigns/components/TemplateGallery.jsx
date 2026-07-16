@@ -122,13 +122,13 @@ function TemplateEditor({ template, onClose, onSave }) {
           <input
             value={form.title}
             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            placeholder="Tytuł powiadomienia"
+            placeholder={tr('Tytuł powiadomienia')}
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium"
           />
           <textarea
             value={form.body}
             onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-            placeholder="Treść..."
+            placeholder={tr('Treść...')}
             rows={3}
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none"
           />

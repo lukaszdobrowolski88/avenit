@@ -124,7 +124,7 @@ export default function AttendanceTab({ members = [] }) {
               </button>
             );
           })}
-          {filtered.length === 0 && <div className="col-span-full text-center text-sm text-gray-400 py-6">Brak osób</div>}
+          {filtered.length === 0 && <div className="col-span-full text-center text-sm text-gray-400 py-6">{tr('Brak osób')}</div>}
         </div>
       )}
     </section>

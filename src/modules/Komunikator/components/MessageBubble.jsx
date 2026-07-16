@@ -4,6 +4,7 @@ import UserAvatar from './UserAvatar';
 import { formatMessageTime, formatFileSize, isImageFile, getFileIcon } from '../utils/messageHelpers';
 import { REACTION_EMOJIS } from '../hooks/useReactions';
 import AudioPlayer from './AudioPlayer';
+import { tr } from '../../../i18n';
 
 export default function MessageBubble({
   message,
@@ -238,7 +239,7 @@ export default function MessageBubble({
                 {message.forwarded_from && (
                   <div className={`flex items-center gap-1.5 mb-2 text-xs ${isOwn ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
                     <Forward size={12} className="opacity-70" />
-                    <span className="italic">Przekazana wiadomość</span>
+                    <span className="italic">{tr('Przekazana wiadomość')}</span>
                   </div>
                 )}
 

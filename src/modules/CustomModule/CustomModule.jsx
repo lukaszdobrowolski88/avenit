@@ -11,6 +11,7 @@ import MaterialsTab from '../shared/MaterialsTab';
 import MembersTab from './components/MembersTab';
 import TasksTab from './components/TasksTab';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import { tr } from '../../i18n';
 
 export default function CustomModule() {
   const { moduleKey: paramKey } = useParams();
@@ -93,7 +94,7 @@ export default function CustomModule() {
     return (
       <div className="p-10 text-center">
         <LucideIcons.AlertCircle size={48} className="mx-auto text-gray-400 mb-4" />
-        <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300">Moduł nie znaleziony</h2>
+        <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300">{tr('Moduł nie znaleziony')}</h2>
         <p className="text-gray-500 dark:text-gray-400 mt-2">
           Moduł nie istnieje lub został usunięty.
         </p>

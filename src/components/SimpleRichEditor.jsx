@@ -64,16 +64,16 @@ export default function SimpleRichEditor({ content, onChange, placeholder = 'Wpi
         <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title="Kursywa">
           <Italic size={15} />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title="Podkreślenie">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title={tr('Podkreślenie')}>
           <UnderlineIcon size={15} />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title="Przekreślenie">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title={tr('Przekreślenie')}>
           <Strikethrough size={15} />
         </ToolbarButton>
 
         <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
 
-        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title="Nagłówek">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title={tr('Nagłówek')}>
           <Heading2 size={15} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title={tr('Lista')}>
@@ -91,7 +91,7 @@ export default function SimpleRichEditor({ content, onChange, placeholder = 'Wpi
         <ToolbarButton onClick={() => editor.chain().focus().undo().run()} title="Cofnij">
           <Undo size={15} />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().redo().run()} title="Ponów">
+        <ToolbarButton onClick={() => editor.chain().focus().redo().run()} title={tr('Ponów')}>
           <Redo size={15} />
         </ToolbarButton>
       </div>

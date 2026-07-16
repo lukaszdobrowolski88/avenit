@@ -14,6 +14,7 @@ import {
   QrCode
 } from 'lucide-react';
 import { useTwoFactor } from '../hooks/useTwoFactor';
+import { tr } from '../i18n';
 
 // Komponent do generowania QR code (używa zewnętrznego API)
 function QRCodeDisplay({ url, size = 200 }) {
@@ -332,8 +333,8 @@ export default function TwoFactorSetup({ userEmail, onClose, onEnabled, isRequir
                 <div className="flex items-start gap-3">
                   <AlertCircle size={20} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-amber-800 dark:text-amber-300">
-                    <p className="font-semibold mb-1">Ważne!</p>
-                    <p>Te kody pozwolą Ci zalogować się, jeśli stracisz dostęp do telefonu. Każdy kod można użyć tylko raz.</p>
+                    <p className="font-semibold mb-1">{tr('Ważne!')}</p>
+                    <p>{tr('Te kody pozwolą Ci zalogować się, jeśli stracisz dostęp do telefonu. Każdy kod można użyć tylko raz.')}</p>
                   </div>
                 </div>
               </div>

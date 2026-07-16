@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trash2, AlertTriangle } from 'lucide-react';
 import { PUSH_CATEGORIES, ACTION_LABEL_MAX } from '../constants';
+import { tr } from '../../../i18n';
 
 const ACTION_TYPE_LABELS = {
   deep_link: 'Deep link (ekran w aplikacji)',
@@ -112,7 +113,7 @@ export default function ActionButtonsBuilder({ categoryId, actions = [], onChang
                   )}
                   {catAction.type === 'inline_rsvp' && (
                     <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Wartość RSVP</label>
+                      <label className="text-xs text-gray-500 mb-1 block">{tr('Wartość RSVP')}</label>
                       <input
                         value={action.action_value || catAction.value || ''}
                         onChange={e => updateAction(idx, { action_value: e.target.value, action_type: catAction.type, label: action.label || catAction.defaultLabel })}

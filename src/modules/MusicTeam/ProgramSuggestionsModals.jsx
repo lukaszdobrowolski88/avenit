@@ -197,7 +197,7 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
                         </div>
                       </div>
                       {alreadyAdded ? (
-                        <span className="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 shrink-0">Już dodana</span>
+                        <span className="text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 shrink-0">{tr('Już dodana')}</span>
                       ) : isSelected ? (
                         <Check size={18} className="text-accent-primary shrink-0" />
                       ) : null}
@@ -235,7 +235,7 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
             </label>
             <textarea
               className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 text-sm min-h-[70px] resize-y focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
-              placeholder="Opcjonalna notatka, np. fragment, zwrotka, kiedy zaśpiewać..."
+              placeholder={tr('Opcjonalna notatka, np. fragment, zwrotka, kiedy zaśpiewać...')}
               value={note}
               onChange={e => setNote(e.target.value)}
             />
@@ -517,7 +517,7 @@ function ProgramSongsEditor({ program, songs, onBack, onClose }) {
           <button
             onClick={onBack}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400 shrink-0"
-            title="Wróć do listy programów"
+            title={tr('Wróć do listy programów')}
           >
             <ChevronLeft size={20} />
           </button>
@@ -618,7 +618,7 @@ function SortableSuggestionRow({
         <span className="text-accent-primary dark:text-accent-primary-light font-bold text-xs w-6 shrink-0">{index + 1}.</span>
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-sm text-gray-800 dark:text-white truncate">
-            {song?.title || <span className="italic text-gray-400">[pieśń usunięta]</span>}
+            {song?.title || <span className="italic text-gray-400">{tr('[pieśń usunięta]')}</span>}
           </div>
           {song?.author && (
             <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{song.author}</div>
@@ -718,7 +718,7 @@ function SongPickerInline({ songs, onPick, onCancel }) {
       </div>
       <div className="max-h-56 overflow-y-auto custom-scrollbar">
         {filtered.length === 0 ? (
-          <div className="p-4 text-center text-xs text-gray-400">Brak pieśni</div>
+          <div className="p-4 text-center text-xs text-gray-400">{tr('Brak pieśni')}</div>
         ) : (
           filtered.map(s => (
             <button

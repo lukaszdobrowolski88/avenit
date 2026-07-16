@@ -7,6 +7,7 @@ import ParticipantForm from './ParticipantForm';
 import AddonSelector from './AddonSelector';
 import PriceBreakdown from './PriceBreakdown';
 import { calculateTotalPrice, calculatePriceBreakdown, formatPrice, checkSeatAvailability } from '../utils/fieldTypes';
+import { tr } from '../../../i18n';
 
 export default function FormRenderer({
   title,
@@ -451,7 +452,7 @@ export default function FormRenderer({
       {settings?.showProgressBar && fields.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-            <span>Postęp</span>
+            <span>{tr('Postęp')}</span>
             <span>{completedFields} z {fields.length}</span>
           </div>
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -843,7 +844,7 @@ export default function FormRenderer({
                     }`}
                   >
                     <DollarSign size={20} className="text-green-600" />
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Gotówka (na miejscu)</span>
+                    <span className="font-medium text-gray-700 dark:text-gray-300">{tr('Gotówka (na miejscu)')}</span>
                   </button>
                 )}
 

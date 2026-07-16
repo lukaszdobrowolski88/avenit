@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Cake, Gift } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { tr } from '../../../i18n';
 
 const WINDOW_DAYS = 30;
 
@@ -65,7 +66,7 @@ export default function BirthdaysWidget() {
         <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
           <Cake size={24} className="text-pink-500" />
         </div>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">Brak urodzin w najbliższym czasie</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm">{tr('Brak urodzin w najbliższym czasie')}</p>
       </div>
     );
   }

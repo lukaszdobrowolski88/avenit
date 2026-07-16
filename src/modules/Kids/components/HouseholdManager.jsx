@@ -406,7 +406,7 @@ export default function HouseholdManager() {
                     type="text"
                     value={formData.address}
                     onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                    placeholder="np. ul. Przykładowa 1, Wrocław"
+                    placeholder={tr('np. ul. Przykładowa 1, Wrocław')}
                     className={inputClasses}
                   />
                 </div>
@@ -497,7 +497,7 @@ export default function HouseholdManager() {
                             }}
                             className={inputClasses}
                           >
-                            <option value="">-- Wybierz członka --</option>
+                            <option value="">{tr('-- Wybierz członka --')}</option>
                             {members.map(m => (
                               <option key={m.id} value={m.id}>
                                 {m.first_name} {m.last_name} {m.phone ? `(${m.phone})` : ''}
@@ -828,7 +828,7 @@ export default function HouseholdManager() {
                               <button
                                 onClick={() => handleUnassignStudent(student.id)}
                                 className="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition"
-                                title="Usuń powiązanie"
+                                title={tr('Usuń powiązanie')}
                               >
                                 <X size={16} />
                               </button>

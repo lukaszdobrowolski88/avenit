@@ -26,7 +26,7 @@ const CATEGORY_ICONS = {
 const EXTENDED_CATEGORIES = {
   ...TEMPLATE_CATEGORIES,
   welcome: { label: 'Powitalne' },
-  holiday: { label: 'Świąteczne' },
+  holiday: { label: tr('Świąteczne') },
   invitation: { label: 'Zaproszenia' },
   ministry: { label: tr('Służby') },
   worship: { label: 'Uwielbienie' },
@@ -41,7 +41,7 @@ const EDITOR_MODES = {
 
 const STEPS = [
   { id: 'info', label: 'Informacje', icon: FileText },
-  { id: 'content', label: 'Treść', icon: Edit3 }
+  { id: 'content', label: tr('Treść'), icon: Edit3 }
 ];
 
 export default function TemplateEditor({ template, onClose, onSave }) {
@@ -221,7 +221,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="np. Newsletter miesięczny"
+                  placeholder={tr('np. Newsletter miesięczny')}
                   disabled={isReadOnly}
                   className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all text-gray-900 dark:text-white placeholder-gray-400 disabled:opacity-50"
                 />
@@ -243,7 +243,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
                   type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
-                  placeholder="np. Aktualności z kościoła"
+                  placeholder={tr('np. Aktualności z kościoła')}
                   disabled={isReadOnly}
                   className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light transition-all text-gray-900 dark:text-white placeholder-gray-400 disabled:opacity-50"
                 />

@@ -39,16 +39,16 @@ export default function PlansManager() {
 
   const featuresList = [
     { key: 'calendar', label: tr('Kalendarz') },
-    { key: 'members', label: 'Zarządzanie członkami' },
+    { key: 'members', label: tr('Zarządzanie członkami') },
     { key: 'groups', label: tr('Grupy domowe') },
     { key: 'kids_checkin', label: 'Check-in dzieci' },
     { key: 'events', label: tr('Wydarzenia') },
-    { key: 'email', label: 'Wysyłka emaili' },
-    { key: 'finance', label: 'Moduł finansowy' },
+    { key: 'email', label: tr('Wysyłka emaili') },
+    { key: 'finance', label: tr('Moduł finansowy') },
     { key: 'forms', label: tr('Formularze') },
     { key: 'basic_reports', label: 'Podstawowe raporty' },
     { key: 'advanced_reports', label: 'Zaawansowane raporty' },
-    { key: 'api', label: 'Dostęp do API' },
+    { key: 'api', label: tr('Dostęp do API') },
     { key: 'white_label', label: 'White label' },
     { key: 'priority_support', label: 'Priorytetowe wsparcie' },
     { key: 'custom_domain', label: tr('Własna domena') }

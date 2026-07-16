@@ -442,7 +442,7 @@ export default function Members() {
     return (
       <div className="p-10 text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary dark:border-accent-primary-light mx-auto"></div>
-        <div className="mt-4 text-gray-600 dark:text-gray-400">Ładowanie bazy członków...</div>
+        <div className="mt-4 text-gray-600 dark:text-gray-400">{tr('Ładowanie bazy członków...')}</div>
       </div>
     );
   }
@@ -675,7 +675,7 @@ export default function Members() {
               {/* Imię i Nazwisko */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię *</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię *')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={formData.first_name}
@@ -734,16 +734,16 @@ export default function Members() {
                     label="Data członkostwa"
                     value={formData.membership_date}
                     onChange={(date) => setFormData({ ...formData, membership_date: date })}
-                    placeholder="Wybierz datę członkostwa"
+                    placeholder={tr('Wybierz datę członkostwa')}
                   />
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Deklaracja członkostwa (PDF)</label>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Deklaracja członkostwa (PDF)')}</label>
                     {formData.membership_declaration_url ? (
                       <div className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                         <FileText size={24} className="text-accent-primary-light" />
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Deklaracja załączona</p>
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{tr('Deklaracja załączona')}</p>
                           <a
                             href={formData.membership_declaration_url}
                             target="_blank"
@@ -768,7 +768,7 @@ export default function Members() {
                           ) : (
                             <>
                               <Upload size={24} className="text-gray-400 mb-2" />
-                              <p className="text-sm text-gray-500 dark:text-gray-400">Kliknij, aby dodać plik PDF</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Kliknij, aby dodać plik PDF')}</p>
                             </>
                           )}
                         </div>
@@ -823,7 +823,7 @@ export default function Members() {
                 </div>
                 <input
                   className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
-                  placeholder="Wpisz tag i naciśnij Enter (np. nowy, do odwiedzenia)"
+                  placeholder={tr('Wpisz tag i naciśnij Enter (np. nowy, do odwiedzenia)')}
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -841,7 +841,7 @@ export default function Members() {
 
               {/* Notatki */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Notatki (widoczne dla zespołu)</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Notatki (widoczne dla zespołu)')}</label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100 h-24 resize-none"
                   placeholder="Notatki duszpasterskie, historia kontaktu…"
@@ -853,7 +853,7 @@ export default function Members() {
               {/* Rodzina (Household) */}
               <CustomSelect
                 label="Rodzina (do Check-in)"
-                placeholder="Wybierz rodzinę..."
+                placeholder={tr('Wybierz rodzinę...')}
                 value={formData.household_id}
                 onChange={(val) => setFormData({ ...formData, household_id: val })}
                 options={[{ id: '', family_name: 'Brak', phone_last_four: '' }, ...households]}

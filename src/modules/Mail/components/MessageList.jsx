@@ -144,7 +144,7 @@ export default function MessageList({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Szukaj wiadomości..."
+            placeholder={tr('Szukaj wiadomości...')}
             className="w-full pl-11 pr-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-accent-primary-light focus:border-transparent outline-none placeholder:text-gray-400"
           />
         </form>
@@ -190,7 +190,7 @@ export default function MessageList({
                 <button
                   onClick={() => setShowMoveMenu(!showMoveMenu)}
                   className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-                  title="Przenieś"
+                  title={tr('Przenieś')}
                 >
                   <FolderInput size={16} />
                 </button>
@@ -265,7 +265,7 @@ export default function MessageList({
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-gray-500 dark:text-gray-400">
             <Mail size={32} className="mb-2 opacity-50" />
-            <p className="text-sm">Brak wiadomości</p>
+            <p className="text-sm">{tr('Brak wiadomości')}</p>
           </div>
         ) : (
           messages.map((message) => {

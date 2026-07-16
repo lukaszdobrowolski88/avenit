@@ -1895,7 +1895,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
             {activeTab === 'history' && (
                 <div className="space-y-4">
                     {loadingHistory ? (
-                        <div className="text-center py-10 text-gray-400">Ładowanie historii...</div>
+                        <div className="text-center py-10 text-gray-400">{tr('Ładowanie historii...')}</div>
                     ) : history.length === 0 ? (
                         <div className="text-center py-10 text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
                             Brak historii użycia tej pieśni w programach.
@@ -1941,7 +1941,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                              <div className="text-center py-8 text-gray-400 text-sm italic border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
                                  <FileText size={32} className="mx-auto mb-2 opacity-50" />
                                  Brak materiałów
-                                 <p className="text-xs mt-1">Kliknij "Edytuj" aby dodać załączniki</p>
+                                 <p className="text-xs mt-1">{tr('Kliknij "Edytuj" aby dodać załączniki')}</p>
                              </div>
                         )}
 

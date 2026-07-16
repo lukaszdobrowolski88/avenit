@@ -8,6 +8,7 @@ import {
   Tag,
   Loader2
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function PlansSelection({ onSelectPlan, onCancel }) {
   const [plans, setPlans] = useState([]);
@@ -108,7 +109,7 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
     return (
       <div className="p-8 text-center">
         <Loader2 size={32} className="animate-spin mx-auto text-accent-primary-light mb-4" />
-        <p className="text-gray-600 dark:text-gray-400">Ładowanie planów...</p>
+        <p className="text-gray-600 dark:text-gray-400">{tr('Ładowanie planów...')}</p>
       </div>
     );
   }
@@ -210,13 +211,13 @@ export default function PlansSelection({ onSelectPlan, onCancel }) {
                 {/* Limits */}
                 <div className="space-y-2 mb-6 text-sm">
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Członkowie:</span>
+                    <span>{tr('Członkowie:')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
                       {plan.max_members === -1 ? 'Bez limitu' : plan.max_members}
                     </span>
                   </div>
                   <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Użytkownicy:</span>
+                    <span>{tr('Użytkownicy:')}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
                       {plan.max_users === -1 ? 'Bez limitu' : plan.max_users}
                     </span>

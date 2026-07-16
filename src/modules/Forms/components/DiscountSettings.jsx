@@ -1,4 +1,5 @@
 import { Plus, Trash2, Percent } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function DiscountSettings({ settings, onChange }) {
   const discounts = settings?.discounts || {};
@@ -115,7 +116,7 @@ export default function DiscountSettings({ settings, onChange }) {
                   >
                     <option value="percentage">Procentowo</option>
                     <option value="fixed_per_person">Kwota/os.</option>
-                    <option value="fixed_total">Kwota łącznie</option>
+                    <option value="fixed_total">{tr('Kwota łącznie')}</option>
                   </select>
                 </div>
                 <div>

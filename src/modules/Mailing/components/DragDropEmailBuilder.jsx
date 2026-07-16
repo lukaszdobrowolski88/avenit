@@ -622,7 +622,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
             </div>
             Elementy
           </h3>
-          <p className="text-xs text-gray-500 mt-1">Przeciągnij na canvas lub kliknij</p>
+          <p className="text-xs text-gray-500 mt-1">{tr('Przeciągnij na canvas lub kliknij')}</p>
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar-thin">
@@ -745,7 +745,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                 onClick={redo}
                 disabled={historyIndex >= history.length - 1}
                 className="p-2 rounded-lg hover:bg-white dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-sm"
-                title="Ponów (Ctrl+Shift+Z)"
+                title={tr('Ponów (Ctrl+Shift+Z)')}
               >
                 <Redo size={16} className="text-gray-600 dark:text-gray-400" />
               </button>
@@ -757,7 +757,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
               onClick={clearAll}
               disabled={blocks.length === 0}
               className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
-              title="Wyczyść wszystko"
+              title={tr('Wyczyść wszystko')}
             >
               <RotateCcw size={16} className="text-gray-500" />
             </button>
@@ -784,7 +784,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
             <button
               onClick={() => setShowHtml(!showHtml)}
               className={`p-2 rounded-lg transition-all duration-200 ${showHtml ? 'bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 text-accent-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500'}`}
-              title="Pokaż HTML"
+              title={tr('Pokaż HTML')}
             >
               <Code size={16} />
             </button>
@@ -849,7 +849,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                     <p className={`font-semibold text-base mb-1 transition-colors ${dragState.isDragging ? 'text-accent-primary dark:text-accent-primary-light' : ''}`}>
                       {dragState.isDragging ? 'Upuść tutaj!' : 'Przeciągnij elementy tutaj'}
                     </p>
-                    <p className="text-sm text-gray-400">lub wybierz gotową sekcję z panelu po lewej</p>
+                    <p className="text-sm text-gray-400">{tr('lub wybierz gotową sekcję z panelu po lewej')}</p>
                   </div>
                 ) : (
                   <div className="relative">
@@ -1091,7 +1091,7 @@ function BlockRenderer({
         <button
           onMouseDown={(e) => e.stopPropagation()}
           className="p-1.5 bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm rounded-lg shadow-lg cursor-grab hover:bg-white dark:hover:bg-gray-600 border border-gray-200/50 dark:border-gray-600/50 hover:scale-110 transition-all duration-200"
-          title="Przeciągnij"
+          title={tr('Przeciągnij')}
         >
           <GripVertical size={14} className="text-gray-500" />
         </button>
@@ -1099,7 +1099,7 @@ function BlockRenderer({
           <button
             onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
             className="p-1.5 bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-white dark:hover:bg-gray-600 border border-gray-200/50 dark:border-gray-600/50 hover:scale-110 hover:-translate-y-0.5 transition-all duration-200"
-            title="Przesuń w górę (Alt+↑)"
+            title={tr('Przesuń w górę (Alt+↑)')}
           >
             <ArrowUp size={14} className="text-gray-500" />
           </button>
@@ -1108,7 +1108,7 @@ function BlockRenderer({
           <button
             onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
             className="p-1.5 bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-white dark:hover:bg-gray-600 border border-gray-200/50 dark:border-gray-600/50 hover:scale-110 hover:translate-y-0.5 transition-all duration-200"
-            title="Przesuń w dół (Alt+↓)"
+            title={tr('Przesuń w dół (Alt+↓)')}
           >
             <ArrowDown size={14} className="text-gray-500" />
           </button>
@@ -1129,7 +1129,7 @@ function BlockRenderer({
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
           className="p-1.5 bg-white/90 dark:bg-gray-700/90 backdrop-blur-sm rounded-lg shadow-lg hover:bg-red-50 dark:hover:bg-red-900/30 border border-gray-200/50 dark:border-gray-600/50 hover:scale-110 hover:border-red-300 transition-all duration-200 group/btn"
-          title="Usuń (Delete)"
+          title={tr('Usuń (Delete)')}
         >
           <Trash2 size={14} className="text-red-500 group-hover/btn:text-red-600" />
         </button>
@@ -1305,7 +1305,7 @@ function EmailSettingsEditor({ settings, onChange }) {
     <div className="space-y-4">
       <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-700">
         <Palette size={16} className="text-accent-primary-light" />
-        <span className="font-medium text-gray-900 dark:text-white">Ogólne ustawienia</span>
+        <span className="font-medium text-gray-900 dark:text-white">{tr('Ogólne ustawienia')}</span>
       </div>
 
       <PropertyField
@@ -1442,7 +1442,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               content={block.content}
               onChange={(v) => handleChange('content', v)}
               onBlur={handleBlur}
-              placeholder="Wpisz treść bloku tekstowego..."
+              placeholder={tr('Wpisz treść bloku tekstowego...')}
               showHeadings={true}
               showLists={true}
               showAlignment={true}
@@ -1468,7 +1468,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               content={block.content}
               onChange={(v) => handleChange('content', v)}
               onBlur={handleBlur}
-              placeholder="Wpisz treść nagłówka..."
+              placeholder={tr('Wpisz treść nagłówka...')}
               showHeadings={false}
               showLists={false}
               showAlignment={false}
@@ -1477,7 +1477,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               minHeight={80}
             />
           </div>
-          <PropertyField label="Poziom nagłówka" type="select" value={block.level} options={[{value: 1, label: 'H1 - Największy'}, {value: 2, label: 'H2 - Średni'}, {value: 3, label: 'H3 - Mniejszy'}]} onChange={(v) => handleChange('level', parseInt(v))} onBlur={handleBlur} />
+          <PropertyField label="Poziom nagłówka" type="select" value={block.level} options={[{value: 1, label: tr('H1 - Największy')}, {value: 2, label: tr('H2 - Średni')}, {value: 3, label: 'H3 - Mniejszy'}]} onChange={(v) => handleChange('level', parseInt(v))} onBlur={handleBlur} />
           <PropertyField label="Kolor tekstu" type="color" value={block.textColor} onChange={(v) => handleChange('textColor', v)} onBlur={handleBlur} />
         </>
       )}
@@ -1515,7 +1515,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               content={block.content}
               onChange={(v) => handleChange('content', v)}
               onBlur={handleBlur}
-              placeholder="Wpisz treść cytatu..."
+              placeholder={tr('Wpisz treść cytatu...')}
               showHeadings={false}
               showLists={false}
               showAlignment={true}
@@ -1546,7 +1546,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
             options={[
               {value: 'disc', label: '• Kropki'},
               {value: 'decimal', label: '1. Numerowanie'},
-              {value: 'none', label: 'Bez znaczników'}
+              {value: 'none', label: tr('Bez znaczników')}
             ]}
             onChange={(v) => handleChange('listStyle', v)}
             onBlur={handleBlur}
@@ -1565,7 +1565,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
 
       {block.type === 'divider' && (
         <>
-          <PropertyField label="Styl" type="select" value={block.style} options={[{value: 'solid', label: 'Ciągły'}, {value: 'dashed', label: 'Przerywany'}, {value: 'dotted', label: 'Kropkowany'}]} onChange={(v) => handleChange('style', v)} onBlur={handleBlur} />
+          <PropertyField label="Styl" type="select" value={block.style} options={[{value: 'solid', label: tr('Ciągły')}, {value: 'dashed', label: 'Przerywany'}, {value: 'dotted', label: 'Kropkowany'}]} onChange={(v) => handleChange('style', v)} onBlur={handleBlur} />
           <PropertyField label="Kolor" type="color" value={block.color} onChange={(v) => handleChange('color', v)} onBlur={handleBlur} />
           <PropertyField label="Grubość" type="range" min={1} max={5} value={block.thickness} onChange={(v) => handleChange('thickness', v)} onBlur={handleBlur} />
           <PropertyField label="Szerokość" type="text" value={block.width} onChange={(v) => handleChange('width', v)} onBlur={handleBlur} placeholder="100% lub 200px" />
@@ -1587,7 +1587,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               content={block.leftContent}
               onChange={(v) => handleChange('leftContent', v)}
               onBlur={handleBlur}
-              placeholder="Treść lewej kolumny..."
+              placeholder={tr('Treść lewej kolumny...')}
               showHeadings={true}
               showLists={true}
               showAlignment={true}
@@ -1605,7 +1605,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               content={block.rightContent}
               onChange={(v) => handleChange('rightContent', v)}
               onBlur={handleBlur}
-              placeholder="Treść prawej kolumny..."
+              placeholder={tr('Treść prawej kolumny...')}
               showHeadings={true}
               showLists={true}
               showAlignment={true}
@@ -1636,7 +1636,7 @@ function BlockPropertiesEditor({ block, onChange, onCommit }) {
               content={block.content}
               onChange={(v) => handleChange('content', v)}
               onBlur={handleBlur}
-              placeholder="Treść stopki emaila..."
+              placeholder={tr('Treść stopki emaila...')}
               showHeadings={false}
               showLists={false}
               showAlignment={true}
@@ -1988,7 +1988,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
               className="w-full px-4 py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-accent-primary-light dark:hover:border-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/10 transition-all text-center"
             >
               <Upload size={20} className="mx-auto mb-2 text-gray-400" />
-              <span className="text-xs text-gray-500 dark:text-gray-400">Kliknij aby wybrać obraz</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{tr('Kliknij aby wybrać obraz')}</span>
             </button>
           )}
           <p className="text-[10px] text-gray-400 dark:text-gray-500">
@@ -2173,7 +2173,7 @@ function BorderEditor({ value, onChange, onBlur }) {
       {/* Grubość */}
       <div className="space-y-1">
         <div className="flex items-center justify-between text-[10px] text-gray-400">
-          <span>Grubość</span>
+          <span>{tr('Grubość')}</span>
           <span className="font-medium text-gray-600 dark:text-gray-300">{border.width}px</span>
         </div>
         <input
@@ -2194,7 +2194,7 @@ function BorderEditor({ value, onChange, onBlur }) {
             <span className="text-[10px] text-gray-400">Styl</span>
             <div className="grid grid-cols-3 gap-1">
               {[
-                { value: 'solid', label: 'Ciągła' },
+                { value: 'solid', label: tr('Ciągła') },
                 { value: 'dashed', label: 'Przerywana' },
                 { value: 'dotted', label: 'Kropkowana' }
               ].map((style) => (
@@ -2239,9 +2239,9 @@ function BorderEditor({ value, onChange, onBlur }) {
               <span className="text-[10px] text-gray-400">Strony</span>
               <div className="grid grid-cols-4 gap-1">
                 {[
-                  { key: 'top', label: '↑ Góra' },
+                  { key: 'top', label: tr('↑ Góra') },
                   { key: 'right', label: '→ Prawa' },
-                  { key: 'bottom', label: '↓ Dół' },
+                  { key: 'bottom', label: tr('↓ Dół') },
                   { key: 'left', label: '← Lewa' }
                 ].map(({ key, label }) => (
                   <button
@@ -2296,12 +2296,12 @@ function ShadowEditor({ value, onChange, onBlur }) {
 
   const directionOptions = [
     { value: 'all', label: tr('Wszystkie'), icon: '◻' },
-    { value: 'bottom', label: 'Dół', icon: '⬇' },
-    { value: 'top', label: 'Góra', icon: '⬆' },
+    { value: 'bottom', label: tr('Dół'), icon: '⬇' },
+    { value: 'top', label: tr('Góra'), icon: '⬆' },
     { value: 'left', label: 'Lewo', icon: '⬅' },
     { value: 'right', label: 'Prawo', icon: '➡' },
     { value: 'horizontal', label: 'Boki', icon: '↔' },
-    { value: 'vertical', label: 'Góra/dół', icon: '↕' }
+    { value: 'vertical', label: tr('Góra/dół'), icon: '↕' }
   ];
 
   return (
@@ -2392,7 +2392,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
               {/* Przesunięcie X */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[10px] text-gray-400">
-                  <span>Przesunięcie X</span>
+                  <span>{tr('Przesunięcie X')}</span>
                   <span className="font-medium text-gray-600 dark:text-gray-300">{shadow.offsetX}px</span>
                 </div>
                 <input
@@ -2409,7 +2409,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
               {/* Przesunięcie Y */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[10px] text-gray-400">
-                  <span>Przesunięcie Y</span>
+                  <span>{tr('Przesunięcie Y')}</span>
                   <span className="font-medium text-gray-600 dark:text-gray-300">{shadow.offsetY}px</span>
                 </div>
                 <input
@@ -2487,7 +2487,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
               onChange={(e) => { handleChange('inset', e.target.checked); onBlur?.(); }}
               className="w-4 h-4 rounded text-accent-primary-light focus:ring-accent-primary-light border-gray-300 dark:border-gray-600"
             />
-            <span className="text-[10px] text-gray-500 dark:text-gray-400">Cień wewnętrzny (inset)</span>
+            <span className="text-[10px] text-gray-500 dark:text-gray-400">{tr('Cień wewnętrzny (inset)')}</span>
           </label>
         </>
       )}
@@ -2643,7 +2643,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
             onChange={(e) => { setLocalValue(e.target.checked); onChange(e.target.checked); onBlur?.(); }}
             className="w-4 h-4 accent-accent-primary-light rounded"
           />
-          <span className="text-sm text-gray-600 dark:text-gray-400">Włączone</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">{tr('Włączone')}</span>
         </label>
       )}
 
@@ -2661,7 +2661,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
             <button
               onClick={handleImageUpload}
               className="px-3 py-2 bg-accent-primary-light text-white rounded-lg hover:bg-accent-primary transition-colors"
-              title="Prześlij obraz"
+              title={tr('Prześlij obraz')}
             >
               <Upload size={16} />
             </button>

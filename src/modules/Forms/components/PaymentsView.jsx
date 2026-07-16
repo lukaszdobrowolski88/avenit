@@ -575,7 +575,7 @@ export default function PaymentsView({ forms }) {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.paidCount}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Opłaconych</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Opłaconych')}</p>
             </div>
           </div>
         </div>
@@ -587,7 +587,7 @@ export default function PaymentsView({ forms }) {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pendingCount}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Oczekujących</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Oczekujących')}</p>
             </div>
           </div>
         </div>
@@ -615,7 +615,7 @@ export default function PaymentsView({ forms }) {
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatPrice(stats.pendingAmount, 'PLN')}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Do zapłaty</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Do zapłaty')}</p>
             </div>
           </div>
         </div>
@@ -629,7 +629,7 @@ export default function PaymentsView({ forms }) {
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatPrice(stats.thisMonthPaid, 'PLN')}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Ten miesiąc</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Ten miesiąc')}</p>
             </div>
           </div>
         </div>
@@ -670,7 +670,7 @@ export default function PaymentsView({ forms }) {
             <button
               onClick={fetchAllPayments}
               className="p-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-              title="Odśwież"
+              title={tr('Odśwież')}
             >
               <RefreshCw size={18} />
             </button>
@@ -721,8 +721,8 @@ export default function PaymentsView({ forms }) {
                 className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
               >
                 <option value="all">{tr('Wszystkie')}</option>
-                <option value="paid">Opłacone</option>
-                <option value="pending">Oczekujące</option>
+                <option value="paid">{tr('Opłacone')}</option>
+                <option value="pending">{tr('Oczekujące')}</option>
               </select>
             </div>
 
@@ -904,7 +904,7 @@ export default function PaymentsView({ forms }) {
                           <button
                             onClick={() => markAsPaid(payment.id)}
                             className="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                            title="Oznacz jako opłacone"
+                            title={tr('Oznacz jako opłacone')}
                           >
                             <Check size={18} />
                           </button>
@@ -912,7 +912,7 @@ export default function PaymentsView({ forms }) {
                           <button
                             onClick={() => markAsPending(payment.id)}
                             className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
-                            title="Cofnij płatność"
+                            title={tr('Cofnij płatność')}
                           >
                             <Clock size={18} />
                           </button>
@@ -1047,7 +1047,7 @@ export default function PaymentsView({ forms }) {
                       setSelectedPayment(prev => ({ ...prev, notes: e.target.value }));
                     }}
                     onBlur={(e) => updatePayment(selectedPayment.id, { notes: e.target.value })}
-                    placeholder="Dodatkowe informacje o płatności..."
+                    placeholder={tr('Dodatkowe informacje o płatności...')}
                     rows={3}
                     className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white resize-none"
                   />
@@ -1130,7 +1130,7 @@ export default function PaymentsView({ forms }) {
                         </button>
                       ))}
                       {unpaidParticipants.filter(p => !unpaidSearch || p.name.toLowerCase().includes(unpaidSearch.toLowerCase()) || p.email?.toLowerCase().includes(unpaidSearch.toLowerCase())).length === 0 && (
-                        <p className="text-center text-sm text-gray-400 py-8">Brak nieopłaconych uczestników</p>
+                        <p className="text-center text-sm text-gray-400 py-8">{tr('Brak nieopłaconych uczestników')}</p>
                       )}
                     </div>
                   )}

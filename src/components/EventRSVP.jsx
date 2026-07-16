@@ -138,7 +138,7 @@ export default function EventRSVP({ eventId, maxParticipants }) {
           <Loader2 size={16} className="animate-spin" /> Ładowanie…
         </div>
       ) : !me ? (
-        <p className="text-sm text-gray-400 py-1">Zaloguj się, aby się zapisać.</p>
+        <p className="text-sm text-gray-400 py-1">{tr('Zaloguj się, aby się zapisać.')}</p>
       ) : myReg ? (
         <div className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
@@ -185,7 +185,7 @@ export default function EventRSVP({ eventId, maxParticipants }) {
               {r.full_name || r.user_email?.split('@')[0]}
               {r.guests_count ? <span className="text-accent-primary font-bold">+{r.guests_count}</span> : null}
               {canManage && (
-                <button onClick={() => removeReg(r.id)} disabled={busy} className="ml-0.5 text-gray-400 hover:text-red-500 transition" title="Usuń z listy">
+                <button onClick={() => removeReg(r.id)} disabled={busy} className="ml-0.5 text-gray-400 hover:text-red-500 transition" title={tr('Usuń z listy')}>
                   <X size={12} />
                 </button>
               )}
@@ -196,7 +196,7 @@ export default function EventRSVP({ eventId, maxParticipants }) {
 
       {canManage && (
         <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">Dopisz ręcznie</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">{tr('Dopisz ręcznie')}</div>
           <div className="flex items-center gap-2 flex-wrap">
             <input
               value={addName}

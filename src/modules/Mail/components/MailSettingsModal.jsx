@@ -7,7 +7,7 @@ import {
 import { tr } from '../../../i18n';
 
 const TABS = [
-  { id: 'accounts', label: 'Konta zewnętrzne', icon: Server },
+  { id: 'accounts', label: tr('Konta zewnętrzne'), icon: Server },
   { id: 'filters', label: tr('Filtry'), icon: Filter }
 ];
 
@@ -222,7 +222,7 @@ export default function MailSettingsModal({
                 <div className="flex items-start gap-3">
                   <AlertCircle size={20} className="text-blue-500 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-blue-700 dark:text-blue-300">
-                    <p className="font-medium mb-1">Informacja o kontach zewnętrznych</p>
+                    <p className="font-medium mb-1">{tr('Informacja o kontach zewnętrznych')}</p>
                     <p>
                       Możesz połączyć zewnętrzne konta email (Gmail, Outlook, inne) aby odbierać
                       i wysyłać wiadomości bezpośrednio z tej aplikacji. Wymaga to podania
@@ -294,7 +294,7 @@ export default function MailSettingsModal({
                         <button
                           onClick={() => handleSyncMail(account)}
                           disabled={syncingAccount === account.id}
-                          title="Synchronizuj pocztę"
+                          title={tr('Synchronizuj pocztę')}
                           className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-50"
                         >
                           {syncingAccount === account.id ? (

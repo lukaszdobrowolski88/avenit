@@ -149,7 +149,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
             <Row icon={Calendar} label="Członek od">{member.status === 'Członek' ? fmtDate(member.membership_date) : null}</Row>
             <Row icon={FileText} label="Deklaracja członkowska">
               {member.membership_declaration_url && (
-                <a href={member.membership_declaration_url} target="_blank" rel="noopener noreferrer" className="text-accent-primary dark:text-accent-primary-light hover:underline">Otwórz dokument</a>
+                <a href={member.membership_declaration_url} target="_blank" rel="noopener noreferrer" className="text-accent-primary dark:text-accent-primary-light hover:underline">{tr('Otwórz dokument')}</a>
               )}
             </Row>
           </div>

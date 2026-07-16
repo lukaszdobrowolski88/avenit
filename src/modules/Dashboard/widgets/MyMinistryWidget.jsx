@@ -6,6 +6,7 @@ import { useScheduleAssignments } from '../../../hooks/useScheduleAssignments';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { tr } from '../../../i18n';
 
 const ROLE_ICONS = {
   'Zespół': Music,
@@ -124,7 +125,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
               <Music size={24} className="text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Program nabożeństwa</h2>
+              <h2 className="text-xl font-bold text-white">{tr('Program nabożeństwa')}</h2>
               {program && (
                 <p className="text-white/80 text-sm">
                   {new Date(program.date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -603,7 +604,7 @@ export default function MyMinistryWidget({ upcomingMinistry, pastMinistry, userE
           }`}
         >
           <Clock size={14} />
-          <span className="hidden sm:inline">Nadchodzące</span>
+          <span className="hidden sm:inline">{tr('Nadchodzące')}</span>
           <span className="sm:hidden">Nowe</span>
           {upcomingMinistry?.length > 0 && (
             <span className="px-1.5 py-0.5 text-xs rounded-full bg-accent-primary-lighter dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">

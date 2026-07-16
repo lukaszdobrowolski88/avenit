@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Copy, Check, Code, ExternalLink, Monitor, Smartphone, Tablet, X } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose }) {
   const [copied, setCopied] = useState(null);
@@ -183,9 +184,9 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                   </div>
                   <div className="flex gap-2 mt-2">
                     {[
-                      { label: 'Mały', width: '400px', height: '400' },
-                      { label: 'Średni', width: '100%', height: '600' },
-                      { label: 'Duży', width: '100%', height: '800' }
+                      { label: tr('Mały'), width: '400px', height: '400' },
+                      { label: tr('Średni'), width: '100%', height: '600' },
+                      { label: tr('Duży'), width: '100%', height: '800' }
                     ].map((preset) => (
                       <button
                         key={preset.label}
@@ -312,7 +313,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                   <iframe
                     src={formUrl}
                     className="w-full h-full border-0"
-                    title="Podgląd formularza"
+                    title={tr('Podgląd formularza')}
                   />
                 </div>
               </div>
@@ -326,8 +327,8 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
                   <ol className="text-sm text-blue-600 dark:text-blue-300 space-y-1 list-decimal list-inside">
                     <li>Pobierz i zainstaluj plugin Avenit Forms</li>
                     <li>Aktywuj plugin w panelu WordPress</li>
-                    <li>Wklej shortcode na dowolnej stronie lub w poście</li>
-                    <li>Formularz pojawi się automatycznie</li>
+                    <li>{tr('Wklej shortcode na dowolnej stronie lub w poście')}</li>
+                    <li>{tr('Formularz pojawi się automatycznie')}</li>
                   </ol>
                 </div>
               )}

@@ -1223,7 +1223,7 @@ export default function MlodziezowkaModule() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Tytuł wydarzenia')}</label>
-                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="Spotkanie młodzieżowe" value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
+                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Spotkanie młodzieżowe')} value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
               </div>
 
               <div>

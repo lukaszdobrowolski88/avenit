@@ -15,6 +15,7 @@ import {
   Type, Palette, Sparkles
 } from 'lucide-react';
 import { EMAIL_VARIABLES } from '../utils/emailVariables';
+import { tr } from '../../../i18n';
 
 export default function BlockTextEditor({
   content,
@@ -127,7 +128,7 @@ export default function BlockTextEditor({
             <ToolbarButton
               onClick={() => editor.chain().focus().redo().run()}
               disabled={!editor.can().redo()}
-              title="Ponów"
+              title={tr('Ponów')}
             >
               <Redo size={15} />
             </ToolbarButton>
@@ -152,14 +153,14 @@ export default function BlockTextEditor({
             <ToolbarButton
               onClick={() => editor.chain().focus().toggleUnderline().run()}
               isActive={editor.isActive('underline')}
-              title="Podkreślenie (Ctrl+U)"
+              title={tr('Podkreślenie (Ctrl+U)')}
             >
               <UnderlineIcon size={15} />
             </ToolbarButton>
             <ToolbarButton
               onClick={() => editor.chain().focus().toggleStrike().run()}
               isActive={editor.isActive('strike')}
-              title="Przekreślenie"
+              title={tr('Przekreślenie')}
             >
               <Strikethrough size={15} />
             </ToolbarButton>
@@ -171,21 +172,21 @@ export default function BlockTextEditor({
               <ToolbarButton
                 onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
                 isActive={editor.isActive('heading', { level: 1 })}
-                title="Nagłówek 1"
+                title={tr('Nagłówek 1')}
               >
                 <Heading1 size={15} />
               </ToolbarButton>
               <ToolbarButton
                 onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
                 isActive={editor.isActive('heading', { level: 2 })}
-                title="Nagłówek 2"
+                title={tr('Nagłówek 2')}
               >
                 <Heading2 size={15} />
               </ToolbarButton>
               <ToolbarButton
                 onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
                 isActive={editor.isActive('heading', { level: 3 })}
-                title="Nagłówek 3"
+                title={tr('Nagłówek 3')}
               >
                 <Heading3 size={15} />
               </ToolbarButton>
@@ -198,21 +199,21 @@ export default function BlockTextEditor({
               <ToolbarButton
                 onClick={() => editor.chain().focus().setTextAlign('left').run()}
                 isActive={editor.isActive({ textAlign: 'left' })}
-                title="Wyrównaj do lewej"
+                title={tr('Wyrównaj do lewej')}
               >
                 <AlignLeft size={15} />
               </ToolbarButton>
               <ToolbarButton
                 onClick={() => editor.chain().focus().setTextAlign('center').run()}
                 isActive={editor.isActive({ textAlign: 'center' })}
-                title="Wyśrodkuj"
+                title={tr('Wyśrodkuj')}
               >
                 <AlignCenter size={15} />
               </ToolbarButton>
               <ToolbarButton
                 onClick={() => editor.chain().focus().setTextAlign('right').run()}
                 isActive={editor.isActive({ textAlign: 'right' })}
-                title="Wyrównaj do prawej"
+                title={tr('Wyrównaj do prawej')}
               >
                 <AlignRight size={15} />
               </ToolbarButton>
@@ -275,7 +276,7 @@ export default function BlockTextEditor({
             {editor.isActive('link') && (
               <ToolbarButton
                 onClick={() => editor.chain().focus().unsetLink().run()}
-                title="Usuń link"
+                title={tr('Usuń link')}
               >
                 <Unlink size={15} />
               </ToolbarButton>

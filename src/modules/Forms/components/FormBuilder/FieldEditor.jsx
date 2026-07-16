@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { FIELD_TYPES } from '../../utils/fieldTypes';
+import { tr } from '../../../../i18n';
 
 export default function FieldEditor({ field, onUpdate }) {
   const [newOption, setNewOption] = useState('');
@@ -92,7 +93,7 @@ export default function FieldEditor({ field, onUpdate }) {
             value={field.label || ''}
             onChange={(e) => handleChange('label', e.target.value)}
             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
-            placeholder="Np. Imię i nazwisko"
+            placeholder={tr('Np. Imię i nazwisko')}
           />
         </div>
 
@@ -106,7 +107,7 @@ export default function FieldEditor({ field, onUpdate }) {
               value={field.placeholder || ''}
               onChange={(e) => handleChange('placeholder', e.target.value)}
               className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
-              placeholder="Np. Wpisz swoje imię..."
+              placeholder={tr('Np. Wpisz swoje imię...')}
             />
           </div>
         )}
@@ -120,7 +121,7 @@ export default function FieldEditor({ field, onUpdate }) {
             value={field.description || ''}
             onChange={(e) => handleChange('description', e.target.value)}
             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
-            placeholder="Dodatkowe informacje dla użytkownika"
+            placeholder={tr('Dodatkowe informacje dla użytkownika')}
           />
         </div>
 
@@ -177,7 +178,7 @@ export default function FieldEditor({ field, onUpdate }) {
               value={newOption}
               onChange={(e) => setNewOption(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddOption()}
-              placeholder="Dodaj opcję..."
+              placeholder={tr('Dodaj opcję...')}
               className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
             />
             <button
@@ -513,8 +514,8 @@ export default function FieldEditor({ field, onUpdate }) {
               })}
               className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 dark:text-white"
             >
-              <option value="fixed">Stała cena</option>
-              <option value="per_person">Cena za osobę</option>
+              <option value="fixed">{tr('Stała cena')}</option>
+              <option value="per_person">{tr('Cena za osobę')}</option>
               <option value="tiered">Cena progowa (rabaty)</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">
@@ -790,7 +791,7 @@ export default function FieldEditor({ field, onUpdate }) {
                   })}
                   rows={2}
                   className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white resize-none"
-                  placeholder="Miejsca podstawowe zostały wyczerpane. Możesz zapisać się na listę rezerwową."
+                  placeholder={tr('Miejsca podstawowe zostały wyczerpane. Możesz zapisać się na listę rezerwową.')}
                 />
               </div>
             </>

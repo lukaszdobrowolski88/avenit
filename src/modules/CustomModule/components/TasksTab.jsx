@@ -671,7 +671,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-gray-400">Brak zadań</td>
+                  <td colSpan={6} className="p-8 text-center text-gray-400">{tr('Brak zadań')}</td>
                 </tr>
               )}
             </tbody>

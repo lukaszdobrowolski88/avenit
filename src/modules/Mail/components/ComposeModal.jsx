@@ -318,7 +318,7 @@ export default function ComposeModal({
                   onChange={(e) => setCcInput(e.target.value)}
                   onKeyDown={(e) => handleEmailKeyDown(e, 'cc', ccInput)}
                   onBlur={() => ccInput && addEmail('cc', ccInput)}
-                  placeholder="Dodaj odbiorców CC..."
+                  placeholder={tr('Dodaj odbiorców CC...')}
                   className="flex-1 min-w-[200px] bg-transparent text-sm outline-none text-gray-900 dark:text-white placeholder-gray-400"
                 />
               </div>
@@ -348,7 +348,7 @@ export default function ComposeModal({
                   onChange={(e) => setBccInput(e.target.value)}
                   onKeyDown={(e) => handleEmailKeyDown(e, 'bcc', bccInput)}
                   onBlur={() => bccInput && addEmail('bcc', bccInput)}
-                  placeholder="Dodaj odbiorców BCC..."
+                  placeholder={tr('Dodaj odbiorców BCC...')}
                   className="flex-1 min-w-[200px] bg-transparent text-sm outline-none text-gray-900 dark:text-white placeholder-gray-400"
                 />
               </div>
@@ -365,7 +365,7 @@ export default function ComposeModal({
               type="text"
               value={draft.subject || ''}
               onChange={(e) => onUpdateDraft('subject', e.target.value)}
-              placeholder="Wpisz temat wiadomości..."
+              placeholder={tr('Wpisz temat wiadomości...')}
               className="flex-1 bg-transparent text-sm outline-none text-gray-900 dark:text-white font-medium placeholder-gray-400"
             />
           </div>
@@ -427,14 +427,14 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('underline')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Podkreślenie (Ctrl+U)"
+            title={tr('Podkreślenie (Ctrl+U)')}
           >
             <Underline size={16} />
           </button>
           <button
             onClick={() => execCommand('strikeThrough')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Przekreślenie"
+            title={tr('Przekreślenie')}
           >
             <Strikethrough size={16} />
           </button>
@@ -445,21 +445,21 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('formatBlock', 'h1')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Nagłówek 1"
+            title={tr('Nagłówek 1')}
           >
             <Heading1 size={16} />
           </button>
           <button
             onClick={() => execCommand('formatBlock', 'h2')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Nagłówek 2"
+            title={tr('Nagłówek 2')}
           >
             <Heading2 size={16} />
           </button>
           <button
             onClick={() => execCommand('formatBlock', 'h3')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Nagłówek 3"
+            title={tr('Nagłówek 3')}
           >
             <Heading3 size={16} />
           </button>
@@ -495,21 +495,21 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('justifyLeft')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Wyrównaj do lewej"
+            title={tr('Wyrównaj do lewej')}
           >
             <AlignLeft size={16} />
           </button>
           <button
             onClick={() => execCommand('justifyCenter')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Wyrównaj do środka"
+            title={tr('Wyrównaj do środka')}
           >
             <AlignCenter size={16} />
           </button>
           <button
             onClick={() => execCommand('justifyRight')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Wyrównaj do prawej"
+            title={tr('Wyrównaj do prawej')}
           >
             <AlignRight size={16} />
           </button>
@@ -595,7 +595,7 @@ export default function ComposeModal({
           <button
             onClick={() => execCommand('redo')}
             className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            title="Ponów (Ctrl+Y)"
+            title={tr('Ponów (Ctrl+Y)')}
           >
             <Redo size={16} />
           </button>
@@ -610,7 +610,7 @@ export default function ComposeModal({
               onInput={handleEditorInput}
               className="w-full h-full p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-base leading-relaxed outline-none overflow-y-auto prose prose-sm dark:prose-invert max-w-none"
               style={{ minHeight: '200px' }}
-              data-placeholder="Napisz swoją wiadomość..."
+              data-placeholder={tr('Napisz swoją wiadomość...')}
               suppressContentEditableWarning
             />
           )}
@@ -621,7 +621,7 @@ export default function ComposeModal({
                 {draft.body_html ? (
                   <div dangerouslySetInnerHTML={{ __html: draft.body_html }} />
                 ) : (
-                  <p className="text-gray-400 italic">Brak treści do podglądu</p>
+                  <p className="text-gray-400 italic">{tr('Brak treści do podglądu')}</p>
                 )}
               </div>
             </div>
@@ -681,7 +681,7 @@ export default function ComposeModal({
             ) : (
               <Send size={18} />
             )}
-            <span>Wyślij wiadomość</span>
+            <span>{tr('Wyślij wiadomość')}</span>
           </button>
 
           <input
@@ -694,7 +694,7 @@ export default function ComposeModal({
           <button
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors"
-            title="Dodaj załącznik"
+            title={tr('Dodaj załącznik')}
           >
             <Paperclip size={18} />
             <span className="hidden sm:inline text-sm font-medium">{tr('Załącznik')}</span>
@@ -766,7 +766,7 @@ export default function ComposeModal({
               }
             }}
             className="p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
-            title="Usuń wiadomość"
+            title={tr('Usuń wiadomość')}
           >
             <Trash2 size={18} />
           </button>

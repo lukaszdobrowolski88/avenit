@@ -14,7 +14,7 @@ import SmsPreview from './SmsPreview';
 import { tr } from '../../../i18n';
 
 const SECTIONS = [
-  { id: 'compose', label: 'Treść' },
+  { id: 'compose', label: tr('Treść') },
   { id: 'recipients', label: 'Odbiorcy' },
   { id: 'schedule', label: 'Harmonogram' },
 ];
@@ -245,8 +245,8 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       {showTestSend && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Wyślij test</h3>
-            <p className="text-sm text-gray-500 mb-4">SMS pójdzie tylko na podany numer. Naliczy się 1 SMS w SMSAPI.</p>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{tr('Wyślij test')}</h3>
+            <p className="text-sm text-gray-500 mb-4">{tr('SMS pójdzie tylko na podany numer. Naliczy się 1 SMS w SMSAPI.')}</p>
             <input
               type="tel"
               value={testPhone}
@@ -332,7 +332,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                     rows={5}
                     value={form.body}
                     onChange={e => updateForm({ body: e.target.value })}
-                    placeholder="Treść SMS-a..."
+                    placeholder={tr('Treść SMS-a...')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none"
                   />
                   {analysis.parts > 3 && (

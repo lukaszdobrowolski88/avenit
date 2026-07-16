@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDays, MapPin, ChevronRight, CalendarCheck } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { tr } from '../../../i18n';
 
 // Kolory znaczników wg kategorii wydarzenia (spójne z modułem Kalendarz).
 const CATEGORY_STYLES = {
@@ -68,7 +69,7 @@ export default function UpcomingEventsWidget() {
         <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
           <CalendarCheck size={24} className="text-indigo-500" />
         </div>
-        <p className="text-gray-600 dark:text-gray-300 font-medium text-sm">Brak nadchodzących wydarzeń</p>
+        <p className="text-gray-600 dark:text-gray-300 font-medium text-sm">{tr('Brak nadchodzących wydarzeń')}</p>
         <button
           onClick={() => navigate('/calendar')}
           className="mt-3 text-sm text-accent-primary dark:text-accent-primary-light font-medium hover:underline"

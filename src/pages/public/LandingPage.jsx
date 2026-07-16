@@ -16,6 +16,7 @@ import {
   MapPin,
   Star
 } from 'lucide-react';
+import { tr } from '../../i18n';
 
 export default function LandingPage() {
   const [plans, setPlans] = useState([]);
@@ -387,7 +388,7 @@ export default function LandingPage() {
               <h4 className="font-semibold text-white mb-4">Firma</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li><a href="#" className="hover:text-white transition">O nas</a></li>
-                <li><a href="#" className="hover:text-white transition">Polityka prywatności</a></li>
+                <li><a href="#" className="hover:text-white transition">{tr('Polityka prywatności')}</a></li>
                 <li><a href="#" className="hover:text-white transition">Regulamin</a></li>
               </ul>
             </div>

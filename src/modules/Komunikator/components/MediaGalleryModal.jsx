@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Image, FileText, Download, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 import { formatMessageDate, formatFileSize, getFileIcon } from '../utils/messageHelpers';
+import { tr } from '../../../i18n';
 
 export default function MediaGalleryModal({
   isOpen,
@@ -86,7 +87,7 @@ export default function MediaGalleryModal({
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center">
                   <div className="w-6 h-6 border-2 border-accent-primary border-t-transparent rounded-full animate-spin" />
                 </div>
-                <p className="text-sm text-gray-500">Ładowanie mediów...</p>
+                <p className="text-sm text-gray-500">{tr('Ładowanie mediów...')}</p>
               </div>
             ) : activeTab === 'images' ? (
               images.length === 0 ? (
@@ -94,8 +95,8 @@ export default function MediaGalleryModal({
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center mb-4">
                     <Image size={28} className="text-accent-primary-light" />
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Brak zdjęć</p>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Zdjęcia udostępnione w tej rozmowie pojawią się tutaj</p>
+                  <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">{tr('Brak zdjęć')}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{tr('Zdjęcia udostępnione w tej rozmowie pojawią się tutaj')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-3">
@@ -125,8 +126,8 @@ export default function MediaGalleryModal({
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 flex items-center justify-center mb-4">
                     <FileText size={28} className="text-accent-primary-light" />
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Brak plików</p>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Pliki udostępnione w tej rozmowie pojawią się tutaj</p>
+                  <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">{tr('Brak plików')}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{tr('Pliki udostępnione w tej rozmowie pojawią się tutaj')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">

@@ -127,14 +127,14 @@ function TemplateEditor({ template, onClose, onSave }) {
             value={form.default_sender}
             maxLength={SENDER_MAX}
             onChange={e => setForm(f => ({ ...f, default_sender: e.target.value }))}
-            placeholder="Domyślny nadawca (opcjonalnie)"
+            placeholder={tr('Domyślny nadawca (opcjonalnie)')}
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-mono"
           />
           <textarea
             value={form.body}
             maxLength={BODY_MAX}
             onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
-            placeholder="Treść SMS-a..."
+            placeholder={tr('Treść SMS-a...')}
             rows={4}
             className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none"
           />

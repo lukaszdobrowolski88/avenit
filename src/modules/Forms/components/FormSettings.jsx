@@ -229,7 +229,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   type="text"
                   value={localSettings.submitButtonText || ''}
                   onChange={(e) => handleChange('submitButtonText', e.target.value)}
-                  placeholder="Wyślij"
+                  placeholder={tr('Wyślij')}
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                 />
               </div>
@@ -241,7 +241,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 <textarea
                   value={localSettings.successMessage || ''}
                   onChange={(e) => handleChange('successMessage', e.target.value)}
-                  placeholder="Dziękujemy za wypełnienie formularza!"
+                  placeholder={tr('Dziękujemy za wypełnienie formularza!')}
                   rows={3}
                   className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light resize-none"
                 />
@@ -453,7 +453,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     ) : (
                       <>
                         <Upload size={24} />
-                        <span className="text-sm">Dodaj obrazek nagłówka</span>
+                        <span className="text-sm">{tr('Dodaj obrazek nagłówka')}</span>
                       </>
                     )}
                   </button>
@@ -510,7 +510,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     ) : (
                       <>
                         <Upload size={24} />
-                        <span className="text-sm">Dodaj obrazek tła</span>
+                        <span className="text-sm">{tr('Dodaj obrazek tła')}</span>
                       </>
                     )}
                   </button>
@@ -646,9 +646,9 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                   <div className="flex flex-wrap gap-2">
                     {[
                       { from: '#3b82f6', to: '#8b5cf6', label: 'Niebiesko-fioletowy' },
-                      { from: '#ec4899', to: '#f97316', label: 'Różowo-pomarańczowy' },
+                      { from: '#ec4899', to: '#f97316', label: tr('Różowo-pomarańczowy') },
                       { from: '#10b981', to: '#3b82f6', label: 'Zielono-niebieski' },
-                      { from: '#f59e0b', to: '#ef4444', label: 'Złoto-czerwony' },
+                      { from: '#f59e0b', to: '#ef4444', label: tr('Złoto-czerwony') },
                       { from: '#1e293b', to: '#334155', label: 'Ciemny' },
                       { from: '#6366f1', to: '#ec4899', label: 'Indigo-pink' }
                     ].map((preset, i) => (
@@ -684,7 +684,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       {uploadingImage === 'headerBg' ? (
                         <div className="w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
                       ) : (
-                        <><Upload size={20} /><span className="text-xs">Dodaj grafikę tła</span></>
+                        <><Upload size={20} /><span className="text-xs">{tr('Dodaj grafikę tła')}</span></>
                       )}
                     </button>
                   )}
@@ -722,7 +722,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               {/* Rozmiar tytułu */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rozmiar tytułu</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('Rozmiar tytułu')}</label>
                 <div className="flex gap-2">
                   {[
                     { id: 'lg', label: 'S' }, { id: 'xl', label: 'M' },
@@ -740,9 +740,9 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               {/* Wyrównanie */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Wyrównanie</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('Wyrównanie')}</label>
                 <div className="flex gap-2">
-                  {[{ id: 'left', label: 'Do lewej' }, { id: 'center', label: 'Na środku' }].map((a) => (
+                  {[{ id: 'left', label: 'Do lewej' }, { id: 'center', label: tr('Na środku') }].map((a) => (
                     <button key={a.id}
                       onClick={() => handleHeaderChange('titleAlign', a.id)}
                       className={`flex-1 py-2 rounded-xl text-sm border transition-colors ${
@@ -770,9 +770,9 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               {/* Zaokrąglenie */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Zaokrąglenie</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('Zaokrąglenie')}</label>
                 <div className="flex gap-2">
-                  {[{ id: 'none', label: tr('Brak') }, { id: 'md', label: 'Małe' }, { id: 'xl', label: 'Średnie' }, { id: '2xl', label: 'Duże' }, { id: '3xl', label: 'Bardzo duże' }].map((r) => (
+                  {[{ id: 'none', label: tr('Brak') }, { id: 'md', label: tr('Małe') }, { id: 'xl', label: tr('Średnie') }, { id: '2xl', label: tr('Duże') }, { id: '3xl', label: tr('Bardzo duże') }].map((r) => (
                     <button key={r.id}
                       onClick={() => handleHeaderChange('borderRadius', r.id)}
                       className={`flex-1 py-2 rounded-xl text-xs border transition-colors ${
@@ -785,9 +785,9 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
 
               {/* Cień */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cień</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('Cień')}</label>
                 <div className="flex gap-2">
-                  {[{ id: 'none', label: tr('Brak') }, { id: 'sm', label: 'Mały' }, { id: 'md', label: 'Średni' }, { id: 'lg', label: 'Duży' }].map((s) => (
+                  {[{ id: 'none', label: tr('Brak') }, { id: 'sm', label: tr('Mały') }, { id: 'md', label: tr('Średni') }, { id: 'lg', label: tr('Duży') }].map((s) => (
                     <button key={s.id}
                       onClick={() => handleHeaderChange('shadow', s.id)}
                       className={`flex-1 py-2 rounded-xl text-xs border transition-colors ${
@@ -808,7 +808,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 </label>
               </div>
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <span className="text-sm text-gray-700 dark:text-gray-300">Linia oddzielająca info</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300">{tr('Linia oddzielająca info')}</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input type="checkbox" checked={localSettings.header?.showDivider !== false}
                     onChange={(e) => handleHeaderChange('showDivider', e.target.checked)} className="sr-only peer" />
@@ -817,7 +817,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               </div>
               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <div>
-                  <span className="text-sm text-gray-700 dark:text-gray-300">Pokaż info o wydarzeniu</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{tr('Pokaż info o wydarzeniu')}</span>
                   <p className="text-xs text-gray-400">Cena, miejsca, data, lokalizacja</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
@@ -844,8 +844,8 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    { id: 'sm', label: 'Wąski', desc: '480px' },
-                    { id: 'md', label: 'Średni', desc: '576px' },
+                    { id: 'sm', label: tr('Wąski'), desc: '480px' },
+                    { id: 'md', label: tr('Średni'), desc: '576px' },
                     { id: 'lg', label: 'Szeroki', desc: '672px' },
                     { id: 'xl', label: 'Bardzo szeroki', desc: '768px' },
                     { id: '2xl', label: 'Maksymalny', desc: '896px' }
@@ -1017,11 +1017,11 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Presety</label>
                     <div className="flex flex-wrap gap-2">
                       {[
-                        { from: '#fdf2f8', via: '#ffffff', to: '#fff7ed', label: 'Różowo-pomarańczowy' },
+                        { from: '#fdf2f8', via: '#ffffff', to: '#fff7ed', label: tr('Różowo-pomarańczowy') },
                         { from: '#eff6ff', via: '#ffffff', to: '#f0fdf4', label: 'Niebiesko-zielony' },
                         { from: '#faf5ff', via: '#ffffff', to: '#fef2f2', label: 'Fioletowo-czerwony' },
                         { from: '#f0f9ff', via: '#e0f2fe', to: '#f0f9ff', label: 'Niebieski' },
-                        { from: '#fefce8', via: '#ffffff', to: '#fefce8', label: 'Ciepły żółty' },
+                        { from: '#fefce8', via: '#ffffff', to: '#fefce8', label: tr('Ciepły żółty') },
                         { from: '#f8fafc', via: '#f1f5f9', to: '#f8fafc', label: 'Szary' }
                       ].map((preset, i) => (
                         <button
@@ -1208,7 +1208,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       onChange={(e) => handlePricingChange('currency', e.target.value)}
                       className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
                     >
-                      <option value="PLN">PLN (zł)</option>
+                      <option value="PLN">{tr('PLN (zł)')}</option>
                       <option value="EUR">EUR (€)</option>
                       <option value="USD">USD ($)</option>
                     </select>
@@ -1306,7 +1306,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               ...(localSettings.pricing?.paypal || {}),
                               clientId: e.target.value
                             })}
-                            placeholder="Twój PayPal Client ID"
+                            placeholder={tr('Twój PayPal Client ID')}
                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                           />
                           <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
@@ -1356,7 +1356,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               ...(localSettings.pricing?.paypal || {}),
                               description: e.target.value
                             })}
-                            placeholder="np. Opłata za wydarzenie"
+                            placeholder={tr('np. Opłata za wydarzenie')}
                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                           />
                         </div>
@@ -1385,7 +1385,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               ...(localSettings.pricing?.przelewy24 || {}),
                               merchantId: e.target.value
                             })}
-                            placeholder="Twój Merchant ID"
+                            placeholder={tr('Twój Merchant ID')}
                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-red-200 dark:border-red-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                           />
                         </div>
@@ -1467,7 +1467,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               ...(localSettings.pricing?.przelewy24 || {}),
                               description: e.target.value
                             })}
-                            placeholder="np. Opłata za wydarzenie"
+                            placeholder={tr('np. Opłata za wydarzenie')}
                             className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-red-200 dark:border-red-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                           />
                         </div>
@@ -1482,7 +1482,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     <textarea
                       value={localSettings.pricing?.paymentInstructions || ''}
                       onChange={(e) => handlePricingChange('paymentInstructions', e.target.value)}
-                      placeholder="Dodatkowe informacje dotyczące płatności..."
+                      placeholder={tr('Dodatkowe informacje dotyczące płatności...')}
                       rows={3}
                       className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light resize-none"
                     />
@@ -2089,7 +2089,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     value={localSettings.emails?.[editingTemplate.type]?.customHtml || editingTemplate.template.html_content}
                     onChange={(e) => handleEmailTypeChange(editingTemplate.type, 'customHtml', e.target.value)}
                     className="w-full h-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg font-mono text-sm text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
-                    placeholder="Wprowadź kod HTML szablonu..."
+                    placeholder={tr('Wprowadź kod HTML szablonu...')}
                   />
                 </div>
               </div>

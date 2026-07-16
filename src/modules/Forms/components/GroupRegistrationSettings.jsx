@@ -1,4 +1,5 @@
 import { Users, GripVertical } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function GroupRegistrationSettings({ settings, fields, onChange }) {
   const groupReg = settings?.groupRegistration || {};
@@ -114,7 +115,7 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
               type="text"
               value={groupReg.participantLabel || 'Członek zespołu'}
               onChange={(e) => handleChange('participantLabel', e.target.value)}
-              placeholder="Członek zespołu"
+              placeholder={tr('Członek zespołu')}
               className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light"
             />
           </div>
@@ -165,7 +166,7 @@ export default function GroupRegistrationSettings({ settings, fields, onChange }
                         onChange={(e) => toggleFieldAssignment(field.id, e.target.value)}
                         className="text-xs px-2 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300"
                       >
-                        <option value="contact">Osoba zgłaszająca</option>
+                        <option value="contact">{tr('Osoba zgłaszająca')}</option>
                         <option value="participant">Per uczestnik</option>
                         <option value="both">Oba</option>
                         <option value="none">Nie przypisane</option>

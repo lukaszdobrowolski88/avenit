@@ -236,7 +236,7 @@ export default function MailSidebar({
           className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-semibold rounded-xl shadow-lg shadow-accent-primary-light/25 transition-all"
         >
           <Mail size={20} />
-          <span>Nowa wiadomość</span>
+          <span>{tr('Nowa wiadomość')}</span>
         </button>
       </div>
 
@@ -402,7 +402,7 @@ export default function MailSidebar({
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   <Edit2 size={14} />
-                  <span>Zmień nazwę</span>
+                  <span>{tr('Zmień nazwę')}</span>
                 </button>
                 <button
                   onClick={() => {

@@ -23,7 +23,7 @@ const CATEGORY_ICONS = {
 const EXTENDED_CATEGORIES = {
   ...TEMPLATE_CATEGORIES,
   welcome: { label: 'Powitalne', description: 'Szablony powitalne dla nowych członków' },
-  holiday: { label: 'Świąteczne', description: 'Szablony na święta i okazje specjalne' },
+  holiday: { label: tr('Świąteczne'), description: 'Szablony na święta i okazje specjalne' },
   invitation: { label: 'Zaproszenia', description: 'Zaproszenia na wydarzenia' },
   ministry: { label: tr('Służby'), description: 'Komunikacja służb kościelnych' },
   worship: { label: 'Uwielbienie', description: 'Materiały zespołu uwielbienia' },
@@ -143,7 +143,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Szukaj szablonów..."
+            placeholder={tr('Szukaj szablonów...')}
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 transition-all"
           />
           {searchQuery && (
@@ -218,7 +218,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
               <FileText className="w-7 h-7 text-white" />
             </div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Nowy szablon</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Stwórz własny szablon</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Stwórz własny szablon')}</p>
           </button>
         )}
 
@@ -256,7 +256,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                     <button
                       onClick={(e) => { e.stopPropagation(); onSelectTemplate(template.id); }}
                       className="p-2 bg-accent-primary-light rounded-lg shadow-lg hover:scale-110 transition-transform"
-                      title="Użyj szablonu"
+                      title={tr('Użyj szablonu')}
                     >
                       <Edit size={18} className="text-white" />
                     </button>
@@ -547,7 +547,7 @@ function TemplatePreviewModal({
                 </html>
               `}
               className="w-full h-full min-h-[500px] border-0"
-              title="Podgląd szablonu"
+              title={tr('Podgląd szablonu')}
             />
           </div>
         </div>

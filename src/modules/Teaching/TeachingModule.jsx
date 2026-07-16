@@ -193,11 +193,11 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
   };
 
   const columns = [
-    { key: 'speaker_id', label: 'Mówca', type: 'select', options: speakerOptions },
+    { key: 'speaker_id', label: tr('Mówca'), type: 'select', options: speakerOptions },
     { key: 'series_id', label: 'Seria', type: 'select', options: seriesOptions },
-    { key: 'title', label: 'Tytuł kazania', type: 'text' },
+    { key: 'title', label: tr('Tytuł kazania'), type: 'text' },
     { key: 'scripture', label: 'Fragment', type: 'text' },
-    { key: 'main_point', label: 'Główna myśl', type: 'text' },
+    { key: 'main_point', label: tr('Główna myśl'), type: 'text' },
     { key: 'notes', label: 'Notatki', type: 'text' },
   ];
 
@@ -446,7 +446,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
                   className="hidden"
                   onChange={handlePhotoUpload}
                 />
-                <span className="text-xs text-gray-400 mt-2">Kliknij aby dodać zdjęcie</span>
+                <span className="text-xs text-gray-400 mt-2">{tr('Kliknij aby dodać zdjęcie')}</span>
               </div>
 
               <div>
@@ -484,7 +484,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
                   onChange={(e) => setForm({ ...form, bio: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white resize-none"
-                  placeholder="Krótki opis mówcy..."
+                  placeholder={tr('Krótki opis mówcy...')}
                 />
               </div>
             </div>
@@ -753,8 +753,8 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
             ) : (
               <div className="text-center py-12 text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
                 <BookOpen size={40} className="mx-auto mb-3 opacity-50" />
-                <p>Brak kazań przypisanych do tej serii</p>
-                <p className="text-sm mt-1">Przypisz kazania w zakładce "Grafik"</p>
+                <p>{tr('Brak kazań przypisanych do tej serii')}</p>
+                <p className="text-sm mt-1">{tr('Przypisz kazania w zakładce "Grafik"')}</p>
               </div>
             )}
           </div>
@@ -899,7 +899,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white resize-none"
-                  placeholder="Krótki opis serii..."
+                  placeholder={tr('Krótki opis serii...')}
                 />
               </div>
 

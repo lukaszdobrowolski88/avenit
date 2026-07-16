@@ -16,7 +16,7 @@ import { tr } from '../../../i18n';
 
 const STEPS = [
   { id: 'basics', label: 'Podstawy', icon: FileText },
-  { id: 'content', label: 'Treść', icon: Edit3 },
+  { id: 'content', label: tr('Treść'), icon: Edit3 },
   { id: 'recipients', label: 'Odbiorcy', icon: Users },
   { id: 'summary', label: 'Podsumowanie', icon: CheckCircle }
 ];
@@ -354,7 +354,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
           <button
             onClick={() => setShowTestSend(true)}
             className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
-            title="Wyślij email testowy"
+            title={tr('Wyślij email testowy')}
           >
             <TestTube size={16} />
             <span className="hidden sm:inline">Test</span>
@@ -541,7 +541,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 <EmailEditor
                   content={formData.html_content}
                   onChange={(html) => setFormData(prev => ({ ...prev, html_content: html }))}
-                  placeholder="Napisz treść wiadomości..."
+                  placeholder={tr('Napisz treść wiadomości...')}
                 />
               </div>
             )}

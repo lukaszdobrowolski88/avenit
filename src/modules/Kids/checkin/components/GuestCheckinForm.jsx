@@ -161,7 +161,7 @@ export default function GuestCheckinForm({
             onChange={(e) => setSelectedLocation(e.target.value)}
             className={inputClasses(errors.location)}
           >
-            <option value="">Wybierz salę...</option>
+            <option value="">{tr('Wybierz salę...')}</option>
             {locations.map((loc) => (
               <option key={loc.id} value={loc.id}>
                 {loc.name}

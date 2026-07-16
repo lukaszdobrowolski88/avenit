@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Monitor, Smartphone, Send, Loader, Eye, Mail, User, Sparkles } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { personalizeHtml } from '../utils/emailVariables';
+import { tr } from '../../../i18n';
 
 export default function CampaignPreview({ subject, htmlContent, onClose }) {
   const [viewMode, setViewMode] = useState('desktop'); // 'desktop' | 'mobile'
@@ -156,7 +157,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
               <Mail size={14} className="text-gray-500 dark:text-gray-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Temat wiadomości</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{tr('Temat wiadomości')}</p>
               <p className="font-semibold text-gray-900 dark:text-white truncate">{subject}</p>
             </div>
           </div>
@@ -172,7 +173,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
               <div className="space-y-1.5 text-xs">
                 <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
                   <span className="text-gray-400 dark:text-gray-500 w-10">Od:</span>
-                  <span className="font-medium">Twój Kościół</span>
+                  <span className="font-medium">{tr('Twój Kościół')}</span>
                   <span className="text-gray-400">&lt;newsletter@kosciol.pl&gt;</span>
                 </p>
                 <p className="flex items-center gap-2 text-gray-600 dark:text-gray-300">

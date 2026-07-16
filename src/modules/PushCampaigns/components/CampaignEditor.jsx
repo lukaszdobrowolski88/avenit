@@ -14,7 +14,7 @@ import PushPreview from './PushPreview';
 import { tr } from '../../../i18n';
 
 const SECTIONS = [
-  { id: 'compose', label: 'Treść' },
+  { id: 'compose', label: tr('Treść') },
   { id: 'recipients', label: 'Odbiorcy' },
   { id: 'actions', label: tr('Akcje') },
   { id: 'schedule', label: 'Harmonogram' },
@@ -239,8 +239,8 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       {showTestSend && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Wyślij test</h3>
-            <p className="text-sm text-gray-500 mb-4">Push trafi tylko do podanego adresu. Sprawdź jak wygląda na urządzeniu.</p>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{tr('Wyślij test')}</h3>
+            <p className="text-sm text-gray-500 mb-4">{tr('Push trafi tylko do podanego adresu. Sprawdź jak wygląda na urządzeniu.')}</p>
             <input
               type="email"
               value={testEmail}
@@ -300,7 +300,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                     maxLength={TITLE_MAX}
                     value={form.title}
                     onChange={e => updateForm({ title: e.target.value })}
-                    placeholder="Tytuł powiadomienia"
+                    placeholder={tr('Tytuł powiadomienia')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium"
                   />
                 </Field>
@@ -311,7 +311,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
                     rows={3}
                     value={form.body}
                     onChange={e => updateForm({ body: e.target.value })}
-                    placeholder="Treść powiadomienia..."
+                    placeholder={tr('Treść powiadomienia...')}
                     className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm resize-none"
                   />
                 </Field>

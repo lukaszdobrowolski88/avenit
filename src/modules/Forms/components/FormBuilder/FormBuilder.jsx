@@ -362,7 +362,7 @@ export default function FormBuilder({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="text-2xl font-bold bg-transparent border-none focus:outline-none focus:ring-0 text-gray-900 dark:text-white w-full mb-2"
-                  placeholder="Tytuł formularza"
+                  placeholder={tr('Tytuł formularza')}
                 />
                 <textarea
                   value={description}

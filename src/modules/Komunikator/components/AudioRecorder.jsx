@@ -313,7 +313,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
             <Mic size={14} className="sm:w-4 sm:h-4 text-accent-primary-light flex-shrink-0" />
             <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
               <span className="hidden sm:inline">{tr('Wiadomość głosowa')}</span>
-              <span className="sm:hidden">Głosowa</span>
+              <span className="sm:hidden">{tr('Głosowa')}</span>
             </span>
             <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-mono flex-shrink-0">
               {formatTime(recordingTime)}

@@ -1,8 +1,9 @@
 import React from 'react';
 import { Send, Clock, Sparkles, Moon } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 const MODES = [
-  { id: 'now', label: 'Wyślij teraz', icon: Send, description: 'Push idzie natychmiast po zapisie.' },
+  { id: 'now', label: tr('Wyślij teraz'), icon: Send, description: 'Push idzie natychmiast po zapisie.' },
   { id: 'scheduled', label: 'Zaplanuj', icon: Clock, description: 'Wybierz datę i godzinę wysyłki.' },
   { id: 'smart', label: 'Smart delivery', icon: Sparkles, description: 'Wyślij gdy odbiorca jest aktywny (max okno czasu).' },
 ];
@@ -41,7 +42,7 @@ export default function ScheduleControl({
 
       {sendMode === 'scheduled' && (
         <div>
-          <label className="text-xs text-gray-500 mb-1 block">Data i godzina wysyłki</label>
+          <label className="text-xs text-gray-500 mb-1 block">{tr('Data i godzina wysyłki')}</label>
           <input
             type="datetime-local"
             value={scheduledAt ? toLocalDatetime(scheduledAt) : ''}
@@ -53,7 +54,7 @@ export default function ScheduleControl({
 
       {sendMode === 'smart' && (
         <div>
-          <label className="text-xs text-gray-500 mb-1 block">Maksymalne okno opóźnienia</label>
+          <label className="text-xs text-gray-500 mb-1 block">{tr('Maksymalne okno opóźnienia')}</label>
           <select
             value={smartWindowHours || 12}
             onChange={e => onChange({ smartWindowHours: parseInt(e.target.value, 10) })}

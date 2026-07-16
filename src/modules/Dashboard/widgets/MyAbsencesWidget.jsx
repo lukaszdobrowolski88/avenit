@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CalendarX, Plus, X, Trash2, ChevronDown } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { tr } from '../../../i18n';
 
 // ============================================
 // CUSTOM DROPDOWN COMPONENT
@@ -264,7 +265,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
           className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary-light dark:hover:text-accent-primary-light transition-colors"
         >
           <Plus size={18} />
-          <span className="font-medium">Zgłoś nieobecność</span>
+          <span className="font-medium">{tr('Zgłoś nieobecność')}</span>
         </button>
       )}
 
@@ -272,7 +273,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
       {isAdding && (
         <form onSubmit={handleSubmit} className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 space-y-3">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="font-medium text-gray-800 dark:text-white">Zgłoś nieobecność</h4>
+            <h4 className="font-medium text-gray-800 dark:text-white">{tr('Zgłoś nieobecność')}</h4>
             <button
               type="button"
               onClick={() => setIsAdding(false)}
@@ -306,7 +307,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
             <textarea
               value={formData.note}
               onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
-              placeholder="Powód nieobecności..."
+              placeholder={tr('Powód nieobecności...')}
               rows={2}
               className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-primary-light resize-none"
             />

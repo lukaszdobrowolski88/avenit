@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { printLabels } from '../utils/labelGenerator';
 import { CheckCircle, Printer, Check } from 'lucide-react';
+import { tr } from '../../../../i18n';
 
 export default function CheckinSuccess({
   checkins,
@@ -106,7 +107,7 @@ export default function CheckinSuccess({
       {/* Print info */}
       <div className="flex items-center gap-2 mb-8 text-gray-500 dark:text-gray-400">
         <Printer size={20} />
-        <span>Etykiety zostały wysłane do drukarki</span>
+        <span>{tr('Etykiety zostały wysłane do drukarki')}</span>
       </div>
 
       {/* Actions */}

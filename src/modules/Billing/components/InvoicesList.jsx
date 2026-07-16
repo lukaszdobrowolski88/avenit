@@ -78,7 +78,7 @@ export default function InvoicesList() {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
         <Loader2 size={32} className="animate-spin mx-auto text-accent-primary-light mb-4" />
-        <p className="text-gray-600 dark:text-gray-400">Ładowanie faktur...</p>
+        <p className="text-gray-600 dark:text-gray-400">{tr('Ładowanie faktur...')}</p>
       </div>
     );
   }
@@ -112,7 +112,7 @@ export default function InvoicesList() {
             <tr className="text-left text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50">
               <th className="px-6 py-3 font-medium">Numer</th>
               <th className="px-6 py-3 font-medium">Data wystawienia</th>
-              <th className="px-6 py-3 font-medium">Termin płatności</th>
+              <th className="px-6 py-3 font-medium">{tr('Termin płatności')}</th>
               <th className="px-6 py-3 font-medium">{tr('Kwota')}</th>
               <th className="px-6 py-3 font-medium">{tr('Status')}</th>
               <th className="px-6 py-3 font-medium text-right">{tr('Akcje')}</th>

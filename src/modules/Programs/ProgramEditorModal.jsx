@@ -73,7 +73,7 @@ const ConfirmDeleteModal = ({ isOpen, onClose, onConfirm, date }) => {
             <AlertTriangle size={24} className="text-red-600 dark:text-red-400" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white">Usuń nabożeństwo</h3>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white">{tr('Usuń nabożeństwo')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Czy na pewno chcesz usunąć nabożeństwo z dnia <span className="font-medium text-gray-700 dark:text-gray-300">{formattedDate}</span>? Tej operacji nie można cofnąć.
             </p>
@@ -424,7 +424,7 @@ const MultiSelect = ({ label, options, value, onChange, absentMembers = [] }) =>
               </div>
             );
           })}
-          {options.length === 0 && <div className="p-3 text-center text-gray-400 text-xs">Brak członków w bazie</div>}
+          {options.length === 0 && <div className="p-3 text-center text-gray-400 text-xs">{tr('Brak członków w bazie')}</div>}
         </div>,
         document.body
       )}
@@ -457,7 +457,7 @@ const SongSelector = ({ songs, onSelect }) => {
         className="w-full px-3 py-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/20 border border-accent-primary-lighter dark:border-accent-primary-dark rounded-lg text-sm text-accent-primary-dark dark:text-accent-primary-light font-medium flex items-center justify-between cursor-pointer hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 transition"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span>+ Wybierz pieśń...</span>
+        <span>{tr('+ Wybierz pieśń...')}</span>
         <ChevronDown size={16} className="text-accent-primary-light" />
       </div>
 
@@ -772,7 +772,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
           ) : (
             <input
               className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
-              placeholder="Szczegóły / Notatki"
+              placeholder={tr('Szczegóły / Notatki')}
               value={row.details || ''}
               onChange={e => {
                 const newSchedule = [...program.schedule];
@@ -968,7 +968,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary-dark dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Szkółka Niedzielna</h3>
+        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary-dark dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{tr('Szkółka Niedzielna')}</h3>
       </div>
       <div className="space-y-4">
         <div>
@@ -995,7 +995,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
         ) : (
           <>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Młodsza</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupa Młodsza')}</label>
               <input
                 className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.mlodsza || ''}
@@ -1003,7 +1003,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Grupa Średnia</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupa Średnia')}</label>
               <input
                 className="w-full px-4 py-2.5 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-sm transition text-gray-700 dark:text-gray-200"
                 value={program.szkolka?.srednia || ''}
@@ -1060,7 +1060,7 @@ const DynamicScenaSection = ({
         { key: 'prowadzenie', label: 'Prowadzenie', roleId: null, source: 'mc' },
         { key: 'modlitwa', label: 'Modlitwa', roleId: null, source: 'mc' },
         { key: 'wieczerza', label: 'Wieczerza', roleId: null, source: 'mc' },
-        { key: 'ogloszenia', label: 'Ogłoszenia', roleId: null, source: 'mc' }
+        { key: 'ogloszenia', label: tr('Ogłoszenia'), roleId: null, source: 'mc' }
       ];
 
   const kazanieField = { key: 'kazanie', label: 'Kazanie', source: 'teaching' };
@@ -1452,7 +1452,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
               <Music size={24} />
             </div>
             <div>
-              <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Edycja Nabożeństwa</h2>
+              <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{tr('Edycja Nabożeństwa')}</h2>
               <div className="mt-1 w-48">
                 <CustomDatePicker value={program.date} onChange={v => setProgram({...program, date: v})} />
               </div>
@@ -1514,7 +1514,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
             <button
               onClick={() => setShowDeleteModal(true)}
               className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-3 lg:px-4 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200 font-medium text-sm"
-              title="Usuń nabożeństwo"
+              title={tr('Usuń nabożeństwo')}
             >
               <Trash2 size={18} />
               <span className="hidden sm:inline">{tr('Usuń')}</span>
@@ -1556,7 +1556,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
                 <div className="col-span-1"></div>
                 <div className="col-span-3">Element</div>
                 <div className="col-span-3">{tr('Osoba')}</div>
-                <div className="col-span-4">Szczegóły / Notatki</div>
+                <div className="col-span-4">{tr('Szczegóły / Notatki')}</div>
                 <div className="col-span-1"></div>
               </div>
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
