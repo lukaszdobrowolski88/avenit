@@ -592,6 +592,32 @@ export default async function adminRoutes(app) {
     await audit(req.admin.id, 'coupon.create', 'coupon', rows[0].id);
     return reply.send({ coupon: rows[0] });
   });
+  app.put('/api/admin/coupons/:id', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const p = req.body || {};
+    const { rows } = await platformPool.query(
+      `UPDATE coupons SET code=UPPER($1), name=$2, description=$3, discount_type=$4, discount_value=$5,
+        valid_from=$6, valid_until=$7, max_uses=$8, max_uses_per_tenant=$9, duration_months=$10,
+        is_active=$11, updated_at=now()
+       WHERE id=$12 RETURNING *`,
+      [p.code, p.name, p.description || null, p.discount_type, p.discount_value,
+       p.valid_from || null, p.valid_until || null, p.max_uses || null,
+       p.max_uses_per_tenant ?? 1, p.duration_months || null, p.is_active !== false, req.params.id]
+    );
+    if (!rows[0]) return reply.code(404).send({ error: 'Kupon nie istnieje' });
+    await audit(req.admin.id, 'coupon.update', 'coupon', rows[0].id);
+    return reply.send({ coupon: rows[0] });
+  });
+  app.delete('/api/admin/coupons/:id', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { rows } = await platformPool.query(`SELECT code FROM coupons WHERE id = $1`, [req.params.id]);
+    if (!rows[0]) return reply.code(404).send({ error: 'Kupon nie istnieje' });
+    const used = await platformPool.query(`SELECT 1 FROM coupon_redemptions WHERE coupon_id = $1 LIMIT 1`, [req.params.id]);
+    if (used.rows.length) {
+      return reply.code(409).send({ error: 'Kupon był już wykorzystany — dezaktywuj go zamiast usuwać.' });
+    }
+    await platformPool.query(`DELETE FROM coupons WHERE id = $1`, [req.params.id]);
+    await audit(req.admin.id, 'coupon.delete', 'coupon', req.params.id, { code: rows[0].code });
+    return reply.send({ ok: true });
+  });
 
   // ── WINDYKACJA (ręczne uruchomienie) ───────────────────────────────
   app.post('/api/admin/dunning/run', { preHandler: app.requireAdmin }, async (req, reply) => {
