@@ -36,7 +36,7 @@ export default function TenantsList({ onSelectTenant }) {
   }, [searchQuery, statusFilter]);
 
   const handleSuspend = async (tenantId) => {
-    if (confirm('Czy na pewno chcesz zawiesić tego klienta?')) {
+    if (confirm(tr('Czy na pewno chcesz zawiesić tego klienta?'))) {
       await suspendTenant(tenantId);
       loadTenants();
     }

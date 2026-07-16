@@ -40,12 +40,12 @@ export default function Przelewy24Button({
   // Rejestracja transakcji w Przelewy24
   const registerTransaction = async () => {
     if (!merchantId || !crcKey) {
-      setError('Brak konfiguracji Przelewy24. Skontaktuj się z administratorem.');
+      setError(tr('Brak konfiguracji Przelewy24. Skontaktuj się z administratorem.'));
       return;
     }
 
     if (!email) {
-      setError('Podaj adres email przed dokonaniem płatności.');
+      setError(tr('Podaj adres email przed dokonaniem płatności.'));
       return;
     }
 

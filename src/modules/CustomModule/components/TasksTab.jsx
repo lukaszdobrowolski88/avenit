@@ -352,7 +352,7 @@ export default function TasksTab({ moduleKey, moduleName, currentUserEmail }) {
       fetchTasks();
     } catch (err) {
       console.error('Błąd zapisu:', err);
-      alert('Błąd zapisu zadania: ' + err.message);
+      alert(tr('Błąd zapisu zadania: ') + err.message);
     }
   };
 
@@ -370,7 +370,7 @@ export default function TasksTab({ moduleKey, moduleName, currentUserEmail }) {
 
   // Usuń zadanie
   const handleDelete = async (id) => {
-    if (!confirm('Usunąć to zadanie?')) return;
+    if (!confirm(tr('Usunąć to zadanie?'))) return;
     try {
       await supabase.from(tableName).delete().eq('id', id);
       setShowModal(false);

@@ -150,7 +150,7 @@ export function hasTabAccess(module, tab, userRole) {
 
     // W przeglądarce nie możemy bezpośrednio zapisać pliku,
     // więc pokazujemy komunikat, że zmiany wymagają restartu
-    alert('Uprawnienia zaktualizowane. Odśwież stronę, aby zmiany weszły w życie.');
+    alert(tr('Uprawnienia zaktualizowane. Odśwież stronę, aby zmiany weszły w życie.'));
     window.location.reload();
   };
 

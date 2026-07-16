@@ -1725,7 +1725,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
         doc.save(fileName);
       } catch (error) {
         console.error('Błąd generowania PDF:', error);
-        alert('Nie udało się wygenerować PDF');
+        alert(tr('Nie udało się wygenerować PDF'));
         if (document.body.contains(container)) {
           document.body.removeChild(container);
         }
@@ -2188,7 +2188,7 @@ export default function WorshipModule() {
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Błąd przesyłania pliku: ' + error.message);
+      alert(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -2214,7 +2214,7 @@ export default function WorshipModule() {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -2251,7 +2251,7 @@ export default function WorshipModule() {
       fetchFinanceData();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -2344,7 +2344,7 @@ export default function WorshipModule() {
       fetchData();
       fetchWorshipRoles(); // Odśwież przypisania
     } catch (err) {
-      alert('Błąd: ' + err.message);
+      alert(tr('Błąd: ') + err.message);
     }
   };
 
@@ -2365,14 +2365,14 @@ export default function WorshipModule() {
   };
 
   const deleteMember = async (id) => {
-    if(confirm('Usunąć?')) {
+    if(confirm(tr('Usunąć?'))) {
       await supabase.from('worship_team').delete().eq('id', id);
       fetchData();
     }
   };
 
   const deleteSong = async (id) => {
-    if(confirm('Usunąć pieśń?')) {
+    if(confirm(tr('Usunąć pieśń?'))) {
       await supabase.from('songs').delete().eq('id', id);
       fetchData();
     }
@@ -2869,7 +2869,7 @@ export default function WorshipModule() {
 
               if (error) {
                 console.error('Supabase error:', error);
-                alert('Błąd zapisu: ' + (error.message || JSON.stringify(error)));
+                alert(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
                 return;
               }
 
@@ -2877,7 +2877,7 @@ export default function WorshipModule() {
               fetchData();
             } catch (err) {
               console.error('Exception:', err);
-              alert('Błąd: ' + (err.message || 'Nie udało się zapisać pieśni'));
+              alert(tr('Błąd: ') + (err.message || 'Nie udało się zapisać pieśni'));
             }
           }}
           onCancel={() => setShowSongModal(false)}

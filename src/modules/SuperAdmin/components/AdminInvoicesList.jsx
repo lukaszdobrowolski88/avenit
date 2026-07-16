@@ -32,7 +32,7 @@ export default function AdminInvoicesList() {
   }, [statusFilter]);
 
   const handleMarkAsPaid = async (invoiceId) => {
-    if (confirm('Oznaczyć fakturę jako opłaconą?')) {
+    if (confirm(tr('Oznaczyć fakturę jako opłaconą?'))) {
       await markAsPaid(invoiceId);
       loadInvoices();
     }
@@ -40,7 +40,7 @@ export default function AdminInvoicesList() {
   };
 
   const handleCancel = async (invoiceId) => {
-    if (confirm('Czy na pewno anulować tę fakturę?')) {
+    if (confirm(tr('Czy na pewno anulować tę fakturę?'))) {
       await cancelInvoice(invoiceId);
       loadInvoices();
     }

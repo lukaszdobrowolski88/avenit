@@ -401,7 +401,7 @@ export default function GlobalSettings() {
       await supabase.from('app_settings').upsert({ key: 'org_logo_url', value: data.publicUrl }, { onConflict: 'key' });
       fetchData();
       window.location.reload(); 
-    } catch (err) { alert('Błąd uploadu'); }
+    } catch (err) { alert(tr('Błąd uploadu')); }
   };
 
   const toggleModule = async (key, currentValue) => {
@@ -431,7 +431,7 @@ export default function GlobalSettings() {
           throw new Error(`Błąd aktualizacji: ${updateError.message}`);
         }
         fetchData();
-        setMessage({ type: 'success', text: 'Zaktualizowano użytkownika' });
+        setMessage({ type: 'success', text: tr('Zaktualizowano użytkownika') });
       } else {
         // Tworzenie nowego użytkownika
 
@@ -592,7 +592,7 @@ export default function GlobalSettings() {
       setRequire2FA(false);
       fetchData();
     } catch (err) {
-      alert('Błąd zapisu: ' + err.message);
+      alert(tr('Błąd zapisu: ') + err.message);
     } finally {
       setIsCreatingAuthUser(false);
     }
@@ -601,10 +601,10 @@ export default function GlobalSettings() {
   const deleteUser = async (id) => {
     const user = users.find(u => u.id === id);
     if (user?.is_super_admin) {
-      return alert('Nie można usunąć superadmina!');
+      return alert(tr('Nie można usunąć superadmina!'));
     }
 
-    if(confirm('Usunąć użytkownika? To również usunie jego konto z systemu autentykacji.')) {
+    if(confirm(tr('Usunąć użytkownika? To również usunie jego konto z systemu autentykacji.'))) {
       try {
         // Usuń z tabeli app_users
         await supabase.from('app_users').delete().eq('id', id);
@@ -613,9 +613,9 @@ export default function GlobalSettings() {
         // const { error } = await supabase.auth.admin.deleteUser(user.auth_user_id);
 
         fetchData();
-        setMessage({ type: 'success', text: 'Użytkownik został usunięty' });
+        setMessage({ type: 'success', text: tr('Użytkownik został usunięty') });
       } catch (err) {
-        alert('Błąd usuwania: ' + err.message);
+        alert(tr('Błąd usuwania: ') + err.message);
       }
     }
   };
@@ -623,11 +623,11 @@ export default function GlobalSettings() {
 
   // Funkcja do scalania zduplikowanych członków we wszystkich tabelach służb
   const mergeDuplicateMembers = async () => {
-    if (!confirm('Czy na pewno chcesz scalić zduplikowanych członków? Ta operacja połączy członków o tym samym imieniu i nazwisku.')) {
+    if (!confirm(tr('Czy na pewno chcesz scalić zduplikowanych członków? Ta operacja połączy członków o tym samym imieniu i nazwisku.'))) {
       return;
     }
 
-    setMessage({ type: 'info', text: 'Scalanie duplikatów...' });
+    setMessage({ type: 'info', text: tr('Scalanie duplikatów...') });
     let totalMerged = 0;
 
     try {
@@ -698,12 +698,12 @@ export default function GlobalSettings() {
       });
     } catch (err) {
       console.error('Błąd scalania duplikatów:', err);
-      setMessage({ type: 'error', text: 'Błąd scalania: ' + err.message });
+      setMessage({ type: 'error', text: tr('Błąd scalania: ') + err.message });
     }
   };
 
   const addDict = async (category, label) => { const { data } = await supabase.from('app_dictionaries').insert([{ category, label, value: label }]).select(); if (data) setDictionaries([...dictionaries, data[0]]); };
-  const delDict = async (id) => { if(confirm('Usunąć?')) { await supabase.from('app_dictionaries').delete().eq('id', id); fetchData(); } };
+  const delDict = async (id) => { if(confirm(tr('Usunąć?'))) { await supabase.from('app_dictionaries').delete().eq('id', id); fetchData(); } };
 
   const togglePermission = async (role, resource, field, value) => {
     const existing = permissions.find(p => p.role === role && p.resource === resource);
@@ -793,7 +793,7 @@ export default function GlobalSettings() {
 
   const saveTabPermissions = () => {
     localStorage.setItem('tabPermissions', JSON.stringify(tabPermissions));
-    setMessage({ type: 'success', text: 'Uprawnienia zaktualizowane. Odśwież stronę, aby zobaczyć zmiany.' });
+    setMessage({ type: 'success', text: tr('Uprawnienia zaktualizowane. Odśwież stronę, aby zobaczyć zmiany.') });
     setTimeout(() => window.location.reload(), 1500);
   };
 
@@ -857,7 +857,7 @@ export default function GlobalSettings() {
 
   const saveUserPermissions = () => {
     localStorage.setItem('userPermissions', JSON.stringify(userPermissions));
-    setMessage({ type: 'success', text: 'Uprawnienia użytkowników zapisane. Odśwież stronę, aby zobaczyć zmiany.' });
+    setMessage({ type: 'success', text: tr('Uprawnienia użytkowników zapisane. Odśwież stronę, aby zobaczyć zmiany.') });
     setTimeout(() => window.location.reload(), 1500);
   };
 
@@ -872,7 +872,7 @@ export default function GlobalSettings() {
       return newPerms;
     });
 
-    setMessage({ type: 'success', text: 'Przywrócono uprawnienia z roli użytkownika' });
+    setMessage({ type: 'success', text: tr('Przywrócono uprawnienia z roli użytkownika') });
   };
 
   const getUserEffectivePermissions = (userId, moduleKey) => {
@@ -985,8 +985,8 @@ export default function GlobalSettings() {
           <div className="max-w-2xl">
             <SectionHeader title="Profil organizacji" description="Podstawowe dane Twojego kościoła." />
             {[
-              { key: 'org_name', label: 'Nazwa organizacji', placeholder: 'np. Kościół Chrześcijański' },
-              { key: 'org_legal_name', label: 'Nazwa prawna', placeholder: 'Pełna nazwa do dokumentów' },
+              { key: 'org_name', label: 'Nazwa organizacji', placeholder: tr('np. Kościół Chrześcijański') },
+              { key: 'org_legal_name', label: 'Nazwa prawna', placeholder: tr('Pełna nazwa do dokumentów') },
               { key: 'org_tax_id', label: 'NIP', placeholder: '000-000-00-00' },
               { key: 'org_email', label: 'E-mail kontaktowy', type: 'email', placeholder: 'kontakt@kosciol.pl' },
               { key: 'org_phone', label: t('Telefon'), placeholder: '+48 000 000 000' },
@@ -1369,7 +1369,7 @@ export default function GlobalSettings() {
                 <button
                   onClick={() => {
                     loadTabPermissions();
-                    setMessage({ type: 'success', text: 'Przywrócono domyślne uprawnienia zakładek' });
+                    setMessage({ type: 'success', text: tr('Przywrócono domyślne uprawnienia zakładek') });
                   }}
                   className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
                 >

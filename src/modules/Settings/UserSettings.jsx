@@ -179,12 +179,12 @@ export default function UserSettings() {
       setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
       await updateProfileData({ avatar_url: publicUrl });
       
-      setMessage({ type: 'success', text: 'Zdjęcie profilowe zaktualizowane!' });
+      setMessage({ type: 'success', text: tr('Zdjęcie profilowe zaktualizowane!') });
       // Przeładowanie strony, aby odświeżyć avatar w Sidebarze
       setTimeout(() => window.location.reload(), 1000);
 
     } catch (err) {
-      setMessage({ type: 'error', text: 'Błąd wysyłania zdjęcia.' });
+      setMessage({ type: 'error', text: tr('Błąd wysyłania zdjęcia.') });
     }
     setSaving(false);
   };
@@ -221,9 +221,9 @@ export default function UserSettings() {
     setSaving(true);
     try {
       await updateProfileData();
-      setMessage({ type: 'success', text: 'Dane zapisane pomyślnie.' });
+      setMessage({ type: 'success', text: tr('Dane zapisane pomyślnie.') });
     } catch (err) {
-      setMessage({ type: 'error', text: 'Nie udało się zapisać danych.' });
+      setMessage({ type: 'error', text: tr('Nie udało się zapisać danych.') });
     }
     setSaving(false);
   };
@@ -264,7 +264,7 @@ export default function UserSettings() {
 
       setMessage({ type: 'success', text: 'Podpis email zapisany.' });
     } catch (err) {
-      setMessage({ type: 'error', text: 'Nie udało się zapisać podpisu.' });
+      setMessage({ type: 'error', text: tr('Nie udało się zapisać podpisu.') });
     }
     setSavingSignature(false);
   };
@@ -274,12 +274,12 @@ export default function UserSettings() {
     setShow2FASetup(false);
     const status = await checkTwoFactorStatus(formData.email);
     setTwoFactorStatus(status);
-    setMessage({ type: 'success', text: 'Uwierzytelnianie dwuskładnikowe zostało włączone!' });
+    setMessage({ type: 'success', text: tr('Uwierzytelnianie dwuskładnikowe zostało włączone!') });
   };
 
   const handleDisable2FA = async () => {
     if (!disable2FACode || disable2FACode.length !== 6) {
-      setMessage({ type: 'error', text: 'Wprowadź 6-cyfrowy kod weryfikacyjny.' });
+      setMessage({ type: 'error', text: tr('Wprowadź 6-cyfrowy kod weryfikacyjny.') });
       return;
     }
 
@@ -287,7 +287,7 @@ export default function UserSettings() {
     if (result.success) {
       setTwoFactorStatus({ enabled: false, verifiedAt: null });
       setDisable2FACode('');
-      setMessage({ type: 'success', text: 'Uwierzytelnianie dwuskładnikowe zostało wyłączone.' });
+      setMessage({ type: 'success', text: tr('Uwierzytelnianie dwuskładnikowe zostało wyłączone.') });
     } else {
       setMessage({ type: 'error', text: result.error || 'Nie udało się wyłączyć 2FA.' });
     }
@@ -301,7 +301,7 @@ export default function UserSettings() {
 
   const handleRegenerateBackupCodes = async () => {
     if (!regenerateCode || regenerateCode.length !== 6) {
-      setMessage({ type: 'error', text: 'Wprowadź 6-cyfrowy kod weryfikacyjny.' });
+      setMessage({ type: 'error', text: tr('Wprowadź 6-cyfrowy kod weryfikacyjny.') });
       return;
     }
 
@@ -387,7 +387,7 @@ export default function UserSettings() {
 
         if (!error) {
           setIcalSubscription({ ...icalSubscription, token: newToken, export_preferences: icalPreferences });
-          setMessage({ type: 'success', text: 'Token kalendarza został zresetowany. Poprzedni link przestał działać.' });
+          setMessage({ type: 'success', text: tr('Token kalendarza został zresetowany. Poprzedni link przestał działać.') });
         } else {
           throw error;
         }
@@ -405,13 +405,13 @@ export default function UserSettings() {
 
         if (!error && data) {
           setIcalSubscription(data);
-          setMessage({ type: 'success', text: 'Subskrypcja kalendarza została utworzona!' });
+          setMessage({ type: 'success', text: tr('Subskrypcja kalendarza została utworzona!') });
         } else {
           throw error;
         }
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Nie udało się utworzyć/zresetować subskrypcji.' });
+      setMessage({ type: 'error', text: tr('Nie udało się utworzyć/zresetować subskrypcji.') });
     }
     setIcalLoading(false);
   };
@@ -434,7 +434,7 @@ export default function UserSettings() {
         throw error;
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Nie udało się zapisać preferencji.' });
+      setMessage({ type: 'error', text: tr('Nie udało się zapisać preferencji.') });
     }
     setIcalLoading(false);
   };
@@ -461,17 +461,17 @@ export default function UserSettings() {
   const handleChangePassword = async () => {
     setMessage(null);
     if (passData.newPassword !== passData.confirmPassword) {
-      return setMessage({ type: 'error', text: 'Hasła nie są identyczne.' });
+      return setMessage({ type: 'error', text: tr('Hasła nie są identyczne.') });
     }
     if (passData.newPassword.length < 6) {
-      return setMessage({ type: 'error', text: 'Hasło musi mieć min. 6 znaków.' });
+      return setMessage({ type: 'error', text: tr('Hasło musi mieć min. 6 znaków.') });
     }
 
     setSaving(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: passData.newPassword });
       if (error) throw error;
-      setMessage({ type: 'success', text: 'Hasło zostało zmienione.' });
+      setMessage({ type: 'success', text: tr('Hasło zostało zmienione.') });
       setPassData({ newPassword: '', confirmPassword: '' });
     } catch (err) {
       setMessage({ type: 'error', text: err.message });

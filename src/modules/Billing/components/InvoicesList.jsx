@@ -42,7 +42,7 @@ export default function InvoicesList() {
       await redirectToPayment(invoiceId);
     } catch (err) {
       console.error('Error initiating payment:', err);
-      alert('Wystąpił błąd podczas inicjowania płatności. Spróbuj ponownie.');
+      alert(tr('Wystąpił błąd podczas inicjowania płatności. Spróbuj ponownie.'));
     } finally {
       setPayingInvoice(null);
     }
@@ -53,7 +53,7 @@ export default function InvoicesList() {
     if (pdfUrl) {
       window.open(pdfUrl, '_blank');
     } else {
-      alert('PDF faktury nie jest jeszcze dostępny.');
+      alert(tr('PDF faktury nie jest jeszcze dostępny.'));
     }
   };
 

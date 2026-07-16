@@ -3,14 +3,15 @@ import { CreditCard, CheckCircle2, Sparkles } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { SettingsCard, UsageBar } from './SettingsUI';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Sekcja Subskrypcja — read-only. Plan i limity pobiera z /api/tenant/info
 // (baza platform), zużycie liczy z bazy tenanta przez Data API.
 const STATUS_LABEL = {
-  trial: { text: 'Okres próbny', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  trialing: { text: 'Okres próbny', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  trial: { text: tr('Okres próbny'), cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  trialing: { text: tr('Okres próbny'), cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
   active: { text: 'Aktywna', cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  past_due: { text: 'Zaległa płatność', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  past_due: { text: tr('Zaległa płatność'), cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
   suspended: { text: 'Zawieszona', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
 };
 
@@ -25,7 +26,7 @@ export default function SubscriptionInfo() {
     (async () => {
       try {
         const res = await supabase._request('/api/tenant/info');
-        if (!res.ok) throw new Error('Nie udało się pobrać danych subskrypcji');
+        if (!res.ok) throw new Error(tr('Nie udało się pobrać danych subskrypcji'));
         setInfo(await res.json());
         // Zużycie z bazy tenanta.
         const counts = await Promise.all([

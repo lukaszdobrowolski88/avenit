@@ -1278,7 +1278,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
       onClose();
     } catch (error) {
       console.error('Błąd usuwania programu:', error);
-      alert('Wystąpił błąd podczas usuwania nabożeństwa.');
+      alert(tr('Wystąpił błąd podczas usuwania nabożeństwa.'));
     }
   };
 
@@ -1381,7 +1381,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
 
   const handleSaveAndUploadPDF = async (songPagesMode = 'lyrics') => {
     if (!program || !program.date) {
-      alert('Najpierw wybierz datę programu.');
+      alert(tr('Najpierw wybierz datę programu.'));
       return;
     }
 
@@ -1406,13 +1406,13 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
       const result = await savePDFToSupabase(program, freshSongsMap, teamRolesForPDF, songPagesMode);
 
       if (result.success) {
-        alert('PDF został pobrany i zapisany w chmurze!');
+        alert(tr('PDF został pobrany i zapisany w chmurze!'));
       } else {
-        alert('PDF pobrany na dysk, ale wystąpił błąd zapisu w chmurze.');
+        alert(tr('PDF pobrany na dysk, ale wystąpił błąd zapisu w chmurze.'));
       }
     } catch (error) {
       console.error('Critical error saving PDF:', error);
-      alert('Wystąpił błąd podczas generowania PDF.');
+      alert(tr('Wystąpił błąd podczas generowania PDF.'));
     } finally {
       setIsLoading(false);
     }
@@ -1429,7 +1429,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
       await generatePPT(program, songsMap);
     } catch (error) {
       console.error('Błąd generowania PPT:', error);
-      alert('Nie udało się wygenerować prezentacji.');
+      alert(tr('Nie udało się wygenerować prezentacji.'));
     }
   };
 

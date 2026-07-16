@@ -217,7 +217,7 @@ export default function Members() {
           .eq('id', id);
         if (error) {
           console.error('Supabase update error:', error);
-          alert('Błąd zapisu: ' + (error.message || JSON.stringify(error)));
+          alert(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
           setSaving(false);
           return;
         }
@@ -227,7 +227,7 @@ export default function Members() {
           .insert([dataToSave]);
         if (error) {
           console.error('Supabase insert error:', error);
-          alert('Błąd zapisu: ' + (error.message || JSON.stringify(error)));
+          alert(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
           setSaving(false);
           return;
         }
@@ -240,14 +240,14 @@ export default function Members() {
       fetchData();
     } catch (error) {
       console.error('Błąd zapisu:', error);
-      alert('Wystąpił błąd podczas zapisywania.');
+      alert(tr('Wystąpił błąd podczas zapisywania.'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć tego członka?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tego członka?'))) return;
 
     try {
       // Pobierz dane członka przed usunięciem
@@ -328,12 +328,12 @@ export default function Members() {
     if (!file) return;
 
     if (file.type !== 'application/pdf') {
-      alert('Proszę wybrać plik PDF');
+      alert(tr('Proszę wybrać plik PDF'));
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('Plik jest za duży. Maksymalny rozmiar to 10MB');
+      alert(tr('Plik jest za duży. Maksymalny rozmiar to 10MB'));
       return;
     }
 
@@ -358,7 +358,7 @@ export default function Members() {
       }));
     } catch (error) {
       console.error('Błąd uploadu:', error);
-      alert('Błąd podczas przesyłania pliku');
+      alert(tr('Błąd podczas przesyłania pliku'));
     } finally {
       setUploading(false);
     }

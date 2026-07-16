@@ -166,13 +166,13 @@ export default function MembersTab({ moduleKey, moduleName }) {
       fetchModuleRoles();
     } catch (err) {
       console.error('Błąd zapisu:', err);
-      alert('Błąd zapisu członka: ' + err.message);
+      alert(tr('Błąd zapisu członka: ') + err.message);
     }
   };
 
   // Usuń członka
   const handleDelete = async (id) => {
-    if (!confirm('Usunąć tego członka?')) return;
+    if (!confirm(tr('Usunąć tego członka?'))) return;
     try {
       // Usuń przypisania do służb
       await supabase

@@ -68,7 +68,7 @@ export default function MessageBubble({
   };
 
   const handleDelete = () => {
-    if (window.confirm('Czy na pewno chcesz usunąć tę wiadomość?')) {
+    if (window.confirm(tr('Czy na pewno chcesz usunąć tę wiadomość?'))) {
       onDelete?.(message.id);
     }
     setShowMenu(false);

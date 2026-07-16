@@ -13,7 +13,7 @@ export default function TemplateGallery({ onUseTemplate }) {
   const handleNew = () => { setEditing(null); setShowEditor(true); };
   const handleEdit = (t) => { setEditing(t); setShowEditor(true); };
   const handleDelete = async (t) => {
-    if (t.is_system) { alert('Nie można usunąć szablonu systemowego.'); return; }
+    if (t.is_system) { alert(tr('Nie można usunąć szablonu systemowego.')); return; }
     if (!confirm(`Usunąć szablon "${t.name}"?`)) return;
     try { await deleteTemplate(t.id); } catch (e) { alert(e.message); }
   };
@@ -99,7 +99,7 @@ function TemplateEditor({ template, onClose, onSave }) {
   const a = smsAnalysis(form.body);
 
   const handleSave = async () => {
-    if (!form.name || !form.body) { alert('Wypełnij wszystkie pola'); return; }
+    if (!form.name || !form.body) { alert(tr('Wypełnij wszystkie pola')); return; }
     setSaving(true);
     try { await onSave(form); } finally { setSaving(false); }
   };

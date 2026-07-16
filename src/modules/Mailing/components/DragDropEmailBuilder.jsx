@@ -220,19 +220,19 @@ const BLOCK_CATEGORIES = {
 const BLOCK_PRESETS = {
   hero: {
     name: 'Hero Banner',
-    description: 'Duży obraz z nagłówkiem',
+    description: tr('Duży obraz z nagłówkiem'),
     icon: ImageIcon,
     color: 'amber',
     blocks: [
       { ...BLOCK_TYPES.image.defaultContent, id: 'preset-1' },
       { ...BLOCK_TYPES.heading.defaultContent, id: 'preset-2', content: 'Witaj {{imie}}!', level: 1, alignment: 'center' },
       { ...BLOCK_TYPES.text.defaultContent, id: 'preset-3', content: '<p>Mamy dla Ciebie wspaniałe wiadomości.</p>', alignment: 'center' },
-      { ...BLOCK_TYPES.button.defaultContent, id: 'preset-4', text: 'Dowiedz się więcej' }
+      { ...BLOCK_TYPES.button.defaultContent, id: 'preset-4', text: tr('Dowiedz się więcej') }
     ]
   },
   announcement: {
     name: 'Ogłoszenie',
-    description: 'Wyróżniona informacja',
+    description: tr('Wyróżniona informacja'),
     icon: Sparkles,
     color: 'amber',
     blocks: [
@@ -242,14 +242,14 @@ const BLOCK_PRESETS = {
   },
   event: {
     name: 'Wydarzenie',
-    description: 'Zaproszenie z datą i miejscem',
+    description: tr('Zaproszenie z datą i miejscem'),
     icon: FileText,
     color: 'green',
     blocks: [
       { ...BLOCK_TYPES.heading.defaultContent, id: 'preset-1', content: '🎉 Nadchodzące wydarzenie', alignment: 'center' },
       { ...BLOCK_TYPES.divider.defaultContent, id: 'preset-2' },
       { ...BLOCK_TYPES.list.defaultContent, id: 'preset-3', items: ['📅 Data: [wpisz datę]', '📍 Miejsce: [wpisz miejsce]', '⏰ Godzina: [wpisz godzinę]'], listStyle: 'none' },
-      { ...BLOCK_TYPES.button.defaultContent, id: 'preset-4', text: 'Zapisz się', backgroundColor: '#10b981' }
+      { ...BLOCK_TYPES.button.defaultContent, id: 'preset-4', text: tr('Zapisz się'), backgroundColor: '#10b981' }
     ]
   },
   newsletter: {
@@ -269,7 +269,7 @@ const BLOCK_PRESETS = {
   },
   twoColumn: {
     name: 'Dwie kolumny',
-    description: 'Treść w dwóch kolumnach',
+    description: tr('Treść w dwóch kolumnach'),
     icon: Columns,
     color: 'purple',
     blocks: [
@@ -601,7 +601,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
 
   // Wyczyść wszystko
   const clearAll = () => {
-    if (confirm('Czy na pewno chcesz usunąć wszystkie bloki?')) {
+    if (confirm(tr('Czy na pewno chcesz usunąć wszystkie bloki?'))) {
       setBlocks([]);
       setSelectedBlockId(null);
       updateHtml([]);
@@ -1755,7 +1755,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
         onBlur?.();
       } catch (err) {
         console.error('Error uploading image:', err);
-        alert('Błąd podczas przesyłania obrazu');
+        alert(tr('Błąd podczas przesyłania obrazu'));
       }
     };
 
@@ -2531,7 +2531,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
         onBlur?.();
       } catch (err) {
         console.error('Error uploading image:', err);
-        alert('Błąd podczas przesyłania obrazu');
+        alert(tr('Błąd podczas przesyłania obrazu'));
       }
     };
 

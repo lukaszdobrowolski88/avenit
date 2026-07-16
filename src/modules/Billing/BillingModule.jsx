@@ -41,7 +41,7 @@ export default function BillingModule() {
       const subscription = await getTenantSubscription();
 
       if (!tenant || !subscription) {
-        throw new Error('Nie można pobrać danych konta');
+        throw new Error(tr('Nie można pobrać danych konta'));
       }
 
       // Utwórz fakturę

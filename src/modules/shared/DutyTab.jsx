@@ -219,7 +219,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
   };
 
   const saveRole = async () => {
-    if (!roleForm.name.trim()) return alert('Podaj nazwę służby');
+    if (!roleForm.name.trim()) return alert(tr('Podaj nazwę służby'));
 
     // Generuj field_key z nazwy jeśli nie podano
     const fieldKey = roleForm.field_key.trim() || roleForm.name.toLowerCase()
@@ -246,18 +246,18 @@ export default function DutyTab({ moduleKey, moduleName }) {
       setRoleForm({ id: null, name: '', field_key: '', description: '' });
       fetchData();
     } catch (err) {
-      alert('Błąd zapisu: ' + err.message);
+      alert(tr('Błąd zapisu: ') + err.message);
     }
   };
 
   const deleteRole = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę służbę? Spowoduje to usunięcie wszystkich przypisań.')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę służbę? Spowoduje to usunięcie wszystkich przypisań.'))) return;
 
     try {
       await supabase.from('team_roles').delete().eq('id', id);
       fetchData();
     } catch (err) {
-      alert('Błąd usuwania: ' + err.message);
+      alert(tr('Błąd usuwania: ') + err.message);
     }
   };
 
@@ -287,7 +287,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
       fetchData();
     } catch (err) {
       console.error('Błąd aktualizacji przypisań:', err);
-      alert('Błąd aktualizacji: ' + err.message);
+      alert(tr('Błąd aktualizacji: ') + err.message);
     }
   };
 

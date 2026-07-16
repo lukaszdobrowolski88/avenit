@@ -94,7 +94,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   }, [editingFolder, parentFolderForNew, createFolder, renameFolder]);
 
   const handleDeleteFolder = useCallback(async (folderId) => {
-    if (window.confirm('Czy na pewno chcesz usunąć ten folder i wszystkie pliki w nim zawarte?')) {
+    if (window.confirm(tr('Czy na pewno chcesz usunąć ten folder i wszystkie pliki w nim zawarte?'))) {
       await deleteFolder(folderId);
     }
   }, [deleteFolder]);

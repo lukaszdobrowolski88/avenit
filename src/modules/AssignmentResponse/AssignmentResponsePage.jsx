@@ -81,7 +81,7 @@ export default function AssignmentResponsePage() {
         setLoading(false);
       } catch (err) {
         console.error('Error:', err);
-        setError('Wystąpił błąd podczas przetwarzania');
+        setError(tr('Wystąpił błąd podczas przetwarzania'));
         setLoading(false);
       }
     };
@@ -130,7 +130,7 @@ export default function AssignmentResponsePage() {
       setAssignment(prev => ({ ...prev, status: newStatus }));
     } catch (err) {
       console.error('Error handling action:', err);
-      setError('Wystąpił błąd podczas zapisywania odpowiedzi');
+      setError(tr('Wystąpił błąd podczas zapisywania odpowiedzi'));
     }
   };
 

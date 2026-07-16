@@ -59,15 +59,15 @@ export default function RegisterPage() {
 
   const validateStep1 = () => {
     if (!formData.email || !formData.password || !formData.fullName) {
-      setError('Wypełnij wszystkie wymagane pola');
+      setError(tr('Wypełnij wszystkie wymagane pola'));
       return false;
     }
     if (formData.password.length < 8) {
-      setError('Hasło musi mieć minimum 8 znaków');
+      setError(tr('Hasło musi mieć minimum 8 znaków'));
       return false;
     }
     if (formData.password !== formData.confirmPassword) {
-      setError('Hasła nie są identyczne');
+      setError(tr('Hasła nie są identyczne'));
       return false;
     }
     setError(null);
@@ -76,11 +76,11 @@ export default function RegisterPage() {
 
   const validateStep2 = () => {
     if (!formData.churchName || !formData.churchSlug) {
-      setError('Podaj nazwę kościoła');
+      setError(tr('Podaj nazwę kościoła'));
       return false;
     }
     if (formData.churchSlug.length < 3) {
-      setError('Slug musi mieć minimum 3 znaki');
+      setError(tr('Slug musi mieć minimum 3 znaki'));
       return false;
     }
     setError(null);

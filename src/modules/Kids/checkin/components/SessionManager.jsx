@@ -63,7 +63,7 @@ export default function SessionManager({ onSessionChange }) {
       if (onSessionChange) onSessionChange(data);
     } catch (err) {
       console.error('Error creating session:', err);
-      alert('Błąd podczas tworzenia sesji');
+      alert(tr('Błąd podczas tworzenia sesji'));
     }
   };
 
@@ -91,7 +91,7 @@ export default function SessionManager({ onSessionChange }) {
   };
 
   const handleDelete = async (sessionId) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę sesję?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę sesję?'))) return;
 
     try {
       const { error } = await supabase
@@ -104,7 +104,7 @@ export default function SessionManager({ onSessionChange }) {
       setSessions(prev => prev.filter(s => s.id !== sessionId));
     } catch (err) {
       console.error('Error deleting session:', err);
-      alert('Błąd podczas usuwania sesji');
+      alert(tr('Błąd podczas usuwania sesji'));
     }
   };
 

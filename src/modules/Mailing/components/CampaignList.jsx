@@ -77,7 +77,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
       await deleteCampaign(campaign.id);
       onRefresh?.();
     } catch (err) {
-      alert('Błąd podczas usuwania maila');
+      alert(tr('Błąd podczas usuwania maila'));
     }
     setMenuOpen(null);
   };
@@ -87,7 +87,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
       await duplicateCampaign(campaign.id);
       onRefresh?.();
     } catch (err) {
-      alert('Błąd podczas duplikowania maila');
+      alert(tr('Błąd podczas duplikowania maila'));
     }
     setMenuOpen(null);
   };

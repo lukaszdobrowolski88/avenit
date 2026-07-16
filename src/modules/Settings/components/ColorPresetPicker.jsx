@@ -64,7 +64,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
     setSaving(true);
     try {
       await supabase.from('app_settings').upsert(
-        { key: 'color_preset', value: key, description: 'Preset kolorów aplikacji' },
+        { key: 'color_preset', value: key, description: tr('Preset kolorów aplikacji') },
         { onConflict: 'key' }
       );
     } catch (err) {
@@ -92,7 +92,7 @@ export default function ColorPresetPicker({ currentPreset: initialPreset }) {
       applyCustomColors(customPrimary, customSecondary);
       setCurrentPreset(id);
       await supabase.from('app_settings').upsert(
-        { key: 'color_preset', value: id, description: 'Preset kolorów aplikacji' },
+        { key: 'color_preset', value: id, description: tr('Preset kolorów aplikacji') },
         { onConflict: 'key' }
       );
 

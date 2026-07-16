@@ -77,7 +77,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       setForm(prev => ({ ...prev, photo_url: data.publicUrl }));
     } catch (err) {
       console.error('Upload error:', err);
-      alert('Błąd przesyłania zdjęcia: ' + err.message);
+      alert(tr('Błąd przesyłania zdjęcia: ') + err.message);
     }
     setUploading(false);
   };
@@ -116,7 +116,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      alert('Podaj nazwę wyposażenia');
+      alert(tr('Podaj nazwę wyposażenia'));
       return;
     }
 
@@ -151,12 +151,12 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       fetchEquipment();
     } catch (err) {
       console.error('Save error:', err);
-      alert('Błąd zapisywania: ' + err.message);
+      alert(tr('Błąd zapisywania: ') + err.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć ten przedmiot?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć ten przedmiot?'))) return;
 
     try {
       const { error } = await supabase
@@ -167,7 +167,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       fetchEquipment();
     } catch (err) {
       console.error('Delete error:', err);
-      alert('Błąd usuwania: ' + err.message);
+      alert(tr('Błąd usuwania: ') + err.message);
     }
   };
 

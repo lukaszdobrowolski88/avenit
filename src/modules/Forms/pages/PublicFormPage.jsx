@@ -124,7 +124,7 @@ export default function PublicFormPage() {
       }
     } catch (err) {
       console.error('Error submitting form:', err);
-      alert('Wystąpił błąd podczas wysyłania formularza. Spróbuj ponownie.');
+      alert(tr('Wystąpił błąd podczas wysyłania formularza. Spróbuj ponownie.'));
     } finally {
       setIsSubmitting(false);
     }

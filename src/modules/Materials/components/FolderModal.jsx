@@ -29,7 +29,7 @@ export default function FolderModal({
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError('Nazwa folderu nie może być pusta');
+      setError(tr('Nazwa folderu nie może być pusta'));
       return;
     }
 
@@ -48,7 +48,7 @@ export default function FolderModal({
     } catch (err) {
       console.error('Folder operation error:', err);
       if (err.message?.includes('unique') || err.message?.includes('duplicate')) {
-        setError('Folder o tej nazwie już istnieje w tym miejscu');
+        setError(tr('Folder o tej nazwie już istnieje w tym miejscu'));
       } else {
         setError(err.message || 'Wystąpił błąd');
       }

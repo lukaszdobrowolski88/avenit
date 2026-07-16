@@ -110,7 +110,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
     const err = validate();
     if (err) { alert(err); return; }
     if (recipientCount === 0) {
-      if (!confirm('Brak odbiorców z numerem. Zapisać mimo to?')) return;
+      if (!confirm(tr('Brak odbiorców z numerem. Zapisać mimo to?'))) return;
     }
     setSaving(true);
     try {
@@ -131,7 +131,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
   const handleSendNow = async () => {
     const err = validate();
     if (err) { alert(err); return; }
-    if (recipientCount === 0) { alert('Brak odbiorców z numerem'); return; }
+    if (recipientCount === 0) { alert(tr('Brak odbiorców z numerem')); return; }
     if (!confirm(`Wysłać SMS do ${recipientCount} odbiorców? Szacunkowy koszt: ${formatPLN(estimatedCost)}.`)) return;
 
     setSending(true);

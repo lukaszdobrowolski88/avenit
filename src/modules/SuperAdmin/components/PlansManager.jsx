@@ -105,12 +105,12 @@ export default function PlansManager() {
       setShowForm(false);
       loadPlans();
     } catch (err) {
-      alert('Błąd zapisu: ' + err.message);
+      alert(tr('Błąd zapisu: ') + err.message);
     }
   };
 
   const handleDelete = async (planId) => {
-    if (confirm('Czy na pewno chcesz dezaktywować ten plan?')) {
+    if (confirm(tr('Czy na pewno chcesz dezaktywować ten plan?'))) {
       await deactivatePlan(planId);
       loadPlans();
     }

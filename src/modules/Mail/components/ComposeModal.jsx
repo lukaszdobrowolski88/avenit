@@ -761,7 +761,7 @@ export default function ComposeModal({
 
           <button
             onClick={() => {
-              if (confirm('Czy na pewno usunąć tę wiadomość?')) {
+              if (confirm(tr('Czy na pewno usunąć tę wiadomość?'))) {
                 onClose();
               }
             }}

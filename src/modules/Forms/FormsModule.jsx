@@ -115,7 +115,7 @@ export default function FormsModule({ userEmail }) {
   };
 
   const handleDeleteForm = async (formId) => {
-    if (window.confirm('Czy na pewno chcesz usunąć ten formularz? Wszystkie odpowiedzi zostaną usunięte.')) {
+    if (window.confirm(tr('Czy na pewno chcesz usunąć ten formularz? Wszystkie odpowiedzi zostaną usunięte.'))) {
       await deleteForm(formId);
     }
   };

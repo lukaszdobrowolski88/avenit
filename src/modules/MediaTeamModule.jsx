@@ -706,7 +706,7 @@ export default function MediaTeamModule() {
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Błąd przesyłania pliku: ' + error.message);
+      alert(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -732,7 +732,7 @@ export default function MediaTeamModule() {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -769,7 +769,7 @@ export default function MediaTeamModule() {
       fetchFinanceData();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -862,7 +862,7 @@ export default function MediaTeamModule() {
       fetchComments(taskForm.id);
     } catch (err) {
       console.error('Błąd dodawania komentarza:', err);
-      alert('Nie udało się dodać komentarza');
+      alert(tr('Nie udało się dodać komentarza'));
     }
   };
 
@@ -925,7 +925,7 @@ export default function MediaTeamModule() {
   const saveMember = async () => {
     try {
       if (!memberForm.full_name.trim()) {
-        alert('Imię i nazwisko jest wymagane');
+        alert(tr('Imię i nazwisko jest wymagane'));
         return;
       }
       let memberId = memberForm.id;
@@ -975,7 +975,7 @@ export default function MediaTeamModule() {
       await fetchMediaRoles();
     } catch (err) {
       console.error('Błąd zapisywania członka:', err);
-      alert('Błąd: ' + err.message);
+      alert(tr('Błąd: ') + err.message);
     }
   };
 
@@ -996,14 +996,14 @@ export default function MediaTeamModule() {
   };
 
   const deleteMember = async (id) => {
-    if (confirm('Usunąć członka zespołu?')) {
+    if (confirm(tr('Usunąć członka zespołu?'))) {
       try {
         const { error } = await supabase.from('media_team').delete().eq('id', id);
         if (error) throw error;
         await fetchData();
       } catch (err) {
         console.error('Błąd usuwania członka:', err);
-        alert('Błąd: ' + err.message);
+        alert(tr('Błąd: ') + err.message);
       }
     }
   };
@@ -1011,7 +1011,7 @@ export default function MediaTeamModule() {
   const saveTask = async () => {
     try {
       if (!taskForm.title.trim()) {
-        alert('Tytuł zadania jest wymagany');
+        alert(tr('Tytuł zadania jest wymagany'));
         return;
       }
       const taskData = {
@@ -1038,19 +1038,19 @@ export default function MediaTeamModule() {
       await fetchData();
     } catch (err) {
       console.error('Błąd zapisywania zadania:', err);
-      alert('Błąd: ' + err.message);
+      alert(tr('Błąd: ') + err.message);
     }
   };
 
   const deleteTask = async (id) => {
-    if (confirm('Usunąć zadanie?')) {
+    if (confirm(tr('Usunąć zadanie?'))) {
       try {
         const { error } = await supabase.from('media_tasks').delete().eq('id', id);
         if (error) throw error;
         await fetchData();
       } catch (err) {
         console.error('Błąd usuwania zadania:', err);
-        alert('Błąd: ' + err.message);
+        alert(tr('Błąd: ') + err.message);
       }
     }
   };

@@ -97,7 +97,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
 
     } catch (err) {
       console.error('Error starting recording:', err);
-      alert('Nie można uzyskać dostępu do mikrofonu. Sprawdź uprawnienia przeglądarki.');
+      alert(tr('Nie można uzyskać dostępu do mikrofonu. Sprawdź uprawnienia przeglądarki.'));
     }
   };
 
@@ -178,7 +178,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
       handleCancel();
     } catch (err) {
       console.error('Error sending voice message:', err);
-      alert('Błąd podczas wysyłania wiadomości głosowej');
+      alert(tr('Błąd podczas wysyłania wiadomości głosowej'));
     } finally {
       setIsSending(false);
     }

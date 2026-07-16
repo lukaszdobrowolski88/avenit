@@ -658,7 +658,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Błąd przesyłania pliku: ' + error.message);
+      alert(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -693,7 +693,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
     });
 
     if (validFiles.length === 0) {
-      alert('Nieobsługiwany format pliku. Akceptowane: PDF, JPG, PNG, MP3, DOC, .pro, .pro6, .pro6pl, .pro7');
+      alert(tr('Nieobsługiwany format pliku. Akceptowane: PDF, JPG, PNG, MP3, DOC, .pro, .pro6, .pro6pl, .pro7'));
       return;
     }
 
@@ -729,7 +729,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Błąd przesyłania pliku: ' + error.message);
+      alert(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }

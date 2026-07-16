@@ -514,7 +514,7 @@ export default function AtmosferaTeamModule() {
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Błąd przesyłania pliku: ' + error.message);
+      alert(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -540,7 +540,7 @@ export default function AtmosferaTeamModule() {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -577,7 +577,7 @@ export default function AtmosferaTeamModule() {
       fetchFinanceData();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -629,7 +629,7 @@ export default function AtmosferaTeamModule() {
 
   const saveMember = async () => {
     try {
-      if (!memberForm.full_name.trim()) return alert('Imię wymagane');
+      if (!memberForm.full_name.trim()) return alert(tr('Imię wymagane'));
       let memberId = memberForm.id;
 
       if (memberForm.id) {
@@ -674,7 +674,7 @@ export default function AtmosferaTeamModule() {
       fetchData();
       fetchAtmosferaRoles();
     } catch (err) {
-      alert('Błąd zapisu: ' + err.message);
+      alert(tr('Błąd zapisu: ') + err.message);
     }
   };
 
@@ -695,13 +695,13 @@ export default function AtmosferaTeamModule() {
   };
 
   const deleteMember = async (id) => {
-    if (!confirm('Usunąć?')) return;
+    if (!confirm(tr('Usunąć?'))) return;
     try {
       const { error } = await supabase.from('atmosfera_members').delete().eq('id', id);
       if (error) throw error;
       fetchData();
     } catch (err) {
-      alert('Błąd: ' + err.message);
+      alert(tr('Błąd: ') + err.message);
     }
   };
 

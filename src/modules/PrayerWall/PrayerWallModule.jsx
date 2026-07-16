@@ -792,7 +792,7 @@ export default function PrayerWallModule() {
 
     } catch (err) {
       console.error('Błąd pobierania prośb:', err);
-      setError('Nie udało się pobrać prośb modlitewnych');
+      setError(tr('Nie udało się pobrać prośb modlitewnych'));
     } finally {
       setLoading(false);
     }
@@ -945,7 +945,7 @@ export default function PrayerWallModule() {
       fetchRequests();
     } catch (err) {
       console.error('Błąd zapisywania:', err);
-      setError('Nie udało się zapisać prośby');
+      setError(tr('Nie udało się zapisać prośby'));
     } finally {
       setIsSubmitting(false);
     }
@@ -953,7 +953,7 @@ export default function PrayerWallModule() {
 
   // Usuń prośbę
   const handleDelete = async (requestId) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę intencję?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę intencję?'))) return;
 
     try {
       const { error } = await supabase
@@ -965,7 +965,7 @@ export default function PrayerWallModule() {
       fetchRequests();
     } catch (err) {
       console.error('Błąd usuwania:', err);
-      setError('Nie udało się usunąć prośby');
+      setError(tr('Nie udało się usunąć prośby'));
     }
   };
 
@@ -988,7 +988,7 @@ export default function PrayerWallModule() {
       fetchRequests();
     } catch (err) {
       console.error('Błąd aktualizacji statusu:', err);
-      setError('Nie udało się zaktualizować statusu');
+      setError(tr('Nie udało się zaktualizować statusu'));
     } finally {
       setIsSubmitting(false);
     }

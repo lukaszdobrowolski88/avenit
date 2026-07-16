@@ -142,7 +142,7 @@ const MINISTRY_CONFIG = {
   worship: {
     tableName: 'worship_events',
     icon: '🎵',
-    title: 'Zespół Uwielbienia',
+    title: tr('Zespół Uwielbienia'),
     defaultType: 'proba',
     types: [
       { value: 'proba', label: t('Próba') },
@@ -182,7 +182,7 @@ const MINISTRY_CONFIG = {
   kids: {
     tableName: 'kids_events',
     icon: '👶',
-    title: 'Małe Avenit',
+    title: tr('Małe Avenit'),
     defaultType: 'zajecia',
     types: [
       { value: 'zajecia', label: t('Zajęcia') },
@@ -250,7 +250,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
 
   const handleSubmit = async () => {
     if (!form.title.trim()) {
-      alert('Tytuł wydarzenia jest wymagany');
+      alert(tr('Tytuł wydarzenia jest wymagany'));
       return;
     }
 

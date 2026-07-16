@@ -14,7 +14,7 @@ export default function FormPreview({
 
   const handlePreviewSubmit = (answers) => {
     console.log('Preview submit:', answers);
-    alert('To jest tylko podgląd. Formularz nie został wysłany.');
+    alert(tr('To jest tylko podgląd. Formularz nie został wysłany.'));
   };
 
   return (

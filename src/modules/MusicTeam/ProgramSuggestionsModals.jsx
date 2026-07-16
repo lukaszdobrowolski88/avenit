@@ -113,9 +113,9 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
       }]);
       if (error) {
         if (error.code === '23505') {
-          alert('Ta pieśń jest już przypisana do tego programu.');
+          alert(tr('Ta pieśń jest już przypisana do tego programu.'));
         } else {
-          alert('Błąd zapisu: ' + error.message);
+          alert(tr('Błąd zapisu: ') + error.message);
         }
         setSaving(false);
         return;
@@ -123,7 +123,7 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
       onSaved?.();
       onClose();
     } catch (err) {
-      alert('Błąd: ' + err.message);
+      alert(tr('Błąd: ') + err.message);
       setSaving(false);
     }
   };
@@ -480,7 +480,7 @@ function ProgramSongsEditor({ program, songs, onBack, onClose }) {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Usunąć pieśń z propozycji?')) return;
+    if (!confirm(tr('Usunąć pieśń z propozycji?'))) return;
     setItems(prev => prev.filter(i => i.id !== id));
     await supabase.from('program_song_suggestions').delete().eq('id', id);
   };
@@ -497,9 +497,9 @@ function ProgramSongsEditor({ program, songs, onBack, onClose }) {
     }]).select().single();
     if (error) {
       if (error.code === '23505') {
-        alert('Ta pieśń jest już przypisana do tego programu.');
+        alert(tr('Ta pieśń jest już przypisana do tego programu.'));
       } else {
-        alert('Błąd: ' + error.message);
+        alert(tr('Błąd: ') + error.message);
       }
       return;
     }

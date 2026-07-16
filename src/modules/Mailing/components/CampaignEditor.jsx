@@ -22,7 +22,7 @@ const STEPS = [
 ];
 
 const EDITOR_MODES = {
-  dragdrop: { id: 'dragdrop', label: 'Kreator wizualny', icon: MousePointer, description: 'Przeciągnij i upuść gotowe elementy' },
+  dragdrop: { id: 'dragdrop', label: 'Kreator wizualny', icon: MousePointer, description: tr('Przeciągnij i upuść gotowe elementy') },
   richtext: { id: 'richtext', label: 'Edytor tekstu', icon: Edit3, description: 'Klasyczny edytor z formatowaniem' },
   html: { id: 'html', label: 'Kod HTML', icon: Code, description: 'Dla zaawansowanych - edytuj surowy HTML' }
 };
@@ -175,14 +175,14 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
       onSave?.();
     } catch (err) {
       console.error('Error saving campaign:', err);
-      alert('Błąd podczas zapisywania maila');
+      alert(tr('Błąd podczas zapisywania maila'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleSend = async () => {
-    if (!confirm('Czy na pewno chcesz wysłać tego maila? Ta operacja jest nieodwracalna.')) {
+    if (!confirm(tr('Czy na pewno chcesz wysłać tego maila? Ta operacja jest nieodwracalna.'))) {
       return;
     }
 
@@ -250,7 +250,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
       }
     } catch (err) {
       console.error('Error sending campaign:', err);
-      alert('Błąd podczas wysyłania maila');
+      alert(tr('Błąd podczas wysyłania maila'));
     } finally {
       setSaving(false);
     }
@@ -258,7 +258,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
   const handleTestSend = async () => {
     if (!testEmail || !testEmail.includes('@')) {
-      alert('Wprowadź poprawny adres email');
+      alert(tr('Wprowadź poprawny adres email'));
       return;
     }
 
@@ -291,7 +291,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
         setShowTestSend(false);
       }
     } catch (err) {
-      alert('Błąd podczas wysyłania testowego emaila');
+      alert(tr('Błąd podczas wysyłania testowego emaila'));
     } finally {
       setSaving(false);
     }
@@ -299,7 +299,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
   const handleSchedule = async () => {
     if (!formData.scheduled_at) {
-      alert('Wybierz datę i godzinę wysyłki');
+      alert(tr('Wybierz datę i godzinę wysyłki'));
       return;
     }
 
@@ -309,7 +309,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
       alert(`Mail zaplanowany na: ${new Date(formData.scheduled_at).toLocaleString('pl-PL')}`);
       setShowSchedule(false);
     } catch (err) {
-      alert('Błąd podczas planowania maila');
+      alert(tr('Błąd podczas planowania maila'));
     } finally {
       setSaving(false);
     }

@@ -2,6 +2,7 @@ import React from 'react';
 import { Mail, Bell, MessageSquare, Megaphone } from 'lucide-react';
 import { SettingsCard, SettingRow, Toggle, SelectSetting } from './SettingsUI';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Ustawienia powiadomień — kanały i zdarzenia. Zapisywane w app_settings
 // (klucze notif_*). Domyślnie włączone tam, gdzie ma to sens.
@@ -17,11 +18,11 @@ export default function NotificationSettings({ get, save }) {
   ];
 
   const events = [
-    { key: 'notif_event_assignments', label: t('Przydziały do służby'), hint: 'Gdy ktoś zostanie przypisany do grafiku' },
-    { key: 'notif_event_programs', label: 'Nowe programy', hint: 'Publikacja programu nabożeństwa' },
-    { key: 'notif_event_messages', label: t('Wiadomości w Komunikatorze'), hint: 'Nowe wiadomości w czacie' },
+    { key: 'notif_event_assignments', label: t('Przydziały do służby'), hint: tr('Gdy ktoś zostanie przypisany do grafiku') },
+    { key: 'notif_event_programs', label: 'Nowe programy', hint: tr('Publikacja programu nabożeństwa') },
+    { key: 'notif_event_messages', label: t('Wiadomości w Komunikatorze'), hint: tr('Nowe wiadomości w czacie') },
     { key: 'notif_event_forms', label: t('Zgłoszenia z formularzy'), hint: 'Nowe odpowiedzi na formularze' },
-    { key: 'notif_event_prayer', label: t('Prośby modlitewne'), hint: 'Nowe wpisy na ścianie modlitwy' },
+    { key: 'notif_event_prayer', label: t('Prośby modlitewne'), hint: tr('Nowe wpisy na ścianie modlitwy') },
   ];
 
   return (

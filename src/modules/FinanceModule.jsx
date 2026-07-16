@@ -359,10 +359,10 @@ const FinanceModule = () => {
 
       setAccountBalances(balanceData);
       setShowBalanceModal(false);
-      alert('Stan kont zapisany pomyślnie');
+      alert(tr('Stan kont zapisany pomyślnie'));
     } catch (error) {
       console.error('Error saving balances:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -435,7 +435,7 @@ const FinanceModule = () => {
 
   const saveBudgetItem = async () => {
     if (!budgetForm.category || !budgetForm.planned_amount) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -470,12 +470,12 @@ const FinanceModule = () => {
       fetchBudgetItems();
     } catch (error) {
       console.error('Error saving budget item:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
   const deleteBudgetItem = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę pozycję budżetową?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę pozycję budżetową?'))) return;
 
     try {
       const { error } = await supabase
@@ -487,13 +487,13 @@ const FinanceModule = () => {
       fetchBudgetItems();
     } catch (error) {
       console.error('Error deleting budget item:', error);
-      alert('Błąd usuwania: ' + error.message);
+      alert(tr('Błąd usuwania: ') + error.message);
     }
   };
 
   const saveIncome = async () => {
     if (!incomeForm.date || !incomeForm.amount || !incomeForm.source) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -532,12 +532,12 @@ const FinanceModule = () => {
       fetchIncomeTransactions();
     } catch (error) {
       console.error('Error saving income:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
   const deleteIncome = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć ten wpływ?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć ten wpływ?'))) return;
 
     try {
       const { error } = await supabase
@@ -549,7 +549,7 @@ const FinanceModule = () => {
       fetchIncomeTransactions();
     } catch (error) {
       console.error('Error deleting income:', error);
-      alert('Błąd usuwania: ' + error.message);
+      alert(tr('Błąd usuwania: ') + error.message);
     }
   };
 
@@ -588,7 +588,7 @@ const FinanceModule = () => {
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Błąd przesyłania pliku: ' + error.message);
+      alert(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -603,7 +603,7 @@ const FinanceModule = () => {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.category || !expenseForm.description || !expenseForm.responsible_person) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -648,12 +648,12 @@ const FinanceModule = () => {
       fetchExpenseTransactions();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
   const deleteExpense = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć ten wydatek?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć ten wydatek?'))) return;
 
     try {
       const { error } = await supabase
@@ -665,7 +665,7 @@ const FinanceModule = () => {
       fetchExpenseTransactions();
     } catch (error) {
       console.error('Error deleting expense:', error);
-      alert('Błąd usuwania: ' + error.message);
+      alert(tr('Błąd usuwania: ') + error.message);
     }
   };
 

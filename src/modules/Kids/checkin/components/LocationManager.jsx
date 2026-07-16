@@ -102,7 +102,7 @@ export default function LocationManager({ onLocationsChange }) {
       fetchLocations();
     } catch (err) {
       console.error('Error saving location:', err);
-      alert('Błąd podczas zapisywania sali');
+      alert(tr('Błąd podczas zapisywania sali'));
     }
   };
 
@@ -126,7 +126,7 @@ export default function LocationManager({ onLocationsChange }) {
   };
 
   const handleDelete = async (locationId) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę salę?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę salę?'))) return;
 
     try {
       const { error } = await supabase
@@ -139,7 +139,7 @@ export default function LocationManager({ onLocationsChange }) {
       setLocations(prev => prev.filter(l => l.id !== locationId));
     } catch (err) {
       console.error('Error deleting location:', err);
-      alert('Nie można usunąć sali - może być używana w check-inach');
+      alert(tr('Nie można usunąć sali - może być używana w check-inach'));
     }
   };
 

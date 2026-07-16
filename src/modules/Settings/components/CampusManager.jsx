@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Plus, Edit3, Trash2, X, MapPin, GripVertical, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 export default function CampusManager({ onMessage }) {
   const t = useT();
@@ -43,7 +44,7 @@ export default function CampusManager({ onMessage }) {
         .update({ name: form.name, address: form.address, city: form.city, timezone: form.timezone, is_active: form.is_active })
         .eq('id', form.id);
       if (error) {
-        onMessage?.({ type: 'error', text: 'Błąd zapisu: ' + error.message });
+        onMessage?.({ type: 'error', text: tr('Błąd zapisu: ') + error.message });
         return;
       }
     } else {
@@ -52,7 +53,7 @@ export default function CampusManager({ onMessage }) {
         .from('campuses')
         .insert({ name: form.name, address: form.address, city: form.city, timezone: form.timezone, is_active: form.is_active, sort_order: maxSort });
       if (error) {
-        onMessage?.({ type: 'error', text: 'Błąd zapisu: ' + error.message });
+        onMessage?.({ type: 'error', text: tr('Błąd zapisu: ') + error.message });
         return;
       }
     }
@@ -66,10 +67,10 @@ export default function CampusManager({ onMessage }) {
     if (!window.confirm(`Usunąć lokalizację "${campus.name}"? Powiązane rekordy stracą przypisanie do lokalizacji.`)) return;
     const { error } = await supabase.from('campuses').delete().eq('id', campus.id);
     if (error) {
-      onMessage?.({ type: 'error', text: 'Błąd usuwania: ' + error.message });
+      onMessage?.({ type: 'error', text: tr('Błąd usuwania: ') + error.message });
       return;
     }
-    onMessage?.({ type: 'success', text: 'Lokalizacja usunięta.' });
+    onMessage?.({ type: 'success', text: tr('Lokalizacja usunięta.') });
     fetchCampuses();
   };
 

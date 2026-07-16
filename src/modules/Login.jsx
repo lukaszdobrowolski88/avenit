@@ -65,7 +65,7 @@ export default function Login() {
       }
       // Sukces bez 2FA - App.jsx wykryje sesję (onAuthStateChange)
     } catch (err) {
-      setError('Wystąpił błąd podczas logowania');
+      setError(tr('Wystąpił błąd podczas logowania'));
       setLoading(false);
     }
   };
@@ -73,7 +73,7 @@ export default function Login() {
   const handleVerify2FA = async e => {
     e.preventDefault();
     if (totpCode.length < 6) {
-      setError('Wprowadź 6-cyfrowy kod');
+      setError(tr('Wprowadź 6-cyfrowy kod'));
       return;
     }
 
@@ -106,7 +106,7 @@ export default function Login() {
   const handleForgotPassword = async e => {
     e.preventDefault();
     if (!email) {
-      setError('Wprowadź adres e-mail');
+      setError(tr('Wprowadź adres e-mail'));
       return;
     }
     setLoading(true);

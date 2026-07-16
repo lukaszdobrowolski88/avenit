@@ -233,7 +233,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
   };
 
   const handleDelete = async (absence) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę nieobecność?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę nieobecność?'))) return;
 
     try {
       // 1. Usuń nieobecność z bazy

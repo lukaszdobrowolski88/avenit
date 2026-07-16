@@ -418,7 +418,7 @@ export default function ParticipantsView({ forms }) {
       }
     } catch (error) {
       console.error('Error updating payment status:', error);
-      alert('Wystąpił błąd podczas aktualizacji statusu płatności');
+      alert(tr('Wystąpił błąd podczas aktualizacji statusu płatności'));
     }
   };
 
@@ -513,7 +513,7 @@ export default function ParticipantsView({ forms }) {
       setPaymentDate(new Date().toISOString().split('T')[0]);
     } catch (error) {
       console.error('Error adding payment:', error);
-      alert('Wystąpił błąd podczas dodawania płatności');
+      alert(tr('Wystąpił błąd podczas dodawania płatności'));
     }
   };
 

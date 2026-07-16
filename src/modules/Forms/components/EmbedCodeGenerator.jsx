@@ -79,7 +79,7 @@ export default function EmbedCodeGenerator({ formId, formTitle, isOpen, onClose 
     { id: 'iframe', label: 'Iframe', icon: Code, description: 'Prosty kod do osadzenia' },
     { id: 'js', label: 'JavaScript', icon: Code, description: 'Dynamiczne osadzenie z auto-resize' },
     { id: 'wordpress', label: 'WordPress', icon: Code, description: 'Shortcode dla WordPress' },
-    { id: 'link', label: 'Link', icon: ExternalLink, description: 'Bezpośredni link do formularza' }
+    { id: 'link', label: 'Link', icon: ExternalLink, description: tr('Bezpośredni link do formularza') }
   ];
 
   const getCurrentCode = () => {

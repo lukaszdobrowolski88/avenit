@@ -123,7 +123,7 @@ export default function GroupSettingsModal({
       setAllUsers(prev => prev.filter(u => u.email !== email));
     } catch (err) {
       console.error('Error adding participant:', err);
-      alert('Nie udało się dodać uczestnika');
+      alert(tr('Nie udało się dodać uczestnika'));
     } finally {
       setSaving(false);
     }
@@ -132,7 +132,7 @@ export default function GroupSettingsModal({
   // Usuń uczestnika
   const handleRemoveParticipant = async (email) => {
     if (email === currentUserEmail) {
-      if (!window.confirm('Czy na pewno chcesz opuścić tę grupę?')) return;
+      if (!window.confirm(tr('Czy na pewno chcesz opuścić tę grupę?'))) return;
     } else {
       if (!window.confirm(`Czy na pewno chcesz usunąć tego uczestnika?`)) return;
     }
@@ -153,7 +153,7 @@ export default function GroupSettingsModal({
       onUpdate?.();
     } catch (err) {
       console.error('Error removing participant:', err);
-      alert('Nie udało się usunąć uczestnika');
+      alert(tr('Nie udało się usunąć uczestnika'));
     } finally {
       setSaving(false);
     }
@@ -174,7 +174,7 @@ export default function GroupSettingsModal({
       onUpdate?.();
     } catch (err) {
       console.error('Error changing role:', err);
-      alert('Nie udało się zmienić roli');
+      alert(tr('Nie udało się zmienić roli'));
     } finally {
       setSaving(false);
     }
@@ -200,7 +200,7 @@ export default function GroupSettingsModal({
       onUpdate?.();
     } catch (err) {
       console.error('Error updating name:', err);
-      alert('Nie udało się zmienić nazwy');
+      alert(tr('Nie udało się zmienić nazwy'));
     } finally {
       setSaving(false);
     }

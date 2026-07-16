@@ -223,12 +223,12 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
 
 // Lista służb do wyboru przy dodawaniu wydarzenia
 const MINISTRY_CALENDARS = [
-  { key: 'worship', icon: '🎵', title: 'Zespół Uwielbienia', color: 'from-purple-500 to-indigo-500', description: 'Próby, koncerty, nabożeństwa' },
+  { key: 'worship', icon: '🎵', title: tr('Zespół Uwielbienia'), color: 'from-purple-500 to-indigo-500', description: tr('Próby, koncerty, nabożeństwa') },
   { key: 'media', icon: '🎬', title: 'Media Team', color: 'from-accent-secondary-light to-red-500', description: 'Produkcje, streaming, szkolenia' },
   { key: 'atmosfera', icon: '💚', title: 'Atmosfera Team', color: 'from-teal-500 to-green-500', description: 'Spotkania, integracje' },
-  { key: 'kids', icon: '👶', title: 'Małe Avenit', color: 'from-yellow-500 to-amber-500', description: 'Zajęcia, warsztaty, wycieczki' },
+  { key: 'kids', icon: '👶', title: tr('Małe Avenit'), color: 'from-yellow-500 to-amber-500', description: tr('Zajęcia, warsztaty, wycieczki') },
   { key: 'homegroups', icon: '🏠', title: 'Grupy Domowe', color: 'from-blue-500 to-cyan-500', description: 'Spotkania grupowe' },
-  { key: 'mlodziezowka', icon: '🎉', title: 'Młodzieżówka', color: 'from-accent-primary-light to-rose-500', description: 'Wydarzenia młodzieżowe' }
+  { key: 'mlodziezowka', icon: '🎉', title: tr('Młodzieżówka'), color: 'from-accent-primary-light to-rose-500', description: tr('Wydarzenia młodzieżowe') }
 ];
 
 const ModalSelectEventCategory = ({ date, categories, onClose, onSelectCategory, onSelectMinistry }) => {
@@ -311,7 +311,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
   }, [initialEvent, category]);
 
   const handleSubmit = async () => {
-    if (!event.title) return alert('Podaj tytuł wydarzenia');
+    if (!event.title) return alert(tr('Podaj tytuł wydarzenia'));
 
     const payload = {
       title: event.title,
@@ -509,7 +509,7 @@ const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
   };
 
   const handleSubmit = () => {
-    if (!task.title) return alert('Podaj tytuł');
+    if (!task.title) return alert(tr('Podaj tytuł'));
 
     const dateStr = task.due_date;
     const timeStr = task.due_time || '00:00';
@@ -619,7 +619,7 @@ const EventBadge = ({ event, onClick }) => {
 const MINISTRY_EVENT_CONFIG = {
   mlodziezowka: {
     icon: '🎉',
-    title: 'Młodzieżówka',
+    title: tr('Młodzieżówka'),
     defaultType: 'spotkanie',
     types: [
       { value: 'spotkanie', label: tr('Spotkanie') },
@@ -630,7 +630,7 @@ const MINISTRY_EVENT_CONFIG = {
   },
   worship: {
     icon: '🎵',
-    title: 'Zespół Uwielbienia',
+    title: tr('Zespół Uwielbienia'),
     defaultType: 'proba',
     types: [
       { value: 'proba', label: tr('Próba') },
@@ -664,7 +664,7 @@ const MINISTRY_EVENT_CONFIG = {
   },
   kids: {
     icon: '👶',
-    title: 'Małe Avenit',
+    title: tr('Małe Avenit'),
     defaultType: 'zajecia',
     types: [
       { value: 'zajecia', label: tr('Zajęcia') },
@@ -704,7 +704,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry }) => {
 
   const handleSubmit = async () => {
     if (!eventForm.title.trim()) {
-      alert('Tytuł wydarzenia jest wymagany');
+      alert(tr('Tytuł wydarzenia jest wymagany'));
       return;
     }
 
@@ -1352,7 +1352,7 @@ export default function CalendarModule() {
       }]).select().single();
 
       if (error) {
-        alert('Błąd tworzenia nabożeństwa: ' + error.message);
+        alert(tr('Błąd tworzenia nabożeństwa: ') + error.message);
         return;
       }
 

@@ -33,13 +33,13 @@ export default function LandingPage() {
   const features = [
     {
       icon: Users,
-      title: 'Zarządzanie członkami',
-      description: 'Kompletna baza członków z historią, grupami i kontaktami.'
+      title: tr('Zarządzanie członkami'),
+      description: tr('Kompletna baza członków z historią, grupami i kontaktami.')
     },
     {
       icon: Calendar,
       title: 'Kalendarz i wydarzenia',
-      description: 'Planuj wydarzenia, nabożeństwa i spotkania w jednym miejscu.'
+      description: tr('Planuj wydarzenia, nabożeństwa i spotkania w jednym miejscu.')
     },
     {
       icon: Baby,
@@ -49,17 +49,17 @@ export default function LandingPage() {
     {
       icon: FileText,
       title: 'Formularze online',
-      description: 'Twórz formularze zgłoszeniowe, ankiety i zbieraj dane.'
+      description: tr('Twórz formularze zgłoszeniowe, ankiety i zbieraj dane.')
     },
     {
       icon: Mail,
       title: 'Komunikacja',
-      description: 'Wysyłaj newslettery, ogłoszenia i powiadomienia do członków.'
+      description: tr('Wysyłaj newslettery, ogłoszenia i powiadomienia do członków.')
     },
     {
       icon: Shield,
-      title: 'Bezpieczeństwo',
-      description: 'Dane są szyfrowane i przechowywane zgodnie z RODO.'
+      title: tr('Bezpieczeństwo'),
+      description: tr('Dane są szyfrowane i przechowywane zgodnie z RODO.')
     }
   ];
 
@@ -67,17 +67,17 @@ export default function LandingPage() {
     {
       name: 'Pastor Jan Kowalski',
       church: 'Kościół Łaski, Warszawa',
-      text: 'Avenit zrewolucjonizowało sposób, w jaki zarządzamy naszą społecznością. Oszczędzamy godziny pracy tygodniowo!'
+      text: tr('Avenit zrewolucjonizowało sposób, w jaki zarządzamy naszą społecznością. Oszczędzamy godziny pracy tygodniowo!')
     },
     {
       name: 'Anna Nowak',
       church: 'Zbór Nowe Życie, Kraków',
-      text: 'System check-in dzieci to game changer. Rodzice czują się bezpiecznie, a my mamy pełną kontrolę.'
+      text: tr('System check-in dzieci to game changer. Rodzice czują się bezpiecznie, a my mamy pełną kontrolę.')
     },
     {
       name: 'Marek Wiśniewski',
       church: 'Kościół Baptystyczny, Poznań',
-      text: 'Intuicyjny interfejs i świetne wsparcie techniczne. Polecam każdemu kościołowi!'
+      text: tr('Intuicyjny interfejs i świetne wsparcie techniczne. Polecam każdemu kościołowi!')
     }
   ];
 

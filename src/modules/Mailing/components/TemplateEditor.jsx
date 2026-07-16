@@ -34,7 +34,7 @@ const EXTENDED_CATEGORIES = {
 };
 
 const EDITOR_MODES = {
-  dragdrop: { id: 'dragdrop', label: 'Kreator wizualny', icon: MousePointer, description: 'Przeciągnij i upuść gotowe elementy' },
+  dragdrop: { id: 'dragdrop', label: 'Kreator wizualny', icon: MousePointer, description: tr('Przeciągnij i upuść gotowe elementy') },
   richtext: { id: 'richtext', label: 'Edytor tekstu', icon: Edit3, description: 'Klasyczny edytor z formatowaniem' },
   html: { id: 'html', label: 'Kod HTML', icon: Code, description: 'Dla zaawansowanych - edytuj surowy HTML' }
 };
@@ -79,7 +79,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      alert('Podaj nazwę szablonu');
+      alert(tr('Podaj nazwę szablonu'));
       setCurrentStep(0);
       return;
     }
@@ -96,7 +96,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
       onSave?.();
     } catch (err) {
       console.error('Error saving template:', err);
-      alert('Błąd podczas zapisywania szablonu');
+      alert(tr('Błąd podczas zapisywania szablonu'));
     } finally {
       setSaving(false);
     }

@@ -36,12 +36,12 @@ export default function ResetPassword() {
     setError('');
 
     if (password.length < 6) {
-      setError('Hasło musi mieć minimum 6 znaków');
+      setError(tr('Hasło musi mieć minimum 6 znaków'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Hasła nie są identyczne');
+      setError(tr('Hasła nie są identyczne'));
       return;
     }
 

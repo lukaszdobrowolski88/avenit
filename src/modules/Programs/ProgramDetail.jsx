@@ -971,7 +971,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                         const file = e.target.files?.[0];
                         if (!file) return;
                         if (file.size > 10 * 1024 * 1024) {
-                          alert('Plik jest za duży (max 10MB)');
+                          alert(tr('Plik jest za duży (max 10MB)'));
                           return;
                         }
                         try {
@@ -983,7 +983,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                           handleChange('customAttachments', [...(item.customAttachments || []), newAtt]);
                         } catch (err) {
                           console.error('Upload error:', err);
-                          alert('Błąd uploadu pliku');
+                          alert(tr('Błąd uploadu pliku'));
                         }
                         e.target.value = '';
                       }}
@@ -2230,11 +2230,11 @@ export default function ProgramDetail() {
         .insert([templateData]);
 
       if (error) throw error;
-      alert('Szablon został zapisany!');
+      alert(tr('Szablon został zapisany!'));
       fetchTemplates();
     } catch (err) {
       console.error('Błąd zapisywania szablonu:', err);
-      alert('Nie udało się zapisać szablonu.');
+      alert(tr('Nie udało się zapisać szablonu.'));
     }
   };
 
@@ -2248,7 +2248,7 @@ export default function ProgramDetail() {
   };
 
   const handleDeleteTemplate = async (templateId) => {
-    if (!window.confirm('Czy na pewno chcesz usunąć ten szablon?')) return;
+    if (!window.confirm(tr('Czy na pewno chcesz usunąć ten szablon?'))) return;
     try {
       await supabase.from('program_templates').delete().eq('id', templateId);
       fetchTemplates();
@@ -2467,7 +2467,7 @@ export default function ProgramDetail() {
     }
 
     if (result.error) {
-      alert('Błąd zapisu: ' + result.error.message);
+      alert(tr('Błąd zapisu: ') + result.error.message);
       return;
     }
 
@@ -2598,7 +2598,7 @@ export default function ProgramDetail() {
 
   const handleSaveAndUploadPDF = async (customOptions = null) => {
     if (!program || !program.date) {
-      alert('Najpierw wybierz lub utwórz program.');
+      alert(tr('Najpierw wybierz lub utwórz program.'));
       return;
     }
 
@@ -2633,13 +2633,13 @@ export default function ProgramDetail() {
       const result = await savePDFToSupabase(program, freshSongsMap, teamRolesForPDF, optionsToUse);
 
       if (result.success) {
-        alert('PDF został pobrany i zapisany w chmurze!');
+        alert(tr('PDF został pobrany i zapisany w chmurze!'));
       } else {
-        alert('PDF pobrany na dysk, ale wystąpił błąd zapisu w chmurze.');
+        alert(tr('PDF pobrany na dysk, ale wystąpił błąd zapisu w chmurze.'));
       }
     } catch (error) {
       console.error('Critical error saving PDF:', error);
-      alert('Wystąpił błąd podczas generowania PDF.');
+      alert(tr('Wystąpił błąd podczas generowania PDF.'));
     } finally {
       setIsLoading(false);
     }
@@ -2666,13 +2666,13 @@ export default function ProgramDetail() {
 
   const handleExportProPresenter = async () => {
     if (!program || !program.schedule || program.schedule.length === 0) {
-      alert('Brak elementów w programie do eksportu.');
+      alert(tr('Brak elementów w programie do eksportu.'));
       return;
     }
 
     const songItems = program.schedule.filter(item => item.type === 'song' && item.songId);
     if (songItems.length === 0) {
-      alert('Brak pieśni w programie. Eksport ProPresenter wymaga co najmniej jednej pieśni.');
+      alert(tr('Brak pieśni w programie. Eksport ProPresenter wymaga co najmniej jednej pieśni.'));
       return;
     }
 
@@ -2692,20 +2692,20 @@ export default function ProgramDetail() {
       }
     } catch (err) {
       console.error('Błąd eksportu do ProPresenter:', err);
-      alert('Wystąpił błąd podczas eksportu do ProPresenter.');
+      alert(tr('Wystąpił błąd podczas eksportu do ProPresenter.'));
     }
   };
 
   const handleSendEmail = async () => {
     if (!program || !program.date) {
-      alert('Najpierw wybierz lub utwórz program.');
+      alert(tr('Najpierw wybierz lub utwórz program.'));
       return;
     }
 
     const recipients = getAllRecipients(program, worshipTeam);
 
     if (recipients.length === 0) {
-      alert('Brak adresów e-mail do wysyłki. Upewnij się, że członkowie zespołu mają przypisane adresy e-mail.');
+      alert(tr('Brak adresów e-mail do wysyłki. Upewnij się, że członkowie zespołu mają przypisane adresy e-mail.'));
       return;
     }
 
@@ -2767,10 +2767,10 @@ export default function ProgramDetail() {
         throw error;
       }
 
-      alert('Program został wysłany!');
+      alert(tr('Program został wysłany!'));
     } catch (error) {
       console.error('Error sending email:', error);
-      alert('Wystąpił błąd podczas wysyłania.');
+      alert(tr('Wystąpił błąd podczas wysyłania.'));
     } finally {
       setIsSending(false);
     }

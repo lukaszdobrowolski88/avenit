@@ -192,12 +192,12 @@ export default function HouseholdManager() {
       resetForm();
     } catch (err) {
       console.error('Error saving household:', err);
-      alert('Błąd podczas zapisywania rodziny');
+      alert(tr('Błąd podczas zapisywania rodziny'));
     }
   };
 
   const handleDelete = async (householdId) => {
-    if (!confirm('Czy na pewno chcesz usunąć tę rodzinę? Uczniowie nie zostaną usunięci, ale stracą powiązanie z rodziną.')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć tę rodzinę? Uczniowie nie zostaną usunięci, ale stracą powiązanie z rodziną.'))) return;
 
     try {
       // First, unlink students
@@ -217,7 +217,7 @@ export default function HouseholdManager() {
       await fetchData();
     } catch (err) {
       console.error('Error deleting household:', err);
-      alert('Błąd podczas usuwania rodziny');
+      alert(tr('Błąd podczas usuwania rodziny'));
     }
   };
 
@@ -267,7 +267,7 @@ export default function HouseholdManager() {
       setAssignStudentModal(null);
     } catch (err) {
       console.error('Error assigning student:', err);
-      alert('Błąd podczas przypisywania ucznia');
+      alert(tr('Błąd podczas przypisywania ucznia'));
     }
   };
 

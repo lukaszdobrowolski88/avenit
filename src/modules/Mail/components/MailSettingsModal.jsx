@@ -317,7 +317,7 @@ export default function MailSettingsModal({
                         </button>
                         <button
                           onClick={() => {
-                            if (confirm('Czy na pewno usunąć to konto?')) {
+                            if (confirm(tr('Czy na pewno usunąć to konto?'))) {
                               onDeleteAccount(account.id);
                             }
                           }}

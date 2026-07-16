@@ -7,14 +7,14 @@ import { tr } from '../../../i18n';
 
 // Dostępne typy komponentów
 const COMPONENT_TYPES = [
-  { key: 'empty', label: tr('Pusta zakładka'), icon: Layers, description: 'Pusta strona do przyszłej rozbudowy' },
-  { key: 'events', label: tr('Wydarzenia'), icon: Calendar, description: 'Lista wydarzeń z kalendarzem' },
+  { key: 'empty', label: tr('Pusta zakładka'), icon: Layers, description: tr('Pusta strona do przyszłej rozbudowy') },
+  { key: 'events', label: tr('Wydarzenia'), icon: Calendar, description: tr('Lista wydarzeń z kalendarzem') },
   { key: 'tasks', label: tr('Zadania'), icon: CheckSquare, description: 'Tablica kanban z zadaniami' },
   { key: 'finance', label: tr('Finanse'), icon: DollarSign, description: 'Przychody i wydatki' },
-  { key: 'members', label: tr('Członkowie'), icon: Users, description: 'Lista członków zespołu' },
+  { key: 'members', label: tr('Członkowie'), icon: Users, description: tr('Lista członków zespołu') },
   { key: 'wall', label: tr('Tablica'), icon: MessageSquare, description: 'Tablica z wpisami i komentarzami' },
-  { key: 'schedule', label: tr('Grafik'), icon: CalendarDays, description: 'Harmonogram służb na wydarzenia' },
-  { key: 'duty', label: tr('Służby'), icon: UserCog, description: 'Zarządzanie służbami i przypisaniami' },
+  { key: 'schedule', label: tr('Grafik'), icon: CalendarDays, description: tr('Harmonogram służb na wydarzenia') },
+  { key: 'duty', label: tr('Służby'), icon: UserCog, description: tr('Zarządzanie służbami i przypisaniami') },
   { key: 'materials', label: tr('Materiały'), icon: FolderOpen, description: 'Pliki i dokumenty do pobrania' }
 ];
 

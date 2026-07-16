@@ -67,7 +67,7 @@ export default function FieldRenderer({
       }
     } catch (err) {
       console.error('Upload error:', err);
-      alert('Błąd podczas przesyłania pliku');
+      alert(tr('Błąd podczas przesyłania pliku'));
     } finally {
       setUploadProgress(null);
     }
@@ -478,7 +478,7 @@ export default function FieldRenderer({
           }
         } catch (err) {
           console.error('Image upload error:', err);
-          alert('Błąd podczas przesyłania obrazu');
+          alert(tr('Błąd podczas przesyłania obrazu'));
         } finally {
           setUploadProgress(null);
         }

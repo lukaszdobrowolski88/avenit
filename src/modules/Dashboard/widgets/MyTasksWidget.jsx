@@ -265,7 +265,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
       onClose();
     } catch (error) {
       console.error('Error saving task:', error);
-      alert('Błąd zapisu: ' + error.message);
+      alert(tr('Błąd zapisu: ') + error.message);
     } finally {
       setSaving(false);
     }
@@ -273,7 +273,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
 
   const handleDelete = async () => {
     if (!task.id) return;
-    if (!confirm('Czy na pewno chcesz usunąć to zadanie?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć to zadanie?'))) return;
 
     try {
       const source = task.source || 'personal';
@@ -291,7 +291,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
       onClose();
     } catch (error) {
       console.error('Error deleting task:', error);
-      alert('Błąd usuwania: ' + error.message);
+      alert(tr('Błąd usuwania: ') + error.message);
     }
   };
 

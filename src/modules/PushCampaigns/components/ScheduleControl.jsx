@@ -4,8 +4,8 @@ import { tr } from '../../../i18n';
 
 const MODES = [
   { id: 'now', label: tr('Wyślij teraz'), icon: Send, description: 'Push idzie natychmiast po zapisie.' },
-  { id: 'scheduled', label: 'Zaplanuj', icon: Clock, description: 'Wybierz datę i godzinę wysyłki.' },
-  { id: 'smart', label: 'Smart delivery', icon: Sparkles, description: 'Wyślij gdy odbiorca jest aktywny (max okno czasu).' },
+  { id: 'scheduled', label: 'Zaplanuj', icon: Clock, description: tr('Wybierz datę i godzinę wysyłki.') },
+  { id: 'smart', label: 'Smart delivery', icon: Sparkles, description: tr('Wyślij gdy odbiorca jest aktywny (max okno czasu).') },
 ];
 
 export default function ScheduleControl({

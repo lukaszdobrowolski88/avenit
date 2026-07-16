@@ -406,7 +406,7 @@ export default function MailSidebar({
                 </button>
                 <button
                   onClick={() => {
-                    if (confirm('Czy na pewno usunąć folder?')) {
+                    if (confirm(tr('Czy na pewno usunąć folder?'))) {
                       onDeleteFolder(contextMenu.item.id);
                     }
                     setContextMenu(null);
@@ -439,7 +439,7 @@ export default function MailSidebar({
                 <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
                 <button
                   onClick={() => {
-                    if (confirm('Czy na pewno usunąć etykietę?')) {
+                    if (confirm(tr('Czy na pewno usunąć etykietę?'))) {
                       onDeleteLabel(contextMenu.item.id);
                     }
                     setContextMenu(null);

@@ -55,7 +55,7 @@ export default function PayPalButton({
 
     script.onerror = () => {
       setLoading(false);
-      setError('Nie udało się załadować PayPal. Sprawdź połączenie z internetem.');
+      setError(tr('Nie udało się załadować PayPal. Sprawdź połączenie z internetem.'));
     };
 
     document.body.appendChild(script);
@@ -125,7 +125,7 @@ export default function PayPalButton({
         } catch (err) {
           console.error('PayPal capture error:', err);
           setPaymentStatus('error');
-          setError('Błąd podczas przetwarzania płatności.');
+          setError(tr('Błąd podczas przetwarzania płatności.'));
           if (onError) {
             onError(err);
           }
@@ -142,7 +142,7 @@ export default function PayPalButton({
       onError: (err) => {
         console.error('PayPal error:', err);
         setPaymentStatus('error');
-        setError('Wystąpił błąd podczas płatności.');
+        setError(tr('Wystąpił błąd podczas płatności.'));
         if (onError) {
           onError(err);
         }

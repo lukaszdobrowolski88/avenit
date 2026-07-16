@@ -163,7 +163,7 @@ export default function HomeGroupsModule() {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      alert('Wypełnij wymagane pola');
+      alert(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -200,7 +200,7 @@ export default function HomeGroupsModule() {
       fetchFinanceData();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -220,7 +220,7 @@ export default function HomeGroupsModule() {
       if (tasksRes.data) setTasks(tasksRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
-      alert('Błąd pobierania danych: ' + error.message);
+      alert(tr('Błąd pobierania danych: ') + error.message);
     } finally {
       setLoading(false);
     }
@@ -228,7 +228,7 @@ export default function HomeGroupsModule() {
 
   const handleSaveGroup = async () => {
     if (!groupForm.name?.trim()) {
-      alert('Podaj nazwę grupy');
+      alert(tr('Podaj nazwę grupy'));
       return;
     }
 
@@ -263,13 +263,13 @@ export default function HomeGroupsModule() {
       closeModal();
     } catch (error) {
       console.error('Error saving group:', error);
-      alert('Błąd zapisywania grupy: ' + error.message);
+      alert(tr('Błąd zapisywania grupy: ') + error.message);
     }
   };
 
   const handleSavePerson = async (type) => {
     if (!personForm.full_name?.trim()) {
-      alert('Podaj imię i nazwisko');
+      alert(tr('Podaj imię i nazwisko'));
       return;
     }
 
@@ -303,12 +303,12 @@ export default function HomeGroupsModule() {
       closeModal();
     } catch (error) {
       console.error('Error saving person:', error);
-      alert('Błąd zapisywania: ' + error.message);
+      alert(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
   const handleDelete = async (id, type) => {
-    if (!confirm('Czy na pewno chcesz usunąć?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć?'))) return;
 
     try {
       const table = type === 'group' ? 'home_groups'
@@ -324,7 +324,7 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (error) {
       console.error('Error deleting:', error);
-      alert('Błąd usuwania: ' + error.message);
+      alert(tr('Błąd usuwania: ') + error.message);
     }
   };
 
@@ -403,7 +403,7 @@ export default function HomeGroupsModule() {
 
   const saveTask = async () => {
     if (!taskForm.title?.trim()) {
-      alert('Tytuł zadania jest wymagany');
+      alert(tr('Tytuł zadania jest wymagany'));
       return;
     }
 
@@ -432,12 +432,12 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd zapisywania zadania:', err);
-      alert('Błąd zapisywania zadania: ' + err.message);
+      alert(tr('Błąd zapisywania zadania: ') + err.message);
     }
   };
 
   const deleteTask = async (id) => {
-    if (!confirm('Czy na pewno chcesz usunąć to zadanie?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć to zadanie?'))) return;
 
     try {
       const { error } = await supabase.from('home_group_tasks').delete().eq('id', id);
@@ -445,7 +445,7 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd usuwania zadania:', err);
-      alert('Błąd usuwania zadania: ' + err.message);
+      alert(tr('Błąd usuwania zadania: ') + err.message);
     }
   };
 
@@ -534,7 +534,7 @@ export default function HomeGroupsModule() {
       fetchTaskComments(taskForm.id);
     } catch (err) {
       console.error('Błąd dodawania komentarza:', err);
-      alert('Błąd dodawania komentarza: ' + err.message);
+      alert(tr('Błąd dodawania komentarza: ') + err.message);
     }
   };
 
@@ -552,7 +552,7 @@ export default function HomeGroupsModule() {
   // Members modal functions
   const attachMemberToGroup = async () => {
     if (!attachMemberId) {
-      alert('Wybierz członka');
+      alert(tr('Wybierz członka'));
       return;
     }
 
@@ -567,12 +567,12 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd dodawania członka:', err);
-      alert('Błąd dodawania członka: ' + err.message);
+      alert(tr('Błąd dodawania członka: ') + err.message);
     }
   };
 
   const detachMemberFromGroup = async (memberId) => {
-    if (!confirm('Czy na pewno chcesz odłączyć członka od tej grupy?')) return;
+    if (!confirm(tr('Czy na pewno chcesz odłączyć członka od tej grupy?'))) return;
 
     try {
       const { error } = await supabase
@@ -584,14 +584,14 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd odłączania członka:', err);
-      alert('Błąd odłączania członka: ' + err.message);
+      alert(tr('Błąd odłączania członka: ') + err.message);
     }
   };
 
   // Materials functions
   const addMaterial = async () => {
     if (!materialForm.title?.trim()) {
-      alert('Podaj nazwę materiału');
+      alert(tr('Podaj nazwę materiału'));
       return;
     }
 
@@ -634,14 +634,14 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd dodawania materiału:', err);
-      alert('Błąd dodawania materiału: ' + err.message);
+      alert(tr('Błąd dodawania materiału: ') + err.message);
     } finally {
       setUploading(false);
     }
   };
 
   const deleteMaterial = async (materialId) => {
-    if (!confirm('Czy na pewno chcesz usunąć ten materiał?')) return;
+    if (!confirm(tr('Czy na pewno chcesz usunąć ten materiał?'))) return;
 
     try {
       const updatedMaterials = (currentGroup.materials || []).filter(m => m.id !== materialId);
@@ -655,7 +655,7 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd usuwania materiału:', err);
-      alert('Błąd usuwania materiału: ' + err.message);
+      alert(tr('Błąd usuwania materiału: ') + err.message);
     }
   };
 

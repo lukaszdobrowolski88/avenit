@@ -321,13 +321,13 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
       setForm(prev => ({ ...prev, photo_url: data.publicUrl }));
     } catch (err) {
       console.error('Upload error:', err);
-      alert('Błąd przesyłania zdjęcia');
+      alert(tr('Błąd przesyłania zdjęcia'));
     }
     setUploading(false);
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return alert('Podaj imię i nazwisko mówcy');
+    if (!form.name.trim()) return alert(tr('Podaj imię i nazwisko mówcy'));
 
     if (editingSpeaker) {
       await onEdit(editingSpeaker.id, form);
@@ -568,7 +568,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
       setForm(prev => ({ ...prev, graphics: [...prev.graphics, ...uploadedFiles] }));
     } catch (err) {
       console.error('Upload error:', err);
-      alert('Błąd przesyłania pliku');
+      alert(tr('Błąd przesyłania pliku'));
     }
     setUploading(false);
   };
@@ -578,7 +578,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return alert('Podaj nazwę serii');
+    if (!form.name.trim()) return alert(tr('Podaj nazwę serii'));
 
     if (editingSeries) {
       await onEdit(editingSeries.id, form);
@@ -1017,40 +1017,40 @@ export default function TeachingModule() {
   // SPEAKERS CRUD
   const addSpeaker = async (data) => {
     const { error } = await supabase.from('teaching_speakers').insert([data]);
-    if (error) { alert('Błąd: ' + error.message); return; }
+    if (error) { alert(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const editSpeaker = async (id, data) => {
     const { error } = await supabase.from('teaching_speakers').update(data).eq('id', id);
-    if (error) { alert('Błąd: ' + error.message); return; }
+    if (error) { alert(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const deleteSpeaker = async (id) => {
-    if (!confirm('Usunąć tego mówcę?')) return;
+    if (!confirm(tr('Usunąć tego mówcę?'))) return;
     const { error } = await supabase.from('teaching_speakers').delete().eq('id', id);
-    if (error) { alert('Błąd: ' + error.message); return; }
+    if (error) { alert(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   // SERIES CRUD
   const addSeries = async (data) => {
     const { error } = await supabase.from('teaching_series').insert([data]);
-    if (error) { alert('Błąd: ' + error.message); return; }
+    if (error) { alert(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const editSeries = async (id, data) => {
     const { error } = await supabase.from('teaching_series').update(data).eq('id', id);
-    if (error) { alert('Błąd: ' + error.message); return; }
+    if (error) { alert(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const deleteSeries = async (id) => {
-    if (!confirm('Usunąć tę serię?')) return;
+    if (!confirm(tr('Usunąć tę serię?'))) return;
     const { error } = await supabase.from('teaching_series').delete().eq('id', id);
-    if (error) { alert('Błąd: ' + error.message); return; }
+    if (error) { alert(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 

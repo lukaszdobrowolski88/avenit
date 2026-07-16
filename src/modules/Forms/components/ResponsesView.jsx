@@ -215,14 +215,14 @@ export default function ResponsesView({ form }) {
   }, [participants]);
 
   const handleDeleteResponse = async (responseId) => {
-    if (window.confirm('Czy na pewno chcesz usunąć tę odpowiedź?')) {
+    if (window.confirm(tr('Czy na pewno chcesz usunąć tę odpowiedź?'))) {
       await deleteResponse(responseId);
       setSelectedParticipant(null);
     }
   };
 
   const handleDeleteAll = async () => {
-    if (window.confirm('Czy na pewno chcesz usunąć wszystkie odpowiedzi? Ta operacja jest nieodwracalna.')) {
+    if (window.confirm(tr('Czy na pewno chcesz usunąć wszystkie odpowiedzi? Ta operacja jest nieodwracalna.'))) {
       await deleteAllResponses();
     }
   };
@@ -281,7 +281,7 @@ export default function ResponsesView({ form }) {
       setPaymentDate(new Date().toISOString().split('T')[0]);
     } catch (error) {
       console.error('Error adding payment:', error);
-      alert('Wystąpił błąd podczas dodawania płatności');
+      alert(tr('Wystąpił błąd podczas dodawania płatności'));
     }
   };
 

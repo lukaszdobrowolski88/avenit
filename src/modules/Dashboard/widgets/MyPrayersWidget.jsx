@@ -538,7 +538,7 @@ export default function MyPrayersWidget({ prayers, userEmail, onRefresh, size = 
       onRefresh?.();
     } catch (err) {
       console.error('Error saving prayer:', err);
-      alert('Błąd zapisu: ' + err.message);
+      alert(tr('Błąd zapisu: ') + err.message);
     } finally {
       setIsSubmitting(false);
     }

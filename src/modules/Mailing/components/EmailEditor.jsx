@@ -85,7 +85,7 @@ export default function EmailEditor({ content, onChange, placeholder = 'Napisz t
         editor?.chain().focus().setImage({ src: urlData.publicUrl }).run();
       } catch (err) {
         console.error('Error uploading image:', err);
-        alert('Błąd podczas przesyłania obrazu');
+        alert(tr('Błąd podczas przesyłania obrazu'));
       }
     };
 

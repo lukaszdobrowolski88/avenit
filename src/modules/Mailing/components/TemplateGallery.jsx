@@ -22,12 +22,12 @@ const CATEGORY_ICONS = {
 
 const EXTENDED_CATEGORIES = {
   ...TEMPLATE_CATEGORIES,
-  welcome: { label: 'Powitalne', description: 'Szablony powitalne dla nowych członków' },
-  holiday: { label: tr('Świąteczne'), description: 'Szablony na święta i okazje specjalne' },
+  welcome: { label: 'Powitalne', description: tr('Szablony powitalne dla nowych członków') },
+  holiday: { label: tr('Świąteczne'), description: tr('Szablony na święta i okazje specjalne') },
   invitation: { label: 'Zaproszenia', description: 'Zaproszenia na wydarzenia' },
-  ministry: { label: tr('Służby'), description: 'Komunikacja służb kościelnych' },
-  worship: { label: 'Uwielbienie', description: 'Materiały zespołu uwielbienia' },
-  study: { label: 'Studium', description: 'Materiały do studium biblijnego' }
+  ministry: { label: tr('Służby'), description: tr('Komunikacja służb kościelnych') },
+  worship: { label: 'Uwielbienie', description: tr('Materiały zespołu uwielbienia') },
+  study: { label: 'Studium', description: tr('Materiały do studium biblijnego') }
 };
 
 export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCreateTemplate }) {
@@ -76,7 +76,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
 
   const handleDelete = async (template) => {
     if (template.is_system) {
-      alert('Nie można usunąć szablonu systemowego');
+      alert(tr('Nie można usunąć szablonu systemowego'));
       return;
     }
     if (!confirm(`Czy na pewno chcesz usunąć szablon "${template.name}"?`)) return;
@@ -84,7 +84,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
     try {
       await deleteTemplate(template.id);
     } catch (err) {
-      alert('Błąd podczas usuwania szablonu');
+      alert(tr('Błąd podczas usuwania szablonu'));
     }
     setMenuOpen(null);
   };
@@ -93,7 +93,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
     try {
       await duplicateTemplate(template.id);
     } catch (err) {
-      alert('Błąd podczas duplikowania szablonu');
+      alert(tr('Błąd podczas duplikowania szablonu'));
     }
     setMenuOpen(null);
   };

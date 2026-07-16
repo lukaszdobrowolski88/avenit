@@ -11,12 +11,12 @@ const SMSAPI_KEYS = [
     label: 'Personal Access Token',
     description: 'OAuth token z panelu SMSAPI (Bearer). Generuj w: ssl.smsapi.pl/react/oauth/manage',
     secret: true,
-    placeholder: 'np. eyJ0eXAi... (wklej cały token)',
+    placeholder: tr('np. eyJ0eXAi... (wklej cały token)'),
   },
   {
     key: 'smsapi_default_sender',
     label: tr('Domyślny nadawca (Sender ID)'),
-    description: 'Zarejestrowany w SMSAPI. Max 11 znaków alfanumerycznych.',
+    description: tr('Zarejestrowany w SMSAPI. Max 11 znaków alfanumerycznych.'),
     secret: false,
     placeholder: 'np. Avenit',
     maxLength: 11,
@@ -24,7 +24,7 @@ const SMSAPI_KEYS = [
   {
     key: 'smsapi_api_url',
     label: 'URL bramki SMSAPI',
-    description: 'Zostaw default lub podmień na sandbox/inny region.',
+    description: tr('Zostaw default lub podmień na sandbox/inny region.'),
     secret: false,
     placeholder: 'https://api.smsapi.pl',
   },
@@ -33,7 +33,7 @@ const SMSAPI_KEYS = [
     label: 'Webhook MO secret',
     description: 'Sekret w URL webhooka MO (incoming SMS / RSVP).',
     secret: true,
-    placeholder: 'losowy ciąg, np. 32 znaki',
+    placeholder: tr('losowy ciąg, np. 32 znaki'),
   },
 ];
 
@@ -125,7 +125,7 @@ export default function IntegrationsTab() {
       await navigator.clipboard.writeText(url);
       setMessage({ type: 'success', text: 'Skopiowano URL webhooka' });
     } catch {
-      setMessage({ type: 'error', text: 'Nie udało się skopiować' });
+      setMessage({ type: 'error', text: tr('Nie udało się skopiować') });
     }
   };
 

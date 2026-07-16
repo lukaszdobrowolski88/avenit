@@ -110,7 +110,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
     const err = validate();
     if (err) { alert(err); return; }
     if (recipientCount === 0) {
-      if (!confirm('Brak odbiorców pasujących do segmentów. Zapisać mimo to?')) return;
+      if (!confirm(tr('Brak odbiorców pasujących do segmentów. Zapisać mimo to?'))) return;
     }
     setSaving(true);
     try {
@@ -131,7 +131,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
   const handleSendNow = async () => {
     const err = validate();
     if (err) { alert(err); return; }
-    if (recipientCount === 0) { alert('Brak odbiorców'); return; }
+    if (recipientCount === 0) { alert(tr('Brak odbiorców')); return; }
     if (!confirm(`Wysłać kampanię do ${recipientCount} odbiorców?`)) return;
 
     setSending(true);
