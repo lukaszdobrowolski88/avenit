@@ -19,8 +19,10 @@ import ParticipantsView from './components/ParticipantsView';
 import PaymentsView from './components/PaymentsView';
 import EmbedCodeGenerator from './components/EmbedCodeGenerator';
 import { BUILT_IN_TEMPLATES, DEFAULT_FORM_SETTINGS } from './utils/fieldTypes';
+import { useT } from '../../i18n';
 
 export default function FormsModule({ userEmail }) {
+  const t = useT();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('forms');
   const [editingForm, setEditingForm] = useState(null);
@@ -223,10 +225,10 @@ export default function FormsModule({ userEmail }) {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary-light bg-clip-text text-transparent">
-              Formularze
+              {t('Formularze')}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Twórz formularze i zbieraj odpowiedzi
+              {t('Twórz formularze i zbieraj odpowiedzi')}
             </p>
           </div>
 
@@ -236,7 +238,7 @@ export default function FormsModule({ userEmail }) {
               className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
             >
               <Plus size={18} />
-              Nowy formularz
+              {t('Nowy formularz')}
             </button>
           </div>
         </div>
@@ -253,7 +255,7 @@ export default function FormsModule({ userEmail }) {
               }`}
             >
               <tab.icon size={16} />
-              {tab.label}
+              {t(tab.label)}
             </button>
           ))}
         </div>

@@ -19,6 +19,7 @@ import {
   RotateCcw,
   Filter
 } from 'lucide-react';
+import { useT } from '../../../i18n';
 
 export default function FormList({
   forms,
@@ -35,6 +36,7 @@ export default function FormList({
   onArchive,
   onRestore
 }) {
+  const t = useT();
   const [openMenuId, setOpenMenuId] = useState(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [copiedId, setCopiedId] = useState(null);
@@ -68,7 +70,7 @@ export default function FormList({
       return (
         <span className="flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs font-medium rounded-full">
           <Archive size={12} />
-          Archiwum
+          {t('Archiwum')}
         </span>
       );
     }
@@ -78,21 +80,21 @@ export default function FormList({
         return (
           <span className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
             <Globe size={12} />
-            Opublikowany
+            {t('Opublikowany')}
           </span>
         );
       case 'closed':
         return (
           <span className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-medium rounded-full">
             <XCircle size={12} />
-            Zamknięty
+            {t('Zamknięty')}
           </span>
         );
       default:
         return (
           <span className="flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-medium rounded-full">
             <Lock size={12} />
-            Wersja robocza
+            {t('Wersja robocza')}
           </span>
         );
     }
@@ -154,12 +156,12 @@ export default function FormList({
   const handleDeleteOrArchive = (form) => {
     if (form.response_count > 0) {
       // Ma odpowiedzi - archiwizuj
-      if (window.confirm('Ten formularz ma zapisane odpowiedzi. Czy chcesz przenieść go do archiwum?')) {
+      if (window.confirm(t('Ten formularz ma zapisane odpowiedzi. Czy chcesz przenieść go do archiwum?'))) {
         onArchive?.(form.id);
       }
     } else {
       // Brak odpowiedzi - można usunąć
-      if (window.confirm('Czy na pewno chcesz usunąć ten formularz?')) {
+      if (window.confirm(t('Czy na pewno chcesz usunąć ten formularz?'))) {
         onDelete(form.id);
       }
     }
@@ -197,7 +199,7 @@ export default function FormList({
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            Aktywne ({activeCount})
+            {t('Aktywne')} ({activeCount})
           </button>
           <button
             onClick={() => setViewFilter('archived')}
@@ -209,7 +211,7 @@ export default function FormList({
           >
             <span className="flex items-center gap-1.5">
               <Archive size={14} />
-              Archiwum ({archivedCount})
+              {t('Archiwum')} ({archivedCount})
             </span>
           </button>
           <button
@@ -220,7 +222,7 @@ export default function FormList({
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            Wszystkie ({forms.length})
+            {t('Wszystkie')} ({forms.length})
           </button>
         </div>
       </div>
@@ -235,12 +237,12 @@ export default function FormList({
             )}
           </div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
-            {viewFilter === 'archived' ? 'Brak zarchiwizowanych formularzy' : 'Brak formularzy'}
+            {viewFilter === 'archived' ? t('Brak zarchiwizowanych formularzy') : t('Brak formularzy')}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {viewFilter === 'archived'
-              ? 'Zarchiwizowane formularze pojawią się tutaj'
-              : 'Utwórz swój pierwszy formularz lub wybierz szablon'}
+              ? t('Zarchiwizowane formularze pojawią się tutaj')
+              : t('Utwórz swój pierwszy formularz lub wybierz szablon')}
           </p>
         </div>
       ) : (
@@ -463,7 +465,7 @@ export default function FormList({
 
                               <button
                                 onClick={() => {
-                                  if (window.confirm('Czy na pewno chcesz trwale usunąć ten formularz wraz ze wszystkimi odpowiedziami? Ta operacja jest nieodwracalna.')) {
+                                  if (window.confirm(t('Czy na pewno chcesz trwale usunąć ten formularz wraz ze wszystkimi odpowiedziami? Ta operacja jest nieodwracalna.'))) {
                                     onDelete(form.id);
                                     setOpenMenuId(null);
                                   }
