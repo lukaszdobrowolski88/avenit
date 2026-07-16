@@ -8,6 +8,7 @@ import TemplateGallery from './components/TemplateGallery';
 import TemplateEditor from './components/TemplateEditor';
 import CampaignStats from './components/CampaignStats';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import { useT } from '../../i18n';
 
 const TABS = [
   { id: 'campaigns', label: 'Maile', icon: Mail },
@@ -16,6 +17,7 @@ const TABS = [
 ];
 
 export default function MailingModule() {
+  const t = useT();
   const [activeTab, setActiveTab] = useState('campaigns');
   const [editingCampaign, setEditingCampaign] = useState(null);
   const [showNewCampaign, setShowNewCampaign] = useState(false);
@@ -106,7 +108,7 @@ export default function MailingModule() {
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs
-        tabs={TABS}
+        tabs={TABS.map((x) => ({ ...x, label: t(x.label) }))}
         activeTab={activeTab}
         onChange={setActiveTab}
       />
