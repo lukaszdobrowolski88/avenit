@@ -1873,6 +1873,7 @@ const en = {
   'Wyślij testową wersję emaila na wskazany adres, aby sprawdzić jak będzie wyglądać przed wysłaniem do odbiorców.': 'Send a test version of the email to the specified address to check how it will look before sending to recipients.',
   'Włącz, aby zwiększyć bezpieczeństwo konta': 'Enable to increase account security',
   'Zeskanuj kod QR aparatem telefonu, aby dodać kalendarz do aplikacji': 'Scan the QR code with your phone camera to add the calendar to the app',
+
 };
 
 const uk = {
@@ -3740,6 +3741,7 @@ const uk = {
   'Wyślij testową wersję emaila na wskazany adres, aby sprawdzić jak będzie wyglądać przed wysłaniem do odbiorców.': 'Надішліть тестову версію листа на вказану адресу, щоб перевірити, як вона виглядатиме перед надсиланням отримувачам.',
   'Włącz, aby zwiększyć bezpieczeństwo konta': 'Увімкніть, щоб підвищити безпеку облікового запису',
   'Zeskanuj kod QR aparatem telefonu, aby dodać kalendarz do aplikacji': 'Відскануйте QR-код камерою телефону, щоб додати календар до застосунку',
+
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

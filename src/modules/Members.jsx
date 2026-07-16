@@ -601,7 +601,7 @@ export default function Members() {
                     <div className="flex flex-col gap-1.5">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(member.status)}`}>
                         {member.status === 'Członek' ? <CheckCircle size={12} /> : member.status === 'Sympatyk' ? <Users size={12} /> : <XCircle size={12} />}
-                        {member.status || 'Gość'}
+                        {tr(member.status || 'Gość')}
                       </span>
                       {member.status === 'Członek' && member.membership_declaration_url && (
                         <a

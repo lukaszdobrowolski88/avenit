@@ -108,7 +108,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
               <h2 className="text-xl font-bold text-gray-800 dark:text-white truncate">{member.first_name} {member.last_name}</h2>
               <div className="mt-1 flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-200">
-                  <CheckCircle size={12} /> {member.status || 'Gość'}
+                  <CheckCircle size={12} /> {tr(member.status || 'Gość')}
                 </span>
                 {ministryLabels.map((label, i) => (
                   <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-300">
