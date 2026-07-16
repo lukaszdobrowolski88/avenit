@@ -5,6 +5,7 @@ import {
   TrendingUp, Calendar, Users, Download, ChevronDown,
   BarChart3, Sparkles, Mail
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function CampaignStats({ campaigns }) {
   const t = useT();
@@ -299,7 +300,7 @@ export default function CampaignStats({ campaigns }) {
                         <div
                           className="bg-gradient-to-r from-emerald-400 to-green-500 transition-all duration-500"
                           style={{ width: `${(campaign.opened_count || 0) / (campaign.total_recipients || 1) * 100}%` }}
-                          title="Otwarte"
+                          title={tr('Otwarte')}
                         />
                         <div
                           className="bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-500"

@@ -5,6 +5,7 @@ import {
   CheckCircle, CalendarClock, UserCircle2, Cake, Tag, StickyNote, CalendarCheck,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { tr } from '../i18n';
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('pl-PL') : null);
 
@@ -218,7 +219,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
 
         {/* Stopka */}
         <div className="flex justify-end gap-2 p-4 border-t border-gray-100 dark:border-gray-800">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">Zamknij</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">{tr('Zamknij')}</button>
           {onEdit && (
             <button onClick={() => onEdit(member)} className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition">
               <Edit2 size={15} /> Edytuj

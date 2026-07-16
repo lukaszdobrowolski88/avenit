@@ -14,6 +14,7 @@ import {
   Clock,
   Zap
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function CurrentPlan({ onUpgrade }) {
   const [tenant, setTenant] = useState(null);
@@ -51,7 +52,7 @@ export default function CurrentPlan({ onUpgrade }) {
     const config = {
       trialing: { label: 'Trial', icon: Clock, color: 'blue' },
       active: { label: 'Aktywna', icon: CheckCircle, color: 'green' },
-      past_due: { label: 'Zaległa płatność', icon: AlertTriangle, color: 'red' },
+      past_due: { label: tr('Zaległa płatność'), icon: AlertTriangle, color: 'red' },
       suspended: { label: 'Zawieszona', icon: AlertTriangle, color: 'red' },
       cancelled: { label: 'Anulowana', icon: AlertTriangle, color: 'gray' }
     };

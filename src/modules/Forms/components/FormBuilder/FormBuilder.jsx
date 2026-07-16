@@ -24,6 +24,7 @@ import FieldEditor from './FieldEditor';
 import FormPreview from '../FormPreview';
 import FormSettings from '../FormSettings';
 import { createField, FIELD_TYPES } from '../../utils/fieldTypes';
+import { tr } from '../../../../i18n';
 
 export default function FormBuilder({
   form,
@@ -266,9 +267,9 @@ export default function FormBuilder({
                     Opublikowany
                   </span>
                 ) : form?.status === 'closed' ? (
-                  <span className="text-gray-500">Zamknięty</span>
+                  <span className="text-gray-500">{tr('Zamknięty')}</span>
                 ) : (
-                  <span className="text-yellow-600 dark:text-yellow-400">Wersja robocza</span>
+                  <span className="text-yellow-600 dark:text-yellow-400">{tr('Wersja robocza')}</span>
                 )}
                 {lastSaved && (
                   <span className="ml-2">
@@ -295,7 +296,7 @@ export default function FormBuilder({
               className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               <Settings size={16} />
-              <span className="hidden sm:inline">Ustawienia</span>
+              <span className="hidden sm:inline">{tr('Ustawienia')}</span>
             </button>
 
             <button
@@ -303,7 +304,7 @@ export default function FormBuilder({
               className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               <Eye size={16} />
-              <span className="hidden sm:inline">Podgląd</span>
+              <span className="hidden sm:inline">{tr('Podgląd')}</span>
             </button>
 
             <button

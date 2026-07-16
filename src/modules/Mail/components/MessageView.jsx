@@ -4,6 +4,7 @@ import {
   Archive, FolderInput, Tag, MoreVertical, Paperclip,
   Download, ExternalLink, ChevronDown, ChevronUp, Mail
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 // Komponent do renderowania HTML emaila w iframe - zapewnia izolację i poprawne renderowanie
 function EmailHtmlContent({ html, messageId }) {
@@ -331,7 +332,7 @@ export default function MessageView({
         <button
           onClick={() => onDelete(message.id)}
           className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-          title="Usuń"
+          title={tr('Usuń')}
         >
           <Trash2 size={18} />
         </button>

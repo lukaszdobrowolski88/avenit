@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Users, UserPlus, UserMinus, Loader2, Check, X, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useUserRole } from '../hooks/useUserRole';
+import { tr } from '../i18n';
 
 // Role mogące zarządzać listą zapisanych (organizatorzy).
 const MANAGER_ROLES = ['superadmin', 'rada_starszych', 'koordynator', 'lider'];
@@ -200,7 +201,7 @@ export default function EventRSVP({ eventId, maxParticipants }) {
             <input
               value={addName}
               onChange={(e) => setAddName(e.target.value)}
-              placeholder="Imię i nazwisko"
+              placeholder={tr('Imię i nazwisko')}
               className="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
             />
             <input

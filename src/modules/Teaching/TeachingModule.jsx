@@ -13,6 +13,7 @@ import MaterialsTab from '../shared/MaterialsTab';
 import CustomDatePicker from '../../components/CustomDatePicker';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
+import { tr } from '../../i18n';
 
 // ================== TABLE SELECT COMPONENT ==================
 
@@ -223,7 +224,7 @@ const ScheduleTable = ({ programs, speakers, series, onUpdateProgram }) => {
                 <table className="w-full text-left border-collapse min-w-max">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-700">
-                      <th className="p-3 font-semibold w-24 min-w-[90px]">Data</th>
+                      <th className="p-3 font-semibold w-24 min-w-[90px]">{tr('Data')}</th>
                       {columns.map(col => (
                         <th key={col.key} className="p-3 font-semibold min-w-[130px]">{col.label}</th>
                       ))}
@@ -339,7 +340,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
   return (
     <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Mówcy</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{tr('Mówcy')}</h2>
         <button
           onClick={openAdd}
           className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
@@ -457,7 +458,7 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white"
-                  placeholder="Jan Kowalski"
+                  placeholder={tr('Jan Kowalski')}
                 />
               </div>
 
@@ -1088,11 +1089,11 @@ export default function TeachingModule() {
       {/* TAB NAVIGATION */}
       <ResponsiveTabs
         tabs={[
-          { id: 'wall', label: 'Tablica', icon: MessageSquare },
-          { id: 'schedule', label: 'Grafik', icon: Calendar },
+          { id: 'wall', label: tr('Tablica'), icon: MessageSquare },
+          { id: 'schedule', label: tr('Grafik'), icon: Calendar },
           { id: 'series', label: 'Serie', icon: BookOpen },
-          ...(hasTabAccess('teaching', 'speakers', userRole) ? [{ id: 'speakers', label: 'Mówcy', icon: Users }] : []),
-          { id: 'files', label: 'Pliki', icon: FolderOpen },
+          ...(hasTabAccess('teaching', 'speakers', userRole) ? [{ id: 'speakers', label: tr('Mówcy'), icon: Users }] : []),
+          { id: 'files', label: tr('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}

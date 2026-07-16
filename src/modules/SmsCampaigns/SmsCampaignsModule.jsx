@@ -9,11 +9,12 @@ import TemplateGallery from './components/TemplateGallery';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { useT } from '../../i18n';
 import { formatPLN } from './utils/smsEncoding';
+import { tr } from '../../i18n';
 
 const TABS = [
-  { id: 'campaigns', label: 'Kampanie', icon: MessageSquare },
-  { id: 'templates', label: 'Szablony', icon: FileText },
-  { id: 'stats', label: 'Statystyki', icon: BarChart3 },
+  { id: 'campaigns', label: tr('Kampanie'), icon: MessageSquare },
+  { id: 'templates', label: tr('Szablony'), icon: FileText },
+  { id: 'stats', label: tr('Statystyki'), icon: BarChart3 },
 ];
 
 export default function SmsCampaignsModule() {
@@ -75,7 +76,7 @@ export default function SmsCampaignsModule() {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">SMS Kampanie</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('SMS Kampanie')}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Twórz, planuj i analizuj kampanie SMS przez bramkę SMSAPI.pl.
         </p>
@@ -85,7 +86,7 @@ export default function SmsCampaignsModule() {
 
       {tab === 'campaigns' && (
         loading ? (
-          <div className="p-8 text-center text-gray-500">Ładowanie...</div>
+          <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>
         ) : (
           <CampaignList
             campaigns={campaigns}

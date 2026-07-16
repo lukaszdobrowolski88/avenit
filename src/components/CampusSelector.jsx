@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Building2, ChevronDown, Check, MapPin } from 'lucide-react';
 import { useCampus } from '../contexts/CampusContext';
+import { tr } from '../i18n';
 
 export default function CampusSelector() {
   const { campuses, selectedCampusId, setSelectedCampusId, canSwitchCampus } = useCampus();
@@ -49,7 +50,7 @@ export default function CampusSelector() {
       {isOpen && (
         <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-[1001]">
           <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">Lokalizacja</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">{tr('Lokalizacja')}</p>
           </div>
           <div className="py-1 max-h-64 overflow-y-auto">
             {/* All campuses option */}

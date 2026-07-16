@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Search, MessageSquare } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { formatMessageDate, truncateText } from '../utils/messageHelpers';
+import { tr } from '../../../i18n';
 
 export default function SearchModal({
   isOpen,
@@ -118,7 +119,7 @@ export default function SearchModal({
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center mb-4">
                 <MessageSquare size={28} className="text-gray-400" />
               </div>
-              <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Brak wyników</p>
+              <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">{tr('Brak wyników')}</p>
               <p className="text-gray-500 dark:text-gray-400 text-sm">Nie znaleziono wiadomości dla "{searchQuery}"</p>
             </div>
           ) : (

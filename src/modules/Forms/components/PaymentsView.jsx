@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
+import { tr } from '../../../i18n';
 
 export default function PaymentsView({ forms }) {
   const [payments, setPayments] = useState([]);
@@ -703,7 +704,7 @@ export default function PaymentsView({ forms }) {
                 onChange={(e) => setSelectedForm(e.target.value)}
                 className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
               >
-                <option value="all">Wszystkie</option>
+                <option value="all">{tr('Wszystkie')}</option>
                 {uniqueForms.map(form => (
                   <option key={form.id} value={form.id}>{form.title}</option>
                 ))}
@@ -719,7 +720,7 @@ export default function PaymentsView({ forms }) {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
               >
-                <option value="all">Wszystkie</option>
+                <option value="all">{tr('Wszystkie')}</option>
                 <option value="paid">Opłacone</option>
                 <option value="pending">Oczekujące</option>
               </select>
@@ -734,11 +735,11 @@ export default function PaymentsView({ forms }) {
                 onChange={(e) => setMethodFilter(e.target.value)}
                 className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
               >
-                <option value="all">Wszystkie</option>
+                <option value="all">{tr('Wszystkie')}</option>
                 <option value="transfer">Przelew</option>
                 <option value="paypal">PayPal</option>
                 <option value="przelewy24">Przelewy24</option>
-                <option value="cash">Gotówka</option>
+                <option value="cash">{tr('Gotówka')}</option>
                 <option value="card">Karta</option>
               </select>
             </div>
@@ -777,10 +778,10 @@ export default function PaymentsView({ forms }) {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
                 >
-                  <option value="date">Data</option>
+                  <option value="date">{tr('Data')}</option>
                   <option value="name">Uczestnik</option>
-                  <option value="amount">Kwota</option>
-                  <option value="status">Status</option>
+                  <option value="amount">{tr('Kwota')}</option>
+                  <option value="status">{tr('Status')}</option>
                 </select>
                 <button
                   onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
@@ -919,7 +920,7 @@ export default function PaymentsView({ forms }) {
                         <button
                           onClick={() => setSelectedPayment(payment)}
                           className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                          title="Szczegóły"
+                          title={tr('Szczegóły')}
                         >
                           <Edit2 size={18} />
                         </button>
@@ -1015,7 +1016,7 @@ export default function PaymentsView({ forms }) {
                     <option value="transfer">Przelew bankowy</option>
                     <option value="paypal">PayPal</option>
                     <option value="przelewy24">Przelewy24</option>
-                    <option value="cash">Gotówka</option>
+                    <option value="cash">{tr('Gotówka')}</option>
                     <option value="card">Karta</option>
                   </select>
                 </div>

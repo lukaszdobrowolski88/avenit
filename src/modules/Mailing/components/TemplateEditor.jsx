@@ -8,6 +8,7 @@ import { useTemplates, TEMPLATE_CATEGORIES } from '../hooks/useTemplates';
 import DragDropEmailBuilder from './DragDropEmailBuilder';
 import EmailEditor from './EmailEditor';
 import CampaignPreview from './CampaignPreview';
+import { tr } from '../../../i18n';
 
 const CATEGORY_ICONS = {
   general: FileText,
@@ -27,7 +28,7 @@ const EXTENDED_CATEGORIES = {
   welcome: { label: 'Powitalne' },
   holiday: { label: 'Świąteczne' },
   invitation: { label: 'Zaproszenia' },
-  ministry: { label: 'Służby' },
+  ministry: { label: tr('Służby') },
   worship: { label: 'Uwielbienie' },
   study: { label: 'Studium' }
 };
@@ -134,7 +135,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
               className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
             >
               <Eye size={18} />
-              <span className="hidden sm:inline">Podgląd</span>
+              <span className="hidden sm:inline">{tr('Podgląd')}</span>
             </button>
           )}
 

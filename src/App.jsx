@@ -13,7 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import InstallPrompt from './components/InstallPrompt';
 import AnnouncementBanner from './components/AnnouncementBanner';
 import CommandPalette from './components/CommandPalette';
-import { I18nProvider } from './i18n';
+import { I18nProvider, useI18n } from './i18n';
 import useOffline from './hooks/useOffline';
 import Login from './modules/Login';
 import ResetPassword from './modules/ResetPassword';
@@ -43,6 +43,7 @@ import FormsModule from './modules/Forms/FormsModule';
 import PublicFormPage from './modules/Forms/pages/PublicFormPage';
 import AssignmentResponsePage from './modules/AssignmentResponse/AssignmentResponsePage';
 import CustomModule from './modules/CustomModule/CustomModule';
+import { tr } from './i18n';
 
 // Lista kluczy systemowych modułów (mają dedykowane komponenty)
 const SYSTEM_MODULE_KEYS = [
@@ -73,7 +74,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="p-10 text-center">
-          <div className="text-red-500 dark:text-red-400 mb-4 text-lg font-bold">Wystąpił błąd</div>
+          <div className="text-red-500 dark:text-red-400 mb-4 text-lg font-bold">{tr('Wystąpił błąd')}</div>
           <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">{this.state.error?.message || 'Nieznany błąd'}</p>
           <button onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }} className="px-4 py-2 bg-accent-primary text-white rounded-xl">Odśwież stronę</button>
         </div>
@@ -97,6 +98,7 @@ function OfflineBanner() {
 }
 
 function AppInner() {
+  useI18n(); // re-render drzewa przy zmianie języka (dla globalnego tr())
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [customModules, setCustomModules] = useState([]);
@@ -246,7 +248,7 @@ function AppInner() {
       <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300 font-medium">Ładowanie...</p>
+          <p className="text-gray-600 dark:text-gray-300 font-medium">{tr('Ładowanie...')}</p>
         </div>
       </div>
     );

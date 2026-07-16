@@ -14,6 +14,7 @@ import {
   Eye,
   Edit
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function TenantsList({ onSelectTenant }) {
   const { getTenants, suspendTenant, resumeTenant, extendTrial, loading } = useTenants();
@@ -129,11 +130,11 @@ export default function TenantsList({ onSelectTenant }) {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light"
         >
-          <option value="">Wszystkie statusy</option>
+          <option value="">{tr('Wszystkie statusy')}</option>
           <option value="trial">Trial</option>
           <option value="active">Aktywny</option>
           <option value="suspended">Zawieszony</option>
-          <option value="cancelled">Anulowany</option>
+          <option value="cancelled">{tr('Anulowany')}</option>
         </select>
       </div>
 
@@ -153,11 +154,11 @@ export default function TenantsList({ onSelectTenant }) {
               <thead>
                 <tr className="text-left text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50">
                   <th className="px-4 py-3 font-medium">Klient</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">{tr('Status')}</th>
                   <th className="px-4 py-3 font-medium">Plan</th>
                   <th className="px-4 py-3 font-medium">Cena</th>
                   <th className="px-4 py-3 font-medium">Data rejestracji</th>
-                  <th className="px-4 py-3 font-medium text-right">Akcje</th>
+                  <th className="px-4 py-3 font-medium text-right">{tr('Akcje')}</th>
                 </tr>
               </thead>
               <tbody>

@@ -5,6 +5,7 @@ import {
   Plus, Search, Trash2, X, Edit2, Phone, Mail, Users,
   User, ChevronDown, ChevronUp, Check, Loader2, Home
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function HouseholdManager() {
   const [households, setHouseholds] = useState([]);
@@ -308,7 +309,7 @@ export default function HouseholdManager() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Rodziny</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Rodziny')}</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Zarządzaj rodzinami i kontaktami rodziców
           </p>

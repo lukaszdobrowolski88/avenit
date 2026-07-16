@@ -11,6 +11,7 @@ import {
   Calendar,
   Building2
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function AdminInvoicesList() {
   const { getInvoices, markAsPaid, cancelInvoice, loading } = useInvoices();
@@ -48,7 +49,7 @@ export default function AdminInvoicesList() {
 
   const getStatusBadge = (status) => {
     const config = {
-      draft: { label: 'Szkic', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
+      draft: { label: tr('Szkic'), color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
       pending: { label: 'Do zapłaty', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
       paid: { label: 'Opłacona', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
       overdue: { label: 'Zaległa', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
@@ -104,7 +105,7 @@ export default function AdminInvoicesList() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
         >
-          <option value="">Wszystkie statusy</option>
+          <option value="">{tr('Wszystkie statusy')}</option>
           <option value="pending">Do zapłaty</option>
           <option value="paid">Opłacone</option>
           <option value="overdue">Zaległe</option>
@@ -115,7 +116,7 @@ export default function AdminInvoicesList() {
       {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Ładowanie...</div>
+          <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>
         ) : filteredInvoices.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
             Brak faktur spełniających kryteria
@@ -127,11 +128,11 @@ export default function AdminInvoicesList() {
                 <tr className="text-left text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50">
                   <th className="px-4 py-3 font-medium">Numer</th>
                   <th className="px-4 py-3 font-medium">Klient</th>
-                  <th className="px-4 py-3 font-medium">Data</th>
-                  <th className="px-4 py-3 font-medium">Termin</th>
-                  <th className="px-4 py-3 font-medium">Kwota</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium text-right">Akcje</th>
+                  <th className="px-4 py-3 font-medium">{tr('Data')}</th>
+                  <th className="px-4 py-3 font-medium">{tr('Termin')}</th>
+                  <th className="px-4 py-3 font-medium">{tr('Kwota')}</th>
+                  <th className="px-4 py-3 font-medium">{tr('Status')}</th>
+                  <th className="px-4 py-3 font-medium text-right">{tr('Akcje')}</th>
                 </tr>
               </thead>
               <tbody>

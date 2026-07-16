@@ -4,13 +4,14 @@ import {
   AlertTriangle, Plus, Minus
 } from 'lucide-react';
 import { useRecipientsSource, ROLE_OPTIONS } from '../../shared/recipients';
+import { tr } from '../../../i18n';
 
 const SEGMENT_GROUPS = [
-  { id: 'all', label: 'Wszyscy', icon: Users },
+  { id: 'all', label: tr('Wszyscy'), icon: Users },
   { id: 'campus', label: 'Campus', icon: MapPin },
-  { id: 'ministry', label: 'Służba', icon: Sparkles },
+  { id: 'ministry', label: tr('Służba'), icon: Sparkles },
   { id: 'home_group', label: 'Grupa domowa', icon: Home },
-  { id: 'role', label: 'Rola', icon: Shield },
+  { id: 'role', label: tr('Rola'), icon: Shield },
   { id: 'custom_email', label: 'Wybrane', icon: UserCheck },
 ];
 
@@ -64,7 +65,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
   const searchResults = useMemo(() => searchUsers(search), [search, searchUsers]);
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-500">Ładowanie...</div>;
+    return <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>;
   }
 
   return (

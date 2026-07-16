@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, Sparkles, MessageSquare, Save, X, Loader2 } from 'l
 import { useSmsTemplates } from '../hooks/useSmsTemplates';
 import { SENDER_MAX, BODY_MAX } from '../constants';
 import { smsAnalysis } from '../utils/smsEncoding';
+import { tr } from '../../../i18n';
 
 export default function TemplateGallery({ onUseTemplate }) {
   const { templates, loading, createTemplate, updateTemplate, deleteTemplate } = useSmsTemplates();
@@ -17,7 +18,7 @@ export default function TemplateGallery({ onUseTemplate }) {
     try { await deleteTemplate(t.id); } catch (e) { alert(e.message); }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Ładowanie...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>;
 
   return (
     <div>
@@ -143,7 +144,7 @@ function TemplateEditor({ template, onClose, onSave }) {
         </div>
 
         <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">Anuluj</button>
+          <button onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">{tr('Anuluj')}</button>
           <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-accent-primary text-white rounded-lg disabled:opacity-50">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             Zapisz

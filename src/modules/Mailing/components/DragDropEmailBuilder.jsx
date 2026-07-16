@@ -13,6 +13,7 @@ import {
 import { supabase } from '../../../lib/supabase';
 import { EMAIL_VARIABLES } from '../utils/emailVariables';
 import BlockTextEditor from './BlockTextEditor';
+import { tr } from '../../../i18n';
 
 // Definicje bloków
 const BLOCK_TYPES = {
@@ -2215,7 +2216,7 @@ function BorderEditor({ value, onChange, onBlur }) {
 
           {/* Kolor */}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-gray-400">Kolor</span>
+            <span className="text-[10px] text-gray-400">{tr('Kolor')}</span>
             <input
               type="color"
               value={border.color}
@@ -2294,7 +2295,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
   ];
 
   const directionOptions = [
-    { value: 'all', label: 'Wszystkie', icon: '◻' },
+    { value: 'all', label: tr('Wszystkie'), icon: '◻' },
     { value: 'bottom', label: 'Dół', icon: '⬇' },
     { value: 'top', label: 'Góra', icon: '⬆' },
     { value: 'left', label: 'Lewo', icon: '⬅' },
@@ -2460,7 +2461,7 @@ function ShadowEditor({ value, onChange, onBlur }) {
 
           {/* Kolor */}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-gray-400">Kolor</span>
+            <span className="text-[10px] text-gray-400">{tr('Kolor')}</span>
             <input
               type="color"
               value={shadow.color.substring(0, 7)}
@@ -2908,7 +2909,7 @@ function blocksToHtml(blocks, settings = DEFAULT_EMAIL_SETTINGS) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Email</title>
+  <title>{tr('Email')}</title>
   <!--[if mso]>
   <style type="text/css">
     table { border-collapse: collapse; }

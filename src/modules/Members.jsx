@@ -17,6 +17,7 @@ import ResponsiveTabs from '../components/ResponsiveTabs';
 import HouseholdManager from './Kids/components/HouseholdManager';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useCampus } from '../contexts/CampusContext';
+import { tr } from '../i18n';
 
 // --- STAŁE DANE ---
 
@@ -28,10 +29,10 @@ const STATUS_OPTIONS = [
 
 const MINISTRY_OPTIONS = [
   { key: 'media_team', label: 'Media Team', table: 'media_team' },
-  { key: 'atmosfera_team', label: 'Atmosfera Team', table: 'atmosfera_members' },
-  { key: 'worship_team', label: 'Grupa Uwielbienia', table: 'worship_team' },
+  { key: 'atmosfera_team', label: tr('Atmosfera Team'), table: 'atmosfera_members' },
+  { key: 'worship_team', label: tr('Grupa Uwielbienia'), table: 'worship_team' },
   { key: 'home_groups', label: 'Grupy Domowe', table: 'home_group_members' },
-  { key: 'kids_ministry', label: 'Małe Avenit', table: 'kids_teachers' },
+  { key: 'kids_ministry', label: tr('Małe Avenit'), table: 'kids_teachers' },
   { key: 'administration', label: 'Administracja', table: null }
 ];
 
@@ -693,7 +694,7 @@ export default function Members() {
 
               {/* Kontakt */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Email</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Email')}</label>
                 <input
                   className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                   type="email"
@@ -704,7 +705,7 @@ export default function Members() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Telefon</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={formData.phone}
@@ -809,7 +810,7 @@ export default function Members() {
 
               {/* Tagi */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tagi</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tagi')}</label>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {(formData.tags || []).map((t) => (
                     <span key={t} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light">
@@ -864,7 +865,7 @@ export default function Members() {
               {/* Grupa Domowa */}
               <CustomSelect
                 label="Grupa Domowa"
-                placeholder="Wybierz grupę..."
+                placeholder={tr('Wybierz grupę...')}
                 value={formData.home_group_id}
                 onChange={(val) => setFormData({ ...formData, home_group_id: val })}
                 options={[{ id: '', name: 'Brak' }, ...homeGroups]}
@@ -877,17 +878,17 @@ export default function Members() {
               {campuses.length > 0 && (
                 <CustomSelect
                   label="Lokalizacja"
-                  placeholder="Wybierz lokalizację..."
+                  placeholder={tr('Wybierz lokalizację...')}
                   value={formData.campus_id ? String(formData.campus_id) : ''}
                   onChange={(val) => setFormData({ ...formData, campus_id: val ? parseInt(val, 10) : null })}
-                  options={[{ value: '', label: 'Brak' }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
+                  options={[{ value: '', label: tr('Brak') }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
                   icon={MapPin}
                 />
               )}
 
               {/* Służby */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Służby</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Służby')}</label>
                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
                   <div className="flex flex-wrap gap-2">
                     {MINISTRY_OPTIONS.map(ministry => {
@@ -916,7 +917,7 @@ export default function Members() {
               </div>
 
               <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
-                <button onClick={() => setShowModal(false)} className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">Anuluj</button>
+                <button onClick={() => setShowModal(false)} className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
                 <button
                   onClick={handleSave}
                   disabled={saving}

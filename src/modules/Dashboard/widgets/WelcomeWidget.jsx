@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckSquare, Calendar, Heart } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function WelcomeWidget({ userProfile, userEmail, stats }) {
   const displayName = userProfile?.full_name || userEmail?.split('@')[0] || 'Użytkowniku';
@@ -41,7 +42,7 @@ export default function WelcomeWidget({ userProfile, userEmail, stats }) {
           {getGreeting()},
         </p>
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-3">
-          {firstName}! <span className="text-gray-400 dark:text-gray-500">Miło Cię widzieć</span>
+          {firstName}! <span className="text-gray-400 dark:text-gray-500">{tr('Miło Cię widzieć')}</span>
         </h2>
 
         {/* Quick Stats */}

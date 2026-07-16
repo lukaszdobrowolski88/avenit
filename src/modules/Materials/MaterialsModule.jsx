@@ -7,6 +7,7 @@ import FileList from './components/FileList';
 import FileUploader from './components/FileUploader';
 import FolderModal from './components/FolderModal';
 import FilePreviewModal from './components/FilePreviewModal';
+import { tr } from '../../i18n';
 
 export default function MaterialsModule({ ministryKey = null, canEdit = false }) {
   // State
@@ -135,7 +136,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
             <FolderOpen className="text-white" size={20} />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Materiały</h1>
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{tr('Materiały')}</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400">Pliki i dokumenty</p>
           </div>
         </div>

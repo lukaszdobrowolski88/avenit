@@ -5,6 +5,7 @@ import {
   Sparkles, Heart, Gift, Bell, Users, Church, BookOpen, Music
 } from 'lucide-react';
 import { useTemplates, TEMPLATE_CATEGORIES } from '../hooks/useTemplates';
+import { tr } from '../../../i18n';
 
 const CATEGORY_ICONS = {
   general: FileText,
@@ -24,7 +25,7 @@ const EXTENDED_CATEGORIES = {
   welcome: { label: 'Powitalne', description: 'Szablony powitalne dla nowych członków' },
   holiday: { label: 'Świąteczne', description: 'Szablony na święta i okazje specjalne' },
   invitation: { label: 'Zaproszenia', description: 'Zaproszenia na wydarzenia' },
-  ministry: { label: 'Służby', description: 'Komunikacja służb kościelnych' },
+  ministry: { label: tr('Służby'), description: 'Komunikacja służb kościelnych' },
   worship: { label: 'Uwielbienie', description: 'Materiały zespołu uwielbienia' },
   study: { label: 'Studium', description: 'Materiały do studium biblijnego' }
 };
@@ -248,7 +249,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
                     <button
                       onClick={(e) => { e.stopPropagation(); setPreviewTemplate(template); }}
                       className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:scale-110 transition-transform"
-                      title="Podgląd"
+                      title={tr('Podgląd')}
                     >
                       <Eye size={18} className="text-gray-700 dark:text-gray-300" />
                     </button>

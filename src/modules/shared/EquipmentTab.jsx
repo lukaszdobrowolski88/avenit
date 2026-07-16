@@ -6,9 +6,10 @@ import {
   DollarSign, Hash, Upload, AlertTriangle
 } from 'lucide-react';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 const CONDITIONS = [
-  { value: 'nowy', label: 'Nowy', color: 'green' },
+  { value: 'nowy', label: tr('Nowy'), color: 'green' },
   { value: 'dobry', label: 'Dobry', color: 'blue' },
   { value: 'uszkodzony', label: 'Uszkodzony', color: 'yellow' },
   { value: 'do_naprawy', label: 'Do naprawy', color: 'red' }

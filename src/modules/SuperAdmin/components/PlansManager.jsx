@@ -11,6 +11,7 @@ import {
   Loader2,
   Save
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function PlansManager() {
   const { getPlans, createPlan, updatePlan, deactivatePlan, loading } = usePlans();
@@ -37,20 +38,20 @@ export default function PlansManager() {
   });
 
   const featuresList = [
-    { key: 'calendar', label: 'Kalendarz' },
+    { key: 'calendar', label: tr('Kalendarz') },
     { key: 'members', label: 'Zarządzanie członkami' },
-    { key: 'groups', label: 'Grupy domowe' },
+    { key: 'groups', label: tr('Grupy domowe') },
     { key: 'kids_checkin', label: 'Check-in dzieci' },
-    { key: 'events', label: 'Wydarzenia' },
+    { key: 'events', label: tr('Wydarzenia') },
     { key: 'email', label: 'Wysyłka emaili' },
     { key: 'finance', label: 'Moduł finansowy' },
-    { key: 'forms', label: 'Formularze' },
+    { key: 'forms', label: tr('Formularze') },
     { key: 'basic_reports', label: 'Podstawowe raporty' },
     { key: 'advanced_reports', label: 'Zaawansowane raporty' },
     { key: 'api', label: 'Dostęp do API' },
     { key: 'white_label', label: 'White label' },
     { key: 'priority_support', label: 'Priorytetowe wsparcie' },
-    { key: 'custom_domain', label: 'Własna domena' }
+    { key: 'custom_domain', label: tr('Własna domena') }
   ];
 
   useEffect(() => {
@@ -217,11 +218,11 @@ export default function PlansManager() {
 
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { key: 'max_members', label: 'Członkowie' },
-                  { key: 'max_users', label: 'Użytkownicy' },
-                  { key: 'max_groups', label: 'Grupy' },
+                  { key: 'max_members', label: tr('Członkowie') },
+                  { key: 'max_users', label: tr('Użytkownicy') },
+                  { key: 'max_groups', label: tr('Grupy') },
                   { key: 'max_kids', label: 'Dzieci' },
-                  { key: 'max_events', label: 'Wydarzenia' },
+                  { key: 'max_events', label: tr('Wydarzenia') },
                   { key: 'max_storage_mb', label: 'Storage (MB)' }
                 ].map(({ key, label }) => (
                   <div key={key}>

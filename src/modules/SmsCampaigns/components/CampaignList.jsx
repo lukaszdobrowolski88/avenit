@@ -8,6 +8,7 @@ import { useSmsCampaigns } from '../hooks/useSmsCampaigns';
 import { STATUS_CONFIG } from '../constants';
 import { useT } from '../../../i18n';
 import { formatPLN } from '../utils/smsEncoding';
+import { tr } from '../../../i18n';
 
 const STATUS_ICON = {
   draft: FileText, scheduled: Clock, sending: Send, sent: CheckCircle,
@@ -43,10 +44,10 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
     <div>
       <div className="flex items-center justify-between mb-4 gap-2">
         <div className="flex gap-2 overflow-x-auto">
-          <FilterBtn active={filter === 'all'} count={campaigns.length} onClick={() => setFilter('all')}>Wszystkie</FilterBtn>
-          <FilterBtn active={filter === 'draft'} count={campaigns.filter(c => c.status === 'draft').length} onClick={() => setFilter('draft')}>Szkice</FilterBtn>
-          <FilterBtn active={filter === 'scheduled'} count={campaigns.filter(c => c.status === 'scheduled').length} onClick={() => setFilter('scheduled')}>Zaplanowane</FilterBtn>
-          <FilterBtn active={filter === 'sent'} count={campaigns.filter(c => c.status === 'sent').length} onClick={() => setFilter('sent')}>Wysłane</FilterBtn>
+          <FilterBtn active={filter === 'all'} count={campaigns.length} onClick={() => setFilter('all')}>{tr('Wszystkie')}</FilterBtn>
+          <FilterBtn active={filter === 'draft'} count={campaigns.filter(c => c.status === 'draft').length} onClick={() => setFilter('draft')}>{tr('Szkice')}</FilterBtn>
+          <FilterBtn active={filter === 'scheduled'} count={campaigns.filter(c => c.status === 'scheduled').length} onClick={() => setFilter('scheduled')}>{tr('Zaplanowane')}</FilterBtn>
+          <FilterBtn active={filter === 'sent'} count={campaigns.filter(c => c.status === 'sent').length} onClick={() => setFilter('sent')}>{tr('Wysłane')}</FilterBtn>
         </div>
         <button
           onClick={onNew}
@@ -87,16 +88,16 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
                         <>
                           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(null)} />
                           <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-50">
-                            <MenuItem icon={Edit} onClick={() => { onEdit(c); setMenuOpen(null); }}>Edytuj</MenuItem>
-                            <MenuItem icon={Copy} onClick={() => handleDuplicate(c)}>Duplikuj</MenuItem>
+                            <MenuItem icon={Edit} onClick={() => { onEdit(c); setMenuOpen(null); }}>{tr('Edytuj')}</MenuItem>
+                            <MenuItem icon={Copy} onClick={() => handleDuplicate(c)}>{tr('Duplikuj')}</MenuItem>
                             {c.status === 'sent' && (
-                              <MenuItem icon={TrendingUp} onClick={() => { onViewStats(c); setMenuOpen(null); }}>Statystyki</MenuItem>
+                              <MenuItem icon={TrendingUp} onClick={() => { onViewStats(c); setMenuOpen(null); }}>{tr('Statystyki')}</MenuItem>
                             )}
                             {c.status === 'scheduled' && (
-                              <MenuItem icon={X} onClick={() => handleCancel(c)}>Anuluj</MenuItem>
+                              <MenuItem icon={X} onClick={() => handleCancel(c)}>{tr('Anuluj')}</MenuItem>
                             )}
                             <hr className="my-1 border-gray-200 dark:border-gray-700" />
-                            <MenuItem icon={Trash2} danger onClick={() => handleDelete(c)}>Usuń</MenuItem>
+                            <MenuItem icon={Trash2} danger onClick={() => handleDelete(c)}>{tr('Usuń')}</MenuItem>
                           </div>
                         </>
                       )}

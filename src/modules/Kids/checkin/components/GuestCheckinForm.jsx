@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getSuggestedLocation, calculateAge, formatAgeRange } from '../utils/ageCalculator';
 import { ArrowLeft, UserPlus, Loader2, Check } from 'lucide-react';
+import { tr } from '../../../../i18n';
 
 export default function GuestCheckinForm({
   locations,
@@ -131,7 +132,7 @@ export default function GuestCheckinForm({
               onChange={(e) => handleChange('birthYear', e.target.value)}
               className={inputClasses(errors.birthYear)}
             >
-              <option value="">Wybierz...</option>
+              <option value="">{tr('Wybierz...')}</option>
               {yearOptions.map(year => (
                 <option key={year} value={year}>{year}</option>
               ))}
@@ -244,7 +245,7 @@ export default function GuestCheckinForm({
           <textarea
             value={formData.notes}
             onChange={(e) => handleChange('notes', e.target.value)}
-            placeholder="Dodatkowe informacje..."
+            placeholder={tr('Dodatkowe informacje...')}
             rows={2}
             className={`${inputClasses(false)} resize-vertical min-h-[60px]`}
           />

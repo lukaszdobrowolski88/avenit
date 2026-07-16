@@ -7,6 +7,7 @@ import { useCampus } from '../../contexts/CampusContext';
 import { useT } from '../../i18n';
 
 import * as LucideIcons from 'lucide-react';
+import { tr } from '../../i18n';
 
 const {
   Plus, Search, History, ArrowUpDown, Copy, Trash2,
@@ -22,11 +23,11 @@ function DynamicIcon({ name, size = 20, className = '' }) {
 
 // Domyślne sekcje zespołów
 const ALL_SECTIONS = [
-  { key: 'zespol', label: 'Zespół uwielbienia' },
-  { key: 'produkcja', label: 'Produkcja / Media' },
-  { key: 'atmosfera_team', label: 'Atmosfera' },
-  { key: 'scena', label: 'Scena / Nauczanie' },
-  { key: 'szkolka', label: 'Szkółka / Dzieci' },
+  { key: 'zespol', label: tr('Zespół uwielbienia') },
+  { key: 'produkcja', label: tr('Produkcja / Media') },
+  { key: 'atmosfera_team', label: tr('Atmosfera') },
+  { key: 'scena', label: tr('Scena / Nauczanie') },
+  { key: 'szkolka', label: tr('Szkółka / Dzieci') },
 ];
 
 export default function ProgramsList() {

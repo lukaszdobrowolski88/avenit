@@ -7,6 +7,7 @@ import CustomSelect from '../components/CustomSelect';
 import MaterialsTab from './shared/MaterialsTab';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import { useT } from '../i18n';
+import { tr } from '../i18n';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -886,14 +887,14 @@ const FinanceModule = () => {
                                     setShowBudgetModal(true);
                                   }}
                                   className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
-                                  title="Edytuj"
+                                  title={tr('Edytuj')}
                                 >
                                   <Edit2 size={16} />
                                 </button>
                                 <button
                                   onClick={() => deleteBudgetItem(item.id)}
                                   className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                                  title="Usuń"
+                                  title={tr('Usuń')}
                                 >
                                   <Trash2 size={16} />
                                 </button>
@@ -923,7 +924,7 @@ const FinanceModule = () => {
                                           className="grid grid-cols-5 gap-3 text-sm py-2 px-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
                                         >
                                           <div className="flex flex-col">
-                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Data</span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{tr('Data')}</span>
                                             <span className="text-gray-900 dark:text-white">
                                               {new Date(expense.payment_date).toLocaleDateString('pl-PL')}
                                             </span>
@@ -1052,10 +1053,10 @@ const FinanceModule = () => {
                 value={incomeFilters.type}
                 onChange={(val) => setIncomeFilters({...incomeFilters, type: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   { value: 'Kolekta', label: 'Kolekta' },
                   { value: 'Darowizny', label: 'Darowizny' },
-                  { value: 'Inne', label: 'Inne' }
+                  { value: 'Inne', label: tr('Inne') }
                 ]}
                 placeholder={t('Wszystkie')}
               />
@@ -1064,7 +1065,7 @@ const FinanceModule = () => {
                 value={incomeFilters.source}
                 onChange={(val) => setIncomeFilters({...incomeFilters, source: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   ...uniqueIncomeSources.map(s => ({ value: s, label: s }))
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1074,7 +1075,7 @@ const FinanceModule = () => {
                 value={incomeFilters.tag}
                 onChange={(val) => setIncomeFilters({...incomeFilters, tag: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   ...uniqueIncomeTags.map(t => ({ value: t, label: t }))
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1113,7 +1114,7 @@ const FinanceModule = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Data</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{tr('Data')}</th>
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Typ</th>
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Źródło')}</th>
                     <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Kwota')}</th>
@@ -1170,14 +1171,14 @@ const FinanceModule = () => {
                               setShowIncomeModal(true);
                             }}
                             className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
-                            title="Edytuj"
+                            title={tr('Edytuj')}
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => deleteIncome(transaction.id)}
                             className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                            title="Usuń"
+                            title={tr('Usuń')}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -1216,7 +1217,7 @@ const FinanceModule = () => {
                 value={expenseFilters.category}
                 onChange={(val) => setExpenseFilters({...expenseFilters, category: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   ...budgetCategories
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1226,7 +1227,7 @@ const FinanceModule = () => {
                 value={expenseFilters.contractor}
                 onChange={(val) => setExpenseFilters({...expenseFilters, contractor: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   ...uniqueExpenseContractors.map(c => ({ value: c, label: c }))
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1236,7 +1237,7 @@ const FinanceModule = () => {
                 value={expenseFilters.responsible}
                 onChange={(val) => setExpenseFilters({...expenseFilters, responsible: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   ...uniqueExpenseResponsible.map(r => ({ value: r, label: r }))
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1248,7 +1249,7 @@ const FinanceModule = () => {
                 value={expenseFilters.tag}
                 onChange={(val) => setExpenseFilters({...expenseFilters, tag: val})}
                 options={[
-                  { value: '', label: 'Wszystkie' },
+                  { value: '', label: tr('Wszystkie') },
                   ...uniqueExpenseTags.map(t => ({ value: t, label: t }))
                 ]}
                 placeholder={t('Wszystkie')}
@@ -1287,9 +1288,9 @@ const FinanceModule = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Data</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Kategoria</th>
-                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">Opis</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{tr('Data')}</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{tr('Kategoria')}</th>
+                    <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{tr('Opis')}</th>
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Kontrahent')}</th>
                     <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Kwota')}</th>
                     <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{t('Odpowiedzialny')}</th>
@@ -1351,14 +1352,14 @@ const FinanceModule = () => {
                               setShowExpenseModal(true);
                             }}
                             className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
-                            title="Edytuj"
+                            title={tr('Edytuj')}
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => deleteExpense(transaction.id)}
                             className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                            title="Usuń"
+                            title={tr('Usuń')}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -1786,16 +1787,16 @@ const FinanceModule = () => {
                 value={budgetForm.category}
                 onChange={(val) => setBudgetForm({...budgetForm, category: val})}
                 options={[
-                  { value: 'Grupa Uwielbienia', label: 'Grupa Uwielbienia' },
-                  { value: 'MediaTeam', label: 'MediaTeam' },
-                  { value: 'Grupy domowe', label: 'Grupy domowe' },
+                  { value: 'Grupa Uwielbienia', label: tr('Grupa Uwielbienia') },
+                  { value: 'MediaTeam', label: tr('MediaTeam') },
+                  { value: 'Grupy domowe', label: tr('Grupy domowe') },
                   { value: 'małe Avenit', label: 'małe Avenit' },
                   { value: 'AtmosferaTeam', label: 'AtmosferaTeam' }
                 ]}
                 placeholder={t('Wybierz służbę')}
               />
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
                   rows={3}
@@ -1851,7 +1852,7 @@ const FinanceModule = () => {
                 onChange={(val) => setIncomeForm({...incomeForm, date: val})}
               />
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kwota (PLN)</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
                 <input
                   type="number"
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -1867,7 +1868,7 @@ const FinanceModule = () => {
                 options={[
                   { value: 'Kolekta', label: 'Kolekta' },
                   { value: 'Darowizny', label: 'Darowizny' },
-                  { value: 'Inne', label: 'Inne' }
+                  { value: 'Inne', label: tr('Inne') }
                 ]}
               />
               <div>
@@ -1960,7 +1961,7 @@ const FinanceModule = () => {
                   onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
                 />
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kwota (PLN)</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
                   <input
                     type="number"
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"

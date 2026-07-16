@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
+import { tr } from '../../../i18n';
 
 export default function ParticipantsView({ forms }) {
   const [participants, setParticipants] = useState([]);
@@ -704,7 +705,7 @@ export default function ParticipantsView({ forms }) {
                 onChange={(e) => setPaymentFilter(e.target.value)}
                 className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
               >
-                <option value="all">Wszystkie</option>
+                <option value="all">{tr('Wszystkie')}</option>
                 <option value="paid">Opłacone</option>
                 <option value="pending">Oczekujące</option>
                 <option value="none">Bez płatności</option>
@@ -721,10 +722,10 @@ export default function ParticipantsView({ forms }) {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white"
                 >
-                  <option value="date">Data</option>
-                  <option value="name">Imię</option>
+                  <option value="date">{tr('Data')}</option>
+                  <option value="name">{tr('Imię')}</option>
                   <option value="form">Formularz</option>
-                  <option value="amount">Kwota</option>
+                  <option value="amount">{tr('Kwota')}</option>
                 </select>
                 <button
                   onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}

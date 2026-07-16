@@ -4,6 +4,7 @@ import {
   FolderInput, CheckSquare, Square, RefreshCw, Search,
   ChevronDown, Mail, MailOpen
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function MessageList({
   messages,
@@ -242,7 +243,7 @@ export default function MessageList({
               <button
                 onClick={() => handleBulkAction('delete')}
                 className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                title="Usuń"
+                title={tr('Usuń')}
               >
                 <Trash2 size={16} />
               </button>

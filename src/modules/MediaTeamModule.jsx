@@ -19,6 +19,7 @@ import { useUserRole } from '../hooks/useUserRole';
 import { hasTabAccess } from '../utils/tabPermissions';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
+import { tr } from '../i18n';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -239,7 +240,7 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">{tr('Wybierz...')}</span>
         ) : (
           selectedItems.map((item, idx) => (
             <span key={idx} className="bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary dark:text-accent-primary-light px-1.5 py-0.5 rounded text-[10px] border border-accent-primary-lighter dark:border-accent-primary-dark whitespace-nowrap">
@@ -324,7 +325,7 @@ const AbsenceMultiSelect = ({ options, value, onChange }) => {
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">{tr('Wybierz...')}</span>
         ) : (
           selectedItems.map((item, idx) => (
             <span key={idx} className="bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded text-[10px] border border-red-100 dark:border-red-800 whitespace-nowrap flex items-center gap-1">
@@ -431,11 +432,11 @@ const ScheduleTable = ({ programs, mediaTeam, onUpdateProgram, roles, memberRole
   const columns = roles && roles.length > 0
     ? roles.map(role => ({ key: role.field_key, label: role.name, roleId: role.id }))
     : [
-        { key: 'propresenter', label: 'Prezentacja', roleId: null },
-        { key: 'social', label: 'SocialMedia', roleId: null },
-        { key: 'video', label: 'Video', roleId: null },
-        { key: 'foto', label: 'Foto', roleId: null },
-        { key: 'naglosnienie', label: 'Nagłośnienie', roleId: null },
+        { key: 'propresenter', label: tr('Prezentacja'), roleId: null },
+        { key: 'social', label: tr('SocialMedia'), roleId: null },
+        { key: 'video', label: tr('Video'), roleId: null },
+        { key: 'foto', label: tr('Foto'), roleId: null },
+        { key: 'naglosnienie', label: tr('Nagłośnienie'), roleId: null },
       ];
 
   // Funkcja do filtrowania członków zespołu według przypisania do służby
@@ -477,7 +478,7 @@ const ScheduleTable = ({ programs, mediaTeam, onUpdateProgram, roles, memberRole
                 <table className="w-full text-left border-collapse min-w-max">
                   <thead>
                     <tr className="bg-gray-50/50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400 uppercase">
-                      <th className="p-3 font-semibold w-24 min-w-[90px]">Data</th>
+                      <th className="p-3 font-semibold w-24 min-w-[90px]">{tr('Data')}</th>
                       {columns.map(col => (
                         <th key={col.key} className="p-3 font-semibold min-w-[130px]">{col.label}</th>
                       ))}
@@ -1156,7 +1157,7 @@ export default function MediaTeamModule() {
                     { value: 'all', label: t('Wszyscy') },
                     { value: 'mine', label: t('Moje') }
                   ]}
-                  placeholder="Zakres"
+                  placeholder={tr('Zakres')}
                 />
               </div>
 
@@ -1216,7 +1217,7 @@ export default function MediaTeamModule() {
           <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
-                <tr><th className="p-4 w-10"></th><th className="p-4">Zadanie</th><th className="p-4">Termin</th><th className="p-4">Przypisane</th><th className="p-4">Status</th><th className="p-4 text-right">Akcje</th></tr>
+                <tr><th className="p-4 w-10"></th><th className="p-4">{tr('Zadanie')}</th><th className="p-4">{tr('Termin')}</th><th className="p-4">{tr('Przypisane')}</th><th className="p-4">{tr('Status')}</th><th className="p-4 text-right">{tr('Akcje')}</th></tr>
               </thead>
               <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
                 {filteredTasks.map(task => (
@@ -1247,7 +1248,7 @@ export default function MediaTeamModule() {
           <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[700px]">
             <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
-              <tr><th className="p-4">Imię i nazwisko</th><th className="p-4">{t('Służby')}</th><th className="p-4">Email</th><th className="p-4">Telefon</th><th className="p-4 text-right">Akcje</th></tr>
+              <tr><th className="p-4">{tr('Imię i nazwisko')}</th><th className="p-4">{t('Służby')}</th><th className="p-4">{tr('Email')}</th><th className="p-4">{tr('Telefon')}</th><th className="p-4 text-right">{tr('Akcje')}</th></tr>
             </thead>
             <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
               {team.map(m => {
@@ -1271,8 +1272,8 @@ export default function MediaTeamModule() {
                     <td className="p-4">{m.email}</td>
                     <td className="p-4">{m.phone}</td>
                     <td className="p-4 text-right flex justify-end gap-2">
-                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light font-medium">Edytuj</button>
-                      <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 font-medium">Usuń</button>
+                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light font-medium">{tr('Edytuj')}</button>
+                      <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 font-medium">{tr('Usuń')}</button>
                     </td>
                   </tr>
                 );
@@ -1332,11 +1333,11 @@ export default function MediaTeamModule() {
               </div>
               <div className="space-y-5">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tytuł zadania</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł zadania')}</label>
                   <input className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100" value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
                   <textarea className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm resize-none h-32 focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100" value={taskForm.description} onChange={e => setTaskForm({...taskForm, description: e.target.value})} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -1375,7 +1376,7 @@ export default function MediaTeamModule() {
                 </div>
                 <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
                   {taskForm.id && <button onClick={() => { deleteTask(taskForm.id); setShowTaskModal(false); }} className="px-4 py-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">{t('Usuń zadanie')}</button>}
-                  <button onClick={saveTask} className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white font-bold rounded-xl hover:shadow-lg transition">Zapisz zmiany</button>
+                  <button onClick={saveTask} className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white font-bold rounded-xl hover:shadow-lg transition">{tr('Zapisz zmiany')}</button>
                 </div>
               </div>
             </div>
@@ -1413,7 +1414,7 @@ export default function MediaTeamModule() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię i nazwisko</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
                 <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
               </div>
 
@@ -1454,18 +1455,18 @@ export default function MediaTeamModule() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Telefon</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
                   <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="+48 123 456 789" value={memberForm.phone} onChange={e => setMemberForm({...memberForm, phone: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Email</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Email')}</label>
                   <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="jan@example.com" value={memberForm.email} onChange={e => setMemberForm({...memberForm, email: e.target.value})} />
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => setShowMemberModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Anuluj</button>
-                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">Zapisz</button>
+                <button onClick={() => setShowMemberModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
+                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">{tr('Zapisz')}</button>
               </div>
             </div>
           </div>
@@ -1492,7 +1493,7 @@ export default function MediaTeamModule() {
                   onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
                 />
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kwota (PLN)</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
                   <input
                     type="number"
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -1506,7 +1507,7 @@ export default function MediaTeamModule() {
               {/* Wiersz 2: Kontrahent i Osoba odpowiedzialna */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kontrahent</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kontrahent')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.contractor}
@@ -1515,7 +1516,7 @@ export default function MediaTeamModule() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Osoba odpowiedzialna</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Osoba odpowiedzialna')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.responsible_person}
@@ -1538,23 +1539,23 @@ export default function MediaTeamModule() {
                       label: item.description
                     }))
                   ]}
-                  placeholder="Wybierz pozycję"
+                  placeholder={tr('Wybierz pozycję')}
                 />
               </div>
 
               {/* Wiersz 4: Szczegółowy opis (pełna szerokość) */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Szczegółowy opis</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Szczegółowy opis')}</label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
                   rows={2}
                   value={expenseForm.detailed_description}
                   onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
-                  placeholder="Dodatkowe informacje o wydatku..."
+                  placeholder={tr('Dodatkowe informacje o wydatku...')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załączniki (opcjonalnie)</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Załączniki (opcjonalnie)')}</label>
                 <div className="space-y-2">
                   <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                     <Upload size={18} className="text-gray-400" />
@@ -1591,13 +1592,13 @@ export default function MediaTeamModule() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tagi</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tagi')}</label>
                 <div className="flex gap-2 mb-2">
                   <input
                     className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Dodaj tag"
+                    placeholder={tr('Dodaj tag')}
                     onKeyPress={(e) => e.key === 'Enter' && addExpenseTag()}
                   />
                   <button

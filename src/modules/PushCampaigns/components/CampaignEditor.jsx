@@ -11,11 +11,12 @@ import RecipientSelector from './RecipientSelector';
 import ActionButtonsBuilder from './ActionButtonsBuilder';
 import ScheduleControl from './ScheduleControl';
 import PushPreview from './PushPreview';
+import { tr } from '../../../i18n';
 
 const SECTIONS = [
   { id: 'compose', label: 'Treść' },
   { id: 'recipients', label: 'Odbiorcy' },
-  { id: 'actions', label: 'Akcje' },
+  { id: 'actions', label: tr('Akcje') },
   { id: 'schedule', label: 'Harmonogram' },
 ];
 
@@ -248,7 +249,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
               className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm mb-4"
             />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowTestSend(false)} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">Anuluj</button>
+              <button onClick={() => setShowTestSend(false)} className="px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">{tr('Anuluj')}</button>
               <button
                 onClick={handleTestSend}
                 disabled={sending || !testEmail}

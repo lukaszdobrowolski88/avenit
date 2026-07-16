@@ -15,6 +15,7 @@ import {
   useSortable, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { tr } from '../../i18n';
 
 const KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
@@ -159,9 +160,9 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
             </div>
             <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 max-h-56 overflow-y-auto custom-scrollbar">
               {loading ? (
-                <div className="p-6 text-center text-sm text-gray-400">Ładowanie...</div>
+                <div className="p-6 text-center text-sm text-gray-400">{tr('Ładowanie...')}</div>
               ) : filtered.length === 0 ? (
-                <div className="p-6 text-center text-sm text-gray-400">Brak nadchodzących programów</div>
+                <div className="p-6 text-center text-sm text-gray-400">{tr('Brak nadchodzących programów')}</div>
               ) : (
                 filtered.map(p => {
                   const isSelected = selectedProgramId === p.id;
@@ -343,9 +344,9 @@ export function ProgramsSongsManagerModal({ songs, onClose }) {
             </div>
             <div className="px-6 pb-6 overflow-y-auto custom-scrollbar flex-1">
               {loading ? (
-                <div className="p-10 text-center text-sm text-gray-400">Ładowanie...</div>
+                <div className="p-10 text-center text-sm text-gray-400">{tr('Ładowanie...')}</div>
               ) : filtered.length === 0 ? (
-                <div className="p-10 text-center text-sm text-gray-400">Brak nadchodzących programów</div>
+                <div className="p-10 text-center text-sm text-gray-400">{tr('Brak nadchodzących programów')}</div>
               ) : (
                 <div className="grid gap-2">
                   {filtered.map(p => {
@@ -537,7 +538,7 @@ function ProgramSongsEditor({ program, songs, onBack, onClose }) {
 
       <div className="px-6 pb-6 overflow-y-auto custom-scrollbar flex-1">
         {loading ? (
-          <div className="p-10 text-center text-sm text-gray-400">Ładowanie...</div>
+          <div className="p-10 text-center text-sm text-gray-400">{tr('Ładowanie...')}</div>
         ) : items.length === 0 ? (
           <div className="text-center py-10 px-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
             <Music size={32} className="mx-auto mb-2 text-gray-300 dark:text-gray-600" />
@@ -642,7 +643,7 @@ function SortableSuggestionRow({
           <button
             onClick={onDelete}
             className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
-            title="Usuń"
+            title={tr('Usuń')}
           >
             <Trash2 size={14} />
           </button>
@@ -707,7 +708,7 @@ function SongPickerInline({ songs, onPick, onCancel }) {
         <input
           autoFocus
           className="flex-1 bg-transparent outline-none text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400"
-          placeholder="Szukaj pieśni..."
+          placeholder={tr('Szukaj pieśni...')}
           value={search}
           onChange={e => setSearch(e.target.value)}
         />

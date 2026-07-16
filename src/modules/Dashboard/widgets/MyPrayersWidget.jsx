@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Heart, Clock, Lock, Star, Sparkles, HeartHandshake, XCircle, UserPlus, X, Ghost, User, UserX, Loader2, CheckCircle, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { tr } from '../../../i18n';
 
 const CATEGORIES = {
-  zdrowie: { label: 'Zdrowie', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: '❤️' },
-  rodzina: { label: 'Rodzina', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: '👨‍👩‍👧‍👦' },
-  finanse: { label: 'Finanse', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: '💰' },
-  duchowe: { label: 'Duchowe', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: '🙏' },
-  inne: { label: 'Inne', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', icon: '✨' }
+  zdrowie: { label: tr('Zdrowie'), color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: '❤️' },
+  rodzina: { label: tr('Rodzina'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: '👨‍👩‍👧‍👦' },
+  finanse: { label: tr('Finanse'), color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: '💰' },
+  duchowe: { label: tr('Duchowe'), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: '🙏' },
+  inne: { label: tr('Inne'), color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', icon: '✨' }
 };
 
 // ============================================
@@ -97,11 +98,11 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                 type="text"
                 value={requesterName}
                 onChange={(e) => setRequesterName(e.target.value)}
-                placeholder="Imię osoby, za którą się modlimy..."
+                placeholder={tr('Imię osoby, za którą się modlimy...')}
                 className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white"
               />
             </div>
-            <p className="text-xs text-gray-400 mt-1">Zostaw puste, jeśli modlisz się za siebie</p>
+            <p className="text-xs text-gray-400 mt-1">{tr('Zostaw puste, jeśli modlisz się za siebie')}</p>
           </div>
 
           {/* Content */}
@@ -112,7 +113,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Podziel się swoją prośbą modlitewną..."
+              placeholder={tr('Podziel się swoją prośbą modlitewną...')}
               rows={4}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 dark:text-white resize-none"
               required
@@ -167,8 +168,8 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                 />
                 <User className={`w-5 h-5 ${visibility === 'public' ? 'text-accent-primary-light' : 'text-gray-400'}`} />
                 <div>
-                  <p className="font-medium text-gray-800 dark:text-gray-200">Publiczna</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Widoczna dla wszystkich</p>
+                  <p className="font-medium text-gray-800 dark:text-gray-200">{tr('Publiczna')}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Widoczna dla wszystkich')}</p>
                 </div>
               </label>
 
@@ -189,8 +190,8 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                 />
                 <UserX className={`w-5 h-5 ${visibility === 'leaders_only' ? 'text-indigo-500' : 'text-gray-400'}`} />
                 <div>
-                  <p className="font-medium text-gray-800 dark:text-gray-200">Tylko liderzy</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Poufna prośba</p>
+                  <p className="font-medium text-gray-800 dark:text-gray-200">{tr('Tylko liderzy')}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Poufna prośba')}</p>
                 </div>
               </label>
             </div>
@@ -206,7 +207,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
             />
             <Ghost className="w-5 h-5 text-gray-500" />
             <div>
-              <p className="font-medium text-gray-800 dark:text-gray-200">Dodaj anonimowo</p>
+              <p className="font-medium text-gray-800 dark:text-gray-200">{tr('Dodaj anonimowo')}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Twoje imię nie będzie widoczne dla innych
               </p>
@@ -237,8 +238,8 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                     />
                     <CheckCircle className={`w-5 h-5 ${isActive ? 'text-green-500' : 'text-gray-400'}`} />
                     <div>
-                      <p className="font-medium text-gray-800 dark:text-gray-200">Aktualna</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Nadal potrzebuję modlitwy</p>
+                      <p className="font-medium text-gray-800 dark:text-gray-200">{tr('Aktualna')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Nadal potrzebuję modlitwy')}</p>
                     </div>
                   </label>
 
@@ -258,8 +259,8 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                     />
                     <XCircle className={`w-5 h-5 ${!isActive ? 'text-gray-500' : 'text-gray-400'}`} />
                     <div>
-                      <p className="font-medium text-gray-800 dark:text-gray-200">Nieaktualna</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Nie potrzebuję już modlitwy</p>
+                      <p className="font-medium text-gray-800 dark:text-gray-200">{tr('Nieaktualna')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Nie potrzebuję już modlitwy')}</p>
                     </div>
                   </label>
                 </div>
@@ -275,7 +276,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                 />
                 <Star className="w-5 h-5 text-amber-500" />
                 <div>
-                  <p className="font-medium text-gray-800 dark:text-gray-200">Modlitwa wysłuchana!</p>
+                  <p className="font-medium text-gray-800 dark:text-gray-200">{tr('Modlitwa wysłuchana!')}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Podziel się świadectwem z innymi
                   </p>
@@ -287,7 +288,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                   <textarea
                     value={testimony}
                     onChange={(e) => setTestimony(e.target.value)}
-                    placeholder="Opisz, jak Bóg odpowiedział na Twoją modlitwę..."
+                    placeholder={tr('Opisz, jak Bóg odpowiedział na Twoją modlitwę...')}
                     rows={3}
                     className="w-full px-4 py-3 rounded-xl border border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500/50 dark:text-white resize-none"
                   />

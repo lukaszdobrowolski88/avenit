@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { CheckCircle, XCircle, Loader2, AlertCircle, Calendar, User, Music } from 'lucide-react';
+import { tr } from '../../i18n';
 
 export default function AssignmentResponsePage() {
   const [searchParams] = useSearchParams();
@@ -162,7 +163,7 @@ export default function AssignmentResponsePage() {
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-8 h-8 text-red-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Błąd</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">{tr('Błąd')}</h1>
           <p className="text-gray-600">{error}</p>
         </div>
       </div>
@@ -254,14 +255,14 @@ export default function AssignmentResponsePage() {
           <div className="flex items-center gap-3 mb-3">
             <Calendar className="text-accent-primary" size={20} />
             <div>
-              <p className="text-sm text-gray-500">Data</p>
+              <p className="text-sm text-gray-500">{tr('Data')}</p>
               <p className="font-medium text-gray-800">{formatDate(program?.date)}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 mb-3">
             <Music className="text-accent-primary" size={20} />
             <div>
-              <p className="text-sm text-gray-500">Służba</p>
+              <p className="text-sm text-gray-500">{tr('Służba')}</p>
               <p className="font-medium text-gray-800">{roleNames[assignment?.role_key] || assignment?.role_key}</p>
             </div>
           </div>

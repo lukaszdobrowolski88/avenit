@@ -26,6 +26,7 @@ import { useFormResponses } from '../hooks/useFormResponses';
 import { exportToCSV, exportToJSON, formatAnswerForExport } from '../utils/exportUtils';
 import { formatPrice } from '../utils/fieldTypes';
 import { supabase } from '../../../lib/supabase';
+import { tr } from '../../../i18n';
 
 export default function ResponsesView({ form }) {
   const [selectedParticipant, setSelectedParticipant] = useState(null);
@@ -298,7 +299,7 @@ export default function ResponsesView({ form }) {
       case 'partial':
         return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium"><AlertCircle size={12} />Częściowo{paidAmt > 0 && dueAmt > 0 && <span className="text-[10px] font-normal ml-0.5">({formatPrice(paidAmt, 'PLN')}/{formatPrice(dueAmt, 'PLN')})</span>}</span>);
       case 'pending':
-        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium"><Clock size={12} />Oczekuje</span>);
+        return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium"><Clock size={12} />{tr('Oczekuje')}</span>);
       default:
         return (<span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full text-xs font-medium">-</span>);
     }
@@ -411,7 +412,7 @@ export default function ResponsesView({ form }) {
       {showFilters && (
         <div className="flex flex-wrap gap-2 mb-4">
           {[
-            { id: 'all', label: 'Wszystkie' },
+            { id: 'all', label: tr('Wszystkie') },
             { id: 'paid', label: 'Opłacone' },
             { id: 'partial', label: 'Częściowe' },
             { id: 'pending', label: 'Oczekujące' }
@@ -437,10 +438,10 @@ export default function ResponsesView({ form }) {
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Uczestnik</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Kontakt</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Kwota</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Akcje</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{tr('Data')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{tr('Kwota')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{tr('Status')}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">{tr('Akcje')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -499,11 +500,11 @@ export default function ResponsesView({ form }) {
                         </button>
                       )}
                       <button onClick={() => setSelectedParticipant(p)}
-                        className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title="Szczegóły">
+                        className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors" title={tr('Szczegóły')}>
                         <Eye size={16} />
                       </button>
                       <button onClick={() => handleDeleteResponse(p.responseId)}
-                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Usuń">
+                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title={tr('Usuń')}>
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -690,7 +691,7 @@ export default function ResponsesView({ form }) {
               </div>
             </div>
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
-              <button onClick={() => setPaymentModal(null)} className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 transition-colors">Anuluj</button>
+              <button onClick={() => setPaymentModal(null)} className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-xl hover:bg-gray-200 transition-colors">{tr('Anuluj')}</button>
               <button onClick={addPayment} className="flex-1 py-2.5 text-sm font-medium text-white bg-green-500 rounded-xl hover:bg-green-600 transition-colors flex items-center justify-center gap-2"><Check size={16} />Potwierdź</button>
             </div>
           </div>

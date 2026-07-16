@@ -7,6 +7,7 @@ import DragDropEmailBuilder from '../../Mailing/components/DragDropEmailBuilder'
 import GroupRegistrationSettings from './GroupRegistrationSettings';
 import AddonsSettings from './AddonsSettings';
 import DiscountSettings from './DiscountSettings';
+import { tr } from '../../../i18n';
 
 export default function FormSettings({ settings, fields, onUpdate, onClose }) {
   const [localSettings, setLocalSettings] = useState(settings || {});
@@ -548,7 +549,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 </label>
                 <div className="flex gap-2">
                   {[
-                    { id: 'solid', label: 'Kolor' },
+                    { id: 'solid', label: tr('Kolor') },
                     { id: 'gradient', label: 'Gradient' },
                     { id: 'image', label: 'Grafika' }
                   ].map((type) => (
@@ -570,7 +571,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               {/* Kolor solid */}
               {(localSettings.header?.background?.type || 'solid') === 'solid' && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Kolor</label>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Kolor')}</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
@@ -593,7 +594,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Od</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Od')}</label>
                       <div className="flex items-center gap-2">
                         <input type="color" value={localSettings.header?.background?.gradient?.from || '#3b82f6'}
                           onChange={(e) => handleHeaderGradientChange('from', e.target.value)}
@@ -604,7 +605,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Do</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Do')}</label>
                       <div className="flex items-center gap-2">
                         <input type="color" value={localSettings.header?.background?.gradient?.to || '#8b5cf6'}
                           onChange={(e) => handleHeaderGradientChange('to', e.target.value)}
@@ -771,7 +772,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Zaokrąglenie</label>
                 <div className="flex gap-2">
-                  {[{ id: 'none', label: 'Brak' }, { id: 'md', label: 'Małe' }, { id: 'xl', label: 'Średnie' }, { id: '2xl', label: 'Duże' }, { id: '3xl', label: 'Bardzo duże' }].map((r) => (
+                  {[{ id: 'none', label: tr('Brak') }, { id: 'md', label: 'Małe' }, { id: 'xl', label: 'Średnie' }, { id: '2xl', label: 'Duże' }, { id: '3xl', label: 'Bardzo duże' }].map((r) => (
                     <button key={r.id}
                       onClick={() => handleHeaderChange('borderRadius', r.id)}
                       className={`flex-1 py-2 rounded-xl text-xs border transition-colors ${
@@ -786,7 +787,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cień</label>
                 <div className="flex gap-2">
-                  {[{ id: 'none', label: 'Brak' }, { id: 'sm', label: 'Mały' }, { id: 'md', label: 'Średni' }, { id: 'lg', label: 'Duży' }].map((s) => (
+                  {[{ id: 'none', label: tr('Brak') }, { id: 'sm', label: 'Mały' }, { id: 'md', label: 'Średni' }, { id: 'lg', label: 'Duży' }].map((s) => (
                     <button key={s.id}
                       onClick={() => handleHeaderChange('shadow', s.id)}
                       className={`flex-1 py-2 rounded-xl text-xs border transition-colors ${
@@ -872,7 +873,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 </label>
                 <div className="flex gap-2">
                   {[
-                    { id: 'solid', label: 'Kolor' },
+                    { id: 'solid', label: tr('Kolor') },
                     { id: 'gradient', label: 'Gradient' }
                   ].map((type) => (
                     <button
@@ -918,7 +919,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                 <div className="space-y-3">
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Od</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Od')}</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -952,7 +953,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Do</label>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tr('Do')}</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -1240,7 +1241,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     <div className="flex flex-wrap gap-2">
                       {[
                         { id: 'transfer', label: 'Przelew bankowy', icon: CreditCard },
-                        { id: 'cash', label: 'Gotówka', icon: DollarSign },
+                        { id: 'cash', label: tr('Gotówka'), icon: DollarSign },
                         { id: 'paypal', label: 'PayPal', icon: CreditCard },
                         { id: 'przelewy24', label: 'Przelewy24', icon: CreditCard }
                       ].map((method) => {

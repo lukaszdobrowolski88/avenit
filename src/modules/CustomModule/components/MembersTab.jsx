@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../../lib/supabase';
 import { Plus, Search, Trash2, X, User, Mail, Phone, Check, Edit2 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function MembersTab({ moduleKey, moduleName }) {
   const [members, setMembers] = useState([]);
@@ -290,7 +291,7 @@ GRANT ALL ON ${tableName} TO anon;`;
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Szukaj..."
+              placeholder={tr('Szukaj...')}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
               className="pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white text-sm focus:border-accent-primary-light outline-none"
@@ -411,7 +412,7 @@ GRANT ALL ON ${tableName} TO anon;`;
                   value={form.full_name}
                   onChange={(e) => setForm({ ...form, full_name: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                  placeholder="Jan Kowalski"
+                  placeholder={tr('Jan Kowalski')}
                 />
               </div>
 

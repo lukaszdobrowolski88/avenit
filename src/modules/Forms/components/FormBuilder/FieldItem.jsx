@@ -2,6 +2,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Trash2, Copy, Asterisk } from 'lucide-react';
 import { FIELD_TYPES } from '../../utils/fieldTypes';
+import { tr } from '../../../../i18n';
 
 export default function FieldItem({
   field,
@@ -169,7 +170,7 @@ export default function FieldItem({
               onDuplicate(field.id);
             }}
             className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-            title="Duplikuj"
+            title={tr('Duplikuj')}
           >
             <Copy size={16} />
           </button>
@@ -179,7 +180,7 @@ export default function FieldItem({
               onRemove(field.id);
             }}
             className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-            title="Usuń"
+            title={tr('Usuń')}
           >
             <Trash2 size={16} />
           </button>

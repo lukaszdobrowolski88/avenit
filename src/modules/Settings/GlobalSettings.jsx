@@ -20,31 +20,32 @@ import LocalizationSettings from './components/LocalizationSettings';
 import SubscriptionInfo from './components/SubscriptionInfo';
 import { useCampus } from '../../contexts/CampusContext';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import { tr } from '../../i18n';
 
 // Grupy nawigacji ustawień (menu po lewej).
 const SETTINGS_NAV = [
   { group: 'Ogólne', items: [
-    { id: 'general', label: 'Organizacja', icon: Settings },
-    { id: 'appearance', label: 'Wygląd', icon: Palette },
-    { id: 'localization', label: 'Regionalne', icon: Globe },
-    { id: 'campuses', label: 'Lokalizacje', icon: Building2 },
+    { id: 'general', label: tr('Organizacja'), icon: Settings },
+    { id: 'appearance', label: tr('Wygląd'), icon: Palette },
+    { id: 'localization', label: tr('Regionalne'), icon: Globe },
+    { id: 'campuses', label: tr('Lokalizacje'), icon: Building2 },
   ]},
   { group: 'Zespół i dostęp', items: [
-    { id: 'users', label: 'Użytkownicy', icon: Users },
-    { id: 'permissions', label: 'Uprawnienia', icon: Shield },
-    { id: 'security', label: 'Bezpieczeństwo', icon: Shield },
+    { id: 'users', label: tr('Użytkownicy'), icon: Users },
+    { id: 'permissions', label: tr('Uprawnienia'), icon: Shield },
+    { id: 'security', label: tr('Bezpieczeństwo'), icon: Shield },
   ]},
   { group: 'Moduły', items: [
-    { id: 'modules', label: 'Moduły', icon: Grid },
-    { id: 'module_manager', label: 'Zarządzanie', icon: Layers },
-    { id: 'dictionaries', label: 'Słowniki', icon: BookOpen },
+    { id: 'modules', label: tr('Moduły'), icon: Grid },
+    { id: 'module_manager', label: tr('Zarządzanie'), icon: Layers },
+    { id: 'dictionaries', label: tr('Słowniki'), icon: BookOpen },
   ]},
   { group: 'Komunikacja', items: [
-    { id: 'notifications', label: 'Powiadomienia', icon: Bell },
-    { id: 'integrations', label: 'Integracje', icon: Plug },
+    { id: 'notifications', label: tr('Powiadomienia'), icon: Bell },
+    { id: 'integrations', label: tr('Integracje'), icon: Plug },
   ]},
   { group: 'Konto', items: [
-    { id: 'subscription', label: 'Subskrypcja', icon: CreditCard },
+    { id: 'subscription', label: tr('Subskrypcja'), icon: CreditCard },
   ]},
 ];
 const SETTINGS_NAV_FLAT = SETTINGS_NAV.flatMap((g) => g.items);
@@ -52,7 +53,7 @@ const SETTINGS_NAV_FLAT = SETTINGS_NAV.flatMap((g) => g.items);
 // --- MODULE TABS DEFINITION ---
 const MODULE_TABS = {
   members: {
-    label: 'Członkowie',
+    label: tr('Członkowie'),
     resourceKey: 'module:members',
     tabs: {}
   },
@@ -77,7 +78,7 @@ const MODULE_TABS = {
     }
   },
   kids: {
-    label: 'Małe Avenit',
+    label: tr('Małe Avenit'),
     resourceKey: 'module:kids',
     tabs: {
       schedule: 'Grafik',
@@ -88,7 +89,7 @@ const MODULE_TABS = {
     }
   },
   worship: {
-    label: 'Grupa Uwielbienia',
+    label: tr('Grupa Uwielbienia'),
     resourceKey: 'module:worship',
     tabs: {
       schedule: 'Grafik',
@@ -99,7 +100,7 @@ const MODULE_TABS = {
     }
   },
   atmosfera: {
-    label: 'Atmosfera Team',
+    label: tr('Atmosfera Team'),
     resourceKey: 'module:atmosfera',
     tabs: {
       schedule: 'Grafik',
@@ -108,12 +109,12 @@ const MODULE_TABS = {
     }
   },
   finance: {
-    label: 'Finanse',
+    label: tr('Finanse'),
     resourceKey: 'module:finance',
     tabs: {}
   },
   teaching: {
-    label: 'Nauczanie',
+    label: tr('Nauczanie'),
     resourceKey: 'module:teaching',
     tabs: {
       wall: 'Tablica',
@@ -123,7 +124,7 @@ const MODULE_TABS = {
     }
   },
   prayer: {
-    label: 'Centrum Modlitwy',
+    label: tr('Centrum Modlitwy'),
     resourceKey: 'module:prayer',
     tabs: {
       wall: 'Ściana Modlitwy',
@@ -131,7 +132,7 @@ const MODULE_TABS = {
     }
   },
   komunikator: {
-    label: 'Komunikator',
+    label: tr('Komunikator'),
     resourceKey: 'module:komunikator',
     tabs: {
       direct: 'Rozmowy prywatne',
@@ -140,7 +141,7 @@ const MODULE_TABS = {
     }
   },
   mlodziezowka: {
-    label: 'Młodzieżówka',
+    label: tr('Młodzieżówka'),
     resourceKey: 'module:mlodziezowka',
     tabs: {
       events: 'Wydarzenia',
@@ -151,7 +152,7 @@ const MODULE_TABS = {
     }
   },
   settings: {
-    label: 'Ustawienia',
+    label: tr('Ustawienia'),
     resourceKey: 'module:settings',
     tabs: {}
   }

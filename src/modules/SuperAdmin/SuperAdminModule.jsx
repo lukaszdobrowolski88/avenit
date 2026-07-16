@@ -14,6 +14,7 @@ import {
   Shield,
   Loader2
 } from 'lucide-react';
+import { tr } from '../../i18n';
 
 const TABS = {
   DASHBOARD: 'dashboard',
@@ -44,7 +45,7 @@ export default function SuperAdminModule() {
     { id: TABS.INVOICES, icon: CreditCard, label: 'Faktury' },
     { id: TABS.PLANS, icon: Package, label: 'Plany' },
     { id: TABS.COUPONS, icon: Tag, label: 'Kupony' },
-    { id: TABS.SETTINGS, icon: Settings, label: 'Ustawienia' }
+    { id: TABS.SETTINGS, icon: Settings, label: tr('Ustawienia') }
   ];
 
   const handleSelectTenant = (tenant) => {

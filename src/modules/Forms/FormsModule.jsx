@@ -20,6 +20,7 @@ import PaymentsView from './components/PaymentsView';
 import EmbedCodeGenerator from './components/EmbedCodeGenerator';
 import { BUILT_IN_TEMPLATES, DEFAULT_FORM_SETTINGS } from './utils/fieldTypes';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 export default function FormsModule({ userEmail }) {
   const t = useT();
@@ -213,10 +214,10 @@ export default function FormsModule({ userEmail }) {
   }
 
   const tabs = [
-    { id: 'forms', label: 'Formularze', icon: FileText },
-    { id: 'participants', label: 'Uczestnicy', icon: Users },
-    { id: 'payments', label: 'Płatności', icon: CreditCard },
-    { id: 'templates', label: 'Szablony', icon: LayoutTemplate }
+    { id: 'forms', label: tr('Formularze'), icon: FileText },
+    { id: 'participants', label: tr('Uczestnicy'), icon: Users },
+    { id: 'payments', label: tr('Płatności'), icon: CreditCard },
+    { id: 'templates', label: tr('Szablony'), icon: LayoutTemplate }
   ];
 
   return (

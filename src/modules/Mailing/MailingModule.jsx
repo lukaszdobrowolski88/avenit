@@ -9,11 +9,12 @@ import TemplateEditor from './components/TemplateEditor';
 import CampaignStats from './components/CampaignStats';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { useT } from '../../i18n';
+import { tr } from '../../i18n';
 
 const TABS = [
-  { id: 'campaigns', label: 'Maile', icon: Mail },
-  { id: 'templates', label: 'Szablony', icon: FileText },
-  { id: 'stats', label: 'Statystyki', icon: BarChart3 }
+  { id: 'campaigns', label: tr('Maile'), icon: Mail },
+  { id: 'templates', label: tr('Szablony'), icon: FileText },
+  { id: 'stats', label: tr('Statystyki'), icon: BarChart3 }
 ];
 
 export default function MailingModule() {

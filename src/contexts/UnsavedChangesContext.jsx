@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Save, AlertTriangle } from 'lucide-react';
+import { tr } from '../i18n';
 
 // Kontekst do śledzenia niezapisanych zmian w całej aplikacji
 const UnsavedChangesContext = createContext({
@@ -31,7 +32,7 @@ const UnsavedChangesWarningModal = ({ isOpen, onClose, onSave, onDiscard }) => {
             <AlertTriangle size={24} className="text-accent-secondary dark:text-accent-secondary-light" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white">Niezapisane zmiany</h3>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white">{tr('Niezapisane zmiany')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Masz niezapisane zmiany. Co chcesz zrobić?
             </p>

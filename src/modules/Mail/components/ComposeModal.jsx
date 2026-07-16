@@ -7,6 +7,7 @@ import {
   Code, Heading1, Heading2, Heading3, Undo, Redo, Type,
   Palette, ChevronDown, Eye, Edit3, Maximize2, Minimize2
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 // Kolory do wyboru
 const TEXT_COLORS = [
@@ -696,7 +697,7 @@ export default function ComposeModal({
             title="Dodaj załącznik"
           >
             <Paperclip size={18} />
-            <span className="hidden sm:inline text-sm font-medium">Załącznik</span>
+            <span className="hidden sm:inline text-sm font-medium">{tr('Załącznik')}</span>
           </button>
 
           {/* Szablony */}
@@ -705,7 +706,7 @@ export default function ComposeModal({
               <button
                 onClick={() => setShowTemplates(!showTemplates)}
                 className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors"
-                title="Szablony"
+                title={tr('Szablony')}
               >
                 <FileText size={18} />
                 <span className="hidden sm:inline text-sm font-medium">Szablon</span>

@@ -21,6 +21,7 @@ import { useT } from '../../i18n';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { PitchShifter } from 'soundtouchjs';
+import { tr } from '../../i18n';
 
 
 // Hook to calculate dropdown position with smart positioning (up/down)
@@ -777,7 +778,7 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [], getAss
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">{tr('Wybierz...')}</span>
         ) : (
           selectedItems.map((item, idx) => (
             <span key={idx} className={`px-1.5 py-0.5 rounded text-[10px] border whitespace-nowrap ${getItemStyles(item)}`}>
@@ -860,7 +861,7 @@ const AbsenceMultiSelect = ({ options, value, onChange }) => {
         onClick={() => setIsOpen(!isOpen)}
       >
         {selectedItems.length === 0 ? (
-          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">Wybierz...</span>
+          <span className="text-gray-400 dark:text-gray-500 text-[10px] italic">{tr('Wybierz...')}</span>
         ) : (
           selectedItems.map((item, idx) => (
             <span key={idx} className="bg-red-50 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded text-[10px] border border-red-100 dark:border-red-800 whitespace-nowrap flex items-center gap-1">
@@ -1068,7 +1069,7 @@ const ScheduleTable = ({ programs, worshipTeam, onUpdateProgram, roles, memberRo
                 <table className="w-full text-left border-collapse min-w-max">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-700">
-                      <th className="p-3 font-semibold w-24 min-w-[90px]">Data</th>
+                      <th className="p-3 font-semibold w-24 min-w-[90px]">{tr('Data')}</th>
                       {columns.map(col => (
                         <th key={col.key} className="p-3 font-semibold min-w-[130px]">{col.label}</th>
                       ))}
@@ -1365,7 +1366,7 @@ const AudioPlayer = ({ url, name }) => {
     { key: 'vocals', label: 'Wokal', icon: MicIcon, color: 'pink' },
     { key: 'drums', label: 'Perkusja', icon: DrumIcon, color: 'orange' },
     { key: 'bass', label: 'Bas', icon: BassIcon, color: 'purple' },
-    { key: 'other', label: 'Inne', icon: GuitarIcon, color: 'blue' }
+    { key: 'other', label: tr('Inne'), icon: GuitarIcon, color: 'blue' }
   ];
 
   return (
@@ -2530,7 +2531,7 @@ export default function WorshipModule() {
   return (
     <div className="space-y-4 lg:space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Grupa Uwielbienia</h1>
+        <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{tr('Grupa Uwielbienia')}</h1>
       </div>
 
       {/* TAB NAVIGATION */}
@@ -2575,7 +2576,7 @@ export default function WorshipModule() {
           <div className="flex gap-2 w-full sm:w-auto">
             <button onClick={() => setShowProgramsManager(true)} className="flex-1 sm:flex-none bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary dark:hover:text-accent-primary-light transition flex items-center justify-center gap-2"><Calendar size={16}/> Programy</button>
             <button onClick={() => setShowTagsModal(true)} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/40 dark:to-accent-secondary-darkest/40 text-accent-primary dark:text-accent-primary-light text-sm px-3 lg:px-4 py-2.5 rounded-xl font-medium border border-accent-primary-lighter dark:border-accent-primary-dark hover:from-accent-primary-lighter hover:to-accent-secondary-lighter dark:hover:from-accent-primary-darkest/60 dark:hover:to-accent-secondary-darkest/60 transition flex items-center justify-center gap-2"><Tag size={16}/> <span className="hidden sm:inline">{t('Zarządzaj')}</span> Tagi</button>
-            <button onClick={() => { setSongForm({}); setShowSongModal(true); }} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-secondary to-accent-primary text-white text-sm px-4 lg:px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-secondary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> <span className="hidden sm:inline">Dodaj</span> Pieśń</button>
+            <button onClick={() => { setSongForm({}); setShowSongModal(true); }} className="flex-1 sm:flex-none bg-gradient-to-r from-accent-secondary to-accent-primary text-white text-sm px-4 lg:px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-secondary-light/50 transition flex items-center justify-center gap-2"><Plus size={18}/> <span className="hidden sm:inline">{tr('Dodaj')}</span> Pieśń</button>
           </div>
         </div>
         
@@ -2593,7 +2594,7 @@ export default function WorshipModule() {
           {/* Lista wszystkich tagów z bazy - filtrowane po wpisanym tekście */}
           {allUniqueTags.length > 0 && (
             <div className="flex gap-2 flex-wrap items-center">
-              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Tagi:</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{tr('Tagi:')}</span>
               {allUniqueTags
                 .filter(tag => !tagFilter || tag.toLowerCase().includes(tagFilter.toLowerCase()))
                 .map(tag => (
@@ -2617,12 +2618,12 @@ export default function WorshipModule() {
           <table className="w-full text-left text-sm align-middle">
             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="p-4">Tytuł</th>
+                <th className="p-4">{tr('Tytuł')}</th>
                 <th className="p-4">Autor</th>
                 <th className="p-4">Tonacja</th>
                 <th className="p-4">Tempo</th>
-                <th className="p-4">Tagi</th>
-                <th className="p-4 text-right">Akcje</th>
+                <th className="p-4">{tr('Tagi')}</th>
+                <th className="p-4 text-right">{tr('Akcje')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -2651,8 +2652,8 @@ export default function WorshipModule() {
                   <td className="p-4 text-right flex justify-end gap-2">
                     <button onClick={() => setShowSongDetails(s)} className="text-gray-800 dark:text-gray-300 font-semibold px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition">{t('Szczegóły')}</button>
                     <button onClick={() => setAddToProgramSong(s)} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-primary-dark dark:hover:text-accent-primary font-medium transition flex items-center gap-1" title={t('Dodaj do programu jako sugerowaną pieśń')}><Calendar size={14}/> Do programu</button>
-                    <button onClick={() => { setSongForm(s); setShowSongModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">Edytuj</button>
-                    <button onClick={() => deleteSong(s.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">Usuń</button>
+                    <button onClick={() => { setSongForm(s); setShowSongModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">{tr('Edytuj')}</button>
+                    <button onClick={() => deleteSong(s.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">{tr('Usuń')}</button>
                   </td>
                 </tr>
               ))}
@@ -2674,12 +2675,12 @@ export default function WorshipModule() {
           <table className="w-full text-left text-sm min-w-[800px]">
             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-400 font-bold border-b border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="p-4">Imię i nazwisko</th>
-                <th className="p-4">Służby</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Telefon</th>
-                <th className="p-4">Email</th>
-                <th className="p-4 text-right">Akcje</th>
+                <th className="p-4">{tr('Imię i nazwisko')}</th>
+                <th className="p-4">{tr('Służby')}</th>
+                <th className="p-4">{tr('Status')}</th>
+                <th className="p-4">{tr('Telefon')}</th>
+                <th className="p-4">{tr('Email')}</th>
+                <th className="p-4 text-right">{tr('Akcje')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -2705,8 +2706,8 @@ export default function WorshipModule() {
                     <td className="p-4 text-gray-600 dark:text-gray-400">{m.phone}</td>
                     <td className="p-4 text-gray-600 dark:text-gray-400">{m.email}</td>
                     <td className="p-4 text-right flex justify-end gap-2">
-                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">Edytuj</button>
-                      <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">Usuń</button>
+                      <button onClick={() => { setMemberForm(m); loadMemberRoles(m.id); setShowMemberModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:text-accent-secondary dark:hover:text-accent-secondary-light font-medium transition">{tr('Edytuj')}</button>
+                      <button onClick={() => deleteMember(m.id)} className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition">{tr('Usuń')}</button>
                     </td>
                   </tr>
                 );
@@ -2776,7 +2777,7 @@ export default function WorshipModule() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Imię i nazwisko</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię i nazwisko')}</label>
                 <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Jan Kowalski')} value={memberForm.full_name} onChange={e => setMemberForm({...memberForm, full_name: e.target.value})} />
               </div>
 
@@ -2817,18 +2818,18 @@ export default function WorshipModule() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Telefon</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Telefon')}</label>
                   <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="+48 123 456 789" value={memberForm.phone} onChange={e => setMemberForm({...memberForm, phone: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Email</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Email')}</label>
                   <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder="jan@example.com" value={memberForm.email} onChange={e => setMemberForm({...memberForm, email: e.target.value})} />
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => setShowMemberModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Anuluj</button>
-                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">Zapisz</button>
+                <button onClick={() => setShowMemberModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
+                <button onClick={saveMember} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">{tr('Zapisz')}</button>
               </div>
             </div>
           </div>
@@ -3041,7 +3042,7 @@ export default function WorshipModule() {
                   onChange={(val) => setExpenseForm({...expenseForm, payment_date: val})}
                 />
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kwota (PLN)</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
                   <input
                     type="number"
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -3055,7 +3056,7 @@ export default function WorshipModule() {
               {/* Wiersz 2: Kontrahent i Osoba odpowiedzialna */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Kontrahent</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kontrahent')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.contractor}
@@ -3064,7 +3065,7 @@ export default function WorshipModule() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Osoba odpowiedzialna</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Osoba odpowiedzialna')}</label>
                   <input
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.responsible_person}
@@ -3087,23 +3088,23 @@ export default function WorshipModule() {
                       label: item.description
                     }))
                   ]}
-                  placeholder="Wybierz pozycję"
+                  placeholder={tr('Wybierz pozycję')}
                 />
               </div>
 
               {/* Wiersz 4: Szczegółowy opis (pełna szerokość) */}
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Szczegółowy opis</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Szczegółowy opis')}</label>
                 <textarea
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
                   rows={2}
                   value={expenseForm.detailed_description}
                   onChange={(e) => setExpenseForm({...expenseForm, detailed_description: e.target.value})}
-                  placeholder="Dodatkowe informacje o wydatku..."
+                  placeholder={tr('Dodatkowe informacje o wydatku...')}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Załączniki (opcjonalnie)</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Załączniki (opcjonalnie)')}</label>
                 <div className="space-y-2">
                   <label className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary transition flex items-center gap-2">
                     <Upload size={18} className="text-gray-400" />
@@ -3140,13 +3141,13 @@ export default function WorshipModule() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tagi</label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tagi')}</label>
                 <div className="flex gap-2 mb-2">
                   <input
                     className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Dodaj tag"
+                    placeholder={tr('Dodaj tag')}
                     onKeyPress={(e) => e.key === 'Enter' && addTag()}
                   />
                   <button

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Check, X } from 'lucide-react';
+import { tr } from '../../i18n';
 
 // Definicja modułów i ich zakładek
 const MODULE_TABS = {
   dashboard: {
-    label: 'Pulpit',
+    label: tr('Pulpit'),
     tabs: {
       ministry: 'Moja służba',
       tasks: 'Moje zadania',
@@ -31,7 +32,7 @@ const MODULE_TABS = {
     }
   },
   kids: {
-    label: 'Małe Avenit',
+    label: tr('Małe Avenit'),
     tabs: {
       schedule: 'Grafik',
       groups: 'Grupy',
@@ -41,7 +42,7 @@ const MODULE_TABS = {
     }
   },
   worship: {
-    label: 'Grupa Uwielbienia',
+    label: tr('Grupa Uwielbienia'),
     tabs: {
       schedule: 'Grafik',
       songs: 'Baza Pieśni',
@@ -50,7 +51,7 @@ const MODULE_TABS = {
     }
   },
   atmosfera: {
-    label: 'Atmosfera Team',
+    label: tr('Atmosfera Team'),
     tabs: {
       schedule: 'Grafik',
       members: 'Członkowie',
@@ -210,8 +211,8 @@ export function hasTabAccess(module, tab, userRole) {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-600">
-                      <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-300">Zakładka</th>
-                      <th className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-300">Wszyscy</th>
+                      <th className="text-left py-3 px-4 font-bold text-gray-600 dark:text-gray-300">{tr('Zakładka')}</th>
+                      <th className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-300">{tr('Wszyscy')}</th>
                       {roles.map(role => (
                         <th key={role.key} className="text-center py-3 px-4 font-bold text-gray-600 dark:text-gray-300">
                           {role.label}

@@ -10,6 +10,7 @@ import {
   Loader2,
   ExternalLink
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 export default function InvoicesList() {
   const [invoices, setInvoices] = useState([]);
@@ -112,9 +113,9 @@ export default function InvoicesList() {
               <th className="px-6 py-3 font-medium">Numer</th>
               <th className="px-6 py-3 font-medium">Data wystawienia</th>
               <th className="px-6 py-3 font-medium">Termin płatności</th>
-              <th className="px-6 py-3 font-medium">Kwota</th>
-              <th className="px-6 py-3 font-medium">Status</th>
-              <th className="px-6 py-3 font-medium text-right">Akcje</th>
+              <th className="px-6 py-3 font-medium">{tr('Kwota')}</th>
+              <th className="px-6 py-3 font-medium">{tr('Status')}</th>
+              <th className="px-6 py-3 font-medium text-right">{tr('Akcje')}</th>
             </tr>
           </thead>
           <tbody>

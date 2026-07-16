@@ -12,6 +12,7 @@ import { generatePPT } from '../../lib/ppt';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { tr } from '../../i18n';
 
 // --- MODAL OSTRZEŻENIA O NIEZAPISANYCH ZMIANACH ---
 
@@ -26,7 +27,7 @@ const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
             <AlertTriangle size={24} className="text-accent-secondary dark:text-accent-secondary-light" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white">Niezapisane zmiany</h3>
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white">{tr('Niezapisane zmiany')}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               Masz niezapisane zmiany w programie. Co chcesz zrobić?
             </p>
@@ -477,7 +478,7 @@ const SongSelector = ({ songs, onSelect }) => {
               <input
                 autoFocus
                 className="bg-transparent outline-none text-sm w-full text-gray-700 dark:text-gray-200 placeholder-gray-400"
-                placeholder="Szukaj..."
+                placeholder={tr('Szukaj...')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -485,7 +486,7 @@ const SongSelector = ({ songs, onSelect }) => {
           </div>
           <div className="overflow-y-auto flex-1 max-h-48 custom-scrollbar">
             {filteredSongs.length === 0 ? (
-              <div className="p-3 text-xs text-gray-400 text-center">Brak wyników</div>
+              <div className="p-3 text-xs text-gray-400 text-center">{tr('Brak wyników')}</div>
             ) : (
               filteredSongs.map(s => (
                 <div
@@ -619,7 +620,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
         <div className="col-span-3">
           <input
             className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
-            placeholder="Jan Kowalski"
+            placeholder={tr('Jan Kowalski')}
             value={row.person || ''}
             onChange={e => {
               const newSchedule = [...program.schedule];
@@ -722,7 +723,7 @@ const SortableRow = ({ row, index, program, setProgram, songs }) => {
         <div className="pl-6">
           <input
             className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600"
-            placeholder="Osoba"
+            placeholder={tr('Osoba')}
             value={row.person || ''}
             onChange={e => {
               const newSchedule = [...program.schedule];
@@ -1516,7 +1517,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
               title="Usuń nabożeństwo"
             >
               <Trash2 size={18} />
-              <span className="hidden sm:inline">Usuń</span>
+              <span className="hidden sm:inline">{tr('Usuń')}</span>
             </button>
             <button
               onClick={handleCloseAttempt}
@@ -1554,7 +1555,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
               <div className="hidden lg:grid grid-cols-12 gap-4 p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/50 font-bold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider min-w-[600px]">
                 <div className="col-span-1"></div>
                 <div className="col-span-3">Element</div>
-                <div className="col-span-3">Osoba</div>
+                <div className="col-span-3">{tr('Osoba')}</div>
                 <div className="col-span-4">Szczegóły / Notatki</div>
                 <div className="col-span-1"></div>
               </div>
@@ -1586,7 +1587,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
           {/* Zespół Uwielbienia */}
           <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-4 lg:p-6 hover:shadow-xl transition relative z-50">
             <div className="flex justify-between items-center mb-4 lg:mb-6">
-              <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary-dark dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Zespół Uwielbienia</h3>
+              <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary-dark dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{tr('Zespół Uwielbienia')}</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
               {(worshipRoles.length > 0
@@ -1633,24 +1634,24 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
           {/* Atmosfera i Media */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 relative z-0">
             <DynamicTeamSection
-              title="Atmosfera Team"
+              title={tr('Atmosfera Team')}
               dataKey="atmosfera_team"
               program={program}
               setProgram={setProgram}
               roles={atmosferaRoles}
               teamMembers={atmosferaTeam}
-              fallbackFields={[{ key: 'przygotowanie', label: 'Przygotowanie' }, { key: 'witanie', label: 'Witanie' }]}
+              fallbackFields={[{ key: 'przygotowanie', label: tr('Przygotowanie') }, { key: 'witanie', label: tr('Witanie') }]}
               absentList={absentList}
               memberRoles={atmosferaMemberRoles}
             />
             <DynamicTeamSection
-              title="MediaTeam"
+              title={tr('MediaTeam')}
               dataKey="produkcja"
               program={program}
               setProgram={setProgram}
               roles={mediaRoles}
               teamMembers={mediaTeam}
-              fallbackFields={[{ key: 'naglosnienie', label: 'Nagłośnienie' }, { key: 'propresenter', label: 'ProPresenter' }, { key: 'social', label: 'Social Media' }, { key: 'host', label: 'Host wydarzenia' }]}
+              fallbackFields={[{ key: 'naglosnienie', label: tr('Nagłośnienie') }, { key: 'propresenter', label: 'ProPresenter' }, { key: 'social', label: 'Social Media' }, { key: 'host', label: 'Host wydarzenia' }]}
               absentList={absentList}
               memberRoles={mediaMemberRoles}
             />

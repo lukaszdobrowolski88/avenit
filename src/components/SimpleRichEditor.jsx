@@ -7,6 +7,7 @@ import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough,
   List, ListOrdered, Heading2, Quote, Undo, Redo
 } from 'lucide-react';
+import { tr } from '../i18n';
 
 function ToolbarButton({ onClick, isActive, children, title }) {
   return (
@@ -75,7 +76,7 @@ export default function SimpleRichEditor({ content, onChange, placeholder = 'Wpi
         <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive('heading', { level: 2 })} title="Nagłówek">
           <Heading2 size={15} />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title="Lista">
+        <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title={tr('Lista')}>
           <List size={15} />
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title="Lista numerowana">

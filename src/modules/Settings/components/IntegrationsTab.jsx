@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, Loader2, Eye, EyeOff, AlertCircle, CheckCircle, MessageSquare, Copy, ExternalLink } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Klucze SMSAPI w `integration_settings` (admin-only RLS).
 const SMSAPI_KEYS = [
@@ -14,7 +15,7 @@ const SMSAPI_KEYS = [
   },
   {
     key: 'smsapi_default_sender',
-    label: 'Domyślny nadawca (Sender ID)',
+    label: tr('Domyślny nadawca (Sender ID)'),
     description: 'Zarejestrowany w SMSAPI. Max 11 znaków alfanumerycznych.',
     secret: false,
     placeholder: 'np. Avenit',

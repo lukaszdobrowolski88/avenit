@@ -25,17 +25,18 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+import { tr } from '../../i18n';
 
 // ============================================
 // KONFIGURACJA KATEGORII
 // ============================================
 
 const CATEGORIES = {
-  zdrowie: { label: 'Zdrowie', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: '❤️' },
-  rodzina: { label: 'Rodzina', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: '👨‍👩‍👧‍👦' },
-  finanse: { label: 'Finanse', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: '💰' },
-  duchowe: { label: 'Duchowe', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: '🙏' },
-  inne: { label: 'Inne', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', icon: '✨' }
+  zdrowie: { label: tr('Zdrowie'), color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: '❤️' },
+  rodzina: { label: tr('Rodzina'), color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: '👨‍👩‍👧‍👦' },
+  finanse: { label: tr('Finanse'), color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: '💰' },
+  duchowe: { label: tr('Duchowe'), color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: '🙏' },
+  inne: { label: tr('Inne'), color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', icon: '✨' }
 };
 
 // ============================================
@@ -259,14 +260,14 @@ function PrayerRequestCard({
             <button
               onClick={() => onEdit(request)}
               className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition"
-              title="Edytuj"
+              title={tr('Edytuj')}
             >
               <Pencil className="w-4 h-4" />
             </button>
             <button
               onClick={() => onDelete(request.id)}
               className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-              title="Usuń"
+              title={tr('Usuń')}
             >
               <X className="w-4 h-4" />
             </button>

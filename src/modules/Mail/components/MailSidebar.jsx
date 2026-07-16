@@ -4,6 +4,7 @@ import {
   Folder, Plus, ChevronDown, ChevronRight, Tag, Settings,
   Mail, MoreVertical, Edit2, Palette, X, User, Globe
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 // Mapowanie typów na ikony
 const FOLDER_TYPE_ICONS = {
@@ -413,7 +414,7 @@ export default function MailSidebar({
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
                   <Trash2 size={14} />
-                  <span>Usuń</span>
+                  <span>{tr('Usuń')}</span>
                 </button>
               </>
             )}
@@ -446,7 +447,7 @@ export default function MailSidebar({
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                 >
                   <Trash2 size={14} />
-                  <span>Usuń</span>
+                  <span>{tr('Usuń')}</span>
                 </button>
               </>
             )}

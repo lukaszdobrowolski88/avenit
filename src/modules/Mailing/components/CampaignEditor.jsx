@@ -12,6 +12,7 @@ import EmailEditor from './EmailEditor';
 import DragDropEmailBuilder from './DragDropEmailBuilder';
 import RecipientSelector from './RecipientSelector';
 import CampaignPreview from './CampaignPreview';
+import { tr } from '../../../i18n';
 
 const STEPS = [
   { id: 'basics', label: 'Podstawy', icon: FileText },
@@ -363,7 +364,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
             className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
           >
             <Eye size={16} />
-            <span className="hidden sm:inline">Podgląd</span>
+            <span className="hidden sm:inline">{tr('Podgląd')}</span>
           </button>
           <button
             onClick={() => handleSave('draft')}
@@ -371,7 +372,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
             className="flex items-center gap-2 px-4 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all disabled:opacity-50"
           >
             {saving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
-            <span className="hidden sm:inline">Zapisz</span>
+            <span className="hidden sm:inline">{tr('Zapisz')}</span>
           </button>
         </div>
       </div>

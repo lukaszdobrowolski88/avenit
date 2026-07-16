@@ -2,20 +2,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckSquare, List, LayoutGrid, Clock, CheckCircle, Circle, Plus, X, Save, Calendar, ChevronLeft, ChevronRight, Trash2, Lock, Users, Video, User } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { tr } from '../../../i18n';
 
 const STATUS_CONFIG = {
   todo: {
-    label: 'Do zrobienia',
+    label: tr('Do zrobienia'),
     color: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
     icon: Circle,
   },
   in_progress: {
-    label: 'W trakcie',
+    label: tr('W trakcie'),
     color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300',
     icon: Clock,
   },
   done: {
-    label: 'Gotowe',
+    label: tr('Gotowe'),
     color: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300',
     icon: CheckCircle,
   },
@@ -323,24 +324,24 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Tytuł</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Tytuł')}</label>
               <input
                 autoFocus
                 className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
                 value={task.title}
                 onChange={e => setTask({...task, title: e.target.value})}
-                placeholder="Co jest do zrobienia?"
+                placeholder={tr('Co jest do zrobienia?')}
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Termin</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Termin')}</label>
               <CustomDatePicker value={task.due_date} onChange={v => setTask({...task, due_date: v})} />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Status</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Status')}</label>
               <div className="grid grid-cols-3 gap-2">
                 {Object.entries(STATUS_CONFIG).map(([key, config]) => {
                   const Icon = config.icon;
@@ -364,12 +365,12 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Opis</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
               <textarea
                 className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white text-sm h-24 resize-none focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
                 value={task.description || ''}
                 onChange={e => setTask({...task, description: e.target.value})}
-                placeholder="Szczegóły zadania..."
+                placeholder={tr('Szczegóły zadania...')}
               />
             </div>
 
@@ -388,7 +389,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
                     {task.is_private && <Lock size={12} className="text-white" />}
                   </div>
                   <div className="flex-1">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Prywatne</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{tr('Prywatne')}</span>
                     <p className="text-xs text-gray-400 dark:text-gray-500">Tylko Ty widzisz to zadanie</p>
                   </div>
                   <Lock size={18} className={task.is_private ? 'text-accent-primary' : 'text-gray-400 dark:text-gray-500'} />

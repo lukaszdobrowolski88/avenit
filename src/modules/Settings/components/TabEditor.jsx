@@ -3,18 +3,19 @@ import { createPortal } from 'react-dom';
 import { X, Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen } from 'lucide-react';
 import IconPicker from './IconPicker';
 import { useT } from '../../../i18n';
+import { tr } from '../../../i18n';
 
 // Dostępne typy komponentów
 const COMPONENT_TYPES = [
-  { key: 'empty', label: 'Pusta zakładka', icon: Layers, description: 'Pusta strona do przyszłej rozbudowy' },
-  { key: 'events', label: 'Wydarzenia', icon: Calendar, description: 'Lista wydarzeń z kalendarzem' },
-  { key: 'tasks', label: 'Zadania', icon: CheckSquare, description: 'Tablica kanban z zadaniami' },
-  { key: 'finance', label: 'Finanse', icon: DollarSign, description: 'Przychody i wydatki' },
-  { key: 'members', label: 'Członkowie', icon: Users, description: 'Lista członków zespołu' },
-  { key: 'wall', label: 'Tablica', icon: MessageSquare, description: 'Tablica z wpisami i komentarzami' },
-  { key: 'schedule', label: 'Grafik', icon: CalendarDays, description: 'Harmonogram służb na wydarzenia' },
-  { key: 'duty', label: 'Służby', icon: UserCog, description: 'Zarządzanie służbami i przypisaniami' },
-  { key: 'materials', label: 'Materiały', icon: FolderOpen, description: 'Pliki i dokumenty do pobrania' }
+  { key: 'empty', label: tr('Pusta zakładka'), icon: Layers, description: 'Pusta strona do przyszłej rozbudowy' },
+  { key: 'events', label: tr('Wydarzenia'), icon: Calendar, description: 'Lista wydarzeń z kalendarzem' },
+  { key: 'tasks', label: tr('Zadania'), icon: CheckSquare, description: 'Tablica kanban z zadaniami' },
+  { key: 'finance', label: tr('Finanse'), icon: DollarSign, description: 'Przychody i wydatki' },
+  { key: 'members', label: tr('Członkowie'), icon: Users, description: 'Lista członków zespołu' },
+  { key: 'wall', label: tr('Tablica'), icon: MessageSquare, description: 'Tablica z wpisami i komentarzami' },
+  { key: 'schedule', label: tr('Grafik'), icon: CalendarDays, description: 'Harmonogram służb na wydarzenia' },
+  { key: 'duty', label: tr('Służby'), icon: UserCog, description: 'Zarządzanie służbami i przypisaniami' },
+  { key: 'materials', label: tr('Materiały'), icon: FolderOpen, description: 'Pliki i dokumenty do pobrania' }
 ];
 
 export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, existingKeys = [] }) {

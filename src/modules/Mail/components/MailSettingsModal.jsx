@@ -4,10 +4,11 @@ import {
   X, Settings, User, Server, Filter, FileText, Plus,
   Trash2, Edit2, Check, AlertCircle, Loader2, Eye, EyeOff, Star, RefreshCw
 } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 const TABS = [
   { id: 'accounts', label: 'Konta zewnętrzne', icon: Server },
-  { id: 'filters', label: 'Filtry', icon: Filter }
+  { id: 'filters', label: tr('Filtry'), icon: Filter }
 ];
 
 export default function MailSettingsModal({

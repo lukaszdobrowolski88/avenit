@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, PlusCircle, Music, Hash, Check, Upload, FileText, Link as LinkIcon, Trash2, Edit3, AlignJustify, Minus, Plus, CornerDownLeft, Undo2, Redo2, Keyboard, Type, Bold, Italic } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import CustomSelect from '../../components/CustomSelect';
+import { tr } from '../../i18n';
 
 // --- STAŁE DANYCH ---
 const KEYS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
@@ -1127,7 +1128,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
               {/* Rząd 1: Tytuł i Autor */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Tytuł')}</label>
                   <input 
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none transition"
                     placeholder="Np. Jak wielki jest Bóg"

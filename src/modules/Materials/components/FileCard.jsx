@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileText, Image, File, Music, Video, Archive, Download, Trash2, Eye } from 'lucide-react';
+import { tr } from '../../../i18n';
 
 // Formatowanie rozmiaru pliku
 function formatFileSize(bytes) {
@@ -140,7 +141,7 @@ export default function FileCard({
             <button
               onClick={handlePreview}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-accent-primary transition-all duration-200"
-              title="Podgląd"
+              title={tr('Podgląd')}
             >
               <Eye size={16} />
             </button>
@@ -156,7 +157,7 @@ export default function FileCard({
             <button
               onClick={handleDelete}
               className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-600 transition-all duration-200"
-              title="Usuń"
+              title={tr('Usuń')}
             >
               <Trash2 size={16} />
             </button>

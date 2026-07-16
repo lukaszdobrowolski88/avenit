@@ -20,6 +20,7 @@ import { useCampus } from '../../contexts/CampusContext';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { tr } from '../../i18n';
 
 const PROGRAM_ELEMENTS = [
   'Wstęp', 'Uwielbienie', 'Modlitwa', 'Czytanie', 'Kazanie',
@@ -32,7 +33,7 @@ const MUSICAL_KEYS = ["C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G
 const ITEM_TYPES = {
   item: { label: 'Element', icon: Type, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800' },
   header: { label: 'Nagłówek', icon: MoreHorizontal, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
-  song: { label: 'Pieśń', icon: Music, color: 'text-accent-primary dark:text-accent-primary-light', bg: 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30' },
+  song: { label: tr('Pieśń'), icon: Music, color: 'text-accent-primary dark:text-accent-primary-light', bg: 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30' },
   media: { label: 'Media', icon: Image, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/30' },
 };
 
@@ -442,7 +443,7 @@ const SongSelector = ({ songs, onSelect, suggestions = [] }) => {
               <input
                 autoFocus
                 className="bg-transparent outline-none text-sm w-full text-gray-700 dark:text-gray-200 placeholder-gray-400"
-                placeholder="Szukaj..."
+                placeholder={tr('Szukaj...')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -450,7 +451,7 @@ const SongSelector = ({ songs, onSelect, suggestions = [] }) => {
           </div>
           <div className="overflow-y-auto flex-1 max-h-64 custom-scrollbar">
             {suggestedSongs.length === 0 && otherSongs.length === 0 ? (
-              <div className="p-3 text-xs text-gray-400 text-center">Brak wyników</div>
+              <div className="p-3 text-xs text-gray-400 text-center">{tr('Brak wyników')}</div>
             ) : (
               <>
                 {suggestedSongs.length > 0 && (
@@ -814,7 +815,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
   const IconComponent = itemType.icon;
 
   const tabs = [
-    { id: 'details', label: 'Szczegóły', icon: Info },
+    { id: 'details', label: tr('Szczegóły'), icon: Info },
     ...(item.type === 'media' ? [{ id: 'media', label: 'Media', icon: Image }] : []),
     { id: 'notes', label: 'Notatki', icon: NoteIcon },
   ];
@@ -839,7 +840,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
   // Timing options
   const timingOptions = [
     { value: 'before', label: 'Przed', icon: '◀' },
-    { value: 'during', label: 'W trakcie', icon: '●' },
+    { value: 'during', label: tr('W trakcie'), icon: '●' },
     { value: 'after', label: 'Po', icon: '▶' },
   ];
 
@@ -869,7 +870,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
           <button
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition"
-            title="Zamknij"
+            title={tr('Zamknij')}
           >
             <X size={16} />
           </button>
@@ -880,7 +881,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
       <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
         {item.type === 'song' ? (
           <>
-            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Pieśń</label>
+            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{tr('Pieśń')}</label>
             {selectedSong ? (
               <div className="flex items-center gap-3 bg-gradient-to-r from-accent-primary-lightest to-accent-primary-lighter/30 dark:from-accent-primary-darkest/20 dark:to-accent-primary-darkest/10 border border-accent-primary-lighter/60 dark:border-accent-primary-dark/40 rounded-xl px-4 py-3">
                 <Music size={18} className="text-accent-primary dark:text-accent-primary-light shrink-0" />
@@ -994,7 +995,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
           </>
         ) : (
           <>
-            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Tytuł</label>
+            <label className="block text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{tr('Tytuł')}</label>
             <input
               type="text"
               value={item.title || ''}
@@ -1146,7 +1147,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: 'video', label: 'Wideo', icon: '🎬' },
-                  { value: 'presentation', label: 'Prezentacja', icon: '📊' },
+                  { value: 'presentation', label: tr('Prezentacja'), icon: '📊' },
                   { value: 'image', label: 'Obraz', icon: '🖼️' },
                   { value: 'countdown', label: 'Odliczanie', icon: '⏱️' },
                 ].map(opt => (
@@ -1307,7 +1308,7 @@ const AddItemDropdown = ({ onAdd }) => {
   const items = [
     { type: 'item', label: 'Element', icon: Type, shortcut: 'i' },
     { type: 'header', label: 'Nagłówek', icon: MoreHorizontal, shortcut: 'h' },
-    { type: 'song', label: 'Pieśń', icon: Music, shortcut: 's' },
+    { type: 'song', label: tr('Pieśń'), icon: Music, shortcut: 's' },
     { type: 'media', label: 'Media', icon: Image, shortcut: 'm' },
   ];
 
@@ -2942,7 +2943,7 @@ export default function ProgramDetail() {
                 <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                   <span className="font-medium">{program.schedule.length}</span>
-                  <span>elementów</span>
+                  <span>{tr('elementów')}</span>
                 </div>
                 <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" />
                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -2985,7 +2986,7 @@ export default function ProgramDetail() {
                     <div className="hidden lg:flex items-center gap-2 px-4 py-2 border-b border-gray-100 dark:border-gray-700/50 bg-gray-50/50 dark:bg-gray-800/30 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                       <div className="w-6"></div>
                       <div className="w-14">Czas</div>
-                      <div className="flex-1">Tytuł</div>
+                      <div className="flex-1">{tr('Tytuł')}</div>
                       <div className="w-20 text-right">{t('Długość')}</div>
                     </div>
 
@@ -3168,7 +3169,7 @@ export default function ProgramDetail() {
               setProgram={setProgram}
               roles={atmosferaRoles}
               teamMembers={atmosferaTeam}
-              fallbackFields={[{ key: 'przygotowanie', label: 'Przygotowanie' }, { key: 'witanie', label: 'Witanie' }]}
+              fallbackFields={[{ key: 'przygotowanie', label: tr('Przygotowanie') }, { key: 'witanie', label: tr('Witanie') }]}
               absentList={absentList}
               memberRoles={atmosferaMemberRoles}
             />
@@ -3181,7 +3182,7 @@ export default function ProgramDetail() {
               setProgram={setProgram}
               roles={mediaRoles}
               teamMembers={mediaTeam}
-              fallbackFields={[{ key: 'naglosnienie', label: 'Nagłośnienie' }, { key: 'propresenter', label: 'ProPresenter' }, { key: 'social', label: 'Social Media' }, { key: 'host', label: 'Host wydarzenia' }]}
+              fallbackFields={[{ key: 'naglosnienie', label: tr('Nagłośnienie') }, { key: 'propresenter', label: 'ProPresenter' }, { key: 'social', label: 'Social Media' }, { key: 'host', label: 'Host wydarzenia' }]}
               absentList={absentList}
               memberRoles={mediaMemberRoles}
             />
