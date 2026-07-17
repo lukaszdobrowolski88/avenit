@@ -3,6 +3,7 @@
 // Wszystkie operacje logowane w audit_log (w przeciwieństwie do martwego
 // modułu SuperAdmin, który działał anon-keyem z przeglądarki).
 import crypto from 'node:crypto';
+import { spawn } from 'node:child_process';
 import { z } from 'zod';
 import { platformPool } from '../db.js';
 import { verifyPassword, hashPassword } from '../auth/passwords.js';
@@ -480,6 +481,28 @@ export default async function adminRoutes(app) {
     await platformPool.query(`DELETE FROM tenants WHERE id = $1`, [req.params.id]);
     await audit(req.admin.id, 'tenant.delete', 'tenant', req.params.id, { slug: rows[0].slug });
     return reply.send({ ok: true });
+  });
+
+  // Backup bazy tenanta na żądanie (pg_dump -Fc, strumień pliku do pobrania).
+  app.get('/api/admin/tenants/:id/backup', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { rows } = await platformPool.query(`SELECT slug, db_name FROM tenants WHERE id = $1`, [req.params.id]);
+    if (!rows[0]) return reply.code(404).send({ error: 'Tenant nie istnieje' });
+    const dbName = rows[0].db_name;
+    if (!/^[a-z0-9_]+$/.test(dbName)) return reply.code(400).send({ error: 'Nieprawidłowa nazwa bazy' });
+    const url = new URL(config.DATABASE_URL);
+    const child = spawn('pg_dump', [
+      '-Fc', '-h', url.hostname, '-p', url.port || '5432',
+      '-U', decodeURIComponent(url.username), dbName,
+    ], { env: { ...process.env, PGPASSWORD: decodeURIComponent(url.password) } });
+    let stderr = '';
+    child.stderr.on('data', (d) => { stderr += d.toString().slice(0, 2000); });
+    child.on('close', (code) => { if (code !== 0) req.log.error(`pg_dump ${dbName} zakończył się kodem ${code}: ${stderr}`); });
+    child.on('error', (e) => { req.log.error(`pg_dump: ${e.message}`); reply.raw.destroy(); });
+    const stamp = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+    await audit(req.admin.id, 'tenant.backup', 'tenant', req.params.id, { db: dbName });
+    reply.header('Content-Type', 'application/octet-stream');
+    reply.header('Content-Disposition', `attachment; filename="${rows[0].slug}_${stamp}.dump"`);
+    return reply.send(child.stdout);
   });
 
   // ── MODUŁY PER TENANT ──────────────────────────────────────────────

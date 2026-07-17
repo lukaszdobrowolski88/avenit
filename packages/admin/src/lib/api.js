@@ -61,6 +61,19 @@ export const api = {
     request(`/api/admin/tenants/${id}/change-plan`, { method: 'POST', body: { planId, billingCycle } }),
   toggleModule: (id, key, enabled) =>
     request(`/api/admin/tenants/${id}/modules/${key}`, { method: 'PUT', body: { is_enabled: enabled } }),
+  backupTenant: async (id) => {
+    const res = await fetch(`${BASE}/api/admin/tenants/${id}/backup`, {
+      credentials: 'include',
+      headers: { ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => null);
+      throw new Error(d?.error || `Błąd ${res.status}`);
+    }
+    const cd = res.headers.get('Content-Disposition') || '';
+    const name = (cd.match(/filename="?([^"]+)"?/) || [])[1] || `backup_${id}.dump`;
+    return { blob: await res.blob(), name };
+  },
   plans: () => request('/api/admin/plans'),
   createPlan: (body) => request('/api/admin/plans', { method: 'POST', body }),
   updatePlan: (id, body) => request(`/api/admin/plans/${id}`, { method: 'PUT', body }),
