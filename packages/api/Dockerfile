@@ -1,6 +1,9 @@
 # Obraz API + worker (ten sam obraz, różne CMD).
 FROM node:22-alpine
 
+# pg_dump (klient Postgres 16) — do backupów baz tenantów z panelu admina.
+RUN apk add --no-cache postgresql16-client
+
 WORKDIR /app
 
 # Zależności workspace: kopiujemy manifesty i instalujemy tylko produkcyjne.

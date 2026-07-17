@@ -36,6 +36,18 @@ export default function TenantDetail() {
     await act(() => api.toggleModule(id, key, nowEnabled), 'Zapisano moduł');
   };
 
+  const downloadBackup = async () => {
+    setErr(''); setMsg('Generowanie backupu…');
+    try {
+      const { blob, name } = await api.backupTenant(id);
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(u);
+      setMsg('Backup pobrany'); setTimeout(() => setMsg(''), 2500);
+    } catch (e) { setMsg(''); setErr(e.message); }
+  };
+
   return (
     <div>
       <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -60,6 +72,7 @@ export default function TenantDetail() {
           ? <button onClick={() => act(() => api.resumeTenant(id), 'Wznowiono')}>Wznów</button>
           : <button className="danger" onClick={() => act(() => api.suspendTenant(id), 'Zawieszono')}>Zawieś</button>}
         <button className="ghost" onClick={() => act(() => api.extendTrial(id, 14), 'Trial przedłużony o 14 dni')}>+14 dni trial</button>
+        <button className="ghost" onClick={downloadBackup}>Pobierz backup</button>
         <ChangePlan tenantId={id} plans={plans} onDone={() => act(async () => {}, 'Zmieniono plan')} />
         <Impersonate tenantId={id} subdomain={tenant.subdomain} onError={setErr} />
         <TenantEmail tenantId={id} tenantName={tenant.name} onDone={() => setMsg('E-mail wysłany')} onError={setErr} />
