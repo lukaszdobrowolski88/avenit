@@ -1,6 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import qrcode from 'qrcode-generator';
 import { api } from '../lib/api.js';
 import { Modal } from './Tenants.jsx';
+
+// Generuje QR (data-URL GIF) po stronie klienta — sekret 2FA nie opuszcza przeglądarki.
+function otpauthQr(url) {
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(url);
+    qr.make();
+    return qr.createDataURL(5, 12);
+  } catch { return null; }
+}
 
 export default function Settings() {
   const [admins, setAdmins] = useState([]);
@@ -113,6 +124,7 @@ function TwoFactor() {
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const qrUrl = useMemo(() => (setup?.otpauthUrl ? otpauthQr(setup.otpauthUrl) : null), [setup]);
 
   useEffect(() => { api.me().then((r) => setEnabled(!!r.admin?.totp_enabled)).catch(() => {}); }, []);
 
@@ -157,7 +169,16 @@ function TwoFactor() {
 
       {setup && (
         <div>
-          <p className="muted">1. Zeskanuj lub wpisz klucz w aplikacji Authenticator:</p>
+          <p className="muted">1. Zeskanuj kod QR aplikacją Authenticator (albo wpisz klucz ręcznie):</p>
+          {qrUrl && (
+            <img
+              src={qrUrl}
+              alt="Kod QR do konfiguracji 2FA"
+              width={170}
+              height={170}
+              style={{ imageRendering: 'pixelated', background: '#fff', padding: 8, borderRadius: 8, margin: '8px 0', display: 'block' }}
+            />
+          )}
           <div style={{ padding: 12, background: 'var(--bg)', borderRadius: 8, fontFamily: 'monospace', fontSize: 15, margin: '8px 0', userSelect: 'all' }}>{setup.secret}</div>
           <p className="muted" style={{ fontSize: 12 }}>Link otpauth: <a href={setup.otpauthUrl} style={{ wordBreak: 'break-all' }}>{setup.otpauthUrl}</a></p>
           <p className="muted" style={{ marginTop: 12 }}>2. Kody zapasowe (zapisz je):</p>
