@@ -281,9 +281,7 @@ const ProgramModal = ({ isOpen, onClose, programId, onSave }) => {
               </div>
             </div>
           ) : (
-            <div className="text-center py-20 text-gray-500">
-              Nie znaleziono programu
-            </div>
+            <div className="text-center py-20 text-gray-500">{tr('Nie znaleziono programu')}</div>
           )}
         </div>
 

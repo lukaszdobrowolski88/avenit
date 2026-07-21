@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Maximize2, Minimize2, EyeOff } from 'lucide-react';
 import { WIDGET_SIZES } from '../utils/layoutDefaults';
+import { tr } from '../../../i18n';
 
 export default function WidgetContainer({
   widgetId,
@@ -76,7 +77,7 @@ export default function WidgetContainer({
               <button
                 onClick={onHide}
                 className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
-                title="Ukryj widget"
+                title={tr('Ukryj widget')}
               >
                 <EyeOff size={16} />
               </button>

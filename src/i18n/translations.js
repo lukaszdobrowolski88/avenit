@@ -1913,6 +1913,18 @@ const en = {
   'Wsparcie techniczne 24/7': '24/7 technical support',
   'Bezpieczne przechowywanie danych (RODO)': 'Secure data storage (GDPR)',
   'Jutro': 'Tomorrow',
+  'Zapisywanie...': 'Saving...',
+  'Ukryj widget': 'Hide widget',
+  'Wybierz wydarzenie': 'Select event',
+  'Nie znaleziono programu': 'Program not found',
+  'Status intencji': 'Intention status',
+  'Dodaj intencje w Centrum Modlitwy': 'Add intentions in the Prayer Center',
+  'Zobacz wszystkie intencje →': 'See all intentions →',
+  'Tylko Ty widzisz to zadanie': 'Only you can see this task',
+  'Dodaj zadanie': 'Add task',
+  'Nowe zadanie': 'New task',
+  'Edytuj zadanie': 'Edit task',
+  'Wszystko przeczytane!': 'All read!',
 };
 
 const uk = {
@@ -3820,6 +3832,18 @@ const uk = {
   'Wsparcie techniczne 24/7': 'Технічна підтримка 24/7',
   'Bezpieczne przechowywanie danych (RODO)': 'Безпечне зберігання даних (GDPR)',
   'Jutro': 'Завтра',
+  'Zapisywanie...': 'Збереження...',
+  'Ukryj widget': 'Приховати віджет',
+  'Wybierz wydarzenie': 'Виберіть подію',
+  'Nie znaleziono programu': 'Програму не знайдено',
+  'Status intencji': 'Статус прохання',
+  'Dodaj intencje w Centrum Modlitwy': 'Додайте прохання в Центрі молитви',
+  'Zobacz wszystkie intencje →': 'Переглянути всі прохання →',
+  'Tylko Ty widzisz to zadanie': 'Лише ви бачите це завдання',
+  'Dodaj zadanie': 'Додати завдання',
+  'Nowe zadanie': 'Нове завдання',
+  'Edytuj zadanie': 'Редагувати завдання',
+  'Wszystko przeczytane!': 'Усе прочитано!',
 };
 
 export const TRANSLATIONS = { pl: {}, en, uk };

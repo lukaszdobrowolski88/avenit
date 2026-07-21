@@ -312,7 +312,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
           <div className="mb-6">
             <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
               {isNewTask ? <Plus size={24} className="text-accent-primary" /> : <CheckCircle size={24} className="text-accent-primary" />}
-              {isNewTask ? 'Nowe zadanie' : 'Edytuj zadanie'}
+              {isNewTask ? tr('Nowe zadanie') : tr('Edytuj zadanie')}
             </h2>
             {!isNewTask && (
               <span className={`inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 text-xs font-medium rounded-full ${sourceConfig.bgColor} ${sourceConfig.color}`}>
@@ -390,7 +390,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
                   </div>
                   <div className="flex-1">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{tr('Prywatne')}</span>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">Tylko Ty widzisz to zadanie</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{tr('Tylko Ty widzisz to zadanie')}</p>
                   </div>
                   <Lock size={18} className={task.is_private ? 'text-accent-primary' : 'text-gray-400 dark:text-gray-500'} />
                 </label>
@@ -421,7 +421,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
                   disabled={saving || !task.title.trim()}
                   className="px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg shadow-accent-primary-light/30 flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Save size={16} /> {saving ? 'Zapisywanie...' : 'Zapisz'}
+                  <Save size={16} /> {saving ? tr('Zapisywanie...') : 'Zapisz'}
                 </button>
               </div>
             </div>
@@ -481,7 +481,7 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
           className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border-2 border-dashed border-gray-200 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-400 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary-light dark:hover:text-accent-primary-light transition-colors"
         >
           <Plus size={18} />
-          <span className="font-medium">Dodaj zadanie</span>
+          <span className="font-medium">{tr('Dodaj zadanie')}</span>
         </button>
 
         <div className="flex flex-col items-center justify-center py-8 text-center">

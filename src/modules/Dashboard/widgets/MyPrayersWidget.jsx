@@ -218,9 +218,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
           {editingRequest && (
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
               <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                  Status intencji
-                </label>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">{tr('Status intencji')}</label>
                 <div className="flex gap-3">
                   <label className={`
                     flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all
@@ -313,9 +311,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Zapisywanie...
-                </>
+                  <Loader2 className="w-5 h-5 animate-spin" />{tr('Zapisywanie...')}</>
               ) : (
                 <>
                   <Heart className="w-5 h-5" />
@@ -566,9 +562,7 @@ export default function MyPrayersWidget({ prayers, userEmail, onRefresh, size = 
         <p className="text-gray-500 dark:text-gray-400 font-medium">
           Brak intencji modlitewnych
         </p>
-        <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-          Dodaj intencje w Centrum Modlitwy
-        </p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{tr('Dodaj intencje w Centrum Modlitwy')}</p>
         <a
           href="/prayer"
           className="mt-4 px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl text-sm font-medium hover:shadow-lg transition-all"
@@ -603,9 +597,7 @@ export default function MyPrayersWidget({ prayers, userEmail, onRefresh, size = 
       <a
         href="/prayer"
         className="block text-center text-sm text-accent-primary-light hover:text-accent-primary dark:text-accent-primary-light dark:hover:text-accent-primary-light font-medium py-2"
-      >
-        Zobacz wszystkie intencje →
-      </a>
+      >{tr('Zobacz wszystkie intencje →')}</a>
 
       {/* Modal */}
       <PrayerModal

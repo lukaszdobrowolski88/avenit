@@ -289,9 +289,7 @@ export default function UnreadMessagesWidget({ userEmail }) {
           <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
             <Inbox size={24} className="text-green-500" />
           </div>
-          <p className="text-gray-600 dark:text-gray-300 font-medium text-sm">
-            Wszystko przeczytane!
-          </p>
+          <p className="text-gray-600 dark:text-gray-300 font-medium text-sm">{tr('Wszystko przeczytane!')}</p>
           <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
             {tr('Nie masz nowych wiadomości')}
           </p>
