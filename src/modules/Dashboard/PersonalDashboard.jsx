@@ -200,7 +200,7 @@ export default function PersonalDashboard({ user }) {
       {saving && (
         <div className="fixed bottom-4 right-4 flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50">
           <div className="w-4 h-4 border-2 border-accent-primary-light border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-gray-600 dark:text-gray-300">Zapisywanie...</span>
+          <span className="text-sm text-gray-600 dark:text-gray-300">{tr('Zapisywanie...')}</span>
         </div>
       )}
 

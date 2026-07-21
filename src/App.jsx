@@ -98,7 +98,7 @@ function OfflineBanner() {
 }
 
 function AppInner() {
-  useI18n(); // re-render drzewa przy zmianie języka (dla globalnego tr())
+  const { lang } = useI18n(); // język do remountu powłoki przy zmianie (globalne tr())
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [customModules, setCustomModules] = useState([]);
@@ -333,7 +333,7 @@ function AppInner() {
           <NotificationProvider userEmail={session.user?.email}>
             <UnsavedChangesProvider>
             <SidebarProvider>
-              <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+              <div key={lang} className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
                 <Sidebar />
               <div className="flex-1 flex flex-col overflow-hidden">
                 <Navbar user={session.user} darkMode={darkMode} toggleTheme={toggleTheme} />

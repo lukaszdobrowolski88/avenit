@@ -291,7 +291,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
               value={formData.program_id}
               onChange={(val) => setFormData(prev => ({ ...prev, program_id: val }))}
               options={programOptions}
-              placeholder="Wybierz wydarzenie"
+              placeholder={tr('Wybierz wydarzenie')}
             />
             {programOptions.length === 0 && (
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
@@ -318,7 +318,7 @@ export default function MyAbsencesWidget({ absences, programs = [], userEmail, u
             disabled={saving || !formData.program_id}
             className="w-full py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? 'Zapisywanie...' : tr('Zgłoś nieobecność')}
+            {saving ? tr('Zapisywanie...') : tr('Zgłoś nieobecność')}
           </button>
         </form>
       )}
