@@ -31,6 +31,8 @@ const MODULES = [
 ];
 
 export async function registerFunctions(app) {
+  const { FN_CAPABILITY } = await import('@avenit/shared/src/permissions/catalog.js');
+  const { requireCapability } = await import('../dataapi/registry.js');
   for (const modName of MODULES) {
     let mod;
     try {
@@ -42,7 +44,11 @@ export async function registerFunctions(app) {
     if (mod.skipRoute) continue; // np. process-dunning: worker/admin only
     const name = mod.name || modName;
     const method = (mod.method || 'POST').toLowerCase();
-    const preHandler = mod.isPublic ? app.requireTenant : app.requireUser;
+    // Akcje użytkownika egzekwują capability (webhooki/publiczne bez zmian).
+    const cap = !mod.isPublic ? FN_CAPABILITY[name] : null;
+    const preHandler = mod.isPublic
+      ? app.requireTenant
+      : (cap ? [app.requireUser, requireCapability(cap)] : app.requireUser);
     // routePath pozwala funkcji nadpisać ścieżkę (np. ical z tokenem w URL).
     const route = mod.routePath || `/api/fn/${name}`;
     app[method](route, { preHandler }, mod.default);
