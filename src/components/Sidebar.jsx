@@ -105,12 +105,12 @@ export default function Sidebar() {
   const t = useT();
   const active = location.pathname;
   const { userRole, loading: roleLoading } = useUserRole();
-  const { permissions, appSettings: moduleSettings, logoUrl } = usePermissions();
+  const { can, ready, appSettings: moduleSettings, logoUrl } = usePermissions();
   const { isOpen, close } = useSidebar();
   const { hasUnsavedChanges, checkBeforeNavigate } = useUnsavedChanges();
 
-  // Sidebar jest gotowy gdy mamy rolę i uprawnienia
-  const sidebarReady = !roleLoading && userRole && permissions.length > 0;
+  // Sidebar jest gotowy gdy mamy rolę i granty
+  const sidebarReady = !roleLoading && userRole && ready;
 
   // Stan zwinięcia sidebara (z localStorage) - tylko dla desktop
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -206,22 +206,8 @@ export default function Sidebar() {
     return LucideIcons[iconName] || LucideIcons.Square;
   };
 
-  // Sprawdź czy użytkownik ma dostęp do modułu (can_read)
-  const hasModuleAccess = (moduleResource) => {
-    // Superadmin ma dostęp do wszystkiego
-    if (userRole === 'superadmin') return true;
-
-    // Rada starszych zawsze ma dostęp do ustawień
-    if (userRole === 'rada_starszych' && moduleResource === 'module:settings') return true;
-
-    // Znajdź uprawnienie dla roli i zasobu
-    const perm = permissions.find(p => p.role === userRole && p.resource === moduleResource);
-
-    // Brak wpisu lub can_read !== true = brak dostępu
-    if (!perm) return false;
-
-    return perm.can_read === true;
-  };
+  // Dostęp do modułu = capability module:<mod> (resolver: admini/granty/legacy).
+  const hasModuleAccess = (moduleResource) => can(moduleResource);
 
   // Mapowanie ścieżek na zasoby uprawnień
   const moduleResourceMap = {

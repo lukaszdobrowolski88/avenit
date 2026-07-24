@@ -16,7 +16,7 @@ import CustomSelect from '../../components/CustomSelect';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { useUserRole } from '../../hooks/useUserRole';
-import { hasTabAccess } from '../../utils/tabPermissions';
+import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
@@ -308,6 +308,7 @@ const ScheduleTable = ({ programs, teachers, groups, onUpdateProgram }) => {
 export default function KidsModule() {
   const t = useT();
   const { userRole } = useUserRole();
+  const hasTabAccess = useTabAccess();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('schedule');
   const [teachers, setTeachers] = useState([]);
@@ -571,11 +572,11 @@ export default function KidsModule() {
           { id: 'events', label: t('Wydarzenia'), icon: Calendar },
           { id: 'schedule', label: t('Grafik'), icon: Calendar },
           { id: 'groups', label: t('Grupy'), icon: Users },
-          ...(hasTabAccess('kids', 'teachers', userRole) ? [{ id: 'teachers', label: t('Nauczyciele'), icon: GraduationCap }] : []),
+          ...(hasTabAccess('kids', 'teachers') ? [{ id: 'teachers', label: t('Nauczyciele'), icon: GraduationCap }] : []),
           { id: 'students', label: t('Uczniowie'), icon: Baby },
           { id: 'households', label: t('Rodziny'), icon: Home },
-          ...(hasTabAccess('kids', 'finances', userRole) ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
-          ...(hasTabAccess('kids', 'equipment', userRole) ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
+          ...(hasTabAccess('kids', 'finances') ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
+          ...(hasTabAccess('kids', 'equipment') ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
           { id: 'files', label: t('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
@@ -755,7 +756,7 @@ export default function KidsModule() {
         <EquipmentTab
           ministryKey="kids"
           currentUserEmail={currentUser.email}
-          canEdit={hasTabAccess('kids', 'equipment', userRole)}
+          canEdit={hasTabAccess('kids', 'equipment')}
         />
       )}
 

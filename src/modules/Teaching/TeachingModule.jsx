@@ -6,7 +6,7 @@ import {
   MessageSquare, ChevronDown, ChevronUp, Image as ImageIcon, Check, Mail, ArrowLeft, FolderOpen
 } from 'lucide-react';
 import { useUserRole } from '../../hooks/useUserRole';
-import { hasTabAccess } from '../../utils/tabPermissions';
+import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import WallTab from '../shared/WallTab';
 import MaterialsTab from '../shared/MaterialsTab';
@@ -967,6 +967,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
 
 export default function TeachingModule() {
   const { userRole } = useUserRole();
+  const hasTabAccess = useTabAccess();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('wall');
   const [loading, setLoading] = useState(true);
@@ -1092,7 +1093,7 @@ export default function TeachingModule() {
           { id: 'wall', label: tr('Tablica'), icon: MessageSquare },
           { id: 'schedule', label: tr('Grafik'), icon: Calendar },
           { id: 'series', label: 'Serie', icon: BookOpen },
-          ...(hasTabAccess('teaching', 'speakers', userRole) ? [{ id: 'speakers', label: tr('Mówcy'), icon: Users }] : []),
+          ...(hasTabAccess('teaching', 'speakers') ? [{ id: 'speakers', label: tr('Mówcy'), icon: Users }] : []),
           { id: 'files', label: tr('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}

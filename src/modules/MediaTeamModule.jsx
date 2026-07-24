@@ -16,7 +16,7 @@ import CustomSelect from '../components/CustomSelect';
 import { CampusBadge, useCampusBadge } from '../components/CampusBadge';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import { useUserRole } from '../hooks/useUserRole';
-import { hasTabAccess } from '../utils/tabPermissions';
+import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
@@ -544,6 +544,7 @@ const ScheduleTable = ({ programs, mediaTeam, onUpdateProgram, roles, memberRole
 export default function MediaTeamModule() {
   const t = useT();
   const { userRole } = useUserRole();
+  const hasTabAccess = useTabAccess();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('schedule');
   const [team, setTeam] = useState([]);
@@ -1096,10 +1097,10 @@ export default function MediaTeamModule() {
           { id: 'events', label: t('Wydarzenia'), icon: Calendar },
           { id: 'schedule', label: t('Grafik'), icon: Calendar },
           { id: 'tasks', label: t('Zadania'), icon: CheckSquare },
-          ...(hasTabAccess('media', 'members', userRole) ? [{ id: 'members', label: t('Członkowie'), icon: User }] : []),
-          ...(hasTabAccess('media', 'finances', userRole) ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
-          ...(hasTabAccess('media', 'members', userRole) ? [{ id: 'roles', label: t('Służby'), icon: Users }] : []),
-          ...(hasTabAccess('media', 'equipment', userRole) ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
+          ...(hasTabAccess('media', 'members') ? [{ id: 'members', label: t('Członkowie'), icon: User }] : []),
+          ...(hasTabAccess('media', 'finances') ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
+          ...(hasTabAccess('media', 'members') ? [{ id: 'roles', label: t('Służby'), icon: Users }] : []),
+          ...(hasTabAccess('media', 'equipment') ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
           { id: 'files', label: t('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
@@ -1318,7 +1319,7 @@ export default function MediaTeamModule() {
         <EquipmentTab
           ministryKey="media"
           currentUserEmail={currentUserEmail}
-          canEdit={hasTabAccess('media', 'equipment', userRole)}
+          canEdit={hasTabAccess('media', 'equipment')}
         />
       )}
 
