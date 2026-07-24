@@ -10,6 +10,7 @@ import {
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
 import MemberProfile from '../components/MemberProfile';
+import Can from '../components/Can';
 import AttendanceTab from './AttendanceTab';
 import MaterialsTab from './shared/MaterialsTab';
 import { useT } from '../i18n';
@@ -491,12 +492,14 @@ export default function Members() {
             </div>
           </div>
 
+          <Can cap="res:members:create">
           <button
             onClick={() => openModal()}
             className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center gap-2 whitespace-nowrap"
           >
             <Plus size={18} /> {t('Dodaj osobę')}
           </button>
+          </Can>
         </div>
 
         {allTags.length > 0 && (
@@ -619,8 +622,8 @@ export default function Members() {
                   <td className="p-4 pr-6 text-right">
                     <div className="flex justify-end gap-2">
                       <button onClick={() => setProfileMember(member)} title={t('Zobacz profil')} className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"><Eye size={18} /></button>
-                      <button onClick={() => openModal(member)} className="p-2 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"><Edit2 size={18} /></button>
-                      <button onClick={() => handleDelete(member.id)} className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"><Trash2 size={18} /></button>
+                      <Can cap="res:members:update"><button onClick={() => openModal(member)} className="p-2 text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 rounded-lg transition"><Edit2 size={18} /></button></Can>
+                      <Can cap="res:members:delete"><button onClick={() => handleDelete(member.id)} className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"><Trash2 size={18} /></button></Can>
                     </div>
                   </td>
                 </tr>
