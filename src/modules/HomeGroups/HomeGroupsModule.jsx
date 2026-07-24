@@ -14,7 +14,7 @@ import EventsTab from '../shared/EventsTab';
 import MaterialsTab from '../shared/MaterialsTab';
 import EquipmentTab from '../shared/EquipmentTab';
 import { useUserRole } from '../../hooks/useUserRole';
-import { hasTabAccess } from '../../utils/tabPermissions';
+import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
@@ -24,6 +24,7 @@ const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 export default function HomeGroupsModule() {
   const t = useT();
   const { userRole, loading: roleLoading } = useUserRole();
+  const hasTabAccess = useTabAccess();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('groups');
   const [groups, setGroups] = useState([]);
@@ -706,10 +707,10 @@ export default function HomeGroupsModule() {
           { id: 'groups', label: t('Grupy'), icon: Users },
           { id: 'tasks', label: t('Zadania'), icon: CheckSquare },
           { id: 'leaders', label: t('Liderzy'), icon: UserPlus },
-          ...(hasTabAccess('homegroups', 'members', userRole) ? [{ id: 'members', label: t('Członkowie'), icon: Users }] : []),
-          ...(hasTabAccess('homegroups', 'finances', userRole) ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
+          ...(hasTabAccess('homegroups', 'members') ? [{ id: 'members', label: t('Członkowie'), icon: Users }] : []),
+          ...(hasTabAccess('homegroups', 'finances') ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
           { id: 'events', label: t('Wydarzenia'), icon: Calendar },
-          ...(hasTabAccess('homegroups', 'equipment', userRole) ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
+          ...(hasTabAccess('homegroups', 'equipment') ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
           { id: 'files', label: t('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
@@ -1192,7 +1193,7 @@ export default function HomeGroupsModule() {
         <EquipmentTab
           ministryKey="homegroups"
           currentUserEmail={currentUserEmail}
-          canEdit={hasTabAccess('homegroups', 'equipment', userRole)}
+          canEdit={hasTabAccess('homegroups', 'equipment')}
         />
       )}
 

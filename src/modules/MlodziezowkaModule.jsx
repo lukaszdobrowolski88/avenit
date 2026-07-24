@@ -14,7 +14,7 @@ import RolesTab from '../components/RolesTab';
 import CustomSelect from '../components/CustomSelect';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import { useUserRole } from '../hooks/useUserRole';
-import { hasTabAccess } from '../utils/tabPermissions';
+import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
@@ -194,6 +194,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
 export default function MlodziezowkaModule() {
   const t = useT();
   const { userRole } = useUserRole();
+  const hasTabAccess = useTabAccess();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('events');
   const [members, setMembers] = useState([]);
@@ -772,10 +773,10 @@ export default function MlodziezowkaModule() {
         tabs={[
           { id: 'events', label: t('Wydarzenia'), icon: Calendar },
           { id: 'tasks', label: t('Zadania'), icon: CheckSquare },
-          ...(hasTabAccess('mlodziezowka', 'leaders', userRole) ? [{ id: 'leaders', label: t('Liderzy'), icon: Star }] : []),
-          ...(hasTabAccess('mlodziezowka', 'members', userRole) ? [{ id: 'members', label: t('Członkowie'), icon: Users }] : []),
-          ...(hasTabAccess('mlodziezowka', 'finances', userRole) ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
-          ...(hasTabAccess('mlodziezowka', 'equipment', userRole) ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
+          ...(hasTabAccess('mlodziezowka', 'leaders') ? [{ id: 'leaders', label: t('Liderzy'), icon: Star }] : []),
+          ...(hasTabAccess('mlodziezowka', 'members') ? [{ id: 'members', label: t('Członkowie'), icon: Users }] : []),
+          ...(hasTabAccess('mlodziezowka', 'finances') ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
+          ...(hasTabAccess('mlodziezowka', 'equipment') ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
         ]}
         activeTab={activeTab}
         onChange={setActiveTab}
@@ -1038,7 +1039,7 @@ export default function MlodziezowkaModule() {
         <EquipmentTab
           ministryKey="mlodziezowka"
           currentUserEmail={currentUserEmail}
-          canEdit={hasTabAccess('mlodziezowka', 'equipment', userRole)}
+          canEdit={hasTabAccess('mlodziezowka', 'equipment')}
         />
       )}
 

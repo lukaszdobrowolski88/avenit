@@ -14,7 +14,7 @@ import CustomSelect from '../components/CustomSelect';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import { CampusBadge, useCampusBadge } from '../components/CampusBadge';
 import { useUserRole } from '../hooks/useUserRole';
-import { hasTabAccess } from '../utils/tabPermissions';
+import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
@@ -375,6 +375,7 @@ const ScheduleTable = ({ programs, team, onUpdateProgram, roles, memberRoles = [
 export default function AtmosferaTeamModule() {
   const t = useT();
   const { userRole } = useUserRole();
+  const hasTabAccess = useTabAccess();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('schedule');
   const [team, setTeam] = useState([]);
@@ -721,10 +722,10 @@ export default function AtmosferaTeamModule() {
         tabs={[
           { id: 'events', label: t('Wydarzenia'), icon: Calendar },
           { id: 'schedule', label: t('Grafik'), icon: Calendar },
-          ...(hasTabAccess('atmosfera', 'members', userRole) ? [{ id: 'members', label: t('Członkowie'), icon: User }] : []),
-          ...(hasTabAccess('atmosfera', 'finances', userRole) ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
-          ...(hasTabAccess('atmosfera', 'members', userRole) ? [{ id: 'roles', label: t('Służby'), icon: Users }] : []),
-          ...(hasTabAccess('atmosfera', 'equipment', userRole) ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
+          ...(hasTabAccess('atmosfera', 'members') ? [{ id: 'members', label: t('Członkowie'), icon: User }] : []),
+          ...(hasTabAccess('atmosfera', 'finances') ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
+          ...(hasTabAccess('atmosfera', 'members') ? [{ id: 'roles', label: t('Służby'), icon: Users }] : []),
+          ...(hasTabAccess('atmosfera', 'equipment') ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
           { id: 'files', label: t('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
@@ -835,7 +836,7 @@ export default function AtmosferaTeamModule() {
         <EquipmentTab
           ministryKey="atmosfera"
           currentUserEmail={currentUserEmail}
-          canEdit={hasTabAccess('atmosfera', 'equipment', userRole)}
+          canEdit={hasTabAccess('atmosfera', 'equipment')}
         />
       )}
 

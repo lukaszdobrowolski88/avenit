@@ -14,7 +14,7 @@ import RolesTab from '../../components/RolesTab';
 import CustomSelect from '../../components/CustomSelect';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { useUserRole } from '../../hooks/useUserRole';
-import { hasTabAccess } from '../../utils/tabPermissions';
+import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
 import { useT } from '../../i18n';
@@ -2034,6 +2034,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
 export default function WorshipModule() {
   const t = useT();
   const { userRole } = useUserRole();
+  const hasTabAccess = useTabAccess();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('wall');
   const [team, setTeam] = useState([]);
@@ -2521,10 +2522,10 @@ export default function WorshipModule() {
     { id: 'events', label: t('Wydarzenia'), icon: Calendar },
     { id: 'schedule', label: t('Grafik'), icon: Calendar },
     { id: 'songs', label: t('Baza Pieśni'), icon: Music },
-    ...(hasTabAccess('worship', 'members', userRole) ? [{ id: 'members', label: t('Członkowie'), icon: User }] : []),
-    ...(hasTabAccess('worship', 'finances', userRole) ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
-    ...(hasTabAccess('worship', 'members', userRole) ? [{ id: 'roles', label: t('Służby'), icon: Users }] : []),
-    ...(hasTabAccess('worship', 'equipment', userRole) ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
+    ...(hasTabAccess('worship', 'members') ? [{ id: 'members', label: t('Członkowie'), icon: User }] : []),
+    ...(hasTabAccess('worship', 'finances') ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
+    ...(hasTabAccess('worship', 'members') ? [{ id: 'roles', label: t('Służby'), icon: Users }] : []),
+    ...(hasTabAccess('worship', 'equipment') ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
     { id: 'files', label: t('Pliki'), icon: FolderOpen },
   ];
 
@@ -2763,7 +2764,7 @@ export default function WorshipModule() {
         <EquipmentTab
           ministryKey="worship"
           currentUserEmail={currentUser.email}
-          canEdit={hasTabAccess('worship', 'equipment', userRole)}
+          canEdit={hasTabAccess('worship', 'equipment')}
         />
       )}
 
