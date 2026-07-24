@@ -12,6 +12,9 @@
 // Role (app_users.role): superadmin, rada_starszych, koordynator, lider, czlonek.
 // superadmin i rada_starszych mają pełny dostęp (jak w ProtectedRoute).
 
+import { can, makeResolver } from '@avenit/shared/src/permissions/resolve.js';
+import { SETTINGS_WRITE_CAPABILITY, crudCapability } from '@avenit/shared/src/permissions/catalog.js';
+
 export const ADMIN_ROLES = ['superadmin', 'rada_starszych'];
 
 // Relacja: { table, column, type: 'one' | 'many' }
@@ -21,17 +24,20 @@ const T = (resource, extra = {}) => ({ resource, ...extra });
 
 export const REGISTRY = {
   // ── Rdzeń / konfiguracja ────────────────────────────────────────────────
+  // Tabele app_* / campuses: odczyt otwarty (config + własne uprawnienia potrzebne
+  // wszystkim). Zapis bramkowany akcją manage_* (SETTINGS_WRITE_CAPABILITY) w canAccess.
   app_users: T(null, {
     hiddenColumns: ['password_hash', 'totp_secret', 'totp_backup_codes'],
-    writeRoles: ADMIN_ROLES,
     // Własny profil może edytować każdy — obsłużone w routes (self-update whitelist).
     selfUpdateColumns: ['full_name', 'name', 'avatar_url', 'phone', 'totp_required'],
   }),
-  app_settings: T(null, { writeRoles: ADMIN_ROLES }),
-  app_permissions: T(null, { writeRoles: ADMIN_ROLES }),
-  app_modules: T(null, { writeRoles: ADMIN_ROLES }),
-  app_module_tabs: T(null, { writeRoles: ADMIN_ROLES }),
-  campuses: T(null, { writeRoles: ADMIN_ROLES }),
+  app_settings: T(null),
+  app_permissions: T(null), // legacy (zastąpione przez permission_grants)
+  app_roles: T(null),
+  permission_grants: T(null),
+  app_modules: T(null),
+  app_module_tabs: T(null),
+  campuses: T(null),
   notifications: T(null),
   user_presence: T(null),
   push_subscriptions: T(null),
@@ -129,7 +135,6 @@ export const REGISTRY = {
   // ── Mail (klient pocztowy) ──────────────────────────────────────────────
   mail_accounts: T('module:mail', {
     hiddenColumns: ['smtp_password_encrypted', 'imap_password_encrypted'],
-    writeRoles: ADMIN_ROLES,
   }),
   mail_messages: T('module:mail', {
     relationships: {
@@ -173,47 +178,100 @@ export function getTableRule(table) {
   return null;
 }
 
-// Cache app_permissions per tenant (60 s) — jak PermissionsContext, ale na serwerze.
-const permsCache = new Map(); // dbName -> { rows, fetchedAt }
+// Cache grantów per tenant (60 s). Zawiera granty permission_grants + role admina.
+// grants === null => nowy model niedostępny (przed migracją) → fallback legacy.
+const grantsCache = new Map(); // dbName -> { grants, adminRoles, legacy, at }
 
-export async function loadPermissions(pool, dbName) {
-  const cached = permsCache.get(dbName);
-  if (cached && Date.now() - cached.fetchedAt < 60_000) return cached.rows;
-  let rows = [];
+export async function loadGrants(pool, dbName) {
+  const cached = grantsCache.get(dbName);
+  if (cached && Date.now() - cached.at < 60_000) return cached;
+  let grants = null, adminRoles = new Set(ADMIN_ROLES), legacy = [];
   try {
-    ({ rows } = await pool.query(`SELECT role, resource, can_read, can_write FROM app_permissions`));
+    const g = await pool.query(`SELECT role, user_id, capability, allowed FROM permission_grants`);
+    grants = g.rows;
+    const r = await pool.query(`SELECT key FROM app_roles WHERE is_admin = true`);
+    adminRoles = new Set(r.rows.map((x) => x.key));
   } catch {
-    rows = []; // brak tabeli => brak dodatkowych ograniczeń poza rejestrem
+    // Brak nowych tabel (np. przed migracją) — fallback do starego app_permissions.
+    grants = null;
+    try {
+      ({ rows: legacy } = await pool.query(`SELECT role, resource, can_read, can_write FROM app_permissions`));
+    } catch { legacy = []; }
   }
-  permsCache.set(dbName, { rows, fetchedAt: Date.now() });
-  return rows;
+  const entry = { grants, adminRoles, legacy, at: Date.now() };
+  grantsCache.set(dbName, entry);
+  return entry;
 }
 
 export function invalidatePermissions(dbName) {
-  permsCache.delete(dbName);
+  grantsCache.delete(dbName);
 }
 
-// Czy user (rola) może wykonać op na tabeli? op: 'read' | 'write'
+// preHandler Fastify egzekwujący capability akcji (np. dla /api/fn/*). Zakłada
+// kontekst po requireUser (req.user, req.tenant, req.db). superadmin/role admina
+// i tryb legacy (przed migracją) przechodzą.
+export function requireCapability(capability) {
+  return async (req, reply) => {
+    if (!req.user || !req.tenant || !req.db) return; // brak kontekstu użytkownika
+    let isSuper = false;
+    try {
+      const { rows } = await req.db.query(`SELECT is_super_admin FROM app_users WHERE id = $1`, [req.user.id]);
+      isSuper = rows[0]?.is_super_admin;
+    } catch { /* ignore */ }
+    const { grants, adminRoles } = await loadGrants(req.db, req.tenant.db_name);
+    if (isSuper || adminRoles.has(req.user.role)) return;
+    if (grants === null) return; // legacy — nie egzekwuj akcji (zgodność wsteczna)
+    if (!can(grants, { role: req.user.role, userId: req.user.id }, capability)) {
+      return reply.code(403).send({ error: `Brak uprawnienia: ${capability}` });
+    }
+  };
+}
+
+const OP_IS_WRITE = { insert: true, update: true, delete: true, select: false };
+
+// Autoryzacja op na tabeli. op: 'select' | 'insert' | 'update' | 'delete'.
+// Zwraca { ok, rule, reason, resolver } — resolver do filtrowania pól (lub null w legacy).
 export async function canAccess({ pool, dbName, table, op, user }) {
   const rule = getTableRule(table);
   if (!rule) return { ok: false, reason: `Tabela '${table}' nie jest dostępna przez API` };
-  if (ADMIN_ROLES.includes(user.role) || user.is_super_admin) return { ok: true, rule };
+  const isWrite = !!OP_IS_WRITE[op];
+  const { grants, adminRoles, legacy } = await loadGrants(pool, dbName);
 
-  if (op === 'write') {
-    if (rule.writeRoles && !rule.writeRoles.includes(user.role)) {
-      return { ok: false, reason: 'Brak uprawnień do zapisu' };
-    }
+  const isAdmin = user.is_super_admin || adminRoles.has(user.role);
+  if (isAdmin) return { ok: true, rule, resolver: makeResolver([], { isAdmin: true }) };
+
+  // Twarde floory z registry (sekrety / tylko serwer) — obowiązują niezależnie od grantów.
+  if (isWrite && rule.writeRoles && !rule.writeRoles.includes(user.role)) {
+    return { ok: false, reason: 'Brak uprawnień do zapisu' };
   }
-  if (op === 'read' && rule.readRoles && !rule.readRoles.includes(user.role)) {
+  if (!isWrite && rule.readRoles && !rule.readRoles.includes(user.role)) {
     return { ok: false, reason: 'Brak uprawnień do odczytu' };
   }
 
-  if (rule.resource) {
-    const perms = await loadPermissions(pool, dbName);
-    const perm = perms.find((p) => p.role === user.role && p.resource === rule.resource);
-    // Brak wpisu w macierzy => brak dostępu do modułu (zgodnie z hasModuleAccess).
-    const allowed = op === 'read' ? perm?.can_read : perm?.can_write;
-    if (!allowed) return { ok: false, reason: `Brak dostępu do ${rule.resource}` };
+  // ── Model legacy (przed migracją): stare app_permissions read/write per resource ──
+  if (grants === null) {
+    if (rule.resource) {
+      const perm = legacy.find((p) => p.role === user.role && p.resource === rule.resource);
+      const allowed = isWrite ? perm?.can_write : perm?.can_read;
+      if (!allowed) return { ok: false, reason: `Brak dostępu do ${rule.resource}` };
+    }
+    return { ok: true, rule, resolver: null };
   }
-  return { ok: true, rule };
+
+  // ── Model capability ──
+  const subject = { role: user.role, userId: user.id, isAdmin: false };
+  const resolver = makeResolver(grants, subject);
+
+  if (rule.resource && rule.resource.startsWith('module:')) {
+    // Zasób modułu → CRUD per zasób (res:<table>:<op>).
+    const cap = crudCapability(table, op);
+    if (!resolver.can(cap)) return { ok: false, reason: `Brak uprawnienia ${cap}` };
+  } else if (isWrite && SETTINGS_WRITE_CAPABILITY[table]) {
+    // Tabele app_* — zapis przez akcję manage_* (odczyt otwarty).
+    if (!resolver.can(SETTINGS_WRITE_CAPABILITY[table])) {
+      return { ok: false, reason: `Brak uprawnienia ${SETTINGS_WRITE_CAPABILITY[table]}` };
+    }
+  }
+  // resource:null bez mapy (dane wspólne/per-user) → dozwolone (po floorach powyżej).
+  return { ok: true, rule, resolver };
 }

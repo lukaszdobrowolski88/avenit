@@ -1,7 +1,8 @@
 // POST /api/db — pojedynczy endpoint zapytań (odpowiednik PostgREST dla klienta
 // zgodnego z supabase-js). Autoryzacja per tabela/rola w registry.js.
 import { buildQuery, buildWhere, ApiError, quoteIdent } from './querybuilder.js';
-import { canAccess, getTableRule, invalidatePermissions } from './registry.js';
+import { canAccess, getTableRule, invalidatePermissions, requireCapability } from './registry.js';
+import { fieldColumns } from '@avenit/shared/src/permissions/catalog.js';
 import { emitChange } from '../realtime/hub.js';
 import { platformPool } from '../db.js';
 
@@ -26,7 +27,6 @@ export default async function dataApiRoutes(app) {
   app.post('/api/db', { preHandler: app.requireUser }, async (req, reply) => {
     const q = req.body || {};
     try {
-      const op = q.op === 'select' ? 'read' : 'write';
       const { rows: userRows } = await req.db.query(
         `SELECT is_super_admin FROM app_users WHERE id = $1`, [req.user.id]
       );
@@ -36,7 +36,7 @@ export default async function dataApiRoutes(app) {
         pool: req.db,
         dbName: req.tenant.db_name,
         table: q.table,
-        op,
+        op: q.op,
         user,
       });
       if (!access.ok) {
@@ -46,8 +46,23 @@ export default async function dataApiRoutes(app) {
         }
       }
 
-      // Wyczyść cache uprawnień przy zmianach macierzy.
-      if (q.table === 'app_permissions' && op === 'write') {
+      // Egzekwowanie pól przy zapisie: odrzuć próbę edycji kolumny bez prawa.
+      if (access.resolver && (q.op === 'insert' || q.op === 'update') && q.values) {
+        const cols = fieldColumns(q.table);
+        if (cols.length) {
+          const rows = Array.isArray(q.values) ? q.values : [q.values];
+          for (const row of rows) {
+            for (const c of cols) {
+              if (row && c in row && !access.resolver.fieldWritable(q.table, c)) {
+                throw new ApiError(403, `Brak uprawnienia do edycji pola '${c}'`);
+              }
+            }
+          }
+        }
+      }
+
+      // Wyczyść cache uprawnień przy zmianach ról/grantów.
+      if (['app_permissions', 'permission_grants', 'app_roles'].includes(q.table) && q.op !== 'select') {
         invalidatePermissions(req.tenant.db_name);
       }
 
@@ -66,6 +81,14 @@ export default async function dataApiRoutes(app) {
       const built = buildQuery(q);
       const result = await req.db.query(built.sql, built.params);
       let data = result.rows.map(unwrapRow);
+
+      // Egzekwowanie pól przy odczycie: usuń kolumny bez prawa odczytu.
+      if (access.resolver && q.op === 'select') {
+        const denied = fieldColumns(q.table).filter((c) => !access.resolver.fieldReadable(q.table, c));
+        if (denied.length && Array.isArray(data)) {
+          for (const row of data) if (row) for (const c of denied) if (c in row) delete row[c];
+        }
+      }
 
       // Egzekwowanie modułów per tenant z poziomu platformy: moduł wyłączony
       // w panelu admina znika u tenanta niezależnie od lokalnego app_modules.
@@ -110,7 +133,8 @@ export default async function dataApiRoutes(app) {
 
   // ── RPC: dynamiczne DDL CustomModule (port funkcji z Supabase) ─────────
   // Bezpieczne w architekturze baza-per-tenant: DDL dotyka wyłącznie bazy tenanta.
-  app.post('/api/rpc/:name', { preHandler: app.requireUser }, async (req, reply) => {
+  // Wymaga uprawnienia do zarządzania modułami (tworzenie tabel modułów własnych).
+  app.post('/api/rpc/:name', { preHandler: [app.requireUser, requireCapability('action:settings:manage_modules')] }, async (req, reply) => {
     const { name } = req.params;
     const args = req.body || {};
     try {
