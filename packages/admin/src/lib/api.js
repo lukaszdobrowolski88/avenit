@@ -61,6 +61,16 @@ export const api = {
     request(`/api/admin/tenants/${id}/change-plan`, { method: 'POST', body: { planId, billingCycle } }),
   toggleModule: (id, key, enabled) =>
     request(`/api/admin/tenants/${id}/modules/${key}`, { method: 'PUT', body: { is_enabled: enabled } }),
+  saveModuleConfig: (id, key, body) =>
+    request(`/api/admin/tenants/${id}/modules/${key}`, { method: 'PUT', body }),
+  tenantConfig: (id) => request(`/api/admin/tenants/${id}/config`),
+  createAppModule: (id, body) => request(`/api/admin/tenants/${id}/app-modules`, { method: 'POST', body }),
+  updateAppModule: (id, mid, body) => request(`/api/admin/tenants/${id}/app-modules/${mid}`, { method: 'PUT', body }),
+  deleteAppModule: (id, mid) => request(`/api/admin/tenants/${id}/app-modules/${mid}`, { method: 'DELETE' }),
+  createAppTab: (id, body) => request(`/api/admin/tenants/${id}/app-tabs`, { method: 'POST', body }),
+  updateAppTab: (id, tid, body) => request(`/api/admin/tenants/${id}/app-tabs/${tid}`, { method: 'PUT', body }),
+  deleteAppTab: (id, tid) => request(`/api/admin/tenants/${id}/app-tabs/${tid}`, { method: 'DELETE' }),
+  applyPreset: (id) => request(`/api/admin/tenants/${id}/apply-preset`, { method: 'POST' }),
   backupTenant: async (id) => {
     const res = await fetch(`${BASE}/api/admin/tenants/${id}/backup`, {
       credentials: 'include',

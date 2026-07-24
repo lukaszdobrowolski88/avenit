@@ -382,6 +382,8 @@ CREATE TABLE IF NOT EXISTS tenant_modules (
   UNIQUE (tenant_id, module_key)
 );
 CREATE INDEX IF NOT EXISTS idx_tenant_modules_tenant ON tenant_modules(tenant_id);
+-- Konfiguracja per moduł per tenant (limity/ustawienia), edytowalna z panelu admina.
+ALTER TABLE tenant_modules ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{}'::jsonb;
 
 -- ── AUDIT_LOG (operacje adminów platformy) ───────────────────────────
 CREATE TABLE IF NOT EXISTS audit_log (

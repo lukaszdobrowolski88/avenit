@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, formatPLN } from '../lib/api.js';
 import { Modal } from './Tenants.jsx';
+import TenantModulesConfig from './TenantModulesConfig.jsx';
 
 // Klucze modułów systemowych (do przełączania per tenant).
 const MODULE_KEYS = [
@@ -104,6 +105,8 @@ export default function TenantDetail() {
           );
         })}
       </div>
+
+      <TenantModulesConfig tenantId={id} />
 
       <h3 style={{ marginTop: 28 }}>Faktury</h3>
       <table>

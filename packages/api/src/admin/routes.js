@@ -15,6 +15,7 @@ import {
 import { provisionTenant, dropTenantDatabase } from './provisioning.js';
 import { getTenantPool } from '../db.js';
 import { isProd, config } from '../config.js';
+import { BUILTIN_ROLES, presetGrantRows } from '@avenit/shared/src/permissions/presets.js';
 
 const adminCookie = { httpOnly: true, secure: isProd, sameSite: 'lax', path: '/' };
 
@@ -24,6 +25,13 @@ async function audit(adminId, action, targetType, targetId, details) {
      VALUES ($1, $2, $3, $4, $5)`,
     [adminId, action, targetType, targetId ? String(targetId) : null, details ? JSON.stringify(details) : null]
   ).catch(() => {});
+}
+
+// Pula bazy tenanta po id (lub 404). Zwraca null i wysyła 404 gdy brak tenanta.
+async function tenantPool(id, reply) {
+  const { rows } = await platformPool.query(`SELECT db_name FROM tenants WHERE id = $1`, [id]);
+  if (!rows[0]) { reply.code(404).send({ error: 'Tenant nie istnieje' }); return null; }
+  return getTenantPool(rows[0].db_name);
 }
 
 export default async function adminRoutes(app) {
@@ -508,13 +516,120 @@ export default async function adminRoutes(app) {
   // ── MODUŁY PER TENANT ──────────────────────────────────────────────
   app.put('/api/admin/tenants/:id/modules/:key', { preHandler: app.requireAdmin }, async (req, reply) => {
     const enabled = req.body?.is_enabled !== false;
+    const config = req.body?.config;
     await platformPool.query(
-      `INSERT INTO tenant_modules (tenant_id, module_key, is_enabled) VALUES ($1, $2, $3)
-       ON CONFLICT (tenant_id, module_key) DO UPDATE SET is_enabled = EXCLUDED.is_enabled, updated_at = now()`,
-      [req.params.id, req.params.key, enabled]
+      `INSERT INTO tenant_modules (tenant_id, module_key, is_enabled, config)
+       VALUES ($1, $2, $3, COALESCE($4::jsonb, '{}'::jsonb))
+       ON CONFLICT (tenant_id, module_key) DO UPDATE SET is_enabled = EXCLUDED.is_enabled,
+         config = COALESCE($4::jsonb, tenant_modules.config), updated_at = now()`,
+      [req.params.id, req.params.key, enabled, config != null ? JSON.stringify(config) : null]
     );
-    await audit(req.admin.id, 'tenant.module_toggle', 'tenant', req.params.id, { module: req.params.key, enabled });
+    await audit(req.admin.id, 'tenant.module_config', 'tenant', req.params.id, { module: req.params.key, enabled });
     return reply.send({ ok: true });
+  });
+
+  // ── Konfiguracja modułów/zakładek/ról tenanta (baza tenanta + platform) ──
+  app.get('/api/admin/tenants/:id/config', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const pool = await tenantPool(req.params.id, reply); if (!pool) return;
+    const safe = (p) => p.then((r) => r.rows).catch(() => []);
+    const [tm, mods, tabs, roles] = await Promise.all([
+      platformPool.query(`SELECT module_key, is_enabled, config FROM tenant_modules WHERE tenant_id = $1`, [req.params.id]).then((r) => r.rows).catch(() => []),
+      safe(pool.query(`SELECT id, key, label, icon, path, resource_key, display_order, is_system, is_enabled FROM app_modules ORDER BY display_order`)),
+      safe(pool.query(`SELECT id, module_id, key, label, icon, display_order, is_system FROM app_module_tabs ORDER BY display_order`)),
+      safe(pool.query(`SELECT key, label, description, is_system, is_admin, display_order FROM app_roles ORDER BY display_order`)),
+    ]);
+    return reply.send({ tenantModules: tm, modules: mods, tabs, roles });
+  });
+
+  // CRUD modułów tenanta (app_modules w bazie tenanta).
+  app.post('/api/admin/tenants/:id/app-modules', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const pool = await tenantPool(req.params.id, reply); if (!pool) return;
+    const p = req.body || {};
+    if (!/^[a-z][a-z0-9_]{1,40}$/.test(p.key || '')) return reply.code(400).send({ error: 'Nieprawidłowy klucz modułu' });
+    const { rows } = await pool.query(
+      `INSERT INTO app_modules (key, label, icon, path, resource_key, display_order, is_system, is_enabled)
+       VALUES ($1,$2,$3,$4,$5,$6,false,true) RETURNING *`,
+      [p.key, p.label || p.key, p.icon || 'Square', p.path || `/${p.key}`, p.resource_key || `module:${p.key}`, p.display_order ?? 0]
+    );
+    await audit(req.admin.id, 'tenant.appmodule_create', 'tenant', req.params.id, { key: p.key });
+    return reply.send({ module: rows[0] });
+  });
+  app.put('/api/admin/tenants/:id/app-modules/:mid', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const pool = await tenantPool(req.params.id, reply); if (!pool) return;
+    const p = req.body || {};
+    const { rows } = await pool.query(
+      `UPDATE app_modules SET label = COALESCE($1,label), icon = COALESCE($2,icon),
+         display_order = COALESCE($3,display_order), is_enabled = COALESCE($4,is_enabled), updated_at = now()
+       WHERE id = $5 RETURNING *`,
+      [p.label ?? null, p.icon ?? null, p.display_order ?? null, p.is_enabled ?? null, req.params.mid]
+    );
+    if (!rows[0]) return reply.code(404).send({ error: 'Moduł nie istnieje' });
+    await audit(req.admin.id, 'tenant.appmodule_update', 'tenant', req.params.id, { id: req.params.mid });
+    return reply.send({ module: rows[0] });
+  });
+  app.delete('/api/admin/tenants/:id/app-modules/:mid', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const pool = await tenantPool(req.params.id, reply); if (!pool) return;
+    const { rows } = await pool.query(`SELECT is_system, key FROM app_modules WHERE id = $1`, [req.params.mid]);
+    if (!rows[0]) return reply.code(404).send({ error: 'Moduł nie istnieje' });
+    if (rows[0].is_system) return reply.code(409).send({ error: 'Nie można usunąć modułu systemowego' });
+    await pool.query(`DELETE FROM app_modules WHERE id = $1`, [req.params.mid]);
+    await audit(req.admin.id, 'tenant.appmodule_delete', 'tenant', req.params.id, { key: rows[0].key });
+    return reply.send({ ok: true });
+  });
+
+  // CRUD zakładek tenanta (app_module_tabs w bazie tenanta).
+  app.post('/api/admin/tenants/:id/app-tabs', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const pool = await tenantPool(req.params.id, reply); if (!pool) return;
+    const p = req.body || {};
+    const { rows } = await pool.query(
+      `INSERT INTO app_module_tabs (module_id, key, label, icon, component_type, display_order, is_system)
+       VALUES ($1,$2,$3,$4,$5,$6,false) RETURNING *`,
+      [p.module_id, p.key, p.label || p.key, p.icon || 'Square', p.component_type || 'empty', p.display_order ?? 0]
+    );
+    await audit(req.admin.id, 'tenant.apptab_create', 'tenant', req.params.id, { key: p.key });
+    return reply.send({ tab: rows[0] });
+  });
+  app.put('/api/admin/tenants/:id/app-tabs/:tid', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const pool = await tenantPool(req.params.id, reply); if (!pool) return;
+    const p = req.body || {};
+    const { rows } = await pool.query(
+      `UPDATE app_module_tabs SET label = COALESCE($1,label), icon = COALESCE($2,icon),
+         display_order = COALESCE($3,display_order) WHERE id = $4 RETURNING *`,
+      [p.label ?? null, p.icon ?? null, p.display_order ?? null, req.params.tid]
+    );
+    if (!rows[0]) return reply.code(404).send({ error: 'Zakładka nie istnieje' });
+    await audit(req.admin.id, 'tenant.apptab_update', 'tenant', req.params.id, { id: req.params.tid });
+    return reply.send({ tab: rows[0] });
+  });
+  app.delete('/api/admin/tenants/:id/app-tabs/:tid', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const pool = await tenantPool(req.params.id, reply); if (!pool) return;
+    const { rows } = await pool.query(`SELECT is_system FROM app_module_tabs WHERE id = $1`, [req.params.tid]);
+    if (!rows[0]) return reply.code(404).send({ error: 'Zakładka nie istnieje' });
+    if (rows[0].is_system) return reply.code(409).send({ error: 'Nie można usunąć zakładki systemowej' });
+    await pool.query(`DELETE FROM app_module_tabs WHERE id = $1`, [req.params.tid]);
+    await audit(req.admin.id, 'tenant.apptab_delete', 'tenant', req.params.id, { id: req.params.tid });
+    return reply.send({ ok: true });
+  });
+
+  // Przywróć role wbudowane + ich domyślne granty (custom role i nadpisania user nietknięte).
+  app.post('/api/admin/tenants/:id/apply-preset', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const pool = await tenantPool(req.params.id, reply); if (!pool) return;
+    const builtinKeys = BUILTIN_ROLES.map((r) => r.key);
+    for (const r of BUILTIN_ROLES) {
+      await pool.query(
+        `INSERT INTO app_roles (key, label, description, is_system, is_admin, display_order)
+         VALUES ($1,$2,$3,true,$4,$5)
+         ON CONFLICT (key) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, is_admin = EXCLUDED.is_admin`,
+        [r.key, r.label, r.description, r.is_admin, r.display_order]
+      );
+    }
+    await pool.query(`DELETE FROM permission_grants WHERE role = ANY($1) AND user_id IS NULL`, [builtinKeys]);
+    const rows = presetGrantRows();
+    for (const g of rows) {
+      await pool.query(`INSERT INTO permission_grants (role, user_id, capability, allowed) VALUES ($1, NULL, $2, $3)`, [g.role, g.capability, g.allowed]);
+    }
+    await audit(req.admin.id, 'tenant.apply_preset', 'tenant', req.params.id, { roles: builtinKeys.length, grants: rows.length });
+    return reply.send({ ok: true, roles: builtinKeys.length, grants: rows.length });
   });
 
   // ── PLANY ──────────────────────────────────────────────────────────
