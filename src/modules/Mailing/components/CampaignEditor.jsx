@@ -13,6 +13,7 @@ import DragDropEmailBuilder from './DragDropEmailBuilder';
 import RecipientSelector from './RecipientSelector';
 import CampaignPreview from './CampaignPreview';
 import { tr } from '../../../i18n';
+import { useCan } from '../../../components/Can';
 
 const STEPS = [
   { id: 'basics', label: 'Podstawy', icon: FileText },
@@ -28,6 +29,7 @@ const EDITOR_MODES = {
 };
 
 export default function CampaignEditor({ campaign, templateId, onClose, onSave }) {
+  const canSend = useCan('action:mailing:send');
   const [currentStep, setCurrentStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -630,6 +632,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   <Save size={18} className="group-hover:text-accent-primary-light transition-colors" />
                   Zapisz jako szkic
                 </button>
+                {canSend && (<>
                 <button
                   onClick={() => setShowSchedule(true)}
                   disabled={saving || totalRecipients === 0}
@@ -646,6 +649,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   {saving ? <Loader size={18} className="animate-spin" /> : <Send size={18} className="group-hover:translate-x-0.5 transition-transform" />}
                   Wyślij teraz ({totalRecipients})
                 </button>
+                </>)}
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import Can from '../../components/Can';
 import { useUnsavedChanges } from '../../contexts/UnsavedChangesContext';
 import { useT } from '../../i18n';
 import {
@@ -2879,6 +2880,7 @@ export default function ProgramDetail() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
+              <Can cap="action:programs:send_email">
               <button
                 onClick={handleSendEmail}
                 disabled={isSending}
@@ -2888,6 +2890,7 @@ export default function ProgramDetail() {
                 {isSending ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
                 <span className="hidden sm:inline">Mail</span>
               </button>
+              </Can>
               <button
                 onClick={() => setShowPrintOptions(true)}
                 disabled={isLoading}

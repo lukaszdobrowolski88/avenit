@@ -12,6 +12,7 @@ import RecipientSelector from './RecipientSelector';
 import ScheduleControl from './ScheduleControl';
 import SmsPreview from './SmsPreview';
 import { tr } from '../../../i18n';
+import { useCan } from '../../../components/Can';
 
 const SECTIONS = [
   { id: 'compose', label: tr('Treść') },
@@ -34,6 +35,7 @@ const EMPTY_FORM = {
 };
 
 export default function CampaignEditor({ campaign, template, onClose }) {
+  const canSend = useCan('action:sms_campaigns:send');
   const [section, setSection] = useState('compose');
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
@@ -220,7 +222,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             Zapisz szkic
           </button>
-          {form.send_mode === 'now' ? (
+          {canSend && (form.send_mode === 'now' ? (
             <button
               onClick={handleSendNow}
               disabled={saving || sending || recipientCount === 0}
@@ -238,7 +240,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               Zaplanuj
             </button>
-          )}
+          ))}
         </div>
       </div>
 
