@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTwoFactor } from '../hooks/useTwoFactor';
 import { Shield, ArrowLeft } from 'lucide-react';
-import { tr } from '../i18n';
+import { tr, useT } from '../i18n';
 
 export default function Login() {
   const t = useT();
