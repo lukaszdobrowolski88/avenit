@@ -424,6 +424,15 @@
     .contact-info h2 { font-size: clamp(26px, 3.4vw, 36px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 16px; }
     .contact-info p { color: var(--muted); font-size: 15.5px; margin-bottom: 26px; }
     .contact-info .ticks li { font-size: 14px; }
+    .contact-direct { margin-top: 28px; padding-top: 24px; border-top: 1px dashed var(--border2); }
+    .contact-direct .cd-label { font-size: 13px; color: var(--dim); margin-bottom: 12px; }
+    .contact-direct a {
+      display: flex; align-items: center; gap: 11px; text-decoration: none;
+      color: var(--text); font-size: 15.5px; font-weight: 600; padding: 7px 0;
+      transition: color .2s;
+    }
+    .contact-direct a:hover { color: #fcd34d; }
+    .contact-direct a svg { width: 18px; height: 18px; stroke: var(--amber); flex-shrink: 0; }
     form { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .field { display: flex; flex-direction: column; gap: 6px; }
     .field.full { grid-column: 1 / -1; }
@@ -806,6 +815,11 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><use href="#i-check"/></svg><span>Pomoc w migracji danych członków</span></li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><use href="#i-check"/></svg><span>Okres próbny dla Twojego kościoła</span></li>
           </ul>
+          <div class="contact-direct">
+            <div class="cd-label">Wolisz porozmawiać od razu?</div>
+            <a href="mailto:lukasz@avenit.pl"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-mail"/></svg>lukasz@avenit.pl</a>
+            <a href="tel:+48607693996"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-phone"/></svg>+48 607 693 996</a>
+          </div>
         </div>
         <div>
           <form id="contact-form" novalidate>
@@ -871,7 +885,8 @@
         </div>
         <div class="foot-col">
           <h5>Kontakt</h5>
-          <a href="mailto:kontakt@avenit.pl">kontakt@avenit.pl</a>
+          <a href="mailto:lukasz@avenit.pl">lukasz@avenit.pl</a>
+          <a href="tel:+48607693996">+48 607 693 996</a>
         </div>
       </div>
       <div class="foot-bottom">
