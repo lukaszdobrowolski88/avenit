@@ -102,3 +102,13 @@ tr.clickable:hover td { background: var(--panel2); }
 .evtag.ev-login, .evtag.ev-identify { background: #14532d; color: #bbf7d0; }
 .evtag.ev-module_open { background: #78350f; color: #fde68a; }
 .evtag.ev-click { background: #4c1d95; color: #ddd6fe; }
+
+/* Analityka v2: heatmapa godzin + badge zgłoszeń */
+.heatmap { display: grid; grid-template-columns: 26px repeat(24, 1fr); gap: 3px; align-items: center; }
+.hm-day { font-size: 11px; color: var(--muted); }
+.hm-cell { aspect-ratio: 1; border-radius: 3px; min-width: 8px; }
+.hm-hour { font-size: 10px; color: var(--muted); text-align: center; }
+.leadbadge {
+  display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 700;
+  background: #14532d; color: #bbf7d0; padding: 2px 8px; border-radius: 999px;
+}

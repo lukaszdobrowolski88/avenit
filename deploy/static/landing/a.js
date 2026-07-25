@@ -55,11 +55,26 @@
   });
   flush();
 
+  // Głębokość scrolla: maksymalny osiągnięty % strony (wysyłany z 'leave').
+  var maxScroll = 0;
+  window.addEventListener('scroll', function () {
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    if (max > 0) {
+      var pct = Math.round((window.scrollY / max) * 100);
+      if (pct > maxScroll) maxScroll = Math.min(100, pct);
+    }
+  }, { passive: true });
+
   // Czas widoczności strony: sumowany między visible/hidden, wysyłany jako 'leave'.
   function sendLeave() {
     if (visStart) { visibleMs += Date.now() - visStart; visStart = null; }
     if (visibleMs <= 0) return;
-    q.push({ n: 'leave', path: location.pathname, dur: visibleMs });
+    q.push({
+      n: 'leave',
+      path: location.pathname,
+      dur: visibleMs,
+      props: maxScroll > 0 ? { scroll: maxScroll } : undefined
+    });
     visibleMs = 0;
     flush();
   }

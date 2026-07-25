@@ -3,6 +3,7 @@ import React from 'react';
 import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useAnalyticsFilters, FilterBar } from './filters.jsx';
 import Overview from './Overview.jsx';
+import Live from './Live.jsx';
 import Visitors from './Visitors.jsx';
 import VisitorDetail from './VisitorDetail.jsx';
 import Sources from './Sources.jsx';
@@ -13,6 +14,7 @@ import TenantsActivity from './TenantsActivity.jsx';
 
 const TABS = [
   { to: '', end: true, label: 'Przegląd' },
+  { to: 'live', label: 'Na żywo' },
   { to: 'visitors', label: 'Odwiedzający' },
   { to: 'sources', label: 'Źródła' },
   { to: 'pages', label: 'Strony' },
@@ -38,6 +40,7 @@ export default function AnalyticsLayout() {
       <FilterBar filters={filters} set={set} />
       <Routes>
         <Route index element={<Overview filters={filters} />} />
+        <Route path="live" element={<Live filters={filters} />} />
         <Route path="visitors" element={<Visitors filters={filters} />} />
         <Route path="visitors/:id" element={<VisitorDetail />} />
         <Route path="sources" element={<Sources filters={filters} />} />
