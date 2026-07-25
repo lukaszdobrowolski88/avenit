@@ -1,8 +1,9 @@
 <!doctype html>
-<html lang="pl">
+<html lang="pl" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f6f8fb" />
   <title>Avenit — aplikacja dla kościoła i zboru | system do zarządzania kościołem</title>
   <meta name="description" content="Avenit to polski program do zarządzania kościołem: planowanie nabożeństw, grafik służb, check-in dzieci, komunikacja, finanse. Alternatywa dla Planning Center — po polsku, z danymi w UE. Web + mobile." />
   <link rel="canonical" href="https://avenit.pl/" />
@@ -88,6 +89,13 @@
   }
   </script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f59e0b'/%3E%3Cstop offset='1' stop-color='%23d97706'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Cpath d='M32 12 L50 52 H41 L32 30 L23 52 H14 Z' fill='url(%23g)'/%3E%3C/svg%3E" />
+  <script>
+    // Motyw: jasny domyślnie (atrybut w HTML); zapisany wybór użytkownika ma pierwszeństwo.
+    try {
+      var __t = localStorage.getItem('avenit-theme');
+      if (__t === 'dark' || __t === 'light') document.documentElement.dataset.theme = __t;
+    } catch (e) {}
+  </script>
   <style>
     :root {
       --bg: #0b1120;
@@ -571,6 +579,81 @@
     .faq-list details[open] summary::after { rotate: 45deg; }
     .faq-list details p { color: var(--muted); padding: 0 0 18px; font-size: 15px; }
     .faq-list details a { color: var(--amber); }
+
+    /* ── przełącznik motywu ── */
+    #theme-toggle {
+      margin-left: 8px; width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+      border: 1px solid var(--border2); background: transparent; color: var(--muted);
+      display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+      transition: border-color .2s, color .2s;
+    }
+    #theme-toggle:hover { border-color: var(--amber2); color: var(--text); }
+    #theme-toggle svg { width: 17px; height: 17px; }
+    html[data-theme="light"] .icon-sun { display: none; }
+    html[data-theme="dark"] .icon-moon { display: none; }
+
+    /* ══ MOTYW JASNY (domyślny) ══════════════════════════════════════
+       Baza arkusza to motyw ciemny ([data-theme="dark"]); poniższe reguły
+       nadpisują go dla jasnego. Podglądy aplikacji (mockup w hero, wizuale
+       modułów) celowo ZOSTAJĄ ciemne — grają rolę zrzutów ekranu appki. */
+    :root { color-scheme: dark; }
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f6f8fb; --bg2: #eef2f7;
+      --surface: #ffffff; --surface2: #eef2f7;
+      --border: #e3e8f0; --border2: #cbd5e1;
+      --text: #0f172a; --muted: #46556b; --dim: #64748b;
+    }
+    [data-theme="light"] nav.scrolled { background: rgba(255, 255, 255, .82); }
+    [data-theme="light"] .aurora::after {
+      background:
+        linear-gradient(rgba(15,23,42,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15,23,42,.05) 1px, transparent 1px);
+      background-size: 56px 56px;
+    }
+    [data-theme="light"] .blob { opacity: .3; }
+    [data-theme="light"] .badge { color: #b45309; }
+    [data-theme="light"] #rot { color: #b45309; }
+    [data-theme="light"] .btn-ghost { background: rgba(255, 255, 255, .7); }
+    [data-theme="light"] .hero-stats .num { color: #0f172a; }
+    [data-theme="light"] .marquee { background: rgba(255, 255, 255, .55); }
+    /* podglądy aplikacji — wymuszenie ciemnych wartości niezależnie od zmiennych */
+    [data-theme="light"] .mock, [data-theme="light"] .float-card { border-color: #2c3a52; }
+    [data-theme="light"] .mock-bar { border-bottom-color: #24324a; }
+    [data-theme="light"] .mock-side { border-right-color: #24324a; }
+    [data-theme="light"] .mock-title, [data-theme="light"] .mrow .n,
+    [data-theme="light"] .float-card .fc-v { color: #e2e8f0; }
+    [data-theme="light"] .mrow { border-color: #24324a; }
+    [data-theme="light"] .dive-visual {
+      border-color: #2c3a52; color: #e2e8f0;
+      background: linear-gradient(180deg, #212c44, #111a2e); /* solidne tło — półprzezroczyste szarzeje na jasnym */
+    }
+    [data-theme="light"] .ticks li span b { color: #0f172a; }
+    [data-theme="light"] .dv-row { border-color: #24324a; }
+    [data-theme="light"] .chords-line .lyric { color: #94a3b8; }
+    [data-theme="light"] .transpose { border-top-color: #334155; }
+    [data-theme="light"] .transpose button { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+    [data-theme="light"] .keypad i { border-color: #334155; color: #94a3b8; }
+    /* karty i sekcje */
+    [data-theme="light"] .card { background: #ffffff; box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 10px 30px rgba(15,23,42,.06); }
+    [data-theme="light"] .card::before { background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), rgba(245, 158, 11, .08), transparent 65%); }
+    [data-theme="light"] .card .chord { color: #b45309; border-color: rgba(217, 119, 6, .35); }
+    [data-theme="light"] .mini-timeline .tl { background: #f6f8fb; }
+    [data-theme="light"] .bubble.in { background: #f1f5f9; }
+    [data-theme="light"] .bubble.out { background: rgba(245, 158, 11, .16); }
+    [data-theme="light"] .kanaly .k { background: #f8fafc; }
+    [data-theme="light"] .label-demo { border: 1px solid #e3e8f0; box-shadow: 0 10px 26px rgba(15,23,42,.12); }
+    [data-theme="light"] .mod { background: #ffffff; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+    [data-theme="light"] .mod:hover { background: #ffffff; }
+    [data-theme="light"] .plat { background: #ffffff; box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+    [data-theme="light"] .step { background: #ffffff; box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 10px 30px rgba(15,23,42,.05); }
+    /* kontakt + stopka */
+    [data-theme="light"] .contact-wrap { background: #ffffff; box-shadow: 0 20px 50px rgba(15,23,42,.08); }
+    [data-theme="light"] .contact-wrap::before { background: radial-gradient(circle, rgba(217, 119, 6, .1), transparent 65%); }
+    [data-theme="light"] input, [data-theme="light"] textarea { background: #ffffff; }
+    [data-theme="light"] .contact-direct a:hover { color: #b45309; }
+    [data-theme="light"] .faq-list details a { color: #b45309; }
+    [data-theme="light"] footer { background: rgba(255, 255, 255, .6); }
   </style>
 </head>
 <body>
@@ -618,6 +701,10 @@
         <a href="#start">Jak zacząć</a>
         <a href="#kontakt">Kontakt</a>
       </div>
+      <button id="theme-toggle" aria-label="Przełącz motyw jasny/ciemny" title="Przełącz motyw">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      </button>
       <a class="nav-cta" href="https://app.avenit.pl">Zaloguj się</a>
       <button id="burger" aria-label="Menu">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -1078,6 +1165,20 @@
       }
       window.addEventListener('scroll', onScroll, { passive: true });
       onScroll();
+
+      // ── przełącznik motywu ──
+      var rootEl = document.documentElement;
+      var themeMeta = document.querySelector('meta[name="theme-color"]');
+      function syncThemeMeta() {
+        if (themeMeta) themeMeta.content = rootEl.dataset.theme === 'dark' ? '#0b1120' : '#f6f8fb';
+      }
+      syncThemeMeta();
+      document.getElementById('theme-toggle').addEventListener('click', function () {
+        var t = rootEl.dataset.theme === 'dark' ? 'light' : 'dark';
+        rootEl.dataset.theme = t;
+        try { localStorage.setItem('avenit-theme', t); } catch (e) {}
+        syncThemeMeta();
+      });
 
       // ── menu mobilne ──
       var burger = document.getElementById('burger');
