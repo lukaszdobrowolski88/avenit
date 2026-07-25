@@ -45,9 +45,46 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Precache hashed assets only — NOT index.html. The HTML must never be
+        // served from precache, otherwise a deploy is invisible until the SW is
+        // fully replaced (the recurring "stale after deploy" bug on Safari).
+        globPatterns: ['**/*.{js,css,ico,png,svg,woff2}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        // Disable the default precache navigation fallback (index.html). Otherwise
+        // Workbox registers a NavigationRoute that serves the *precached* index.html
+        // for every navigation, which is exactly the stale-after-deploy bug. With it
+        // off, navigations fall through to the NetworkFirst rule below.
+        navigateFallback: null,
+        // Also drop index.html from the precache manifest entirely, so Workbox's
+        // directoryIndex mapping ('/' -> index.html) can't serve a stale root either.
+        manifestTransforms: [
+          (entries) => ({
+            manifest: entries.filter((e) => !/(^|\/)index\.html$/.test(e.url)),
+            warnings: []
+          })
+        ],
         runtimeCaching: [
+          {
+            // App shell / SPA navigations: always try the network first so the
+            // latest index.html (and its hashed asset refs) load right away;
+            // fall back to the last cached copy only when offline.
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'app-shell',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 dni
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
           {
             urlPattern: /^https:\/\/vsyxhwfnjznrmkgcinyx\.supabase\.co\/rest\/v1\/.*/i,
             handler: 'NetworkFirst',
