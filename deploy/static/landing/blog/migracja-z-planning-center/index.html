@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jak przenieść zbór z Planning Center — migracja krok po kroku | Blog Avenit</title>
+  <meta name="description" content="Sprawdzony plan migracji z Planning Center na polski system: eksport ludzi i pieśni, mapowanie służb, tydzień równoległego działania i moment przełączenia — bez chaosu w niedzielę." />
+  <link rel="canonical" href="https://avenit.pl/blog/migracja-z-planning-center/" />
+  <meta property="og:title" content="Jak przenieść zbór z Planning Center — migracja krok po kroku" />
+  <meta property="og:description" content="Eksport, mapowanie, równoległy tydzień, przełączenie. Plan migracji bez chaosu w niedzielę." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://avenit.pl/blog/migracja-z-planning-center/" />
+  <meta property="og:image" content="https://avenit.pl/assets/og.png" />
+  <meta property="og:locale" content="pl_PL" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23f59e0b'/%3E%3Cstop offset='1' stop-color='%23d97706'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Cpath d='M32 12 L50 52 H41 L32 30 L23 52 H14 Z' fill='url(%23g)'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="/assets/site.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Article",
+        "headline": "Jak przenieść zbór z Planning Center — migracja krok po kroku",
+        "description": "Eksport ludzi i pieśni, mapowanie służb, tydzień równoległego działania i moment przełączenia.",
+        "datePublished": "2026-07-25",
+        "dateModified": "2026-07-25",
+        "inLanguage": "pl-PL",
+        "image": "https://avenit.pl/assets/og.png",
+        "author": { "@type": "Organization", "name": "Avenit", "url": "https://avenit.pl/" },
+        "publisher": { "@type": "Organization", "name": "Avenit", "logo": { "@type": "ImageObject", "url": "https://avenit.pl/assets/og.png" } },
+        "mainEntityOfPage": "https://avenit.pl/blog/migracja-z-planning-center/"
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Avenit", "item": "https://avenit.pl/" },
+          { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://avenit.pl/blog/" },
+          { "@type": "ListItem", "position": 3, "name": "Migracja z Planning Center", "item": "https://avenit.pl/blog/migracja-z-planning-center/" }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <nav class="topnav">
+    <div class="inner">
+      <a class="logo" href="/">Avenit</a>
+      <div class="links">
+        <a href="/blog/">Blog</a>
+        <a href="/alternatywa-dla-planning-center/">vs Planning Center</a>
+        <a href="/grafik-sluzb/">Grafik służb</a>
+      </div>
+      <a class="nav-cta" href="/#kontakt" data-track="cta-nav-blog-pc">Umów prezentację</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <nav class="breadcrumb"><a href="/">Strona główna</a> › <a href="/blog/">Blog</a> › Migracja z Planning Center</nav>
+    <article>
+      <h1>Jak przenieść zbór z Planning Center — <span class="grad-text">krok po kroku</span></h1>
+      <p class="lead">Zmiana systemu, na którym stoi niedziela, brzmi groźnie — i słusznie, jeśli robić ją „z dnia na dzień". Robiona planowo zajmuje dwa–trzy tygodnie i nikt poza liderami nie zauważa momentu przełączenia. Oto plan, który stosujemy przy wdrożeniach Avenit.</p>
+
+      <h2>Zanim zaczniesz: po co właściwie migrujecie?</h2>
+      <p>Spisz na jednej kartce, co ma się poprawić: język (służący nie mówią po angielsku?), koszty (kilka subskrypcji w dolarach?), RODO (dane w USA?), brakujące moduły (finanse, SMS-y, komunikator?). Ta lista wyznacza kolejność wdrażania i pozwoli po miesiącu ocenić, czy migracja się udała. Pełne zestawienie różnic znajdziesz w <a href="/alternatywa-dla-planning-center/">porównaniu Avenit vs Planning Center</a>.</p>
+
+      <h2>Krok 1: Eksport danych z Planning Center (1 wieczór)</h2>
+      <ul>
+        <li><strong>Ludzie</strong> — w Planning Center People: Lists → eksport do CSV (imiona, e-maile, telefony, rodziny).</li>
+        <li><strong>Pieśni</strong> — w Services: lista utworów z tonacjami; teksty i akordy, jeśli trzymacie je w PC, wyeksportuj lub zgraj do plików.</li>
+        <li><strong>Zespoły i role</strong> — zrzut ekranu wystarczy; struktura służb i tak będzie mapowana ręcznie (krok 2).</li>
+        <li><strong>Terminy</strong> — nadchodzące plany nabożeństw na najbliższe 2–4 tygodnie.</li>
+      </ul>
+
+      <h2>Krok 2: Mapowanie struktury (1 spotkanie liderów)</h2>
+      <p>Migracja to najlepszy moment na sprzątanie. Nie przenoś struktury 1:1 — przenieś tę, której faktycznie używacie: służby i role (martwe pomiń), pule osób per rola, grupy wiekowe dzieci. Zwykle wychodzi z tego prostszy układ niż w PC, bo znika podział na osobne produkty (Services/People/Check-Ins).</p>
+
+      <h2>Krok 3: Import i konfiguracja (my to robimy z Wami)</h2>
+      <p>CSV z ludźmi wchodzi do <a href="/kartoteka-czlonkow/">kartoteki</a> podczas wdrożenia — z mapowaniem kolumn i deduplikacją. Pieśni z tonacjami trafiają do bazy zespołu uwielbienia. Zakładamy subdomenę (np. <code>twojzbor.avenit.pl</code>), konta liderów i uprawnienia. Realny czas: jedno popołudnie.</p>
+
+      <h2>Krok 4: Tydzień równoległy (kluczowy!)</h2>
+      <p>Przez jeden tydzień prowadzisz obie aplikacje: grafik na najbliższą niedzielę istnieje w PC (źródło prawdy) i w Avenit (próba generalna). Liderzy klikają w Avenit wszystko to, co robili w PC: układają <a href="/grafik-sluzb/">grafik</a>, potwierdzają udział, sprawdzają program na telefonie. To wyłapuje 90% pytań, zanim będą dotyczyć prawdziwej niedzieli.</p>
+
+      <h2>Krok 5: Przełączenie i miesiąc przejściowy</h2>
+      <p>Od ustalonej niedzieli źródłem prawdy jest Avenit — ogłoś to jasno („grafik od 1 marca jest TYLKO w Avenit"). Subskrypcje PC wyłącz dopiero po miesiącu spokojnego działania: to tani bufor bezpieczeństwa. Po miesiącu wróć do kartki z celami z początku — sprawdź, czy każdy punkt faktycznie się poprawił.</p>
+
+      <h2>Najczęstsze obawy</h2>
+      <ul>
+        <li><strong>„Zespół się przyzwyczaił do PC"</strong> — zespół przyzwyczaił się do <em>procesu</em> (grafik → potwierdzenie → przypomnienie), a ten wygląda tak samo. Różnica: wszystko jest po polsku.</li>
+        <li><strong>„Stracimy historię"</strong> — eksporty CSV zachowują ludzi i pieśni; historyczne plany nabożeństw można zarchiwizować jako PDF-y. W praktyce nikt do nich nie wraca.</li>
+        <li><strong>„Nie mamy czasu na wdrożenie"</strong> — realny koszt to jedno spotkanie liderów i jeden tydzień równoległy. Chaos, który dziś kosztuje Was każda niedziela, jest droższy.</li>
+      </ul>
+
+      <div class="cta-box">
+        <h2>Przenieś swój zbór bez chaosu</h2>
+        <p>Umów prezentację — przejdziemy przez Wasz eksport z Planning Center i zaplanujemy migrację.</p>
+        <a class="btn-primary" href="/#kontakt" data-track="cta-blog-pc">Umów prezentację</a>
+      </div>
+
+      <div class="related">
+        <h2>Zobacz także</h2>
+        <div class="related-links">
+          <a href="/alternatywa-dla-planning-center/">Avenit vs Planning Center</a>
+          <a href="/blog/jak-ulozyc-grafik-sluzb/">Jak ułożyć grafik służb</a>
+          <a href="/blog/rodo-w-kosciele/">RODO w kościele</a>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="site">
+    <div class="inner">
+      <span>© 2026 Avenit — system do zarządzania kościołem</span>
+      <span>
+        <a href="/">Strona główna</a><a href="/blog/">Blog</a><a href="/polityka-prywatnosci/">Polityka prywatności</a><a href="https://app.avenit.pl">Logowanie</a>
+      </span>
+    </div>
+  </footer>
+  <script defer src="/a.js"></script>
+</body>
+</html>

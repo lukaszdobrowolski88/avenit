@@ -137,6 +137,104 @@ export default async function adminAnalyticsRoutes(app) {
     return reply.send({ onlineNow: rows.length, active: rows.slice(0, 50) });
   });
 
+  // ── LEJEK KONWERSJI (landing): odwiedzający → CTA → zgłoszenia ───────
+  app.get('/api/admin/analytics/funnel', opts, async (req, reply) => {
+    const f = parseFilters(req);
+    const range = [f.from, f.to];
+    const [visitors, cta, leads, returning] = await Promise.all([
+      platformPool.query(
+        `SELECT COUNT(DISTINCT visitor_id)::int AS n FROM analytics_sessions
+          WHERE site = 'landing' AND started_at >= $1::date AND started_at < $2::date + 1 AND NOT is_bot`,
+        range),
+      platformPool.query(
+        `SELECT COUNT(DISTINCT visitor_id)::int AS n FROM analytics_events
+          WHERE site = 'landing' AND name = 'click' AND props->>'t' LIKE 'cta%'
+            AND created_at >= $1::date AND created_at < $2::date + 1`,
+        range),
+      platformPool.query(
+        `SELECT COUNT(*)::int AS n,
+                COUNT(*) FILTER (WHERE visitor_id IS NOT NULL)::int AS linked
+           FROM landing_leads
+          WHERE created_at >= $1::date AND created_at < $2::date + 1`,
+        range),
+      // Ile z konwertujących było na stronie więcej niż raz (dojrzewanie leada).
+      platformPool.query(
+        `SELECT COUNT(*)::int AS n FROM landing_leads l
+           JOIN analytics_visitors v ON v.id = l.visitor_id
+          WHERE l.created_at >= $1::date AND l.created_at < $2::date + 1
+            AND v.sessions_count > 1`,
+        range),
+    ]);
+    const v = visitors.rows[0].n;
+    const nLeads = leads.rows[0].n;
+    return reply.send({
+      visitors: v,
+      ctaClicks: cta.rows[0].n,
+      leads: nLeads,
+      leadsLinked: leads.rows[0].linked,
+      leadsReturning: returning.rows[0].n,
+      conversionRate: v ? +((nLeads / v) * 100).toFixed(1) : 0,
+    });
+  });
+
+  // ── GODZINY AKTYWNOŚCI: heatmapa dzień tygodnia × godzina (czas PL) ──
+  app.get('/api/admin/analytics/hours', opts, async (req, reply) => {
+    const f = parseFilters(req);
+    const { cond, params } = rawWhere(f, 'created_at');
+    const { rows } = await platformPool.query(
+      `SELECT EXTRACT(ISODOW FROM created_at AT TIME ZONE 'Europe/Warsaw')::int AS dow,
+              EXTRACT(HOUR FROM created_at AT TIME ZONE 'Europe/Warsaw')::int AS hour,
+              COUNT(*)::int AS events
+         FROM analytics_events WHERE ${cond}
+        GROUP BY 1, 2`,
+      [f.from, f.to, ...params]
+    );
+    return reply.send({ cells: rows });
+  });
+
+  // ── EKSPORT CSV (odwiedzający / sesje) ───────────────────────────────
+  app.get('/api/admin/analytics/export', opts, async (req, reply) => {
+    const f = parseFilters(req);
+    const what = req.query.what === 'sessions' ? 'sessions' : 'visitors';
+    let rows;
+    if (what === 'visitors') {
+      ({ rows } = await platformPool.query(
+        `SELECT v.first_seen, v.last_seen, v.site, ident.display_name, ident.email,
+                t.name AS tenant, v.asn_org, v.rdns_host, v.country, v.city,
+                v.device_type, v.browser, v.os, v.sessions_count, v.pageviews_count
+           FROM analytics_visitors v
+           LEFT JOIN LATERAL (
+             SELECT email, display_name, tenant_id FROM analytics_visitor_identities x
+              WHERE x.visitor_id = v.id ORDER BY identified_at DESC LIMIT 1) ident ON true
+           LEFT JOIN tenants t ON t.id = ident.tenant_id
+          WHERE NOT v.is_bot AND v.last_seen >= $1::date AND v.last_seen < $2::date + 1
+          ORDER BY v.last_seen DESC LIMIT 10000`,
+        [f.from, f.to]));
+    } else {
+      ({ rows } = await platformPool.query(
+        `SELECT s.started_at, s.site, t.name AS tenant, s.entry_path, s.exit_path,
+                s.referrer_domain, s.utm_source, s.utm_medium, s.utm_campaign,
+                s.country, s.city, s.device_type, s.browser, s.os,
+                s.pageviews, s.duration_seconds
+           FROM analytics_sessions s
+           LEFT JOIN tenants t ON t.id = s.tenant_id
+          WHERE NOT s.is_bot AND s.started_at >= $1::date AND s.started_at < $2::date + 1
+          ORDER BY s.started_at DESC LIMIT 10000`,
+        [f.from, f.to]));
+    }
+    const esc = (x) => {
+      if (x == null) return '';
+      const s = x instanceof Date ? x.toISOString() : String(x);
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const cols = rows[0] ? Object.keys(rows[0]) : [];
+    const csv = ['﻿' + cols.join(';'), ...rows.map((r) => cols.map((c) => esc(r[c])).join(';'))].join('\n');
+    return reply
+      .header('Content-Type', 'text/csv; charset=utf-8')
+      .header('Content-Disposition', `attachment; filename="avenit-${what}-${f.from}_${f.to}.csv"`)
+      .send(csv);
+  });
+
   // ── ŹRÓDŁA: referrery + UTM (z rollupów) ─────────────────────────────
   app.get('/api/admin/analytics/sources', opts, async (req, reply) => {
     const f = parseFilters(req);
@@ -250,7 +348,8 @@ export default async function adminAnalyticsRoutes(app) {
                 v.asn_org AS "orgName", v.rdns_host AS "rdnsHost", v.org_source AS "orgSource",
                 v.sessions_count AS "sessionsCount", v.pageviews_count AS "pageviewsCount",
                 ident.email AS "userEmail", ident.display_name AS "userName", t.name AS "tenantName",
-                lastev.path AS "lastPath"
+                lastev.path AS "lastPath",
+                EXISTS (SELECT 1 FROM landing_leads ll WHERE ll.visitor_id = v.id) AS "hasLead"
            FROM analytics_visitors v
            LEFT JOIN LATERAL (
              SELECT email, display_name, tenant_id FROM analytics_visitor_identities x
@@ -280,13 +379,16 @@ export default async function adminAnalyticsRoutes(app) {
          FROM analytics_visitors v WHERE v.id = $1`, [id]);
     if (!vrows[0]) return reply.code(404).send({ error: 'Odwiedzający nie istnieje' });
 
-    const [identities, sessions] = await Promise.all([
+    const [identities, leads, sessions] = await Promise.all([
       platformPool.query(
         `SELECT x.email, x.display_name AS "displayName", x.role, x.identified_at AS "identifiedAt",
                 t.name AS "tenantName", t.subdomain
            FROM analytics_visitor_identities x
            LEFT JOIN tenants t ON t.id = x.tenant_id
           WHERE x.visitor_id = $1 ORDER BY x.identified_at DESC`, [id]),
+      platformPool.query(
+        `SELECT id, name, email, phone, church, status, created_at AS "createdAt"
+           FROM landing_leads WHERE visitor_id = $1 ORDER BY created_at DESC`, [id]),
       platformPool.query(
         `SELECT s.id, s.site, s.started_at AS "startedAt", s.last_activity_at AS "lastActivityAt",
                 s.entry_path AS "entryPath", s.exit_path AS "exitPath",
@@ -316,6 +418,7 @@ export default async function adminAnalyticsRoutes(app) {
     return reply.send({
       visitor: vrows[0],
       identities: identities.rows,
+      leads: leads.rows,
       sessions: [...bySession.values()],
     });
   });

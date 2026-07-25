@@ -9,6 +9,8 @@ import { Delta } from './common.jsx';
 
 export default function Overview({ filters }) {
   const [d, setD] = useState(null);
+  const [funnel, setFunnel] = useState(null);
+  const [hours, setHours] = useState(null);
   const [online, setOnline] = useState(null);
   const [err, setErr] = useState('');
 
@@ -16,6 +18,8 @@ export default function Overview({ filters }) {
     let alive = true;
     setD(null);
     api.analyticsOverview(filters).then((r) => alive && setD(r)).catch((e) => alive && setErr(e.message));
+    api.analyticsFunnel(filters).then((r) => alive && setFunnel(r)).catch(() => {});
+    api.analyticsHours(filters).then((r) => alive && setHours(r.cells)).catch(() => {});
     return () => { alive = false; };
   }, [filters.from, filters.to, filters.site, filters.tenantId]);
 
@@ -82,6 +86,73 @@ export default function Overview({ filters }) {
             </AreaChart>
           </ResponsiveContainer>
         )}
+      </div>
+
+      <div className="grid2">
+        {funnel && <Funnel f={funnel} />}
+        {hours && hours.length > 0 && <HoursHeatmap cells={hours} />}
+      </div>
+    </div>
+  );
+}
+
+// Lejek konwersji landingu: odwiedzający → kliknięcia CTA → zgłoszenia.
+function Funnel({ f }) {
+  const steps = [
+    { label: 'Odwiedzający stronę', n: f.visitors },
+    { label: 'Kliknęli „Umów prezentację"', n: f.ctaClicks },
+    { label: 'Wysłali zgłoszenie', n: f.leads },
+  ];
+  const max = Math.max(1, f.visitors);
+  return (
+    <div className="card">
+      <h3 style={{ marginTop: 0, marginBottom: 4 }}>Lejek konwersji (strona WWW)</h3>
+      <div className="muted" style={{ fontSize: 13, marginBottom: 14 }}>
+        Konwersja: <b style={{ color: 'var(--accent2)' }}>{f.conversionRate}%</b>
+        {f.leadsReturning > 0 && <> · {f.leadsReturning} zgłaszających było na stronie więcej niż raz</>}
+      </div>
+      {steps.map((s, i) => (
+        <div key={i} style={{ marginBottom: 12 }}>
+          <div className="row" style={{ justifyContent: 'space-between', marginBottom: 4, fontSize: 14 }}>
+            <span>{s.label}</span><b>{s.n}</b>
+          </div>
+          <div style={{ height: 10, background: 'var(--panel2)', borderRadius: 5, overflow: 'hidden' }}>
+            <div style={{ width: `${(s.n / max) * 100}%`, height: '100%', background: 'var(--accent)', borderRadius: 5, minWidth: s.n ? 4 : 0 }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Heatmapa aktywności: dzień tygodnia × godzina (czas polski).
+const DAYS = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'];
+function HoursHeatmap({ cells }) {
+  const grid = new Map(cells.map((c) => [`${c.dow}-${c.hour}`, c.events]));
+  const max = Math.max(1, ...cells.map((c) => c.events));
+  return (
+    <div className="card">
+      <h3 style={{ marginTop: 0, marginBottom: 14 }}>Godziny aktywności</h3>
+      <div className="heatmap">
+        {DAYS.map((day, di) => (
+          <React.Fragment key={day}>
+            <span className="hm-day">{day}</span>
+            {Array.from({ length: 24 }, (_, h) => {
+              const n = grid.get(`${di + 1}-${h}`) || 0;
+              return (
+                <span
+                  key={h} className="hm-cell"
+                  style={{ opacity: n ? 0.15 + 0.85 * (n / max) : 1, background: n ? 'var(--accent)' : 'var(--panel2)' }}
+                  title={`${day} ${h}:00 — ${n} zdarzeń`}
+                />
+              );
+            })}
+          </React.Fragment>
+        ))}
+        <span />
+        {Array.from({ length: 24 }, (_, h) => (
+          <span key={h} className="hm-hour">{h % 3 === 0 ? h : ''}</span>
+        ))}
       </div>
     </div>
   );

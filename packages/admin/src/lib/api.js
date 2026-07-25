@@ -139,6 +139,18 @@ export const api = {
   analyticsVisitors: (p) => request(`/api/admin/analytics/visitors?${qs(p)}`),
   analyticsVisitor: (id) => request(`/api/admin/analytics/visitors/${id}`),
   analyticsTenants: (p) => request(`/api/admin/analytics/tenants?${qs(p)}`),
+  analyticsFunnel: (p) => request(`/api/admin/analytics/funnel?${qs(p)}`),
+  analyticsHours: (p) => request(`/api/admin/analytics/hours?${qs(p)}`),
+  analyticsExportCsv: async (p) => {
+    const res = await fetch(`${BASE}/api/admin/analytics/export?${qs(p)}`, {
+      credentials: 'include',
+      headers: { ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+    });
+    if (!res.ok) throw new Error(`Błąd ${res.status}`);
+    const cd = res.headers.get('Content-Disposition') || '';
+    const name = (cd.match(/filename="?([^"]+)"?/) || [])[1] || 'analytics.csv';
+    return { blob: await res.blob(), name };
+  },
   // Ogłoszenia
   announcements: () => request('/api/admin/announcements'),
   createAnnouncement: (body) => request('/api/admin/announcements', { method: 'POST', body }),

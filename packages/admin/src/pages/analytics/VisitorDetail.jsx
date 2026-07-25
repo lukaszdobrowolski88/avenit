@@ -22,7 +22,7 @@ export default function VisitorDetail() {
   if (err) return <div className="err">{err}</div>;
   if (!d) return <div>Ładowanie…</div>;
 
-  const { visitor: v, identities, sessions } = d;
+  const { visitor: v, identities, sessions, leads = [] } = d;
   const who = identities[0];
 
   return (
@@ -57,6 +57,18 @@ export default function VisitorDetail() {
           </div>
         </div>
       </div>
+
+      {leads.length > 0 && (
+        <div className="card" style={{ marginBottom: 20, borderColor: 'var(--green)' }}>
+          <h3 style={{ marginTop: 0, marginBottom: 10 }}>📩 Zgłoszenia z formularza</h3>
+          {leads.map((l) => (
+            <div key={l.id} className="row" style={{ justifyContent: 'space-between', padding: '6px 0', fontSize: 13, borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+              <span><b>{l.name}</b> · {l.email}{l.phone ? ` · ${l.phone}` : ''}{l.church ? ` · ${l.church}` : ''}</span>
+              <span className="muted"><span className={`badge lead-${l.status || 'new'}`}>{l.status || 'new'}</span> {fmtWhen(l.createdAt)}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {identities.length > 1 && (
         <div className="card" style={{ marginBottom: 20 }}>

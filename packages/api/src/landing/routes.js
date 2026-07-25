@@ -17,6 +17,44 @@ import { platformPool } from '../db.js';
 import { sendEmail } from '../lib/email.js';
 import { config } from '../config.js';
 import { leadNotificationEmail, leadConfirmationEmail } from './emails.js';
+import { getDailySalt, landingVisitorKey } from '../analytics/sessions.js';
+
+// Powiąż zgłoszenie z odwiedzającym z analityki (lejek konwersji). Klucz liczony
+// tym samym dziennym hashem co eventy z a.js (IP+UA po stronie serwera), więc
+// żadnych danych z klienta nie potrzeba. Analityka nigdy nie może zepsuć leada —
+// wołane fire-and-forget z pełnym catch.
+async function attachLeadToVisitor(req, leadId) {
+  const ua = String(req.headers['user-agent'] || '');
+  const key = landingVisitorKey(await getDailySalt(), req.ip || '', ua);
+  const { rows } = await platformPool.query(
+    `SELECT id FROM analytics_visitors WHERE visitor_key = $1`, [key]
+  );
+  const visitorId = rows[0]?.id;
+  if (!visitorId) return;
+  await platformPool.query(
+    `UPDATE landing_leads SET visitor_id = $1 WHERE id = $2 AND visitor_id IS NULL`,
+    [visitorId, leadId]
+  );
+  // Event 'lead' na osi czasu odwiedzającego (dopięty do otwartej sesji, jeśli jest).
+  const { rows: s } = await platformPool.query(
+    `SELECT id FROM analytics_sessions
+      WHERE visitor_id = $1 AND site = 'landing'
+        AND last_activity_at > NOW() - interval '30 minutes'
+      ORDER BY last_activity_at DESC LIMIT 1`,
+    [visitorId]
+  );
+  await platformPool.query(
+    `INSERT INTO analytics_events (session_id, visitor_id, site, name, path)
+     VALUES ($1, $2, 'landing', 'lead', '/#kontakt')`,
+    [s[0]?.id || null, visitorId]
+  );
+  if (s[0]) {
+    await platformPool.query(
+      `UPDATE analytics_sessions SET events = events + 1, last_activity_at = NOW() WHERE id = $1`,
+      [s[0].id]
+    );
+  }
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TOKEN_MIN_AGE_MS = 3_000;
@@ -98,6 +136,11 @@ export default async function landingRoutes(app) {
          req.ip || null, String(req.headers['user-agent'] || '').slice(0, 500) || null]
       );
       const lead = rows[0];
+
+      // Analityka: lejek konwersji (nie blokuje odpowiedzi ani maili).
+      attachLeadToVisitor(req, lead.id).catch((err) =>
+        req.log.warn({ err }, 'landing-contact: powiązanie z analityką nieudane')
+      );
 
       // Powiadomienie dla admina (Reply-To = zgłaszający) + potwierdzenie dla
       // zgłaszającego (Reply-To = adres kontaktowy). Zgłoszenie jest już w

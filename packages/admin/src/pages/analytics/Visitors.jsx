@@ -5,6 +5,18 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../../lib/api.js';
 import { IdentityBadge, flag, deviceIcon, fmtWhen } from './common.jsx';
 
+async function exportCsv(what, filters) {
+  try {
+    const { blob, name } = await api.analyticsExportCsv({ ...filters, what });
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), { href: url, download: name });
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert(`Eksport nieudany: ${e.message}`);
+  }
+}
+
 export default function Visitors({ filters }) {
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -36,9 +48,10 @@ export default function Visitors({ filters }) {
           placeholder="Szukaj: imię, e-mail, organizacja, miasto…"
           value={q} onChange={(e) => setQ(e.target.value)} style={{ maxWidth: 360 }}
         />
-        <span className="muted" style={{ alignSelf: 'center' }}>
-          {d ? `${d.total} odwiedzających` : ''}
-        </span>
+        <div className="row">
+          <span className="muted">{d ? `${d.total} odwiedzających` : ''}</span>
+          <button className="ghost" onClick={() => exportCsv('visitors', filters)}>Eksport CSV</button>
+        </div>
       </div>
       {!d && <div>Ładowanie…</div>}
       {d && d.visitors.length === 0 && <div className="muted">Brak odwiedzających w wybranym okresie.</div>}
@@ -58,7 +71,10 @@ export default function Visitors({ filters }) {
                 key={v.id} className="clickable"
                 onClick={() => navigate({ pathname: v.id, search })}
               >
-                <td><IdentityBadge v={v} /></td>
+                <td>
+                  <IdentityBadge v={v} />
+                  {v.hasLead && <span className="leadbadge" title="Wysłał(a) zgłoszenie z formularza">📩 zgłoszenie</span>}
+                </td>
                 <td>{flag(v.country)} {v.city || v.country || '—'}</td>
                 <td>{deviceIcon(v.deviceType)} {v.browser || '—'}{v.os ? ` · ${v.os}` : ''}</td>
                 <td style={{ textAlign: 'right' }}>{v.sessionsCount}</td>

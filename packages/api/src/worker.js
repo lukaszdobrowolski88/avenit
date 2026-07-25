@@ -102,6 +102,16 @@ cron.schedule('15 3 * * *', exclusive(async () => {
   }
 }));
 
+// Poniedziałek 7:00: tygodniowy raport analityki e-mailem do właściciela.
+cron.schedule('0 7 * * 1', exclusive(async () => {
+  try {
+    const { sendWeeklyReport } = await import('./analytics/report.js');
+    await sendWeeklyReport(platformPool, { log });
+  } catch (err) {
+    log(`raport-tygodniowy: błąd: ${err.message}`);
+  }
+}));
+
 // Raz w tygodniu: świeże bazy GeoIP; przy starcie dograj, jeśli ich brak.
 cron.schedule('0 4 * * 1', exclusive(async () => {
   try {
