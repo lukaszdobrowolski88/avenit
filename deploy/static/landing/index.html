@@ -1023,35 +1023,54 @@
       document.getElementById('tr-down').addEventListener('click', function () { shift--; applyShift(); });
 
       // ── formularz zgłoszeniowy ──
+      // Token antyspamowy: pobierany przy załadowaniu strony; serwer wymaga,
+      // by od pobrania do wysyłki minęło ≥3 s (odsiewa boty).
       var form = document.getElementById('contact-form');
       var msg = document.getElementById('form-msg');
       var submitBtn = document.getElementById('f-submit');
+      var formToken = null;
+      function fetchToken() {
+        return fetch('/api/public/landing-form-token')
+          .then(function (r) { return r.json(); })
+          .then(function (j) { formToken = j.token; })
+          .catch(function () {});
+      }
+      fetchToken();
+
       form.addEventListener('submit', function (e) {
         e.preventDefault();
-        var data = {
-          name: form.name.value.trim(),
-          email: form.email.value.trim(),
-          phone: form.phone.value.trim(),
-          church: form.church.value.trim(),
-          message: form.message.value.trim(),
-          website: form.website.value
-        };
         msg.className = ''; msg.textContent = '';
-        if (!data.name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        var name = form.name.value.trim();
+        var email = form.email.value.trim();
+        if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           msg.className = 'err';
           msg.textContent = 'Podaj imię i poprawny adres e-mail.';
           return;
         }
         submitBtn.disabled = true;
         submitBtn.textContent = 'Wysyłanie…';
-        fetch('/api/public/landing-contact', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+        var ready = formToken ? Promise.resolve() : fetchToken();
+        ready.then(function () {
+          return fetch('/api/public/landing-contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: name,
+              email: email,
+              phone: form.phone.value.trim(),
+              church: form.church.value.trim(),
+              message: form.message.value.trim(),
+              website: form.website.value,
+              token: formToken
+            })
+          });
         }).then(function (res) {
           if (res.status === 429) throw new Error('Zbyt wiele prób — spróbuj ponownie za kilkanaście minut.');
           return res.json().then(function (j) {
-            if (!res.ok || !j.ok) throw new Error(j.error || 'Nie udało się wysłać zgłoszenia.');
+            if (!res.ok || !j.ok) {
+              if (res.status === 400 && j.error && j.error.indexOf('Sesja') === 0) fetchToken();
+              throw new Error(j.error || 'Nie udało się wysłać zgłoszenia.');
+            }
           });
         }).then(function () {
           form.style.display = 'none';

@@ -2,7 +2,7 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config.js';
 
-export async function sendEmail({ to, subject, html, text, from, fromName, attachments }) {
+export async function sendEmail({ to, subject, html, text, from, fromName, replyTo, attachments }) {
   const fromEmail = from || config.MAILING_FROM_EMAIL;
   const senderName = fromName || config.MAILING_FROM_NAME;
 
@@ -10,6 +10,7 @@ export async function sendEmail({ to, subject, html, text, from, fromName, attac
     const body = {
       personalizations: [{ to: (Array.isArray(to) ? to : [to]).map((e) => ({ email: e })) }],
       from: { email: fromEmail, name: senderName },
+      ...(replyTo ? { reply_to: { email: replyTo } } : {}),
       subject,
       content: [
         ...(text ? [{ type: 'text/plain', value: text }] : []),
@@ -52,6 +53,7 @@ export async function sendEmail({ to, subject, html, text, from, fromName, attac
     await transport.sendMail({
       from: `"${senderName}" <${fromEmail}>`,
       to: Array.isArray(to) ? to.join(', ') : to,
+      ...(replyTo ? { replyTo } : {}),
       subject,
       text,
       html,
