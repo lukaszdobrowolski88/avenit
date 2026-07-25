@@ -165,6 +165,62 @@ export const REGISTRY = {
   sms_campaign_recipients: T('module:sms_campaigns'),
   sms_incoming: T('module:sms_campaigns'),
 
+  // ── Dorejestrowane tabele modułów ──────────────────────────────────────
+  // (funkcje dodane po pierwszym rejestrze; wcześniej zwracały 403 na /api/db)
+  // Programy
+  program_templates: T('module:programs'),
+  program_song_suggestions: T('module:programs'),
+  // Finanse
+  budget_items: T('module:finance'),
+  income_transactions: T('module:finance'),
+  expense_transactions: T('module:finance'),
+  // Mailing (kampanie e-mail)
+  email_campaigns: T('module:mailing'),
+  email_campaign_recipients: T('module:mailing'),
+  email_recipient_segments: T('module:mailing'),
+  email_templates: T('module:mailing'),
+  email_unsubscribes: T('module:mailing'),
+  // Poczta (klient)
+  mail_folders: T('module:mail'),
+  // Formularze
+  form_responses: T('module:forms'),
+  // Grupy domowe (zadania)
+  home_group_tasks: T('module:homegroups'),
+  home_group_task_comments: T('module:homegroups'),
+  // Nauczanie / materiały
+  teaching_series: T('module:teaching'),
+  materials_files: T('module:teaching'),
+  materials_folders: T('module:teaching'),
+  // Media (zadania)
+  media_tasks: T('module:media'),
+  media_task_comments: T('module:media'),
+  // Komunikator (interakcje)
+  message_reactions: T('module:komunikator'),
+  message_read_receipts: T('module:komunikator'),
+  pinned_messages: T('module:komunikator'),
+  typing_status: T('module:komunikator'),
+  // Młodzieżówka
+  mlodziezowka_leaders: T('module:mlodziezowka'),
+  mlodziezowka_task_comments: T('module:mlodziezowka'),
+  // Modlitwa
+  prayer_interactions: T('module:prayer'),
+  // Kampanie push
+  push_campaign_ab_variants: T('module:push_campaigns'),
+  push_campaign_actions: T('module:push_campaigns'),
+  push_campaign_segments: T('module:push_campaigns'),
+  push_campaign_templates: T('module:push_campaigns'),
+  // Kampanie SMS
+  sms_campaign_ab_variants: T('module:sms_campaigns'),
+  sms_campaign_segments: T('module:sms_campaigns'),
+  sms_campaign_templates: T('module:sms_campaigns'),
+  sms_inline_responses: T('module:sms_campaigns'),
+  // Per-użytkownik / wspólne (dostęp dla każdego zalogowanego — własne dane)
+  user_tasks: T(null),
+  user_absences: T(null),
+  user_dashboard_layouts: T(null),
+  push_user_preferences: T(null),
+  sms_user_preferences: T(null),
+
   // ── 2FA log ─────────────────────────────────────────────────────────────
   totp_auth_logs: T(null, { writeRoles: [] }), // tylko serwer pisze
 };

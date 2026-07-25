@@ -65,13 +65,31 @@ export const RESOURCE_LABELS = {
   sms_campaigns: 'Kampanie SMS', sms_campaign_recipients: 'Odbiorcy kampanii SMS', sms_incoming: 'Przychodzące SMS',
   // Ustawienia / inne
   integration_settings: 'Ustawienia integracji', custom_mc_members: 'Członkowie (moduł własny)',
+  // Dorejestrowane tabele modułów
+  program_templates: 'Szablony programów', program_song_suggestions: 'Propozycje pieśni',
+  budget_items: 'Pozycje budżetu', income_transactions: 'Wpływy', expense_transactions: 'Wydatki (transakcje)',
+  email_campaigns: 'Kampanie e-mail', email_campaign_recipients: 'Odbiorcy kampanii e-mail',
+  email_recipient_segments: 'Segmenty odbiorców e-mail', email_templates: 'Szablony e-mail', email_unsubscribes: 'Wypisania e-mail',
+  mail_folders: 'Foldery poczty',
+  form_responses: 'Odpowiedzi formularzy',
+  home_group_tasks: 'Zadania grup domowych', home_group_task_comments: 'Komentarze zadań grup domowych',
+  teaching_series: 'Serie nauczań', materials_files: 'Pliki materiałów', materials_folders: 'Foldery materiałów',
+  media_tasks: 'Zadania Media', media_task_comments: 'Komentarze zadań Media',
+  message_reactions: 'Reakcje na wiadomości', message_read_receipts: 'Potwierdzenia odczytu',
+  pinned_messages: 'Przypięte wiadomości', typing_status: 'Status pisania',
+  mlodziezowka_leaders: 'Liderzy młodzieżówki', mlodziezowka_task_comments: 'Komentarze zadań młodzieżówki',
+  prayer_interactions: 'Interakcje modlitewne',
+  push_campaign_ab_variants: 'Warianty A/B (push)', push_campaign_actions: 'Akcje kampanii push',
+  push_campaign_segments: 'Segmenty kampanii push', push_campaign_templates: 'Szablony kampanii push',
+  sms_campaign_ab_variants: 'Warianty A/B (SMS)', sms_campaign_segments: 'Segmenty kampanii SMS',
+  sms_campaign_templates: 'Szablony kampanii SMS', sms_inline_responses: 'Odpowiedzi SMS',
 };
 
 // Definicje modułów. Kolejność = kolejność w macierzy uprawnień.
 export const MODULES = [
   {
     key: 'programs', label: 'Programy',
-    resources: ['programs', 'program_types', 'program_songs', 'schedule_assignments'],
+    resources: ['programs', 'program_types', 'program_songs', 'schedule_assignments', 'program_templates', 'program_song_suggestions'],
     tabs: [],
     actions: [
       { key: 'publish', label: 'Publikuj program' },
@@ -110,7 +128,7 @@ export const MODULES = [
   },
   {
     key: 'homegroups', label: 'Grupy domowe',
-    resources: ['home_groups', 'home_group_leaders', 'home_group_members', 'homegroups_events'],
+    resources: ['home_groups', 'home_group_leaders', 'home_group_members', 'homegroups_events', 'home_group_tasks', 'home_group_task_comments'],
     tabs: [
       { key: 'groups', label: 'Grupy' },
       { key: 'leaders', label: 'Liderzy' },
@@ -122,7 +140,7 @@ export const MODULES = [
   },
   {
     key: 'media', label: 'Media Team',
-    resources: ['media_events', 'media_team', 'equipment'],
+    resources: ['media_events', 'media_team', 'equipment', 'media_tasks', 'media_task_comments'],
     tabs: [
       { key: 'schedule', label: 'Grafik' },
       { key: 'tasks', label: 'Zadania' },
@@ -174,7 +192,7 @@ export const MODULES = [
   },
   {
     key: 'finance', label: 'Finanse',
-    resources: ['finance_transactions', 'finance_balances', 'expenses', 'expense_categories'],
+    resources: ['finance_transactions', 'finance_balances', 'expenses', 'expense_categories', 'budget_items', 'income_transactions', 'expense_transactions'],
     tabs: [],
     actions: [
       { key: 'approve', label: 'Zatwierdź wydatek' },
@@ -186,7 +204,7 @@ export const MODULES = [
   },
   {
     key: 'teaching', label: 'Nauczanie',
-    resources: ['teachings', 'teaching_speakers'],
+    resources: ['teachings', 'teaching_speakers', 'teaching_series', 'materials_files', 'materials_folders'],
     tabs: [
       { key: 'wall', label: 'Tablica' },
       { key: 'schedule', label: 'Grafik' },
@@ -198,7 +216,7 @@ export const MODULES = [
   },
   {
     key: 'prayer', label: 'Centrum Modlitwy',
-    resources: ['prayer_requests', 'wall_posts'],
+    resources: ['prayer_requests', 'wall_posts', 'prayer_interactions'],
     tabs: [
       { key: 'wall', label: 'Ściana Modlitwy' },
       { key: 'leaders_requests', label: 'Prośby dla Liderów' },
@@ -208,7 +226,7 @@ export const MODULES = [
   },
   {
     key: 'mlodziezowka', label: 'Młodzieżówka',
-    resources: ['mlodziezowka_events', 'mlodziezowka_members', 'mlodziezowka_tasks', 'custom_mc_members'],
+    resources: ['mlodziezowka_events', 'mlodziezowka_members', 'mlodziezowka_tasks', 'custom_mc_members', 'mlodziezowka_leaders', 'mlodziezowka_task_comments'],
     tabs: [
       { key: 'events', label: 'Wydarzenia' },
       { key: 'tasks', label: 'Zadania' },
@@ -221,7 +239,7 @@ export const MODULES = [
   },
   {
     key: 'komunikator', label: 'Komunikator',
-    resources: ['conversations', 'conversation_participants', 'messages'],
+    resources: ['conversations', 'conversation_participants', 'messages', 'message_reactions', 'message_read_receipts', 'pinned_messages', 'typing_status'],
     tabs: [
       { key: 'direct', label: 'Rozmowy prywatne' },
       { key: 'groups', label: 'Grupy' },
@@ -232,7 +250,7 @@ export const MODULES = [
   },
   {
     key: 'mail', label: 'Poczta',
-    resources: ['mail_accounts', 'mail_messages', 'mail_attachments', 'mail_labels', 'mail_message_labels'],
+    resources: ['mail_accounts', 'mail_messages', 'mail_attachments', 'mail_labels', 'mail_message_labels', 'mail_folders'],
     tabs: [],
     actions: [
       { key: 'send', label: 'Wyślij e-mail' },
@@ -243,7 +261,7 @@ export const MODULES = [
   },
   {
     key: 'mailing', label: 'Mailing',
-    resources: ['mail_campaigns', 'mail_templates'],
+    resources: ['mail_campaigns', 'mail_templates', 'email_campaigns', 'email_campaign_recipients', 'email_recipient_segments', 'email_templates', 'email_unsubscribes'],
     tabs: [],
     actions: [
       { key: 'send', label: 'Wyślij kampanię e-mail' },
@@ -252,7 +270,7 @@ export const MODULES = [
   },
   {
     key: 'forms', label: 'Formularze',
-    resources: ['forms', 'form_submissions'],
+    resources: ['forms', 'form_submissions', 'form_responses'],
     tabs: [],
     actions: [
       { key: 'export', label: 'Eksport odpowiedzi' },
@@ -262,7 +280,7 @@ export const MODULES = [
   },
   {
     key: 'push_campaigns', label: 'Kampanie push',
-    resources: ['push_campaigns', 'push_campaign_recipients', 'push_campaign_events'],
+    resources: ['push_campaigns', 'push_campaign_recipients', 'push_campaign_events', 'push_campaign_ab_variants', 'push_campaign_actions', 'push_campaign_segments', 'push_campaign_templates'],
     tabs: [],
     actions: [
       { key: 'send', label: 'Wyślij kampanię push' },
@@ -271,7 +289,7 @@ export const MODULES = [
   },
   {
     key: 'sms_campaigns', label: 'Kampanie SMS',
-    resources: ['sms_campaigns', 'sms_campaign_recipients', 'sms_incoming'],
+    resources: ['sms_campaigns', 'sms_campaign_recipients', 'sms_incoming', 'sms_campaign_ab_variants', 'sms_campaign_segments', 'sms_campaign_templates', 'sms_inline_responses'],
     tabs: [],
     actions: [
       { key: 'send', label: 'Wyślij kampanię SMS' },
