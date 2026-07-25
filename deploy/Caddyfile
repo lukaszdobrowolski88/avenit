@@ -27,6 +27,8 @@
 			reverse_proxy api:3001
 		}
 		handle {
+			# Panel nie ma czego szukać w Google
+			header X-Robots-Tag "noindex, nofollow"
 			root * /srv/admin
 			try_files {path} /index.html
 			file_server
@@ -53,15 +55,19 @@
 		file_server
 	}
 
-	# Domena główna: strona www (landing) + API formularza zgłoszeniowego
+	# Domena główna: strona www (landing) + API formularza zgłoszeniowego.
+	# Bez fallbacku na /index.html — nieistniejące URL-e dostają prawdziwy 404
+	# (patrz handle_errors na dole), a nie soft-404 z kopią strony głównej.
 	@root host {$APP_DOMAIN}
 	handle @root {
 		handle /api/* {
 			reverse_proxy api:3001
 		}
 		handle {
+			@assets path /assets/*
+			header @assets Cache-Control "public, max-age=604800"
 			root * /srv/static/landing
-			try_files {path} /index.html
+			try_files {path} {path}/
 			file_server
 		}
 	}
@@ -73,6 +79,7 @@
 			reverse_proxy api:3001
 		}
 		handle {
+			header X-Robots-Tag "noindex, nofollow"
 			root * /srv/static/entry
 			try_files {path} /index.html
 			file_server
@@ -87,8 +94,21 @@
 		reverse_proxy api:3001
 	}
 	handle {
+		# Aplikacje kościołów są za logowaniem — nie indeksować
+		header X-Robots-Tag "noindex, nofollow"
 		root * /srv/web
 		try_files {path} /index.html
 		file_server
+	}
+
+	# Własna strona 404 dla landingu (inne hosty mają fallback na /index.html,
+	# więc ten blok dotyczy w praktyce tylko domeny głównej).
+	handle_errors {
+		@landing404 expression `{err.status_code} == 404 && {http.request.host} == "{$APP_DOMAIN}"`
+		handle @landing404 {
+			root * /srv/static/landing
+			rewrite * /404.html
+			file_server
+		}
 	}
 }

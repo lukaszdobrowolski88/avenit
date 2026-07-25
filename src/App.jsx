@@ -14,6 +14,7 @@ import InstallPrompt from './components/InstallPrompt';
 import AnnouncementBanner from './components/AnnouncementBanner';
 import CommandPalette from './components/CommandPalette';
 import { I18nProvider, useI18n } from './i18n';
+import { PageTracker, identify as analyticsIdentify, trackLogin } from './lib/analytics';
 import useOffline from './hooks/useOffline';
 import Login from './modules/Login';
 import ResetPassword from './modules/ResetPassword';
@@ -230,6 +231,9 @@ function AppInner() {
     const authListener = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session) {
+        // Analityka: powiąż odwiedzającego z użytkownikiem (serwer weryfikuje cookie).
+        if (_event === 'SIGNED_IN') trackLogin();
+        analyticsIdentify(session.user);
         await check2FARequirement(session.user?.email);
       } else {
         setRequires2FASetup(false);
@@ -328,6 +332,8 @@ function AppInner() {
 
   return (
     <BrowserRouter>
+      {/* Analityka: odsłony przy zmianie trasy + otwarcia modułów */}
+      <PageTracker />
       <PermissionsProvider>
         <CampusProvider>
           <NotificationProvider userEmail={session.user?.email}>

@@ -74,6 +74,9 @@ export async function buildServer() {
   // Publiczny formularz zgłoszeniowy ze strony głównej (avenit.pl).
   const { default: landingRoutes } = await import('./landing/routes.js');
   await app.register(landingRoutes);
+  // Analityka first-party: ingestia zdarzeń z landingu i aplikacji (POST /api/track).
+  const { default: analyticsRoutes } = await import('./analytics/routes.js');
+  await app.register(analyticsRoutes);
   await app.register(dataApiRoutes);
   await app.register(storageRoutes);
 
@@ -88,6 +91,9 @@ export async function buildServer() {
   // Admin API (panel administracyjny platformy).
   const { default: adminRoutes } = await import('./admin/routes.js');
   await app.register(adminRoutes);
+  // Analityka w panelu admina (przegląd, odwiedzający, źródła, ...).
+  const { default: adminAnalyticsRoutes } = await import('./admin/analytics-routes.js');
+  await app.register(adminAnalyticsRoutes);
 
   // Odnowienie subskrypcji web push po pushsubscriptionchange (woła sw-push.js).
   // Publiczny — service worker nie ma tokenów; identyfikacja po starym endpoincie.

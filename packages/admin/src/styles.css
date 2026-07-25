@@ -58,3 +58,47 @@ label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px
 .chart-bars .bar:hover { background: var(--accent2); }
 .chart-x { display: flex; gap: 6px; margin-top: 6px; }
 .chart-x span { flex: 1; text-align: center; font-size: 10px; color: var(--muted); }
+
+/* ── Analityka ─────────────────────────────────────────────────────── */
+.anatabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; flex-wrap: wrap; }
+.anatabs a {
+  padding: 9px 14px; color: var(--muted); text-decoration: none; font-size: 14px;
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.anatabs a.active { color: var(--text); border-bottom-color: var(--accent); }
+.anatabs a:hover { color: var(--text); }
+.anafilters { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.anafilters button { font-size: 13px; padding: 7px 12px; }
+.anafilters input, .anafilters select { width: auto; font-size: 13px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .grid2 { grid-template-columns: 1fr; } }
+.delta { font-size: 12px; font-weight: 600; }
+.delta.up { color: var(--green); }
+.delta.down { color: var(--red); }
+.livedot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); margin-right: 6px; animation: livepulse 2s infinite;
+}
+@keyframes livepulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.idbadge { font-weight: 600; }
+.idbadge.user { color: var(--green); }
+.idbadge.tenant { color: var(--accent2); }
+.idbadge.org { color: #38bdf8; }
+.idbadge.anon { color: var(--muted); font-weight: 400; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: var(--panel2); }
+.ranktable td { position: relative; }
+.rankbar {
+  position: absolute; left: 0; top: 15%; height: 70%;
+  background: color-mix(in srgb, var(--accent) 18%, transparent); border-radius: 4px;
+}
+.timeline { display: flex; flex-direction: column; gap: 4px; }
+.timeline-item { display: flex; gap: 10px; align-items: baseline; font-size: 13px; padding: 3px 0; }
+.evtag {
+  font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 5px;
+  background: var(--panel2); color: var(--muted); flex-shrink: 0;
+}
+.evtag.ev-pageview { background: #1e3a8a; color: #bfdbfe; }
+.evtag.ev-login, .evtag.ev-identify { background: #14532d; color: #bbf7d0; }
+.evtag.ev-module_open { background: #78350f; color: #fde68a; }
+.evtag.ev-click { background: #4c1d95; color: #ddd6fe; }
