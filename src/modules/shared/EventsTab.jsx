@@ -138,6 +138,9 @@ const CustomDatePicker = ({ label, value, onChange }) => {
 };
 
 // Konfiguracja dla różnych służb
+// UWAGA: to jest stała na poziomie modułu — ewaluowana przy imporcie, PRZED
+// zamontowaniem komponentów. Wolno tu używać tylko globalnego `tr(...)`, nigdy
+// hookowego `t` z useT() (nie istnieje w tym zasięgu → ReferenceError, biały ekran).
 const MINISTRY_CONFIG = {
   worship: {
     tableName: 'worship_events',
@@ -145,11 +148,11 @@ const MINISTRY_CONFIG = {
     title: tr('Zespół Uwielbienia'),
     defaultType: 'proba',
     types: [
-      { value: 'proba', label: t('Próba') },
+      { value: 'proba', label: tr('Próba') },
       { value: 'koncert', label: 'Koncert' },
-      { value: 'nabozesnstwo', label: t('Nabożeństwo') },
+      { value: 'nabozesnstwo', label: tr('Nabożeństwo') },
       { value: 'warsztat', label: 'Warsztat' },
-      { value: 'inne', label: t('Inne') }
+      { value: 'inne', label: tr('Inne') }
     ],
     color: 'purple'
   },
@@ -162,7 +165,7 @@ const MINISTRY_CONFIG = {
       { value: 'produkcja', label: 'Produkcja' },
       { value: 'szkolenie', label: 'Szkolenie' },
       { value: 'streaming', label: 'Streaming' },
-      { value: 'inne', label: t('Inne') }
+      { value: 'inne', label: tr('Inne') }
     ],
     color: 'orange'
   },
@@ -172,10 +175,10 @@ const MINISTRY_CONFIG = {
     title: 'Atmosfera Team',
     defaultType: 'spotkanie',
     types: [
-      { value: 'spotkanie', label: t('Spotkanie') },
+      { value: 'spotkanie', label: tr('Spotkanie') },
       { value: 'szkolenie', label: 'Szkolenie' },
-      { value: 'integracja', label: t('Integracja') },
-      { value: 'inne', label: t('Inne') }
+      { value: 'integracja', label: tr('Integracja') },
+      { value: 'inne', label: tr('Inne') }
     ],
     color: 'teal'
   },
@@ -185,11 +188,11 @@ const MINISTRY_CONFIG = {
     title: tr('Małe Avenit'),
     defaultType: 'zajecia',
     types: [
-      { value: 'zajecia', label: t('Zajęcia') },
+      { value: 'zajecia', label: tr('Zajęcia') },
       { value: 'wycieczka', label: 'Wycieczka' },
       { value: 'warsztat', label: 'Warsztat' },
       { value: 'przedstawienie', label: 'Przedstawienie' },
-      { value: 'inne', label: t('Inne') }
+      { value: 'inne', label: tr('Inne') }
     ],
     color: 'yellow'
   },
@@ -199,10 +202,10 @@ const MINISTRY_CONFIG = {
     title: 'Grupy Domowe',
     defaultType: 'spotkanie',
     types: [
-      { value: 'spotkanie', label: t('Spotkanie') },
-      { value: 'integracja', label: t('Integracja') },
+      { value: 'spotkanie', label: tr('Spotkanie') },
+      { value: 'integracja', label: tr('Integracja') },
       { value: 'szkolenie', label: 'Szkolenie' },
-      { value: 'inne', label: t('Inne') }
+      { value: 'inne', label: tr('Inne') }
     ],
     color: 'blue'
   }

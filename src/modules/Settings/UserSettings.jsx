@@ -7,7 +7,7 @@ import {
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { useTwoFactor } from '../../hooks/useTwoFactor';
 import TwoFactorSetup from '../../components/TwoFactorSetup';
-import { tr } from '../../i18n';
+import { tr, useT } from '../../i18n';
 
 export default function UserSettings() {
   const t = useT();
