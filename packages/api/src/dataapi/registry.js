@@ -32,6 +32,7 @@ export const REGISTRY = {
     selfUpdateColumns: ['full_name', 'name', 'avatar_url', 'phone', 'totp_required'],
   }),
   app_settings: T(null),
+  app_dictionaries: T(null), // słowniki (statusy, kategorie) — zarządzane w Ustawieniach
   app_permissions: T(null), // legacy (zastąpione przez permission_grants)
   app_roles: T(null),
   permission_grants: T(null),

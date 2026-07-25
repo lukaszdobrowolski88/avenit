@@ -14,6 +14,59 @@
 export const CRUD_OPS = ['read', 'create', 'update', 'delete'];
 export const CRUD_LABELS = { read: 'Odczyt', create: 'Tworzenie', update: 'Edycja', delete: 'Usuwanie' };
 
+// Przyjazne nazwy zasobów danych (surowe klucze tabel -> etykieta w macierzy uprawnień).
+// Brakujący klucz => fallback do surowej nazwy (patrz capabilityGroups).
+export const RESOURCE_LABELS = {
+  // Programy
+  programs: 'Programy', program_types: 'Typy programów', program_songs: 'Pieśni w programie',
+  schedule_assignments: 'Przypisania do służby',
+  // Kalendarz
+  events: 'Wydarzenia', ministry_events: 'Wydarzenia służb', tasks: 'Zadania',
+  // Członkowie
+  members: 'Członkowie', attendance: 'Obecność', households: 'Gospodarstwa domowe',
+  parent_contacts: 'Kontakty rodziców', groups: 'Grupy', group_members: 'Członkowie grup',
+  // Grupy domowe
+  home_groups: 'Grupy domowe', home_group_leaders: 'Liderzy grup domowych',
+  home_group_members: 'Członkowie grup domowych', homegroups_events: 'Wydarzenia grup domowych',
+  // Media
+  media_events: 'Wydarzenia Media', media_team: 'Zespół Media', equipment: 'Sprzęt',
+  // Kids
+  kids_events: 'Wydarzenia dziecięce', kids_groups: 'Grupy dziecięce', kids_students: 'Dzieci',
+  kids_teachers: 'Nauczyciele dziecięcy', checkin_locations: 'Lokalizacje check-in',
+  checkin_sessions: 'Sesje check-in', checkins: 'Check-iny',
+  // Uwielbienie
+  worship_events: 'Wydarzenia Uwielbienia', worship_team: 'Zespół Uwielbienia',
+  songs: 'Pieśni', song_attachments: 'Załączniki pieśni',
+  // Atmosfera
+  atmosfera_events: 'Wydarzenia Atmosfera', atmosfera_members: 'Członkowie Atmosfera',
+  // Finanse
+  finance_transactions: 'Transakcje finansowe', finance_balances: 'Salda finansowe',
+  expenses: 'Wydatki', expense_categories: 'Kategorie wydatków',
+  // Nauczanie
+  teachings: 'Nauczania', teaching_speakers: 'Mówcy',
+  // Modlitwa
+  prayer_requests: 'Prośby modlitewne',
+  // Młodzieżówka
+  mlodziezowka_events: 'Wydarzenia młodzieżówki', mlodziezowka_members: 'Członkowie młodzieżówki',
+  mlodziezowka_tasks: 'Zadania młodzieżówki',
+  // Komunikator
+  conversations: 'Rozmowy', conversation_participants: 'Uczestnicy rozmów',
+  messages: 'Wiadomości', wall_posts: 'Wpisy na ścianie',
+  // Poczta
+  mail_accounts: 'Konta pocztowe', mail_messages: 'Wiadomości e-mail', mail_attachments: 'Załączniki e-mail',
+  mail_labels: 'Etykiety e-mail', mail_message_labels: 'Etykiety wiadomości', mail_templates: 'Szablony e-mail',
+  mail_campaigns: 'Kampanie e-mail',
+  // Formularze
+  forms: 'Formularze', form_submissions: 'Zgłoszenia formularzy',
+  // Push
+  push_campaigns: 'Kampanie push', push_campaign_recipients: 'Odbiorcy kampanii push',
+  push_campaign_events: 'Zdarzenia kampanii push',
+  // SMS
+  sms_campaigns: 'Kampanie SMS', sms_campaign_recipients: 'Odbiorcy kampanii SMS', sms_incoming: 'Przychodzące SMS',
+  // Ustawienia / inne
+  integration_settings: 'Ustawienia integracji', custom_mc_members: 'Członkowie (moduł własny)',
+};
+
 // Definicje modułów. Kolejność = kolejność w macierzy uprawnień.
 export const MODULES = [
   {
@@ -286,7 +339,7 @@ export function capabilityGroups() {
     rows: [
       { cap: `module:${m.key}`, label: 'Dostęp do modułu', kind: 'module' },
       ...m.tabs.map((t) => ({ cap: `tab:${m.key}:${t.key}`, label: `Zakładka: ${t.label}`, kind: 'tab' })),
-      ...m.resources.flatMap((r) => CRUD_OPS.map((op) => ({ cap: `res:${r}:${op}`, label: `${r} — ${CRUD_LABELS[op]}`, kind: 'crud' }))),
+      ...m.resources.flatMap((r) => CRUD_OPS.map((op) => ({ cap: `res:${r}:${op}`, label: `${RESOURCE_LABELS[r] || r} — ${CRUD_LABELS[op]}`, kind: 'crud' }))),
       ...m.actions.map((a) => ({ cap: `action:${m.key}:${a.key}`, label: `Akcja: ${a.label}`, kind: 'action' })),
       ...m.fields.flatMap((f) => [
         { cap: `field:${f.resource}:${f.column}:read`, label: `Pole ${f.label} — odczyt`, kind: 'field' },
