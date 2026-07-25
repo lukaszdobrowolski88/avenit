@@ -197,6 +197,7 @@ const DictionaryEditor = ({ category, title, items, onAdd, onDelete }) => {
 // --- GŁÓWNY KOMPONENT ---
 
 export default function GlobalSettings() {
+  const t = useT();
   const [activeTab, setActiveTab] = useState('general');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
@@ -928,7 +929,6 @@ export default function GlobalSettings() {
     setMessage({ type: 'success', text: 'Zapisano' });
   };
   const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
-  const t = useT();
 
   return (
     <div className="flex flex-col h-full space-y-4">
