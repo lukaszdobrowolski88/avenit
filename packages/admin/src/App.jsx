@@ -13,6 +13,7 @@ import Settings from './pages/Settings.jsx';
 import System from './pages/System.jsx';
 import Announcements from './pages/Announcements.jsx';
 import Leads from './pages/Leads.jsx';
+import AnalyticsLayout from './pages/analytics/AnalyticsLayout.jsx';
 import GlobalSearch from './components/GlobalSearch.jsx';
 
 export default function App() {
@@ -47,6 +48,7 @@ function Shell({ admin, onLogout }) {
         <GlobalSearch />
         <nav className="nav">
           <NavLink to="/" end>Dashboard</NavLink>
+          <NavLink to="/analytics">Analityka</NavLink>
           <NavLink to="/tenants">Tenanci</NavLink>
           <NavLink to="/leads">Zgłoszenia{newLeads > 0 && <span className="navbadge">{newLeads}</span>}</NavLink>
           <NavLink to="/plans">Plany</NavLink>
@@ -65,6 +67,7 @@ function Shell({ admin, onLogout }) {
       <main className="main">
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/analytics/*" element={<AnalyticsLayout />} />
           <Route path="/tenants" element={<Tenants />} />
           <Route path="/tenants/:id" element={<TenantDetail />} />
           <Route path="/leads" element={<Leads onCountsChange={(c) => setNewLeads(c.new || 0)} />} />

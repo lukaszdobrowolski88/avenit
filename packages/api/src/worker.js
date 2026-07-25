@@ -78,4 +78,45 @@ cron.schedule('0 8 * * *', exclusive(async () => {
   }
 }));
 
+// ── Analityka (baza platform) ────────────────────────────────────────
+// Co 10 min: domknij przeterminowane sesje + odśwież rollup dzisiejszego dnia
+// (wykresy "dziś" w panelu admina są aktualne bez czekania na noc).
+cron.schedule('*/10 * * * *', exclusive(async () => {
+  try {
+    const { closeStaleSessions, rollupDay, dayISO } = await import('./analytics/rollup.js');
+    await closeStaleSessions(platformPool);
+    await rollupDay(platformPool, dayISO());
+  } catch (err) {
+    log(`analytics-rollup: błąd: ${err.message}`);
+  }
+}));
+
+// W nocy: finalny rollup wczorajszego dnia + retencja surowych danych.
+cron.schedule('15 3 * * *', exclusive(async () => {
+  try {
+    const { rollupDay, runRetention, yesterdayISO } = await import('./analytics/rollup.js');
+    await rollupDay(platformPool, yesterdayISO());
+    await runRetention(platformPool);
+  } catch (err) {
+    log(`analytics-retencja: błąd: ${err.message}`);
+  }
+}));
+
+// Raz w tygodniu: świeże bazy GeoIP; przy starcie dograj, jeśli ich brak.
+cron.schedule('0 4 * * 1', exclusive(async () => {
+  try {
+    const { updateGeoipDb } = await import('../scripts/update-geoip.mjs');
+    await updateGeoipDb();
+  } catch (err) {
+    log(`geoip: błąd: ${err.message}`);
+  }
+}));
+(async () => {
+  const { geoipFilesPresent, updateGeoipDb } = await import('../scripts/update-geoip.mjs');
+  if (!geoipFilesPresent()) {
+    log('geoip: brak baz — pobieram przy starcie...');
+    await updateGeoipDb();
+  }
+})().catch((err) => log(`geoip start: błąd: ${err.message}`));
+
 log('Worker wystartował — harmonogram aktywny.');

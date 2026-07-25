@@ -13,7 +13,7 @@ Architektura: **baza per tenant**. Dwa rodzaje baz:
 - **`template/tenant_schema.sql`** — szablon bazy nowego tenanta. **GENEROWANY** przez `build-tenant-schema.mjs` — nie edytuj ręcznie.
 - **`build-tenant-schema.mjs`** — składa szablon z rzeczywistych migracji (`supabase/migrations` + `migrations`), usuwając konstrukcje Supabase (RLS, `auth.*`, `storage.*`, realtime, pg_cron/pg_net) i dodając warstwę auth (hasła, refresh tokeny). Uruchom po zmianie migracji: `node packages/api/db/build-tenant-schema.mjs`.
 - **`migrate.mjs`** — runner migracji (tabela `_migrations` per baza).
-- **`platform/migrations/`**, **`tenant-migrations/`** — przyrostowe migracje nakładane runnerem po wygenerowaniu schematu bazowego.
+- **`platform/migrations/`**, **`tenant-migrations/`** — przyrostowe migracje nakładane runnerem po wygenerowaniu schematu bazowego. ⚠️ Tabele analityki (`analytics_*`) żyją WYŁĄCZNIE w `platform/migrations/002_analytics.sql` — nie ma ich w `schema.sql`; odbudowa bazy z samego `schema.sql` je pominie (zawsze uruchamiaj pełne `migrate.mjs platform`).
 
 ## Użycie
 

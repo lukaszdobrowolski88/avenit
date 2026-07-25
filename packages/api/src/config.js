@@ -21,6 +21,12 @@ const schema = z.object({
   // Pliki tenantów: /srv/storage/<tenant>/<bucket>/<path>
   STORAGE_DIR: z.string().default('./storage'),
 
+  // Analityka (bazy GeoIP domyślnie na wolumenie storage: <STORAGE_DIR>/geoip)
+  GEOIP_DIR: z.string().optional(),
+  ANALYTICS_RAW_RETENTION_DAYS: z.coerce.number().default(400),
+  // Opcjonalnie: dokładniejsze bazy MaxMind GeoLite2 zamiast DB-IP Lite
+  MAXMIND_LICENSE_KEY: z.string().optional(),
+
   // Usługi zewnętrzne (opcjonalne — funkcje zgłoszą brak przy użyciu)
   SENDGRID_API_KEY: z.string().optional(),
   MAILING_FROM_EMAIL: z.string().default('noreply@avenit.pl'),

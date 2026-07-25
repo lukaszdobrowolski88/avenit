@@ -45,6 +45,10 @@ async function tryRefresh() {
   }
 }
 
+// Query string bez pustych wartości (filtry analityki).
+const qs = (p = {}) =>
+  new URLSearchParams(Object.entries(p).filter(([, v]) => v != null && v !== '')).toString();
+
 export const api = {
   login: (email, password, totpCode) =>
     request('/api/admin/login', { method: 'POST', body: { email, password, totpCode } }),
@@ -125,6 +129,16 @@ export const api = {
   landingLeads: (status) => request(`/api/admin/landing-leads${status ? `?status=${status}` : ''}`),
   updateLead: (id, body) => request(`/api/admin/landing-leads/${id}`, { method: 'PATCH', body }),
   deleteLead: (id) => request(`/api/admin/landing-leads/${id}`, { method: 'DELETE' }),
+  // Analityka (GA-style + identyfikacja odwiedzających)
+  analyticsOverview: (p) => request(`/api/admin/analytics/overview?${qs(p)}`),
+  analyticsRealtime: (p) => request(`/api/admin/analytics/realtime?${qs(p)}`),
+  analyticsSources: (p) => request(`/api/admin/analytics/sources?${qs(p)}`),
+  analyticsPages: (p) => request(`/api/admin/analytics/pages?${qs(p)}`),
+  analyticsGeo: (p) => request(`/api/admin/analytics/geo?${qs(p)}`),
+  analyticsDevices: (p) => request(`/api/admin/analytics/devices?${qs(p)}`),
+  analyticsVisitors: (p) => request(`/api/admin/analytics/visitors?${qs(p)}`),
+  analyticsVisitor: (id) => request(`/api/admin/analytics/visitors/${id}`),
+  analyticsTenants: (p) => request(`/api/admin/analytics/tenants?${qs(p)}`),
   // Ogłoszenia
   announcements: () => request('/api/admin/announcements'),
   createAnnouncement: (body) => request('/api/admin/announcements', { method: 'POST', body }),
@@ -140,3 +154,12 @@ export const formatBytes = (b) => {
 };
 
 export const formatPLN = (grosze) => `${((grosze || 0) / 100).toFixed(2)} zł`;
+
+// Sekundy → "2 min 15 s" (czasy wizyt w analityce).
+export const formatDuration = (s) => {
+  s = Math.max(0, Math.round(s || 0));
+  if (s < 60) return `${s} s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m} min ${s % 60} s`;
+  return `${Math.floor(m / 60)} h ${m % 60} min`;
+};
