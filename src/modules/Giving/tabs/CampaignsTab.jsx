@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Edit2, Trash2, X, Target, Heart } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Target, Heart, Code2, Check } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
@@ -22,6 +22,14 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
 
   const [pledgeModal, setPledgeModal] = useState(null); // campaign obj
   const [pledgeForm, setPledgeForm] = useState(emptyPledge);
+  const [copiedId, setCopiedId] = useState(null);
+
+  const copyEmbed = async (c) => {
+    const code = `<iframe src="${window.location.origin}/widget/campaign/${c.id}" width="100%" height="180" style="border:0"></iframe>`;
+    try { await navigator.clipboard.writeText(code); } catch { window.prompt('Skopiuj kod osadzenia:', code); }
+    setCopiedId(c.id);
+    setTimeout(() => setCopiedId(v => (v === c.id ? null : v)), 2000);
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -154,6 +162,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
                     {c.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{c.description}</p>}
                   </div>
                   <div className="flex gap-1 shrink-0">
+                    <button onClick={() => copyEmbed(c)} title="Kopiuj kod osadzenia (iframe)" className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700">{copiedId === c.id ? <Check size={15} /> : <Code2 size={15} />}</button>
                     <button onClick={() => openEdit(c)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
                     <button onClick={() => remove(c)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
                   </div>

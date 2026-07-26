@@ -31,6 +31,7 @@ import HomeGroupsModule from './modules/HomeGroups/HomeGroupsModule';
 import FinanceModule from './modules/FinanceModule';
 import GivingModule from './modules/Giving/GivingModule';
 import GiveOnlinePage from './modules/Giving/GiveOnlinePage';
+import CampaignWidgetPage from './modules/Giving/CampaignWidgetPage';
 import AttendanceModule from './modules/Attendance/AttendanceModule';
 import AnalyticsModule from './modules/Analytics/AnalyticsModule';
 import AutomationModule from './modules/Automation/AutomationModule';
@@ -306,6 +307,19 @@ function AppInner() {
           <Route path="/give" element={<GiveOnlinePage />} />
           <Route path="/give/success" element={<GiveOnlinePage success />} />
           <Route path="*" element={<Navigate to="/give" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
+  // Publiczny widget termometru zbiórki (osadzany iframe) - bez logowania
+  const isWidgetCampaignPage = window.location.pathname.startsWith('/widget/campaign/');
+  if (isWidgetCampaignPage) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/widget/campaign/:id" element={<CampaignWidgetPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     );

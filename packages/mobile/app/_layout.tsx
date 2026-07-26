@@ -21,6 +21,7 @@ import {
   registerNotificationCategories,
   handleAssignmentAction,
   handleCampaignAction,
+  handleRsvpInviteAction,
 } from '../src/lib/push';
 import { navigateFromDeepLink } from '../src/lib/deep-links';
 import { updatePresence } from '../src/lib/presence';
@@ -82,7 +83,7 @@ function RootEffects() {
   useEffect(() => {
     const handle = async (response: Notifications.NotificationResponse) => {
       const data = response.notification.request.content.data as
-        | { link?: string; assignmentId?: number | string; campaign_id?: string; recipient_id?: string }
+        | { link?: string; assignmentId?: number | string; campaign_id?: string; recipient_id?: string; rsvp_token?: string }
         | null;
       const action = response.actionIdentifier;
 
@@ -91,6 +92,13 @@ function RootEffects() {
       if (handledAssignment) {
         queryClient.invalidateQueries({ queryKey: ['dashboard'] });
         queryClient.invalidateQueries({ queryKey: ['programs', 'myAssignments'] });
+        return;
+      }
+
+      // 1b. RSVP (moduł Obecność) — inline Będę/Nie będę po tokenie.
+      const handledRsvp = await handleRsvpInviteAction(action, data ?? undefined);
+      if (handledRsvp) {
+        queryClient.invalidateQueries({ queryKey: ['rsvp', 'mine'] });
         return;
       }
 
@@ -103,9 +111,9 @@ function RootEffects() {
         }
       }
 
-      // 3. Default: open default link from data.
+      // 3. Default: open default link (lub ekran zaproszeń przy RSVP).
       if (action === Notifications.DEFAULT_ACTION_IDENTIFIER || !action) {
-        navigateFromDeepLink(router, data?.link);
+        navigateFromDeepLink(router, data?.rsvp_token ? '/(app)/rsvp' : data?.link);
       }
     };
     responseSubRef.current = Notifications.addNotificationResponseReceivedListener(handle);

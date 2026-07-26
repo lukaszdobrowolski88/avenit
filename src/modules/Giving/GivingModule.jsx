@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Gift, LayoutDashboard, Receipt, Repeat, Target, FolderOpen, FileText } from 'lucide-react';
+import { Gift, LayoutDashboard, Receipt, Repeat, Target, FolderOpen, FileText, Users } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
@@ -9,10 +9,12 @@ import RecurringTab from './tabs/RecurringTab';
 import CampaignsTab from './tabs/CampaignsTab';
 import FundsTab from './tabs/FundsTab';
 import StatementsTab from './tabs/StatementsTab';
+import DonorsTab from './tabs/DonorsTab';
 
 const TABS = [
   { id: 'overview', label: 'Pulpit', icon: LayoutDashboard },
   { id: 'donations', label: 'Darowizny', icon: Receipt },
+  { id: 'donors', label: 'Darczyńcy', icon: Users },
   { id: 'recurring', label: 'Cykliczne', icon: Repeat },
   { id: 'campaigns', label: 'Kampanie', icon: Target },
   { id: 'funds', label: 'Fundusze', icon: FolderOpen },
@@ -77,6 +79,7 @@ export default function GivingModule() {
       <div>
         {activeTab === 'overview' && <OverviewTab {...shared} loading={loading} onNavigate={setActiveTab} />}
         {activeTab === 'donations' && <DonationsTab {...shared} />}
+        {activeTab === 'donors' && <DonorsTab {...shared} />}
         {activeTab === 'recurring' && <RecurringTab {...shared} />}
         {activeTab === 'campaigns' && <CampaignsTab {...shared} />}
         {activeTab === 'funds' && <FundsTab {...shared} />}

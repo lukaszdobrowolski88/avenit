@@ -165,6 +165,8 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
   const [saving, setSaving] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderDays, setReminderDays] = useState(1);
+  const [isSeries, setIsSeries] = useState(false);
+  const [seriesInterval, setSeriesInterval] = useState(7);
 
   const recipients = useMemo(() => {
     if (audience === 'all') return members;
@@ -187,24 +189,34 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
     setSaving(true);
     try {
       const user = await getCachedUser();
-      const { data: camp, error } = await supabase.from('rsvp_campaigns').insert({
+      const payload = {
         title: form.title.trim(), event_type: form.event_type,
         event_date: form.event_date || null, event_time: form.event_time || null,
         location: form.location || null, message: form.message || null,
         channels: chans, status: 'draft', created_by: user?.email || null, campus_id: campusIdForInsert,
         reminder_enabled: reminderEnabled, reminder_days_before: Number(reminderDays) || 1,
-      }).select().single();
+      };
+      if (isSeries) {
+        // Szablon serii: nie tworzymy zaproszeń teraz — worker rsvp-series generuje
+        // kolejne wystąpienia z zapisanej publiczności.
+        payload.is_series = true;
+        payload.recur_interval_days = Number(seriesInterval) || 7;
+        payload.series_next_date = form.event_date || new Date().toISOString().slice(0, 10);
+        payload.audience_member_ids = recipients.map(m => m.id);
+      }
+      const { data: camp, error } = await supabase.from('rsvp_campaigns').insert(payload).select().single();
       if (error) throw error;
 
-      const invites = recipients.map(m => ({
-        campaign_id: camp.id, member_id: m.id, name: memberName(m),
-        email: m.email || null, phone: m.phone || null, token: genToken(),
-        status: 'pending', campus_id: campusIdForInsert,
-      }));
-      // Wstaw w partiach po 500
-      for (let i = 0; i < invites.length; i += 500) {
-        const { error: e2 } = await supabase.from('rsvp_invitations').insert(invites.slice(i, i + 500));
-        if (e2) throw e2;
+      if (!isSeries) {
+        const invites = recipients.map(m => ({
+          campaign_id: camp.id, member_id: m.id, name: memberName(m),
+          email: m.email || null, phone: m.phone || null, token: genToken(),
+          status: 'pending', campus_id: campusIdForInsert,
+        }));
+        for (let i = 0; i < invites.length; i += 500) {
+          const { error: e2 } = await supabase.from('rsvp_invitations').insert(invites.slice(i, i + 500));
+          if (e2) throw e2;
+        }
       }
       onCreated();
     } catch (err) {
@@ -267,6 +279,20 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
                 </div>
               )}
             </div>
+
+            {/* Cykliczność (seria) */}
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 px-4 py-3">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+                <input type="checkbox" checked={isSeries} onChange={e => setIsSeries(e.target.checked)} className="rounded accent-emerald-500" />
+                Powtarzaj cyklicznie (seria)
+              </label>
+              {isSeries && (
+                <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+                  co <input type="number" min="1" max="60" value={seriesInterval} onChange={e => setSeriesInterval(e.target.value)} className="w-14 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-center text-gray-900 dark:text-gray-100" /> dni
+                </div>
+              )}
+            </div>
+            {isSeries && <p className="text-xs text-gray-400 -mt-2">Seria automatycznie wygeneruje kolejne zaproszenia dla wybranej publiczności (pierwsze wystąpienie w dniu wydarzenia).</p>}
 
             {/* Odbiorcy */}
             <CustomSelect label="Odbiorcy" value={audience} onChange={setAudience} options={AUDIENCE} />

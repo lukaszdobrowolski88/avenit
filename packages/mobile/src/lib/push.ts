@@ -31,6 +31,7 @@ Notifications.setNotificationHandler({
 });
 
 export const ASSIGNMENT_CATEGORY = 'assignment_invite';
+export const RSVP_INVITE_CATEGORY = 'rsvp_invite';
 
 // Kategorie używane przez moduł Push Campaigns (zsynchronizowane z
 // src/modules/PushCampaigns/constants.js).  Etykiety są sztywne i wymagają
@@ -74,6 +75,12 @@ export const registerNotificationCategories = async () => {
     for (const category of PUSH_CAMPAIGN_CATEGORIES) {
       await Notifications.setNotificationCategoryAsync(category.id, category.actions as any);
     }
+
+    // Moduł Obecność (RSVP) — inline Będę / Nie będę po tokenie zaproszenia.
+    await Notifications.setNotificationCategoryAsync(RSVP_INVITE_CATEGORY, [
+      { identifier: 'rsvp_yes', buttonTitle: 'Będę', options: { opensAppToForeground: false } },
+      { identifier: 'rsvp_no', buttonTitle: 'Nie będę', options: { opensAppToForeground: false, isDestructive: true } },
+    ]);
 
     categoryRegistered = true;
   } catch (e) {
@@ -160,6 +167,23 @@ const trackEvent = async (
     event,
     action_id: actionId,
   });
+};
+
+// Inline RSVP (moduł Obecność) — Będę/Nie będę wprost z powiadomienia (po tokenie).
+export const handleRsvpInviteAction = async (
+  actionIdentifier: string,
+  data: Record<string, unknown> | null | undefined,
+): Promise<boolean> => {
+  const token = data?.rsvp_token as string | undefined;
+  if (!token) return false;
+  if (actionIdentifier !== 'rsvp_yes' && actionIdentifier !== 'rsvp_no') return false;
+  const answer = actionIdentifier === 'rsvp_yes' ? 'yes' : 'no';
+  try {
+    await callFn('rsvp-respond', { token, answer });
+  } catch (e) {
+    console.warn('[push] rsvp invite action failed:', (e as Error)?.message);
+  }
+  return true;
 };
 
 export const handleAssignmentAction = async (

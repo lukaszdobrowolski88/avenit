@@ -13,7 +13,10 @@ export const TAB_PERMISSIONS = {
     unreadMessages: null, // Nieprzeczytane wiadomości - wszyscy
     upcomingEvents: null, // Nadchodzące wydarzenia - wszyscy
     quickAccess: null, // Szybki dostęp - wszyscy
-    birthdays: null // Urodziny - wszyscy
+    birthdays: null, // Urodziny - wszyscy
+    rsvpSummary: null, // Nadchodzące RSVP - wszyscy
+    givingMonth: ['rada_starszych', 'koordynator', 'admin'], // Dawanie - liderzy finansów
+    attendance: ['rada_starszych', 'koordynator', 'lider', 'admin'] // Frekwencja - liderzy
   },
 
   // Moduł Grupy Domowe

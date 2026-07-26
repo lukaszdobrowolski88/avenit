@@ -75,6 +75,8 @@ cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('automation', 'automa
 cron.schedule('0 7 * * *', exclusive(() => forEachTenant('giving-recurring', 'giving-recurring')));
 // Przypomnienia RSVP: codziennie 10:00 — ponaglenie niepotwierdzonych przed wydarzeniem.
 cron.schedule('0 10 * * *', exclusive(() => forEachTenant('rsvp-reminders', 'rsvp-reminders')));
+// Serie RSVP: codziennie 06:00 — generuj kolejne wystąpienia cyklicznych kampanii.
+cron.schedule('0 6 * * *', exclusive(() => forEachTenant('rsvp-series', 'rsvp-series')));
 
 cron.schedule('0 8 * * *', exclusive(async () => {
   try {

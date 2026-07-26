@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, RefreshCw, Calendar, CheckSquare, CalendarX, Heart, Users, MessageCircle, CalendarDays, Zap, Cake } from 'lucide-react';
+import { Settings, RefreshCw, Calendar, CheckSquare, CalendarX, Heart, Users, MessageCircle, CalendarDays, Zap, Cake, CalendarCheck, Gift, ClipboardCheck } from 'lucide-react';
 
 import { useDashboardLayout } from './hooks/useDashboardLayout';
 import { useDashboardData } from './hooks/useDashboardData';
@@ -21,6 +21,9 @@ import UnreadMessagesWidget from './widgets/UnreadMessagesWidget';
 import UpcomingEventsWidget from './widgets/UpcomingEventsWidget';
 import QuickAccessWidget from './widgets/QuickAccessWidget';
 import BirthdaysWidget from './widgets/BirthdaysWidget';
+import RsvpSummaryWidget from './widgets/RsvpSummaryWidget';
+import GivingMonthWidget from './widgets/GivingMonthWidget';
+import AttendanceWidget from './widgets/AttendanceWidget';
 import { tr } from '../../i18n';
 
 const WIDGET_ICONS = {
@@ -33,6 +36,9 @@ const WIDGET_ICONS = {
   upcomingEvents: CalendarDays,
   quickAccess: Zap,
   birthdays: Cake,
+  rsvpSummary: CalendarCheck,
+  givingMonth: Gift,
+  attendance: ClipboardCheck,
 };
 
 export default function PersonalDashboard({ user }) {
@@ -101,6 +107,12 @@ export default function PersonalDashboard({ user }) {
         return <QuickAccessWidget />;
       case 'birthdays':
         return <BirthdaysWidget />;
+      case 'rsvpSummary':
+        return <RsvpSummaryWidget />;
+      case 'givingMonth':
+        return <GivingMonthWidget />;
+      case 'attendance':
+        return <AttendanceWidget />;
       default:
         return null;
     }

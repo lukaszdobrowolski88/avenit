@@ -81,6 +81,30 @@ export const WIDGET_DEFINITIONS = {
     defaultSize: 'small',
     minSize: 'small',
   },
+  rsvpSummary: {
+    id: 'rsvpSummary',
+    name: 'Nadchodzące RSVP',
+    description: 'Zaproszenia i potwierdzenia obecności',
+    icon: 'CalendarCheck',
+    defaultSize: 'medium',
+    minSize: 'small',
+  },
+  givingMonth: {
+    id: 'givingMonth',
+    name: 'Dawanie',
+    description: 'Darowizny w tym miesiącu i roku',
+    icon: 'Gift',
+    defaultSize: 'small',
+    minSize: 'small',
+  },
+  attendance: {
+    id: 'attendance',
+    name: 'Frekwencja',
+    description: 'Ostatnia frekwencja i trend',
+    icon: 'ClipboardCheck',
+    defaultSize: 'medium',
+    minSize: 'small',
+  },
 };
 
 export const WIDGET_SIZES = {
@@ -112,6 +136,9 @@ export const DEFAULT_LAYOUT = [
   { widgetId: 'upcomingEvents', order: 7, size: 'medium', visible: true },
   { widgetId: 'quickAccess', order: 8, size: 'medium', visible: true },
   { widgetId: 'birthdays', order: 9, size: 'small', visible: true },
+  { widgetId: 'rsvpSummary', order: 10, size: 'medium', visible: true },
+  { widgetId: 'givingMonth', order: 11, size: 'small', visible: true },
+  { widgetId: 'attendance', order: 12, size: 'medium', visible: true },
 ];
 
 export const LOCAL_STORAGE_KEY = 'dashboard_layout';

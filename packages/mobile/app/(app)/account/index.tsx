@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import {
   Bell,
   BookOpen,
+  CalendarCheck,
   ClipboardList,
   Fingerprint,
   FolderOpen,
@@ -251,6 +252,15 @@ export default function AccountScreen() {
       </SettingsGroup>
 
       <SettingsGroup title="Dla Ciebie">
+        <SettingsRow
+          variant="nav"
+          Icon={CalendarCheck}
+          iconTint="#db2777"
+          iconBg="#fce7f3"
+          title="Moje zaproszenia"
+          description="Potwierdź obecność na wydarzeniach"
+          onPress={() => router.push('/(app)/rsvp')}
+        />
         <SettingsRow
           variant="nav"
           Icon={Gift}

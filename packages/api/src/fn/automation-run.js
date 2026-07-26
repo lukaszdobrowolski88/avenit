@@ -123,32 +123,71 @@ async function processRun(pool, run, ctx) {
   }
 }
 
-// Auto-zapis nowych członków/gości do aktywnych ścieżek wyzwalanych zdarzeniem.
+// Znajdź kandydatów do zapisania dla danej ścieżki wg jej wyzwalacza.
+async function findCandidates(pool, wf) {
+  if (wf.trigger_type === 'new_member' || wf.trigger_type === 'new_guest') {
+    const status = STATUS_BY_TRIGGER[wf.trigger_type];
+    const { rows } = await pool.query(
+      `SELECT m.id FROM members m
+        WHERE m.status = $1
+          AND m.created_at >= now() - interval '2 days'
+          AND NOT EXISTS (SELECT 1 FROM automation_runs r WHERE r.workflow_id = $2 AND r.member_id = m.id)`,
+      [status, wf.id]
+    );
+    return rows;
+  }
+  if (wf.trigger_type === 'birthday') {
+    // Osoby z urodzinami dzisiaj (bez ponownego zapisu tego samego dnia).
+    const { rows } = await pool.query(
+      `SELECT m.id FROM members m
+        WHERE m.birth_date IS NOT NULL
+          AND EXTRACT(MONTH FROM m.birth_date) = EXTRACT(MONTH FROM CURRENT_DATE)
+          AND EXTRACT(DAY FROM m.birth_date) = EXTRACT(DAY FROM CURRENT_DATE)
+          AND NOT EXISTS (SELECT 1 FROM automation_runs r
+                           WHERE r.workflow_id = $1 AND r.member_id = m.id
+                             AND r.created_at > now() - interval '2 days')`,
+      [wf.id]
+    );
+    return rows;
+  }
+  if (wf.trigger_type === 'absence') {
+    // Osoby, które bywały (frekwencja w ~4 mies.), ale nie było ich od N tygodni.
+    const weeks = Number(wf.trigger_config?.absence_weeks) || 4;
+    const { rows } = await pool.query(
+      `SELECT ar.member_id AS id
+         FROM attendance_records ar
+         JOIN attendance_sessions s ON s.id = ar.session_id
+        WHERE ar.present = true AND ar.member_id IS NOT NULL
+        GROUP BY ar.member_id
+       HAVING MAX(s.session_date) < CURRENT_DATE - ($1 * 7)
+          AND MAX(s.session_date) >= CURRENT_DATE - 120
+          AND NOT EXISTS (SELECT 1 FROM automation_runs r
+                           WHERE r.workflow_id = $2 AND r.member_id = ar.member_id
+                             AND r.created_at > now() - interval '30 days')`,
+      [weeks, wf.id]
+    );
+    return rows;
+  }
+  return [];
+}
+
+// Auto-zapis do aktywnych ścieżek wg wyzwalacza (nowy członek/gość, urodziny, nieobecność).
 async function autoEnroll(pool, ctx) {
   const log = ctx.log || (() => {});
   let workflows;
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM automation_workflows WHERE is_active = true AND trigger_type IN ('new_member','new_guest')`
+      `SELECT * FROM automation_workflows
+        WHERE is_active = true AND trigger_type IN ('new_member','new_guest','birthday','absence')`
     );
     workflows = rows;
   } catch { return 0; }
 
   let enrolled = 0;
   for (const wf of workflows) {
-    const status = STATUS_BY_TRIGGER[wf.trigger_type];
     try {
-      // Nowi z ostatnich 2 dni (created_at), którzy nie mają jeszcze uruchomienia tej ścieżki.
-      const { rows: members } = await pool.query(
-        `SELECT m.id FROM members m
-          WHERE m.status = $1
-            AND m.created_at >= now() - interval '2 days'
-            AND NOT EXISTS (
-              SELECT 1 FROM automation_runs r WHERE r.workflow_id = $2 AND r.member_id = m.id
-            )`,
-        [status, wf.id]
-      );
-      for (const m of members) {
+      const candidates = await findCandidates(pool, wf);
+      for (const m of candidates) {
         await pool.query(
           `INSERT INTO automation_runs (workflow_id, member_id, status, current_step, log)
            VALUES ($1, $2, 'pending', 0, '[]'::jsonb)`,
@@ -157,7 +196,7 @@ async function autoEnroll(pool, ctx) {
         enrolled++;
       }
     } catch (err) {
-      // np. brak kolumny created_at w members — pomiń auto-zapis (dostępny ręczny).
+      // np. brak kolumny/tabeli (created_at, birth_date, attendance) — pomiń dany wyzwalacz.
       log(`automation: auto-zapis ${wf.trigger_type} pominięty (${err.message})`);
     }
   }

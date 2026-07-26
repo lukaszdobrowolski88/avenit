@@ -73,6 +73,8 @@ export async function sendInvitation(db, base, campaign, inv, { reminder = false
       title: `${prefix}${campaign.title}`,
       body: `${campaign.message || 'Czy będziesz obecny/a?'}${when ? ` — ${when}` : ''}`,
       link,
+      category_id: 'rsvp_invite',       // przyciski Będę / Nie będę wprost w powiadomieniu (mobile)
+      data: { rsvp_token: inv.token },
     });
     if ((r.body?.sent || 0) > 0) sent.push('push');
   }
