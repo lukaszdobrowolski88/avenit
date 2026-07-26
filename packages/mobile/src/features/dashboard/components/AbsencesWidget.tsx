@@ -32,7 +32,10 @@ interface Props {
   upcomingPrograms?: UpcomingProgramItem[];
 }
 
-const useReportAbsence = (userEmail: string | null | undefined) => {
+const useReportAbsence = (
+  userEmail: string | null | undefined,
+  userName: string | null | undefined,
+) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
@@ -41,12 +44,16 @@ const useReportAbsence = (userEmail: string | null | undefined) => {
       note: string;
     }) => {
       if (!userEmail) throw new Error('Brak email');
+      // Zgłoszenie własnej nieobecności to deklaracja samego zainteresowanego —
+      // w Avenit nie ma osobnego kroku zatwierdzania, więc zapisujemy od razu jako
+      // 'approved' (inaczej status 'pending' wisiałby w nieskończoność) i z user_name.
       const { error } = await (supabase.from('user_absences') as any).insert({
         user_email: userEmail,
+        user_name: userName ?? null,
         program_id: input.programId,
         absence_date: input.absenceDate,
         note: input.note || null,
-        status: 'pending',
+        status: 'approved',
       });
       if (error) throw error;
     },
@@ -274,7 +281,9 @@ const ReportModal = ({
 export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
   const { user } = useAuthSession();
   const [modalOpen, setModalOpen] = useState(false);
-  const reportAbsence = useReportAbsence(user?.email);
+  const displayName =
+    user?.full_name ?? (user?.name as string | undefined) ?? user?.email ?? null;
+  const reportAbsence = useReportAbsence(user?.email, displayName);
   const deleteAbsence = useDeleteAbsence();
 
   const handleDelete = (a: AbsenceItem) => {

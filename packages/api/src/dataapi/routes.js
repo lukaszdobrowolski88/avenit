@@ -4,7 +4,11 @@ import { buildQuery, buildWhere, ApiError, quoteIdent } from './querybuilder.js'
 import { canAccess, getTableRule, invalidatePermissions, requireCapability } from './registry.js';
 import { fieldColumns } from '@avenit/shared/src/permissions/catalog.js';
 import { emitChange } from '../realtime/hub.js';
+import { notifyOnWrite } from '../realtime/push-hooks.js';
 import { platformPool } from '../db.js';
+
+// Tabele, których insert wyzwala automatyczny push (patrz push-hooks.js).
+const PUSH_ON_INSERT = new Set(['messages', 'schedule_assignments']);
 
 // Cache modułów wyłączonych na poziomie platformy per tenant (60 s).
 const disabledModulesCache = new Map(); // tenantId -> { set, at }
@@ -123,6 +127,19 @@ export default async function dataApiRoutes(app) {
       // Realtime: powiadom subskrybentów o zmianach.
       if (q.op !== 'select') {
         emitChange(req.tenant.slug, q.table, q.op, Array.isArray(data) ? data : [data].filter(Boolean));
+      }
+
+      // Push: nowa wiadomość / zaproszenie do służby. Fire-and-forget — nie blokuje
+      // odpowiedzi i nie może jej wywrócić (błędy łapane w środku hooka).
+      if (q.op === 'insert' && PUSH_ON_INSERT.has(q.table)) {
+        notifyOnWrite({
+          pool: req.db,
+          table: q.table,
+          op: q.op,
+          values: q.values,
+          actingUserEmail: req.user.email,
+          log: req.log,
+        }).catch((err) => req.log?.error?.({ err }, 'push-hooks failed'));
       }
 
       return reply.send({ data, count });
