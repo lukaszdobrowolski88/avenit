@@ -28,6 +28,7 @@ const MODULES = [
   'przelewy24-webhook',
   'process-dunning',
   'ical',
+  'ai-assist',
 ];
 
 export async function registerFunctions(app) {

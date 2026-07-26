@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, createContext, useContext } from 'r
 import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import * as LucideIcons from 'lucide-react';
-import { Users, Music, Video, Home, Baby, UserCircle, Settings, HeartHandshake, Calendar, DollarSign, BookOpen, Heart, LayoutDashboard, FileText, MessageCircle, Sparkles, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
+import { Users, Music, Video, Home, Baby, UserCircle, Settings, HeartHandshake, Calendar, DollarSign, Gift, BookOpen, Heart, LayoutDashboard, FileText, MessageCircle, Sparkles, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
 import { useUserRole } from '../hooks/useUserRole';
 import { usePermissions } from '../contexts/PermissionsContext';
 import { useUnsavedChanges } from '../contexts/UnsavedChangesContext';
@@ -219,6 +219,15 @@ export default function Sidebar() {
     homegroups: 'module:homegroups',
     groups: 'module:homegroups', // alias
     finance: 'module:finance',
+    giving: 'module:giving',
+    attendance: 'module:attendance',
+    analytics: 'module:analytics',
+    automation: 'module:automation',
+    ai: 'module:ai',
+    sermons: 'module:sermons',
+    care: 'module:care',
+    rooms: 'module:rooms',
+    serve: 'module:serve',
     teaching: 'module:teaching',
     prayer: 'module:prayer',
     komunikator: 'module:komunikator',
@@ -250,6 +259,15 @@ export default function Sidebar() {
     { path: '/kids', icon: Baby, label: tr('Małe Avenit'), show: isModuleVisible('kids') },
     { path: '/home-groups', icon: UserCircle, label: tr('Grupy domowe'), show: isModuleVisible('groups') },
     { path: '/finance', icon: DollarSign, label: tr('Finanse'), show: hasModuleAccess('module:finance') },
+    { path: '/giving', icon: Gift, label: tr('Dawanie'), show: hasModuleAccess('module:giving') },
+    { path: '/care', icon: LucideIcons.HeartPulse, label: tr('Opieka i CRM'), show: hasModuleAccess('module:care') },
+    { path: '/attendance', icon: LucideIcons.ClipboardCheck, label: tr('Frekwencja'), show: hasModuleAccess('module:attendance') },
+    { path: '/serve', icon: LucideIcons.CalendarCheck, label: tr('Służba'), show: hasModuleAccess('module:serve') },
+    { path: '/rooms', icon: LucideIcons.DoorOpen, label: tr('Rezerwacje sal'), show: hasModuleAccess('module:rooms') },
+    { path: '/sermons', icon: LucideIcons.Podcast, label: tr('Kazania'), show: hasModuleAccess('module:sermons') },
+    { path: '/automation', icon: LucideIcons.Workflow, label: tr('Automatyzacje'), show: hasModuleAccess('module:automation') },
+    { path: '/analytics', icon: LucideIcons.BarChart3, label: tr('Analityka'), show: hasModuleAccess('module:analytics') },
+    { path: '/ai', icon: LucideIcons.Sparkles, label: tr('Asystent AI'), show: hasModuleAccess('module:ai') },
     { path: '/teaching', icon: BookOpen, label: tr('Nauczanie'), show: hasModuleAccess('module:teaching') },
     { path: '/prayer', icon: Heart, label: tr('Centrum Modlitwy'), show: isModuleVisible('prayer') },
     { path: '/komunikator', icon: MessageCircle, label: tr('Komunikator'), show: hasModuleAccess('module:komunikator') },

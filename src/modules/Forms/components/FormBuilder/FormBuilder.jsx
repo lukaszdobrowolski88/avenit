@@ -389,6 +389,7 @@ export default function FormBuilder({
             </h2>
             <FieldEditor
               field={selectedField}
+              allFields={fields}
               onUpdate={handleUpdateField}
             />
           </div>

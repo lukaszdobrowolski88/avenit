@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
-import { FIELD_TYPES } from '../../utils/fieldTypes';
+import { FIELD_TYPES, VISIBILITY_OPERATORS } from '../../utils/fieldTypes';
 import { tr } from '../../../../i18n';
 
-export default function FieldEditor({ field, onUpdate }) {
+export default function FieldEditor({ field, allFields = [], onUpdate }) {
   const [newOption, setNewOption] = useState('');
 
   if (!field) {
@@ -61,6 +61,32 @@ export default function FieldEditor({ field, onUpdate }) {
         : opt
     );
     onUpdate({ options });
+  };
+
+  // === Widoczność warunkowa (show-if) ===
+  // Pola, które mogą pełnić rolę pola nadrzędnego (przyjmują wartość od użytkownika, nie samo siebie)
+  const conditionSourceFields = (allFields || []).filter(
+    f => f.id !== field.id &&
+      ['text', 'textarea', 'select', 'radio', 'checkbox', 'date', 'email', 'phone', 'number'].includes(f.type)
+  );
+  const visibleWhen = field.visibleWhen || null;
+  const sourceField = visibleWhen
+    ? conditionSourceFields.find(f => f.id === visibleWhen.fieldId)
+    : null;
+  const needsValue = visibleWhen && !['is_empty', 'is_not_empty'].includes(visibleWhen.operator);
+  const sourceHasOptions = sourceField && ['select', 'radio', 'checkbox'].includes(sourceField.type) && (sourceField.options || []).length > 0;
+
+  const handleVisibilityChange = (key, value) => {
+    onUpdate({ visibleWhen: { ...(field.visibleWhen || {}), [key]: value } });
+  };
+
+  const toggleVisibility = (enabled) => {
+    if (enabled) {
+      const first = conditionSourceFields[0];
+      onUpdate({ visibleWhen: { fieldId: first?.id || '', operator: 'equals', value: '' } });
+    } else {
+      onUpdate({ visibleWhen: null });
+    }
   };
 
   return (
@@ -898,6 +924,98 @@ export default function FieldEditor({ field, onUpdate }) {
           </label>
         </div>
       )}
+
+      {/* === Widoczność warunkowa === */}
+      <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {tr('Widoczność warunkowa')}
+            </h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {tr('Pokaż to pole tylko, gdy inne pole ma określoną wartość')}
+            </p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+            <input
+              type="checkbox"
+              checked={!!visibleWhen}
+              onChange={(e) => toggleVisibility(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary-light dark:peer-focus:ring-accent-primary-dark rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-accent-primary-light"></div>
+          </label>
+        </div>
+
+        {visibleWhen && (
+          conditionSourceFields.length === 0 ? (
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              {tr('Dodaj inne pola do formularza, aby użyć warunków.')}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  {tr('Pole nadrzędne')}
+                </label>
+                <select
+                  value={visibleWhen.fieldId || ''}
+                  onChange={(e) => handleVisibilityChange('fieldId', e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
+                >
+                  <option value="">{tr('Wybierz pole...')}</option>
+                  {conditionSourceFields.map(f => (
+                    <option key={f.id} value={f.id}>{f.label || f.type}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  {tr('Warunek')}
+                </label>
+                <select
+                  value={visibleWhen.operator || 'equals'}
+                  onChange={(e) => handleVisibilityChange('operator', e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
+                >
+                  {VISIBILITY_OPERATORS.map(op => (
+                    <option key={op.value} value={op.value}>{tr(op.label)}</option>
+                  ))}
+                </select>
+              </div>
+
+              {needsValue && (
+                <div>
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    {tr('Wartość')}
+                  </label>
+                  {sourceHasOptions ? (
+                    <select
+                      value={visibleWhen.value ?? ''}
+                      onChange={(e) => handleVisibilityChange('value', e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
+                    >
+                      <option value="">{tr('Wybierz wartość...')}</option>
+                      {(sourceField.options || []).map(o => (
+                        <option key={o.id} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={visibleWhen.value ?? ''}
+                      onChange={(e) => handleVisibilityChange('value', e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light dark:text-white"
+                      placeholder={tr('Oczekiwana wartość')}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        )}
+      </div>
     </div>
   );
 }
