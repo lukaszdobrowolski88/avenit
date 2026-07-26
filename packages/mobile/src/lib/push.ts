@@ -5,15 +5,17 @@ import { Platform } from 'react-native';
 import { supabase } from './supabase';
 
 // Wywołanie funkcji backendu Avenit (/api/fn/*) z nagłówkiem tenanta i tokenem.
+// Tenant bierzemy DYNAMICZNIE z klienta (ustawiony przy logowaniu), nie z buildu —
+// apka jest uniwersalna dla wszystkich kościołów.
 const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
-const TENANT = process.env.EXPO_PUBLIC_TENANT || '';
 async function callFn(name: string, body: Record<string, unknown>) {
   const { data: { session } } = await supabase.auth.getSession();
+  const tenant = supabase.getTenant();
   return fetch(`${API_URL}/api/fn/${name}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(TENANT ? { 'X-Tenant': TENANT } : {}),
+      ...(tenant ? { 'X-Tenant': tenant } : {}),
       ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
     },
     body: JSON.stringify(body),

@@ -9,6 +9,9 @@
 // (upload, getPublicUrl, remove, list); functions.invoke; rpc; channel (WS lub no-op).
 
 const SESSION_KEY = 'avenit.auth.session';
+// Wybrany tenant (kościół) zapamiętany między uruchomieniami — dla apki uniwersalnej,
+// gdzie tenant nie jest zaszyty w buildzie, tylko ustalany przy logowaniu po e-mailu.
+const TENANT_KEY = 'avenit.tenant';
 
 export function createApiClient({
   apiUrl = '',
@@ -19,6 +22,35 @@ export function createApiClient({
 } = {}) {
   const doFetch = fetchImpl || ((...args) => fetch(...args));
   const base = String(apiUrl || '').replace(/\/$/, '');
+
+  // ── Tenant (dynamiczny) ──────────────────────────────────────────────────
+  // `tenant` z opcji to domyślny/fallback (np. EXPO_PUBLIC_TENANT w devie); w apce
+  // uniwersalnej jest null, a ustala się go przy logowaniu i utrwala w storage.
+  let tenantLoaded = false;
+  async function loadTenant() {
+    if (tenantLoaded) return tenant;
+    tenantLoaded = true;
+    try {
+      const saved = await storage?.getItem(TENANT_KEY);
+      if (saved) tenant = saved;
+    } catch {
+      // brak storage — zostaje wartość domyślna z opcji
+    }
+    return tenant;
+  }
+  async function setTenant(slug) {
+    tenant = slug || null;
+    tenantLoaded = true;
+    try {
+      if (slug) await storage?.setItem(TENANT_KEY, slug);
+      else await storage?.removeItem(TENANT_KEY);
+    } catch {
+      // brak storage — tenant tylko w pamięci
+    }
+  }
+  function getTenant() {
+    return tenant;
+  }
 
   // ── Sesja ──────────────────────────────────────────────────────────────
   let session = null;
@@ -93,6 +125,7 @@ export function createApiClient({
   // Żądanie z automatycznym odświeżeniem tokena przy 401 (raz).
   async function request(path, options = {}, retried = false) {
     await loadSession();
+    await loadTenant();
     const res = await doFetch(`${base}${path}`, {
       credentials: 'include',
       ...options,
@@ -205,6 +238,24 @@ export function createApiClient({
 
   // ── Auth ───────────────────────────────────────────────────────────────
   const auth = {
+    // Globalne logowanie po e-mailu bez wskazywania tenanta (apka uniwersalna).
+    // Zwraca surowy payload z /api/app-login:
+    //   { multiple, tenants } — konto w wielu kościołach, poproś o wybór
+    //   { requires2fa, tenant } — potrzebny kod 2FA
+    //   { tenant, churchName, ticket, redirect } — sukces: ustaw tenant i wymień ticket
+    async appLogin({ email, password, totpCode, tenant: chosen } = {}) {
+      const { res, payload } = await requestJson('/api/app-login', {
+        email,
+        password,
+        totpCode,
+        tenant: chosen,
+      });
+      if (!res.ok) {
+        return { data: null, error: { message: payload?.error || 'Błąd logowania', status: res.status } };
+      }
+      return { data: payload, error: null };
+    },
+
     async signInWithPassword({ email, password, totpCode }) {
       const { res, payload } = await requestJson('/api/auth/login', {
         email,
@@ -484,6 +535,8 @@ export function createApiClient({
     channel,
     removeChannel,
     getChannels,
+    setTenant,
+    getTenant,
     removeAllChannels: () => {
       wsHandlers = [];
       activeChannels = [];
