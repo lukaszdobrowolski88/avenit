@@ -44,8 +44,11 @@ export default async function dataApiRoutes(app) {
         user,
       });
       if (!access.ok) {
-        // Wyjątek: własny profil w app_users (whitelist kolumn).
-        if (!(await allowSelfUpdate(q, req))) {
+        // Wyjątki self-service (mimo braku roli): własny profil w app_users,
+        // oraz akceptacja/odrzucenie WŁASNEGO zaproszenia do służby.
+        const selfAllowed =
+          (await allowSelfUpdate(q, req)) || (await allowAssignmentSelfRespond(q, req));
+        if (!selfAllowed) {
           throw new ApiError(403, access.reason);
         }
       }
@@ -179,6 +182,29 @@ export default async function dataApiRoutes(app) {
     emitChange(req.tenant.slug, 'user_presence', 'update', [{ user_email: req.user.email, status }]);
     return reply.send({ ok: true });
   });
+}
+
+// Akceptacja/odrzucenie WŁASNEGO zaproszenia do służby przez zaproszonego,
+// nawet bez ogólnego prawa zapisu do grafiku (res:schedule_assignments:update).
+// Ograniczenia: tylko update statusu na 'accepted'/'rejected' na własnym wierszu.
+async function allowAssignmentSelfRespond(q, req) {
+  if (q.table !== 'schedule_assignments' || q.op !== 'update') return false;
+  const values = q.values || {};
+  const cols = Object.keys(values);
+  const allowedCols = ['status', 'responded_at', 'updated_at'];
+  if (!cols.length || !cols.every((c) => allowedCols.includes(c))) return false;
+  if (!['accepted', 'rejected'].includes(String(values.status))) return false;
+  // Filtr musi wskazywać pojedynczy wiersz po id.
+  const f = q.filters || [];
+  const idFilter = f.find((x) => x.type === 'eq' && x.column === 'id');
+  if (f.length !== 1 || !idFilter) return false;
+  // Właścicielstwo: wiersz musi należeć do zalogowanego (assigned_email == email).
+  const { rows } = await req.db.query(
+    `SELECT 1 FROM schedule_assignments
+      WHERE id = $1 AND lower(assigned_email) = lower($2)`,
+    [idFilter.value, req.user.email],
+  );
+  return rows.length > 0;
 }
 
 // Aktualizacja własnego profilu w app_users mimo braku roli admina.

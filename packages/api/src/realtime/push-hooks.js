@@ -75,6 +75,21 @@ async function notifyNewAssignment(pool, assignment) {
   const status = assignment.status || 'pending';
   if (!email || status !== 'pending') return;
 
+  // id jest generowane przez DB (gen_random_uuid) i zwykle nie ma go w danych insertu.
+  // Dociągnij najnowsze pasujące zaproszenie — potrzebne do przycisków Akceptuj/Odrzuć
+  // (mobile: kategoria 'assignment_invite' + handleAssignmentAction czyta data.assignmentId).
+  let assignmentId = assignment.id ?? null;
+  if (!assignmentId && assignment.program_id != null) {
+    const { rows } = await pool.query(
+      `SELECT id FROM schedule_assignments
+        WHERE program_id = $1 AND lower(assigned_email) = lower($2) AND status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 1`,
+      [assignment.program_id, email],
+    );
+    assignmentId = rows[0]?.id ?? null;
+  }
+
   let programLabel = '';
   if (assignment.program_id != null) {
     const { rows } = await pool.query(
@@ -96,7 +111,14 @@ async function notifyNewAssignment(pool, assignment) {
     title: 'Nowe zaproszenie do służby',
     body,
     link: assignment.program_id != null ? `/programs/${assignment.program_id}` : '/dashboard',
-    data: { type: 'assignment', program_id: assignment.program_id ?? null },
+    // Kategoria z przyciskami Akceptuję/Odrzucam — tylko gdy znamy id (inaczej akcja
+    // nie miałaby na czym działać); bez id zostaje zwykłe powiadomienie z tapnięciem.
+    category_id: assignmentId ? 'assignment_invite' : undefined,
+    data: {
+      type: 'assignment',
+      assignmentId,
+      program_id: assignment.program_id ?? null,
+    },
   });
 }
 
