@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { verifyLoginCode } from '../../src/lib/totp';
-import { signOut } from '../../src/lib/auth';
+import { useRouter } from 'expo-router';
+import { completeTwoFactorLogin, signOut } from '../../src/lib/auth';
 
 export default function TotpScreen() {
   const router = useRouter();
-  const { email } = useLocalSearchParams<{ email: string }>();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleVerify = async () => {
-    if (!email || code.length < 6) {
+    if (code.trim().length < 6) {
       Alert.alert(
         'Wpisz kod',
         'Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej (lub kod zapasowy).',
@@ -19,14 +17,12 @@ export default function TotpScreen() {
       return;
     }
     setLoading(true);
-    const result = await verifyLoginCode(email, code.trim());
+    // Serwer weryfikuje kod i dopiero wtedy wydaje sesję (kod zapasowy też obsłuży).
+    const { error } = await completeTwoFactorLogin(code.trim());
     setLoading(false);
-    if (!result.success) {
-      Alert.alert('Błąd', result.error ?? 'Nieprawidłowy kod');
+    if (error) {
+      Alert.alert('Błąd', error.message);
       return;
-    }
-    if (result.backupCodeUsed) {
-      Alert.alert('Użyto kodu zapasowego', 'Pamiętaj, że ten kod nie zadziała ponownie.');
     }
     router.replace('/(auth)/biometric');
   };

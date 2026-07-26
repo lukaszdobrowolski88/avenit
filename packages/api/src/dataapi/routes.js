@@ -4,7 +4,11 @@ import { buildQuery, buildWhere, ApiError, quoteIdent } from './querybuilder.js'
 import { canAccess, getTableRule, invalidatePermissions, requireCapability } from './registry.js';
 import { fieldColumns } from '@avenit/shared/src/permissions/catalog.js';
 import { emitChange } from '../realtime/hub.js';
+import { notifyOnWrite } from '../realtime/push-hooks.js';
 import { platformPool } from '../db.js';
+
+// Tabele, których insert wyzwala automatyczny push (patrz push-hooks.js).
+const PUSH_ON_INSERT = new Set(['messages', 'schedule_assignments']);
 
 // Cache modułów wyłączonych na poziomie platformy per tenant (60 s).
 const disabledModulesCache = new Map(); // tenantId -> { set, at }
@@ -40,8 +44,11 @@ export default async function dataApiRoutes(app) {
         user,
       });
       if (!access.ok) {
-        // Wyjątek: własny profil w app_users (whitelist kolumn).
-        if (!(await allowSelfUpdate(q, req))) {
+        // Wyjątki self-service (mimo braku roli): własny profil w app_users,
+        // oraz akceptacja/odrzucenie WŁASNEGO zaproszenia do służby.
+        const selfAllowed =
+          (await allowSelfUpdate(q, req)) || (await allowAssignmentSelfRespond(q, req));
+        if (!selfAllowed) {
           throw new ApiError(403, access.reason);
         }
       }
@@ -125,6 +132,19 @@ export default async function dataApiRoutes(app) {
         emitChange(req.tenant.slug, q.table, q.op, Array.isArray(data) ? data : [data].filter(Boolean));
       }
 
+      // Push: nowa wiadomość / zaproszenie do służby. Fire-and-forget — nie blokuje
+      // odpowiedzi i nie może jej wywrócić (błędy łapane w środku hooka).
+      if (q.op === 'insert' && PUSH_ON_INSERT.has(q.table)) {
+        notifyOnWrite({
+          pool: req.db,
+          table: q.table,
+          op: q.op,
+          values: q.values,
+          actingUserEmail: req.user.email,
+          log: req.log,
+        }).catch((err) => req.log?.error?.({ err }, 'push-hooks failed'));
+      }
+
       return reply.send({ data, count });
     } catch (err) {
       return sendError(reply, err, req);
@@ -162,6 +182,29 @@ export default async function dataApiRoutes(app) {
     emitChange(req.tenant.slug, 'user_presence', 'update', [{ user_email: req.user.email, status }]);
     return reply.send({ ok: true });
   });
+}
+
+// Akceptacja/odrzucenie WŁASNEGO zaproszenia do służby przez zaproszonego,
+// nawet bez ogólnego prawa zapisu do grafiku (res:schedule_assignments:update).
+// Ograniczenia: tylko update statusu na 'accepted'/'rejected' na własnym wierszu.
+async function allowAssignmentSelfRespond(q, req) {
+  if (q.table !== 'schedule_assignments' || q.op !== 'update') return false;
+  const values = q.values || {};
+  const cols = Object.keys(values);
+  const allowedCols = ['status', 'responded_at', 'updated_at'];
+  if (!cols.length || !cols.every((c) => allowedCols.includes(c))) return false;
+  if (!['accepted', 'rejected'].includes(String(values.status))) return false;
+  // Filtr musi wskazywać pojedynczy wiersz po id.
+  const f = q.filters || [];
+  const idFilter = f.find((x) => x.type === 'eq' && x.column === 'id');
+  if (f.length !== 1 || !idFilter) return false;
+  // Właścicielstwo: wiersz musi należeć do zalogowanego (assigned_email == email).
+  const { rows } = await req.db.query(
+    `SELECT 1 FROM schedule_assignments
+      WHERE id = $1 AND lower(assigned_email) = lower($2)`,
+    [idFilter.value, req.user.email],
+  );
+  return rows.length > 0;
 }
 
 // Aktualizacja własnego profilu w app_users mimo braku roli admina.
