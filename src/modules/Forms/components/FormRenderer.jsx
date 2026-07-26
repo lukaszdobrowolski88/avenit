@@ -6,7 +6,7 @@ import Przelewy24Button from './Przelewy24Button';
 import ParticipantForm from './ParticipantForm';
 import AddonSelector from './AddonSelector';
 import PriceBreakdown from './PriceBreakdown';
-import { calculateTotalPrice, calculatePriceBreakdown, formatPrice, checkSeatAvailability } from '../utils/fieldTypes';
+import { calculateTotalPrice, calculatePriceBreakdown, formatPrice, checkSeatAvailability, evaluateVisibility } from '../utils/fieldTypes';
 import { tr } from '../../../i18n';
 
 export default function FormRenderer({
@@ -279,6 +279,8 @@ export default function FormRenderer({
         const pErrors = {};
         const fieldsForParticipant = index === 0 ? contactFields : participantFields;
         fieldsForParticipant.forEach(field => {
+          // Pomiń pola ukryte przez logikę warunkową (per uczestnik)
+          if (!evaluateVisibility(field, participant.answers)) return;
           const error = validateField(field, participant.answers[field.id]);
           if (error) {
             pErrors[field.id] = error;
@@ -294,6 +296,8 @@ export default function FormRenderer({
     // Waliduj standardowe pola (niezależnie od trybu)
     const fieldsToValidate = isGroupEnabled && registrationMode === 'group' ? standardFields : fields;
     fieldsToValidate.forEach(field => {
+      // Pomiń pola ukryte przez logikę warunkową (nie waliduj wymagalności)
+      if (!evaluateVisibility(field, answers)) return;
       const error = validateField(field, answers[field.id]);
       if (error) {
         newErrors[field.id] = error;
@@ -405,11 +409,12 @@ export default function FormRenderer({
     );
   }
 
-  const completedFields = fields.filter(f => {
+  const visibleFields = fields.filter(f => evaluateVisibility(f, answers));
+  const completedFields = visibleFields.filter(f => {
     const value = answers[f.id];
     return value !== null && value !== undefined && value !== '' && (!Array.isArray(value) || value.length > 0);
   }).length;
-  const progress = fields.length > 0 ? Math.round((completedFields / fields.length) * 100) : 0;
+  const progress = visibleFields.length > 0 ? Math.round((completedFields / visibleFields.length) * 100) : 0;
 
   // Dodatki per osoba i per rejestracja
   const perPersonAddons = (addonsConfig.items || []).filter(a => a.scope === 'per_person' && a.available !== false);
@@ -453,7 +458,7 @@ export default function FormRenderer({
         <div className="mb-6">
           <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
             <span>{tr('Postęp')}</span>
-            <span>{completedFields} z {fields.length}</span>
+            <span>{completedFields} z {visibleFields.length}</span>
           </div>
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
@@ -698,7 +703,8 @@ export default function FormRenderer({
       {/* Standardowe pola (niegrupowe lub tryb indywidualny) */}
       {(() => {
         const displayFields = (!isGroupEnabled || registrationMode === 'individual' ? fields : standardFields)
-          .filter(f => !['price', 'seat_limit', 'location', 'date_start', 'date_end', 'time_start', 'time_end'].includes(f.type));
+          .filter(f => !['price', 'seat_limit', 'location', 'date_start', 'date_end', 'time_start', 'time_end'].includes(f.type))
+          .filter(f => evaluateVisibility(f, answers));
         return displayFields.length > 0 && (
         <div className="space-y-6">
           {displayFields.map((field) => (

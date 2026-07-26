@@ -69,6 +69,15 @@ cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('push-receipts', 'pus
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('sms-receipts', 'sms-campaign-receipts')));
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('sync-mail', 'sync-mail')));
 
+// Automatyzacje: co 5 min — auto-zapis nowych oraz wykonanie należnych kroków.
+cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('automation', 'automation-run')));
+// Dawanie cykliczne: codziennie 07:00 — generuj należne darowizny i przesuń terminy.
+cron.schedule('0 7 * * *', exclusive(() => forEachTenant('giving-recurring', 'giving-recurring')));
+// Przypomnienia RSVP: codziennie 10:00 — ponaglenie niepotwierdzonych przed wydarzeniem.
+cron.schedule('0 10 * * *', exclusive(() => forEachTenant('rsvp-reminders', 'rsvp-reminders')));
+// Serie RSVP: codziennie 06:00 — generuj kolejne wystąpienia cyklicznych kampanii.
+cron.schedule('0 6 * * *', exclusive(() => forEachTenant('rsvp-series', 'rsvp-series')));
+
 cron.schedule('0 8 * * *', exclusive(async () => {
   try {
     const mod = await import('./fn/process-dunning.js');

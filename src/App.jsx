@@ -29,6 +29,20 @@ import AtmosferaTeamModule from './modules/AtmosferaTeamModule';
 import KidsModule from './modules/Kids/KidsModule';
 import HomeGroupsModule from './modules/HomeGroups/HomeGroupsModule';
 import FinanceModule from './modules/FinanceModule';
+import GivingModule from './modules/Giving/GivingModule';
+import GiveOnlinePage from './modules/Giving/GiveOnlinePage';
+import CampaignWidgetPage from './modules/Giving/CampaignWidgetPage';
+import AttendanceModule from './modules/Attendance/AttendanceModule';
+import AnalyticsModule from './modules/Analytics/AnalyticsModule';
+import AutomationModule from './modules/Automation/AutomationModule';
+import AiAssistantModule from './modules/AI/AiAssistantModule';
+import SermonsModule from './modules/Sermons/SermonsModule';
+import SermonPublicPage from './modules/Sermons/SermonPublicPage';
+import CareModule from './modules/Care/CareModule';
+import RoomsModule from './modules/Rooms/RoomsModule';
+import ServeModule from './modules/Serve/ServeModule';
+import RsvpModule from './modules/Rsvp/RsvpModule';
+import RsvpPublicPage from './modules/Rsvp/RsvpPublicPage';
 import GlobalSettings from './modules/Settings/GlobalSettings';
 import UserSettings from './modules/Settings/UserSettings';
 import CalendarModule from './modules/CalendarModule';
@@ -49,8 +63,9 @@ import { tr } from './i18n';
 // Lista kluczy systemowych modułów (mają dedykowane komponenty)
 const SYSTEM_MODULE_KEYS = [
   'dashboard', 'programs', 'calendar', 'members', 'worship', 'media',
-  'atmosfera', 'kids', 'homegroups', 'finance', 'teaching', 'prayer',
-  'komunikator', 'mlodziezowka', 'mailing', 'mail', 'forms', 'settings', 'push_campaigns', 'sms_campaigns'
+  'atmosfera', 'kids', 'homegroups', 'finance', 'giving', 'teaching', 'prayer',
+  'komunikator', 'mlodziezowka', 'mailing', 'mail', 'forms', 'settings', 'push_campaigns', 'sms_campaigns',
+  'attendance', 'analytics', 'automation', 'ai', 'sermons', 'care', 'rooms', 'serve', 'rsvp'
 ];
 
 // Komponent do wyświetlania toast notifications (używa context)
@@ -268,6 +283,61 @@ function AppInner() {
   // Sprawdź czy to jest strona odpowiedzi na przypisanie (dostępna bez logowania)
   const isAssignmentResponsePage = window.location.pathname === '/assignment-response';
 
+  // Sprawdź czy to jest publiczna strona kazania (dostępna bez logowania)
+  const isPublicSermonPage = window.location.pathname.startsWith('/sermon/');
+
+  // Publiczne kazanie - renderuj bez wymogu logowania
+  if (isPublicSermonPage) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/sermon/:slug" element={<SermonPublicPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
+  // Publiczna strona dawania online - dostępna bez logowania
+  const isPublicGivePage = window.location.pathname === '/give' || window.location.pathname.startsWith('/give/');
+  if (isPublicGivePage) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/give" element={<GiveOnlinePage />} />
+          <Route path="/give/success" element={<GiveOnlinePage success />} />
+          <Route path="*" element={<Navigate to="/give" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
+  // Publiczny widget termometru zbiórki (osadzany iframe) - bez logowania
+  const isWidgetCampaignPage = window.location.pathname.startsWith('/widget/campaign/');
+  if (isWidgetCampaignPage) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/widget/campaign/:id" element={<CampaignWidgetPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
+  // Publiczna strona odpowiedzi RSVP (/rsvp/:token) - dostępna bez logowania
+  const isPublicRsvpPage = window.location.pathname.startsWith('/rsvp/');
+  if (isPublicRsvpPage) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/rsvp/:token" element={<RsvpPublicPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
   // Publiczny formularz - renderuj bez wymogu logowania
   if (isPublicFormPage) {
     return (
@@ -380,6 +450,36 @@ function AppInner() {
                 } />
                 <Route path="/finance" element={
                   <ProtectedRoute resource="module:finance"><FinanceModule /></ProtectedRoute>
+                } />
+                <Route path="/giving" element={
+                  <ProtectedRoute resource="module:giving"><GivingModule /></ProtectedRoute>
+                } />
+                <Route path="/attendance" element={
+                  <ProtectedRoute resource="module:attendance"><AttendanceModule /></ProtectedRoute>
+                } />
+                <Route path="/analytics" element={
+                  <ProtectedRoute resource="module:analytics"><AnalyticsModule /></ProtectedRoute>
+                } />
+                <Route path="/automation" element={
+                  <ProtectedRoute resource="module:automation"><AutomationModule /></ProtectedRoute>
+                } />
+                <Route path="/ai" element={
+                  <ProtectedRoute resource="module:ai"><AiAssistantModule /></ProtectedRoute>
+                } />
+                <Route path="/sermons" element={
+                  <ProtectedRoute resource="module:sermons"><SermonsModule /></ProtectedRoute>
+                } />
+                <Route path="/care" element={
+                  <ProtectedRoute resource="module:care"><CareModule /></ProtectedRoute>
+                } />
+                <Route path="/rooms" element={
+                  <ProtectedRoute resource="module:rooms"><RoomsModule /></ProtectedRoute>
+                } />
+                <Route path="/serve" element={
+                  <ProtectedRoute resource="module:serve"><ServeModule /></ProtectedRoute>
+                } />
+                <Route path="/rsvp" element={
+                  <ProtectedRoute resource="module:rsvp"><RsvpModule /></ProtectedRoute>
                 } />
                 <Route path="/teaching" element={
                   <ProtectedRoute resource="module:teaching"><TeachingModule /></ProtectedRoute>

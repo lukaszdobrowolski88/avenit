@@ -1,6 +1,7 @@
 import { Trash2 } from 'lucide-react';
 import FieldRenderer from './FieldRenderer';
 import AddonSelector from './AddonSelector';
+import { evaluateVisibility } from '../utils/fieldTypes';
 import { tr } from '../../../i18n';
 
 export default function ParticipantForm({
@@ -55,7 +56,7 @@ export default function ParticipantForm({
       </div>
 
       <div className="space-y-4">
-        {fields.map((field) => (
+        {fields.filter((field) => evaluateVisibility(field, participant.answers)).map((field) => (
           <div key={field.id} id={`field-p${index}-${field.id}`}>
             <label className="block mb-2">
               <span className="text-sm font-medium text-gray-900 dark:text-white">

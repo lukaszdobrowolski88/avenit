@@ -110,6 +110,9 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen name="prayers" options={{ href: null }} />
+      <Tabs.Screen name="giving" options={{ href: null }} />
+      <Tabs.Screen name="rsvp" options={{ href: null }} />
+      <Tabs.Screen name="sermons" options={{ href: null }} />
       <Tabs.Screen name="members" options={{ href: null }} />
       <Tabs.Screen name="materials" options={{ href: null }} />
       <Tabs.Screen name="teachings" options={{ href: null }} />

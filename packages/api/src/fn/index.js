@@ -26,8 +26,14 @@ const MODULES = [
   'sms-incoming-webhook',
   'przelewy24-create-payment',
   'przelewy24-webhook',
+  'giving-create-payment',
+  'campaign-progress',
+  'automation-run',
+  'rsvp-send',
+  'rsvp-respond',
   'process-dunning',
   'ical',
+  'ai-assist',
 ];
 
 export async function registerFunctions(app) {

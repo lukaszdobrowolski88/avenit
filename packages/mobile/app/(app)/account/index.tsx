@@ -4,15 +4,18 @@ import { useRouter } from 'expo-router';
 import {
   Bell,
   BookOpen,
+  CalendarCheck,
   ClipboardList,
   Fingerprint,
   FolderOpen,
+  Gift,
   Heart,
   Home,
   KeyRound,
   LogOut,
   Moon,
   Palette,
+  Podcast,
   Shield,
   ShieldCheck,
   Smartphone,
@@ -247,6 +250,36 @@ export default function AccountScreen() {
           onPress={() =>
             Alert.alert('Wkrótce', 'Lista zarejestrowanych urządzeń pojawi się w kolejnej wersji.')
           }
+        />
+      </SettingsGroup>
+
+      <SettingsGroup title="Dla Ciebie">
+        <SettingsRow
+          variant="nav"
+          Icon={CalendarCheck}
+          iconTint="#db2777"
+          iconBg="#fce7f3"
+          title="Moje zaproszenia"
+          description="Potwierdź obecność na wydarzeniach"
+          onPress={() => router.push('/(app)/rsvp')}
+        />
+        <SettingsRow
+          variant="nav"
+          Icon={Gift}
+          iconTint="#059669"
+          iconBg="#d1fae5"
+          title="Dawanie"
+          description="Twoje darowizny i wsparcie wspólnoty"
+          onPress={() => router.push('/(app)/giving')}
+        />
+        <SettingsRow
+          variant="nav"
+          Icon={Podcast}
+          iconTint="#7c3aed"
+          iconBg="#ede9fe"
+          title="Kazania"
+          description="Posłuchaj lub obejrzyj kazania"
+          onPress={() => router.push('/(app)/sermons')}
         />
       </SettingsGroup>
 

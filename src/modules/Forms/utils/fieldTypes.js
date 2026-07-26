@@ -312,6 +312,54 @@ export function getFieldTypeInfo(typeId) {
   return FIELD_TYPES[typeId] || null;
 }
 
+// === Logika warunkowa pól (show-if) ===
+// Operatory dostępne w regule field.visibleWhen
+export const VISIBILITY_OPERATORS = [
+  { value: 'equals', label: 'Równa się' },
+  { value: 'not_equals', label: 'Różni się od' },
+  { value: 'contains', label: 'Zawiera' },
+  { value: 'is_empty', label: 'Jest puste' },
+  { value: 'is_not_empty', label: 'Nie jest puste' }
+];
+
+function isAnswerEmpty(value) {
+  return (
+    value === null ||
+    value === undefined ||
+    value === '' ||
+    (Array.isArray(value) && value.length === 0)
+  );
+}
+
+// Zwraca true, jeśli pole powinno być widoczne dla podanych odpowiedzi.
+// Pole bez reguły visibleWhen jest zawsze widoczne.
+// field.visibleWhen = { fieldId, operator, value }
+export function evaluateVisibility(field, answers) {
+  const cond = field?.visibleWhen;
+  if (!cond || !cond.fieldId || !cond.operator) return true;
+
+  const raw = answers ? answers[cond.fieldId] : undefined;
+  const target = cond.value;
+
+  switch (cond.operator) {
+    case 'is_empty':
+      return isAnswerEmpty(raw);
+    case 'is_not_empty':
+      return !isAnswerEmpty(raw);
+    case 'equals':
+      if (Array.isArray(raw)) return raw.map(String).includes(String(target ?? ''));
+      return String(raw ?? '') === String(target ?? '');
+    case 'not_equals':
+      if (Array.isArray(raw)) return !raw.map(String).includes(String(target ?? ''));
+      return String(raw ?? '') !== String(target ?? '');
+    case 'contains':
+      if (Array.isArray(raw)) return raw.map(String).includes(String(target ?? ''));
+      return String(raw ?? '').toLowerCase().includes(String(target ?? '').toLowerCase());
+    default:
+      return true;
+  }
+}
+
 export const DEFAULT_FORM_SETTINGS = {
   submitButtonText: 'Wyślij',
   successMessage: 'Dziękujemy za wypełnienie formularza!',
