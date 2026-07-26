@@ -1,7 +1,5 @@
 import {
   ActivityIndicator,
-  Alert,
-  Linking,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -9,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { Gift, Info, Repeat } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { GradientButton } from '../../../src/components/ui/GradientButton';
@@ -20,20 +19,6 @@ import {
   type Donation,
   type GivingFund,
 } from '../../../src/features/giving/api';
-
-// Otwiera publiczną stronę dawania online (BLIK / karta / przelew — Przelewy24).
-// Web tenanta: https://<slug>.<domena>/give (API to api.<domena>).
-const showSupportInfo = () => {
-  const api = (process.env.EXPO_PUBLIC_API_URL || '').replace(/\/$/, '');
-  const tenant = process.env.EXPO_PUBLIC_TENANT || '';
-  const base = api ? api.replace('://api.', tenant ? `://${tenant}.` : '://') : '';
-  const url = base ? `${base}/give` : '';
-  if (!url) {
-    Alert.alert('Wesprzyj wspólnotę', 'Poproś koordynatora o link do darowizn online.');
-    return;
-  }
-  Linking.openURL(url).catch(() => Alert.alert('Link do darowizn online', url));
-};
 
 const DonationCard = ({
   donation,
@@ -131,6 +116,7 @@ const DonationCard = ({
 };
 
 export default function GivingScreen() {
+  const router = useRouter();
   const { user } = useAuthSession();
   const { data, isLoading, isError, error, refetch, isRefetching } = useMyGiving(
     user?.email ?? null,
@@ -203,7 +189,7 @@ export default function GivingScreen() {
                 </Text>
               ) : null}
               <View className="mt-4">
-                <GradientButton onPress={showSupportInfo}>Wesprzyj wspólnotę</GradientButton>
+                <GradientButton onPress={() => router.push('/(app)/giving/donate')}>Wesprzyj wspólnotę</GradientButton>
               </View>
             </View>
 

@@ -40,6 +40,8 @@ import SermonPublicPage from './modules/Sermons/SermonPublicPage';
 import CareModule from './modules/Care/CareModule';
 import RoomsModule from './modules/Rooms/RoomsModule';
 import ServeModule from './modules/Serve/ServeModule';
+import RsvpModule from './modules/Rsvp/RsvpModule';
+import RsvpPublicPage from './modules/Rsvp/RsvpPublicPage';
 import GlobalSettings from './modules/Settings/GlobalSettings';
 import UserSettings from './modules/Settings/UserSettings';
 import CalendarModule from './modules/CalendarModule';
@@ -62,7 +64,7 @@ const SYSTEM_MODULE_KEYS = [
   'dashboard', 'programs', 'calendar', 'members', 'worship', 'media',
   'atmosfera', 'kids', 'homegroups', 'finance', 'giving', 'teaching', 'prayer',
   'komunikator', 'mlodziezowka', 'mailing', 'mail', 'forms', 'settings', 'push_campaigns', 'sms_campaigns',
-  'attendance', 'analytics', 'automation', 'ai', 'sermons', 'care', 'rooms', 'serve'
+  'attendance', 'analytics', 'automation', 'ai', 'sermons', 'care', 'rooms', 'serve', 'rsvp'
 ];
 
 // Komponent do wyświetlania toast notifications (używa context)
@@ -309,6 +311,19 @@ function AppInner() {
     );
   }
 
+  // Publiczna strona odpowiedzi RSVP (/rsvp/:token) - dostępna bez logowania
+  const isPublicRsvpPage = window.location.pathname.startsWith('/rsvp/');
+  if (isPublicRsvpPage) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/rsvp/:token" element={<RsvpPublicPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
   // Publiczny formularz - renderuj bez wymogu logowania
   if (isPublicFormPage) {
     return (
@@ -448,6 +463,9 @@ function AppInner() {
                 } />
                 <Route path="/serve" element={
                   <ProtectedRoute resource="module:serve"><ServeModule /></ProtectedRoute>
+                } />
+                <Route path="/rsvp" element={
+                  <ProtectedRoute resource="module:rsvp"><RsvpModule /></ProtectedRoute>
                 } />
                 <Route path="/teaching" element={
                   <ProtectedRoute resource="module:teaching"><TeachingModule /></ProtectedRoute>

@@ -28,6 +28,8 @@ const MODULES = [
   'przelewy24-webhook',
   'giving-create-payment',
   'automation-run',
+  'rsvp-send',
+  'rsvp-respond',
   'process-dunning',
   'ical',
   'ai-assist',
