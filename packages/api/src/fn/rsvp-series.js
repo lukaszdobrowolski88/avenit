@@ -36,7 +36,7 @@ export async function runForTenant(pool, ctx = {}) {
         continue;
       }
       const { rows: members } = await pool.query(
-        `SELECT id, first_name, last_name, email, phone FROM members WHERE id = ANY($1::uuid[])`, [ids]
+        `SELECT id, first_name, last_name, email, phone FROM members WHERE id = ANY($1::int[])`, [ids]
       );
 
       // Nowe wystąpienie kampanii.
