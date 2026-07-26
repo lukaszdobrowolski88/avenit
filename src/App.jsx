@@ -30,6 +30,7 @@ import KidsModule from './modules/Kids/KidsModule';
 import HomeGroupsModule from './modules/HomeGroups/HomeGroupsModule';
 import FinanceModule from './modules/FinanceModule';
 import GivingModule from './modules/Giving/GivingModule';
+import GiveOnlinePage from './modules/Giving/GiveOnlinePage';
 import AttendanceModule from './modules/Attendance/AttendanceModule';
 import AnalyticsModule from './modules/Analytics/AnalyticsModule';
 import AutomationModule from './modules/Automation/AutomationModule';
@@ -289,6 +290,20 @@ function AppInner() {
         <Routes>
           <Route path="/sermon/:slug" element={<SermonPublicPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
+  // Publiczna strona dawania online - dostępna bez logowania
+  const isPublicGivePage = window.location.pathname === '/give' || window.location.pathname.startsWith('/give/');
+  if (isPublicGivePage) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/give" element={<GiveOnlinePage />} />
+          <Route path="/give/success" element={<GiveOnlinePage success />} />
+          <Route path="*" element={<Navigate to="/give" replace />} />
         </Routes>
       </BrowserRouter>
     );

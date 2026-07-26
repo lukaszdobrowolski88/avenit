@@ -63,8 +63,26 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
 
   if (loading) return <div className="p-10 text-center text-gray-400">Ładowanie...</div>;
 
+  const giveUrl = `${window.location.origin}/give`;
+  const copyGiveLink = () => {
+    try { navigator.clipboard.writeText(giveUrl); alert('Skopiowano link do dawania online.'); }
+    catch { window.prompt('Link do dawania online:', giveUrl); }
+  };
+
   return (
     <div className="space-y-5">
+      {/* Dawanie online — link publiczny */}
+      <div className="bg-gradient-to-r from-accent-primary to-accent-secondary rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-white">
+        <div>
+          <div className="font-semibold">Dawanie online (Przelewy24 / BLIK)</div>
+          <div className="text-sm text-white/80">Udostępnij link, aby przyjmować darowizny online: <span className="font-mono">{giveUrl}</span></div>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={copyGiveLink} className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-sm font-medium">Kopiuj link</button>
+          <a href={giveUrl} target="_blank" rel="noreferrer" className="px-4 py-2 rounded-xl bg-white text-accent-primary text-sm font-semibold">Otwórz</a>
+        </div>
+      </div>
+
       {/* Karty statystyk */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {cards.map(c => (

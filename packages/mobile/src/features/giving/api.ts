@@ -96,20 +96,33 @@ export const useMyGiving = (userEmail: string | null) =>
       };
       if (!userEmail) return empty;
 
-      // 1. Powiązanie członka po e-mailu.
+      // 1. Powiązanie członka: najpierw app_users.member_id (niezawodne), potem e-mail.
       let memberId: string | number | null = null;
       try {
-        const { data: member, error } = await supabase
-          .from('members')
-          .select('id')
+        const { data: appUser } = await supabase
+          .from('app_users')
+          .select('member_id')
           .eq('email', userEmail)
           .maybeSingle();
-        if (error) throw error;
-        memberId = (member as { id?: string | number } | null)?.id ?? null;
-      } catch (err) {
-        if (isMissingTable(err)) return empty;
-        // Inny błąd przy członkach — nie blokuj ekranu, potraktuj jak brak powiązania.
-        return empty;
+        memberId = (appUser as { member_id?: string | number | null } | null)?.member_id ?? null;
+      } catch {
+        // brak kolumny member_id / tabeli — spróbujemy dopasować po e-mailu poniżej.
+      }
+
+      if (memberId == null) {
+        try {
+          const { data: member, error } = await supabase
+            .from('members')
+            .select('id')
+            .eq('email', userEmail)
+            .maybeSingle();
+          if (error) throw error;
+          memberId = (member as { id?: string | number } | null)?.id ?? null;
+        } catch (err) {
+          if (isMissingTable(err)) return empty;
+          // Inny błąd przy członkach — nie blokuj ekranu, potraktuj jak brak powiązania.
+          return empty;
+        }
       }
 
       if (memberId == null) return empty;

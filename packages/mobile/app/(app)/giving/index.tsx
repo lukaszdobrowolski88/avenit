@@ -1,6 +1,7 @@
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   RefreshControl,
   ScrollView,
   StatusBar,
@@ -20,15 +21,18 @@ import {
   type GivingFund,
 } from '../../../src/features/giving/api';
 
+// Otwiera publiczną stronę dawania online (BLIK / karta / przelew — Przelewy24).
+// Web tenanta: https://<slug>.<domena>/give (API to api.<domena>).
 const showSupportInfo = () => {
-  Alert.alert(
-    'Wesprzyj wspólnotę',
-    'Dziękujemy za Twoją hojność! 🙏\n\n' +
-      'Darowiznę możesz przekazać przelewem na konto wspólnoty. Dane do przelewu ' +
-      'oraz cele (dziesięcina, ofiara, misje) znajdziesz u koordynatora lub w aplikacji webowej.\n\n' +
-      'Płatności online (BLIK / karta) pojawią się wkrótce.',
-    [{ text: 'OK' }],
-  );
+  const api = (process.env.EXPO_PUBLIC_API_URL || '').replace(/\/$/, '');
+  const tenant = process.env.EXPO_PUBLIC_TENANT || '';
+  const base = api ? api.replace('://api.', tenant ? `://${tenant}.` : '://') : '';
+  const url = base ? `${base}/give` : '';
+  if (!url) {
+    Alert.alert('Wesprzyj wspólnotę', 'Poproś koordynatora o link do darowizn online.');
+    return;
+  }
+  Linking.openURL(url).catch(() => Alert.alert('Link do darowizn online', url));
 };
 
 const DonationCard = ({

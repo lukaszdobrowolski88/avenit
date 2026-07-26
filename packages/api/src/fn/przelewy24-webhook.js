@@ -1,9 +1,24 @@
 // Port edge function przelewy24-webhook: callback statusu płatności z P24.
 // Oryginał: supabase/functions/przelewy24-webhook/index.ts. Publiczny.
 // Transakcje żyją w bazie PLATFORM.
-import { platformPool } from '../db.js';
+import { platformPool, getTenantPool } from '../db.js';
 import { config } from '../config.js';
 import { P24_API_URL, p24Checksum, p24AuthHeader } from '../lib/p24.js';
+
+// Domknięcie darowizny w bazie tenanta (dla płatności z modułu Dawania).
+async function finalizeDonation(req, transaction, ok) {
+  const meta = transaction.gateway_response || {};
+  if (meta.purpose !== 'donation' || !meta.tenant_db || !meta.donation_id) return;
+  try {
+    const tpool = getTenantPool(meta.tenant_db);
+    await tpool.query(
+      `UPDATE donations SET status = $1, payment_transaction_id = $2, updated_at = now() WHERE id = $3`,
+      [ok ? 'completed' : 'failed', transaction.id, meta.donation_id]
+    );
+  } catch (err) {
+    req.log.error({ err }, 'P24 webhook: domknięcie darowizny nieudane');
+  }
+}
 
 export const name = 'przelewy24-webhook';
 export const isPublic = true;
@@ -56,6 +71,7 @@ export default async function handler(req, reply) {
         WHERE id = $3`,
       [orderId, JSON.stringify({ ...transaction.gateway_response, verify: verifyResult }), transaction.id]
     );
+    await finalizeDonation(req, transaction, true);
   } else {
     await platformPool.query(
       `UPDATE payment_transactions
@@ -64,6 +80,7 @@ export default async function handler(req, reply) {
       [verifyResult.error || 'Verification failed',
        JSON.stringify({ ...transaction.gateway_response, verify: verifyResult }), transaction.id]
     );
+    await finalizeDonation(req, transaction, false);
   }
 
   return reply.send('OK');

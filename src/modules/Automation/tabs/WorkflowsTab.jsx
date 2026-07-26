@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, Edit2, Trash2, X, Zap, ArrowUp, ArrowDown, GripVertical, Workflow } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Zap, ArrowUp, ArrowDown, GripVertical, Workflow, UserPlus } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
@@ -10,7 +10,7 @@ import {
 
 const emptyForm = { name: '', description: '', trigger_type: 'new_guest' };
 
-export default function WorkflowsTab({ campusIdForInsert, withCampusFilter }) {
+export default function WorkflowsTab({ campusIdForInsert, withCampusFilter, members = [] }) {
   const [workflows, setWorkflows] = useState([]);
   const [stepsByWorkflow, setStepsByWorkflow] = useState({});
   const [loading, setLoading] = useState(true);
@@ -20,6 +20,29 @@ export default function WorkflowsTab({ campusIdForInsert, withCampusFilter }) {
   const [form, setForm] = useState(emptyForm);
   const [steps, setSteps] = useState([]);
   const [saving, setSaving] = useState(false);
+
+  // Ręczny zapis osoby do ścieżki
+  const [enrollWf, setEnrollWf] = useState(null);
+  const [enrollMemberId, setEnrollMemberId] = useState('');
+  const [enrolling, setEnrolling] = useState(false);
+  const memberOptions = useMemo(() => (members || []).map(m => ({
+    value: m.id, label: `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email || 'Członek',
+  })), [members]);
+
+  const doEnroll = async () => {
+    if (!enrollMemberId) { alert('Wybierz osobę.'); return; }
+    setEnrolling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('automation-run', {
+        body: { action: 'enroll', workflow_id: enrollWf.id, member_id: enrollMemberId },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      setEnrollWf(null); setEnrollMemberId('');
+      alert('Osoba zapisana do ścieżki — należne kroki zostaną wykonane.');
+    } catch (err) {
+      alert('Nie udało się zapisać: ' + (err.message || err));
+    } finally { setEnrolling(false); }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -205,6 +228,7 @@ export default function WorkflowsTab({ campusIdForInsert, withCampusFilter }) {
                     >
                       <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${wf.is_active ? 'translate-x-4' : ''}`} />
                     </button>
+                    <button onClick={() => { setEnrollMemberId(''); setEnrollWf(wf); }} title="Zapisz osobę do ścieżki" className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><UserPlus size={15} /></button>
                     <button onClick={() => openEdit(wf)} className="p-2 rounded-lg text-gray-400 hover:text-accent-primary hover:bg-gray-100 dark:hover:bg-gray-700"><Edit2 size={15} /></button>
                     <button onClick={() => remove(wf)} className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Trash2 size={15} /></button>
                   </div>
@@ -327,6 +351,26 @@ export default function WorkflowsTab({ campusIdForInsert, withCampusFilter }) {
             <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
               <button onClick={() => setModalOpen(false)} disabled={saving} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
               <button onClick={save} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Zapisywanie...' : 'Zapisz'}</button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal — ręczny zapis osoby do ścieżki */}
+      <Modal isOpen={!!enrollWf}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => !enrolling && setEnrollWf(null)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Zapisz osobę do ścieżki</h3>
+              <button onClick={() => setEnrollWf(null)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Ścieżka: <b className="text-gray-900 dark:text-white">{enrollWf?.name}</b></p>
+              <CustomSelect label="Osoba" value={enrollMemberId} onChange={setEnrollMemberId} options={memberOptions} placeholder="Wybierz członka..." />
+            </div>
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700">
+              <button onClick={() => setEnrollWf(null)} disabled={enrolling} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
+              <button onClick={doEnroll} disabled={enrolling} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{enrolling ? 'Zapisywanie...' : 'Zapisz i uruchom'}</button>
             </div>
           </div>
         </div>

@@ -26,6 +26,8 @@ const MODULES = [
   'sms-incoming-webhook',
   'przelewy24-create-payment',
   'przelewy24-webhook',
+  'giving-create-payment',
+  'automation-run',
   'process-dunning',
   'ical',
   'ai-assist',

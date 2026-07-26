@@ -63,8 +63,9 @@ export default function AutomationModule() {
       <div className="flex items-start gap-2 p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-sm text-amber-700 dark:text-amber-300">
         <Zap size={16} className="shrink-0 mt-0.5" />
         <span>
-          Tutaj <b>definiujesz</b> automatyzacje i przeglądasz dziennik uruchomień. Samo wykonanie kroków (wysyłka, zadania, opóźnienia)
-          realizuje w tle worker (cron) — zmiany w konfiguracji zostaną uwzględnione przy kolejnym przebiegu.
+          Definiujesz automatyzacje i przeglądasz dziennik uruchomień. Wykonanie kroków (e-mail, SMS, push, zadania, opóźnienia)
+          realizuje w tle worker <b>co ~5 minut</b> — nowi członkowie/goście zapisywani są automatycznie wg wyzwalacza,
+          a dowolną osobę możesz też dodać ręcznie przyciskiem „Zapisz osobę do ścieżki".
         </span>
       </div>
 
