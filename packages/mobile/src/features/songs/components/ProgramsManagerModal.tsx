@@ -61,7 +61,7 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
   const [search, setSearch] = useState('');
 
   const { data: programs, isLoading } = useUpcomingPrograms(visible);
-  const programIds = useMemo(() => (programs ?? []).map((p) => p.id), [programs]);
+  const programIds = useMemo(() => (programs ?? []).map((p: UpcomingProgram) => p.id), [programs]);
   const { data: counts } = useProgramSuggestionCounts(programIds, visible);
 
   const filtered = useMemo(() => {
@@ -69,7 +69,7 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
     const q = search.trim().toLowerCase();
     if (!q) return list;
     return list.filter(
-      (p) =>
+      (p: UpcomingProgram) =>
         (p.title ?? '').toLowerCase().includes(q) ||
         (p.date ?? '').toLowerCase().includes(q) ||
         formatProgramDate(p.date).toLowerCase().includes(q),
@@ -470,10 +470,10 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
   const { data: songs, isLoading } = useSongsList('');
 
   const filtered = useMemo(() => {
-    const list = (songs ?? []).filter((s) => !assignedIds.has(s.id));
+    const list = (songs ?? []).filter((s: Song) => !assignedIds.has(s.id));
     const q = query.trim().toLowerCase();
     if (!q) return list.slice(0, 50);
-    return list.filter((s) => s.title.toLowerCase().includes(q)).slice(0, 50);
+    return list.filter((s: Song) => s.title.toLowerCase().includes(q)).slice(0, 50);
   }, [songs, query, assignedIds]);
 
   return (
@@ -519,7 +519,7 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
         </Text>
       ) : (
         <View style={{ marginTop: 8, gap: 6 }}>
-          {filtered.map((s) => (
+          {filtered.map((s: Song) => (
             <Pressable
               key={s.id}
               disabled={disabled}

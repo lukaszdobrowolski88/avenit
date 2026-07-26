@@ -32,9 +32,9 @@ export const useRealtimeMessages = (conversationId: string) => {
         },
         (payload) => {
           const msg = payload.new as MessageRow;
-          qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev) => {
+          qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev: MessageRow[] | undefined) => {
             if (!prev) return [msg];
-            if (prev.some((m) => m.id === msg.id)) return prev;
+            if (prev.some((m: MessageRow) => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
           qc.invalidateQueries({ queryKey: ["conversations"] });
@@ -50,13 +50,13 @@ export const useRealtimeMessages = (conversationId: string) => {
         },
         (payload) => {
           const updated = payload.new as MessageRow;
-          qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev) => {
+          qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev: MessageRow[] | undefined) => {
             if (!prev) return prev;
             // Soft-deleted (deleted_at is set) — usuwamy z listy.
             if (updated.deleted_at) {
-              return prev.filter((m) => m.id !== updated.id);
+              return prev.filter((m: MessageRow) => m.id !== updated.id);
             }
-            return prev.map((m) => (m.id === updated.id ? updated : m));
+            return prev.map((m: MessageRow) => (m.id === updated.id ? updated : m));
           });
           qc.invalidateQueries({ queryKey: ["conversations"] });
         },

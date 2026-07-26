@@ -473,7 +473,7 @@ export default function HomeGroupDetailScreen() {
                   Członkowie · {members.length}
                 </Text>
               </View>
-              {members.map((m, idx) => (
+              {members.map((m: HomeGroupMember, idx: number) => (
                 <MemberRow key={m.id} member={m} isLast={idx === members.length - 1} />
               ))}
             </View>

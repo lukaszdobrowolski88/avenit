@@ -43,7 +43,11 @@ const groupByDate = (items: AgendaEvent[]): { date: Date; items: AgendaEvent[] }
   const map = new Map<string, AgendaEvent[]>();
   for (const it of items) {
     const d = toDate(it.startsAt);
-    const key = d.toISOString().slice(0, 10);
+    // Klucz dnia w LOKALNEJ strefie — toISOString() zwraca UTC i w PL (UTC+1/+2)
+    // wydarzenia o północy trafiłyby do poprzedniego dnia (niedziela pod sobotę).
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+      d.getDate(),
+    ).padStart(2, '0')}`;
     const arr = map.get(key) ?? [];
     arr.push(it);
     map.set(key, arr);

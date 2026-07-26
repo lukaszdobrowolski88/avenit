@@ -40,10 +40,10 @@ function RootEffects() {
       );
       updatePresence(email, 'online').catch(() => undefined);
     };
-    supabase.auth.getSession().then(({ data }) => register(data.session?.user.email));
+    supabase.auth.getSession().then(({ data }) => register(data.session?.user?.email));
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        register(session?.user.email);
+        register(session?.user?.email);
       }
     });
     return () => sub.subscription.unsubscribe();
@@ -54,12 +54,12 @@ function RootEffects() {
     let interval: ReturnType<typeof setInterval> | null = null;
     const tick = async () => {
       const { data } = await supabase.auth.getSession();
-      const email = data.session?.user.email;
+      const email = data.session?.user?.email;
       if (email) updatePresence(email, 'online').catch(() => undefined);
     };
     const handleAppState = async (s: AppStateStatus) => {
       const { data } = await supabase.auth.getSession();
-      const email = data.session?.user.email;
+      const email = data.session?.user?.email;
       if (!email) return;
       if (s === 'active') updatePresence(email, 'online').catch(() => undefined);
       else updatePresence(email, 'away').catch(() => undefined);

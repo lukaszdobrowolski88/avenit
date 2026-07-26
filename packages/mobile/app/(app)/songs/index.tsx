@@ -14,6 +14,7 @@ import { Link } from 'expo-router';
 import { FolderOpen, Music, Search, X } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { useSongsList, useSongTags } from '../../../src/features/songs/api';
+import type { Song } from '../../../src/lib/domain';
 import { ProgramsManagerModal } from '../../../src/features/songs/components/ProgramsManagerModal';
 import { useAuthSession } from '../../../src/lib/auth';
 
@@ -27,7 +28,7 @@ export default function SongsScreen() {
 
   const filtered = useMemo(() => {
     const list = allSongs ?? [];
-    return list.filter((s) => {
+    return list.filter((s: Song) => {
       const matchesSearch =
         !search.trim() || s.title.toLowerCase().includes(search.trim().toLowerCase());
       const matchesTag =
@@ -254,7 +255,7 @@ export default function SongsScreen() {
                         ) : null}
                         {Array.isArray(item.tags) && item.tags.length > 0 ? (
                           <View className="flex-row gap-1">
-                            {item.tags.slice(0, 2).map((t) => (
+                            {item.tags.slice(0, 2).map((t: string) => (
                               <View
                                 key={t}
                                 className="px-1.5 py-0.5"

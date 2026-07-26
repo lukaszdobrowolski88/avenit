@@ -49,7 +49,7 @@ export default function CalendarScreen() {
     withCampusFilter,
   });
 
-  const items = (data ?? []).filter((e) => {
+  const items = (data ?? []).filter((e: AgendaEvent) => {
     if (filter === 'all') return true;
     if (filter === 'mine') return e.isMine;
     return e.source === filter;
@@ -57,11 +57,11 @@ export default function CalendarScreen() {
 
   const filterCounts: Record<string, number> = {
     all: data?.length ?? 0,
-    mine: (data ?? []).filter((e) => e.isMine).length,
+    mine: (data ?? []).filter((e: AgendaEvent) => e.isMine).length,
   };
   for (const f of SOURCE_FILTERS) {
     if (f.key !== 'all' && f.key !== 'mine') {
-      filterCounts[f.key] = (data ?? []).filter((e) => e.source === f.key).length;
+      filterCounts[f.key] = (data ?? []).filter((e: AgendaEvent) => e.source === f.key).length;
     }
   }
 

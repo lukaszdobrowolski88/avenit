@@ -25,6 +25,7 @@ import {
   useMarkRead,
   TYPE_META,
   type NotificationType,
+  type NotificationRow,
 } from '../../../src/features/notifications/api';
 import { useAuthSession } from '../../../src/lib/auth';
 import { navigateFromDeepLink } from '../../../src/lib/deep-links';
@@ -46,7 +47,7 @@ export default function NotificationsScreen() {
   const markAll = useMarkAllRead(user?.email ?? null);
   const markOne = useMarkRead();
 
-  const unreadCount = (data ?? []).filter((n) => !n.read).length;
+  const unreadCount = (data ?? []).filter((n: NotificationRow) => !n.read).length;
 
   return (
     <>
@@ -133,8 +134,8 @@ export default function NotificationsScreen() {
               </View>
             }
             renderItem={({ item }) => {
-              const meta = TYPE_META[item.type];
-              const Icon = ICONS[item.type] ?? Bell;
+              const meta = TYPE_META[item.type as NotificationType];
+              const Icon = ICONS[item.type as NotificationType] ?? Bell;
               return (
                 <Pressable
                   onPress={() => {

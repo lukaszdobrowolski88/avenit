@@ -29,6 +29,7 @@ import {
   fileIconType,
   getDownloadUrl,
   type FileRow,
+  type FolderRow,
 } from '../../../src/features/materials/api';
 
 const ICON_BY_TYPE = {
@@ -156,7 +157,7 @@ export default function MaterialsScreen() {
                 Główny
               </Text>
             </Pressable>
-            {path.data!.map((p) => (
+            {path.data!.map((p: FolderRow) => (
               <View key={p.id} className="flex-row items-center gap-1">
                 <ChevronRight size={12} color="#a8a29e" />
                 <Pressable onPress={() => setFolderId(p.id)}>
@@ -195,7 +196,7 @@ export default function MaterialsScreen() {
                 >
                   Foldery
                 </Text>
-                {folders.data!.map((f) => (
+                {folders.data!.map((f: FolderRow) => (
                   <Pressable
                     key={f.id}
                     onPress={() => setFolderId(f.id)}
@@ -244,7 +245,7 @@ export default function MaterialsScreen() {
                 >
                   Pliki
                 </Text>
-                {files.data!.map((file) => {
+                {files.data!.map((file: FileRow) => {
                   const meta = ICON_BY_TYPE[fileIconType(file.mime_type)];
                   return (
                     <Pressable

@@ -1,4 +1,6 @@
-import type { ExpoConfig } from 'expo/config';
+// `@expo/config` w tej wersji nie reeksportuje typu ExpoConfig — luźny alias lokalny.
+// (Typ i tak jest wymazywany w runtime; expo czyta wyeksportowany obiekt konfiguracji.)
+type ExpoConfig = Record<string, any>;
 
 const variant = process.env.APP_VARIANT ?? 'production';
 const isPreview = variant === 'preview';

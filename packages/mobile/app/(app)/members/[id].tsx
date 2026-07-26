@@ -18,6 +18,7 @@ import {
   initials,
   STATUS_META,
   MINISTRY_LABELS,
+  type MemberStatus,
 } from '../../../src/features/members/api';
 
 const SectionCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -168,7 +169,7 @@ export default function MemberDetailScreen() {
     );
   }
 
-  const meta = member.status ? STATUS_META[member.status] : null;
+  const meta = member.status ? STATUS_META[member.status as MemberStatus] : null;
   const ministries = (member.ministries ?? []).filter(Boolean);
 
   return (
@@ -344,7 +345,7 @@ export default function MemberDetailScreen() {
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                {ministries.map((m) => (
+                {ministries.map((m: string) => (
                   <View
                     key={m}
                     style={{

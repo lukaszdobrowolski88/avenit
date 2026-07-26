@@ -1,6 +1,6 @@
 import { ActivityIndicator, RefreshControl, ScrollView, StatusBar, View } from 'react-native';
 import { useAuthSession } from '../../../src/lib/auth';
-import { useDashboard } from '../../../src/features/dashboard/api';
+import { useDashboard, type UpcomingMinistryItem } from '../../../src/features/dashboard/api';
 import { Greeting } from '../../../src/features/dashboard/components/Greeting';
 import { MinistryWidget } from '../../../src/features/dashboard/components/MinistryWidget';
 import { MessagesWidget } from '../../../src/features/dashboard/components/MessagesWidget';
@@ -31,7 +31,7 @@ export default function DashboardScreen() {
   }
 
   const acceptedMinistry = (data?.upcomingMinistry ?? []).filter(
-    (m) => m.status === 'accepted',
+    (m: UpcomingMinistryItem) => m.status === 'accepted',
   ).length;
   const totalTasks = (data?.myTasks ?? []).length;
   const totalPrayers = (data?.myPrayers ?? []).length;

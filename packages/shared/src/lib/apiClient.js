@@ -420,9 +420,14 @@ export function createApiClient({
     send: () => {},
   };
 
+  // Aktywne kanały — mobile używa getChannels()/topic do sprzątania kanałów-widm.
+  let activeChannels = [];
+
   function channel(channelName) {
     if (!realtime) return noopChannel;
     const chan = {
+      // Zgodnie z supabase-js: topic ma prefiks `realtime:`.
+      topic: `realtime:${channelName}`,
       _handlers: [],
       on(type, filterOrCb, maybeCb) {
         const filter = typeof filterOrCb === 'object' ? filterOrCb : {};
@@ -444,14 +449,21 @@ export function createApiClient({
       },
       unsubscribe() {
         wsHandlers = wsHandlers.filter((h) => !chan._handlers.includes(h));
+        activeChannels = activeChannels.filter((c) => c !== chan);
         return Promise.resolve('ok');
       },
     };
+    activeChannels.push(chan);
     return chan;
   }
 
   function removeChannel(chan) {
     chan?.unsubscribe?.();
+    activeChannels = activeChannels.filter((c) => c !== chan);
+  }
+
+  function getChannels() {
+    return activeChannels.slice();
   }
 
   // ── RPC ────────────────────────────────────────────────────────────────
@@ -471,8 +483,10 @@ export function createApiClient({
     rpc,
     channel,
     removeChannel,
+    getChannels,
     removeAllChannels: () => {
       wsHandlers = [];
+      activeChannels = [];
       ws?.close();
     },
     // Dostęp do surowego requesta (dla nietypowych wywołań).

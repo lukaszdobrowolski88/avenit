@@ -23,6 +23,7 @@ import {
   STATUS_META,
   MINISTRY_LABELS,
   type MemberStatus,
+  type MemberRow,
 } from '../../../src/features/members/api';
 
 const STATUSES: { key: MemberStatus | 'all'; label: string }[] = [
@@ -46,14 +47,14 @@ export default function MembersScreen() {
 
   const counts = {
     all: data?.length ?? 0,
-    Członek: (data ?? []).filter((m) => m.status === 'Członek').length,
-    Sympatyk: (data ?? []).filter((m) => m.status === 'Sympatyk').length,
-    Gość: (data ?? []).filter((m) => m.status === 'Gość').length,
+    Członek: (data ?? []).filter((m: MemberRow) => m.status === 'Członek').length,
+    Sympatyk: (data ?? []).filter((m: MemberRow) => m.status === 'Sympatyk').length,
+    Gość: (data ?? []).filter((m: MemberRow) => m.status === 'Gość').length,
   };
 
-  const ministriesInData = Array.from(
-    new Set((data ?? []).flatMap((m) => m.ministries ?? [])),
-  ).filter(Boolean);
+  const ministriesInData: string[] = Array.from(
+    new Set((data ?? []).flatMap((m: MemberRow) => m.ministries ?? [])),
+  ).filter(Boolean) as string[];
 
   return (
     <>

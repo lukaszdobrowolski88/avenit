@@ -123,11 +123,11 @@ export const ForwardMessageModal = ({
 
   const filtered = useMemo(() => {
     const list = (data ?? []).filter(
-      (c) => !c.archived && c.id !== sourceConversationId,
+      (c: ConversationListItem) => !c.archived && c.id !== sourceConversationId,
     );
     if (!search.trim()) return list;
     const q = search.trim().toLowerCase();
-    return list.filter((c) => {
+    return list.filter((c: ConversationListItem) => {
       const ministry = c.ministry_key
         ? MINISTRY_CHANNEL_META[c.ministry_key]?.label ?? ""
         : "";

@@ -23,7 +23,7 @@ export interface AuthState {
 }
 
 export const useAuthSession = (): AuthState => {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
