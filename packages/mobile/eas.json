@@ -5,7 +5,11 @@
   },
   "build": {
     "base": {
-      "node": "20.18.0"
+      "node": "20.18.0",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.avenit.pl",
+        "EAS_PROJECT_ID": "5e740a70-96bb-4fbc-a00f-ecf4bea0b9df"
+      }
     },
     "development": {
       "extends": "base",

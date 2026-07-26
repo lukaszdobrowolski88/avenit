@@ -12,8 +12,31 @@
   "workspaces": [
     "packages/*"
   ],
+  "comment:overrides": "Metro przypięte do 0.81.0 (Expo SDK 52). Bez tego reinstall ciągnie 0.84, które usunęło metro-cache/src/stores/FileStore i wywala metro config w buildzie EAS.",
+  "comment:types-react": "@types/react(-dom) przypięte do 18.x — web (React 18 runtime) przez tiptap ciągnął typy React 19, co kolidowało z react-native (chce @types/react 18) i blokowało wspólny hoisting. 18.x jest poprawne dla obu.",
+  "overrides": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "metro": "0.81.0",
+    "metro-babel-transformer": "0.81.0",
+    "metro-cache": "0.81.0",
+    "metro-cache-key": "0.81.0",
+    "metro-config": "0.81.0",
+    "metro-core": "0.81.0",
+    "metro-file-map": "0.81.0",
+    "metro-minify-terser": "0.81.0",
+    "metro-resolver": "0.81.0",
+    "metro-runtime": "0.81.0",
+    "metro-source-map": "0.81.0",
+    "metro-symbolicate": "0.81.0",
+    "metro-transform-plugins": "0.81.0",
+    "metro-transform-worker": "0.81.0"
+  },
+  "comment:hoist": "expo/react-native w root deps CELOWO — wymusza wspólny poziom hoistingu w monorepo npm (inaczej expo ląduje w packages/mobile, a babel-preset-expo/@expo/config w root i się nie widzą). Web (Vite) ich nie importuje.",
   "dependencies": {
     "@avenit/shared": "*",
+    "expo": "~52.0.0",
+    "react-native": "0.76.9",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
