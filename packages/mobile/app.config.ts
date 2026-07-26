@@ -6,9 +6,10 @@ const variant = process.env.APP_VARIANT ?? 'production';
 const isPreview = variant === 'preview';
 const isDev = variant === 'development';
 
-// Bundle ID celowo pozostaje 'com.schtomy.app' — zmiana identyfikatora oznacza
-// NOWĄ aplikację w App Store/Google Play (utrata instalacji i tokenów push).
-const baseId = 'com.schtomy.app';
+// Identyfikator aplikacji (Android applicationId / iOS bundle ID). Avenit, nie legacy
+// 'com.schtomy.app' (apka nigdy nie była w sklepie, więc nie było czego chronić).
+// NIEODWRACALNY po utworzeniu wpisu w Play/App Store.
+const baseId = 'pl.avenit.app';
 const suffix = isPreview ? '.preview' : isDev ? '.dev' : '';
 
 const config: ExpoConfig = {
