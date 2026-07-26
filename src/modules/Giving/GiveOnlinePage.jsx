@@ -12,6 +12,7 @@ export default function GiveOnlinePage({ success = false }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [note, setNote] = useState('');
+  const [recurring, setRecurring] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [orgName, setOrgName] = useState('');
@@ -44,6 +45,7 @@ export default function GiveOnlinePage({ success = false }) {
         body: {
           amount: amt, email, donor_name: name || null, fund_id: fundId || null,
           note: note || null, returnUrl: `${window.location.origin}/give/success`,
+          recurring, frequency: recurring ? 'monthly' : undefined,
         },
       });
       if (fnErr || !data?.paymentUrl) throw new Error(data?.error || fnErr?.message || 'Nie udało się utworzyć płatności');
@@ -116,6 +118,11 @@ export default function GiveOnlinePage({ success = false }) {
             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100" />
           <input value={note} onChange={e => setNote(e.target.value)} placeholder="Wiadomość / intencja (opcjonalnie)"
             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100" />
+
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer bg-gray-50 dark:bg-gray-900/40 rounded-xl px-4 py-3">
+            <input type="checkbox" checked={recurring} onChange={e => setRecurring(e.target.checked)} className="rounded accent-emerald-500" />
+            Chcę wspierać regularnie — co miesiąc
+          </label>
 
           {error && <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-4 py-2">{error}</p>}
 

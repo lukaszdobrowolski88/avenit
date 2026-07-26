@@ -5,16 +5,41 @@ import { platformPool, getTenantPool } from '../db.js';
 import { config } from '../config.js';
 import { P24_API_URL, p24Checksum, p24AuthHeader } from '../lib/p24.js';
 
+async function sendDonationThanks(email, amount, currency) {
+  if (!config.RESEND_API_KEY || !email) return;
+  const kwota = `${Number(amount || 0).toFixed(2)} ${currency || 'PLN'}`;
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.RESEND_API_KEY}` },
+      body: JSON.stringify({
+        from: `Avenit <${config.RESEND_FROM_EMAIL || 'noreply@avenit.pl'}>`,
+        to: [email],
+        subject: 'Dziękujemy za dar 🙏',
+        html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1f2937">
+          <h2>Dziękujemy za Twoją hojność!</h2>
+          <p>Potwierdzamy otrzymanie darowizny na kwotę <strong>${kwota}</strong>.</p>
+          <p>Niech Bóg Ci błogosławi. 🙏</p>
+          <hr><p style="color:#9ca3af;font-size:12px">Avenit — wiadomość wygenerowana automatycznie</p></div>`,
+      }),
+    });
+  } catch { /* nie blokuj webhooka */ }
+}
+
 // Domknięcie darowizny w bazie tenanta (dla płatności z modułu Dawania).
 async function finalizeDonation(req, transaction, ok) {
   const meta = transaction.gateway_response || {};
   if (meta.purpose !== 'donation' || !meta.tenant_db || !meta.donation_id) return;
   try {
     const tpool = getTenantPool(meta.tenant_db);
-    await tpool.query(
-      `UPDATE donations SET status = $1, payment_transaction_id = $2, updated_at = now() WHERE id = $3`,
+    const { rows } = await tpool.query(
+      `UPDATE donations SET status = $1, payment_transaction_id = $2, updated_at = now()
+        WHERE id = $3 RETURNING donor_email, amount, currency`,
       [ok ? 'completed' : 'failed', transaction.id, meta.donation_id]
     );
+    if (ok && rows[0]?.donor_email) {
+      await sendDonationThanks(rows[0].donor_email, rows[0].amount, rows[0].currency);
+    }
   } catch (err) {
     req.log.error({ err }, 'P24 webhook: domknięcie darowizny nieudane');
   }

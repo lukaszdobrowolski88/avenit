@@ -36,6 +36,7 @@ export default function DonateScreen() {
   const [fundId, setFundId] = useState<string | null>(null);
   const [email, setEmail] = useState(user?.email ?? '');
   const [note, setNote] = useState('');
+  const [recurring, setRecurring] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -79,6 +80,8 @@ export default function DonateScreen() {
           fund_id: fundId,
           note: note || null,
           returnUrl: webBase() ? `${webBase()}/give/success` : undefined,
+          recurring,
+          frequency: recurring ? 'monthly' : undefined,
         }),
       });
       const json = await res.json();
@@ -164,6 +167,16 @@ export default function DonateScreen() {
             placeholderTextColor="#9ca3af"
             style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, fontFamily: 'Inter_400Regular', color: '#0c0a09', marginBottom: 20 }}
           />
+
+          <Pressable
+            onPress={() => setRecurring((v) => !v)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: recurring ? '#059669' : '#e5e7eb', backgroundColor: recurring ? '#ecfdf5' : '#ffffff', marginBottom: 16 }}
+          >
+            <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: recurring ? '#059669' : '#cbd5e1', backgroundColor: recurring ? '#059669' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+              {recurring ? <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>✓</Text> : null}
+            </View>
+            <Text style={{ color: '#334155', fontFamily: 'Inter_500Medium', fontSize: 14 }}>Chcę wspierać co miesiąc</Text>
+          </Pressable>
 
           <GradientButton onPress={submit} disabled={submitting}>
             {submitting ? 'Przekierowanie...' : `Zapłać${amt ? ' ' + formatMoney(amt) : ''}`}

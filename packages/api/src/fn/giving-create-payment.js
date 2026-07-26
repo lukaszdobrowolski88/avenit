@@ -10,12 +10,24 @@ import { P24_API_URL, p24Checksum, p24AuthHeader } from '../lib/p24.js';
 export const name = 'giving-create-payment';
 export const isPublic = true;
 
+function nextRun(frequency) {
+  const d = new Date();
+  switch (frequency) {
+    case 'weekly': d.setDate(d.getDate() + 7); break;
+    case 'biweekly': d.setDate(d.getDate() + 14); break;
+    case 'quarterly': d.setMonth(d.getMonth() + 3); break;
+    case 'yearly': d.setFullYear(d.getFullYear() + 1); break;
+    default: d.setMonth(d.getMonth() + 1);
+  }
+  return d.toISOString().slice(0, 10);
+}
+
 export default async function handler(req, reply) {
   if (!req.db || !req.tenant) {
     return reply.code(404).send({ error: 'Nieznany tenant' });
   }
 
-  const { amount, email, donor_name, fund_id, campaign_id, note, returnUrl } = req.body || {};
+  const { amount, email, donor_name, fund_id, campaign_id, note, returnUrl, recurring, frequency } = req.body || {};
   const amountPln = Number(amount);
   if (!amountPln || amountPln <= 0 || !email) {
     return reply.code(400).send({ error: 'Wymagane: dodatnia kwota oraz e-mail' });
@@ -36,6 +48,22 @@ export default async function handler(req, reply) {
   } catch (err) {
     req.log.error({ err }, 'giving: nie udało się utworzyć darowizny');
     return reply.code(500).send({ error: 'Błąd zapisu darowizny' });
+  }
+
+  // Deklaracja cyklicznego dawania (opcjonalnie): pierwsza wpłata idzie teraz przez P24,
+  // kolejne należne generuje worker giving-recurring (przypomnienia/linki).
+  if (recurring) {
+    const freq = ['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly'].includes(frequency) ? frequency : 'monthly';
+    try {
+      await req.db.query(
+        `INSERT INTO giving_recurring
+           (donor_name, fund_id, amount, currency, frequency, method, start_date, next_run_date, is_active)
+         VALUES ($1, $2, $3, 'PLN', $4, 'przelewy24', CURRENT_DATE, $5, true)`,
+        [donor_name || null, fund_id || null, amountPln, freq, nextRun(freq)]
+      );
+    } catch (err) {
+      req.log.error({ err }, 'giving: zapis planu cyklicznego nieudany');
+    }
   }
 
   // 2. Zarejestruj transakcję w Przelewy24.

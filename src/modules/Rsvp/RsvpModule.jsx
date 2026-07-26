@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  CalendarCheck, Plus, X, Send, ArrowLeft, Check, HelpCircle, Users, Copy, Search, Trash2,
+  CalendarCheck, Plus, X, Send, ArrowLeft, Check, HelpCircle, Users, Copy, Search, Trash2, ClipboardCheck,
 } from 'lucide-react';
 import { supabase, getCachedUser } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -163,6 +163,8 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
   const [manualIds, setManualIds] = useState([]);
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState(false);
+  const [reminderEnabled, setReminderEnabled] = useState(true);
+  const [reminderDays, setReminderDays] = useState(1);
 
   const recipients = useMemo(() => {
     if (audience === 'all') return members;
@@ -190,6 +192,7 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
         event_date: form.event_date || null, event_time: form.event_time || null,
         location: form.location || null, message: form.message || null,
         channels: chans, status: 'draft', created_by: user?.email || null, campus_id: campusIdForInsert,
+        reminder_enabled: reminderEnabled, reminder_days_before: Number(reminderDays) || 1,
       }).select().single();
       if (error) throw error;
 
@@ -251,6 +254,20 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
               </div>
             </div>
 
+            {/* Przypomnienie */}
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 dark:bg-gray-700/30 px-4 py-3">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+                <input type="checkbox" checked={reminderEnabled} onChange={e => setReminderEnabled(e.target.checked)} className="rounded accent-emerald-500" />
+                Automatyczne przypomnienie niepotwierdzonym
+              </label>
+              {reminderEnabled && (
+                <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+                  <input type="number" min="0" max="14" value={reminderDays} onChange={e => setReminderDays(e.target.value)} className="w-14 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-center text-gray-900 dark:text-gray-100" />
+                  <span>dni przed</span>
+                </div>
+              )}
+            </div>
+
             {/* Odbiorcy */}
             <CustomSelect label="Odbiorcy" value={audience} onChange={setAudience} options={AUDIENCE} />
             {audience === 'home_group' && (
@@ -292,8 +309,11 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
 }
 
 // ---------------- Szczegóły kampanii ----------------
+const SESSION_TYPE = { service: 'service', home_group: 'group', kids: 'group', event: 'event', custom: 'event' };
+
 function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
   const [sending, setSending] = useState(false);
+  const [creatingAtt, setCreatingAtt] = useState(false);
   const [invs, setInvs] = useState(invitations);
 
   useEffect(() => { setInvs(invitations); }, [invitations]);
@@ -323,6 +343,35 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
     try { navigator.clipboard.writeText(url); alert('Skopiowano link.'); } catch { window.prompt('Link:', url); }
   };
 
+  const createAttendance = async () => {
+    const yes = invs.filter(i => i.status === 'yes');
+    if (!yes.length) { alert('Brak odpowiedzi „Będę" — nie ma z czego utworzyć frekwencji.'); return; }
+    if (!confirm(`Utworzyć sesję frekwencji i oznaczyć ${yes.length} obecnych (odpowiedzi „Będę")?`)) return;
+    setCreatingAtt(true);
+    try {
+      const user = await getCachedUser();
+      const guests = yes.reduce((s, i) => s + (i.guests_count || 0), 0);
+      const { data: session, error } = await supabase.from('attendance_sessions').insert({
+        title: campaign.title,
+        session_date: campaign.event_date || new Date().toISOString().slice(0, 10),
+        session_type: SESSION_TYPE[campaign.event_type] || 'event',
+        headcount: yes.length + guests,
+        note: 'Utworzono z RSVP',
+        campus_id: campaign.campus_id || null,
+        created_by: user?.email || null,
+      }).select().single();
+      if (error) throw error;
+      const records = yes.filter(i => i.member_id).map(i => ({ session_id: session.id, member_id: i.member_id, present: true }));
+      if (records.length) {
+        const { error: e2 } = await supabase.from('attendance_records').insert(records);
+        if (e2) throw e2;
+      }
+      alert(`Utworzono sesję frekwencji: ${yes.length} obecnych${guests ? ` (+${guests} osób)` : ''}. Znajdziesz ją w module Frekwencja.`);
+    } catch (err) {
+      alert('Nie udało się utworzyć frekwencji: ' + (err.message || err) + '\n(Wymagany aktywny moduł Frekwencja.)');
+    } finally { setCreatingAtt(false); }
+  };
+
   const badge = (s) => {
     const map = { yes: ['Będę', 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'], no: ['Nie będę', 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'], maybe: ['Może', 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'], pending: ['Oczekuje', 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'] };
     const [lbl, cls] = map[s] || map.pending;
@@ -344,9 +393,14 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
               {campaign.location ? ` · ${campaign.location}` : ''}
             </p>
           </div>
-          <button onClick={send} disabled={sending} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md disabled:opacity-60">
-            <Send size={16} /> {sending ? 'Wysyłanie...' : campaign.status === 'sent' ? 'Wyślij ponownie' : 'Wyślij zaproszenia'}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={createAttendance} disabled={creatingAtt} className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium flex items-center gap-2 text-sm disabled:opacity-60">
+              <ClipboardCheck size={16} /> {creatingAtt ? 'Tworzenie...' : 'Utwórz frekwencję'}
+            </button>
+            <button onClick={send} disabled={sending} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md disabled:opacity-60">
+              <Send size={16} /> {sending ? 'Wysyłanie...' : campaign.status === 'sent' ? 'Wyślij ponownie' : 'Wyślij zaproszenia'}
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-5">

@@ -73,6 +73,8 @@ cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('sync-mail', 'sync-ma
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('automation', 'automation-run')));
 // Dawanie cykliczne: codziennie 07:00 — generuj należne darowizny i przesuń terminy.
 cron.schedule('0 7 * * *', exclusive(() => forEachTenant('giving-recurring', 'giving-recurring')));
+// Przypomnienia RSVP: codziennie 10:00 — ponaglenie niepotwierdzonych przed wydarzeniem.
+cron.schedule('0 10 * * *', exclusive(() => forEachTenant('rsvp-reminders', 'rsvp-reminders')));
 
 cron.schedule('0 8 * * *', exclusive(async () => {
   try {
