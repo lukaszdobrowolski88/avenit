@@ -68,7 +68,7 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
     const list = data ?? [];
     const q = search.trim().toLowerCase();
     if (!q) return list;
-    return list.filter((m) => {
+    return list.filter((m: PickerMember) => {
       const name = fullName(m).toLowerCase();
       const email = (m.email ?? '').toLowerCase();
       return name.includes(q) || email.includes(q);

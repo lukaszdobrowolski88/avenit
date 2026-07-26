@@ -11,7 +11,7 @@ import {
 import { ClipboardList, Clock, ExternalLink, Lock } from 'lucide-react-native';
 import { formatRelative } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
-import { useForms } from '../../../src/features/forms/api';
+import { useForms, type FormRow } from '../../../src/features/forms/api';
 
 export default function FormsScreen() {
   const { data, isLoading, isError, error, refetch, isRefetching } = useForms();
@@ -80,7 +80,7 @@ export default function FormsScreen() {
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
             }
           >
-            {data!.map((form) => {
+            {data!.map((form: FormRow) => {
               const closed = form.status === 'closed';
               const closesSoon =
                 !closed && form.closes_at && new Date(form.closes_at) > new Date();

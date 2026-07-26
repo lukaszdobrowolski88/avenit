@@ -165,7 +165,7 @@ export default function MessengerScreen() {
   const { getStatus } = usePresence(peerEmails);
 
   const filtered = useMemo(() => {
-    const list = (data ?? []).filter((c) => {
+    const list = (data ?? []).filter((c: ConversationListItem) => {
       if (filter === "archived") return !!c.archived;
       if (c.archived) return false;
       if (filter === "all") return true;
@@ -176,7 +176,7 @@ export default function MessengerScreen() {
     });
     if (!search.trim()) return list;
     const q = search.trim().toLowerCase();
-    return list.filter((c) => {
+    return list.filter((c: ConversationListItem) => {
       const ministry =
         c.ministry_key ? MINISTRY_CHANNEL_META[c.ministry_key]?.label ?? "" : "";
       const senderName = c.last_message?.sender_email
@@ -194,7 +194,7 @@ export default function MessengerScreen() {
     });
   }, [data, filter, search, members]);
 
-  const totalUnread = (data ?? []).reduce((sum, c) => sum + (c.unread_count ?? 0), 0);
+  const totalUnread = (data ?? []).reduce((sum: number, c: ConversationListItem) => sum + (c.unread_count ?? 0), 0);
 
   // Sekcje (PRYWATNE / GRUPY / KANAŁY) — używane gdy nie filtrujemy po typie.
   const sections = useMemo(() => {

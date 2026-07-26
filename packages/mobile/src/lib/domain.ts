@@ -116,6 +116,9 @@ export const transposeChord = (chord: string, fromKey: string, toKey: string): s
   if (!parsed) return chord;
   const fromIndex = getNoteIndex(fromKey);
   const toIndex = getNoteIndex(toKey);
+  // Nieparsowalna tonacja (pusta / "H" / śmieci) → nie transponuj, oddaj akord bez zmian
+  // zamiast przesuwać o błędny interwał.
+  if (fromIndex === -1 || toIndex === -1) return chord;
   const semitones = toIndex - fromIndex;
   const newRoot = transposeNote(parsed.root, semitones, toKey);
   let result = newRoot + parsed.modifier;

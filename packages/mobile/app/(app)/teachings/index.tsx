@@ -239,7 +239,7 @@ export default function TeachingsScreen() {
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
             }
           >
-            {data!.map((t) => (
+            {data!.map((t: ProgramTeaching) => (
               <TeachingCard key={t.programId} teaching={t} />
             ))}
           </ScrollView>

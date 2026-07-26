@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { isSameDay } from "date-fns";
 import {
   useMessages,
@@ -31,6 +32,7 @@ import {
   canEditMessage,
   type MessageAttachment,
   type MessageRow,
+  type ReadReceiptRow,
 } from "../../../src/features/messenger/api";
 import { usePresence } from "../../../src/lib/presence";
 import {
@@ -58,6 +60,7 @@ type FeedItem =
 export default function ConversationScreen() {
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const { user } = useAuthSession();
+  const qc = useQueryClient();
   const cid = String(conversationId ?? "");
 
   // Composer siedzi nad tabbarem — padding równy jego wysokości z (app)/_layout.tsx.
@@ -97,7 +100,7 @@ export default function ConversationScreen() {
   const peerEmail = useMemo(() => {
     if (detailsQuery.data?.type !== "direct") return null;
     return (
-      detailsQuery.data.participant_emails.find((e) => e !== user?.email) ?? null
+      detailsQuery.data.participant_emails.find((e: string) => e !== user?.email) ?? null
     );
   }, [detailsQuery.data, user?.email]);
   const peerStatus = peerEmail ? getStatus(peerEmail) : undefined;
@@ -151,11 +154,14 @@ export default function ConversationScreen() {
 
   useEffect(() => {
     if (cid && user?.email) {
-      markConversationRead(cid, user.email).catch(() => undefined);
+      markConversationRead(cid, user.email)
+        // Po oznaczeniu jako przeczytane odśwież listę rozmów, żeby zniknął badge nieprzeczytanych.
+        .then(() => qc.invalidateQueries({ queryKey: ["conversations"] }))
+        .catch(() => undefined);
       // Per-message read receipts — tylko cudze wiadomości.
       const ids = (messagesQuery.data ?? [])
-        .filter((m) => m.sender_email !== user.email)
-        .map((m) => m.id);
+        .filter((m: MessageRow) => m.sender_email !== user.email)
+        .map((m: MessageRow) => m.id);
       if (ids.length > 0) {
         markMessagesAsRead(ids, user.email).catch(() => undefined);
       }
@@ -414,7 +420,7 @@ export default function ConversationScreen() {
               const mine = m.sender_email === user?.email;
               const receipts = readReceiptsQuery.data?.[m.id] ?? [];
               const readByCount = mine
-                ? receipts.filter((r) => r.user_email !== m.sender_email).length
+                ? receipts.filter((r: ReadReceiptRow) => r.user_email !== m.sender_email).length
                 : 0;
               return (
                 <MessageBubble

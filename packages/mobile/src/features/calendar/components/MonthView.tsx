@@ -27,7 +27,10 @@ const SOURCE_LABEL: Record<EventSource, string> = {
 
 const WEEKDAYS = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'];
 
-const isoKey = (d: Date) => d.toISOString().slice(0, 10);
+// Klucz dnia w LOKALNEJ strefie — toISOString() (UTC) przesuwałby wydarzenia
+// o północy do sąsiedniej komórki w PL (UTC+1/+2).
+const isoKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 const startOfDay = (d: Date) => {
   const c = new Date(d);

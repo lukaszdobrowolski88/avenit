@@ -133,6 +133,8 @@ export const useUpdateAssignmentStatus = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['assignments'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
+      // Zakładka „Zespół" (useProgramTeam) też pokazuje status — odśwież ją.
+      qc.invalidateQueries({ queryKey: ['programs', 'team'] });
     },
   });
 };

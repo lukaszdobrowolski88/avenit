@@ -18,6 +18,8 @@ import {
   useProgramDetail,
   useMyAssignments,
   useProgramTeam,
+  type MyAssignmentRow,
+  type ProgramTeamMember,
 } from '../../../src/features/programs/api';
 import { ScheduleList } from '../../../src/features/programs/components/ScheduleList';
 import { AssignmentCard } from '../../../src/features/programs/components/AssignmentCard';
@@ -284,7 +286,7 @@ export default function ProgramDetailScreen() {
             >
               Twoje przypisania
             </Text>
-            {assignmentsQuery.data.map((a) => (
+            {assignmentsQuery.data.map((a: MyAssignmentRow) => (
               <AssignmentCard key={String(a.id)} assignment={a} />
             ))}
           </View>
@@ -409,7 +411,7 @@ export default function ProgramDetailScreen() {
                         </View>
                       </View>
                       <View className="px-3 py-2">
-                        {members?.map((m, idx) => (
+                        {members?.map((m: ProgramTeamMember, idx: number) => (
                           <View
                             key={m.id}
                             className="flex-row items-center gap-3 px-2 py-2.5"

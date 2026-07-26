@@ -29,6 +29,7 @@ import {
   useTeamSchedule,
   useWallPosts,
   type MinistryKey,
+  type ScheduleEntry,
 } from '../../../src/features/teams/api';
 import { WallPostCard } from '../../../src/features/teams/components/WallPostCard';
 import { EventRow } from '../../../src/features/teams/components/EventRow';
@@ -165,7 +166,7 @@ export default function TeamDetailScreen() {
 
   const sortedSchedule = useMemo(() => {
     const list = (schedule.data ?? []).slice();
-    list.sort((a, b) => {
+    list.sort((a: ScheduleEntry, b: ScheduleEntry) => {
       const am = a.assignedEmail === myEmail ? 0 : 1;
       const bm = b.assignedEmail === myEmail ? 0 : 1;
       if (am !== bm) return am - bm;

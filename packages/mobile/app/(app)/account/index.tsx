@@ -51,7 +51,7 @@ export default function AccountScreen() {
       if (cancelled) return;
       setBiometricSupported(cap.available);
       setBiometricOn(enabled && cap.available);
-      setPushOn(perm.status === 'granted');
+      setPushOn((perm as { status?: string }).status === 'granted');
     })();
     return () => {
       cancelled = true;
@@ -70,7 +70,9 @@ export default function AccountScreen() {
 
   const handlePushToggle = async (next: boolean) => {
     if (next) {
-      const { status } = await Notifications.requestPermissionsAsync();
+      const { status } = (await Notifications.requestPermissionsAsync()) as {
+        status?: string;
+      };
       if (status !== 'granted') {
         Alert.alert(
           'Powiadomienia wyłączone',

@@ -30,11 +30,11 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
 
   const images = useMemo(
-    () => (data ?? []).filter((m) => m.type?.startsWith("image/")),
+    () => (data ?? []).filter((m: MediaItem) => m.type?.startsWith("image/")),
     [data],
   );
   const files = useMemo(
-    () => (data ?? []).filter((m) => !m.type?.startsWith("image/")),
+    () => (data ?? []).filter((m: MediaItem) => !m.type?.startsWith("image/")),
     [data],
   );
 

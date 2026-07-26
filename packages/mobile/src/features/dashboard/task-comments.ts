@@ -44,7 +44,11 @@ export const useAddTaskComment = (taskId: string | null | undefined) => {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['task-comments', taskId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['task-comments', taskId] });
+      // Badge z liczbą komentarzy używa innego klucza — odśwież też jego.
+      qc.invalidateQueries({ queryKey: ['task-comments-counts'] });
+    },
   });
 };
 
@@ -58,7 +62,10 @@ export const useDeleteTaskComment = (taskId: string | null | undefined) => {
         .eq('id', commentId);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['task-comments', taskId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['task-comments', taskId] });
+      qc.invalidateQueries({ queryKey: ['task-comments-counts'] });
+    },
   });
 };
 

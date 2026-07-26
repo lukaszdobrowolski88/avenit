@@ -305,7 +305,7 @@ export default function PrayersScreen() {
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
             }
           >
-            {data!.map((p) => (
+            {data!.map((p: PrayerRequest) => (
               <PrayerCard key={p.id} prayer={p} userEmail={user?.email ?? null} />
             ))}
           </ScrollView>

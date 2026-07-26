@@ -43,7 +43,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
   const songId = song?.id;
   const { data: programs, isLoading } = useUpcomingPrograms(visible);
   const { data: existingIds } = useSongProgramAssignments(songId, visible);
-  const programIds = useMemo(() => (programs ?? []).map((p) => p.id), [programs]);
+  const programIds = useMemo(() => (programs ?? []).map((p: UpcomingProgram) => p.id), [programs]);
   const { data: counts } = useProgramSuggestionCounts(programIds, visible);
   const addMutation = useAddSongToProgram(myEmail);
 
@@ -56,7 +56,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
     const list = programs ?? [];
     const q = search.trim().toLowerCase();
     if (!q) return list;
-    return list.filter((p) => {
+    return list.filter((p: UpcomingProgram) => {
       return (
         (p.title ?? '').toLowerCase().includes(q) ||
         (p.date ?? '').toLowerCase().includes(q) ||

@@ -188,10 +188,14 @@ export const registerPushToken = async (userEmail: string) => {
     return;
   }
 
-  const { status: existing } = await Notifications.getPermissionsAsync();
+  const { status: existing } = (await Notifications.getPermissionsAsync()) as {
+    status?: string;
+  };
   let status = existing;
   if (status !== 'granted') {
-    const { status: requested } = await Notifications.requestPermissionsAsync();
+    const { status: requested } = (await Notifications.requestPermissionsAsync()) as {
+      status?: string;
+    };
     status = requested;
   }
   if (status !== 'granted') {

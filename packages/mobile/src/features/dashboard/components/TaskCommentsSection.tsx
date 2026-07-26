@@ -183,7 +183,7 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
           Brak komentarzy. Bądź pierwszy!
         </Text>
       ) : (
-        comments.map((c) => {
+        comments.map((c: TaskComment) => {
           const canDelete =
             !!myEmail && (c.author_email === myEmail || taskOwnerEmail === myEmail);
           return (

@@ -321,15 +321,18 @@ export const useMessages = (conversationId: string) =>
   useQuery({
     queryKey: ["messages", conversationId],
     queryFn: async (): Promise<MessageRow[]> => {
+      // Pobierz NAJNOWSZE 200 (desc + limit), potem odwróć do rosnącej kolejności
+      // do wyświetlania — inaczej w rozmowach >200 wiadomości widać samą starą historię,
+      // a świeżo wysłana wiadomość znika po refetchu.
       const { data, error } = await supabase
         .from("messages")
         .select("*")
         .eq("conversation_id", conversationId)
         .is("deleted_at", null)
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return (data ?? []) as MessageRow[];
+      return ((data ?? []) as MessageRow[]).reverse();
     },
     enabled: !!conversationId,
   });
