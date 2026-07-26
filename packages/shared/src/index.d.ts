@@ -77,7 +77,23 @@ export interface AuthSubscription {
   data: { subscription: { unsubscribe(): void } };
 }
 
+export interface AppLoginResult {
+  multiple?: boolean;
+  tenants?: { slug: string; name: string }[];
+  requires2fa?: boolean;
+  tenant?: string;
+  churchName?: string;
+  ticket?: string;
+  redirect?: string;
+}
+
 export interface AuthClient {
+  appLogin(creds: {
+    email: string;
+    password: string;
+    totpCode?: string;
+    tenant?: string;
+  }): Promise<{ data: AppLoginResult | null; error: PostgrestError | null }>;
   signInWithPassword(creds: { email: string; password: string; totpCode?: string }): Promise<AuthResponse>;
   signUp(creds: { email: string; password: string }): Promise<AuthResponse>;
   signOut(): Promise<{ error: PostgrestError | null }>;
@@ -129,6 +145,8 @@ export interface AvenitClient {
   removeChannel(chan: RealtimeChannel): void;
   getChannels(): RealtimeChannel[];
   removeAllChannels(): void;
+  setTenant(slug: string | null): Promise<void>;
+  getTenant(): string | null;
 }
 
 export interface StorageAdapter {

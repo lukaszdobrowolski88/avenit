@@ -46,18 +46,57 @@ export const useAuthSession = (): AuthState => {
   return { session, user: session?.user ?? null, loading };
 };
 
-export const signInWithPassword = (email: string, password: string, totpCode?: string) =>
-  supabase.auth.signInWithPassword({ email, password, totpCode });
+// ── Logowanie uniwersalne (jedna apka, wszystkie kościoły) ──────────────────
+// Nie zaszywamy tenanta w buildzie. Użytkownik podaje sam e-mail+hasło; backend
+// (/api/app-login) znajduje kościół(y) po e-mailu, obsługuje wybór gdy konto jest
+// w wielu, 2FA (serwerowo), i zwraca jednorazowy bilet SSO. Klient ustawia wtedy
+// tenant (utrwalany) i wymienia bilet na sesję przez /api/auth/ticket.
+
+export interface LoginTenant {
+  slug: string;
+  name: string;
+}
+
+export type UniversalLoginResult =
+  | { ok: true }
+  | { multiple: LoginTenant[] }
+  | { requires2fa: true; tenant: string }
+  | { error: { message: string } };
+
+export const universalLogin = async (
+  email: string,
+  password: string,
+  opts?: { tenant?: string; totpCode?: string },
+): Promise<UniversalLoginResult> => {
+  const { data, error } = await supabase.auth.appLogin({
+    email,
+    password,
+    totpCode: opts?.totpCode,
+    tenant: opts?.tenant,
+  });
+  if (error) return { error };
+  if (data?.multiple && data.tenants?.length) return { multiple: data.tenants };
+  if (data?.requires2fa) return { requires2fa: true, tenant: data.tenant ?? '' };
+  if (!data?.ticket || !data?.tenant) {
+    return { error: { message: 'Nieprawidłowa odpowiedź logowania' } };
+  }
+  // Sukces: zapamiętaj kościół i wymień bilet na sesję.
+  await supabase.setTenant(data.tenant);
+  const { error: ticketError } = await supabase.auth.loginWithTicket(data.ticket);
+  if (ticketError) {
+    await supabase.setTenant(null);
+    return { error: ticketError };
+  }
+  return { ok: true };
+};
 
 // ── 2FA: weryfikacja WYŁĄCZNIE po stronie serwera ──────────────────────────
-// Backend (/api/auth/login) sam sprawdza kod TOTP/kod zapasowy i dopiero wtedy
-// wydaje sesję — sekret nigdy nie trafia do klienta. Poświadczenia oczekujące
-// na drugi składnik trzymamy TYLKO w pamięci procesu (nigdy w SecureStore ani
-// w parametrach nawigacji), i czyścimy zaraz po użyciu.
-let pending2fa: { email: string; password: string } | null = null;
+// Poświadczenia oczekujące na drugi składnik (wraz z rozwiązanym już tenantem)
+// trzymamy TYLKO w pamięci procesu — nigdy w SecureStore ani w parametrach nawigacji.
+let pending2fa: { email: string; password: string; tenant?: string } | null = null;
 
-export const beginTwoFactor = (email: string, password: string) => {
-  pending2fa = { email, password };
+export const beginTwoFactor = (email: string, password: string, tenant?: string) => {
+  pending2fa = { email, password, tenant };
 };
 
 export const clearPending2fa = () => {
@@ -70,19 +109,15 @@ export const completeTwoFactorLogin = async (
   if (!pending2fa) {
     return { error: { message: 'Sesja logowania wygasła — zaloguj się ponownie.' } };
   }
-  const { email, password } = pending2fa;
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-    totpCode: code,
-  });
-  if (error) return { error };
-  // Gdyby backend nadal żądał 2FA (np. pusty/nieprawidłowy kod przepuszczony) — traktuj jak błąd.
-  if ((data as { requires2fa?: boolean })?.requires2fa) {
-    return { error: { message: 'Nieprawidłowy kod weryfikacyjny' } };
+  const { email, password, tenant } = pending2fa;
+  const result = await universalLogin(email, password, { tenant, totpCode: code });
+  if ('ok' in result) {
+    pending2fa = null;
+    return { error: null };
   }
-  pending2fa = null;
-  return { error: null };
+  if ('error' in result) return { error: result.error };
+  // Wciąż requires2fa / multiple przy podanym kodzie → traktuj jak zły kod.
+  return { error: { message: 'Nieprawidłowy kod weryfikacyjny' } };
 };
 
 export const signOut = () => {

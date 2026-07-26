@@ -10,7 +10,12 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { signInWithPassword, sendPasswordReset, beginTwoFactor } from '../../src/lib/auth';
+import {
+  universalLogin,
+  sendPasswordReset,
+  beginTwoFactor,
+  type LoginTenant,
+} from '../../src/lib/auth';
 import { GradientAvatar } from '../../src/components/ui/GradientAvatar';
 import { GradientButton } from '../../src/components/ui/GradientButton';
 
@@ -19,31 +24,42 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  // Gdy jeden e-mail jest w wielu kościołach — lista do wyboru.
+  const [choices, setChoices] = useState<LoginTenant[] | null>(null);
 
-  const handleLogin = async () => {
+  const submit = async (chosenTenant?: string) => {
     if (!email || !password) {
       Alert.alert('Brak danych', 'Wpisz email i hasło.');
       return;
     }
     setLoading(true);
     const trimmed = email.trim();
-    const { data, error } = await signInWithPassword(trimmed, password);
-    if (error) {
-      setLoading(false);
-      Alert.alert('Błąd logowania', error.message);
+    const result = await universalLogin(
+      trimmed,
+      password,
+      chosenTenant ? { tenant: chosenTenant } : undefined,
+    );
+    setLoading(false);
+    if ('ok' in result) {
+      setChoices(null);
+      router.replace('/(auth)/biometric');
       return;
     }
-    // Backend zażądał drugiego składnika — sesja NIE jest jeszcze wydana.
-    // Przekaż poświadczenia do ekranu 2FA w pamięci (nie w parametrach).
-    if ((data as { requires2fa?: boolean })?.requires2fa) {
-      beginTwoFactor(trimmed, password);
-      setLoading(false);
+    if ('multiple' in result) {
+      // Konto w wielu kościołach — pokaż wybór.
+      setChoices(result.multiple);
+      return;
+    }
+    if ('requires2fa' in result) {
+      // Tenant już rozwiązany — przekaż go razem z poświadczeniami do ekranu 2FA (w pamięci).
+      beginTwoFactor(trimmed, password, result.tenant);
       router.replace('/(auth)/totp');
       return;
     }
-    setLoading(false);
-    router.replace('/(auth)/biometric');
+    Alert.alert('Błąd logowania', result.error.message);
   };
+
+  const handleLogin = () => submit();
 
   const handleReset = async () => {
     if (!email) {
@@ -89,9 +105,57 @@ export default function LoginScreen() {
             fontFamily: 'Inter_500Medium',
           }}
         >
-          Zaloguj się do aplikacji
+          {choices ? 'Wybierz swój kościół' : 'Zaloguj się do aplikacji'}
         </Text>
 
+        {choices && (
+          <View style={{ gap: 10 }}>
+            {choices.map((c) => (
+              <Pressable
+                key={c.slug}
+                onPress={() => submit(c.slug)}
+                disabled={loading}
+                style={{
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: '#eef0f3',
+                  backgroundColor: '#fafaf9',
+                  paddingHorizontal: 16,
+                  paddingVertical: 16,
+                  opacity: loading ? 0.6 : 1,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 15,
+                    color: '#0c0a09',
+                    fontFamily: 'Inter_600SemiBold',
+                  }}
+                >
+                  {c.name}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable
+              onPress={() => setChoices(null)}
+              disabled={loading}
+              style={{ paddingVertical: 10 }}
+            >
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: 13,
+                  color: '#78716c',
+                  fontFamily: 'Inter_500Medium',
+                }}
+              >
+                Wróć
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
+        {!choices && (
         <View
           style={{
             borderRadius: 20,
@@ -203,6 +267,7 @@ export default function LoginScreen() {
             </Pressable>
           </View>
         </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );

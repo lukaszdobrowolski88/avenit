@@ -105,6 +105,9 @@ export default async function appLoginRoutes(app) {
       return reply.send({
         tenant: sub,
         churchName: match.tenant.name,
+        // `ticket` dla klientów natywnych (mobile) — wymieniają go bez otwierania
+        // przeglądarki przez /api/auth/ticket. `redirect` zostaje dla weba (SSO).
+        ticket: raw,
         redirect: `https://${sub}.${config.APP_DOMAIN}/login?ticket=${raw}`,
       });
     }
