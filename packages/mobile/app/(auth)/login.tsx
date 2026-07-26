@@ -10,8 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { signInWithPassword, sendPasswordReset } from '../../src/lib/auth';
-import { checkTwoFactorStatus } from '../../src/lib/totp';
+import { signInWithPassword, sendPasswordReset, beginTwoFactor } from '../../src/lib/auth';
 import { GradientAvatar } from '../../src/components/ui/GradientAvatar';
 import { GradientButton } from '../../src/components/ui/GradientButton';
 
@@ -28,18 +27,21 @@ export default function LoginScreen() {
     }
     setLoading(true);
     const trimmed = email.trim();
-    const { error } = await signInWithPassword(trimmed, password);
+    const { data, error } = await signInWithPassword(trimmed, password);
     if (error) {
       setLoading(false);
       Alert.alert('Błąd logowania', error.message);
       return;
     }
-    const status = await checkTwoFactorStatus(trimmed);
-    setLoading(false);
-    if (status.enabled || status.required) {
-      router.replace({ pathname: '/(auth)/totp', params: { email: trimmed } });
+    // Backend zażądał drugiego składnika — sesja NIE jest jeszcze wydana.
+    // Przekaż poświadczenia do ekranu 2FA w pamięci (nie w parametrach).
+    if ((data as { requires2fa?: boolean })?.requires2fa) {
+      beginTwoFactor(trimmed, password);
+      setLoading(false);
+      router.replace('/(auth)/totp');
       return;
     }
+    setLoading(false);
     router.replace('/(auth)/biometric');
   };
 
