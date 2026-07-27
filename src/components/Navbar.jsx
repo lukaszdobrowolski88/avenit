@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, Moon, LogOut, User as UserIcon, Circle, Search, LifeBuoy, PlayCircle, ListChecks } from 'lucide-react';
+import { Sun, Moon, LogOut, User as UserIcon, Circle, Search, LifeBuoy, PlayCircle, ListChecks, GraduationCap } from 'lucide-react';
 import { openCommandPalette } from './CommandPalette';
 import { useOnboarding } from '../onboarding/OnboardingContext';
 import { supabase } from '../lib/supabase';
@@ -14,7 +14,7 @@ import { tr } from '../i18n';
 
 export default function Navbar({ user, darkMode, toggleTheme }) {
   const t = useT();
-  const { startTour, openChecklist } = useOnboarding();
+  const { startTour, openChecklist, openTutorials } = useOnboarding();
   const [userProfile, setUserProfile] = useState(null);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [showHelpMenu, setShowHelpMenu] = useState(false);
@@ -137,6 +137,12 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary transition-colors"
                 >
                   <PlayCircle size={16} /> {t('Rozpocznij samouczek')}
+                </button>
+                <button
+                  onClick={() => { setShowHelpMenu(false); openTutorials(); }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary transition-colors"
+                >
+                  <GraduationCap size={16} /> {t('Samouczki procesów')}
                 </button>
                 <button
                   onClick={() => { setShowHelpMenu(false); openChecklist(); }}

@@ -14,7 +14,7 @@ export default function GettingStartedWidget() {
   const navigate = useNavigate();
   const {
     loaded, state, isAdmin, checklistOpen, openChecklist, closeChecklist,
-    completeStep, uncompleteStep, isStepDone, startTour, openWizard, dismissChecklist,
+    completeStep, uncompleteStep, isStepDone, startTour, openWizard, openTutorials, dismissChecklist,
   } = useOnboarding();
 
   const tasks = useMemo(() => getChecklist({ isAdmin }), [isAdmin]);
@@ -46,6 +46,7 @@ export default function GettingStartedWidget() {
     const a = task.action;
     if (a.type === 'tour') { closeChecklist(); startTour(a.tourId); }
     else if (a.type === 'wizard') { closeChecklist(); openWizard(); }
+    else if (a.type === 'tutorials') { completeStep(task.id); closeChecklist(); openTutorials(); }
     else if (a.type === 'navigate') {
       if (!task.autoSignal) completeStep(task.id);
       closeChecklist();

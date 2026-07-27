@@ -7,6 +7,7 @@
 
 import {
   Calendar, Users, ListChecks, Palette, Boxes, UserPlus, FileText, UserCircle,
+  Compass, CalendarClock, ClipboardCheck, CalendarPlus, GraduationCap,
 } from 'lucide-react';
 
 // ── Product tour (spotlight / coach-marks) ──────────────────────────────────
@@ -71,11 +72,89 @@ export const TOURS = {
     {
       selector: '[data-tour="help"]',
       title: 'Pomoc zawsze pod ręką',
-      body: 'W każdej chwili kliknij tutaj, aby ponownie uruchomić samouczek albo otworzyć listę kroków.',
+      body: 'W każdej chwili kliknij tutaj, aby ponownie uruchomić samouczek albo otworzyć listę kroków i przewodników.',
       placement: 'bottom',
     },
   ],
+
+  // ── Proces: jak zbudować program (plan nabożeństwa) ──
+  'program-build': [
+    { selector: '[data-tour="prog-new"]', route: '/programs', placement: 'left', interactive: true, advanceOn: 'click',
+      title: 'Utwórz nowy program', body: 'Zacznijmy od planu nabożeństwa. Kliknij „Nowy" przy wybranym typie, aby otworzyć edytor programu.' },
+    { selector: '[data-tour="prog-title"]', placement: 'bottom', interactive: true, waitMs: 12000,
+      title: 'Nadaj nazwę', body: 'Wpisz nazwę programu — np. „Nabożeństwo niedzielne".' },
+    { selector: '[data-tour="prog-date"]', placement: 'bottom', interactive: true,
+      title: 'Ustaw datę', body: 'Wybierz datę, w której odbędzie się program.' },
+    { selector: '[data-tour="prog-add-item"]', placement: 'bottom', interactive: true,
+      title: 'Dodaj elementy planu', body: 'Tu budujesz przebieg: pieśni, nagłówki, ogłoszenia, media. Kliknij „Dodaj", aby dołożyć pozycję do planu.' },
+    { selector: '[data-tour="prog-team"]', placement: 'top', interactive: true, optional: true,
+      title: 'Przypisz służby', body: 'W tej sekcji przypisujesz osoby do służb (zespół uwielbienia, media…). Przypisane osoby dostaną powiadomienie.' },
+    { selector: '[data-tour="prog-save"]', placement: 'bottom', interactive: true,
+      title: 'Zapisz program', body: 'Na koniec zapisz. Gotowe — Twój plan nabożeństwa jest utworzony i widoczny dla zespołu!' },
+  ],
+
+  // ── Proces: jak zaznaczyć obecność / nieobecność ──
+  'attendance-mark': [
+    { selector: '[data-tour="att-add-session"]', route: '/attendance', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Utwórz sesję', body: 'Obecność notujemy w „sesjach" — czyli konkretne spotkanie danego dnia. Kliknij „Dodaj sesję".' },
+    { selector: '[data-tour="att-session-date"]', placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Data i typ', body: 'Wybierz datę sesji oraz jej typ (np. nabożeństwo, spotkanie grupy).' },
+    { selector: '[data-tour="att-session-save"]', placement: 'top', interactive: true, advanceOn: 'click',
+      title: 'Zapisz sesję', body: 'Zapisz — sesja pojawi się na liście.' },
+    { selector: '[data-tour="att-session-list"]', placement: 'top', interactive: true, advanceOn: 'click', waitMs: 10000,
+      title: 'Otwórz sesję', body: 'Kliknij sesję na liście, aby otworzyć imienną listę obecności.' },
+    { selector: '[data-tour="att-mark"]', placement: 'left', interactive: true, waitMs: 10000,
+      title: 'Zaznacz obecność', body: 'Kliknij osobę, aby oznaczyć ją jako obecną (zielony znacznik). Ponowne kliknięcie = nieobecność. Zmiany zapisują się automatycznie.' },
+  ],
+
+  // ── Proces: jak uzupełnić grafik służb ──
+  'grafik-fill': [
+    { selector: '[data-tour="grafik-tab"]', route: '/worship', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Otwórz grafik', body: 'Grafik służb jest w zakładce „Grafik". Kliknij ją, aby zobaczyć rozpiskę.' },
+    { selector: '[data-tour="grafik-section"]', placement: 'top', interactive: true, waitMs: 10000,
+      title: 'Tak wygląda grafik', body: 'Wiersze to kolejne programy/nabożeństwa, a kolumny to poszczególne służby (np. wokal, dźwięk, prowadzenie).' },
+    { selector: '[data-tour="grafik-section"]', placement: 'top', interactive: true,
+      title: 'Przypisz osobę do służby', body: 'Kliknij komórkę roli przy wybranym programie i wybierz osobę z listy. Zostanie powiadomiona e-mailem i potwierdzi służbę. Zapis następuje automatycznie.' },
+  ],
+
+  // ── Proces: jak dodać członka ──
+  'member-add': [
+    { selector: '[data-tour="member-add"]', route: '/members', placement: 'bottom', interactive: true, advanceOn: 'click', optional: true,
+      title: 'Dodaj osobę', body: 'Kliknij „Dodaj osobę", aby dopisać nowego członka do bazy.' },
+    { selector: '[data-tour="member-first"]', placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Imię', body: 'Wpisz imię nowej osoby.' },
+    { selector: '[data-tour="member-last"]', placement: 'bottom', interactive: true,
+      title: 'Nazwisko', body: 'Uzupełnij nazwisko (imię i nazwisko są wymagane). Pozostałe dane — telefon, e-mail, służby — możesz dodać teraz lub później.' },
+    { selector: '[data-tour="member-save"]', placement: 'top', interactive: true, advanceOn: 'click',
+      title: 'Zapisz', body: 'Zapisz — osoba trafi do bazy członków i będzie dostępna w innych modułach.' },
+  ],
+
+  // ── Proces: jak dodać wydarzenie do kalendarza ──
+  'calendar-event': [
+    { selector: '[data-tour="cal-add"]', route: '/calendar', placement: 'right', interactive: true, advanceOn: 'click',
+      title: 'Dodaj do kalendarza', body: 'Kliknij „Dodaj", aby utworzyć nowy wpis w kalendarzu.' },
+    { selector: '[data-tour="cal-type-event"]', placement: 'bottom', interactive: true, advanceOn: 'click', waitMs: 10000,
+      title: 'Wybierz „Wydarzenie"', body: 'Wybierz „Wydarzenie". Następnie wskażesz kalendarz (np. ogólny lub konkretnej służby).' },
+    { selector: '[data-tour="cal-event-title"]', placement: 'bottom', interactive: true, waitMs: 12000, optional: true,
+      title: 'Szczegóły wydarzenia', body: 'Nadaj wydarzeniu nazwę, ustaw datę oraz godziny rozpoczęcia i zakończenia.' },
+    { selector: '[data-tour="cal-event-save"]', placement: 'top', interactive: true, optional: true,
+      title: 'Zapisz wydarzenie', body: 'Zapisz — wydarzenie pojawi się w kalendarzu, a jeśli włączysz zapisy (RSVP), członkowie będą mogli się zgłaszać.' },
+  ],
 };
+
+// ── Katalog przewodników (biblioteka „Samouczki") ───────────────────────────
+// Każdy wpis odpala tour z TOURS (pole id = klucz w TOURS). category grupuje w UI.
+export const TUTORIALS = [
+  { id: 'welcome', title: 'Szybkie wprowadzenie', desc: 'Przegląd całego panelu w minutę.', icon: Compass, category: 'Podstawy' },
+  { id: 'program-build', title: 'Jak zbudować program', desc: 'Zaplanuj nabożeństwo krok po kroku.', icon: FileText, category: 'Planowanie' },
+  { id: 'grafik-fill', title: 'Jak uzupełnić grafik', desc: 'Przypisz osoby do służb.', icon: CalendarClock, category: 'Planowanie' },
+  { id: 'calendar-event', title: 'Jak dodać wydarzenie', desc: 'Utwórz wpis w kalendarzu.', icon: CalendarPlus, category: 'Planowanie' },
+  { id: 'attendance-mark', title: 'Jak zaznaczyć obecność', desc: 'Notuj obecność i nieobecność.', icon: ClipboardCheck, category: 'Ludzie' },
+  { id: 'member-add', title: 'Jak dodać członka', desc: 'Dopisz nową osobę do bazy.', icon: UserPlus, category: 'Ludzie' },
+];
+
+// Kolejność kategorii w bibliotece.
+export const TUTORIAL_CATEGORIES = ['Podstawy', 'Planowanie', 'Ludzie'];
 
 // ── Checklista „Pierwsze kroki" ─────────────────────────────────────────────
 // Zadanie: { id, title, desc, icon, action, autoSignal?, adminOnly? }
@@ -91,6 +170,13 @@ const COMMON_STEPS = [
     icon: ListChecks,
     action: { type: 'tour', tourId: 'welcome' },
     autoSignal: 'tourDone',
+  },
+  {
+    id: 'tutorials',
+    title: 'Naucz się procesów krok po kroku',
+    desc: 'Program, grafik, obecność i więcej — w bibliotece przewodników.',
+    icon: GraduationCap,
+    action: { type: 'tutorials' },
   },
   {
     id: 'profile',

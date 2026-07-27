@@ -1314,7 +1314,7 @@ const AddItemDropdown = ({ onAdd }) => {
   ];
 
   return (
-    <div ref={wrapperRef} className="relative">
+    <div ref={wrapperRef} data-tour="prog-add-item" className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm font-medium rounded-lg hover:shadow-lg hover:shadow-accent-primary-light/20 transition"
@@ -2846,6 +2846,7 @@ export default function ProgramDetail() {
           <div className="bg-white/70 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-gray-200/60 dark:border-gray-700/50 p-5 lg:p-6 mb-6 lg:mb-8 relative">
             <div className="mb-4">
               <input
+                data-tour="prog-title"
                 type="text"
                 value={program.title || ''}
                 onChange={(e) => setProgram({...program, title: e.target.value})}
@@ -2855,10 +2856,12 @@ export default function ProgramDetail() {
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <CustomDatePicker
-                  value={program.date}
-                  onChange={(v) => setProgram({...program, date: v})}
-                />
+                <span data-tour="prog-date">
+                  <CustomDatePicker
+                    value={program.date}
+                    onChange={(v) => setProgram({...program, date: v})}
+                  />
+                </span>
                 <div className="h-5 w-px bg-gray-200 dark:bg-gray-700 hidden sm:block" />
                 <div className="flex items-center gap-1">
                   <button
@@ -2923,6 +2926,7 @@ export default function ProgramDetail() {
               </button>
 
               <button
+                data-tour="prog-save"
                 onClick={handleSave}
                 className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 lg:px-6 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary-light hover:from-accent-primary-dark hover:to-accent-secondary text-white rounded-lg shadow-lg shadow-accent-primary-light/20 hover:shadow-accent-primary-light/30 transition-all font-medium text-sm"
               >
@@ -3124,7 +3128,7 @@ export default function ProgramDetail() {
           </div>
 
           {isSectionVisible('zespol') && (
-          <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-4 lg:p-6 mb-4 lg:mb-6 hover:shadow-xl transition relative z-50">
+          <div data-tour="prog-team" className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-4 lg:p-6 mb-4 lg:mb-6 hover:shadow-xl transition relative z-50">
             <div className="flex justify-between items-center mb-4 lg:mb-6">
               <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{t('Zespół Uwielbienia')}</h3>
             </div>

@@ -41,6 +41,7 @@ export default function ResponsiveTabs({ tabs, activeTab, onChange, className = 
               <button
                 key={tab.id}
                 ref={isActive ? activeTabRef : null}
+                data-tour={tab.tour}
                 onClick={() => onChange(tab.id)}
                 className={`flex-shrink-0 px-4 py-2.5 rounded-full font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
                   isActive
@@ -67,6 +68,7 @@ export default function ResponsiveTabs({ tabs, activeTab, onChange, className = 
             return (
               <button
                 key={tab.id}
+                data-tour={tab.tour}
                 onClick={() => onChange(tab.id)}
                 className={`px-4 xl:px-6 py-2.5 rounded-xl font-medium transition text-sm flex items-center gap-2 ${
                   isActive

@@ -494,6 +494,7 @@ export default function Members() {
 
           <Can cap="res:members:create">
           <button
+            data-tour="member-add"
             onClick={() => openModal()}
             className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center gap-2 whitespace-nowrap"
           >
@@ -680,6 +681,7 @@ export default function Members() {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Imię *')}</label>
                   <input
+                    data-tour="member-first"
                     className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={formData.first_name}
                     onChange={e => setFormData({ ...formData, first_name: e.target.value })}
@@ -688,6 +690,7 @@ export default function Members() {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwisko *</label>
                   <input
+                    data-tour="member-last"
                     className="w-full px-4 py-3 border border-gray-200/50 dark:border-gray-700/50 rounded-xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:ring-2 focus:ring-accent-primary-light/20 outline-none text-gray-900 dark:text-gray-100"
                     value={formData.last_name}
                     onChange={e => setFormData({ ...formData, last_name: e.target.value })}
@@ -922,6 +925,7 @@ export default function Members() {
               <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
                 <button onClick={() => setShowModal(false)} className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
                 <button
+                  data-tour="member-save"
                   onClick={handleSave}
                   disabled={saving}
                   className="px-8 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition disabled:opacity-50"

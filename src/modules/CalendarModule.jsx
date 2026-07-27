@@ -189,6 +189,7 @@ const ModalSelectType = ({ date, onClose, onSelectTask, onSelectEvent }) => {
 
         <div className="grid grid-cols-2 gap-4">
           <button
+            data-tour="cal-type-event"
             onClick={onSelectEvent}
             className="flex flex-col items-center gap-3 p-6 bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 border-2 border-accent-primary-lighter dark:border-accent-primary-dark rounded-2xl hover:border-accent-primary-light dark:hover:border-accent-primary hover:shadow-lg transition group"
           >
@@ -365,6 +366,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Tytuł')}</label>
             <input
               autoFocus
+              data-tour="cal-event-title"
               className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 outline-none"
               value={event.title}
               onChange={e => setEvent({...event, title: e.target.value})}
@@ -460,7 +462,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
 
           <div className="flex gap-2">
             <button onClick={onClose} className="px-4 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">{t('Anuluj')}</button>
-            <button onClick={handleSubmit} className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg shadow-accent-primary-light/30 flex items-center gap-2 transition">
+            <button data-tour="cal-event-save" onClick={handleSubmit} className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg shadow-accent-primary-light/30 flex items-center gap-2 transition">
               <Save size={16} /> {t('Zapisz')}
             </button>
           </div>
@@ -2601,7 +2603,7 @@ export default function CalendarModule() {
                 </label>
               ))}
             </div>
-            <button onClick={() => { handleAddClick(new Date().toISOString().split('T')[0]); setSidebarOpen(false); }} className="w-full mt-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl shadow-lg shadow-accent-primary-light/30 flex items-center justify-center gap-2 hover:shadow-accent-primary-light/50 transition transform hover:-translate-y-0.5">
+            <button data-tour="cal-add" onClick={() => { handleAddClick(new Date().toISOString().split('T')[0]); setSidebarOpen(false); }} className="w-full mt-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl shadow-lg shadow-accent-primary-light/30 flex items-center justify-center gap-2 hover:shadow-accent-primary-light/50 transition transform hover:-translate-y-0.5">
               <Plus size={18} /> Dodaj
             </button>
           </div>

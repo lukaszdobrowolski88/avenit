@@ -166,7 +166,7 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
           />
         </div>
         <div className="w-48"><CustomSelect value={typeFilter} onChange={setTypeFilter} options={typeOptionsAll} compact icon={Filter} /></div>
-        <button onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition">
+        <button data-tour="att-add-session" onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition">
           <Plus size={16} /> Dodaj sesję
         </button>
       </div>
@@ -178,7 +178,7 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
       </div>
 
       {/* Lista */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div data-tour="att-session-list" className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
           <div className="p-10 text-center text-gray-400">Ładowanie...</div>
         ) : filtered.length === 0 ? (
@@ -252,7 +252,7 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
-                  <input type="date" value={form.session_date} onChange={e => setForm(f => ({ ...f, session_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  <input data-tour="att-session-date" type="date" value={form.session_date} onChange={e => setForm(f => ({ ...f, session_date: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
                 <CustomSelect label="Typ" value={form.session_type} onChange={v => setForm(f => ({ ...f, session_type: v }))} options={typeOptionsForm} />
               </div>
@@ -270,7 +270,7 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
             </div>
             <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
               <button onClick={() => setModalOpen(false)} disabled={saving} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
-              <button onClick={save} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Zapisywanie...' : 'Zapisz'}</button>
+              <button data-tour="att-session-save" onClick={save} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Zapisywanie...' : 'Zapisz'}</button>
             </div>
           </div>
         </div>
@@ -417,7 +417,7 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
               />
             </div>
           </div>
-          <div className="max-h-[420px] overflow-y-auto custom-scrollbar">
+          <div data-tour="att-mark" className="max-h-[420px] overflow-y-auto custom-scrollbar">
             {loading ? (
               <div className="p-10 text-center text-gray-400">Ładowanie...</div>
             ) : filteredMembers.length === 0 ? (
