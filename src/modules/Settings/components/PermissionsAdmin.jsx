@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
-import { capabilityGroups } from '@avenit/shared/src/permissions/catalog.js';
+import { dynamicCapabilityGroups } from '@avenit/shared/src/permissions/catalog.js';
 import { ROLE_PRESETS, BUILTIN_ROLES } from '@avenit/shared/src/permissions/presets.js';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { ChevronDown, ChevronRight, Shield, Plus, Trash2, Users, Sliders } from 'lucide-react';
@@ -19,24 +19,31 @@ export default function PermissionsAdmin() {
   const [roles, setRoles] = useState([]);
   const [grants, setGrants] = useState([]); // wszystkie granty (rola + user)
   const [users, setUsers] = useState([]);
+  const [dbModules, setDbModules] = useState([]); // moduły własne (kreator) → macierz
+  const [dbTabs, setDbTabs] = useState([]);
   const [selectedRole, setSelectedRole] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [expanded, setExpanded] = useState(() => new Set());
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
-  const groups = useMemo(() => capabilityGroups(), []);
+  // Macierz = katalog statyczny (moduły systemowe) + moduły własne doklejone z DB.
+  const groups = useMemo(() => dynamicCapabilityGroups(dbModules, dbTabs), [dbModules, dbTabs]);
 
   const load = async () => {
-    const [r, g, u] = await Promise.all([
+    const [r, g, u, mods, tabs] = await Promise.all([
       supabase.from('app_roles').select('*').order('display_order'),
       supabase.from('permission_grants').select('*'),
       supabase.from('app_users').select('id, email, full_name, name, role').order('created_at'),
+      supabase.from('app_modules').select('id, key, label, is_system').order('display_order'),
+      supabase.from('app_module_tabs').select('module_id, key, label').order('display_order'),
     ]);
     const rolesData = r.data || [];
     setRoles(rolesData);
     setGrants(g.data || []);
     setUsers(u.data || []);
+    setDbModules(mods.data || []);
+    setDbTabs(tabs.data || []);
     if (!selectedRole && rolesData.length) setSelectedRole(rolesData.find((x) => !x.is_admin)?.key || rolesData[0].key);
   };
   useEffect(() => { load().catch((e) => setErr(e.message)); }, []);

@@ -367,6 +367,53 @@ export function capabilityGroups() {
   }));
 }
 
+// ── Moduły WŁASNE (kreator) — dynamiczne doklejenie do katalogu ─────────────
+// Katalog statyczny (MODULES) opisuje moduły systemowe. Moduły utworzone kreatorem
+// żyją w app_modules/app_module_tabs. Aby były w macierzy uprawnień i objęte tymi
+// samymi presetami (module:*, tab:*:*) co systemowe, doklejamy je dynamicznie z danych
+// DB. Server enforcement dla ich danych: custom_<key>_* → module:<key> (registry.js),
+// module_records → module:<key> per rekord (routes.js).
+// Zsynchronizowane z CUSTOM_TABLE_SUFFIXES w registry.js (enforcement res:custom_<key>_<suffix>:<op>).
+const CUSTOM_MODULE_RESOURCES = [
+  { suffix: 'members', label: 'Członkowie' },
+  { suffix: 'tasks', label: 'Zadania' },
+  { suffix: 'task_comments', label: 'Komentarze zadań' },
+  { suffix: 'wall', label: 'Tablica' },
+  { suffix: 'events', label: 'Wydarzenia' },
+];
+
+function customModuleGroup(mod, tabs) {
+  return {
+    key: mod.key,
+    label: mod.label,
+    custom: true,
+    rows: [
+      { cap: `module:${mod.key}`, label: 'Dostęp do modułu', kind: 'module' },
+      ...tabs.map((t) => ({ cap: `tab:${mod.key}:${t.key}`, label: `Zakładka: ${t.label}`, kind: 'tab' })),
+      ...CUSTOM_MODULE_RESOURCES.flatMap(({ suffix, label }) =>
+        CRUD_OPS.map((op) => ({ cap: `res:custom_${mod.key}_${suffix}:${op}`, label: `${label} — ${CRUD_LABELS[op]}`, kind: 'crud' }))),
+    ],
+  };
+}
+
+// Grupy do macierzy z modułami własnymi (spoza MODULES) doklejonymi po statycznych.
+// dbModules: [{ id, key, label }], dbTabs: [{ module_id, key, label }].
+export function dynamicCapabilityGroups(dbModules = [], dbTabs = []) {
+  const staticKeys = new Set(MODULES.map((m) => m.key));
+  const tabsByModule = {};
+  for (const t of dbTabs) (tabsByModule[t.module_id] ||= []).push(t);
+  const customGroups = (dbModules || [])
+    // Tylko moduły WŁASNE (kreator): nie-systemowe i spoza statycznego katalogu.
+    // (np. 'dashboard' jest systemowy, ale nie ma pozycji w MODULES — pomijamy.)
+    .filter((m) => m && m.key && m.is_system !== true && !staticKeys.has(m.key))
+    .map((m) => customModuleGroup(m, tabsByModule[m.id] || []));
+  return [...capabilityGroups(), ...customGroups];
+}
+
+export function dynamicAllCapabilities(dbModules = [], dbTabs = []) {
+  return dynamicCapabilityGroups(dbModules, dbTabs).flatMap((g) => g.rows.map((r) => r.cap));
+}
+
 // Kolumny z kontrolą na poziomie pola dla danej tabeli/zasobu (do filtrowania w Data API).
 const FIELD_COLUMNS = {};
 for (const m of MODULES) for (const f of m.fields) {

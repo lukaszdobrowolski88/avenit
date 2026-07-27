@@ -68,6 +68,17 @@ export default async function dataApiRoutes(app) {
         }
       }
 
+      // PARYTET DANYCH: rekordy własnych kolekcji kreatora egzekwowane per moduł.
+      // Wymaga capability module:<module_key> (jak dostęp do samego modułu). Zapytania
+      // muszą być zawężone do modułu (module_key) — inaczej odrzucamy (brak wycieku).
+      if (q.table === 'module_records' && access.resolver && !user.is_super_admin) {
+        const moduleKey = moduleRecordsModuleKey(q);
+        if (!moduleKey) throw new ApiError(400, 'module_records: wymagany filtr/wartość module_key');
+        if (!access.resolver.can(`module:${moduleKey}`)) {
+          throw new ApiError(403, `Brak dostępu do modułu: ${moduleKey}`);
+        }
+      }
+
       // Wyczyść cache uprawnień przy zmianach ról/grantów.
       if (['app_permissions', 'permission_grants', 'app_roles'].includes(q.table) && q.op !== 'select') {
         invalidatePermissions(req.tenant.db_name);
@@ -222,6 +233,18 @@ async function allowSelfUpdate(q, req) {
     ((f[0].column === 'id' && String(f[0].value) === String(req.user.id)) ||
       (f[0].column === 'email' && f[0].value?.toLowerCase() === req.user.email?.toLowerCase()))
   );
+}
+
+// Wyznacza module_key żądania na module_records (insert: z values; pozostałe: z filtra eq).
+// Zwraca null, gdy żądanie nie jest jednoznacznie zawężone do jednego modułu.
+function moduleRecordsModuleKey(q) {
+  if (q.op === 'insert') {
+    const rows = Array.isArray(q.values) ? q.values : [q.values];
+    const keys = new Set(rows.map((r) => r && r.module_key).filter(Boolean));
+    return keys.size === 1 ? String([...keys][0]) : null;
+  }
+  const f = (q.filters || []).find((x) => x.type === 'eq' && x.column === 'module_key');
+  return f ? String(f.value) : null;
 }
 
 function unwrapRow(row) {

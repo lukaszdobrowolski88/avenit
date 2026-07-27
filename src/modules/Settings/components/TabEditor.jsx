@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen } from 'lucide-react';
+import { X, Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen, LayoutDashboard } from 'lucide-react';
 import IconPicker from './IconPicker';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
@@ -15,7 +15,8 @@ const COMPONENT_TYPES = [
   { key: 'wall', label: tr('Tablica'), icon: MessageSquare, description: 'Tablica z wpisami i komentarzami' },
   { key: 'schedule', label: tr('Grafik'), icon: CalendarDays, description: tr('Harmonogram służb na wydarzenia') },
   { key: 'duty', label: tr('Służby'), icon: UserCog, description: tr('Zarządzanie służbami i przypisaniami') },
-  { key: 'materials', label: tr('Materiały'), icon: FolderOpen, description: 'Pliki i dokumenty do pobrania' }
+  { key: 'materials', label: tr('Materiały'), icon: FolderOpen, description: 'Pliki i dokumenty do pobrania' },
+  { key: 'custom', label: tr('Kreator graficzny'), icon: LayoutDashboard, description: tr('Zbuduj własny układ zakładki metodą przeciągnij i upuść') }
 ];
 
 export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, existingKeys = [] }) {
