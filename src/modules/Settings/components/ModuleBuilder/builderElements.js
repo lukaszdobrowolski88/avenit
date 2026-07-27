@@ -98,19 +98,30 @@ export const COLLECTION_FIELD_TYPES = [
   { type: 'text', label: 'Tekst' },
   { type: 'textarea', label: 'Długi tekst' },
   { type: 'number', label: 'Liczba' },
+  { type: 'currency', label: 'Kwota (PLN)' },
   { type: 'date', label: 'Data' },
   { type: 'select', label: 'Lista wyboru' },
+  { type: 'multiselect', label: 'Wielokrotny wybór' },
   { type: 'checkbox', label: 'Tak / Nie' },
+  { type: 'rating', label: 'Ocena (gwiazdki)' },
   { type: 'email', label: 'E-mail' },
   { type: 'phone', label: 'Telefon' },
+  { type: 'image', label: 'Obraz (URL)' },
+  { type: 'file', label: 'Plik (URL)' },
 ];
+
+// Pola wymagające listy opcji (options).
+export const FIELDS_WITH_OPTIONS = ['select', 'multiselect'];
 
 export function newFieldKey() {
   return 'f_' + Math.random().toString(36).slice(2, 8);
 }
 
 export function createCollectionField(type = 'text') {
-  return { key: newFieldKey(), label: 'Nowe pole', type, required: false, options: type === 'select' ? [{ label: 'Opcja 1', value: 'opcja_1' }] : undefined };
+  return {
+    key: newFieldKey(), label: 'Nowe pole', type, required: false,
+    options: FIELDS_WITH_OPTIONS.includes(type) ? [{ label: 'Opcja 1', value: 'opcja_1' }] : undefined,
+  };
 }
 
 // Pusty układ.

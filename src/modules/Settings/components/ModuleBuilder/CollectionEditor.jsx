@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { tr } from '../../../../i18n';
-import { COLLECTION_FIELD_TYPES, createCollectionField } from './builderElements';
+import { COLLECTION_FIELD_TYPES, createCollectionField, FIELDS_WITH_OPTIONS } from './builderElements';
 import { VISIBILITY_OPERATORS } from '../../../Forms/utils/fieldTypes';
 
 const inputCls =
@@ -81,7 +81,7 @@ export default function CollectionEditor({ element, update }) {
               <button onClick={() => setFields(fields.filter((_, idx) => idx !== i))} className="p-1 text-gray-400 hover:text-red-500 shrink-0"><Trash2 size={14} /></button>
             </div>
             <div className="flex items-center gap-2">
-              <select className={inputCls} value={f.type} onChange={(e) => patchField(i, { type: e.target.value, options: e.target.value === 'select' ? (f.options || [{ label: 'Opcja 1', value: 'opcja_1' }]) : undefined })}>
+              <select className={inputCls} value={f.type} onChange={(e) => patchField(i, { type: e.target.value, options: FIELDS_WITH_OPTIONS.includes(e.target.value) ? (f.options || [{ label: 'Opcja 1', value: 'opcja_1' }]) : undefined })}>
                 {COLLECTION_FIELD_TYPES.map((t) => <option key={t.type} value={t.type}>{tr(t.label)}</option>)}
               </select>
               <label className="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300 shrink-0">
@@ -89,7 +89,7 @@ export default function CollectionEditor({ element, update }) {
                 {tr('Wymagane')}
               </label>
             </div>
-            {f.type === 'select' && (
+            {FIELDS_WITH_OPTIONS.includes(f.type) && (
               <div className="pl-6 space-y-1">
                 {(f.options || []).map((o, oi) => (
                   <div key={oi} className="flex items-center gap-2">
