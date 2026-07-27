@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Database, Plus, Pencil, Trash2, X, Save } from 'lucide-react';
 import { tr } from '../../../i18n';
 import { useModuleRecords } from '../../../hooks/useModuleRecords';
+import { evaluateVisibility } from '../../Forms/utils/fieldTypes';
 
 function formatValue(field, value) {
   if (value == null || value === '') return '—';
@@ -51,6 +52,8 @@ function RecordForm({ fields, initial, onCancel, onSubmit }) {
 
   const submit = async () => {
     for (const f of fields) {
+      // Pomiń walidację pól ukrytych warunkowo.
+      if (!evaluateVisibility(f, values)) continue;
       if (f.required && (values[f.key] == null || values[f.key] === '')) {
         setErr(tr('Wypełnij wymagane pola')); return;
       }
@@ -73,14 +76,17 @@ function RecordForm({ fields, initial, onCancel, onSubmit }) {
         <div className="p-6 space-y-4 overflow-y-auto flex-1">
           {err && <div className="text-sm text-red-500">{err}</div>}
           {fields.length === 0 && <p className="text-sm text-gray-400">{tr('Ta kolekcja nie ma jeszcze zdefiniowanych pól.')}</p>}
-          {fields.map((f) => (
-            <div key={f.key}>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">
-                {f.label}{f.required ? ' *' : ''}
-              </label>
-              <FieldInput field={f} value={values[f.key]} onChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))} />
-            </div>
-          ))}
+          {fields.map((f) => {
+            if (!evaluateVisibility(f, values)) return null; // logika warunkowa
+            return (
+              <div key={f.key}>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">
+                  {f.label}{f.required ? ' *' : ''}
+                </label>
+                <FieldInput field={f} value={values[f.key]} onChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))} />
+              </div>
+            );
+          })}
         </div>
         <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3 shrink-0">
           <button onClick={onCancel} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition font-medium">{tr('Anuluj')}</button>

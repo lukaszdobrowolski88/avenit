@@ -6158,3 +6158,13 @@ CREATE TABLE IF NOT EXISTS module_records (
 );
 CREATE INDEX IF NOT EXISTS idx_module_records_scope ON module_records(module_id, tab_id, collection_key);
 CREATE INDEX IF NOT EXISTS idx_module_records_module_key ON module_records(module_key);
+
+-- Kampusy w tabelach modułów własnych (patrz tenant-migrations/008_custom_tables_campus.sql).
+DO $$
+DECLARE t text;
+BEGIN
+  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE 'custom\_%'
+  LOOP
+    EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS campus_id UUID', t);
+  END LOOP;
+END $$;

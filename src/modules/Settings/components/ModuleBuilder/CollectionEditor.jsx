@@ -2,9 +2,39 @@ import React from 'react';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { tr } from '../../../../i18n';
 import { COLLECTION_FIELD_TYPES, createCollectionField } from './builderElements';
+import { VISIBILITY_OPERATORS } from '../../../Forms/utils/fieldTypes';
 
 const inputCls =
   'w-full px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light';
+
+// Logika warunkowa pola: pokaż pole gdy inne pole spełnia warunek (field.visibleWhen).
+function ConditionalEditor({ f, i, fields, patchField }) {
+  const vw = f.visibleWhen;
+  const others = fields.filter((x) => x.key !== f.key);
+  const setVW = (patch) => patchField(i, { visibleWhen: patch });
+  const needsValue = vw && !['is_empty', 'is_not_empty'].includes(vw.operator);
+  return (
+    <div className="pt-1">
+      <label className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+        <input type="checkbox" checked={!!vw}
+          onChange={(e) => setVW(e.target.checked ? { fieldId: others[0]?.key || '', operator: 'equals', value: '' } : undefined)} />
+        {tr('Pokaż warunkowo')}
+      </label>
+      {vw && (
+        <div className="mt-1.5 grid grid-cols-1 gap-1.5 pl-5">
+          <select className={inputCls} value={vw.fieldId} onChange={(e) => setVW({ ...vw, fieldId: e.target.value })}>
+            <option value="">{tr('— pole —')}</option>
+            {others.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+          </select>
+          <select className={inputCls} value={vw.operator} onChange={(e) => setVW({ ...vw, operator: e.target.value })}>
+            {VISIBILITY_OPERATORS.map((op) => <option key={op.value} value={op.value}>{tr(op.label)}</option>)}
+          </select>
+          {needsValue && <input className={inputCls} placeholder={tr('Wartość')} value={vw.value ?? ''} onChange={(e) => setVW({ ...vw, value: e.target.value })} />}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Edytor definicji kolekcji danych (element 'collection'): pola, widok, uprawnienia.
 export default function CollectionEditor({ element, update }) {
@@ -71,6 +101,7 @@ export default function CollectionEditor({ element, update }) {
                 <button onClick={() => addOption(i)} className="text-xs text-accent-primary hover:underline">+ {tr('Opcja')}</button>
               </div>
             )}
+            <ConditionalEditor f={f} i={i} fields={fields} patchField={patchField} />
           </div>
         ))}
       </div>

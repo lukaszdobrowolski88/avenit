@@ -380,6 +380,7 @@ const CUSTOM_MODULE_RESOURCES = [
   { suffix: 'task_comments', label: 'Komentarze zadań' },
   { suffix: 'wall', label: 'Tablica' },
   { suffix: 'events', label: 'Wydarzenia' },
+  { suffix: 'records', label: 'Rekordy kolekcji' }, // module_records (per moduł, per operacja)
 ];
 
 function customModuleGroup(mod, tabs) {

@@ -2,7 +2,7 @@
 // zgodnego z supabase-js). Autoryzacja per tabela/rola w registry.js.
 import { buildQuery, buildWhere, ApiError, quoteIdent } from './querybuilder.js';
 import { canAccess, getTableRule, invalidatePermissions, requireCapability } from './registry.js';
-import { fieldColumns } from '@avenit/shared/src/permissions/catalog.js';
+import { fieldColumns, crudCapability } from '@avenit/shared/src/permissions/catalog.js';
 import { emitChange } from '../realtime/hub.js';
 import { notifyOnWrite } from '../realtime/push-hooks.js';
 import { platformPool } from '../db.js';
@@ -68,14 +68,15 @@ export default async function dataApiRoutes(app) {
         }
       }
 
-      // PARYTET DANYCH: rekordy własnych kolekcji kreatora egzekwowane per moduł.
-      // Wymaga capability module:<module_key> (jak dostęp do samego modułu). Zapytania
-      // muszą być zawężone do modułu (module_key) — inaczej odrzucamy (brak wycieku).
+      // PARYTET DANYCH: rekordy własnych kolekcji kreatora egzekwowane PER MODUŁ i PER
+      // OPERACJA — dokładnie jak tabele custom_<key>_* (res:custom_<key>_records:<op>).
+      // Zapytania muszą być zawężone do modułu (module_key) — inaczej odrzucamy (brak wycieku).
       if (q.table === 'module_records' && access.resolver && !user.is_super_admin) {
         const moduleKey = moduleRecordsModuleKey(q);
         if (!moduleKey) throw new ApiError(400, 'module_records: wymagany filtr/wartość module_key');
-        if (!access.resolver.can(`module:${moduleKey}`)) {
-          throw new ApiError(403, `Brak dostępu do modułu: ${moduleKey}`);
+        const cap = crudCapability(`custom_${moduleKey}_records`, q.op);
+        if (!access.resolver.can(cap)) {
+          throw new ApiError(403, `Brak uprawnienia ${cap}`);
         }
       }
 
