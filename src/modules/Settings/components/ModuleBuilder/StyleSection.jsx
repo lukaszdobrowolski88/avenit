@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
-import { Palette, Eye, Smartphone, ChevronDown, ChevronRight } from 'lucide-react';
+import { Palette, Eye, Smartphone, ChevronDown, ChevronRight, Type } from 'lucide-react';
 import { tr } from '../../../../i18n';
 import { BUILTIN_ROLES } from '@avenit/shared/src/permissions/presets.js';
-import { SPACE_OPTIONS, RADIUS_OPTIONS, SHADOW_OPTIONS } from './styleToCSS';
+import {
+  SPACE_OPTIONS, RADIUS_OPTIONS, SHADOW_OPTIONS,
+  HOVER_OPTIONS, GRADIENT_DIR_OPTIONS, TRANSFORM_OPTIONS, LETTER_OPTIONS, WEIGHT_OPTIONS,
+} from './styleToCSS';
+
+const FONT_SIZE_OPTIONS = [
+  { value: '', label: 'Domyślna' }, { value: '14', label: 'Mała' }, { value: '16', label: 'Normalna' },
+  { value: '18', label: 'Większa' }, { value: '24', label: 'Duża' }, { value: '32', label: 'Bardzo duża' },
+];
 
 const inputCls =
   'w-full px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20';
@@ -62,6 +70,17 @@ export default function StyleSection({ element, update }) {
     <div className="space-y-3">
       <Group title="Styl" icon={Palette}>
         <Color label="Tło" value={style.bg} onChange={(v) => setStyle('bg', v)} />
+        <label className="flex items-center justify-between text-sm text-gray-700 dark:text-gray-300">
+          {tr('Gradient tła')}
+          <input type="checkbox" checked={!!style.gradient} onChange={(e) => setStyle('gradient', e.target.checked ? { from: style.bg || '#c7ab71', to: '#ffffff', dir: 'to right' } : undefined)} />
+        </label>
+        {style.gradient && (
+          <div className="grid grid-cols-2 gap-2">
+            <Color label="Od" value={style.gradient.from} onChange={(v) => setStyle('gradient', { ...style.gradient, from: v })} />
+            <Color label="Do" value={style.gradient.to} onChange={(v) => setStyle('gradient', { ...style.gradient, to: v })} />
+            <div className="col-span-2"><Sel label="Kierunek" value={style.gradient.dir} onChange={(v) => setStyle('gradient', { ...style.gradient, dir: v })} options={GRADIENT_DIR_OPTIONS} /></div>
+          </div>
+        )}
         <Color label="Kolor tekstu" value={style.color} onChange={(v) => setStyle('color', v)} />
         <Sel label="Padding" value={style.padding} onChange={(v) => setStyle('padding', v)} options={SPACE_OPTIONS} />
         <div className="grid grid-cols-2 gap-2">
@@ -74,6 +93,14 @@ export default function StyleSection({ element, update }) {
           {tr('Obramowanie')}
           <input type="checkbox" checked={!!style.border} onChange={(e) => setStyle('border', e.target.checked || undefined)} />
         </label>
+        <Sel label="Efekt hover" value={style.hover} onChange={(v) => setStyle('hover', v)} options={HOVER_OPTIONS} />
+      </Group>
+
+      <Group title="Typografia" icon={Type}>
+        <Sel label="Wielkość tekstu" value={style.fontSize ? String(style.fontSize) : ''} onChange={(v) => setStyle('fontSize', v ? Number(v) : undefined)} options={FONT_SIZE_OPTIONS} />
+        <Sel label="Grubość" value={style.fontWeight} onChange={(v) => setStyle('fontWeight', v)} options={WEIGHT_OPTIONS} />
+        <Sel label="Odstęp liter" value={style.letterSpacing} onChange={(v) => setStyle('letterSpacing', v)} options={LETTER_OPTIONS} />
+        <Sel label="Wielkość liter" value={style.textTransform} onChange={(v) => setStyle('textTransform', v)} options={TRANSFORM_OPTIONS} />
       </Group>
 
       <Group title="Widoczność (rola)" icon={Eye}>

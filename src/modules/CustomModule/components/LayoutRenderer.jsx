@@ -2,7 +2,7 @@ import React from 'react';
 import * as LucideIcons from 'lucide-react';
 import { usePermissions } from '../../../contexts/PermissionsContext';
 import { tr } from '../../../i18n';
-import { styleToCSS } from '../../Settings/components/ModuleBuilder/styleToCSS';
+import { styleToCSS, hoverClass } from '../../Settings/components/ModuleBuilder/styleToCSS';
 import ModuleWidget from './ModuleWidget';
 import CollectionView from './CollectionView';
 
@@ -55,6 +55,49 @@ function Countdown({ target, label }) {
   );
 }
 
+// Kontener „Zakładki" — interaktywny w runtime (każde dziecko = panel).
+function TabsRuntime({ el, ctx }) {
+  const [active, setActive] = React.useState(0);
+  const children = el.children || [];
+  const labels = el.props?.labels || [];
+  if (!children.length) return null;
+  const idx = Math.min(active, children.length - 1);
+  return (
+    <div>
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-3 overflow-x-auto">
+        {children.map((c, i) => (
+          <button key={c.id} onClick={() => setActive(i)}
+            className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition ${i === idx ? 'border-accent-primary text-accent-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+            {labels[i] || `${tr('Zakładka')} ${i + 1}`}
+          </button>
+        ))}
+      </div>
+      <ElementRenderer el={children[idx]} ctx={ctx} />
+    </div>
+  );
+}
+
+// Kontener „Akordeon" — rozwijane panele.
+function AccordionRuntime({ el, ctx }) {
+  const [open, setOpen] = React.useState(0);
+  const children = el.children || [];
+  const labels = el.props?.labels || [];
+  return (
+    <div className="space-y-2">
+      {children.map((c, i) => (
+        <div key={c.id} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <button onClick={() => setOpen(open === i ? -1 : i)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 text-left font-medium text-gray-800 dark:text-white">
+            {labels[i] || `${tr('Sekcja')} ${i + 1}`}
+            <LucideIcons.ChevronDown size={16} className={`transition-transform ${open === i ? 'rotate-180' : ''}`} />
+          </button>
+          {open === i && <div className="p-4"><ElementRenderer el={c} ctx={ctx} /></div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // Runtime kreatora graficznego — interpretuje drzewo `layout` na zakładce typu 'custom'.
 export default function LayoutRenderer({ layout, moduleId, moduleKey, moduleName, tabId, device }) {
   const { can, subject } = usePermissions();
@@ -83,8 +126,8 @@ function ElementRenderer({ el, ctx }) {
   const inner = renderInner(el, ctx);
   if (inner == null) return null;
   const css = styleToCSS(el.style);
-  const cls = el.responsive?.hiddenMobile ? 'hidden md:block' : undefined;
-  if (Object.keys(css).length || cls) return <div style={css} className={cls}>{inner}</div>;
+  const cls = [el.responsive?.hiddenMobile ? 'hidden md:block' : '', hoverClass(el.style)].filter(Boolean).join(' ');
+  if (Object.keys(css).length || cls) return <div style={css} className={cls || undefined}>{inner}</div>;
   return inner;
 }
 
@@ -217,6 +260,41 @@ function renderInner(el, ctx) {
         </div>
       );
     }
+
+    case 'tabs':
+      return <TabsRuntime el={el} ctx={ctx} />;
+
+    case 'accordion':
+      return <AccordionRuntime el={el} ctx={ctx} />;
+
+    case 'verse':
+      return (
+        <figure className="border-l-4 border-accent-primary bg-accent-primary-lightest/30 dark:bg-accent-primary-darkest/10 rounded-r-xl px-5 py-4">
+          <blockquote className="text-lg italic text-gray-800 dark:text-gray-100">„{p.text}"</blockquote>
+          {p.reference && <figcaption className="mt-2 text-sm font-semibold text-accent-primary">{p.reference}</figcaption>}
+        </figure>
+      );
+
+    case 'giving':
+      return (
+        <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30">
+          {p.note && <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{p.note}</p>}
+          <a href={p.url || '#'} target={p.url?.startsWith('http') ? '_blank' : undefined} rel="noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:shadow-lg transition">
+            <LucideIcons.Heart size={18} /> {p.label || tr('Wesprzyj nas')}
+          </a>
+        </div>
+      );
+
+    case 'songlist':
+      return (
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          {p.title && <div className="px-4 py-2.5 bg-gray-50 dark:bg-gray-800 font-semibold text-gray-800 dark:text-white flex items-center gap-2"><LucideIcons.Music size={16} className="text-accent-primary" />{p.title}</div>}
+          <ol className="divide-y divide-gray-100 dark:divide-gray-800">
+            {(p.songs || []).filter(Boolean).map((s, i) => <li key={i} className="px-4 py-2.5 text-gray-700 dark:text-gray-200 flex gap-3"><span className="text-gray-400 w-5">{i + 1}.</span>{s}</li>)}
+          </ol>
+        </div>
+      );
 
     case 'widget':
       return <ModuleWidget widgetType={p.widgetType} moduleKey={ctx.moduleKey} moduleName={ctx.moduleName} />;

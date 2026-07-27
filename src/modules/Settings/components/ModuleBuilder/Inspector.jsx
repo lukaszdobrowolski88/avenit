@@ -169,6 +169,35 @@ export default function Inspector() {
         </>
       )}
 
+      {(selected.type === 'tabs' || selected.type === 'accordion') && (
+        <>
+          <Area label="Etykiety paneli (jedna na linię, wg kolejności elementów)" rows={5} value={(p.labels || []).join('\n')} onChange={(v) => setProp('labels', v.split('\n'))} />
+          <p className="text-xs text-gray-400">{tr('Przeciągnij elementy do wnętrza — każdy element = osobny panel.')}</p>
+        </>
+      )}
+
+      {selected.type === 'verse' && (
+        <>
+          <Area label="Treść wersetu" value={p.text} onChange={(v) => setProp('text', v)} />
+          <Text label="Odniesienie (np. Ef 1,7)" value={p.reference} onChange={(v) => setProp('reference', v)} />
+        </>
+      )}
+
+      {selected.type === 'giving' && (
+        <>
+          <Text label="Etykieta przycisku" value={p.label} onChange={(v) => setProp('label', v)} />
+          <Text label="Link (P24 / PayPal / strona)" value={p.url} onChange={(v) => setProp('url', v)} />
+          <Text label="Krótki tekst (opcjonalnie)" value={p.note} onChange={(v) => setProp('note', v)} />
+        </>
+      )}
+
+      {selected.type === 'songlist' && (
+        <>
+          <Text label="Tytuł" value={p.title} onChange={(v) => setProp('title', v)} />
+          <Area label="Pieśni (jedna na linię)" rows={6} value={(p.songs || []).join('\n')} onChange={(v) => setProp('songs', v.split('\n'))} />
+        </>
+      )}
+
       {selected.type === 'divider' && (
         <Select label="Styl linii" value={p.lineStyle} onChange={(v) => setProp('lineStyle', v)}
           options={[{ value: 'solid', label: 'Ciągła' }, { value: 'dashed', label: 'Przerywana' }, { value: 'dotted', label: 'Kropkowana' }]} />

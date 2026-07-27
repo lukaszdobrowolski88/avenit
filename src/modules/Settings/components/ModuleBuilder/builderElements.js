@@ -7,6 +7,7 @@ import {
   AlertTriangle, Star, Database, Calendar, CheckSquare, DollarSign, Users,
   MessageSquare, CalendarDays, UserCog, FolderOpen,
   Video, Map, Code, Timer, GalleryThumbnails,
+  AppWindow, ChevronsUpDown, BookOpen, Heart, Music,
 } from 'lucide-react';
 
 export const LAYOUT_VERSION = 1;
@@ -47,6 +48,8 @@ export const ELEMENT_TYPES = {
   card:     { category: 'layout', label: 'Karta', icon: Square, isContainer: true, defaultProps: { title: '' } },
   divider:  { category: 'layout', label: 'Linia', icon: Minus, defaultProps: { lineStyle: 'solid' } },
   spacer:   { category: 'layout', label: 'Odstęp', icon: StretchVertical, defaultProps: { size: 'md' } },
+  tabs:     { category: 'layout', label: 'Zakładki', icon: AppWindow, isContainer: true, defaultProps: { labels: [] } },
+  accordion:{ category: 'layout', label: 'Akordeon', icon: ChevronsUpDown, isContainer: true, defaultProps: { labels: [] } },
   // ── Treść ──
   heading:  { category: 'content', label: 'Nagłówek', icon: Heading, defaultProps: { text: 'Nagłówek', level: 2, align: 'left' } },
   text:     { category: 'content', label: 'Tekst', icon: Type, defaultProps: { html: '<p>Wpisz treść…</p>' } },
@@ -61,6 +64,9 @@ export const ELEMENT_TYPES = {
   embed:    { category: 'content', label: 'Osadzenie', icon: Code, defaultProps: { url: '', height: 400 } },
   countdown:{ category: 'content', label: 'Licznik', icon: Timer, defaultProps: { target: '', label: 'Do wydarzenia' } },
   gallery:  { category: 'content', label: 'Galeria', icon: GalleryThumbnails, defaultProps: { images: [], columns: 3 } },
+  verse:    { category: 'content', label: 'Werset', icon: BookOpen, defaultProps: { text: 'W nim mamy odkupienie przez krew jego…', reference: 'Ef 1,7' } },
+  giving:   { category: 'content', label: 'Wesprzyj', icon: Heart, defaultProps: { label: 'Wesprzyj nas', url: '', note: '' } },
+  songlist: { category: 'content', label: 'Setlista', icon: Music, defaultProps: { title: 'Pieśni', songs: ['Pieśń 1', 'Pieśń 2'] } },
   // ── Widget danych (jeden typ; konkretny widget w props.widgetType) ──
   widget:   { category: 'widget', label: 'Widget', icon: Database, isContainer: false, defaultProps: { widgetType: 'events' } },
   // ── Dane (kolekcja — Faza 2) ──

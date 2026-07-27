@@ -85,6 +85,12 @@ function LeafPreview({ el }) {
       return <div className="flex items-center gap-2 justify-center text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-4"><LucideIcons.Timer size={18} className="text-accent-primary" /> {tr('Licznik')}: {p.label}</div>;
     case 'gallery':
       return <div className="flex items-center gap-2 justify-center text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-4"><LucideIcons.GalleryThumbnails size={18} className="text-accent-primary" /> {tr('Galeria')} ({(p.images || []).filter(Boolean).length})</div>;
+    case 'verse':
+      return <blockquote className="border-l-4 border-accent-primary pl-3 italic text-sm text-gray-600 dark:text-gray-300">„{p.text}" <span className="not-italic font-semibold text-accent-primary">{p.reference}</span></blockquote>;
+    case 'giving':
+      return <div className="text-center text-sm text-gray-600 dark:text-gray-300 bg-accent-primary-lightest/40 dark:bg-accent-primary-darkest/10 rounded-lg px-3 py-3"><LucideIcons.Heart size={16} className="inline text-accent-primary mr-1" />{p.label}</div>;
+    case 'songlist':
+      return <div className="text-sm text-gray-600 dark:text-gray-300"><LucideIcons.Music size={14} className="inline text-accent-primary mr-1" />{p.title} ({(p.songs || []).filter(Boolean).length})</div>;
     default:
       return <div className="text-xs text-gray-400">{el.type}</div>;
   }
