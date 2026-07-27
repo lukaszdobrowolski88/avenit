@@ -38,6 +38,10 @@ export const REGISTRY = {
   permission_grants: T(null),
   app_modules: T(null),
   app_module_tabs: T(null),
+  // Rekordy własnych kolekcji kreatora. Dostęp egzekwowany PER MODUŁ (module_key)
+  // w routes.js (moduleScoped) — nie da się zmapować na jeden resource, bo tabela
+  // obsługuje wiele modułów. Tu tylko rejestracja (żeby nie było fail-closed).
+  module_records: T(null, { moduleScoped: true }),
   campuses: T(null),
   notifications: T(null),
   user_presence: T(null),
@@ -225,13 +229,33 @@ export const REGISTRY = {
   totp_auth_logs: T(null, { writeRoles: [] }), // tylko serwer pisze
 };
 
-// Tabele dynamiczne CustomModule: custom_<key>_(events|tasks|members|wall|dane)
-// — tworzone w locie; dopuszczamy po wzorcu nazwy.
+// Tabele dynamiczne CustomModule: custom_<moduleKey>_(members|tasks|task_comments|wall)
+// — tworzone w locie przez initialize_custom_module. PARYTET DANYCH: mapujemy tabelę
+// na moduł, do którego należy (module:<moduleKey>), aby CRUD był egzekwowany capability
+// (res:<table>:<op>) tak jak w modułach systemowych. Jawne wpisy w REGISTRY
+// (np. custom_mc_members → module:mlodziezowka) mają pierwszeństwo.
 const CUSTOM_TABLE_RE = /^custom_[a-z0-9_]+$/;
+// Sufiksy tabel danych modułów własnych. 'task_comments' PRZED 'tasks' (dłuższy pierwszy).
+// 'events' obsługuje custom_<key>_events (EventsTab), 'dane' — starsza konwencja.
+const CUSTOM_TABLE_SUFFIXES = ['task_comments', 'members', 'tasks', 'wall', 'events', 'dane'];
+
+function customModuleKey(table) {
+  const body = table.slice('custom_'.length); // <moduleKey>_<suffix>
+  for (const suf of CUSTOM_TABLE_SUFFIXES) {
+    if (body.endsWith('_' + suf)) {
+      const key = body.slice(0, -(suf.length + 1));
+      if (key) return key;
+    }
+  }
+  return null; // nieznany kształt — traktuj jak dane wspólne (resource:null)
+}
 
 export function getTableRule(table) {
   if (REGISTRY[table]) return REGISTRY[table];
-  if (CUSTOM_TABLE_RE.test(table)) return { resource: null, custom: true };
+  if (CUSTOM_TABLE_RE.test(table)) {
+    const key = customModuleKey(table);
+    return key ? { resource: `module:${key}`, custom: true } : { resource: null, custom: true };
+  }
   return null;
 }
 

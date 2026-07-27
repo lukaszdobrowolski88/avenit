@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import CustomSelect from '../../../components/CustomSelect';
 import { tr } from '../../../i18n';
+import { useCampusQuery } from '../../../hooks/useCampusQuery';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -168,6 +169,7 @@ export default function TasksTab({ moduleKey, moduleName, currentUserEmail }) {
   const [draggedTask, setDraggedTask] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
 
+  const { withCampusFilter, campusIdForInsert } = useCampusQuery();
   const tableName = `custom_${moduleKey}_tasks`;
   const membersTableName = `custom_${moduleKey}_members`;
   const commentsTableName = `custom_${moduleKey}_task_comments`;
@@ -193,9 +195,9 @@ export default function TasksTab({ moduleKey, moduleName, currentUserEmail }) {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await withCampusFilter(supabase
         .from(tableName)
-        .select('*')
+        .select('*'))
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -335,7 +337,7 @@ export default function TasksTab({ moduleKey, moduleName, currentUserEmail }) {
       if (editingTask?.id) {
         result = await supabase.from(tableName).update(taskData).eq('id', editingTask.id);
       } else {
-        result = await supabase.from(tableName).insert([taskData]);
+        result = await supabase.from(tableName).insert([{ ...taskData, campus_id: campusIdForInsert }]);
       }
 
       if (result.error) {

@@ -3,7 +3,7 @@ import { Plus, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 
-export default function FinanceTab({ ministry, budgetItems, expenses, onAddExpense, onRefresh }) {
+export default function FinanceTab({ ministry, budgetItems = [], expenses = [], onAddExpense, onRefresh }) {
   const t = useT();
   const [expandedItems, setExpandedItems] = useState({});
 

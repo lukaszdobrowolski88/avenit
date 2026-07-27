@@ -19,11 +19,12 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import TabEditor from './TabEditor';
+import ModuleLayoutBuilder from './ModuleBuilder/ModuleLayoutBuilder';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 
 // Sortable Tab Item
-function SortableTabItem({ tab, onEdit, onDelete }) {
+function SortableTabItem({ tab, onEdit, onDelete, onOpenBuilder }) {
   const t = useT();
   const {
     attributes,
@@ -75,6 +76,15 @@ function SortableTabItem({ tab, onEdit, onDelete }) {
 
       {/* Actions */}
       <div className="flex items-center gap-1">
+        {tab.component_type === 'custom' && (
+          <button
+            onClick={() => onOpenBuilder(tab)}
+            className="p-2 text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition"
+            title={t('Otwórz kreator')}
+          >
+            <Icons.LayoutDashboard size={16} />
+          </button>
+        )}
         {tab.is_system ? (
           <div className="p-2 text-gray-400" title={t('Zakładka systemowa')}>
             <Lock size={16} />
@@ -115,6 +125,7 @@ export default function TabManager({
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingTab, setEditingTab] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [builderTab, setBuilderTab] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -159,6 +170,12 @@ export default function TabManager({
   const handleDeleteTab = async (tab) => {
     if (tab.is_system) return;
     setDeleteConfirm(tab);
+  };
+
+  // Zapis układu z kreatora graficznego do kolumny app_module_tabs.layout.
+  const handleSaveLayout = async (layout) => {
+    if (!builderTab) return { success: false };
+    return await onUpdateTab(builderTab.id, module.id, { layout });
   };
 
   const confirmDelete = async () => {
@@ -228,6 +245,7 @@ export default function TabManager({
                       tab={tab}
                       onEdit={handleEditTab}
                       onDelete={handleDeleteTab}
+                      onOpenBuilder={setBuilderTab}
                     />
                   ))}
                 </div>
@@ -260,6 +278,18 @@ export default function TabManager({
           onClose={() => setEditorOpen(false)}
           onSave={handleSaveTab}
           existingKeys={existingKeys}
+        />
+      )}
+
+      {/* Kreator graficzny (pełnoekranowa nakładka) */}
+      {builderTab && (
+        <ModuleLayoutBuilder
+          tab={builderTab}
+          moduleId={module.id}
+          moduleName={module.label}
+          moduleKey={module.key}
+          onClose={() => setBuilderTab(null)}
+          onSave={handleSaveLayout}
         />
       )}
 

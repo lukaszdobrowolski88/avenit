@@ -6136,3 +6136,35 @@ CREATE TABLE IF NOT EXISTS login_tickets (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_login_tickets_expires ON login_tickets(expires_at);
+
+-- =====================================================
+-- Kreator graficzny modułów (patrz tenant-migrations/007_module_builder.sql)
+-- =====================================================
+-- Drzewo układu dla zakładek typu component_type='custom'.
+ALTER TABLE app_module_tabs ADD COLUMN IF NOT EXISTS layout JSONB;
+
+-- Rekordy własnych kolekcji danych kreatora (bez dynamicznego DDL).
+-- module_key zdenormalizowany → egzekwowanie capability module:<key> per rekord.
+CREATE TABLE IF NOT EXISTS module_records (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    module_id UUID REFERENCES app_modules(id) ON DELETE CASCADE,
+    module_key TEXT NOT NULL,
+    tab_id UUID REFERENCES app_module_tabs(id) ON DELETE CASCADE,
+    collection_key TEXT NOT NULL,
+    data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_by UUID,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_module_records_scope ON module_records(module_id, tab_id, collection_key);
+CREATE INDEX IF NOT EXISTS idx_module_records_module_key ON module_records(module_key);
+
+-- Kampusy w tabelach modułów własnych (patrz tenant-migrations/008_custom_tables_campus.sql).
+DO $$
+DECLARE t text;
+BEGIN
+  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE 'custom\_%'
+  LOOP
+    EXECUTE format('ALTER TABLE %I ADD COLUMN IF NOT EXISTS campus_id UUID', t);
+  END LOOP;
+END $$;

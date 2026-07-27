@@ -1,17 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import * as LucideIcons from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import EventsTab from '../shared/EventsTab';
-import FinanceTab from '../shared/FinanceTab';
-import WallTab from '../shared/WallTab';
-import ScheduleTab from '../shared/ScheduleTab';
-import DutyTab from '../shared/DutyTab';
-import MaterialsTab from '../shared/MaterialsTab';
-import MembersTab from './components/MembersTab';
-import TasksTab from './components/TasksTab';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import { useTabAccess } from '../../components/Can';
 import { tr } from '../../i18n';
+import ModuleWidget, { WIDGET_TYPES, SELF_WRAPPING_WIDGETS } from './components/ModuleWidget';
+import LayoutRenderer from './components/LayoutRenderer';
+
+const CARD_CLASS =
+  'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 relative z-[50] transition-colors duration-300';
 
 export default function CustomModule() {
   const { moduleKey: paramKey } = useParams();
@@ -20,8 +18,8 @@ export default function CustomModule() {
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState(null);
   const [loading, setLoading] = useState(true);
+  const hasTabAccess = useTabAccess();
 
-  // Pobierz klucz modułu z parametru lub z ścieżki URL
   const currentPath = location.pathname;
 
   useEffect(() => {
@@ -29,44 +27,24 @@ export default function CustomModule() {
       setLoading(true);
       try {
         let moduleData = null;
-
-        // Jeśli mamy parametr moduleKey, użyj go
         if (paramKey) {
-          const { data, error } = await supabase
-            .from('app_modules')
-            .select('*')
-            .eq('key', paramKey)
-            .single();
+          const { data, error } = await supabase.from('app_modules').select('*').eq('key', paramKey).single();
           if (!error) moduleData = data;
         } else {
-          // W przeciwnym razie znajdź moduł po ścieżce
-          const { data, error } = await supabase
-            .from('app_modules')
-            .select('*')
-            .eq('path', currentPath)
-            .single();
+          const { data, error } = await supabase.from('app_modules').select('*').eq('path', currentPath).single();
           if (!error) moduleData = data;
         }
-
-        if (!moduleData) {
-          setLoading(false);
-          return;
-        }
-
+        if (!moduleData) { setLoading(false); return; }
         setModule(moduleData);
 
-        // Pobierz zakładki modułu
         const { data: tabsData, error: tabsError } = await supabase
           .from('app_module_tabs')
           .select('*')
           .eq('module_id', moduleData.id)
           .order('display_order', { ascending: true });
-
         if (!tabsError && tabsData) {
           setTabs(tabsData);
-          if (tabsData.length > 0) {
-            setActiveTab(tabsData[0].key);
-          }
+          if (tabsData.length > 0) setActiveTab(tabsData[0].key);
         }
       } catch (err) {
         console.error('Błąd pobierania modułu:', err);
@@ -74,13 +52,22 @@ export default function CustomModule() {
         setLoading(false);
       }
     };
-
     fetchModuleData();
   }, [paramKey, currentPath]);
 
-  const getIconComponent = (iconName) => {
-    return LucideIcons[iconName] || LucideIcons.Square;
-  };
+  const getIconComponent = (iconName) => LucideIcons[iconName] || LucideIcons.Square;
+
+  // PARYTET UPRAWNIEŃ: zakładki widoczne tylko wg capability tab:<key>:<tab>
+  // (dokładnie jak w modułach systemowych — useTabAccess/Can). Superadmin/admin i
+  // stan „przed załadowaniem grantów" są permisywne (can() zwraca wtedy true).
+  const visibleTabs = module ? tabs.filter((t) => hasTabAccess(module.key, t.key)) : [];
+
+  // Utrzymuj aktywną zakładkę w obrębie widocznych.
+  useEffect(() => {
+    if (visibleTabs.length && !visibleTabs.some((t) => t.key === activeTab)) {
+      setActiveTab(visibleTabs[0].key);
+    }
+  }, [visibleTabs, activeTab]);
 
   if (loading) {
     return (
@@ -95,126 +82,92 @@ export default function CustomModule() {
       <div className="p-10 text-center">
         <LucideIcons.AlertCircle size={48} className="mx-auto text-gray-400 mb-4" />
         <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300">{tr('Moduł nie znaleziony')}</h2>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">
-          {tr('Moduł nie istnieje lub został usunięty.')}
-        </p>
+        <p className="text-gray-500 dark:text-gray-400 mt-2">{tr('Moduł nie istnieje lub został usunięty.')}</p>
       </div>
     );
   }
 
+  const HeaderIcon = getIconComponent(module.icon);
+  const activeTabObj = visibleTabs.find((t) => t.key === activeTab);
+  const selfWrap = activeTabObj && SELF_WRAPPING_WIDGETS.has(activeTabObj.component_type);
+
   return (
     <div className="space-y-8">
-      {/* Nagłówek modułu - identyczny styl jak MediaTeamModule */}
+      {/* Nagłówek modułu — identyczny styl jak moduły systemowe (ikona + gradient) */}
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-          {module.label}
+        <h1 className="text-4xl font-bold flex items-center gap-3">
+          <HeaderIcon size={40} className="text-accent-primary dark:text-accent-primary-light" />
+          <span className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
+            {module.label}
+          </span>
         </h1>
       </div>
 
-      {/* TAB NAVIGATION */}
-      {tabs.length > 0 && (
+      {visibleTabs.length > 0 && (
         <ResponsiveTabs
-          tabs={tabs.map(tab => ({
-            id: tab.key,
-            label: tab.label,
-            icon: getIconComponent(tab.icon)
-          }))}
+          tabs={visibleTabs.map((tab) => ({ id: tab.key, label: tab.label, icon: getIconComponent(tab.icon) }))}
           activeTab={activeTab}
           onChange={setActiveTab}
         />
       )}
 
-      {/* Zawartość - identyczny styl jak sekcje w MediaTeamModule */}
-      <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 relative z-[50] transition-colors duration-300">
-        {tabs.length > 0 ? (
-          <TabContent
-            tab={tabs.find(t => t.key === activeTab)}
-            moduleKey={module.key}
-            moduleName={module.label}
-          />
+      {visibleTabs.length > 0 ? (
+        // Finanse (i inne self-wrapping) mają własną kartę — nie owijamy podwójnie.
+        selfWrap ? (
+          <TabContent tab={activeTabObj} moduleId={module.id} moduleKey={module.key} moduleName={module.label} />
         ) : (
+          <section className={CARD_CLASS}>
+            <TabContent tab={activeTabObj} moduleId={module.id} moduleKey={module.key} moduleName={module.label} />
+          </section>
+        )
+      ) : (
+        <section className={CARD_CLASS}>
           <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
             <LucideIcons.Layers size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 mb-2">
-              {tr('Ten moduł nie ma jeszcze zakładek.')}
-            </p>
-            <p className="text-sm text-gray-400 dark:text-gray-500">
-              {tr('Dodaj zakładki w Ustawienia → Zarządzanie → kliknij "Zakładki" przy module.')}
-            </p>
+            {tabs.length === 0 ? (
+              <>
+                <p className="text-gray-500 dark:text-gray-400 mb-2">{tr('Ten moduł nie ma jeszcze zakładek.')}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">
+                  {tr('Dodaj zakładki w Ustawienia → Zarządzanie → kliknij "Zakładki" przy module.')}
+                </p>
+              </>
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400">{tr('Nie masz dostępu do żadnej zakładki tego modułu.')}</p>
+            )}
           </div>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   );
 }
 
-// Komponent renderujący zawartość zakładki na podstawie component_type
-function TabContent({ tab, moduleKey, moduleName }) {
-  const [currentUserEmail, setCurrentUserEmail] = useState('');
-  const [currentUserName, setCurrentUserName] = useState('');
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setCurrentUserEmail(user.email);
-        // Pobierz pełną nazwę użytkownika
-        const { data } = await supabase
-          .from('app_users')
-          .select('full_name')
-          .eq('email', user.email)
-          .single();
-        if (data) setCurrentUserName(data.full_name);
-      }
-    };
-    fetchUser();
-  }, []);
-
+// Renderuje zawartość zakładki wg component_type.
+function TabContent({ tab, moduleId, moduleKey, moduleName }) {
   if (!tab) return null;
+  const type = tab.component_type || 'empty';
 
-  const componentType = tab.component_type || 'empty';
-
-  switch (componentType) {
-    case 'events':
-      return <EventsTab ministry={moduleKey} currentUserEmail={currentUserEmail} />;
-
-    case 'tasks':
-      return <TasksTab moduleKey={moduleKey} moduleName={moduleName} currentUserEmail={currentUserEmail} />;
-
-    case 'finance':
-      return <FinanceTab ministry={moduleKey} />;
-
-    case 'members':
-      return <MembersTab moduleKey={moduleKey} moduleName={moduleName} />;
-
-    case 'wall':
-      return <WallTab ministry={moduleKey} currentUserEmail={currentUserEmail} currentUserName={currentUserName} />;
-
-    case 'schedule':
-      return <ScheduleTab moduleKey={moduleKey} moduleName={moduleName} />;
-
-    case 'duty':
-      return <DutyTab moduleKey={moduleKey} moduleName={moduleName} />;
-
-    case 'materials':
-      return <MaterialsTab moduleKey={moduleKey} canEdit={true} />;
-
-    case 'empty':
-    default:
-      return (
-        <div>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-              {tab.label}
-            </h2>
-          </div>
-          <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
-            <LucideIcons.Construction size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">
-              {tr('Ta zakładka jest w budowie. Możesz dodać tutaj własną zawartość.')}
-            </p>
-          </div>
-        </div>
-      );
+  // Kreator graficzny — interpretuje drzewo układu (tab.layout).
+  if (type === 'custom') {
+    return <LayoutRenderer layout={tab.layout} moduleId={moduleId} moduleKey={moduleKey} moduleName={moduleName} tabId={tab.id} />;
   }
+
+  // Gotowe widgety danych — przez wspólny ModuleWidget (parytet z modułami systemowymi).
+  if (WIDGET_TYPES.includes(type)) {
+    return <ModuleWidget widgetType={type} moduleKey={moduleKey} moduleName={moduleName} />;
+  }
+
+  // empty / nieznany — placeholder.
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
+          {tab.label}
+        </h2>
+      </div>
+      <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
+        <LucideIcons.Construction size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+        <p className="text-gray-500 dark:text-gray-400">{tr('Ta zakładka jest w budowie. Możesz dodać tutaj własną zawartość.')}</p>
+      </div>
+    </div>
+  );
 }

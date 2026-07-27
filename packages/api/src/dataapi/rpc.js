@@ -16,6 +16,7 @@ const SHAPES = {
     avatar_url TEXT,
     notes TEXT,
     is_active BOOLEAN DEFAULT true,
+    campus_id UUID,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()`,
   tasks: `
@@ -27,6 +28,7 @@ const SHAPES = {
     due_date DATE,
     attachment JSONB,
     sort_order INTEGER DEFAULT 0,
+    campus_id UUID,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()`,
   task_comments: `
@@ -47,6 +49,7 @@ const SHAPES = {
     attachments JSONB DEFAULT '[]'::jsonb,
     comments JSONB DEFAULT '[]'::jsonb,
     reply_to JSONB,
+    campus_id UUID,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()`,
 };

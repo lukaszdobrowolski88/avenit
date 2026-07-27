@@ -3,8 +3,10 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../../lib/supabase';
 import { Plus, Search, Trash2, X, User, Mail, Phone, Check, Edit2 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { useCampusQuery } from '../../../hooks/useCampusQuery';
 
 export default function MembersTab({ moduleKey, moduleName }) {
+  const { withCampusFilter, campusIdForInsert } = useCampusQuery();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchFilter, setSearchFilter] = useState('');
@@ -46,9 +48,9 @@ export default function MembersTab({ moduleKey, moduleName }) {
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await withCampusFilter(supabase
         .from(tableName)
-        .select('*')
+        .select('*'))
         .order('full_name', { ascending: true });
 
       if (error) {
@@ -118,7 +120,7 @@ export default function MembersTab({ moduleKey, moduleName }) {
       if (editingMember) {
         result = await supabase.from(tableName).update(form).eq('id', editingMember.id);
       } else {
-        result = await supabase.from(tableName).insert([form]).select().single();
+        result = await supabase.from(tableName).insert([{ ...form, campus_id: campusIdForInsert }]).select().single();
         if (result.data) memberId = result.data.id;
       }
 
@@ -229,6 +231,7 @@ CREATE TABLE ${tableName} (
   avatar_url TEXT,
   notes TEXT,
   is_active BOOLEAN DEFAULT true,
+  campus_id UUID,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
