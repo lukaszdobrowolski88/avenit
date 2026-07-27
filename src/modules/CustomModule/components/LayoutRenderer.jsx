@@ -15,6 +15,46 @@ const ALERT_STYLES = {
   error: 'bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800',
 };
 
+// Zwraca URL osadzenia dla YouTube/Vimeo (albo null → traktuj jak plik wideo).
+function videoEmbedSrc(url) {
+  if (!url) return null;
+  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  const vm = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+  return null;
+}
+
+// Licznik odliczający (live, aktualizacja co sekundę).
+function Countdown({ target, label }) {
+  const [now, setNow] = React.useState(() => Date.now());
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const t = target ? new Date(target).getTime() : NaN;
+  if (!target || isNaN(t)) return <div className="text-sm text-gray-400 text-center">{tr('Ustaw datę w kreatorze')}</div>;
+  let diff = Math.max(0, t - now);
+  const d = Math.floor(diff / 86400000); diff -= d * 86400000;
+  const h = Math.floor(diff / 3600000); diff -= h * 3600000;
+  const m = Math.floor(diff / 60000); diff -= m * 60000;
+  const s = Math.floor(diff / 1000);
+  const Box = ({ v, l }) => (
+    <div className="flex flex-col items-center px-3 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 min-w-[64px]">
+      <span className="text-2xl font-bold text-gray-900 dark:text-white">{String(v).padStart(2, '0')}</span>
+      <span className="text-[11px] uppercase text-gray-400">{l}</span>
+    </div>
+  );
+  return (
+    <div className="text-center">
+      {label && <div className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">{label}</div>}
+      <div className="flex items-center justify-center gap-2 flex-wrap">
+        <Box v={d} l={tr('dni')} /><Box v={h} l={tr('godz')} /><Box v={m} l={tr('min')} /><Box v={s} l={tr('sek')} />
+      </div>
+    </div>
+  );
+}
+
 // Runtime kreatora graficznego — interpretuje drzewo `layout` na zakładce typu 'custom'.
 export default function LayoutRenderer({ layout, moduleId, moduleKey, moduleName, tabId, device }) {
   const { can, subject } = usePermissions();
@@ -138,6 +178,44 @@ function renderInner(el, ctx) {
     case 'icon': {
       const Ico = LucideIcons[p.name] || LucideIcons.Star;
       return <Ico size={p.size || 32} className="text-accent-primary dark:text-accent-primary-light" />;
+    }
+
+    case 'video': {
+      const src = videoEmbedSrc(p.url);
+      if (src) return (
+        <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+          <iframe src={src} title="video" className="absolute inset-0 w-full h-full rounded-xl"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+        </div>
+      );
+      if (p.url) return <video src={p.url} controls className="w-full rounded-xl" />;
+      return <div className="p-6 bg-gray-100 dark:bg-gray-800 rounded-xl text-center text-sm text-gray-400">{tr('Wklej link do wideo (YouTube/Vimeo/mp4)')}</div>;
+    }
+
+    case 'map':
+      return p.query
+        ? <div className="relative w-full rounded-xl overflow-hidden" style={{ paddingTop: '56.25%' }}>
+            <iframe title="map" loading="lazy" className="absolute inset-0 w-full h-full border-0"
+              src={`https://maps.google.com/maps?q=${encodeURIComponent(p.query)}&output=embed`} />
+          </div>
+        : <div className="p-6 bg-gray-100 dark:bg-gray-800 rounded-xl text-center text-sm text-gray-400">{tr('Podaj adres lub miejsce')}</div>;
+
+    case 'embed':
+      return p.url
+        ? <iframe title="embed" src={p.url} className="w-full rounded-xl border border-gray-200 dark:border-gray-700" style={{ height: p.height || 400 }} />
+        : <div className="p-6 bg-gray-100 dark:bg-gray-800 rounded-xl text-center text-sm text-gray-400">{tr('Podaj adres URL do osadzenia')}</div>;
+
+    case 'countdown':
+      return <Countdown target={p.target} label={p.label} />;
+
+    case 'gallery': {
+      const imgs = (p.images || []).filter(Boolean);
+      if (!imgs.length) return <div className="p-6 bg-gray-100 dark:bg-gray-800 rounded-xl text-center text-sm text-gray-400">{tr('Dodaj adresy zdjęć')}</div>;
+      return (
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${ctx.device === 'mobile' ? 2 : (p.columns || 3)}, minmax(0,1fr))`, gap: 8 }}>
+          {imgs.map((src, i) => <img key={i} src={src} alt="" className="w-full object-cover rounded-lg aspect-square" />)}
+        </div>
+      );
     }
 
     case 'widget':

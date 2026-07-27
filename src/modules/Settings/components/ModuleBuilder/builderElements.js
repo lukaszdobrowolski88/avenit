@@ -6,6 +6,7 @@ import {
   Heading, Type, Image as ImageIcon, MousePointerClick, List, Quote,
   AlertTriangle, Star, Database, Calendar, CheckSquare, DollarSign, Users,
   MessageSquare, CalendarDays, UserCog, FolderOpen,
+  Video, Map, Code, Timer, GalleryThumbnails,
 } from 'lucide-react';
 
 export const LAYOUT_VERSION = 1;
@@ -55,6 +56,11 @@ export const ELEMENT_TYPES = {
   quote:    { category: 'content', label: 'Cytat', icon: Quote, defaultProps: { text: 'Treść cytatu…', author: '' } },
   alert:    { category: 'content', label: 'Wyróżnienie', icon: AlertTriangle, defaultProps: { text: 'Ważna informacja', variant: 'info' } },
   icon:     { category: 'content', label: 'Ikona', icon: Star, defaultProps: { name: 'Star', size: 32 } },
+  video:    { category: 'content', label: 'Wideo', icon: Video, defaultProps: { url: '' } },
+  map:      { category: 'content', label: 'Mapa', icon: Map, defaultProps: { query: '' } },
+  embed:    { category: 'content', label: 'Osadzenie', icon: Code, defaultProps: { url: '', height: 400 } },
+  countdown:{ category: 'content', label: 'Licznik', icon: Timer, defaultProps: { target: '', label: 'Do wydarzenia' } },
+  gallery:  { category: 'content', label: 'Galeria', icon: GalleryThumbnails, defaultProps: { images: [], columns: 3 } },
   // ── Widget danych (jeden typ; konkretny widget w props.widgetType) ──
   widget:   { category: 'widget', label: 'Widget', icon: Database, isContainer: false, defaultProps: { widgetType: 'events' } },
   // ── Dane (kolekcja — Faza 2) ──

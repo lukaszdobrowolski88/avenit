@@ -75,6 +75,16 @@ function LeafPreview({ el }) {
           {tr('Kolekcja')}: {p.title || tr('Kolekcja danych')}
         </div>
       );
+    case 'video':
+      return <div className="flex items-center gap-2 justify-center text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-4"><LucideIcons.Video size={18} className="text-accent-primary" /> {tr('Wideo')}{p.url ? '' : ` — ${tr('brak linku')}`}</div>;
+    case 'map':
+      return <div className="flex items-center gap-2 justify-center text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-4"><LucideIcons.Map size={18} className="text-accent-primary" /> {tr('Mapa')}{p.query ? `: ${p.query}` : ''}</div>;
+    case 'embed':
+      return <div className="flex items-center gap-2 justify-center text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-4"><LucideIcons.Code size={18} className="text-accent-primary" /> {tr('Osadzenie')}</div>;
+    case 'countdown':
+      return <div className="flex items-center gap-2 justify-center text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-4"><LucideIcons.Timer size={18} className="text-accent-primary" /> {tr('Licznik')}: {p.label}</div>;
+    case 'gallery':
+      return <div className="flex items-center gap-2 justify-center text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-4"><LucideIcons.GalleryThumbnails size={18} className="text-accent-primary" /> {tr('Galeria')} ({(p.images || []).filter(Boolean).length})</div>;
     default:
       return <div className="text-xs text-gray-400">{el.type}</div>;
   }

@@ -6,6 +6,7 @@ import { ELEMENT_TYPES, WIDGET_META } from './builderElements';
 import { useBuilder, useBuilderActions } from './BuilderContext';
 import CollectionEditor from './CollectionEditor';
 import StyleSection from './StyleSection';
+import SimpleRichEditor from '../../../../components/SimpleRichEditor';
 
 // ── Drobne kontrolki ────────────────────────────────────────────────────────
 const Label = ({ children }) => (
@@ -78,7 +79,10 @@ export default function Inspector() {
       )}
 
       {selected.type === 'text' && (
-        <Area label="Treść (HTML)" rows={8} value={p.html} onChange={(v) => setProp('html', v)} />
+        <div>
+          <Label>{tr('Treść')}</Label>
+          <SimpleRichEditor content={p.html} onChange={(html) => setProp('html', html)} minHeight={160} />
+        </div>
       )}
 
       {selected.type === 'image' && (
@@ -130,6 +134,38 @@ export default function Inspector() {
             <IconPicker value={p.name} onChange={(v) => setProp('name', v)} />
           </div>
           <Text label="Rozmiar (px)" type="number" value={p.size} onChange={(v) => setProp('size', v)} />
+        </>
+      )}
+
+      {selected.type === 'video' && (
+        <Text label="Link do wideo (YouTube/Vimeo/mp4)" value={p.url} onChange={(v) => setProp('url', v)} />
+      )}
+
+      {selected.type === 'map' && (
+        <Text label="Adres / miejsce" value={p.query} onChange={(v) => setProp('query', v)} />
+      )}
+
+      {selected.type === 'embed' && (
+        <>
+          <Text label="Adres URL (iframe)" value={p.url} onChange={(v) => setProp('url', v)} />
+          <Text label="Wysokość (px)" type="number" value={p.height} onChange={(v) => setProp('height', v)} />
+        </>
+      )}
+
+      {selected.type === 'countdown' && (
+        <>
+          <Text label="Etykieta" value={p.label} onChange={(v) => setProp('label', v)} />
+          <div>
+            <Label>{tr('Data i godzina')}</Label>
+            <input type="datetime-local" value={p.target || ''} onChange={(e) => setProp('target', e.target.value)} className={inputCls} />
+          </div>
+        </>
+      )}
+
+      {selected.type === 'gallery' && (
+        <>
+          <Area label="Adresy zdjęć (jeden na linię)" rows={5} value={(p.images || []).join('\n')} onChange={(v) => setProp('images', v.split('\n'))} />
+          <Text label="Kolumny" type="number" value={p.columns} onChange={(v) => setProp('columns', Math.min(Math.max(v || 1, 1), 6))} />
         </>
       )}
 
