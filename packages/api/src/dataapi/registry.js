@@ -29,7 +29,7 @@ export const REGISTRY = {
   app_users: T(null, {
     hiddenColumns: ['password_hash', 'totp_secret', 'totp_backup_codes'],
     // Własny profil może edytować każdy — obsłużone w routes (self-update whitelist).
-    selfUpdateColumns: ['full_name', 'name', 'avatar_url', 'phone', 'totp_required'],
+    selfUpdateColumns: ['full_name', 'name', 'avatar_url', 'phone', 'totp_required', 'onboarding'],
   }),
   app_settings: T(null),
   app_dictionaries: T(null), // słowniki (statusy, kategorie) — zarządzane w Ustawieniach

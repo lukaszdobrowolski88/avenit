@@ -341,7 +341,7 @@ export default function Sidebar() {
       )}
 
       {/* NAWIGACJA */}
-      <nav className={`flex-1 ${isCollapsed && !isMobile ? 'p-2' : 'p-3 lg:p-4'} space-y-1 overflow-y-auto custom-scrollbar ${isMobile ? 'mt-0' : 'mt-2'}`}>
+      <nav data-tour="sidebar" className={`flex-1 ${isCollapsed && !isMobile ? 'p-2' : 'p-3 lg:p-4'} space-y-1 overflow-y-auto custom-scrollbar ${isMobile ? 'mt-0' : 'mt-2'}`}>
         {!sidebarReady ? (
           // Skeleton loader — pulsujące placeholdery zamiast migotania
           Array.from({ length: 8 }).map((_, i) => (
@@ -373,6 +373,7 @@ export default function Sidebar() {
               <Tooltip key={link.path} text={t(link.label)} show={isCollapsed && !isMobile}>
                 <Link
                   to={link.path}
+                  data-tour={`nav-${link.path}`}
                   onClick={handleLinkClick}
                   className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-xl transition-all group ${isActive ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg shadow-accent-primary-light/30 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary dark:hover:text-white'}`}
                 >
@@ -391,6 +392,7 @@ export default function Sidebar() {
           <Tooltip text="Ustawienia" show={isCollapsed && !isMobile}>
             <Link
               to="/settings"
+              data-tour="nav-/settings"
               onClick={(e) => {
                 if (hasUnsavedChanges) {
                   e.preventDefault();
