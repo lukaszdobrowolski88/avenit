@@ -250,6 +250,7 @@ export default function ProgramsList() {
               <Edit3 size={14} />
             </button>
             <button
+              data-tour="prog-new"
               onClick={() => handleNewProgram(type.id)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition text-white shadow-sm hover:shadow-md"
               style={{ background: type.color || '#6366f1' }}

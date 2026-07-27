@@ -2520,7 +2520,7 @@ export default function WorshipModule() {
   const tabs = [
     { id: 'wall', label: t('Tablica'), icon: MessageSquare },
     { id: 'events', label: t('Wydarzenia'), icon: Calendar },
-    { id: 'schedule', label: t('Grafik'), icon: Calendar },
+    { id: 'schedule', label: t('Grafik'), icon: Calendar, tour: 'grafik-tab' },
     { id: 'songs', label: t('Baza Pieśni'), icon: Music },
     ...(hasTabAccess('worship', 'members') ? [{ id: 'members', label: t('Członkowie'), icon: User }] : []),
     ...(hasTabAccess('worship', 'finances') ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
@@ -2551,7 +2551,7 @@ export default function WorshipModule() {
 
       {/* SEKCJA 1: GRAFIK ZESPOŁU */}
       {activeTab === 'schedule' && (
-      <section className="bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 lg:p-6 relative z-[50] transition-colors">
+      <section data-tour="grafik-section" className="bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 lg:p-6 relative z-[50] transition-colors">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
           <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">{t('Grafik Zespołu')}</h2>
         </div>

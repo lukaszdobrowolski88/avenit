@@ -86,6 +86,8 @@ export default function TourEngine() {
   useEffect(() => {
     if (!active || !step) return;
     let cancelled = false, tries = 0, timer;
+    // Kroki procesowe czekają dłużej na element pojawiający się po akcji usera (modal, trasa).
+    const maxTries = step.waitMs ? Math.max(40, Math.ceil(step.waitMs / 60)) : 40;
 
     if (step.route && location.pathname !== step.route) navigate(step.route);
     if (step.sidebar && window.innerWidth < 1024 && sidebar && !sidebar.isOpen) sidebar.toggle();
@@ -97,7 +99,7 @@ export default function TourEngine() {
         try { el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' }); } catch { /* ignore */ }
         setTargetEl(el);
         timer = setTimeout(() => { if (!cancelled) setRect(measure(el)); }, 140);
-      } else if (tries < 40) {
+      } else if (tries < maxTries) {
         tries++; timer = setTimeout(locate, 60);
       } else {
         // Elementu brak (moduł wyłączony / brak dostępu / krok opcjonalny) — pomiń.
@@ -142,10 +144,26 @@ export default function TourEngine() {
     return () => window.removeEventListener('keydown', onKey);
   }, [active, close, goNext, goPrev]);
 
+  // Zawsze aktualne goNext dla nasłuchów (identyczność zmienia się co render).
+  const goNextRef = useRef(goNext);
+  goNextRef.current = goNext;
+
+  // Krok interaktywny z advanceOn:'click' — przejdź dalej, gdy user kliknie podświetlony element
+  // (np. „Nowy program", „Dodaj sesję"). Opóźnienie pozwala odpalić skutek kliknięcia (modal/trasa).
+  useEffect(() => {
+    if (!active || !targetEl || step?.advanceOn !== 'click') return;
+    const onClick = () => { setTimeout(() => goNextRef.current(), 400); };
+    targetEl.addEventListener('click', onClick, { capture: true, once: true });
+    return () => targetEl.removeEventListener('click', onClick, { capture: true });
+  }, [active, targetEl, step]);
+
   if (!active || !step) return null;
 
   const vw = window.innerWidth, vh = window.innerHeight;
   const pos = rect && !isMobile ? placePopover(rect, step.placement, popSize, vw, vh) : null;
+  // Krok interaktywny: pozwól klikać podświetlony element (nie blokuj aplikacji).
+  const interactive = !!step.interactive;
+  const advanceClick = step.advanceOn === 'click';
 
   const holeStyle = rect ? {
     position: 'fixed',
@@ -164,8 +182,16 @@ export default function TourEngine() {
 
   return createPortal(
     <div aria-live="polite">
-      {/* Warstwa blokująca interakcję z aplikacją (dim rysuje box-shadow „dziury"). */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: Z_BACKDROP, background: rect ? 'transparent' : 'rgba(15,23,42,0.6)', cursor: 'default' }} onClick={close} />
+      {/* Tło. Krok pasywny: blokuje kliknięcia (klik = zamknij). Krok interaktywny:
+          przepuszcza kliknięcia do aplikacji, żeby user mógł wykonać akcję. Dim rysuje box-shadow „dziury". */}
+      <div
+        style={{
+          position: 'fixed', inset: 0, zIndex: Z_BACKDROP,
+          background: rect ? 'transparent' : (interactive ? 'rgba(15,23,42,0.35)' : 'rgba(15,23,42,0.6)'),
+          cursor: 'default', pointerEvents: interactive ? 'none' : 'auto',
+        }}
+        onClick={interactive ? undefined : close}
+      />
       {holeStyle && <div style={holeStyle} />}
 
       {/* Dymek */}
@@ -182,6 +208,12 @@ export default function TourEngine() {
           <h3 className="font-bold text-gray-900 dark:text-white text-base mb-1">{t(step.title)}</h3>
           <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{t(step.body)}</p>
 
+          {advanceClick && (
+            <p className="mt-2.5 flex items-center gap-1.5 text-xs font-semibold text-accent-primary dark:text-accent-primary-light">
+              <span className="text-sm">👆</span> {t('Kliknij podświetlony element, aby przejść dalej')}
+            </p>
+          )}
+
           <div className="flex items-center justify-between mt-4">
             {/* Kropki postępu */}
             <div className="flex items-center gap-1.5">
@@ -195,9 +227,15 @@ export default function TourEngine() {
                   <ChevronLeft size={16} /> {t('Wstecz')}
                 </button>
               )}
-              <button onClick={goNext} className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:opacity-90 transition flex items-center gap-1">
-                {isLast ? (<>{t('Zakończ')} <Check size={16} /></>) : (<>{t('Dalej')} <ChevronRight size={16} /></>)}
-              </button>
+              {advanceClick && !isLast ? (
+                <button onClick={goNext} className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center gap-1">
+                  {t('Pomiń krok')} <ChevronRight size={16} />
+                </button>
+              ) : (
+                <button onClick={goNext} className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:opacity-90 transition flex items-center gap-1">
+                  {isLast ? (<>{t('Zakończ')} <Check size={16} /></>) : (<>{t('Dalej')} <ChevronRight size={16} /></>)}
+                </button>
+              )}
             </div>
           </div>
 

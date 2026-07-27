@@ -20,13 +20,14 @@ const readCache = () => {
 const noop = () => {};
 const DEFAULT_CTX = {
   state: {}, loaded: false, isAdmin: false, signals: { hasLogo: false, tourDone: false },
-  activeTour: null, checklistOpen: false, welcomeOpen: false, wizardOpen: false,
+  activeTour: null, checklistOpen: false, welcomeOpen: false, wizardOpen: false, tutorialsOpen: false,
   startTour: noop, stopTour: noop, finishTour: noop,
   completeStep: noop, uncompleteStep: noop, isStepDone: () => false,
   dismissHint: noop, setWelcomed: noop, markWizardDone: noop,
   dismissChecklist: noop, dismissAll: noop, resetOnboarding: noop,
   openChecklist: noop, closeChecklist: noop, toggleChecklist: noop,
   openWizard: noop, closeWizard: noop, closeWelcome: noop,
+  openTutorials: noop, closeTutorials: noop,
 };
 
 const OnboardingContext = createContext(DEFAULT_CTX);
@@ -47,6 +48,7 @@ export function OnboardingProvider({ user, children }) {
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [tutorialsOpen, setTutorialsOpen] = useState(false);
 
   const saveTimer = useRef(null);
 
@@ -114,6 +116,8 @@ export function OnboardingProvider({ user, children }) {
   const openWizard = useCallback(() => setWizardOpen(true), []);
   const closeWizard = useCallback(() => setWizardOpen(false), []);
   const closeWelcome = useCallback(() => { setWelcomeOpen(false); setWelcomed(); }, [setWelcomed]);
+  const openTutorials = useCallback(() => setTutorialsOpen(true), []);
+  const closeTutorials = useCallback(() => setTutorialsOpen(false), []);
 
   // Powitanie pokazuje się raz — przy pierwszym logowaniu (pusty stan, brak rezygnacji).
   useEffect(() => {
@@ -133,15 +137,17 @@ export function OnboardingProvider({ user, children }) {
 
   const value = useMemo(() => ({
     state, loaded, isAdmin, signals,
-    activeTour, checklistOpen, welcomeOpen, wizardOpen,
+    activeTour, checklistOpen, welcomeOpen, wizardOpen, tutorialsOpen,
     startTour, stopTour, finishTour,
     completeStep, uncompleteStep, isStepDone,
     dismissHint, setWelcomed, markWizardDone, dismissChecklist, dismissAll, resetOnboarding,
     openChecklist, closeChecklist, toggleChecklist, openWizard, closeWizard, closeWelcome,
-  }), [state, loaded, isAdmin, signals, activeTour, checklistOpen, welcomeOpen, wizardOpen,
+    openTutorials, closeTutorials,
+  }), [state, loaded, isAdmin, signals, activeTour, checklistOpen, welcomeOpen, wizardOpen, tutorialsOpen,
     startTour, stopTour, finishTour, completeStep, uncompleteStep, isStepDone,
     dismissHint, setWelcomed, markWizardDone, dismissChecklist, dismissAll, resetOnboarding,
-    openChecklist, closeChecklist, toggleChecklist, openWizard, closeWizard, closeWelcome]);
+    openChecklist, closeChecklist, toggleChecklist, openWizard, closeWizard, closeWelcome,
+    openTutorials, closeTutorials]);
 
   return <OnboardingContext.Provider value={value}>{children}</OnboardingContext.Provider>;
 }
