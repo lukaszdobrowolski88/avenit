@@ -13,6 +13,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import InstallPrompt from './components/InstallPrompt';
 import AnnouncementBanner from './components/AnnouncementBanner';
 import CommandPalette from './components/CommandPalette';
+import { OnboardingProvider } from './onboarding/OnboardingContext';
+import OnboardingLayer from './onboarding/OnboardingLayer';
 import { I18nProvider, useI18n } from './i18n';
 import { PageTracker, identify as analyticsIdentify, trackLogin } from './lib/analytics';
 import useOffline from './hooks/useOffline';
@@ -405,6 +407,7 @@ function AppInner() {
       {/* Analityka: odsłony przy zmianie trasy + otwarcia modułów */}
       <PageTracker />
       <PermissionsProvider>
+        <OnboardingProvider user={session.user}>
         <CampusProvider>
           <NotificationProvider userEmail={session.user?.email}>
             <UnsavedChangesProvider>
@@ -415,6 +418,8 @@ function AppInner() {
                 <Navbar user={session.user} darkMode={darkMode} toggleTheme={toggleTheme} />
                 {/* Globalna wyszukiwarka (Cmd/Ctrl+K) */}
                 <CommandPalette />
+                {/* Onboarding: powitanie, kreator, samouczek, checklista, podpowiedzi */}
+                <OnboardingLayer />
                 {/* Toast Notifications - fixed positioned */}
                 <ToastNotifications />
               {/* PWA Install Prompt */}
@@ -539,6 +544,7 @@ function AppInner() {
             </UnsavedChangesProvider>
           </NotificationProvider>
         </CampusProvider>
+        </OnboardingProvider>
       </PermissionsProvider>
     </BrowserRouter>
   );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Sun, Moon, LogOut, User as UserIcon, Circle, Search } from 'lucide-react';
+import { Sun, Moon, LogOut, User as UserIcon, Circle, Search, LifeBuoy, PlayCircle, ListChecks } from 'lucide-react';
 import { openCommandPalette } from './CommandPalette';
+import { useOnboarding } from '../onboarding/OnboardingContext';
 import { supabase } from '../lib/supabase';
 import NotificationCenter from './NotificationCenter';
 import { useMyPresence, statusLabels } from '../hooks/usePresence';
@@ -13,8 +14,10 @@ import { tr } from '../i18n';
 
 export default function Navbar({ user, darkMode, toggleTheme }) {
   const t = useT();
+  const { startTour, openChecklist } = useOnboarding();
   const [userProfile, setUserProfile] = useState(null);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [showHelpMenu, setShowHelpMenu] = useState(false);
   const [currentStatus, setCurrentStatus] = useState('online');
 
   // Zarządzaj własnym statusem presence
@@ -91,6 +94,7 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
 
         {/* Globalna wyszukiwarka (Cmd/Ctrl+K) */}
         <button
+          data-tour="search"
           onClick={openCommandPalette}
           title={`${t('Szukaj')} (⌘K)`}
           className="hidden md:flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -108,7 +112,42 @@ export default function Navbar({ user, darkMode, toggleTheme }) {
         </button>
 
         {/* Przełącznik języka */}
-        <LanguageSwitcher />
+        <span data-tour="language"><LanguageSwitcher /></span>
+
+        {/* Pomoc / samouczek */}
+        <div className="relative">
+          <button
+            data-tour="help"
+            onClick={() => setShowHelpMenu(v => !v)}
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
+            title={t('Pomoc i samouczek')}
+            aria-label={t('Pomoc i samouczek')}
+          >
+            <LifeBuoy size={18} className="lg:w-5 lg:h-5" />
+          </button>
+          {showHelpMenu && (
+            <>
+              <div className="fixed inset-0 z-[1000]" onClick={() => setShowHelpMenu(false)} />
+              <div className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-[1001]">
+                <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">{t('Pomoc')}</p>
+                </div>
+                <button
+                  onClick={() => { setShowHelpMenu(false); startTour('welcome'); }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary transition-colors"
+                >
+                  <PlayCircle size={16} /> {t('Rozpocznij samouczek')}
+                </button>
+                <button
+                  onClick={() => { setShowHelpMenu(false); openChecklist(); }}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary transition-colors"
+                >
+                  <ListChecks size={16} /> {t('Pierwsze kroki')}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Przełącznik Motywu */}
         <button

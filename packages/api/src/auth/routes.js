@@ -46,7 +46,8 @@ export default async function authRoutes(app) {
 
       const { rows } = await req.db.query(
         `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id,
-                password_hash, totp_enabled, totp_secret, totp_backup_codes
+                password_hash, totp_enabled, totp_secret, totp_backup_codes,
+                onboarding, last_login_at
            FROM app_users WHERE lower(email) = lower($1)`,
         [email]
       );
@@ -140,7 +141,8 @@ export default async function authRoutes(app) {
     if (!rotated) return reply.code(401).send({ error: 'Sesja wygasła' });
 
     const { rows } = await req.db.query(
-      `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id
+      `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id,
+              onboarding, last_login_at
          FROM app_users WHERE id = $1`,
       [rotated.userId]
     );
@@ -181,7 +183,8 @@ export default async function authRoutes(app) {
     if (!rows[0]) return reply.code(400).send({ error: 'Link logowania wygasł lub został użyty' });
 
     const { rows: userRows } = await req.db.query(
-      `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id
+      `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id,
+              onboarding, last_login_at
          FROM app_users WHERE id = $1`,
       [rows[0].user_id]
     );
@@ -219,7 +222,8 @@ export default async function authRoutes(app) {
   app.get('/api/auth/me', { preHandler: app.requireUser }, async (req, reply) => {
     const { rows } = await req.db.query(
       `SELECT id, email, full_name, name, role, is_active, is_super_admin, campus_id,
-              totp_enabled, totp_required, auth_user_id, created_at
+              totp_enabled, totp_required, auth_user_id, created_at,
+              onboarding, last_login_at
          FROM app_users WHERE id = $1`,
       [req.user.id]
     );
@@ -400,5 +404,7 @@ function publicUser(u) {
     totp_enabled: u.totp_enabled,
     totp_required: u.totp_required,
     created_at: u.created_at,
+    last_login_at: u.last_login_at,
+    onboarding: u.onboarding || {},
   };
 }
