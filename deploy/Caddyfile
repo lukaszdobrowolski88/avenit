@@ -30,6 +30,10 @@
 			# Panel nie ma czego szukać w Google
 			header X-Robots-Tag "noindex, nofollow"
 			root * /srv/admin
+			@admin_assets path /assets/*
+			header @admin_assets Cache-Control "public, max-age=31536000, immutable"
+			@admin_html not path /assets/*
+			header @admin_html Cache-Control "no-cache"
 			try_files {path} /index.html
 			file_server
 		}
@@ -81,6 +85,10 @@
 		handle {
 			header X-Robots-Tag "noindex, nofollow"
 			root * /srv/static/entry
+			@app_assets path /assets/*
+			header @app_assets Cache-Control "public, max-age=31536000, immutable"
+			@app_html not path /assets/*
+			header @app_html Cache-Control "no-cache"
 			try_files {path} /index.html
 			file_server
 		}
@@ -97,6 +105,12 @@
 		# Aplikacje kościołów są za logowaniem — nie indeksować
 		header X-Robots-Tag "noindex, nofollow"
 		root * /srv/web
+		# HTML + sw.js zawsze rewalidowane (no-cache) → po każdym deployu widać nową
+		# wersję bez czyszczenia; hashowane /assets/* cache'owane na stałe (immutable).
+		@web_assets path /assets/*
+		header @web_assets Cache-Control "public, max-age=31536000, immutable"
+		@web_html not path /assets/*
+		header @web_html Cache-Control "no-cache"
 		try_files {path} /index.html
 		file_server
 	}
