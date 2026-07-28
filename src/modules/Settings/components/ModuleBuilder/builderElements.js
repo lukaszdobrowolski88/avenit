@@ -8,6 +8,7 @@ import {
   MessageSquare, CalendarDays, UserCog, FolderOpen,
   Video, Map, Code, Timer, GalleryThumbnails,
   AppWindow, ChevronsUpDown, BookOpen, Heart, Music,
+  Hash, BarChart3,
 } from 'lucide-react';
 
 export const LAYOUT_VERSION = 1;
@@ -71,6 +72,8 @@ export const ELEMENT_TYPES = {
   widget:   { category: 'widget', label: 'Widget', icon: Database, isContainer: false, defaultProps: { widgetType: 'events' } },
   // ── Dane (kolekcja — Faza 2) ──
   collection: { category: 'data', label: 'Kolekcja danych', icon: Database, defaultProps: { collectionKey: '', title: 'Kolekcja', view: 'list', fields: [], allowCreate: true, allowEdit: true, allowDelete: true } },
+  stat:  { category: 'data', label: 'Statystyka', icon: Hash, defaultProps: { collectionKey: '', label: 'Liczba wpisów' } },
+  chart: { category: 'data', label: 'Wykres', icon: BarChart3, defaultProps: { collectionKey: '', field: '', chartType: 'bar', title: 'Wykres' } },
 };
 
 export function isContainer(type) {

@@ -91,6 +91,10 @@ function LeafPreview({ el }) {
       return <div className="text-center text-sm text-gray-600 dark:text-gray-300 bg-accent-primary-lightest/40 dark:bg-accent-primary-darkest/10 rounded-lg px-3 py-3"><LucideIcons.Heart size={16} className="inline text-accent-primary mr-1" />{p.label}</div>;
     case 'songlist':
       return <div className="text-sm text-gray-600 dark:text-gray-300"><LucideIcons.Music size={14} className="inline text-accent-primary mr-1" />{p.title} ({(p.songs || []).filter(Boolean).length})</div>;
+    case 'stat':
+      return <div className="text-center text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-3"><LucideIcons.Hash size={16} className="inline text-accent-primary mr-1" />{p.label}</div>;
+    case 'chart':
+      return <div className="text-center text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-3"><LucideIcons.BarChart3 size={16} className="inline text-accent-primary mr-1" />{tr('Wykres')}: {p.title}</div>;
     default:
       return <div className="text-xs text-gray-400">{el.type}</div>;
   }

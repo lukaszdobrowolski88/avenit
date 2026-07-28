@@ -46,8 +46,16 @@ const ALIGN_OPTS = [{ value: 'left', label: 'Do lewej' }, { value: 'center', lab
 const GAP_OPTS = [{ value: 'sm', label: 'Mały' }, { value: 'md', label: 'Średni' }, { value: 'lg', label: 'Duży' }, { value: 'xl', label: 'Bardzo duży' }];
 const SIZE_OPTS = GAP_OPTS;
 
+function findCollections(nodes, out = []) {
+  for (const n of nodes || []) {
+    if (n.type === 'collection') out.push({ collectionKey: n.props?.collectionKey, title: n.props?.title || 'Kolekcja', fields: n.props?.fields || [] });
+    if (n.children) findCollections(n.children, out);
+  }
+  return out;
+}
+
 export default function Inspector() {
-  const { selected } = useBuilder();
+  const { selected, root } = useBuilder();
   const { update } = useBuilderActions();
 
   if (!selected) {
@@ -226,6 +234,27 @@ export default function Inspector() {
       {selected.type === 'collection' && (
         <CollectionEditor element={selected} update={update} />
       )}
+
+      {(selected.type === 'stat' || selected.type === 'chart') && (() => {
+        const cols = findCollections(root);
+        const chosen = cols.find((c) => c.collectionKey === p.collectionKey);
+        return (
+          <>
+            <Select label="Kolekcja danych" value={p.collectionKey} onChange={(v) => setProp('collectionKey', v)}
+              options={[{ value: '', label: '— wybierz —' }, ...cols.map((c) => ({ value: c.collectionKey, label: c.title }))]} />
+            {selected.type === 'stat' && <Text label="Etykieta" value={p.label} onChange={(v) => setProp('label', v)} />}
+            {selected.type === 'chart' && (
+              <>
+                <Select label="Pole (grupowanie)" value={p.field} onChange={(v) => setProp('field', v)}
+                  options={[{ value: '', label: '— wybierz —' }, ...(chosen?.fields || []).map((f) => ({ value: f.key, label: f.label }))]} />
+                <Select label="Typ wykresu" value={p.chartType} onChange={(v) => setProp('chartType', v)} options={[{ value: 'bar', label: 'Słupkowy' }, { value: 'pie', label: 'Kołowy' }]} />
+                <Text label="Tytuł" value={p.title} onChange={(v) => setProp('title', v)} />
+              </>
+            )}
+            {cols.length === 0 && <p className="text-xs text-amber-500">{tr('Najpierw dodaj element „Kolekcja danych" na tej zakładce.')}</p>}
+          </>
+        );
+      })()}
 
       {selected.type === 'section' && (
         <p className="text-sm text-gray-400">{tr('Sekcja grupuje elementy. Przeciągnij elementy do jej wnętrza.')}</p>

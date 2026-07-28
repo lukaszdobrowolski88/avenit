@@ -5,6 +5,85 @@ import { tr } from '../../../i18n';
 import { styleToCSS, hoverClass } from '../../Settings/components/ModuleBuilder/styleToCSS';
 import ModuleWidget from './ModuleWidget';
 import CollectionView from './CollectionView';
+import { useModuleRecords } from '../../../hooks/useModuleRecords';
+
+const CHART_COLORS = ['#c7ab71', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#6366f1', '#84cc16', '#f97316', '#06b6d4'];
+
+// KPI — liczba wpisów w kolekcji.
+function StatWidget({ el, ctx }) {
+  const { records } = useModuleRecords({ moduleId: ctx.moduleId, moduleKey: ctx.moduleKey, tabId: ctx.tabId, collectionKey: el.props?.collectionKey });
+  return (
+    <div className="p-6 rounded-2xl bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 text-center">
+      <div className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">{records.length}</div>
+      <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">{el.props?.label || tr('Liczba wpisów')}</div>
+    </div>
+  );
+}
+
+function BarList({ data, max }) {
+  return (
+    <div className="space-y-2">
+      {data.map((d, i) => (
+        <div key={d.label} className="flex items-center gap-2">
+          <div className="w-28 shrink-0 truncate text-xs text-gray-600 dark:text-gray-300 text-right">{d.label}</div>
+          <div className="flex-1 h-5 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden">
+            <div className="h-full rounded-md" style={{ width: `${max ? (d.value / max) * 100 : 0}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+          </div>
+          <div className="w-8 shrink-0 text-xs font-medium text-gray-700 dark:text-gray-200">{d.value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PieSvg({ data, total }) {
+  const R = 52, C = 2 * Math.PI * R;
+  let acc = 0;
+  return (
+    <div className="flex items-center gap-4 flex-wrap">
+      <svg width="150" height="150" viewBox="0 0 150 150" className="shrink-0">
+        <g transform="translate(75,75) rotate(-90)">
+          {data.map((d, i) => {
+            const dash = (d.value / total) * C; const off = acc; acc += dash;
+            return <circle key={d.label} r={R} cx="0" cy="0" fill="none" stroke={CHART_COLORS[i % CHART_COLORS.length]} strokeWidth="26" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-off} />;
+          })}
+        </g>
+      </svg>
+      <div className="space-y-1">
+        {data.map((d, i) => (
+          <div key={d.label} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+            <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+            {d.label}: {d.value} ({Math.round((d.value / total) * 100)}%)
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Wykres — zliczanie wpisów kolekcji wg wybranego pola.
+function ChartWidget({ el, ctx }) {
+  const p = el.props || {};
+  const { records } = useModuleRecords({ moduleId: ctx.moduleId, moduleKey: ctx.moduleKey, tabId: ctx.tabId, collectionKey: p.collectionKey });
+  const counts = React.useMemo(() => {
+    const m = new Map();
+    for (const r of records) {
+      const v = r.data?.[p.field];
+      const vals = Array.isArray(v) ? v : [v];
+      for (const x of vals) { const key = (x == null || x === '') ? '—' : String(x); m.set(key, (m.get(key) || 0) + 1); }
+    }
+    return [...m.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 12);
+  }, [records, p.field]);
+  if (!p.collectionKey || !p.field) return <div className="p-6 bg-gray-100 dark:bg-gray-800 rounded-xl text-center text-sm text-gray-400">{tr('Wybierz kolekcję i pole do wykresu')}</div>;
+  if (!counts.length) return <div className="p-6 bg-gray-100 dark:bg-gray-800 rounded-xl text-center text-sm text-gray-400">{tr('Brak danych')}</div>;
+  const total = counts.reduce((s, c) => s + c.value, 0);
+  return (
+    <div>
+      {p.title && <div className="text-sm font-semibold text-gray-800 dark:text-white mb-3">{p.title}</div>}
+      {p.chartType === 'pie' ? <PieSvg data={counts} total={total} /> : <BarList data={counts} max={counts[0].value} />}
+    </div>
+  );
+}
 
 const GAP_PX = { sm: 8, md: 16, lg: 24, xl: 32 };
 const SPACER_PX = { sm: 8, md: 24, lg: 48, xl: 80 };
@@ -301,6 +380,12 @@ function renderInner(el, ctx) {
 
     case 'collection':
       return <CollectionView element={el} ctx={ctx} />;
+
+    case 'stat':
+      return <StatWidget el={el} ctx={ctx} />;
+
+    case 'chart':
+      return <ChartWidget el={el} ctx={ctx} />;
 
     default:
       return null;
