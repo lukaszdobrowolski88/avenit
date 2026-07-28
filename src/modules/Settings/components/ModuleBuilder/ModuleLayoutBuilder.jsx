@@ -1,15 +1,20 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
   pointerWithin, closestCenter,
 } from '@dnd-kit/core';
-import { ChevronLeft, Undo2, Redo2, Eye, Save, Check, LayoutTemplate, Monitor, Smartphone } from 'lucide-react';
+import { ChevronLeft, Undo2, Redo2, Eye, Save, Check, LayoutTemplate, Monitor, Smartphone, MoreVertical, Download, Upload, Bookmark } from 'lucide-react';
 import { tr } from '../../../../i18n';
 import { TEMPLATES } from './templates';
 import {
-  createElement, createWidgetElement, locateElement, findElement,
+  createElement, createWidgetElement, locateElement, findElement, cloneTree,
   emptyLayout, LAYOUT_VERSION, ELEMENT_TYPES, WIDGET_META,
 } from './builderElements';
+
+const CUSTOM_TPL_KEY = 'builderCustomTemplates';
+function loadCustomTemplates() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_TPL_KEY) || '[]'); } catch { return []; }
+}
 import { BuilderProvider, useBuilder, useBuilderActions } from './BuilderContext';
 import ElementPalette from './ElementPalette';
 import BuilderCanvas from './BuilderCanvas';
@@ -22,18 +27,66 @@ const collisionDetection = (args) => {
 };
 
 function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave }) {
-  const { root, settings, canUndo, canRedo, dirty } = useBuilder();
-  const { add, move, undo, redo, markClean, setRoot } = useBuilderActions();
+  const { root, settings, canUndo, canRedo, dirty, selectedId } = useBuilder();
+  const { add, move, undo, redo, markClean, setRoot, remove, duplicate, select } = useBuilderActions();
   const [activeDrag, setActiveDrag] = useState(null);
   const [preview, setPreview] = useState(false);
   const [device, setDevice] = useState('desktop');
   const [tplOpen, setTplOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [customTpls, setCustomTpls] = useState(loadCustomTemplates);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   const rootRef = useRef(root);
   rootRef.current = root;
+  const fileRef = useRef(null);
+
+  // Skróty klawiszowe (Del=usuń, Ctrl+D=duplikuj, Ctrl+Z/Y=cofnij/ponów, Esc=odznacz).
+  useEffect(() => {
+    const onKey = (e) => {
+      const tag = (e.target?.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable) return;
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+      else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
+      else if (mod && e.key.toLowerCase() === 'd' && selectedId) { e.preventDefault(); duplicate(selectedId); }
+      else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) { e.preventDefault(); remove(selectedId); }
+      else if (e.key === 'Escape') select(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedId, undo, redo, duplicate, remove, select]);
+
+  const exportJson = () => {
+    const blob = new Blob([JSON.stringify({ version: LAYOUT_VERSION, root, settings }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${(tab?.label || 'uklad').replace(/[^a-z0-9]+/gi, '_')}.json`; a.click();
+    URL.revokeObjectURL(url); setMenuOpen(false);
+  };
+  const importJson = (e) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        const nodes = Array.isArray(parsed?.root) ? parsed.root : Array.isArray(parsed) ? parsed : null;
+        if (nodes) setRoot(cloneTree(nodes)); else alert(tr('Nieprawidłowy plik układu'));
+      } catch { alert(tr('Nieprawidłowy plik układu')); }
+    };
+    reader.readAsText(file); e.target.value = ''; setMenuOpen(false);
+  };
+  const saveAsTemplate = () => {
+    const name = window.prompt(tr('Nazwa szablonu:')); if (!name) return;
+    const next = [...loadCustomTemplates(), { key: 'c_' + Date.now(), label: name, root: JSON.parse(JSON.stringify(root)) }];
+    localStorage.setItem(CUSTOM_TPL_KEY, JSON.stringify(next)); setCustomTpls(next); setMenuOpen(false);
+  };
+  const insertTemplate = (t) => {
+    setRoot([...root, ...(t.build ? t.build() : cloneTree(t.root))]);
+    setTplOpen(false);
+  };
 
   const handleDragStart = (event) => setActiveDrag(event.active.data.current || null);
 
@@ -125,15 +178,28 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave })
               <LayoutTemplate size={16} /> <span className="hidden sm:inline">{tr('Szablony')}</span>
             </button>
             {tplOpen && (
-              <div className="absolute right-0 mt-1 w-60 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-30 py-1">
-                {TEMPLATES.map((t) => (
-                  <button key={t.key} onClick={() => { setRoot([...root, ...t.build()]); setTplOpen(false); }}
+              <div className="absolute right-0 mt-1 w-60 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-30 py-1 max-h-80 overflow-y-auto">
+                {[...TEMPLATES, ...customTpls].map((t) => (
+                  <button key={t.key} onClick={() => insertTemplate(t)}
                     className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                    {tr(t.label)}
+                    {t.build ? tr(t.label) : t.label}
                   </button>
                 ))}
               </div>
             )}
+          </div>
+          <div className="relative">
+            <button onClick={() => setMenuOpen((v) => !v)} className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700" title={tr('Więcej')}>
+              <MoreVertical size={18} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-1 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-30 py-1">
+                <button onClick={saveAsTemplate} className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><Bookmark size={15} /> {tr('Zapisz jako szablon')}</button>
+                <button onClick={exportJson} className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><Download size={15} /> {tr('Eksport JSON')}</button>
+                <button onClick={() => fileRef.current?.click()} className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><Upload size={15} /> {tr('Import JSON')}</button>
+              </div>
+            )}
+            <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={importJson} />
           </div>
           <button onClick={undo} disabled={!canUndo} title={tr('Cofnij')}
             className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed">

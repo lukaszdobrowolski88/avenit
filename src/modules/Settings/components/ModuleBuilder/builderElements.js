@@ -204,6 +204,16 @@ export function insertElement(nodes, element, { parentId = null, index = null } 
   });
 }
 
+// Sklonuj poddrzewo z NOWYMI id (do wstawiania szablonów / importu).
+export function cloneTree(nodes) {
+  return (nodes || []).map((el) => {
+    const c = { ...structuredClone(el), id: newId() };
+    if (c.type === 'collection' && c.props) c.props = { ...c.props, collectionKey: newId().replace('el-', 'col-') };
+    c.children = el.children ? cloneTree(el.children) : el.children;
+    return c;
+  });
+}
+
 // Znajdź rodzica i indeks elementu (do reorder/move).
 export function locateElement(nodes, id, parentId = null) {
   for (let i = 0; i < nodes.length; i++) {
