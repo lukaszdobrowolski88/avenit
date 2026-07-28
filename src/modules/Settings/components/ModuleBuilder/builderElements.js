@@ -6,6 +6,9 @@ import {
   Heading, Type, Image as ImageIcon, MousePointerClick, List, Quote,
   AlertTriangle, Star, Database, Calendar, CheckSquare, DollarSign, Users,
   MessageSquare, CalendarDays, UserCog, FolderOpen,
+  Video, Map, Code, Timer, GalleryThumbnails,
+  AppWindow, ChevronsUpDown, BookOpen, Heart, Music,
+  Hash, BarChart3,
 } from 'lucide-react';
 
 export const LAYOUT_VERSION = 1;
@@ -46,6 +49,8 @@ export const ELEMENT_TYPES = {
   card:     { category: 'layout', label: 'Karta', icon: Square, isContainer: true, defaultProps: { title: '' } },
   divider:  { category: 'layout', label: 'Linia', icon: Minus, defaultProps: { lineStyle: 'solid' } },
   spacer:   { category: 'layout', label: 'Odstęp', icon: StretchVertical, defaultProps: { size: 'md' } },
+  tabs:     { category: 'layout', label: 'Zakładki', icon: AppWindow, isContainer: true, defaultProps: { labels: [] } },
+  accordion:{ category: 'layout', label: 'Akordeon', icon: ChevronsUpDown, isContainer: true, defaultProps: { labels: [] } },
   // ── Treść ──
   heading:  { category: 'content', label: 'Nagłówek', icon: Heading, defaultProps: { text: 'Nagłówek', level: 2, align: 'left' } },
   text:     { category: 'content', label: 'Tekst', icon: Type, defaultProps: { html: '<p>Wpisz treść…</p>' } },
@@ -55,10 +60,20 @@ export const ELEMENT_TYPES = {
   quote:    { category: 'content', label: 'Cytat', icon: Quote, defaultProps: { text: 'Treść cytatu…', author: '' } },
   alert:    { category: 'content', label: 'Wyróżnienie', icon: AlertTriangle, defaultProps: { text: 'Ważna informacja', variant: 'info' } },
   icon:     { category: 'content', label: 'Ikona', icon: Star, defaultProps: { name: 'Star', size: 32 } },
+  video:    { category: 'content', label: 'Wideo', icon: Video, defaultProps: { url: '' } },
+  map:      { category: 'content', label: 'Mapa', icon: Map, defaultProps: { query: '' } },
+  embed:    { category: 'content', label: 'Osadzenie', icon: Code, defaultProps: { url: '', height: 400 } },
+  countdown:{ category: 'content', label: 'Licznik', icon: Timer, defaultProps: { target: '', label: 'Do wydarzenia' } },
+  gallery:  { category: 'content', label: 'Galeria', icon: GalleryThumbnails, defaultProps: { images: [], columns: 3 } },
+  verse:    { category: 'content', label: 'Werset', icon: BookOpen, defaultProps: { text: 'W nim mamy odkupienie przez krew jego…', reference: 'Ef 1,7' } },
+  giving:   { category: 'content', label: 'Wesprzyj', icon: Heart, defaultProps: { label: 'Wesprzyj nas', url: '', note: '' } },
+  songlist: { category: 'content', label: 'Setlista', icon: Music, defaultProps: { title: 'Pieśni', songs: ['Pieśń 1', 'Pieśń 2'] } },
   // ── Widget danych (jeden typ; konkretny widget w props.widgetType) ──
   widget:   { category: 'widget', label: 'Widget', icon: Database, isContainer: false, defaultProps: { widgetType: 'events' } },
   // ── Dane (kolekcja — Faza 2) ──
   collection: { category: 'data', label: 'Kolekcja danych', icon: Database, defaultProps: { collectionKey: '', title: 'Kolekcja', view: 'list', fields: [], allowCreate: true, allowEdit: true, allowDelete: true } },
+  stat:  { category: 'data', label: 'Statystyka', icon: Hash, defaultProps: { collectionKey: '', label: 'Liczba wpisów' } },
+  chart: { category: 'data', label: 'Wykres', icon: BarChart3, defaultProps: { collectionKey: '', field: '', chartType: 'bar', title: 'Wykres' } },
 };
 
 export function isContainer(type) {
@@ -92,19 +107,30 @@ export const COLLECTION_FIELD_TYPES = [
   { type: 'text', label: 'Tekst' },
   { type: 'textarea', label: 'Długi tekst' },
   { type: 'number', label: 'Liczba' },
+  { type: 'currency', label: 'Kwota (PLN)' },
   { type: 'date', label: 'Data' },
   { type: 'select', label: 'Lista wyboru' },
+  { type: 'multiselect', label: 'Wielokrotny wybór' },
   { type: 'checkbox', label: 'Tak / Nie' },
+  { type: 'rating', label: 'Ocena (gwiazdki)' },
   { type: 'email', label: 'E-mail' },
   { type: 'phone', label: 'Telefon' },
+  { type: 'image', label: 'Obraz (URL)' },
+  { type: 'file', label: 'Plik (URL)' },
 ];
+
+// Pola wymagające listy opcji (options).
+export const FIELDS_WITH_OPTIONS = ['select', 'multiselect'];
 
 export function newFieldKey() {
   return 'f_' + Math.random().toString(36).slice(2, 8);
 }
 
 export function createCollectionField(type = 'text') {
-  return { key: newFieldKey(), label: 'Nowe pole', type, required: false, options: type === 'select' ? [{ label: 'Opcja 1', value: 'opcja_1' }] : undefined };
+  return {
+    key: newFieldKey(), label: 'Nowe pole', type, required: false,
+    options: FIELDS_WITH_OPTIONS.includes(type) ? [{ label: 'Opcja 1', value: 'opcja_1' }] : undefined,
+  };
 }
 
 // Pusty układ.
@@ -179,6 +205,29 @@ export function insertElement(nodes, element, { parentId = null, index = null } 
     if (n.children) return { ...n, children: insertElement(n.children, element, { parentId, index }) };
     return n;
   });
+}
+
+// Sklonuj poddrzewo z NOWYMI id (do wstawiania szablonów / importu).
+export function cloneTree(nodes) {
+  return (nodes || []).map((el) => {
+    const c = { ...structuredClone(el), id: newId() };
+    if (c.type === 'collection' && c.props) c.props = { ...c.props, collectionKey: newId().replace('el-', 'col-') };
+    c.children = el.children ? cloneTree(el.children) : el.children;
+    return c;
+  });
+}
+
+// Sanityzuje drzewo z AI: zostawia tylko znane typy, wymusza świeże id i domyślne propsy.
+export function normalizeAiNodes(nodes) {
+  if (!Array.isArray(nodes)) return [];
+  const out = [];
+  for (const n of nodes) {
+    if (!n || !ELEMENT_TYPES[n.type]) continue;
+    const el = createElement(n.type, (n.props && typeof n.props === 'object') ? n.props : {});
+    if (isContainer(n.type)) el.children = normalizeAiNodes(n.children);
+    out.push(el);
+  }
+  return out;
 }
 
 // Znajdź rodzica i indeks elementu (do reorder/move).

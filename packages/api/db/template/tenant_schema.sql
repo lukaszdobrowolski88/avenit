@@ -6159,6 +6159,11 @@ CREATE TABLE IF NOT EXISTS module_records (
 CREATE INDEX IF NOT EXISTS idx_module_records_scope ON module_records(module_id, tab_id, collection_key);
 CREATE INDEX IF NOT EXISTS idx_module_records_module_key ON module_records(module_key);
 
+-- Publiczne strony kreatora (patrz tenant-migrations/009_module_public_pages.sql).
+ALTER TABLE app_module_tabs ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT false;
+ALTER TABLE app_module_tabs ADD COLUMN IF NOT EXISTS public_slug TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_app_module_tabs_public_slug ON app_module_tabs(public_slug) WHERE public_slug IS NOT NULL;
+
 -- Kampusy w tabelach modułów własnych (patrz tenant-migrations/008_custom_tables_campus.sql).
 DO $$
 DECLARE t text;

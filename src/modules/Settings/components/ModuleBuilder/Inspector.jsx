@@ -6,6 +6,7 @@ import { ELEMENT_TYPES, WIDGET_META } from './builderElements';
 import { useBuilder, useBuilderActions } from './BuilderContext';
 import CollectionEditor from './CollectionEditor';
 import StyleSection from './StyleSection';
+import SimpleRichEditor from '../../../../components/SimpleRichEditor';
 
 // ── Drobne kontrolki ────────────────────────────────────────────────────────
 const Label = ({ children }) => (
@@ -45,8 +46,16 @@ const ALIGN_OPTS = [{ value: 'left', label: 'Do lewej' }, { value: 'center', lab
 const GAP_OPTS = [{ value: 'sm', label: 'Mały' }, { value: 'md', label: 'Średni' }, { value: 'lg', label: 'Duży' }, { value: 'xl', label: 'Bardzo duży' }];
 const SIZE_OPTS = GAP_OPTS;
 
+function findCollections(nodes, out = []) {
+  for (const n of nodes || []) {
+    if (n.type === 'collection') out.push({ collectionKey: n.props?.collectionKey, title: n.props?.title || 'Kolekcja', fields: n.props?.fields || [] });
+    if (n.children) findCollections(n.children, out);
+  }
+  return out;
+}
+
 export default function Inspector() {
-  const { selected } = useBuilder();
+  const { selected, root } = useBuilder();
   const { update } = useBuilderActions();
 
   if (!selected) {
@@ -78,7 +87,10 @@ export default function Inspector() {
       )}
 
       {selected.type === 'text' && (
-        <Area label="Treść (HTML)" rows={8} value={p.html} onChange={(v) => setProp('html', v)} />
+        <div>
+          <Label>{tr('Treść')}</Label>
+          <SimpleRichEditor content={p.html} onChange={(html) => setProp('html', html)} minHeight={160} />
+        </div>
       )}
 
       {selected.type === 'image' && (
@@ -133,6 +145,67 @@ export default function Inspector() {
         </>
       )}
 
+      {selected.type === 'video' && (
+        <Text label="Link do wideo (YouTube/Vimeo/mp4)" value={p.url} onChange={(v) => setProp('url', v)} />
+      )}
+
+      {selected.type === 'map' && (
+        <Text label="Adres / miejsce" value={p.query} onChange={(v) => setProp('query', v)} />
+      )}
+
+      {selected.type === 'embed' && (
+        <>
+          <Text label="Adres URL (iframe)" value={p.url} onChange={(v) => setProp('url', v)} />
+          <Text label="Wysokość (px)" type="number" value={p.height} onChange={(v) => setProp('height', v)} />
+        </>
+      )}
+
+      {selected.type === 'countdown' && (
+        <>
+          <Text label="Etykieta" value={p.label} onChange={(v) => setProp('label', v)} />
+          <div>
+            <Label>{tr('Data i godzina')}</Label>
+            <input type="datetime-local" value={p.target || ''} onChange={(e) => setProp('target', e.target.value)} className={inputCls} />
+          </div>
+        </>
+      )}
+
+      {selected.type === 'gallery' && (
+        <>
+          <Area label="Adresy zdjęć (jeden na linię)" rows={5} value={(p.images || []).join('\n')} onChange={(v) => setProp('images', v.split('\n'))} />
+          <Text label="Kolumny" type="number" value={p.columns} onChange={(v) => setProp('columns', Math.min(Math.max(v || 1, 1), 6))} />
+        </>
+      )}
+
+      {(selected.type === 'tabs' || selected.type === 'accordion') && (
+        <>
+          <Area label="Etykiety paneli (jedna na linię, wg kolejności elementów)" rows={5} value={(p.labels || []).join('\n')} onChange={(v) => setProp('labels', v.split('\n'))} />
+          <p className="text-xs text-gray-400">{tr('Przeciągnij elementy do wnętrza — każdy element = osobny panel.')}</p>
+        </>
+      )}
+
+      {selected.type === 'verse' && (
+        <>
+          <Area label="Treść wersetu" value={p.text} onChange={(v) => setProp('text', v)} />
+          <Text label="Odniesienie (np. Ef 1,7)" value={p.reference} onChange={(v) => setProp('reference', v)} />
+        </>
+      )}
+
+      {selected.type === 'giving' && (
+        <>
+          <Text label="Etykieta przycisku" value={p.label} onChange={(v) => setProp('label', v)} />
+          <Text label="Link (P24 / PayPal / strona)" value={p.url} onChange={(v) => setProp('url', v)} />
+          <Text label="Krótki tekst (opcjonalnie)" value={p.note} onChange={(v) => setProp('note', v)} />
+        </>
+      )}
+
+      {selected.type === 'songlist' && (
+        <>
+          <Text label="Tytuł" value={p.title} onChange={(v) => setProp('title', v)} />
+          <Area label="Pieśni (jedna na linię)" rows={6} value={(p.songs || []).join('\n')} onChange={(v) => setProp('songs', v.split('\n'))} />
+        </>
+      )}
+
       {selected.type === 'divider' && (
         <Select label="Styl linii" value={p.lineStyle} onChange={(v) => setProp('lineStyle', v)}
           options={[{ value: 'solid', label: 'Ciągła' }, { value: 'dashed', label: 'Przerywana' }, { value: 'dotted', label: 'Kropkowana' }]} />
@@ -161,6 +234,27 @@ export default function Inspector() {
       {selected.type === 'collection' && (
         <CollectionEditor element={selected} update={update} />
       )}
+
+      {(selected.type === 'stat' || selected.type === 'chart') && (() => {
+        const cols = findCollections(root);
+        const chosen = cols.find((c) => c.collectionKey === p.collectionKey);
+        return (
+          <>
+            <Select label="Kolekcja danych" value={p.collectionKey} onChange={(v) => setProp('collectionKey', v)}
+              options={[{ value: '', label: '— wybierz —' }, ...cols.map((c) => ({ value: c.collectionKey, label: c.title }))]} />
+            {selected.type === 'stat' && <Text label="Etykieta" value={p.label} onChange={(v) => setProp('label', v)} />}
+            {selected.type === 'chart' && (
+              <>
+                <Select label="Pole (grupowanie)" value={p.field} onChange={(v) => setProp('field', v)}
+                  options={[{ value: '', label: '— wybierz —' }, ...(chosen?.fields || []).map((f) => ({ value: f.key, label: f.label }))]} />
+                <Select label="Typ wykresu" value={p.chartType} onChange={(v) => setProp('chartType', v)} options={[{ value: 'bar', label: 'Słupkowy' }, { value: 'pie', label: 'Kołowy' }]} />
+                <Text label="Tytuł" value={p.title} onChange={(v) => setProp('title', v)} />
+              </>
+            )}
+            {cols.length === 0 && <p className="text-xs text-amber-500">{tr('Najpierw dodaj element „Kolekcja danych" na tej zakładce.')}</p>}
+          </>
+        );
+      })()}
 
       {selected.type === 'section' && (
         <p className="text-sm text-gray-400">{tr('Sekcja grupuje elementy. Przeciągnij elementy do jej wnętrza.')}</p>

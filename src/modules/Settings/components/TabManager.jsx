@@ -290,6 +290,7 @@ export default function TabManager({
           moduleKey={module.key}
           onClose={() => setBuilderTab(null)}
           onSave={handleSaveLayout}
+          onSaveMeta={(meta) => onUpdateTab(builderTab.id, module.id, meta)}
         />
       )}
 

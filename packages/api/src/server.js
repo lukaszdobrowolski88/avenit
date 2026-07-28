@@ -9,6 +9,7 @@ import contextPlugin from './plugins/context.js';
 import authRoutes from './auth/routes.js';
 import dataApiRoutes from './dataapi/routes.js';
 import storageRoutes from './storage/routes.js';
+import publicPageRoutes from './public/routes.js';
 import { registerClient } from './realtime/hub.js';
 import { verifyAccessToken, AUD_TENANT } from './auth/tokens.js';
 import { config, isProd } from './config.js';
@@ -74,6 +75,7 @@ export async function buildServer() {
   // Publiczny formularz zgłoszeniowy ze strony głównej (avenit.pl).
   const { default: landingRoutes } = await import('./landing/routes.js');
   await app.register(landingRoutes);
+  await app.register(publicPageRoutes);
   // Analityka first-party: ingestia zdarzeń z landingu i aplikacji (POST /api/track).
   const { default: analyticsRoutes } = await import('./analytics/routes.js');
   await app.register(analyticsRoutes);
