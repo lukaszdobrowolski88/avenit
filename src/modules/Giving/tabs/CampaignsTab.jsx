@@ -134,7 +134,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-gray-500 dark:text-gray-400">Zbiórki z celem kwotowym i deklaracjami wsparcia.</p>
-        <button onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md"><Plus size={16} /> Nowa kampania</button>
+        <button data-tour="giving-campaign-new" onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md"><Plus size={16} /> Nowa kampania</button>
       </div>
 
       {loading ? <div className="p-10 text-center text-gray-400">Ładowanie...</div>
@@ -220,7 +220,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
             <div className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Nazwa</label>
-                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                <input data-tour="giving-campaign-name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Opis</label>
@@ -229,7 +229,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Cel (PLN)</label>
-                  <input type="number" step="0.01" min="0" value={form.goal_amount} onChange={e => setForm(f => ({ ...f, goal_amount: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  <input data-tour="giving-campaign-goal" type="number" step="0.01" min="0" value={form.goal_amount} onChange={e => setForm(f => ({ ...f, goal_amount: e.target.value }))} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
                 </div>
                 <CustomSelect label="Fundusz" value={form.fund_id} onChange={v => setForm(f => ({ ...f, fund_id: v }))} options={fundOptions} />
               </div>
@@ -249,7 +249,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
             </div>
             <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
               <button onClick={() => setModalOpen(false)} disabled={saving} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
-              <button onClick={save} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Zapisywanie...' : 'Zapisz'}</button>
+              <button data-tour="giving-campaign-save" onClick={save} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Zapisywanie...' : 'Zapisz'}</button>
             </div>
           </div>
         </div>

@@ -21,7 +21,7 @@ const VIEW_TABS = [
 
 const PERSON_TABS = [
   { id: 'notes', label: 'Notatki', icon: StickyNote },
-  { id: 'care', label: 'Opieka', icon: HeartHandshake },
+  { id: 'care', label: 'Opieka', icon: HeartHandshake, tour: 'care-tab' },
   { id: 'milestones', label: 'Kamienie milowe', icon: Award },
   { id: 'tags', label: 'Tagi', icon: TagIcon },
   { id: 'custom', label: 'Pola własne', icon: SlidersHorizontal },
@@ -119,6 +119,7 @@ export default function CareModule() {
                 <div className="relative">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
+                    data-tour="care-search"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     placeholder="Szukaj po imieniu, nazwisku, e-mailu..."

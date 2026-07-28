@@ -9,7 +9,7 @@ import ScheduleTab from './tabs/ScheduleTab';
 
 const TABS = [
   { id: 'resources', label: 'Zasoby', icon: Boxes },
-  { id: 'bookings', label: 'Rezerwacje', icon: CalendarClock },
+  { id: 'bookings', label: 'Rezerwacje', icon: CalendarClock, tour: 'rooms-bookings-tab' },
   { id: 'schedule', label: 'Harmonogram', icon: CalendarDays },
 ];
 
