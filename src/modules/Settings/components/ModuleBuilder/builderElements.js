@@ -217,6 +217,19 @@ export function cloneTree(nodes) {
   });
 }
 
+// Sanityzuje drzewo z AI: zostawia tylko znane typy, wymusza świeże id i domyślne propsy.
+export function normalizeAiNodes(nodes) {
+  if (!Array.isArray(nodes)) return [];
+  const out = [];
+  for (const n of nodes) {
+    if (!n || !ELEMENT_TYPES[n.type]) continue;
+    const el = createElement(n.type, (n.props && typeof n.props === 'object') ? n.props : {});
+    if (isContainer(n.type)) el.children = normalizeAiNodes(n.children);
+    out.push(el);
+  }
+  return out;
+}
+
 // Znajdź rodzica i indeks elementu (do reorder/move).
 export function locateElement(nodes, id, parentId = null) {
   for (let i = 0; i < nodes.length; i++) {

@@ -3,11 +3,12 @@ import {
   DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
   pointerWithin, closestCenter,
 } from '@dnd-kit/core';
-import { ChevronLeft, Undo2, Redo2, Eye, Save, Check, LayoutTemplate, Monitor, Smartphone, MoreVertical, Download, Upload, Bookmark, Globe, Link as LinkIcon } from 'lucide-react';
+import { ChevronLeft, Undo2, Redo2, Eye, Save, Check, LayoutTemplate, Monitor, Smartphone, MoreVertical, Download, Upload, Bookmark, Globe, Link as LinkIcon, Sparkles, X } from 'lucide-react';
 import { tr } from '../../../../i18n';
+import { supabase } from '../../../../lib/supabase';
 import { TEMPLATES } from './templates';
 import {
-  createElement, createWidgetElement, locateElement, findElement, cloneTree,
+  createElement, createWidgetElement, locateElement, findElement, cloneTree, normalizeAiNodes,
   emptyLayout, LAYOUT_VERSION, ELEMENT_TYPES, WIDGET_META,
 } from './builderElements';
 
@@ -36,6 +37,7 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave, o
   const [menuOpen, setMenuOpen] = useState(false);
   const [customTpls, setCustomTpls] = useState(loadCustomTemplates);
   const [pub, setPub] = useState({ isPublic: !!tab?.is_public, slug: tab?.public_slug || '' });
+  const [ai, setAi] = useState({ open: false, prompt: '', loading: false, error: '' });
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(null);
 
@@ -103,6 +105,24 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave, o
     setMenuOpen(false);
   };
   const copyPublicUrl = () => { navigator.clipboard?.writeText(`${window.location.origin}/p/${pub.slug}`); setMenuOpen(false); };
+
+  const generateAi = async () => {
+    const prompt = ai.prompt.trim();
+    if (!prompt) return;
+    setAi((s) => ({ ...s, loading: true, error: '' }));
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-assist', { body: { task: 'builder_layout', input: prompt } });
+      if (error || data?.error) throw new Error(data?.error || error?.message || 'Błąd AI');
+      const text = String(data?.result || '').trim().replace(/^```(json)?/i, '').replace(/```$/, '').trim();
+      const parsed = JSON.parse(text);
+      const norm = normalizeAiNodes(Array.isArray(parsed) ? parsed : parsed?.root);
+      if (!norm.length) throw new Error('AI nie zwróciło elementów');
+      setRoot([...root, ...norm]);
+      setAi({ open: false, prompt: '', loading: false, error: '' });
+    } catch (e) {
+      setAi((s) => ({ ...s, loading: false, error: e.message || 'Nie udało się wygenerować układu' }));
+    }
+  };
 
   const handleDragStart = (event) => setActiveDrag(event.active.data.current || null);
 
@@ -188,6 +208,10 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave, o
         </div>
 
         <div className="flex items-center gap-1.5">
+          <button onClick={() => setAi((s) => ({ ...s, open: true, error: '' }))}
+            className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:shadow-lg transition">
+            <Sparkles size={16} /> <span className="hidden sm:inline">AI</span>
+          </button>
           <div className="relative">
             <button onClick={() => setTplOpen((v) => !v)}
               className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -245,6 +269,30 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave, o
           </button>
         </div>
       </div>
+
+      {ai.open && (
+        <div className="fixed inset-0 z-[210] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="font-bold text-lg flex items-center gap-2 text-gray-900 dark:text-white"><Sparkles size={18} className="text-accent-primary" /> {tr('Wygeneruj układ AI')}</h3>
+              <button onClick={() => setAi((s) => ({ ...s, open: false }))} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl"><X size={18} className="text-gray-500" /></button>
+            </div>
+            <div className="p-5 space-y-3">
+              <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Opisz stronę, którą chcesz zbudować — AI utworzy elementy i doda je do płótna.')}</p>
+              <textarea rows={4} autoFocus value={ai.prompt} onChange={(e) => setAi((s) => ({ ...s, prompt: e.target.value }))}
+                placeholder={tr('np. Strona wydarzenia: nagłówek, opis, licznik do daty, mapa dojazdu i przycisk zapisów')}
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20" />
+              {ai.error && <div className="text-sm text-red-500">{ai.error}</div>}
+            </div>
+            <div className="p-5 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+              <button onClick={() => setAi((s) => ({ ...s, open: false }))} className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300">{tr('Anuluj')}</button>
+              <button onClick={generateAi} disabled={ai.loading || !ai.prompt.trim()} className="px-5 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl flex items-center gap-2 disabled:opacity-50">
+                <Sparkles size={16} /> {ai.loading ? tr('Generowanie...') : tr('Generuj')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {preview ? (
         <div className="flex-1 overflow-y-auto p-6">
