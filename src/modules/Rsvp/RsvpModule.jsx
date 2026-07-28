@@ -99,7 +99,7 @@ export default function RsvpModule() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Obecność (RSVP)</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">Zaproszenia „Będę / Nie będę" przez push, e-mail i SMS</p>
         </div>
-        <button onClick={() => setModalOpen(true)} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md">
+        <button data-tour="rsvp-new" onClick={() => setModalOpen(true)} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md">
           <Plus size={16} /> Nowa kampania
         </button>
       </div>
@@ -237,7 +237,7 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
           <div className="p-5 space-y-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
-              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Grupa domowa — wtorek" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+              <input data-tour="rsvp-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Grupa domowa — wtorek" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
             <CustomSelect label="Typ" value={form.event_type} onChange={v => setForm(f => ({ ...f, event_type: v }))} options={EVENT_TYPES} />
             <div className="grid grid-cols-2 gap-3">
@@ -326,7 +326,7 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
           </div>
           <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
             <button onClick={onClose} disabled={saving} className="px-4 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Anuluj</button>
-            <button onClick={create} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Tworzenie...' : 'Utwórz'}</button>
+            <button data-tour="rsvp-create" onClick={create} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60">{saving ? 'Tworzenie...' : 'Utwórz'}</button>
           </div>
         </div>
       </div>

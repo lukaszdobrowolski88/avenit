@@ -248,7 +248,7 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
           <input type="checkbox" checked={showPast} onChange={e => setShowPast(e.target.checked)} className="rounded accent-emerald-500" />
           Pokaż też przeszłe
         </label>
-        <button onClick={openCreate} disabled={noResources} title={noResources ? 'Najpierw dodaj zasób' : ''} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition disabled:opacity-50">
+        <button data-tour="rooms-booking-new" onClick={openCreate} disabled={noResources} title={noResources ? 'Najpierw dodaj zasób' : ''} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md hover:shadow-lg transition disabled:opacity-50">
           <Plus size={16} /> Nowa rezerwacja
         </button>
       </div>
@@ -342,7 +342,7 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
-                <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Próba zespołu, Spotkanie grupy" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                <input data-tour="rooms-booking-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Próba zespołu, Spotkanie grupy" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -422,7 +422,7 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
                   </button>
                 </>
               ) : (
-                <button onClick={() => doSave('auto')} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60 inline-flex items-center gap-2">
+                <button data-tour="rooms-booking-save" onClick={() => doSave('auto')} disabled={saving} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium text-sm shadow-md disabled:opacity-60 inline-flex items-center gap-2">
                   {saving ? <><Clock size={15} className="animate-spin" /> Sprawdzam...</> : 'Zapisz'}
                 </button>
               )}

@@ -50,6 +50,7 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
           <FilterBtn active={filter === 'sent'} count={campaigns.filter(c => c.status === 'sent').length} onClick={() => setFilter('sent')}>{tr('Wysłane')}</FilterBtn>
         </div>
         <button
+          data-tour="sms-new"
           onClick={onNew}
           className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm rounded-lg shadow hover:shadow-lg whitespace-nowrap"
         >

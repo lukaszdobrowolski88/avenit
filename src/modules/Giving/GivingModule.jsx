@@ -16,7 +16,7 @@ const TABS = [
   { id: 'donations', label: 'Darowizny', icon: Receipt },
   { id: 'donors', label: 'Darczyńcy', icon: Users },
   { id: 'recurring', label: 'Cykliczne', icon: Repeat },
-  { id: 'campaigns', label: 'Kampanie', icon: Target },
+  { id: 'campaigns', label: 'Kampanie', icon: Target, tour: 'giving-campaigns-tab' },
   { id: 'funds', label: 'Fundusze', icon: FolderOpen },
   { id: 'statements', label: 'Zestawienia PIT', icon: FileText },
 ];

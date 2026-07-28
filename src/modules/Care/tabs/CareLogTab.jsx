@@ -101,7 +101,7 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
           className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 resize-none"
         />
         <div className="flex justify-end">
-          <button onClick={add} disabled={saving} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md disabled:opacity-60">
+          <button data-tour="care-add" onClick={add} disabled={saving} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md disabled:opacity-60">
             <Plus size={16} /> {saving ? 'Zapisywanie...' : 'Dodaj kontakt'}
           </button>
         </div>

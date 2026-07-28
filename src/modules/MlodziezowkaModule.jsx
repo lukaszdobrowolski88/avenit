@@ -787,7 +787,7 @@ export default function MlodziezowkaModule() {
         <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 transition-colors duration-300">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary-light to-accent-secondary-light dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Wydarzenia ({events.length})</h2>
-            <button onClick={() => { setEventForm({ id: null, title: '', description: '', start_date: '', event_time: '', location: '', max_participants: '', event_type: 'spotkanie' }); setShowEventModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj wydarzenie</button>
+            <button data-tour="mlodz-event-add" onClick={() => { setEventForm({ id: null, title: '', description: '', start_date: '', event_time: '', location: '', max_participants: '', event_type: 'spotkanie' }); setShowEventModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj wydarzenie</button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1224,7 +1224,7 @@ export default function MlodziezowkaModule() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Tytuł wydarzenia')}</label>
-                <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Spotkanie młodzieżowe')} value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
+                <input data-tour="mlodz-event-title" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={tr('Spotkanie młodzieżowe')} value={eventForm.title} onChange={e => setEventForm({...eventForm, title: e.target.value})} />
               </div>
 
               <div>
@@ -1233,7 +1233,7 @@ export default function MlodziezowkaModule() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div data-tour="mlodz-event-date">
                   <CustomDatePicker
                     label="Data"
                     value={eventForm.start_date}
@@ -1274,7 +1274,7 @@ export default function MlodziezowkaModule() {
 
               <div className="flex justify-end gap-3 mt-6">
                 <button onClick={() => setShowEventModal(false)} className="px-5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
-                <button onClick={saveEvent} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">{tr('Zapisz')}</button>
+                <button data-tour="mlodz-event-save" onClick={saveEvent} className="px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/50 transition font-medium">{tr('Zapisz')}</button>
               </div>
             </div>
           </div>

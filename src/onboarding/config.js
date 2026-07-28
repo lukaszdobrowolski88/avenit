@@ -10,6 +10,7 @@ import {
   Compass, CalendarClock, ClipboardCheck, CalendarPlus, GraduationCap,
   Coins, Home, Send, Video,
   Heart, BookOpen, ClipboardList, Baby, Bell, MessageCircle,
+  MessageSquare, Target, Sparkles, CalendarCheck, HeartHandshake,
 } from 'lucide-react';
 
 // ── Product tour (spotlight / coach-marks) ──────────────────────────────────
@@ -276,6 +277,76 @@ export const TOURS = {
     { selector: '[data-tour="komunikator-send"]', placement: 'left', interactive: true, optional: true,
       title: 'Wyślij', body: 'Wyślij wiadomość (albo naciśnij Enter).' },
   ],
+
+  // ── Proces: jak wysłać kampanię SMS ──
+  'sms-send': [
+    { selector: '[data-tour="sms-new"]', route: '/sms-campaigns', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Nowa kampania SMS', body: 'Kliknij „Nowa kampania", aby stworzyć wysyłkę SMS.' },
+    { selector: '[data-tour="sms-name"]', placement: 'bottom', interactive: true, waitMs: 12000,
+      title: 'Nazwa', body: 'Nadaj kampanii nazwę wewnętrzną (widoczną tylko dla Ciebie).' },
+    { selector: '[data-tour="sms-body"]', placement: 'bottom', interactive: true,
+      title: 'Treść SMS', body: 'Napisz treść wiadomości. Pamiętaj o limicie znaków. Potem w sekcji „Odbiorcy" wskaż adresatów.' },
+    { selector: '[data-tour="sms-send"]', placement: 'bottom', interactive: true, optional: true,
+      title: 'Wyślij', body: 'Wyślij SMS teraz albo zaplanuj wysyłkę na później.' },
+  ],
+
+  // ── Proces: jak założyć zbiórkę (darowizny) ──
+  'giving-campaign': [
+    { selector: '[data-tour="giving-campaigns-tab"]', route: '/giving', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Zakładka Kampanie', body: 'Zbiórki z celem kwotowym zakładasz w zakładce „Kampanie". Kliknij ją.' },
+    { selector: '[data-tour="giving-campaign-new"]', placement: 'bottom', interactive: true, advanceOn: 'click', waitMs: 10000,
+      title: 'Nowa zbiórka', body: 'Kliknij „Nowa kampania", aby utworzyć zbiórkę z celem.' },
+    { selector: '[data-tour="giving-campaign-name"]', placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Nazwa zbiórki', body: 'Nadaj zbiórce nazwę (np. „Remont dachu").' },
+    { selector: '[data-tour="giving-campaign-goal"]', placement: 'bottom', interactive: true,
+      title: 'Cel kwotowy', body: 'Ustaw cel w złotówkach — na tej podstawie wyświetli się „termometr" postępu zbiórki.' },
+    { selector: '[data-tour="giving-campaign-save"]', placement: 'top', interactive: true, advanceOn: 'click',
+      title: 'Zapisz', body: 'Zapisz — zbiórka będzie widoczna, a wpłaty online (link /give) będą ją zasilać.' },
+  ],
+
+  // ── Proces: jak dodać wydarzenie młodzieżowe ──
+  'mlodziezowka-event': [
+    { selector: '[data-tour="mlodz-event-add"]', route: '/mlodziezowka', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Dodaj wydarzenie', body: 'Kliknij „Dodaj wydarzenie", aby zaplanować spotkanie młodzieżowe.' },
+    { selector: '[data-tour="mlodz-event-title"]', placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Tytuł', body: 'Nadaj wydarzeniu nazwę (np. „Wieczór uwielbienia").' },
+    { selector: '[data-tour="mlodz-event-date"]', placement: 'bottom', interactive: true,
+      title: 'Data', body: 'Ustaw datę wydarzenia. Możesz dodać godzinę, miejsce i limit uczestników.' },
+    { selector: '[data-tour="mlodz-event-save"]', placement: 'top', interactive: true, advanceOn: 'click',
+      title: 'Zapisz', body: 'Zapisz — wydarzenie pojawi się na liście młodzieżówki.' },
+  ],
+
+  // ── Proces: jak utworzyć zapisy (RSVP) na wydarzenie ──
+  'rsvp-campaign': [
+    { selector: '[data-tour="rsvp-new"]', route: '/rsvp', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Nowe zapisy', body: 'Kliknij „Nowa kampania", aby uruchomić zapisy „Będę / Nie będę".' },
+    { selector: '[data-tour="rsvp-title"]', placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Tytuł i szczegóły', body: 'Nadaj tytuł, wybierz typ, ustaw datę oraz kanały (push / e-mail / SMS) i wskaż odbiorców.' },
+    { selector: '[data-tour="rsvp-create"]', placement: 'top', interactive: true, advanceOn: 'click',
+      title: 'Utwórz', body: 'Utwórz — zaproszenia trafią do wybranych osób, a Ty zobaczysz odpowiedzi na bieżąco.' },
+  ],
+
+  // ── Proces: jak zanotować kontakt duszpasterski (Care) ──
+  'care-log': [
+    { selector: '[data-tour="care-search"]', route: '/care', placement: 'right', interactive: true, waitMs: 10000,
+      title: 'Wybierz osobę', body: 'Znajdź i kliknij osobę na liście po lewej, aby otworzyć jej kartę opieki.' },
+    { selector: '[data-tour="care-tab"]', placement: 'bottom', interactive: true, advanceOn: 'click', waitMs: 15000,
+      title: 'Zakładka Opieka', body: 'Kliknij zakładkę „Opieka", aby zobaczyć historię kontaktów duszpasterskich.' },
+    { selector: '[data-tour="care-add"]', placement: 'top', interactive: true, waitMs: 10000,
+      title: 'Dodaj kontakt', body: 'Wybierz typ kontaktu (wizyta, telefon, modlitwa…), datę i opis, a następnie kliknij „Dodaj kontakt". Wpis trafi do historii opieki.' },
+  ],
+
+  // ── Proces: jak zarezerwować salę ──
+  'rooms-booking': [
+    { selector: '[data-tour="rooms-bookings-tab"]', route: '/rooms', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Zakładka Rezerwacje', body: 'Rezerwacje sal robisz w zakładce „Rezerwacje". Kliknij ją.' },
+    { selector: '[data-tour="rooms-booking-new"]', placement: 'bottom', interactive: true, advanceOn: 'click', waitMs: 10000, optional: true,
+      title: 'Nowa rezerwacja', body: 'Kliknij „Nowa rezerwacja". Jeśli przycisk jest nieaktywny — najpierw dodaj salę/zasób w zakładce „Zasoby".' },
+    { selector: '[data-tour="rooms-booking-title"]', placement: 'bottom', interactive: true, waitMs: 10000, optional: true,
+      title: 'Szczegóły', body: 'Wybierz zasób (salę), nadaj tytuł oraz ustaw początek i koniec rezerwacji.' },
+    { selector: '[data-tour="rooms-booking-save"]', placement: 'top', interactive: true, advanceOn: 'click', optional: true,
+      title: 'Zapisz', body: 'Zapisz — system automatycznie sprawdzi konflikty terminów i utworzy rezerwację.' },
+  ],
 };
 
 // ── Katalog przewodników (biblioteka „Samouczki") ───────────────────────────
@@ -297,6 +368,12 @@ export const TUTORIALS = [
   { id: 'teaching-plan', title: 'Jak zaplanować kazanie', desc: 'Przypisz mówcę i temat do nabożeństwa.', icon: BookOpen, category: 'Planowanie' },
   { id: 'prayer-request', title: 'Jak dodać intencję modlitewną', desc: 'Dodaj prośbę na ścianę modlitwy.', icon: Heart, category: 'Ludzie' },
   { id: 'kids-add-child', title: 'Jak dodać dziecko (Małe Avenit)', desc: 'Utwórz grupę i dopisz dziecko.', icon: Baby, category: 'Ludzie' },
+  { id: 'sms-send', title: 'Jak wysłać SMS', desc: 'Stwórz i wyślij kampanię SMS.', icon: MessageSquare, category: 'Komunikacja' },
+  { id: 'giving-campaign', title: 'Jak założyć zbiórkę', desc: 'Kampania z celem i termometrem.', icon: Target, category: 'Finanse' },
+  { id: 'mlodziezowka-event', title: 'Jak dodać wydarzenie młodzieżowe', desc: 'Zaplanuj spotkanie młodzieżówki.', icon: Sparkles, category: 'Ludzie' },
+  { id: 'rsvp-campaign', title: 'Jak uruchomić zapisy (RSVP)', desc: 'Zbieraj potwierdzenia obecności.', icon: CalendarCheck, category: 'Planowanie' },
+  { id: 'care-log', title: 'Jak zanotować opiekę', desc: 'Zapisz kontakt duszpasterski.', icon: HeartHandshake, category: 'Ludzie' },
+  { id: 'rooms-booking', title: 'Jak zarezerwować salę', desc: 'Rezerwacja z wykrywaniem konfliktów.', icon: CalendarClock, category: 'Planowanie' },
 ];
 
 // Kolejność kategorii w bibliotece.
