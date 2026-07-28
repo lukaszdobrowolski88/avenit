@@ -58,6 +58,7 @@ import SmsCampaignsModule from './modules/SmsCampaigns/SmsCampaignsModule';
 import MailModule from './modules/Mail/MailModule';
 import FormsModule from './modules/Forms/FormsModule';
 import PublicFormPage from './modules/Forms/pages/PublicFormPage';
+import PublicModulePage from './modules/CustomModule/pages/PublicModulePage';
 import AssignmentResponsePage from './modules/AssignmentResponse/AssignmentResponsePage';
 import CustomModule from './modules/CustomModule/CustomModule';
 import { tr } from './i18n';
@@ -346,6 +347,18 @@ function AppInner() {
       <BrowserRouter>
         <Routes>
           <Route path="/form/:formId" element={<PublicFormPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
+  // Publiczna strona kreatora (/p/:slug) - dostępna bez logowania
+  if (window.location.pathname.startsWith('/p/')) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/p/:slug" element={<PublicModulePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

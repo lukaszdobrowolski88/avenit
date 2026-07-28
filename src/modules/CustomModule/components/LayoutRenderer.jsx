@@ -178,7 +178,7 @@ function AccordionRuntime({ el, ctx }) {
 }
 
 // Runtime kreatora graficznego — interpretuje drzewo `layout` na zakładce typu 'custom'.
-export default function LayoutRenderer({ layout, moduleId, moduleKey, moduleName, tabId, device }) {
+export default function LayoutRenderer({ layout, moduleId, moduleKey, moduleName, tabId, device, publicMode }) {
   const { can, subject } = usePermissions();
   const root = layout?.root || [];
 
@@ -191,7 +191,7 @@ export default function LayoutRenderer({ layout, moduleId, moduleKey, moduleName
     );
   }
 
-  const ctx = { moduleId, moduleKey, moduleName, tabId, can, role: subject?.role, isAdmin: subject?.isAdmin, device: device || 'desktop' };
+  const ctx = { moduleId, moduleKey, moduleName, tabId, can, role: subject?.role, isAdmin: subject?.isAdmin, device: device || 'desktop', public: !!publicMode };
   return <div className="space-y-4">{root.map((el) => <ElementRenderer key={el.id} el={el} ctx={ctx} />)}</div>;
 }
 
@@ -213,6 +213,11 @@ function ElementRenderer({ el, ctx }) {
 function renderInner(el, ctx) {
   const p = el.props || {};
   const kids = (el.children || []).map((c) => <ElementRenderer key={c.id} el={c} ctx={ctx} />);
+
+  // Na stronie publicznej dane wymagające logowania nie są renderowane.
+  if (ctx.public && ['widget', 'collection', 'stat', 'chart'].includes(el.type)) {
+    return <div className="p-4 rounded-xl bg-gray-100 dark:bg-gray-800 text-center text-sm text-gray-400">{tr('Ta zawartość jest dostępna po zalogowaniu.')}</div>;
+  }
 
   switch (el.type) {
     case 'section':

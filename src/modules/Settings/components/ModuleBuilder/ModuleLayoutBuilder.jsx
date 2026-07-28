@@ -3,7 +3,7 @@ import {
   DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
   pointerWithin, closestCenter,
 } from '@dnd-kit/core';
-import { ChevronLeft, Undo2, Redo2, Eye, Save, Check, LayoutTemplate, Monitor, Smartphone, MoreVertical, Download, Upload, Bookmark } from 'lucide-react';
+import { ChevronLeft, Undo2, Redo2, Eye, Save, Check, LayoutTemplate, Monitor, Smartphone, MoreVertical, Download, Upload, Bookmark, Globe, Link as LinkIcon } from 'lucide-react';
 import { tr } from '../../../../i18n';
 import { TEMPLATES } from './templates';
 import {
@@ -26,7 +26,7 @@ const collisionDetection = (args) => {
   return hits.length ? hits : closestCenter(args);
 };
 
-function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave }) {
+function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave, onSaveMeta }) {
   const { root, settings, canUndo, canRedo, dirty, selectedId } = useBuilder();
   const { add, move, undo, redo, markClean, setRoot, remove, duplicate, select } = useBuilderActions();
   const [activeDrag, setActiveDrag] = useState(null);
@@ -35,6 +35,7 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave })
   const [tplOpen, setTplOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [customTpls, setCustomTpls] = useState(loadCustomTemplates);
+  const [pub, setPub] = useState({ isPublic: !!tab?.is_public, slug: tab?.public_slug || '' });
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(null);
 
@@ -87,6 +88,21 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave })
     setRoot([...root, ...(t.build ? t.build() : cloneTree(t.root))]);
     setTplOpen(false);
   };
+
+  const slugify = (s) => (s || 'strona').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48);
+  const publish = async () => {
+    const slug = pub.slug || `${slugify(tab?.label)}-${Math.random().toString(36).slice(2, 6)}`;
+    await doSave();
+    const res = await onSaveMeta?.({ is_public: true, public_slug: slug });
+    if (res?.success !== false) setPub({ isPublic: true, slug });
+    setMenuOpen(false);
+  };
+  const unpublish = async () => {
+    const res = await onSaveMeta?.({ is_public: false });
+    if (res?.success !== false) setPub((s) => ({ ...s, isPublic: false }));
+    setMenuOpen(false);
+  };
+  const copyPublicUrl = () => { navigator.clipboard?.writeText(`${window.location.origin}/p/${pub.slug}`); setMenuOpen(false); };
 
   const handleDragStart = (event) => setActiveDrag(event.active.data.current || null);
 
@@ -197,6 +213,15 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave })
                 <button onClick={saveAsTemplate} className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><Bookmark size={15} /> {tr('Zapisz jako szablon')}</button>
                 <button onClick={exportJson} className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><Download size={15} /> {tr('Eksport JSON')}</button>
                 <button onClick={() => fileRef.current?.click()} className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><Upload size={15} /> {tr('Import JSON')}</button>
+                <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+                {!pub.isPublic ? (
+                  <button onClick={publish} className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><Globe size={15} /> {tr('Opublikuj stronę')}</button>
+                ) : (
+                  <>
+                    <button onClick={copyPublicUrl} className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"><LinkIcon size={15} /> {tr('Kopiuj link publiczny')}</button>
+                    <button onClick={unpublish} className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"><Globe size={15} /> {tr('Cofnij publikację')}</button>
+                  </>
+                )}
               </div>
             )}
             <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={importJson} />
@@ -264,10 +289,10 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave })
   );
 }
 
-export default function ModuleLayoutBuilder({ tab, moduleId, moduleName, moduleKey, onClose, onSave }) {
+export default function ModuleLayoutBuilder({ tab, moduleId, moduleName, moduleKey, onClose, onSave, onSaveMeta }) {
   return (
     <BuilderProvider initialLayout={tab?.layout || emptyLayout()}>
-      <BuilderShell tab={tab} moduleId={moduleId} moduleName={moduleName} moduleKey={moduleKey} onClose={onClose} onSave={onSave} />
+      <BuilderShell tab={tab} moduleId={moduleId} moduleName={moduleName} moduleKey={moduleKey} onClose={onClose} onSave={onSave} onSaveMeta={onSaveMeta} />
     </BuilderProvider>
   );
 }
