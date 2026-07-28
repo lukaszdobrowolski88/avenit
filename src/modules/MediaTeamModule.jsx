@@ -1095,7 +1095,7 @@ export default function MediaTeamModule() {
       <ResponsiveTabs
         tabs={[
           { id: 'events', label: t('Wydarzenia'), icon: Calendar },
-          { id: 'schedule', label: t('Grafik'), icon: Calendar },
+          { id: 'schedule', label: t('Grafik'), icon: Calendar, tour: 'media-grafik-tab' },
           { id: 'tasks', label: t('Zadania'), icon: CheckSquare },
           ...(hasTabAccess('media', 'members') ? [{ id: 'members', label: t('Członkowie'), icon: User }] : []),
           ...(hasTabAccess('media', 'finances') ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
@@ -1116,7 +1116,7 @@ export default function MediaTeamModule() {
 
       {/* SEKCJA 1: GRAFIK MEDIA TEAM */}
       {activeTab === 'schedule' && (
-      <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 relative z-[50] transition-colors duration-300">
+      <section data-tour="media-grafik-section" className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 relative z-[50] transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Grafik Media Team</h2>
         </div>

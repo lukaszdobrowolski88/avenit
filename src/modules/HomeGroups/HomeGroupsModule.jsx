@@ -736,6 +736,7 @@ export default function HomeGroupsModule() {
                 />
               </div>
               <button
+                data-tour="hg-add-group"
                 onClick={() => openModal('group')}
                 className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
               >
@@ -1216,6 +1217,7 @@ export default function HomeGroupsModule() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Nazwa grupy')}</label>
                     <input
+                      data-tour="hg-group-name"
                       className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={groupForm.name}
                       onChange={(e) => setGroupForm({...groupForm, name: e.target.value})}
@@ -1246,6 +1248,7 @@ export default function HomeGroupsModule() {
                     <div>
                       <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Dzień spotkania')}</label>
                       <input
+                        data-tour="hg-group-day"
                         className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                         value={groupForm.meeting_day}
                         onChange={(e) => setGroupForm({...groupForm, meeting_day: e.target.value})}
@@ -1265,6 +1268,7 @@ export default function HomeGroupsModule() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Lokalizacja')}</label>
                     <input
+                      data-tour="hg-group-location"
                       className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light outline-none"
                       value={groupForm.location}
                       onChange={(e) => setGroupForm({...groupForm, location: e.target.value})}
@@ -1351,6 +1355,7 @@ export default function HomeGroupsModule() {
                 Anuluj
               </button>
               <button
+                data-tour="hg-group-save"
                 onClick={() => modalType === 'group' ? handleSaveGroup() : handleSavePerson(modalType)}
                 className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg transition"
               >
