@@ -235,6 +235,7 @@ export default function ConversationList({
             </h1>
           </div>
           <button
+            data-tour="komunikator-new"
             onClick={onNewConversation}
             className="p-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all duration-200 shadow-lg shadow-accent-primary-light/30 hover:shadow-accent-primary-light/40 hover:scale-105"
             title={t('Nowa rozmowa')}

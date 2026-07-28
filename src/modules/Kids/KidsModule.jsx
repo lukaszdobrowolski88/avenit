@@ -571,9 +571,9 @@ export default function KidsModule() {
           { id: 'checkin', label: t('Check-in'), icon: UserCheck },
           { id: 'events', label: t('Wydarzenia'), icon: Calendar },
           { id: 'schedule', label: t('Grafik'), icon: Calendar },
-          { id: 'groups', label: t('Grupy'), icon: Users },
+          { id: 'groups', label: t('Grupy'), icon: Users, tour: 'kids-tab-groups' },
           ...(hasTabAccess('kids', 'teachers') ? [{ id: 'teachers', label: t('Nauczyciele'), icon: GraduationCap }] : []),
-          { id: 'students', label: t('Uczniowie'), icon: Baby },
+          { id: 'students', label: t('Uczniowie'), icon: Baby, tour: 'kids-tab-students' },
           { id: 'households', label: t('Rodziny'), icon: Home },
           ...(hasTabAccess('kids', 'finances') ? [{ id: 'finances', label: t('Finanse'), icon: DollarSign }] : []),
           ...(hasTabAccess('kids', 'equipment') ? [{ id: 'equipment', label: t('Wyposażenie'), icon: Package }] : []),
@@ -610,7 +610,7 @@ export default function KidsModule() {
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Grupy Wiekowe</h2>
-          <button onClick={() => { setGroupForm({ id: null, name: '', teacher_ids: [], room: '', age_range: '' }); setShowGroupModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj grupę</button>
+          <button data-tour="kids-group-new" onClick={() => { setGroupForm({ id: null, name: '', teacher_ids: [], room: '', age_range: '' }); setShowGroupModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj grupę</button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {groups.map(group => {
@@ -684,7 +684,7 @@ export default function KidsModule() {
               <Search size={16} className="text-gray-400 dark:text-gray-500"/>
               <input className="bg-transparent text-sm outline-none w-full text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Szukaj ucznia...')} value={studentFilter} onChange={e => setStudentFilter(e.target.value)}/>
             </div>
-            <button onClick={() => { setGlobalStudentForm({ id: null, full_name: '', birth_year: '', parent_info: '', notes: '', group_id: null, household_id: null }); setShowGlobalStudentModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-4 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><UserPlus size={18}/> Nowy uczeń</button>
+            <button data-tour="kids-student-new" onClick={() => { setGlobalStudentForm({ id: null, full_name: '', birth_year: '', parent_info: '', notes: '', group_id: null, household_id: null }); setShowGlobalStudentModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-4 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><UserPlus size={18}/> Nowy uczeń</button>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -766,11 +766,11 @@ export default function KidsModule() {
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-white/20 dark:border-gray-700">
             <div className="flex justify-between mb-6"><h3 className="font-bold text-xl text-gray-800 dark:text-white">Grupa Wiekowa</h3><button onClick={() => setShowGroupModal(false)} className="text-gray-500 dark:text-gray-400"><X/></button></div>
             <div className="space-y-4">
-              <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Nazwa grupy')} value={groupForm.name} onChange={e => setGroupForm({...groupForm, name: e.target.value})} />
+              <input data-tour="kids-group-name" className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Nazwa grupy')} value={groupForm.name} onChange={e => setGroupForm({...groupForm, name: e.target.value})} />
               <div><label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Nauczyciele')}</label><TeacherMultiSelect teachers={teachers} selectedIds={groupForm.teacher_ids || []} onChange={ids => setGroupForm({...groupForm, teacher_ids: ids})} /></div>
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Numer sali')} value={groupForm.room} onChange={e => setGroupForm({...groupForm, room: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Przedział wiekowy')} value={groupForm.age_range} onChange={e => setGroupForm({...groupForm, age_range: e.target.value})} />
-              <button onClick={saveGroup} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-4">{tr('Zapisz')}</button>
+              <button data-tour="kids-group-save" onClick={saveGroup} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-4">{tr('Zapisz')}</button>
             </div>
           </div>
         </div>,
@@ -781,13 +781,13 @@ export default function KidsModule() {
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-white/20 dark:border-gray-700">
             <div className="flex justify-between mb-6"><h3 className="font-bold text-xl text-gray-800 dark:text-white">{t('Uczeń')}</h3><button onClick={() => setShowGlobalStudentModal(false)} className="text-gray-500 dark:text-gray-400"><X/></button></div>
             <div className="space-y-4">
-              <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Imię i nazwisko')} value={globalStudentForm.full_name} onChange={e => setGlobalStudentForm({...globalStudentForm, full_name: e.target.value})} />
+              <input data-tour="kids-student-name" className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Imię i nazwisko')} value={globalStudentForm.full_name} onChange={e => setGlobalStudentForm({...globalStudentForm, full_name: e.target.value})} />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Rocznik')} value={globalStudentForm.birth_year} onChange={e => setGlobalStudentForm({...globalStudentForm, birth_year: e.target.value})} />
               <CustomSelect options={householdOptions} value={globalStudentForm.household_id} onChange={v => setGlobalStudentForm({...globalStudentForm, household_id: v})} placeholder={t('Przypisz do rodziny...')} icon={Home} label="Rodzina" />
               <input className="w-full p-3 rounded-xl border dark:bg-gray-900 dark:border-gray-600 dark:text-white" placeholder={t('Kontakt do rodzica (opcjonalnie)')} value={globalStudentForm.parent_info} onChange={e => setGlobalStudentForm({...globalStudentForm, parent_info: e.target.value})} />
               <CustomSelect options={groupOptions} value={globalStudentForm.group_id} onChange={v => setGlobalStudentForm({...globalStudentForm, group_id: v})} placeholder={t('Przypisz do grupy...')} icon={Users} />
               <textarea className="w-full p-3 rounded-xl border resize-none dark:bg-gray-900 dark:border-gray-600 dark:text-white" rows={3} placeholder={t('Uwagi')} value={globalStudentForm.notes} onChange={e => setGlobalStudentForm({...globalStudentForm, notes: e.target.value})} />
-              <button onClick={saveGlobalStudent} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-2">{tr('Zapisz')}</button>
+              <button data-tour="kids-student-save" onClick={saveGlobalStudent} className="w-full py-3 bg-accent-primary text-white rounded-xl font-bold mt-2">{tr('Zapisz')}</button>
             </div>
           </div>
         </div>,

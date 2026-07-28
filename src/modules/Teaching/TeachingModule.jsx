@@ -1091,7 +1091,7 @@ export default function TeachingModule() {
       <ResponsiveTabs
         tabs={[
           { id: 'wall', label: tr('Tablica'), icon: MessageSquare },
-          { id: 'schedule', label: tr('Grafik'), icon: Calendar },
+          { id: 'schedule', label: tr('Grafik'), icon: Calendar, tour: 'teaching-schedule-tab' },
           { id: 'series', label: 'Serie', icon: BookOpen },
           ...(hasTabAccess('teaching', 'speakers') ? [{ id: 'speakers', label: tr('Mówcy'), icon: Users }] : []),
           { id: 'files', label: tr('Pliki'), icon: FolderOpen },
@@ -1112,7 +1112,7 @@ export default function TeachingModule() {
       )}
 
       {activeTab === 'schedule' && (
-        <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
+        <section data-tour="teaching-schedule-section" className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Grafik Nauczania</h2>
           </div>

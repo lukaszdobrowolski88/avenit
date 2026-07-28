@@ -198,6 +198,7 @@ export default function NewConversationModal({
           <div className="relative">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
+              data-tour="komunikator-user-search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -218,7 +219,7 @@ export default function NewConversationModal({
               {tr('Nie znaleziono użytkowników')}
             </div>
           ) : (
-            <div className="space-y-1">
+            <div data-tour="komunikator-users" className="space-y-1">
               {filteredUsers.map(user => {
                 const isSelected = selectedUsers.some(u => u.email === user.email);
                 return (

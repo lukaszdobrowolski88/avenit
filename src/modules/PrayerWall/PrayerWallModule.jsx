@@ -379,6 +379,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               {tr('Treść intencji modlitewnej')}
             </label>
             <textarea
+              data-tour="prayer-content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder={t('Podziel się swoją prośbą modlitewną...')}
@@ -389,7 +390,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
           </div>
 
           {/* Kategoria */}
-          <div>
+          <div data-tour="prayer-category">
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">
               Kategoria
             </label>
@@ -576,6 +577,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
               Anuluj
             </button>
             <button
+              data-tour="prayer-save"
               type="submit"
               disabled={isLoading || !content.trim()}
               className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium hover:from-accent-primary hover:to-accent-secondary transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -1021,6 +1023,7 @@ export default function PrayerWallModule() {
           {t('Centrum Modlitwy')}
         </h1>
         <button
+          data-tour="prayer-add"
           onClick={() => {
             setEditingRequest(null);
             setIsModalOpen(true);

@@ -297,6 +297,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
           {/* Pole tekstowe */}
           <div className="flex-1 relative min-w-0">
             <textarea
+              data-tour="komunikator-message"
               ref={textareaRef}
               value={content}
               onChange={handleTextareaChange}
@@ -311,6 +312,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
 
           {/* Przycisk wyślij */}
           <button
+            data-tour="komunikator-send"
             type="submit"
             disabled={(!content.trim() && attachments.length === 0) || disabled || uploading}
             className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-accent-primary-light/30 hover:shadow-accent-primary-light/40 flex-shrink-0"
