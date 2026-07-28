@@ -235,6 +235,7 @@ export default function FormsModule({ userEmail }) {
 
           <div className="flex items-center gap-3">
             <button
+              data-tour="forms-new"
               onClick={handleCreateForm}
               className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
             >

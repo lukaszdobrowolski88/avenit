@@ -308,6 +308,7 @@ export default function FormBuilder({
             </button>
 
             <button
+              data-tour="fb-save"
               onClick={handleSave}
               disabled={isSaving}
               className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
@@ -326,6 +327,7 @@ export default function FormBuilder({
               </button>
             ) : (
               <button
+                data-tour="fb-publish"
                 onClick={async () => {
                   await handleSave();
                   onPublish();
@@ -347,7 +349,7 @@ export default function FormBuilder({
         onDragEnd={handleDragEnd}
       >
         <div className="flex-1 flex overflow-hidden">
-          <div className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto p-4">
+          <div data-tour="fb-palette" className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-y-auto p-4">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
               Dodaj pola
             </h2>
@@ -358,6 +360,7 @@ export default function FormBuilder({
             <div className="max-w-2xl mx-auto">
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-4">
                 <input
+                  data-tour="fb-title"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}

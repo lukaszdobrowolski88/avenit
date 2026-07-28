@@ -9,6 +9,7 @@ import {
   Calendar, Users, ListChecks, Palette, Boxes, UserPlus, FileText, UserCircle,
   Compass, CalendarClock, ClipboardCheck, CalendarPlus, GraduationCap,
   Coins, Home, Send, Video,
+  Heart, BookOpen, ClipboardList, Baby, Bell, MessageCircle,
 } from 'lucide-react';
 
 // ── Product tour (spotlight / coach-marks) ──────────────────────────────────
@@ -193,6 +194,88 @@ export const TOURS = {
     { selector: '[data-tour="media-grafik-section"]', placement: 'top', interactive: true,
       title: 'Przypisz osobę', body: 'Kliknij komórkę roli przy wybranym nabożeństwie i wybierz osobę z listy. Zapis następuje automatycznie, a osoba dostanie powiadomienie.' },
   ],
+
+  // ── Proces: jak dodać intencję modlitewną ──
+  'prayer-request': [
+    { selector: '[data-tour="prayer-add"]', route: '/prayer', placement: 'left', interactive: true, advanceOn: 'click',
+      title: 'Dodaj intencję', body: 'Kliknij „Dodaj intencję", aby dodać nową prośbę modlitewną.' },
+    { selector: '[data-tour="prayer-content"]', placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Treść intencji', body: 'Opisz prośbę modlitewną. Możesz ustawić anonimowość oraz widoczność — dla wszystkich lub tylko dla liderów.' },
+    { selector: '[data-tour="prayer-category"]', placement: 'top', interactive: true,
+      title: 'Kategoria', body: 'Wybierz kategorię intencji — ułatwi to jej odnalezienie.' },
+    { selector: '[data-tour="prayer-save"]', placement: 'top', interactive: true, advanceOn: 'click',
+      title: 'Zapisz', body: 'Zapisz — intencja pojawi się na ścianie modlitwy.' },
+  ],
+
+  // ── Proces: jak zaplanować kazanie (nauczanie) ──
+  'teaching-plan': [
+    { selector: '[data-tour="teaching-schedule-tab"]', route: '/teaching', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Zakładka Grafik', body: 'Kazania planujesz w zakładce „Grafik". Kliknij ją.' },
+    { selector: '[data-tour="teaching-schedule-section"]', placement: 'top', interactive: true, waitMs: 10000,
+      title: 'Zaplanuj kazanie', body: 'Dla każdego nabożeństwa (wiersz) uzupełnij mówcę, serię, tytuł kazania i fragment Pisma. Zmiany zapisują się automatycznie. Same nabożeństwa dodajesz w module „Programy".' },
+  ],
+
+  // ── Proces: jak stworzyć formularz ──
+  'forms-build': [
+    { selector: '[data-tour="forms-new"]', route: '/forms', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Nowy formularz', body: 'Kliknij „Nowy formularz", aby otworzyć kreator.' },
+    { selector: '[data-tour="fb-title"]', placement: 'bottom', interactive: true, waitMs: 12000,
+      title: 'Nazwa formularza', body: 'Nadaj formularzowi tytuł, który zobaczą wypełniający.' },
+    { selector: '[data-tour="fb-palette"]', placement: 'right', interactive: true,
+      title: 'Dodaj pola', body: 'Przeciągnij pola z tego panelu na formularz (tekst, e-mail, wybór, zgoda…). Tak dodajesz pytania.' },
+    { selector: '[data-tour="fb-save"]', placement: 'bottom', interactive: true,
+      title: 'Zapisz', body: 'Zapisuj postępy pracy nad formularzem.' },
+    { selector: '[data-tour="fb-publish"]', placement: 'bottom', interactive: true, optional: true,
+      title: 'Opublikuj', body: 'Gdy skończysz — opublikuj formularz i udostępnij link do wypełnienia.' },
+  ],
+
+  // ── Proces: jak dodać grupę i dziecko (Małe Avenit) ──
+  'kids-add-child': [
+    { selector: '[data-tour="kids-tab-groups"]', route: '/kids', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Zakładka Grupy', body: 'Zacznij od grup wiekowych. Kliknij zakładkę „Grupy".' },
+    { selector: '[data-tour="kids-group-new"]', placement: 'bottom', interactive: true, advanceOn: 'click', waitMs: 10000,
+      title: 'Dodaj grupę', body: 'Kliknij „Dodaj grupę", aby utworzyć grupę wiekową.' },
+    { selector: '[data-tour="kids-group-name"]', placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Nazwa grupy', body: 'Nadaj grupie nazwę (np. „Przedszkolaki"). Możesz przypisać nauczycieli i salę.' },
+    { selector: '[data-tour="kids-group-save"]', placement: 'top', interactive: true, advanceOn: 'click',
+      title: 'Zapisz grupę', body: 'Zapisz grupę.' },
+    { selector: '[data-tour="kids-tab-students"]', placement: 'bottom', interactive: true, advanceOn: 'click', waitMs: 10000,
+      title: 'Zakładka Uczniowie', body: 'Teraz dodajmy dziecko. Kliknij zakładkę „Uczniowie".' },
+    { selector: '[data-tour="kids-student-new"]', placement: 'bottom', interactive: true, advanceOn: 'click', waitMs: 10000,
+      title: 'Nowy uczeń', body: 'Kliknij „Nowy uczeń".' },
+    { selector: '[data-tour="kids-student-name"]', placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Dane dziecka', body: 'Wpisz imię i nazwisko. Możesz ustawić rocznik oraz przypisać dziecko do rodziny i grupy.' },
+    { selector: '[data-tour="kids-student-save"]', placement: 'top', interactive: true, advanceOn: 'click',
+      title: 'Zapisz', body: 'Zapisz — dziecko trafi do bazy i będzie gotowe do check-inu.' },
+  ],
+
+  // ── Proces: jak wysłać powiadomienie push ──
+  'push-send': [
+    { selector: '[data-tour="push-new"]', route: '/push-campaigns', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Nowa kampania', body: 'Kliknij „Nowa kampania", aby stworzyć powiadomienie push.' },
+    { selector: '[data-tour="push-name"]', placement: 'bottom', interactive: true, waitMs: 12000,
+      title: 'Nazwa', body: 'Nadaj kampanii nazwę wewnętrzną (widoczną tylko dla Ciebie).' },
+    { selector: '[data-tour="push-title"]', placement: 'bottom', interactive: true,
+      title: 'Tytuł', body: 'Tytuł powiadomienia — to zobaczą odbiorcy na ekranie.' },
+    { selector: '[data-tour="push-body"]', placement: 'bottom', interactive: true,
+      title: 'Treść', body: 'Napisz treść powiadomienia. Potem w sekcji „Odbiorcy" wskaż, do kogo ma trafić.' },
+    { selector: '[data-tour="push-send"]', placement: 'bottom', interactive: true, optional: true,
+      title: 'Wyślij', body: 'Wyślij powiadomienie teraz albo zaplanuj wysyłkę na później.' },
+  ],
+
+  // ── Proces: jak napisać wiadomość w komunikatorze ──
+  'komunikator-message': [
+    { selector: '[data-tour="komunikator-new"]', route: '/komunikator', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Nowa rozmowa', body: 'Kliknij, aby rozpocząć nową rozmowę.' },
+    { selector: '[data-tour="komunikator-user-search"]', placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Znajdź osobę', body: 'Wyszukaj osobę, z którą chcesz porozmawiać (albo przełącz na „Grupa", by założyć czat grupowy).' },
+    { selector: '[data-tour="komunikator-users"]', placement: 'bottom', interactive: true, advanceOn: 'click', waitMs: 10000,
+      title: 'Wybierz osobę', body: 'Kliknij osobę z listy — rozmowa zostanie od razu utworzona.' },
+    { selector: '[data-tour="komunikator-message"]', placement: 'top', interactive: true, waitMs: 12000,
+      title: 'Napisz wiadomość', body: 'Wpisz treść wiadomości w polu na dole ekranu.' },
+    { selector: '[data-tour="komunikator-send"]', placement: 'left', interactive: true, optional: true,
+      title: 'Wyślij', body: 'Wyślij wiadomość (albo naciśnij Enter).' },
+  ],
 };
 
 // ── Katalog przewodników (biblioteka „Samouczki") ───────────────────────────
@@ -208,6 +291,12 @@ export const TUTORIALS = [
   { id: 'homegroup-create', title: 'Jak założyć grupę domową', desc: 'Utwórz grupę i dodaj osoby.', icon: Home, category: 'Ludzie' },
   { id: 'finance-income', title: 'Jak zaksięgować wpływ', desc: 'Zapisz kolektę lub darowiznę.', icon: Coins, category: 'Finanse' },
   { id: 'mailing-send', title: 'Jak wysłać mailing', desc: 'Stwórz i wyślij wiadomość e-mail.', icon: Send, category: 'Komunikacja' },
+  { id: 'push-send', title: 'Jak wysłać powiadomienie push', desc: 'Stwórz i wyślij kampanię push.', icon: Bell, category: 'Komunikacja' },
+  { id: 'komunikator-message', title: 'Jak napisać wiadomość', desc: 'Rozpocznij rozmowę w komunikatorze.', icon: MessageCircle, category: 'Komunikacja' },
+  { id: 'forms-build', title: 'Jak stworzyć formularz', desc: 'Zbuduj i opublikuj formularz.', icon: ClipboardList, category: 'Komunikacja' },
+  { id: 'teaching-plan', title: 'Jak zaplanować kazanie', desc: 'Przypisz mówcę i temat do nabożeństwa.', icon: BookOpen, category: 'Planowanie' },
+  { id: 'prayer-request', title: 'Jak dodać intencję modlitewną', desc: 'Dodaj prośbę na ścianę modlitwy.', icon: Heart, category: 'Ludzie' },
+  { id: 'kids-add-child', title: 'Jak dodać dziecko (Małe Avenit)', desc: 'Utwórz grupę i dopisz dziecko.', icon: Baby, category: 'Ludzie' },
 ];
 
 // Kolejność kategorii w bibliotece.

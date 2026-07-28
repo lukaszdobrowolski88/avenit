@@ -217,6 +217,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
           </button>
           {canSend && (form.send_mode === 'now' ? (
             <button
+              data-tour="push-send"
               onClick={handleSendNow}
               disabled={saving || sending || recipientCount === 0}
               className="flex items-center gap-1.5 px-4 py-2 text-sm bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-lg shadow hover:shadow-lg disabled:opacity-50"
@@ -290,6 +291,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
               <>
                 <Field label={tr('Nazwa kampanii (wewnętrznie)')}>
                   <input
+                    data-tour="push-name"
                     value={form.name}
                     onChange={e => updateForm({ name: e.target.value })}
                     placeholder="Np. Niedziela 12.05 — przypomnienie"
@@ -299,6 +301,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
                 <Field label={tr('Tytuł')} hint={`${form.title.length}/${TITLE_MAX}`}>
                   <input
+                    data-tour="push-title"
                     maxLength={TITLE_MAX}
                     value={form.title}
                     onChange={e => updateForm({ title: e.target.value })}
@@ -309,6 +312,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
                 <Field label={tr('Treść')} hint={`${form.body.length}/${BODY_MAX}`}>
                   <textarea
+                    data-tour="push-body"
                     maxLength={BODY_MAX}
                     rows={3}
                     value={form.body}
