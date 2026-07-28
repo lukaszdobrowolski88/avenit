@@ -99,6 +99,7 @@ export default function MailingModule() {
           Mailing
         </h1>
         <button
+          data-tour="mail-new"
           onClick={() => handleNewCampaign()}
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all font-medium shadow-lg shadow-accent-primary-light/25 hover:shadow-xl hover:shadow-accent-primary-light/30"
         >

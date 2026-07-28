@@ -436,6 +436,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   <span className="text-accent-primary-light">*</span>
                 </label>
                 <input
+                  data-tour="mail-name"
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -458,6 +459,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   <span className="text-accent-primary-light">*</span>
                 </label>
                 <input
+                  data-tour="mail-subject"
                   type="text"
                   value={formData.subject}
                   onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
@@ -567,7 +569,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
         {/* Step 2: Recipients */}
         {currentStep === 2 && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-6">
+          <div data-tour="mail-recipients" className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-6">
             <RecipientSelector
               selectedSegments={selectedSegments}
               onChange={setSelectedSegments}
@@ -642,6 +644,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                   {tr('Zaplanuj wysyłkę')}
                 </button>
                 <button
+                  data-tour="mail-send"
                   onClick={handleSend}
                   disabled={saving || totalRecipients === 0}
                   className="group flex-1 flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl hover:shadow-accent-primary-light/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
@@ -667,6 +670,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
               Wstecz
             </button>
             <button
+              data-tour="mail-next"
               onClick={() => setCurrentStep(prev => Math.min(STEPS.length - 1, prev + 1))}
               disabled={!canProceed()}
               className="group flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white font-medium rounded-xl transition-all shadow-lg shadow-accent-primary-light/30 hover:shadow-xl hover:shadow-accent-primary-light/40 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"

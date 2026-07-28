@@ -747,7 +747,7 @@ const FinanceModule = () => {
       <ResponsiveTabs
         tabs={[
           { id: 'budget', label: t('Budżet'), icon: DollarSign },
-          { id: 'income', label: t('Wpływy'), icon: TrendingUp },
+          { id: 'income', label: t('Wpływy'), icon: TrendingUp, tour: 'fin-income-tab' },
           { id: 'expenses', label: t('Wydatki'), icon: Receipt },
           { id: 'reports', label: t('Raporty'), icon: BarChart3 },
           { id: 'files', label: t('Pliki'), icon: FolderOpen },
@@ -1036,6 +1036,7 @@ const FinanceModule = () => {
               Wpływy {selectedYear}
             </h2>
             <button
+              data-tour="fin-income-add"
               onClick={() => setShowIncomeModal(true)}
               className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
             >
@@ -1854,6 +1855,7 @@ const FinanceModule = () => {
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
                 <input
+                  data-tour="fin-income-amount"
                   type="number"
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   value={incomeForm.amount}
@@ -1874,6 +1876,7 @@ const FinanceModule = () => {
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Źródło')}</label>
                 <input
+                  data-tour="fin-income-source"
                   className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   value={incomeForm.source}
                   onChange={(e) => setIncomeForm({...incomeForm, source: e.target.value})}
@@ -1930,6 +1933,7 @@ const FinanceModule = () => {
                   Anuluj
                 </button>
                 <button
+                  data-tour="fin-income-save"
                   onClick={saveIncome}
                   className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium"
                 >

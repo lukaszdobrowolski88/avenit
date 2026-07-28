@@ -8,6 +8,7 @@
 import {
   Calendar, Users, ListChecks, Palette, Boxes, UserPlus, FileText, UserCircle,
   Compass, CalendarClock, ClipboardCheck, CalendarPlus, GraduationCap,
+  Coins, Home, Send, Video,
 } from 'lucide-react';
 
 // ── Product tour (spotlight / coach-marks) ──────────────────────────────────
@@ -140,6 +141,58 @@ export const TOURS = {
     { selector: '[data-tour="cal-event-save"]', placement: 'top', interactive: true, optional: true,
       title: 'Zapisz wydarzenie', body: 'Zapisz — wydarzenie pojawi się w kalendarzu, a jeśli włączysz zapisy (RSVP), członkowie będą mogli się zgłaszać.' },
   ],
+
+  // ── Proces: jak zaksięgować wpływ (kolekta / darowizna) ──
+  'finance-income': [
+    { selector: '[data-tour="fin-income-tab"]', route: '/finance', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Otwórz „Wpływy"', body: 'Wpłaty — kolekty i darowizny — księgujemy w zakładce „Wpływy". Kliknij ją.' },
+    { selector: '[data-tour="fin-income-add"]', placement: 'bottom', interactive: true, advanceOn: 'click', waitMs: 10000,
+      title: 'Dodaj wpływ', body: 'Kliknij „Dodaj wpływ", aby zaksięgować nową wpłatę.' },
+    { selector: '[data-tour="fin-income-amount"]', placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Kwota', body: 'Wpisz kwotę wpłaty (PLN). Wyżej ustawisz datę oraz typ — kolekta, darowizna lub inne.' },
+    { selector: '[data-tour="fin-income-source"]', placement: 'bottom', interactive: true,
+      title: 'Źródło', body: 'Opisz źródło wpłaty — np. „Kolekta niedzielna".' },
+    { selector: '[data-tour="fin-income-save"]', placement: 'top', interactive: true, advanceOn: 'click',
+      title: 'Zapisz wpływ', body: 'Zapisz — wpłata trafi do zestawień i raportów finansowych.' },
+  ],
+
+  // ── Proces: jak założyć grupę domową ──
+  'homegroup-create': [
+    { selector: '[data-tour="hg-add-group"]', route: '/home-groups', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Nowa grupa domowa', body: 'Kliknij „Dodaj grupę", aby utworzyć nową grupę domową.' },
+    { selector: '[data-tour="hg-group-name"]', placement: 'bottom', interactive: true, waitMs: 10000,
+      title: 'Nazwa grupy', body: 'Nadaj grupie nazwę — np. „Grupa środowa u Kowalskich".' },
+    { selector: '[data-tour="hg-group-day"]', placement: 'bottom', interactive: true,
+      title: 'Dzień spotkań', body: 'Ustaw dzień i godzinę cyklicznych spotkań.' },
+    { selector: '[data-tour="hg-group-location"]', placement: 'bottom', interactive: true,
+      title: 'Lokalizacja', body: 'Wskaż miejsce spotkań. Możesz też wybrać lidera grupy (jeśli już go dodałeś).' },
+    { selector: '[data-tour="hg-group-save"]', placement: 'top', interactive: true, advanceOn: 'click',
+      title: 'Zapisz grupę', body: 'Zapisz. Następnie na karcie grupy kliknij „Członkowie", aby dodać do niej osoby.' },
+  ],
+
+  // ── Proces: jak wysłać mailing (newsletter) ──
+  'mailing-send': [
+    { selector: '[data-tour="mail-new"]', route: '/mailing', placement: 'bottom', interactive: true, advanceOn: 'click',
+      title: 'Nowy mail', body: 'Kliknij „Nowy mail", aby otworzyć kreator wiadomości.' },
+    { selector: '[data-tour="mail-name"]', placement: 'bottom', interactive: true, waitMs: 12000,
+      title: 'Nazwa wiadomości', body: 'Krok „Podstawy": nadaj nazwę wewnętrzną (widoczną tylko dla Ciebie).' },
+    { selector: '[data-tour="mail-subject"]', placement: 'bottom', interactive: true,
+      title: 'Temat', body: 'Wpisz temat wiadomości — to zobaczą odbiorcy w skrzynce.' },
+    { selector: '[data-tour="mail-next"]', placement: 'top', interactive: true, advanceOn: 'click',
+      title: 'Przejdź dalej', body: 'Przyciskiem „Dalej" przechodzisz przez kolejne kroki: treść, odbiorcy, podsumowanie.' },
+    { selector: '[data-tour="mail-recipients"]', placement: 'top', interactive: true, waitMs: 20000, optional: true,
+      title: 'Wybierz odbiorców', body: 'W kroku „Odbiorcy" wskaż segmenty: wszyscy, konkretne służby lub grupy.' },
+    { selector: '[data-tour="mail-send"]', placement: 'top', interactive: true, optional: true,
+      title: 'Wyślij', body: 'W podsumowaniu wyślij wiadomość teraz albo zaplanuj wysyłkę na później.' },
+  ],
+
+  // ── Proces: jak ułożyć grafik zespołu medialnego ──
+  'media-schedule': [
+    { selector: '[data-tour="media-grafik-section"]', route: '/media', placement: 'top', interactive: true, waitMs: 10000,
+      title: 'Grafik zespołu medialnego', body: 'To grafik mediów: wiersze to nabożeństwa, kolumny to służby medialne (prezentacja, wideo, foto, nagłośnienie).' },
+    { selector: '[data-tour="media-grafik-section"]', placement: 'top', interactive: true,
+      title: 'Przypisz osobę', body: 'Kliknij komórkę roli przy wybranym nabożeństwie i wybierz osobę z listy. Zapis następuje automatycznie, a osoba dostanie powiadomienie.' },
+  ],
 };
 
 // ── Katalog przewodników (biblioteka „Samouczki") ───────────────────────────
@@ -149,12 +202,16 @@ export const TUTORIALS = [
   { id: 'program-build', title: 'Jak zbudować program', desc: 'Zaplanuj nabożeństwo krok po kroku.', icon: FileText, category: 'Planowanie' },
   { id: 'grafik-fill', title: 'Jak uzupełnić grafik', desc: 'Przypisz osoby do służb.', icon: CalendarClock, category: 'Planowanie' },
   { id: 'calendar-event', title: 'Jak dodać wydarzenie', desc: 'Utwórz wpis w kalendarzu.', icon: CalendarPlus, category: 'Planowanie' },
+  { id: 'media-schedule', title: 'Jak ułożyć grafik mediów', desc: 'Przypisz zespół medialny do nabożeństw.', icon: Video, category: 'Planowanie' },
   { id: 'attendance-mark', title: 'Jak zaznaczyć obecność', desc: 'Notuj obecność i nieobecność.', icon: ClipboardCheck, category: 'Ludzie' },
   { id: 'member-add', title: 'Jak dodać członka', desc: 'Dopisz nową osobę do bazy.', icon: UserPlus, category: 'Ludzie' },
+  { id: 'homegroup-create', title: 'Jak założyć grupę domową', desc: 'Utwórz grupę i dodaj osoby.', icon: Home, category: 'Ludzie' },
+  { id: 'finance-income', title: 'Jak zaksięgować wpływ', desc: 'Zapisz kolektę lub darowiznę.', icon: Coins, category: 'Finanse' },
+  { id: 'mailing-send', title: 'Jak wysłać mailing', desc: 'Stwórz i wyślij wiadomość e-mail.', icon: Send, category: 'Komunikacja' },
 ];
 
 // Kolejność kategorii w bibliotece.
-export const TUTORIAL_CATEGORIES = ['Podstawy', 'Planowanie', 'Ludzie'];
+export const TUTORIAL_CATEGORIES = ['Podstawy', 'Planowanie', 'Ludzie', 'Finanse', 'Komunikacja'];
 
 // ── Checklista „Pierwsze kroki" ─────────────────────────────────────────────
 // Zadanie: { id, title, desc, icon, action, autoSignal?, adminOnly? }
