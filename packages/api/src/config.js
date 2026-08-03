@@ -42,7 +42,7 @@ const schema = z.object({
   EXPO_ACCESS_TOKEN: z.string().optional(),
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
-  VAPID_EMAIL: z.string().default('mailto:kontakt@avenit.pl'),
+  VAPID_EMAIL: z.string().default('mailto:lukasz@avenit.pl'),
   MAIL_ENCRYPTION_SECRET: z.string().optional(),
   P24_MERCHANT_ID: z.string().optional(),
   P24_POS_ID: z.string().optional(),
