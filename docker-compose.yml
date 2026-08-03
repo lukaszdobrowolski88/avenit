@@ -97,6 +97,7 @@ services:
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_EMAIL: ${VAPID_EMAIL:-mailto:kontakt@avenit.pl}
       MAIL_ENCRYPTION_SECRET: ${MAIL_ENCRYPTION_SECRET:-}
+      LANDING_CONTACT_EMAIL: ${LANDING_CONTACT_EMAIL:-kontakt@avenit.pl}
     volumes:
       - storage:/srv/storage
 
