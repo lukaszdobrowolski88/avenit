@@ -902,14 +902,14 @@ const AbsenceMultiSelect = ({ options, value, onChange }) => {
   );
 };
 
-// Ile NOWYCH osób do powiadomienia dla programu (oczekujące, niewysłane, nie powiadomione
-// wcześniej — dedup per osoba/e-mail; osoby już powiadomione dla tej daty są pomijane).
+// Ile osób ma NOWE (niewysłane) służby do powiadomienia dla programu. Wysyłka idzie do
+// każdego z niewysłanym przypisaniem — także jeśli wcześniej dostał maila o innych służbach
+// (dedup per SŁUŻBA: email_sent_at jest stemplowany na wysłanych przypisaniach).
 function countNewInvites(assignments, programId) {
-  const forProg = assignments.filter(a => a.program_id === programId && a.team_type === 'worship');
-  const notified = new Set(forProg.filter(a => a.email_sent_at && a.assigned_email).map(a => a.assigned_email.toLowerCase()));
   const toNotify = new Set();
-  for (const a of forProg) {
-    if (a.status === 'pending' && !a.email_sent_at && a.assigned_email && !notified.has(a.assigned_email.toLowerCase())) {
+  for (const a of assignments) {
+    if (a.program_id === programId && a.team_type === 'worship'
+        && a.status === 'pending' && !a.email_sent_at && a.assigned_email) {
       toNotify.add(a.assigned_email.toLowerCase());
     }
   }

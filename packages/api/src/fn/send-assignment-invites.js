@@ -80,15 +80,13 @@ export default async function handler(req, reply) {
       [programId]
     );
 
-    // Osoby, którym już kiedyś wysłano zaproszenie dla tej daty — pomijamy przy re-send.
-    const notified = new Set(all.filter((a) => a.email_sent_at && a.assigned_email).map((a) => a.assigned_email.toLowerCase()));
-
-    // Grupuj oczekujące, niewysłane, z e-mailem — per osoba.
+    // Grupuj oczekujące, NIEwysłane przypisania (z e-mailem) per osoba. Wysyłamy do każdego,
+    // kto ma nowe (niewysłane) służby — także jeśli wcześniej dostał już maila o INNYCH
+    // służbach tej daty. Wtedy mail dotyczy tylko nowych, jeszcze niewysłanych służb.
     const byPerson = new Map();
     for (const a of all) {
       if (a.status !== 'pending' || a.email_sent_at || !a.assigned_email) continue;
       const key = a.assigned_email.toLowerCase();
-      if (notified.has(key)) continue; // osoba już powiadomiona wcześniej
       if (!byPerson.has(key)) byPerson.set(key, { email: a.assigned_email, name: a.assigned_name, by: a.assigned_by_name, roles: [] });
       byPerson.get(key).roles.push(a);
     }
@@ -130,7 +128,7 @@ export default async function handler(req, reply) {
       sent++;
     }
 
-    return reply.send({ success: true, sent, skipped: notified.size, emailReady });
+    return reply.send({ success: true, sent, emailReady });
   } catch (err) {
     req.log.error({ err }, 'send-assignment-invites error');
     return reply.code(500).send({ error: err.message });
