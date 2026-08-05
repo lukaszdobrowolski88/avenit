@@ -46,7 +46,7 @@ services:
       DEFAULT_SMTP_PORT: ${DEFAULT_SMTP_PORT:-465}
       DEFAULT_SMTP_USER: ${DEFAULT_SMTP_USER:-}
       DEFAULT_SMTP_PASS: ${DEFAULT_SMTP_PASS:-}
-      LANDING_CONTACT_EMAIL: ${LANDING_CONTACT_EMAIL:-kontakt@avenit.pl}
+      LANDING_CONTACT_EMAIL: ${LANDING_CONTACT_EMAIL:-lukasz@avenit.pl}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@avenit.pl}
       SMSAPI_TOKEN: ${SMSAPI_TOKEN:-}
@@ -55,7 +55,7 @@ services:
       EXPO_ACCESS_TOKEN: ${EXPO_ACCESS_TOKEN:-}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
-      VAPID_EMAIL: ${VAPID_EMAIL:-mailto:kontakt@avenit.pl}
+      VAPID_EMAIL: ${VAPID_EMAIL:-mailto:lukasz@avenit.pl}
       MAIL_ENCRYPTION_SECRET: ${MAIL_ENCRYPTION_SECRET:-}
       P24_MERCHANT_ID: ${P24_MERCHANT_ID:-}
       P24_POS_ID: ${P24_POS_ID:-}
@@ -95,9 +95,9 @@ services:
       EXPO_ACCESS_TOKEN: ${EXPO_ACCESS_TOKEN:-}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
-      VAPID_EMAIL: ${VAPID_EMAIL:-mailto:kontakt@avenit.pl}
+      VAPID_EMAIL: ${VAPID_EMAIL:-mailto:lukasz@avenit.pl}
       MAIL_ENCRYPTION_SECRET: ${MAIL_ENCRYPTION_SECRET:-}
-      LANDING_CONTACT_EMAIL: ${LANDING_CONTACT_EMAIL:-kontakt@avenit.pl}
+      LANDING_CONTACT_EMAIL: ${LANDING_CONTACT_EMAIL:-lukasz@avenit.pl}
     volumes:
       - storage:/srv/storage
 

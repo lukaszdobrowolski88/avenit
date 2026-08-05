@@ -38,7 +38,7 @@ function emailContent(stage, data) {
          (${data.days_overdue} dni po terminie).</p>
       ${body}
       <hr><p style="color:#6b7280;font-size:13px">Avenit — Zarządzanie kościołem<br>
-      W razie problemów z płatnością napisz: kontakt@avenit.pl</p></div>`,
+      W razie problemów z płatnością napisz: lukasz@avenit.pl</p></div>`,
   });
   switch (stage) {
     case 1: return base('Przypomnienie o płatności', '<p>Prosimy o uregulowanie należności.</p>');
