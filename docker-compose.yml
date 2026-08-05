@@ -108,6 +108,7 @@ services:
       dockerfile: Dockerfile.frontend
       args:
         VITE_API_URL: ""   # same-origin (Caddy proxuje /api)
+        VITE_VAPID_PUBLIC_KEY: ${VITE_VAPID_PUBLIC_KEY:-}   # web push (VAPID) — z .env
     volumes:
       - web_dist:/web_out
       - admin_dist:/admin_out

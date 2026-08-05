@@ -3,10 +3,11 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 
-# Argumenty budowania (URL API wstrzykiwane do bundla Vite).
+# Argumenty budowania (URL API + klucz publiczny VAPID wstrzykiwane do bundla Vite).
 ARG VITE_API_URL=""
 ARG VITE_APP_NAME=Avenit
-ENV VITE_API_URL=$VITE_API_URL VITE_APP_NAME=$VITE_APP_NAME
+ARG VITE_VAPID_PUBLIC_KEY=""
+ENV VITE_API_URL=$VITE_API_URL VITE_APP_NAME=$VITE_APP_NAME VITE_VAPID_PUBLIC_KEY=$VITE_VAPID_PUBLIC_KEY
 
 COPY package.json package-lock.json* ./
 COPY packages/shared/package.json packages/shared/
