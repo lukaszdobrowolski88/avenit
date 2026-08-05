@@ -2673,11 +2673,11 @@ export default function WorshipModule() {
                   <td className="p-4 text-gray-600 dark:text-gray-400">{s.tempo || "-"}</td>
                   <td className="p-4">
                     <div className="flex gap-1 flex-wrap">
-                      {Array.isArray(s.tags) && s.tags.length > 0 ? s.tags.map((t, i) => (
+                      {Array.isArray(s.tags) && s.tags.length > 0 ? s.tags.map((tag, i) => (
                         <span key={i} className="bg-gradient-to-r from-accent-primary-lighter to-accent-secondary-lighter dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 px-2 py-1 text-xs rounded-full text-accent-primary-dark dark:text-accent-primary-light border border-accent-primary-lighter dark:border-accent-primary-dark font-medium flex items-center gap-1 group">
-                          {t}
+                          {tag}
                           <button
-                            onClick={(e) => { e.stopPropagation(); removeTagFromSong(s.id, t); }}
+                            onClick={(e) => { e.stopPropagation(); removeTagFromSong(s.id, tag); }}
                             className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity"
                             title={t('Usuń tag')}
                           >
