@@ -50,12 +50,12 @@ export function usePushNotifications(userEmail) {
 
     const initPush = async () => {
       try {
-        // Rejestruj service worker dla push
-        const registration = await navigator.serviceWorker.register('/sw-push.js', {
-          scope: '/'
-        });
-
-        await navigator.serviceWorker.ready;
+        // JEDEN service worker: korzystamy z zarejestrowanego SW aplikacji (Workbox),
+        // który importuje handlery push (vite.config → workbox.importScripts). NIE
+        // rejestrujemy osobnego /sw-push.js na tym samym scope '/', bo dwa SW na jednym
+        // scope nadpisują się wzajemnie i psują cykl aktualizacji Workboxa — to była
+        // powracająca przyczyna „stary widok po deployu" na Safari.
+        const registration = await navigator.serviceWorker.ready;
 
         // Sprawdź istniejącą subskrypcję
         const existingSubscription = await registration.pushManager.getSubscription();

@@ -53,6 +53,10 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
+        // Handlery push (push/notificationclick/…) wciągamy do TEGO SAMEGO, jedynego
+        // service workera zamiast rejestrować osobny /sw-push.js na scope '/'. Dwa SW na
+        // jednym scope nadpisują się i psują aktualizacje (powracający stale-after-deploy).
+        importScripts: ['sw-push.js'],
         // Disable the default precache navigation fallback (index.html). Otherwise
         // Workbox registers a NavigationRoute that serves the *precached* index.html
         // for every navigation, which is exactly the stale-after-deploy bug. With it
