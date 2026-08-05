@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Text, TextInput, type TextStyle } from 'react-native';
 import {
   useFonts,
@@ -47,15 +47,24 @@ const applyDefaults = () => {
 };
 
 export const useAppFonts = () => {
-  const [loaded] = useFonts({
+  const [loaded, error] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
     Inter_800ExtraBold,
   });
+  // Zabezpieczenie: NIGDY nie blokuj startu na fontach. Gdyby `useFonts` zwróciło
+  // błąd albo utknęło (asset/bundling), po timeoutcie i tak wchodzimy do apki
+  // (fonty systemowe jako fallback) — inaczej apka wisi na ekranie startowym.
+  const [timedOut, setTimedOut] = useState(false);
   useEffect(() => {
-    if (loaded) applyDefaults();
-  }, [loaded]);
-  return loaded;
+    const t = setTimeout(() => setTimedOut(true), 2500);
+    return () => clearTimeout(t);
+  }, []);
+  const ready = loaded || !!error || timedOut;
+  useEffect(() => {
+    if (ready) applyDefaults();
+  }, [ready]);
+  return ready;
 };

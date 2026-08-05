@@ -366,7 +366,7 @@ export default function RsvpScreen() {
                 >
                   Nadchodzące
                 </Text>
-                {summary.invitations.map((inv) => (
+                {summary.invitations.map((inv: any) => (
                   <InvitationCard key={inv.id} invitation={inv} onRespond={handleRespond} />
                 ))}
               </>

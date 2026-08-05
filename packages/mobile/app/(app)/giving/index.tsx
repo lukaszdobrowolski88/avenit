@@ -253,7 +253,7 @@ export default function GivingScreen() {
                 >
                   Historia
                 </Text>
-                {summary.donations.map((d) => (
+                {summary.donations.map((d: any) => (
                   <DonationCard
                     key={d.id}
                     donation={d}
