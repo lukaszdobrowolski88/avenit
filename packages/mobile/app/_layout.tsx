@@ -152,6 +152,15 @@ function RootNavigator() {
 export default function RootLayout() {
   const fontsLoaded = useAppFonts();
 
+  // Awaryjne schowanie ekranu startowego — gdyby cokolwiek utknęło, po 4 s i tak
+  // odsłaniamy interfejs zamiast wisieć na splashu w nieskończoność.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => undefined);
+    }, 4000);
+    return () => clearTimeout(t);
+  }, []);
+
   if (!fontsLoaded) {
     return <View style={{ flex: 1, backgroundColor: '#ffffff' }} />;
   }

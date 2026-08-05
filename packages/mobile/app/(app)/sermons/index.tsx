@@ -184,7 +184,7 @@ export default function SermonsScreen() {
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
             }
           >
-            {data!.map((s) => (
+            {data!.map((s: any) => (
               <SermonCard
                 key={s.id}
                 sermon={s}
