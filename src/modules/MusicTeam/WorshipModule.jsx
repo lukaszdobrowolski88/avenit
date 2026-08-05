@@ -926,11 +926,11 @@ function RowInviteButton({ programId, count, onSendInvites, onRefresh }) {
     if (res?.success) await onRefresh?.();
     else if (res?.error) alert(res.error);
   };
-  if (!count) return <span className="text-xs text-gray-400">—</span>;
   return (
-    <button onClick={send} disabled={loading} title="Wyślij zaproszenia o akceptację do wybranych osób"
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-xs font-medium hover:shadow disabled:opacity-50">
-      <Send size={13} /> {loading ? 'Wysyłanie...' : `Wyślij (${count})`}
+    <button onClick={send} disabled={loading || !count}
+      title={count ? 'Wyślij zaproszenia o akceptację do wybranych osób' : 'Brak nowych osób do powiadomienia'}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition ${loading ? 'opacity-60' : ''} ${count ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:shadow' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed'}`}>
+      <Send size={12} /> {loading ? '...' : count ? `Wyślij (${count})` : 'Wyślij'}
     </button>
   );
 }
@@ -1102,13 +1102,12 @@ const ScheduleTable = ({ programs, worshipTeam, onUpdateProgram, roles, memberRo
                 <table className="w-full text-left border-collapse min-w-max">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 dark:text-gray-400 uppercase border-b border-gray-200 dark:border-gray-700">
-                      <th className="p-3 font-semibold w-24 min-w-[90px]">{tr('Data')}</th>
+                      <th className="p-3 font-semibold min-w-[120px]">{tr('Data')}</th>
                       {columns.map(col => (
                         <th key={col.key} className="p-3 font-semibold min-w-[130px]">{col.label}</th>
                       ))}
                       <th className="p-3 font-semibold min-w-[130px] text-red-500 dark:text-red-400">Absencja</th>
                       <th className="p-3 font-semibold min-w-[150px]">Notatki</th>
-                      <th className="p-3 font-semibold min-w-[120px]">Zaproszenia</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-800 relative">
@@ -1122,9 +1121,10 @@ const ScheduleTable = ({ programs, worshipTeam, onUpdateProgram, roles, memberRo
                         return (
                           <tr key={prog.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition relative">
                             <td className="p-3 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs">
-                              <div className="flex flex-col gap-1 items-start">
+                              <div className="flex flex-col gap-1.5 items-start">
                                 <span>{formatDateShort(prog.date)}</span>
                                 <CampusBadge campus={getCampus(prog.campus_id)} />
+                                <RowInviteButton programId={prog.id} count={countNewInvites(assignments, prog.id)} onSendInvites={onSendInvites} onRefresh={onRefreshAssignments} />
                               </div>
                             </td>
                             {columns.map(col => (
@@ -1152,9 +1152,6 @@ const ScheduleTable = ({ programs, worshipTeam, onUpdateProgram, roles, memberRo
                                 defaultValue={prog.zespol?.notatki || ''}
                                 onBlur={(e) => updateNotes(prog.id, e.target.value)}
                               />
-                            </td>
-                            <td className="p-2">
-                              <RowInviteButton programId={prog.id} count={countNewInvites(assignments, prog.id)} onSendInvites={onSendInvites} onRefresh={onRefreshAssignments} />
                             </td>
                           </tr>
                         );
