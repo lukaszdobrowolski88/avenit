@@ -923,8 +923,12 @@ function RowInviteButton({ programId, count, onSendInvites, onRefresh }) {
     setLoading(true);
     const res = await onSendInvites?.(programId);
     setLoading(false);
-    if (res?.success) await onRefresh?.();
-    else if (res?.error) alert(res.error);
+    if (res?.success) {
+      await onRefresh?.();
+      if (!res.sent) alert('Nie wysłano żadnego maila — sprawdź, czy wybrane osoby mają adres e-mail w profilu.');
+    } else {
+      alert(res?.error || 'Nie udało się wysłać zaproszeń.');
+    }
   };
   return (
     <button onClick={send} disabled={loading || !count}

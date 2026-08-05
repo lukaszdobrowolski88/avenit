@@ -1,18 +1,18 @@
 // Wsadowa wysyłka zaproszeń do służby dla jednego programu (daty).
 // Wejście: { programId, baseUrl }
 // - grupuje NIEwysłane, oczekujące przypisania per OSOBA (assigned_email),
-// - pomija osoby, którym już wcześniej wysłano (email_sent_at ustawiony) — re-send
-//   idzie tylko do osób bez wcześniejszej wysyłki dla tej daty,
 // - jednej osobie wysyła JEDEN łączony e-mail + JEDEN push (wszystkie jej służby),
 // - nadaje wspólny token na jej przypisania (akceptacja/odrzucenie obejmuje wszystkie),
-// - stempluje email_sent_at.
+// - stempluje email_sent_at DOPIERO po realnej wysyłce maila (nie przy błędzie/braku
+//   konfiguracji) — dzięki temu nieudaną wysyłkę można ponowić.
+// Wysyłka przez wspólny helper lib/email.js (SendGrid → SMTP), zgodnie z resztą maili
+// systemowych; NIE zakłada na sztywno SendGrida.
 import crypto from 'node:crypto';
 import { config } from '../config.js';
+import { sendEmail } from '../lib/email.js';
 import { sendPushCore } from './send-push.js';
 
 export const name = 'send-assignment-invites';
-
-const FROM_NAME_DEFAULT = 'Avenit';
 
 const ROLE_NAMES = {
   lider: 'Lider Uwielbienia', piano: 'Piano', wokale: 'Wokal',
@@ -22,21 +22,7 @@ const ROLE_NAMES = {
 };
 const roleName = (key, fallbackLabel) => fallbackLabel || ROLE_NAMES[key] || key;
 
-async function sendViaSendGrid(to, subject, html) {
-  const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.SENDGRID_API_KEY}` },
-    body: JSON.stringify({
-      personalizations: [{ to: [{ email: to }] }],
-      from: { email: config.MAILING_FROM_EMAIL, name: config.MAILING_FROM_NAME || FROM_NAME_DEFAULT },
-      subject,
-      content: [{ type: 'text/html', value: html }],
-    }),
-  });
-  return res.status === 202;
-}
-
-function emailHtml({ assignedName, assignedByName, roles, programDate, programTitle, acceptUrl, rejectUrl }) {
+function emailHtml({ assignedByName, roles, programDate, programTitle, acceptUrl, rejectUrl }) {
   const rolesHtml = roles.map((r) => `
     <tr><td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;color:#1f2937;font-size:15px;font-weight:600;">${r}</td></tr>`).join('');
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -81,7 +67,7 @@ export default async function handler(req, reply) {
     );
 
     // Grupuj oczekujące, NIEwysłane przypisania (z e-mailem) per osoba. Wysyłamy do każdego,
-    // kto ma nowe (niewysłane) służby — także jeśli wcześniej dostał już maila o INNYCH
+    // kto ma nowe (niewysłane) służby — także jeśli wcześniej dostał maila o INNYCH
     // służbach tej daty. Wtedy mail dotyczy tylko nowych, jeszcze niewysłanych służb.
     const byPerson = new Map();
     for (const a of all) {
@@ -91,31 +77,42 @@ export default async function handler(req, reply) {
       byPerson.get(key).roles.push(a);
     }
 
+    // Ten sam mechanizm co reszta maili systemowych: SendGrid lub SMTP.
+    const emailReady = !!(config.SENDGRID_API_KEY || config.DEFAULT_SMTP_HOST);
+    if (!emailReady) {
+      return reply.send({ success: false, emailReady: false, sent: 0, error: 'Brak konfiguracji e-mail na serwerze (SMTP/SendGrid).' });
+    }
+
     let sent = 0;
-    const emailReady = !!config.SENDGRID_API_KEY;
+    let failed = 0;
     for (const person of byPerson.values()) {
       const token = crypto.randomUUID();
-      // Wspólny token + stempel wysyłki na wszystkich przypisaniach osoby (niewysłanych).
+      const roleLabels = person.roles.map((r) => roleName(r.role_key));
+      const acceptUrl = `${origin}/assignment-response?token=${token}&action=accept`;
+      const rejectUrl = `${origin}/assignment-response?token=${token}&action=reject`;
+      const html = emailHtml({ assignedByName: person.by || 'Administrator', roles: roleLabels, programDate, programTitle, acceptUrl, rejectUrl });
+      const subject = roleLabels.length > 1
+        ? `Zaproszenie do służby (${roleLabels.length}) — ${programDate}`
+        : `Zaproszenie do służby: ${roleLabels[0]} — ${programDate}`;
+
+      // Najpierw realna wysyłka; stempel dopiero po sukcesie (nieudane można ponowić).
+      try {
+        await sendEmail({ to: person.email, subject, html });
+      } catch (e) {
+        failed++;
+        req.log?.warn?.({ err: e }, 'invite email failed');
+        continue;
+      }
+
+      // Wspólny token + stempel wysyłki na wszystkich (niewysłanych) przypisaniach osoby.
       await req.db.query(
         `UPDATE schedule_assignments SET token = $1, email_sent_at = now()
           WHERE program_id = $2 AND lower(assigned_email) = $3 AND status = 'pending' AND email_sent_at IS NULL`,
         [token, programId, person.email.toLowerCase()]
       );
+      sent++;
 
-      const roleLabels = person.roles.map((r) => roleName(r.role_key));
-      const acceptUrl = `${origin}/assignment-response?token=${token}&action=accept`;
-      const rejectUrl = `${origin}/assignment-response?token=${token}&action=reject`;
-
-      // E-mail (łączony).
-      if (emailReady) {
-        const html = emailHtml({ assignedName: person.name, assignedByName: person.by || 'Administrator', roles: roleLabels, programDate, programTitle, acceptUrl, rejectUrl });
-        const subject = roleLabels.length > 1
-          ? `Zaproszenie do służby (${roleLabels.length}) — ${programDate}`
-          : `Zaproszenie do służby: ${roleLabels[0]} — ${programDate}`;
-        try { await sendViaSendGrid(person.email, subject, html); } catch (e) { req.log?.warn?.({ err: e }, 'invite email failed'); }
-      }
-
-      // Push (łączony, informacyjny — akceptacja przez e-mail/aplikację).
+      // Push (łączony, informacyjny — akceptacja przez e-mail/aplikację). Best-effort.
       try {
         await sendPushCore(req.db, {
           user_email: person.email,
@@ -124,11 +121,9 @@ export default async function handler(req, reply) {
           link: `/programs/${programId}`,
         });
       } catch (e) { req.log?.warn?.({ err: e }, 'invite push failed'); }
-
-      sent++;
     }
 
-    return reply.send({ success: true, sent, emailReady });
+    return reply.send({ success: true, sent, failed, emailReady: true });
   } catch (err) {
     req.log.error({ err }, 'send-assignment-invites error');
     return reply.code(500).send({ error: err.message });
