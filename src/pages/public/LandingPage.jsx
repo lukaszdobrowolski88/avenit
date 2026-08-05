@@ -398,7 +398,7 @@ export default function LandingPage() {
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li className="flex items-center gap-2">
                   <Mail size={14} />
-                  kontakt@avenit.pl
+                  lukasz@avenit.pl
                 </li>
                 <li className="flex items-center gap-2">
                   <Phone size={14} />

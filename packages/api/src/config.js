@@ -32,7 +32,7 @@ const schema = z.object({
   MAILING_FROM_EMAIL: z.string().default('noreply@avenit.pl'),
   MAILING_FROM_NAME: z.string().default('Avenit'),
   // Adresat powiadomień o zgłoszeniach z formularza na avenit.pl
-  LANDING_CONTACT_EMAIL: z.string().default('kontakt@avenit.pl'),
+  LANDING_CONTACT_EMAIL: z.string().default('lukasz@avenit.pl'),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().default('noreply@avenit.pl'),
   SMSAPI_TOKEN: z.string().optional(),
@@ -42,7 +42,7 @@ const schema = z.object({
   EXPO_ACCESS_TOKEN: z.string().optional(),
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
-  VAPID_EMAIL: z.string().default('mailto:kontakt@avenit.pl'),
+  VAPID_EMAIL: z.string().default('mailto:lukasz@avenit.pl'),
   MAIL_ENCRYPTION_SECRET: z.string().optional(),
   P24_MERCHANT_ID: z.string().optional(),
   P24_POS_ID: z.string().optional(),

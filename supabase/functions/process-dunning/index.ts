@@ -142,7 +142,7 @@ function generateEmailContent(stage: number, data: DunningItem): { subject: stri
               Zapłać teraz i zachowaj dostęp
             </a>
             <p style="color: #666;">
-              W razie problemów z płatnością, skontaktuj się z nami: kontakt@avenit.pl
+              W razie problemów z płatnością, skontaktuj się z nami: lukasz@avenit.pl
             </p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
             <p style="color: #999; font-size: 12px;">
@@ -176,7 +176,7 @@ function generateEmailContent(stage: number, data: DunningItem): { subject: stri
                 Opłać fakturę i odblokuj konto
               </a>
               <p style="color: #666; font-size: 14px;">
-                Masz pytania? Napisz do nas: kontakt@avenit.pl
+                Masz pytania? Napisz do nas: lukasz@avenit.pl
               </p>
             </div>
           </div>
