@@ -6,6 +6,34 @@ export async function sendEmail({ to, subject, html, text, from, fromName, reply
   const fromEmail = from || config.MAILING_FROM_EMAIL;
   const senderName = fromName || config.MAILING_FROM_NAME;
 
+  // Resend — preferowany, gdy skonfigurowany. Dostawca transakcyjny robi prawidłowy
+  // routing MX, więc omija problem hostingu SMTP traktującego cudzą domenę jako lokalną
+  // (patrz: maile na @schwro.pl odbijane przez lh.pl). Nadawca musi być na domenie
+  // zweryfikowanej w Resend (RESEND_FROM_EMAIL / MAILING_FROM_EMAIL).
+  if (config.RESEND_API_KEY) {
+    const resendFrom = from || config.RESEND_FROM_EMAIL || config.MAILING_FROM_EMAIL;
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: senderName ? `${senderName} <${resendFrom}>` : resendFrom,
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        ...(html ? { html } : {}),
+        ...(text ? { text } : {}),
+        ...(replyTo ? { reply_to: replyTo } : {}),
+        ...(attachments?.length
+          ? { attachments: attachments.map((a) => ({ filename: a.filename, content: a.contentBase64 })) }
+          : {}),
+      }),
+    });
+    if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
+    return { ok: true, provider: 'resend' };
+  }
+
   if (config.SENDGRID_API_KEY) {
     const body = {
       personalizations: [{ to: (Array.isArray(to) ? to : [to]).map((e) => ({ email: e })) }],
