@@ -133,7 +133,10 @@ export const REGISTRY = {
   // ── Komunikator ─────────────────────────────────────────────────────────
   conversations: T('module:komunikator'),
   conversation_participants: T('module:komunikator', {
-    relationships: { users: { table: 'app_users', column: 'user_id', type: 'one' } },
+    relationships: {
+      users: { table: 'app_users', column: 'user_id', type: 'one' },
+      conversations: { table: 'conversations', column: 'conversation_id', type: 'one' },
+    },
   }),
   messages: T('module:komunikator'),
 
