@@ -34,6 +34,7 @@ const MODULES = [
   'process-dunning',
   'ical',
   'ai-assist',
+  'send-assignment-invites',
 ];
 
 export async function registerFunctions(app) {

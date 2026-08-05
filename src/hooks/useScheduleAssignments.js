@@ -154,12 +154,8 @@ export function useScheduleAssignments() {
         return [...prev, data];
       });
 
-      // Jeśli nie jest to przypisanie do siebie - wyślij email (w tle, nie blokuj)
-      if (!isSelfAssignment && assignedEmail && data) {
-        sendAssignmentEmail(data).catch(err => {
-          console.warn('Failed to send assignment email:', err);
-        });
-      }
+      // Wysyłka zaproszeń jest teraz WSADOWA (przycisk „Wyślij zaproszenia" przy dacie →
+      // fn send-assignment-invites): NIE wysyłamy e-maila/push przy każdym wyborze osoby.
 
       return { success: true, data };
     } catch (err) {
@@ -374,6 +370,22 @@ export function useScheduleAssignments() {
     return assignment?.status || null;
   }, [assignments]);
 
+  /**
+   * Wsadowa wysyłka zaproszeń dla programu (daty). Jeden łączony e-mail + push per osoba,
+   * tylko do osób, którym wcześniej nie wysłano dla tej daty. Zwraca { success, sent, skipped }.
+   */
+  const sendInvitesForProgram = useCallback(async (programId) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-assignment-invites', {
+        body: { programId, baseUrl: window.location.origin },
+      });
+      if (error || data?.error) return { success: false, error: data?.error || error?.message };
+      return { success: true, ...data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
   return {
     loading,
     assignments,
@@ -386,6 +398,7 @@ export function useScheduleAssignments() {
     rejectAssignment,
     acceptByToken,
     rejectByToken,
-    getAssignmentStatus
+    getAssignmentStatus,
+    sendInvitesForProgram
   };
 }
