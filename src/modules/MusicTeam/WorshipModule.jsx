@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
-import { Plus, Search, Trash2, X, FileText, Music, Calendar, ChevronDown, Check, ChevronUp, User, UserX, Link as LinkIcon, Clock, History, ExternalLink, Minus, Hash, DollarSign, ChevronLeft, ChevronRight, Tag, Upload, FileDown, MessageSquare, Download, Play, Pause, Volume2, Users, FolderOpen, Package } from 'lucide-react';
+import { Plus, Search, Trash2, X, FileText, Music, Calendar, ChevronDown, Check, ChevronUp, User, UserX, Link as LinkIcon, Clock, History, ExternalLink, Minus, Hash, DollarSign, ChevronLeft, ChevronRight, Tag, Upload, FileDown, MessageSquare, Download, Play, Pause, Volume2, Users, FolderOpen, Package, Send } from 'lucide-react';
 import SongForm from './SongForm';
 import { AddSongToProgramModal, ProgramsSongsManagerModal } from './ProgramSuggestionsModals';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
@@ -902,7 +902,40 @@ const AbsenceMultiSelect = ({ options, value, onChange }) => {
   );
 };
 
-const ScheduleTable = ({ programs, worshipTeam, onUpdateProgram, roles, memberRoles = [], currentUser, assignments = [], onCreateAssignment, onRemoveAssignment }) => {
+// Ile NOWYCH osób do powiadomienia dla programu (oczekujące, niewysłane, nie powiadomione
+// wcześniej — dedup per osoba/e-mail; osoby już powiadomione dla tej daty są pomijane).
+function countNewInvites(assignments, programId) {
+  const forProg = assignments.filter(a => a.program_id === programId && a.team_type === 'worship');
+  const notified = new Set(forProg.filter(a => a.email_sent_at && a.assigned_email).map(a => a.assigned_email.toLowerCase()));
+  const toNotify = new Set();
+  for (const a of forProg) {
+    if (a.status === 'pending' && !a.email_sent_at && a.assigned_email && !notified.has(a.assigned_email.toLowerCase())) {
+      toNotify.add(a.assigned_email.toLowerCase());
+    }
+  }
+  return toNotify.size;
+}
+
+// Przycisk wsadowej wysyłki zaproszeń o akceptację przy dacie.
+function RowInviteButton({ programId, count, onSendInvites, onRefresh }) {
+  const [loading, setLoading] = useState(false);
+  const send = async () => {
+    setLoading(true);
+    const res = await onSendInvites?.(programId);
+    setLoading(false);
+    if (res?.success) await onRefresh?.();
+    else if (res?.error) alert(res.error);
+  };
+  if (!count) return <span className="text-xs text-gray-400">—</span>;
+  return (
+    <button onClick={send} disabled={loading} title="Wyślij zaproszenia o akceptację do wybranych osób"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-xs font-medium hover:shadow disabled:opacity-50">
+      <Send size={13} /> {loading ? 'Wysyłanie...' : `Wyślij (${count})`}
+    </button>
+  );
+}
+
+const ScheduleTable = ({ programs, worshipTeam, onUpdateProgram, roles, memberRoles = [], currentUser, assignments = [], onCreateAssignment, onRemoveAssignment, onSendInvites, onRefreshAssignments }) => {
   const [expandedMonths, setExpandedMonths] = useState({});
   const { getCampus } = useCampusBadge();
 
@@ -1075,6 +1108,7 @@ const ScheduleTable = ({ programs, worshipTeam, onUpdateProgram, roles, memberRo
                       ))}
                       <th className="p-3 font-semibold min-w-[130px] text-red-500 dark:text-red-400">Absencja</th>
                       <th className="p-3 font-semibold min-w-[150px]">Notatki</th>
+                      <th className="p-3 font-semibold min-w-[120px]">Zaproszenia</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-800 relative">
@@ -1118,6 +1152,9 @@ const ScheduleTable = ({ programs, worshipTeam, onUpdateProgram, roles, memberRo
                                 defaultValue={prog.zespol?.notatki || ''}
                                 onBlur={(e) => updateNotes(prog.id, e.target.value)}
                               />
+                            </td>
+                            <td className="p-2">
+                              <RowInviteButton programId={prog.id} count={countNewInvites(assignments, prog.id)} onSendInvites={onSendInvites} onRefresh={onRefreshAssignments} />
                             </td>
                           </tr>
                         );
@@ -2050,7 +2087,8 @@ export default function WorshipModule() {
     assignments,
     fetchAssignmentsForPrograms,
     createAssignment,
-    removeAssignment
+    removeAssignment,
+    sendInvitesForProgram
   } = useScheduleAssignments();
 
   const [showSongModal, setShowSongModal] = useState(false);
@@ -2565,6 +2603,8 @@ export default function WorshipModule() {
           assignments={assignments}
           onCreateAssignment={createAssignment}
           onRemoveAssignment={removeAssignment}
+          onSendInvites={sendInvitesForProgram}
+          onRefreshAssignments={() => fetchAssignmentsForPrograms(programs.map(p => p.id))}
         />
       </section>
       )}

@@ -436,6 +436,7 @@ export const FN_CAPABILITY = {
   'send-mailing-campaign': 'action:mailing:send',
   'send-program-email': 'action:programs:send_email',
   'send-assignment-email': 'action:programs:send_assignment',
+  'send-assignment-invites': 'action:programs:send_assignment',
   'send-form-email': 'action:forms:export',
   'send-sms': 'action:sms_campaigns:send',
   'sms-campaign-dispatch': 'action:sms_campaigns:send',

@@ -8,7 +8,8 @@ import { notifyOnWrite } from '../realtime/push-hooks.js';
 import { platformPool } from '../db.js';
 
 // Tabele, których insert wyzwala automatyczny push (patrz push-hooks.js).
-const PUSH_ON_INSERT = new Set(['messages', 'schedule_assignments']);
+// Push wysyłamy wsadowo (fn send-assignment-invites), nie na każdy insert przypisania.
+const PUSH_ON_INSERT = new Set(['messages']);
 
 // Cache modułów wyłączonych na poziomie platformy per tenant (60 s).
 const disabledModulesCache = new Map(); // tenantId -> { set, at }

@@ -11,6 +11,7 @@ export default function AssignmentResponsePage() {
 
   const [loading, setLoading] = useState(true);
   const [assignment, setAssignment] = useState(null);
+  const [allAssignments, setAllAssignments] = useState([]); // wspólny token = wiele służb
   const [program, setProgram] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -41,26 +42,22 @@ export default function AssignmentResponsePage() {
       }
 
       try {
-        // Pobierz przypisanie
-        const { data: assignmentData, error: assignmentError } = await supabase
+        // Pobierz przypisania po tokenie (wspólny token = wszystkie służby osoby na tę datę).
+        const { data: rows, error: assignmentError } = await supabase
           .from('schedule_assignments')
           .select('*')
-          .eq('token', token)
-          .single();
+          .eq('token', token);
 
-        if (assignmentError || !assignmentData) {
+        if (assignmentError || !rows || rows.length === 0) {
           setError('Nie znaleziono przypisania');
           setLoading(false);
           return;
         }
 
-        // Sprawdź czy już odpowiedziano
-        if (assignmentData.status !== 'pending') {
-          setAlreadyResponded(true);
-          setAssignment(assignmentData);
-        } else {
-          setAssignment(assignmentData);
-        }
+        const assignmentData = rows[0];
+        setAllAssignments(rows);
+        setAssignment(assignmentData);
+        if (assignmentData.status !== 'pending') setAlreadyResponded(true);
 
         // Pobierz dane programu
         const { data: programData } = await supabase
@@ -73,9 +70,9 @@ export default function AssignmentResponsePage() {
           setProgram(programData);
         }
 
-        // Jeśli jest akcja i przypisanie jest pending - wykonaj akcję
+        // Jeśli jest akcja i przypisania są pending - wykonaj akcję (na wszystkich).
         if (action && assignmentData.status === 'pending') {
-          await handleAction(action, token, assignmentData);
+          await handleAction(action, token, rows);
         }
 
         setLoading(false);
@@ -89,40 +86,30 @@ export default function AssignmentResponsePage() {
     fetchAssignment();
   }, [token, action]);
 
-  const handleAction = async (actionType, tokenValue, assignmentData) => {
+  const handleAction = async (actionType, tokenValue, rows) => {
     try {
       const newStatus = actionType === 'accept' ? 'accepted' : 'rejected';
+      const list = Array.isArray(rows) ? rows : [rows].filter(Boolean);
+      const first = list[0];
 
+      // Update po tokenie obejmuje wszystkie przypisania osoby (wspólny token).
       const { error: updateError } = await supabase
         .from('schedule_assignments')
-        .update({
-          status: newStatus,
-          responded_at: new Date().toISOString()
-        })
+        .update({ status: newStatus, responded_at: new Date().toISOString() })
         .eq('token', tokenValue);
-
       if (updateError) throw updateError;
 
-      // Jeśli odrzucono - usuń z grafiku programu
-      if (actionType === 'reject' && assignmentData) {
+      // Jeśli odrzucono - usuń WSZYSTKIE służby tej osoby z grafiku programu.
+      if (actionType === 'reject' && first) {
         const { data: programData } = await supabase
-          .from('programs')
-          .select('zespol')
-          .eq('id', assignmentData.program_id)
-          .single();
-
+          .from('programs').select('zespol').eq('id', first.program_id).single();
         if (programData?.zespol) {
           const zespol = { ...programData.zespol };
-          const roleKey = assignmentData.role_key;
-          const currentValue = zespol[roleKey] || '';
-          const names = currentValue.split(',').map(s => s.trim()).filter(Boolean);
-          const newNames = names.filter(n => n !== assignmentData.assigned_name);
-          zespol[roleKey] = newNames.join(', ');
-
-          await supabase
-            .from('programs')
-            .update({ zespol })
-            .eq('id', assignmentData.program_id);
+          for (const r of list) {
+            const names = (zespol[r.role_key] || '').split(',').map(s => s.trim()).filter(Boolean);
+            zespol[r.role_key] = names.filter(n => n !== r.assigned_name).join(', ');
+          }
+          await supabase.from('programs').update({ zespol }).eq('id', first.program_id);
         }
       }
 
@@ -133,6 +120,10 @@ export default function AssignmentResponsePage() {
       setError(tr('Wystąpił błąd podczas zapisywania odpowiedzi'));
     }
   };
+
+  // Nazwy wszystkich służb osoby (dla wyświetlenia w łączonym zaproszeniu).
+  const rolesText = (allAssignments.length ? allAssignments : (assignment ? [assignment] : []))
+    .map(a => roleNames[a.role_key] || a.role_key).join(', ');
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -223,7 +214,7 @@ export default function AssignmentResponsePage() {
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
               <Music size={16} />
-              <span>{roleNames[assignment?.role_key] || assignment?.role_key}</span>
+              <span>{rolesText}</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <User size={16} />
@@ -263,7 +254,7 @@ export default function AssignmentResponsePage() {
             <Music className="text-accent-primary" size={20} />
             <div>
               <p className="text-sm text-gray-500">{tr('Służba')}</p>
-              <p className="font-medium text-gray-800">{roleNames[assignment?.role_key] || assignment?.role_key}</p>
+              <p className="font-medium text-gray-800">{rolesText}</p>
             </div>
           </div>
           {program?.title && (
@@ -279,14 +270,14 @@ export default function AssignmentResponsePage() {
 
         <div className="space-y-3">
           <button
-            onClick={() => handleAction('accept', token, assignment)}
+            onClick={() => handleAction('accept', token, allAssignments)}
             className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:shadow-emerald-500/30 transition flex items-center justify-center gap-2"
           >
             <CheckCircle size={20} />
             {tr('Akceptuję')}
           </button>
           <button
-            onClick={() => handleAction('reject', token, assignment)}
+            onClick={() => handleAction('reject', token, allAssignments)}
             className="w-full py-3 px-4 bg-gradient-to-r from-accent-secondary-light to-red-500 hover:from-accent-secondary hover:to-red-600 text-white font-bold rounded-xl shadow-lg hover:shadow-red-500/30 transition flex items-center justify-center gap-2"
           >
             <XCircle size={20} />
