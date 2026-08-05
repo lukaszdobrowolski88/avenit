@@ -1,23 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
 import { CheckCircle, XCircle, Loader2, AlertCircle, Calendar, User, Music } from 'lucide-react';
 import { tr } from '../../i18n';
 
+// Strona akceptacji/odrzucenia zaproszenia do służby. Zaproszony jest NIEzalogowany —
+// autoryzuje sam token z linku w mailu. Dane idą przez publiczne endpointy
+// /api/public/assignment/:token (odczyt) i .../respond (accept/reject), NIE przez /api/db
+// (który wymaga logowania).
 export default function AssignmentResponsePage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const action = searchParams.get('action');
 
   const [loading, setLoading] = useState(true);
-  const [assignment, setAssignment] = useState(null);
-  const [allAssignments, setAllAssignments] = useState([]); // wspólny token = wiele służb
+  const [assignments, setAssignments] = useState([]); // wspólny token = wiele służb
   const [program, setProgram] = useState(null);
+  const [status, setStatus] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [alreadyResponded, setAlreadyResponded] = useState(false);
 
-  // Mapowanie kluczy ról na czytelne nazwy
+  const assignedByName = assignments[0]?.assigned_by_name;
+
   const roleNames = {
     lider: 'Lider Uwielbienia',
     piano: 'Piano',
@@ -40,41 +44,28 @@ export default function AssignmentResponsePage() {
         setLoading(false);
         return;
       }
-
       try {
-        // Pobierz przypisania po tokenie (wspólny token = wszystkie służby osoby na tę datę).
-        const { data: rows, error: assignmentError } = await supabase
-          .from('schedule_assignments')
-          .select('*')
-          .eq('token', token);
-
-        if (assignmentError || !rows || rows.length === 0) {
+        const res = await fetch(`/api/public/assignment/${encodeURIComponent(token)}`);
+        if (!res.ok) {
           setError('Nie znaleziono przypisania');
           setLoading(false);
           return;
         }
+        const data = await res.json();
+        setAssignments(data.assignments || []);
+        setProgram(data.program || null);
+        setStatus(data.status || null);
 
-        const assignmentData = rows[0];
-        setAllAssignments(rows);
-        setAssignment(assignmentData);
-        if (assignmentData.status !== 'pending') setAlreadyResponded(true);
-
-        // Pobierz dane programu
-        const { data: programData } = await supabase
-          .from('programs')
-          .select('date, title')
-          .eq('id', assignmentData.program_id)
-          .single();
-
-        if (programData) {
-          setProgram(programData);
+        if (data.status && data.status !== 'pending') {
+          setAlreadyResponded(true);
+          setLoading(false);
+          return;
         }
 
-        // Jeśli jest akcja i przypisania są pending - wykonaj akcję (na wszystkich).
-        if (action && assignmentData.status === 'pending') {
-          await handleAction(action, token, rows);
+        // Akcja w URL (przyciski z maila) — wykonaj od razu.
+        if (action === 'accept' || action === 'reject') {
+          await handleAction(action);
         }
-
         setLoading(false);
       } catch (err) {
         console.error('Error:', err);
@@ -82,39 +73,29 @@ export default function AssignmentResponsePage() {
         setLoading(false);
       }
     };
-
     fetchAssignment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, action]);
 
-  const handleAction = async (actionType, tokenValue, rows) => {
+  const handleAction = async (actionType) => {
     try {
-      const newStatus = actionType === 'accept' ? 'accepted' : 'rejected';
-      const list = Array.isArray(rows) ? rows : [rows].filter(Boolean);
-      const first = list[0];
-
-      // Update po tokenie obejmuje wszystkie przypisania osoby (wspólny token).
-      const { error: updateError } = await supabase
-        .from('schedule_assignments')
-        .update({ status: newStatus, responded_at: new Date().toISOString() })
-        .eq('token', tokenValue);
-      if (updateError) throw updateError;
-
-      // Jeśli odrzucono - usuń WSZYSTKIE służby tej osoby z grafiku programu.
-      if (actionType === 'reject' && first) {
-        const { data: programData } = await supabase
-          .from('programs').select('zespol').eq('id', first.program_id).single();
-        if (programData?.zespol) {
-          const zespol = { ...programData.zespol };
-          for (const r of list) {
-            const names = (zespol[r.role_key] || '').split(',').map(s => s.trim()).filter(Boolean);
-            zespol[r.role_key] = names.filter(n => n !== r.assigned_name).join(', ');
-          }
-          await supabase.from('programs').update({ zespol }).eq('id', first.program_id);
-        }
+      const res = await fetch(`/api/public/assignment/${encodeURIComponent(token)}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: actionType }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || tr('Wystąpił błąd podczas zapisywania odpowiedzi'));
+        return;
       }
-
+      if (data.already) {
+        setStatus(data.status);
+        setAlreadyResponded(true);
+        return;
+      }
+      setStatus(data.status || (actionType === 'accept' ? 'accepted' : 'rejected'));
       setSuccess(true);
-      setAssignment(prev => ({ ...prev, status: newStatus }));
     } catch (err) {
       console.error('Error handling action:', err);
       setError(tr('Wystąpił błąd podczas zapisywania odpowiedzi'));
@@ -122,8 +103,7 @@ export default function AssignmentResponsePage() {
   };
 
   // Nazwy wszystkich służb osoby (dla wyświetlenia w łączonym zaproszeniu).
-  const rolesText = (allAssignments.length ? allAssignments : (assignment ? [assignment] : []))
-    .map(a => roleNames[a.role_key] || a.role_key).join(', ');
+  const rolesText = assignments.map((a) => roleNames[a.role_key] || a.role_key).join(', ');
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -162,7 +142,7 @@ export default function AssignmentResponsePage() {
   }
 
   if (alreadyResponded) {
-    const isAccepted = assignment?.status === 'accepted';
+    const isAccepted = status === 'accepted';
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
@@ -187,7 +167,7 @@ export default function AssignmentResponsePage() {
   }
 
   if (success) {
-    const isAccepted = assignment?.status === 'accepted';
+    const isAccepted = status === 'accepted';
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
@@ -216,10 +196,12 @@ export default function AssignmentResponsePage() {
               <Music size={16} />
               <span>{rolesText}</span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <User size={16} />
-              <span>Przypisał: {assignment?.assigned_by_name}</span>
-            </div>
+            {assignedByName && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <User size={16} />
+                <span>Przypisał: {assignedByName}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -237,9 +219,11 @@ export default function AssignmentResponsePage() {
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
             {tr('Zaproszenie do służby')}
           </h1>
-          <p className="text-gray-600">
-            {assignment?.assigned_by_name} przypisał/a Cię do służby
-          </p>
+          {assignedByName && (
+            <p className="text-gray-600">
+              {assignedByName} przypisał/a Cię do służby
+            </p>
+          )}
         </div>
 
         <div className="bg-gray-50 rounded-xl p-4 mb-6">
@@ -270,14 +254,14 @@ export default function AssignmentResponsePage() {
 
         <div className="space-y-3">
           <button
-            onClick={() => handleAction('accept', token, allAssignments)}
+            onClick={() => handleAction('accept')}
             className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:shadow-emerald-500/30 transition flex items-center justify-center gap-2"
           >
             <CheckCircle size={20} />
             {tr('Akceptuję')}
           </button>
           <button
-            onClick={() => handleAction('reject', token, allAssignments)}
+            onClick={() => handleAction('reject')}
             className="w-full py-3 px-4 bg-gradient-to-r from-accent-secondary-light to-red-500 hover:from-accent-secondary hover:to-red-600 text-white font-bold rounded-xl shadow-lg hover:shadow-red-500/30 transition flex items-center justify-center gap-2"
           >
             <XCircle size={20} />
