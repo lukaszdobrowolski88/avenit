@@ -162,7 +162,17 @@ export const REGISTRY = {
   }),
 
   // ── Kampanie push / SMS ─────────────────────────────────────────────────
-  push_campaigns: T('module:push_campaigns'),
+  push_campaigns: T('module:push_campaigns', {
+    // Embedy zagnieżdżonego selectu (CAMPAIGN_SELECT w usePushCampaigns) — bez tego
+    // resolveRelationship rzuca 400 i cała lista/edytor kampanii jest pusty.
+    // Tabele-dzieci zarejestrowane niżej. (NIE embedujemy creator — created_by to
+    // e-mail, a embed to-one joinuje po id.)
+    relationships: {
+      segments: { table: 'push_campaign_segments', column: 'campaign_id', type: 'many' },
+      actions: { table: 'push_campaign_actions', column: 'campaign_id', type: 'many' },
+      ab_variants: { table: 'push_campaign_ab_variants', column: 'campaign_id', type: 'many' },
+    },
+  }),
   push_campaign_recipients: T('module:push_campaigns'),
   push_campaign_events: T('module:push_campaigns'),
   sms_campaigns: T('module:sms_campaigns'),

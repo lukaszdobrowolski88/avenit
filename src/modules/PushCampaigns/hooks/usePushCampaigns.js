@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
 
+// Uwaga: NIE embedujemy `creator` (app_users) — created_by to e-mail (FK na
+// app_users.email), a embed to-one w API joinuje po `id`, więc taki join nie działa
+// i wywala CAŁE zapytanie (400) → lista/edytor pusty. Embedy dzieci wymagają wpisu
+// `relationships` w registry.js (dodane dla push_campaigns).
 const CAMPAIGN_SELECT = `
   *,
   segments:push_campaign_segments(*),
   actions:push_campaign_actions(*),
-  ab_variants:push_campaign_ab_variants(*),
-  creator:app_users!push_campaigns_created_by_fkey(full_name, avatar_url)
+  ab_variants:push_campaign_ab_variants(*)
 `;
 
 export function usePushCampaigns(campusId = null) {
@@ -17,9 +20,11 @@ export function usePushCampaigns(campusId = null) {
   const fetchCampaigns = useCallback(async () => {
     try {
       setLoading(true);
+      // Lista nie potrzebuje embedów (renderuje tylko pola kampanii) — bierzemy '*',
+      // co jest szybsze (bez podzapytań per wiersz) i odporne na embedy.
       let query = supabase
         .from('push_campaigns')
-        .select(CAMPAIGN_SELECT)
+        .select('*')
         .order('created_at', { ascending: false });
       if (campusId) query = query.eq('campus_id', campusId);
 
