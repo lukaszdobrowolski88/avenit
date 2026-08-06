@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, type LucideIcon } from 'lucide-react-native';
 import { GradientIcon } from './GradientIcon';
+import { useDS, font, radius } from '../../theme/ds';
 
 interface Props {
   title: string;
@@ -14,53 +15,31 @@ interface Props {
 
 export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: Props) => {
   const router = useRouter();
+  const { c } = useDS();
 
   return (
-    <View className="px-5 pt-12 pb-4 flex-row items-center gap-3">
+    <View style={{ paddingHorizontal: 20, paddingTop: 52, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       {showBack ? (
         <Pressable
           onPress={() => router.back()}
-          className="active:opacity-60"
           hitSlop={10}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: '#fafaf9',
-            borderWidth: 1,
-            borderColor: '#e7e5e4',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          style={({ pressed }) => ({
+            width: 44, height: 44, borderRadius: radius.icon,
+            backgroundColor: c.card, borderWidth: 1, borderColor: c.line,
+            alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1,
+          })}
         >
-          <ChevronLeft size={20} color="#1c1917" strokeWidth={2.2} />
+          <ChevronLeft size={21} color={c.ink} strokeWidth={2.2} />
         </Pressable>
       ) : null}
       {Icon && !showBack ? (
-        <GradientIcon Icon={Icon} size={40} iconSize={20} from="#f97316" to="#ec4899" />
+        <GradientIcon Icon={Icon} size={42} iconSize={21} from="#FFB24D" to="#F5911F" />
       ) : null}
-      <View className="flex-1">
+      <View style={{ flex: 1 }}>
         {subtitle ? (
-          <Text
-            className="text-[12px]"
-            style={{
-              color: '#78716c',
-              fontFamily: 'Inter_500Medium',
-              letterSpacing: -0.1,
-            }}
-          >
-            {subtitle}
-          </Text>
+          <Text style={{ fontSize: 12, color: c.inkSoft, fontFamily: font.medium, letterSpacing: -0.1 }}>{subtitle}</Text>
         ) : null}
-        <Text
-          className="text-[24px] mt-0.5"
-          style={{
-            color: '#0c0a09',
-            letterSpacing: -0.6,
-            fontFamily: 'Inter_700Bold',
-          }}
-          numberOfLines={1}
-        >
+        <Text style={{ fontSize: 24, marginTop: 2, color: c.ink, letterSpacing: -0.6, fontFamily: font.display }} numberOfLines={1}>
           {title}
         </Text>
       </View>

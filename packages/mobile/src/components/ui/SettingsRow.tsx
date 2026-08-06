@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 import { ChevronRight, type LucideIcon } from 'lucide-react-native';
+import { useDS, font, radius, cardShadow, space } from '../../theme/ds';
 
 interface BaseProps {
   Icon: LucideIcon;
@@ -31,136 +32,68 @@ interface ActionProps extends BaseProps {
 
 type Props = ToggleProps | NavProps | ActionProps;
 
-const Body = ({
-  Icon,
-  iconTint = '#ec4899',
-  iconBg = '#fef3f2',
-  title,
-  description,
-}: BaseProps) => (
-  <View className="flex-row items-center gap-3 flex-1">
-    <View
-      style={{
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        backgroundColor: iconBg,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Icon size={18} color={iconTint} strokeWidth={2.2} />
+const Body = ({ Icon, iconTint, iconBg, title, description }: BaseProps) => {
+  const { c } = useDS();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+      <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: iconBg ?? c.amberTint, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon size={19} color={iconTint ?? c.amberInk} strokeWidth={2.1} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 15, color: c.ink, letterSpacing: -0.2, fontFamily: font.semibold }}>{title}</Text>
+        {description ? (
+          <Text style={{ fontSize: 12, marginTop: 2, color: c.inkSoft, fontFamily: font.regular }}>{description}</Text>
+        ) : null}
+      </View>
     </View>
-    <View className="flex-1">
-      <Text
-        className="text-[15px]"
-        style={{
-          color: '#0c0a09',
-          letterSpacing: -0.2,
-          fontFamily: 'Inter_500Medium',
-        }}
-      >
-        {title}
-      </Text>
-      {description ? (
-        <Text
-          className="text-[12px] mt-0.5"
-          style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
-        >
-          {description}
-        </Text>
-      ) : null}
-    </View>
-  </View>
-);
+  );
+};
 
 export const SettingsRow = (props: Props) => {
+  const { c } = useDS();
+  const rowBorder = { borderBottomWidth: 1, borderBottomColor: c.line };
   if (props.variant === 'toggle') {
     return (
-      <View
-        className="flex-row items-center px-4 py-3"
-        style={{ borderBottomWidth: 1, borderBottomColor: '#f5f5f4' }}
-      >
+      <View style={[{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13 }, rowBorder]}>
         <Body {...props} />
         <Switch
           value={props.value}
           onValueChange={props.onValueChange}
           disabled={props.disabled}
-          trackColor={{ true: '#ec4899', false: '#e7e5e4' }}
+          trackColor={{ true: c.amber, false: c.line }}
           thumbColor="#ffffff"
-          ios_backgroundColor="#e7e5e4"
+          ios_backgroundColor={c.line}
         />
       </View>
     );
   }
   if (props.variant === 'nav') {
     return (
-      <Pressable
-        onPress={props.onPress}
-        className="flex-row items-center px-4 py-3 active:opacity-70"
-        style={{ borderBottomWidth: 1, borderBottomColor: '#f5f5f4' }}
-      >
+      <Pressable onPress={props.onPress} style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, opacity: pressed ? 0.7 : 1 }, rowBorder]}>
         <Body {...props} />
-        {props.rightElement ?? <ChevronRight size={18} color="#a8a29e" />}
+        {props.rightElement ?? <ChevronRight size={19} color={c.inkSoft} />}
       </Pressable>
     );
   }
   return (
-    <Pressable
-      onPress={props.onPress}
-      className="flex-row items-center px-4 py-3 active:opacity-70"
-    >
-      <Body
-        {...props}
-        iconTint={props.destructive ? '#e11d48' : props.iconTint}
-        iconBg={props.destructive ? '#ffe4e6' : props.iconBg}
-      />
+    <Pressable onPress={props.onPress} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, opacity: pressed ? 0.7 : 1 })}>
+      <Body {...props} iconTint={props.destructive ? '#E5487F' : props.iconTint} iconBg={props.destructive ? c.rose : props.iconBg} />
     </Pressable>
   );
 };
 
-export const SettingsGroup = ({
-  title,
-  children,
-}: {
-  title?: string;
-  children: ReactNode;
-}) => (
-  <View className="mb-4">
-    {title ? (
-      <Text
-        className="text-[11px] uppercase mx-5 mb-2"
-        style={{
-          color: '#78716c',
-          letterSpacing: 0.6,
-          fontFamily: 'Inter_700Bold',
-        }}
-      >
-        {title}
-      </Text>
-    ) : null}
-    <View
-      className="mx-4"
-      style={{
-        borderRadius: 20,
-        backgroundColor: '#ffffff',
-        shadowColor: '#0f172a',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
-      }}
-    >
-      <View
-        className="overflow-hidden"
-        style={{
-          borderRadius: 20,
-          borderWidth: 1,
-          borderColor: '#eef0f3',
-        }}
-      >
+export const SettingsGroup = ({ title, children }: { title?: string; children: ReactNode }) => {
+  const { dark, c } = useDS();
+  return (
+    <View style={{ marginBottom: 16 }}>
+      {title ? (
+        <Text style={{ fontSize: 11, textTransform: 'uppercase', marginHorizontal: space.section, marginBottom: 8, color: c.inkSoft, letterSpacing: 0.6, fontFamily: font.bold }}>
+          {title}
+        </Text>
+      ) : null}
+      <View style={[{ marginHorizontal: space.screen, borderRadius: radius.card, backgroundColor: c.card, borderWidth: 1, borderColor: c.line, overflow: 'hidden' }, cardShadow(dark)]}>
         {children}
       </View>
     </View>
-  </View>
-);
+  );
+};

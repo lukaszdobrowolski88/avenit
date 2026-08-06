@@ -25,6 +25,7 @@ import * as Notifications from 'expo-notifications';
 import { useColorScheme } from 'nativewind';
 import { useAuthSession, signOut, isStaffUser } from '../../../src/lib/auth';
 import { registerPushToken } from '../../../src/lib/push';
+import { useDS, font } from '../../../src/theme/ds';
 import {
   isBiometricEnabled,
   setBiometricEnabled,
@@ -41,6 +42,7 @@ export default function AccountScreen() {
   const { user } = useAuthSession();
   const { colorScheme, setColorScheme } = useColorScheme();
   const { campuses } = useCampus();
+  const { c } = useDS();
 
   const [biometricSupported, setBiometricSupported] = useState(false);
   const [biometricOn, setBiometricOn] = useState(false);
@@ -121,7 +123,7 @@ export default function AccountScreen() {
   return (
     <ScrollView
       className="flex-1"
-      style={{ backgroundColor: '#ffffff' }}
+      style={{ backgroundColor: c.ground }}
       contentContainerStyle={{ paddingBottom: 120 }}
     >
       <View className="items-center pt-12 pb-8 px-4">
@@ -129,16 +131,16 @@ export default function AccountScreen() {
         <Text
           className="mt-4 text-[18px]"
           style={{
-            color: '#0c0a09',
+            color: c.ink,
             letterSpacing: -0.4,
-            fontFamily: 'Inter_700Bold',
+            fontFamily: font.display,
           }}
         >
           {email}
         </Text>
         <Text
           className="text-[12px] mt-1"
-          style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
+          style={{ color: c.inkSoft, fontFamily: font.medium }}
         >
           Konto
         </Text>
@@ -404,7 +406,7 @@ export default function AccountScreen() {
 
       <Text
         className="text-[11px] text-center mt-2"
-        style={{ color: '#a8a29e', fontFamily: 'Inter_500Medium' }}
+        style={{ color: c.inkSoft, fontFamily: font.medium }}
       >
         Avenit · v1.0.0
       </Text>

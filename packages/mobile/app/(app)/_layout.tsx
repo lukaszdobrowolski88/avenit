@@ -2,6 +2,7 @@ import { Tabs, Redirect } from 'expo-router';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { Calendar, Home, MessageCircle, Music, ListChecks, User } from 'lucide-react-native';
 import { useAuthSession, isStaffUser } from '../../src/lib/auth';
+import { useDS } from '../../src/theme/ds';
 
 // Eksportowany — żeby ekrany detail (np. wątek czatu) mogły same przywrócić styl po ukryciu.
 export const APP_TAB_BAR_STYLE = {
@@ -20,6 +21,7 @@ export const APP_TAB_BAR_STYLE = {
 
 export default function AppLayout() {
   const { session, user, loading } = useAuthSession();
+  const { dark, c } = useDS();
   // Pieśni to treść „służbowa" — zwykły członek jej nie widzi (ukrywamy zakładkę,
   // by nie trafiał na pustą listę). Liderzy/koordynatorzy/admin widzą normalnie.
   const staff = isStaffUser(user);
@@ -31,10 +33,10 @@ export default function AppLayout() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: c.ground,
         }}
       >
-        <ActivityIndicator color="#ec4899" />
+        <ActivityIndicator color={c.amber} />
       </View>
     );
   }
@@ -44,8 +46,8 @@ export default function AppLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#ec4899',
-        tabBarInactiveTintColor: '#94a3b8',
+        tabBarActiveTintColor: c.amberDeep,
+        tabBarInactiveTintColor: c.inkSoft,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '700',
@@ -55,7 +57,12 @@ export default function AppLayout() {
         tabBarItemStyle: {
           paddingVertical: 6,
         },
-        tabBarStyle: APP_TAB_BAR_STYLE,
+        tabBarStyle: {
+          ...APP_TAB_BAR_STYLE,
+          backgroundColor: dark ? 'rgba(20,18,22,0.94)' : 'rgba(255,255,255,0.96)',
+          borderTopWidth: 1,
+          borderTopColor: c.line,
+        },
       }}
     >
       <Tabs.Screen
