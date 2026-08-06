@@ -367,15 +367,32 @@ export const useDashboard = (
         const memberByEmail = new Map<string, any>(
           ((memberRows ?? []) as any[]).map((m) => [m.email, m]),
         );
+        // Fallback nazw dla ról bez dostępu do `members` (zwykły członek dostaje 403):
+        // app_users jest resource:null (czyta każdy zalogowany). Bez tego lista online
+        // pokazuje członkowi same e-maile zamiast imion.
+        const userByEmail = new Map<string, { firstName: string | null; lastName: string | null }>();
+        const { data: appUserRows } = await supabase
+          .from('app_users')
+          .select('email, full_name')
+          .in('email', onlineEmails);
+        for (const u of (appUserRows ?? []) as any[]) {
+          if (!u.email) continue;
+          const parts = String(u.full_name ?? '').trim().split(/\s+/).filter(Boolean);
+          userByEmail.set(u.email, {
+            firstName: parts[0] ?? null,
+            lastName: parts.length > 1 ? parts.slice(1).join(' ') : null,
+          });
+        }
         onlineUsers = ((onlineRows ?? []) as any[]).map((r) => {
           const m = memberByEmail.get(r.user_email);
+          const u = userByEmail.get(r.user_email);
           return {
             email: r.user_email,
             status: r.status,
             lastSeen: r.last_seen,
             memberId: m?.id ?? null,
-            firstName: m?.first_name ?? null,
-            lastName: m?.last_name ?? null,
+            firstName: m?.first_name ?? u?.firstName ?? null,
+            lastName: m?.last_name ?? u?.lastName ?? null,
           } satisfies OnlineUser;
         });
       }
