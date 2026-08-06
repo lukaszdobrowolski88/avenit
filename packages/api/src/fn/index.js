@@ -27,6 +27,8 @@ const MODULES = [
   'przelewy24-create-payment',
   'przelewy24-webhook',
   'giving-create-payment',
+  'my-giving',
+  'my-invitations',
   'campaign-progress',
   'automation-run',
   'rsvp-send',

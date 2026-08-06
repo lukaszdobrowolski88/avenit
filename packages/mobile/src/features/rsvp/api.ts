@@ -38,22 +38,6 @@ export interface MyInvitationsData {
 const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
 const TENANT = process.env.EXPO_PUBLIC_TENANT || '';
 
-// PostgREST/Postgres: tabela nie istnieje w schema cache lub w bazie.
-const isMissingTable = (err: unknown): boolean => {
-  const e = err as { code?: string; message?: string } | null;
-  const code = e?.code ?? '';
-  const msg = (e?.message ?? '').toLowerCase();
-  return (
-    code === '42P01' ||
-    code === 'PGRST205' ||
-    code === 'PGRST202' ||
-    msg.includes('does not exist') ||
-    msg.includes('could not find')
-  );
-};
-
-const todayISO = (): string => new Date().toISOString().slice(0, 10);
-
 /**
  * Zapis odpowiedzi RSVP przez publiczny endpoint /api/fn/rsvp-respond.
  * Body: { token, answer: 'yes'|'no'|'maybe', guests }. Dołączamy token sesji i X-Tenant
@@ -99,104 +83,12 @@ export const useMyInvitations = (userEmail: string | null) =>
       const empty: MyInvitationsData = { memberResolved: false, invitations: [] };
       if (!userEmail) return empty;
 
-      // 1. Powiązanie członka: najpierw app_users.member_id (niezawodne), potem e-mail.
-      let memberId: string | number | null = null;
-      try {
-        const { data: appUser } = await supabase
-          .from('app_users')
-          .select('member_id')
-          .eq('email', userEmail)
-          .maybeSingle();
-        memberId = (appUser as { member_id?: string | number | null } | null)?.member_id ?? null;
-      } catch {
-        // brak kolumny member_id / tabeli — spróbujemy dopasować po e-mailu poniżej.
-      }
-
-      if (memberId == null) {
-        try {
-          const { data: member } = await supabase
-            .from('members')
-            .select('id')
-            .eq('email', userEmail)
-            .maybeSingle();
-          memberId = (member as { id?: string | number } | null)?.id ?? null;
-        } catch {
-          // brak tabeli members / błąd — dalej spróbujemy po e-mailu w zaproszeniach.
-        }
-      }
-
-      const memberResolved = memberId != null;
-
-      // 2. Zaproszenia tej osoby: po member_id (jeśli znane) oraz po e-mailu (zaproszenia
-      //    bywają adresowane bezpośrednio). Łączymy i deduplikujemy po id.
-      const byId = new Map<string, Invitation>();
-      const cols = 'id, campaign_id, token, status, guests_count';
-      const collect = (rows: unknown[]) => {
-        for (const row of (rows ?? []) as Invitation[]) {
-          if (row?.id != null) byId.set(String(row.id), { ...row, campaign: null });
-        }
-      };
-
-      try {
-        if (memberId != null) {
-          const { data, error } = await supabase
-            .from('rsvp_invitations')
-            .select(cols)
-            .eq('member_id', memberId)
-            .limit(200);
-          if (error) throw error;
-          collect(data ?? []);
-        }
-        {
-          const { data, error } = await supabase
-            .from('rsvp_invitations')
-            .select(cols)
-            .eq('email', userEmail)
-            .limit(200);
-          if (error) throw error;
-          collect(data ?? []);
-        }
-      } catch (err) {
-        // Brak tabeli zaproszeń — członek mógł zostać rozpoznany, ale bez zaproszeń.
-        if (isMissingTable(err)) return { memberResolved, invitations: [] };
-        return { memberResolved, invitations: [] };
-      }
-
-      const invitations = Array.from(byId.values());
-      if (invitations.length === 0) return { memberResolved, invitations: [] };
-
-      // 3. Dane kampanii — jedno zapytanie po campaign_id IN (...), łączymy w kodzie.
-      const campaignIds = Array.from(
-        new Set(invitations.map((i) => i.campaign_id).filter((x): x is string => Boolean(x))),
-      );
-      const campaigns = new Map<string, RsvpCampaign>();
-      if (campaignIds.length > 0) {
-        try {
-          const { data: campRows } = await supabase
-            .from('rsvp_campaigns')
-            .select('id, title, event_type, event_date, event_time, location')
-            .in('id', campaignIds);
-          for (const c of (campRows ?? []) as RsvpCampaign[]) campaigns.set(String(c.id), c);
-        } catch {
-          // kampanie opcjonalne — pokażemy zaproszenie bez metadanych.
-        }
-      }
-
-      const today = todayISO();
-      const withCampaign = invitations
-        .map((inv) => ({ ...inv, campaign: campaigns.get(String(inv.campaign_id)) ?? null }))
-        // Ukryj przeszłe wydarzenia; zaproszenia bez daty zostawiamy jako „nadchodzące".
-        .filter((inv) => {
-          const d = inv.campaign?.event_date;
-          return !d || d >= today;
-        })
-        // Sortuj po dacie wydarzenia rosnąco; bez daty na końcu.
-        .sort((a, b) => {
-          const da = a.campaign?.event_date ?? '9999-12-31';
-          const db = b.campaign?.event_date ?? '9999-12-31';
-          return da < db ? -1 : da > db ? 1 : 0;
-        });
-
-      return { memberResolved, invitations: withCampaign };
+      // Prywatność: zaproszenia czyta serwerowy endpoint /api/fn/my-invitations,
+      // który ustala członka z ZALOGOWANEGO usera (nie z parametru) i zwraca tylko
+      // nadchodzące, posortowane. Bezpośredni odczyt rsvp_* odsłaniałby cudze
+      // zaproszenia (uprawnienia są per-tabela).
+      const { data, error } = await supabase.functions.invoke('my-invitations');
+      if (error || !data) return empty;
+      return data as MyInvitationsData;
     },
   });
