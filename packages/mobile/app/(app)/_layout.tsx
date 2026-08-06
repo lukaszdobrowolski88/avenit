@@ -1,7 +1,7 @@
 import { Tabs, Redirect } from 'expo-router';
 import { ActivityIndicator, Platform, View } from 'react-native';
 import { Calendar, Home, MessageCircle, Music, ListChecks, User } from 'lucide-react-native';
-import { useAuthSession } from '../../src/lib/auth';
+import { useAuthSession, isStaffUser } from '../../src/lib/auth';
 
 // Eksportowany — żeby ekrany detail (np. wątek czatu) mogły same przywrócić styl po ukryciu.
 export const APP_TAB_BAR_STYLE = {
@@ -19,7 +19,10 @@ export const APP_TAB_BAR_STYLE = {
 };
 
 export default function AppLayout() {
-  const { session, loading } = useAuthSession();
+  const { session, user, loading } = useAuthSession();
+  // Pieśni to treść „służbowa" — zwykły członek jej nie widzi (ukrywamy zakładkę,
+  // by nie trafiał na pustą listę). Liderzy/koordynatorzy/admin widzą normalnie.
+  const staff = isStaffUser(user);
 
   if (loading) {
     return (
@@ -77,6 +80,8 @@ export default function AppLayout() {
         name="songs"
         options={{
           title: 'Pieśni',
+          // Ukryta dla zwykłego członka (href:null) — widoczna od roli lidera wzwyż.
+          href: staff ? undefined : null,
           tabBarIcon: ({ color, focused }) => (
             <Music color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
           ),

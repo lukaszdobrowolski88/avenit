@@ -16,6 +16,17 @@ export interface AuthSession {
   user: AuthUser | null;
 }
 
+// Role „służbowe" (lider i wyżej) — widzą moduły, których zwykły członek (czlonek)
+// nie ma nadanych w backendzie: Pieśni, Formularze, katalog Członków. Ukrywamy je
+// w UI dla członka, żeby nie trafiał na puste/zablokowane ekrany. Nieznana/niestandardowa
+// rola => traktowana jak członek (bezpieczniej ukryć potencjalnie pusty ekran).
+const STAFF_ROLES = ['superadmin', 'rada_starszych', 'koordynator', 'lider'];
+export const isStaffUser = (user: AuthUser | null): boolean => {
+  if (!user) return false;
+  if (user.is_super_admin === true) return true;
+  return STAFF_ROLES.includes(String(user.role ?? ''));
+};
+
 export interface AuthState {
   session: AuthSession | null;
   user: AuthUser | null;

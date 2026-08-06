@@ -23,7 +23,7 @@ import {
 } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
 import { useColorScheme } from 'nativewind';
-import { useAuthSession, signOut } from '../../../src/lib/auth';
+import { useAuthSession, signOut, isStaffUser } from '../../../src/lib/auth';
 import { registerPushToken } from '../../../src/lib/push';
 import {
   isBiometricEnabled,
@@ -115,6 +115,8 @@ export default function AccountScreen() {
   const initial = email.charAt(0).toUpperCase();
   const isDark = colorScheme === 'dark';
   const showCampusSection = campuses.length > 0;
+  // Treści „służbowe" — zwykły członek ich nie widzi (Formularze, katalog Członków).
+  const staff = isStaffUser(user);
 
   return (
     <ScrollView
@@ -315,15 +317,17 @@ export default function AccountScreen() {
           description="Intencje wspólnoty"
           onPress={() => router.push('/(app)/prayers')}
         />
-        <SettingsRow
-          variant="nav"
-          Icon={Users}
-          iconTint="#0e7490"
-          iconBg="#cffafe"
-          title="Członkowie"
-          description="Lista członków wspólnoty"
-          onPress={() => router.push('/(app)/members')}
-        />
+        {staff ? (
+          <SettingsRow
+            variant="nav"
+            Icon={Users}
+            iconTint="#0e7490"
+            iconBg="#cffafe"
+            title="Członkowie"
+            description="Lista członków wspólnoty"
+            onPress={() => router.push('/(app)/members')}
+          />
+        ) : null}
         <SettingsRow
           variant="nav"
           Icon={BookOpen}
@@ -342,15 +346,17 @@ export default function AccountScreen() {
           description="Pliki i dokumenty"
           onPress={() => router.push('/(app)/materials')}
         />
-        <SettingsRow
-          variant="nav"
-          Icon={ClipboardList}
-          iconTint="#047857"
-          iconBg="#d1fae5"
-          title="Formularze"
-          description="Aktywne formularze i ankiety"
-          onPress={() => router.push('/(app)/forms')}
-        />
+        {staff ? (
+          <SettingsRow
+            variant="nav"
+            Icon={ClipboardList}
+            iconTint="#047857"
+            iconBg="#d1fae5"
+            title="Formularze"
+            description="Aktywne formularze i ankiety"
+            onPress={() => router.push('/(app)/forms')}
+          />
+        ) : null}
         <SettingsRow
           variant="nav"
           Icon={Bell}
