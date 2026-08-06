@@ -24,6 +24,7 @@ import {
 import * as Notifications from 'expo-notifications';
 import { useColorScheme } from 'nativewind';
 import { useAuthSession, signOut } from '../../../src/lib/auth';
+import { registerPushToken } from '../../../src/lib/push';
 import {
   isBiometricEnabled,
   setBiometricEnabled,
@@ -84,6 +85,9 @@ export default function AccountScreen() {
         return;
       }
       setPushOn(true);
+      // Po przyznaniu zgody od razu rejestruj token push — inaczej push_tokens
+      // pozostaje puste i serwer nie ma dokąd wysłać powiadomień.
+      if (user?.email) registerPushToken(user.email).catch(() => undefined);
     } else {
       Alert.alert(
         'Wyłączyć powiadomienia?',
