@@ -208,6 +208,13 @@ export const REGISTRY = {
   mlodziezowka_task_comments: T('module:mlodziezowka'),
   // Modlitwa
   prayer_interactions: T('module:prayer'),
+  // Widok modlitw z licznikami (features/prayers/api.ts czyta go zamiast tabeli).
+  // Read-only projekcja prayer_requests → dostęp dla każdego zalogowanego (dane
+  // wspólne wspólnoty, jak prayer_requests dla członka), zapis zablokowany (widok).
+  prayer_requests_with_counts: T(null, { writeRoles: [] }),
+  // Kazania (moduł „Dla Ciebie" — member-facing). Odczyt dla każdego zalogowanego
+  // członka (publikowane treści), zapis tylko admin (zarządzanie w webie).
+  sermons: T(null, { writeRoles: ADMIN_ROLES }),
   // Kampanie push
   push_campaign_ab_variants: T('module:push_campaigns'),
   push_campaign_actions: T('module:push_campaigns'),
