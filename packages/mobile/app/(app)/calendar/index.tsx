@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Calendar, CalendarDays, List } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
+import { useDS } from '../../../src/theme/ds';
 import {
   useAgenda,
   type AgendaEvent,
@@ -38,6 +39,7 @@ type ViewMode = 'agenda' | 'month';
 
 export default function CalendarScreen() {
   const { user } = useAuthSession();
+  const { dark, c } = useDS();
   const { selectedCampusId, withCampusFilter } = useCampusQuery();
   const [filter, setFilter] = useState<EventSource | 'all' | 'mine'>('all');
   const [view, setView] = useState<ViewMode>('agenda');
@@ -67,8 +69,8 @@ export default function CalendarScreen() {
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
+      <View className="flex-1" style={{ backgroundColor: c.ground }}>
         <PageHeader
           title="Kalendarz"
           subtitle="Wszystkie wydarzenia"
@@ -169,7 +171,7 @@ export default function CalendarScreen() {
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color={c.amber} />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-6">
@@ -191,7 +193,7 @@ export default function CalendarScreen() {
               padding: 32,
             }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.amber} />
             }
           >
             <View
@@ -227,7 +229,7 @@ export default function CalendarScreen() {
             className="flex-1"
             contentContainerStyle={{ paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.amber} />
             }
           >
             <AgendaList items={items} onPick={setPicked} />

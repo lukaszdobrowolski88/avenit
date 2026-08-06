@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { GradientButton } from '../../../src/components/ui/GradientButton';
+import { useDS, font } from '../../../src/theme/ds';
 import { useAuthSession } from '../../../src/lib/auth';
 import {
   METHOD_LABELS,
@@ -118,6 +119,7 @@ const DonationCard = ({
 export default function GivingScreen() {
   const router = useRouter();
   const { user } = useAuthSession();
+  const { dark, c } = useDS();
   const { data, isLoading, isError, error, refetch, isRefetching } = useMyGiving(
     user?.email ?? null,
   );
@@ -134,19 +136,19 @@ export default function GivingScreen() {
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <StatusBar barStyle={dark ? 'light-content' : 'dark-content'} backgroundColor="transparent" translucent />
+      <View className="flex-1" style={{ backgroundColor: c.ground }}>
         <PageHeader title="Wsparcie" subtitle="Twoje darowizny" Icon={Gift} showBack />
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color={c.amber} />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}
+              style={{ color: c.roseInk, fontFamily: font.medium }}
             >
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
@@ -155,7 +157,7 @@ export default function GivingScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={c.amber} />
             }
           >
             {/* Karta podsumowania roku */}
@@ -163,27 +165,27 @@ export default function GivingScreen() {
               className="mb-4 p-5"
               style={{
                 borderRadius: 24,
-                backgroundColor: '#ecfdf5',
+                backgroundColor: c.green,
                 borderWidth: 1,
-                borderColor: '#bbf7d0',
+                borderColor: c.line,
               }}
             >
               <Text
                 className="text-[12px]"
-                style={{ color: '#047857', fontFamily: 'Inter_600SemiBold' }}
+                style={{ color: c.greenInk, fontFamily: font.semibold }}
               >
                 Twoje dawanie w {summary.year}
               </Text>
               <Text
                 className="text-[34px] mt-1"
-                style={{ color: '#065f46', letterSpacing: -1, fontFamily: 'Inter_700Bold' }}
+                style={{ color: c.greenInk, letterSpacing: -1, fontFamily: font.heavy }}
               >
                 {formatMoney(summary.yearTotal, summary.currency)}
               </Text>
               {summary.allTimeTotal > summary.yearTotal ? (
                 <Text
                   className="text-[12px] mt-1"
-                  style={{ color: '#059669', fontFamily: 'Inter_500Medium' }}
+                  style={{ color: c.greenInk, fontFamily: font.medium }}
                 >
                   Łącznie: {formatMoney(summary.allTimeTotal, summary.currency)}
                 </Text>
