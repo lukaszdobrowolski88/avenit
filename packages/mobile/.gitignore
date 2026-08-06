@@ -5,3 +5,7 @@ google-play-service-account.json
 # Klucz service accountu Firebase/FCM (SEKRET — nigdy do repo)
 *firebase-adminsdk*.json
 fcm-service-account.json
+
+# iOS credentials (SEKRET — nigdy do repo)
+credentials.json
+credentials/
