@@ -87,12 +87,13 @@ export const useMembersByEmails = (emails: string[]) => {
         return !cached.firstName && !cached.lastName;
       });
       if (missing.length > 0) {
-        // Najpierw members (mają photo_url + first_name/last_name).
-        const { data: membersRows, error: mErr } = await supabase
+        // Najpierw members (mają photo_url + first_name/last_name). Zwykły członek
+        // nie ma dostępu do `members` (403) — NIE przerywaj, spadnij na app_users
+        // (dozwolone dla każdego zalogowanego), inaczej czat pokazuje same e-maile.
+        const { data: membersRows } = await supabase
           .from("members")
           .select("id, email, first_name, last_name, photo_url")
           .in("email", missing);
-        if (mErr) throw mErr;
         for (const row of (membersRows ?? []) as any[]) {
           if (row.email) {
             memberCache.set(row.email, {
@@ -565,9 +566,9 @@ export const useReactions = (conversationId: string, userEmail: string | null) =
         .select("id, message_id, emoji, user_email")
         .in("message_id", ids);
       if (error) {
-        // Tabela może nie istnieć (świeży backend) — wracamy z pustym zestawem.
-        if ((error as any).code === "42P01") return {};
-        throw error;
+        // Reakcje to dodatek — brak tabeli (42P01) LUB brak grantu (403) nie może
+        // wywalać rozmowy. Wracamy z pustym zestawem.
+        return {};
       }
       const byMessage: Record<string, ReactionRow[]> = {};
       for (const r of (data ?? []) as ReactionRow[]) {
@@ -656,8 +657,8 @@ export const usePinnedMessages = (conversationId: string) =>
         .eq("conversation_id", conversationId)
         .order("pinned_at", { ascending: false });
       if (error) {
-        if ((error as any).code === "42P01") return [];
-        throw error;
+        // Brak tabeli (42P01) lub brak grantu (403) — panel przypiętych po prostu pusty.
+        return [];
       }
       return (data ?? []) as PinnedRow[];
     },
@@ -764,8 +765,8 @@ export const useReadReceipts = (conversationId: string) =>
         .select("message_id, user_email, read_at")
         .in("message_id", ids);
       if (error) {
-        if ((error as any).code === "42P01") return {};
-        throw error;
+        // Brak tabeli (42P01) lub brak grantu (403) — bez potwierdzeń odczytu.
+        return {};
       }
       const out: Record<string, ReadReceiptRow[]> = {};
       for (const r of (data ?? []) as ReadReceiptRow[]) {
