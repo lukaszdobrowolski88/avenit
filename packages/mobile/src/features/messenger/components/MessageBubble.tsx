@@ -78,7 +78,9 @@ export const MessageBubble = ({
   onLongPress,
   onToggleReaction,
 }: Props) => {
-  const attachments = message.attachments ?? [];
+  // API zwraca puste załączniki jako {} (obiekt), nie []. Bez tego guardu
+  // {}.map(...) rzuca "undefined is not a function" i wywala całą rozmowę.
+  const attachments = Array.isArray(message.attachments) ? message.attachments : [];
   const senderName = memberDisplayName(members, message.sender_email);
   const replyName = replyTo
     ? memberDisplayName(members, replyTo.sender_email)

@@ -847,7 +847,7 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
       is_private: !!t.is_private,
       assigned_to_email: t.assigned_to_email,
       assigned_to_name: t.assigned_to_name,
-      attachments: t.attachments ?? [],
+      attachments: (Array.isArray(t.attachments) ? t.attachments : []),
     });
     setModalOpen(true);
   };
@@ -896,7 +896,7 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
         is_private: !!t.is_private,
         assigned_to_email: t.assigned_to_email,
         assigned_to_name: t.assigned_to_name,
-        attachments: t.attachments ?? [],
+        attachments: (Array.isArray(t.attachments) ? t.attachments : []),
       },
       {
         onError: (err: any) =>

@@ -1,3 +1,7 @@
 
 # Klucz service accountu Google Play (NIGDY do repo)
 google-play-service-account.json
+
+# Klucz service accountu Firebase/FCM (SEKRET — nigdy do repo)
+*firebase-adminsdk*.json
+fcm-service-account.json

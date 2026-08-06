@@ -39,6 +39,10 @@ const config: ExpoConfig = {
   },
   android: {
     package: baseId + suffix,
+    // FCM (push). google-services.json musi zawierać pakiet danego wariantu —
+    // obecnie tylko pl.avenit.app.preview; przed buildem produkcyjnym dodaj
+    // pl.avenit.app w Firebase i pobierz nowy plik.
+    googleServicesFile: './google-services.json',
     permissions: ['android.permission.RECORD_AUDIO'],
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',

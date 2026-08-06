@@ -71,21 +71,26 @@ const fetchPrograms = async (
     .lte('date', toIso.slice(0, 10))
     .order('date', { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((row: any) => {
-    const start = new Date(row.date + 'T00:00:00');
+  return (data ?? []).flatMap((row: any) => {
+    // Guard na złą/pustą datę — inaczej format(Invalid Date) rzuca "Invalid time value"
+    // i wywala CAŁĄ agendę (kalendarz pokazuje błąd zamiast wydarzeń).
+    const start = safeDate(row.date);
+    if (!start) return [];
     const fallbackTitle = `Nabożeństwo · ${format(start, 'EEEE', { locale: pl })}`;
-    return {
-      id: `program-${row.id}`,
-      source: 'program' as const,
-      title: (row.title && String(row.title).trim()) || fallbackTitle,
-      startsAt: start,
-      endsAt: null,
-      location: null,
-      description: null,
-      programId: row.id,
-      campusId: row.campus_id ?? null,
-      isMine: false,
-    };
+    return [
+      {
+        id: `program-${row.id}`,
+        source: 'program' as const,
+        title: (row.title && String(row.title).trim()) || fallbackTitle,
+        startsAt: start,
+        endsAt: null,
+        location: null,
+        description: null,
+        programId: row.id,
+        campusId: row.campus_id ?? null,
+        isMine: false,
+      } satisfies AgendaEvent,
+    ];
   });
 };
 
@@ -103,20 +108,24 @@ const fetchGenericEvents = async (
     .lte('date', toIso.slice(0, 10))
     .order('date', { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((row: any) => {
+  return (data ?? []).flatMap((row: any) => {
     const time = row.time && /^\d{1,2}:\d{2}/.test(row.time) ? row.time : '00:00';
     const endTime = row.end_time && /^\d{1,2}:\d{2}/.test(row.end_time) ? row.end_time : null;
-    return {
-      id: `event-${row.id}`,
-      source: 'event' as const,
-      title: row.title,
-      startsAt: new Date(`${row.date}T${time}:00`),
-      endsAt: endTime ? new Date(`${row.date}T${endTime}:00`) : null,
-      location: null,
-      description: row.description ?? null,
-      campusId: row.campus_id ?? null,
-      isMine: false,
-    } satisfies AgendaEvent;
+    const startsAt = safeDate(`${row.date}T${time}:00`);
+    if (!startsAt) return []; // pomiń wydarzenie ze złą datą (nie wywracaj agendy)
+    return [
+      {
+        id: `event-${row.id}`,
+        source: 'event' as const,
+        title: row.title,
+        startsAt,
+        endsAt: endTime ? safeDate(`${row.date}T${endTime}:00`) : null,
+        location: null,
+        description: row.description ?? null,
+        campusId: row.campus_id ?? null,
+        isMine: false,
+      } satisfies AgendaEvent,
+    ];
   });
 };
 
