@@ -207,7 +207,12 @@ export const REGISTRY = {
   mlodziezowka_leaders: T('module:mlodziezowka'),
   mlodziezowka_task_comments: T('module:mlodziezowka'),
   // Modlitwa
-  prayer_interactions: T('module:prayer'),
+  // Interakcja „Modlę się" = użytkownik sam włącza/wyłącza swój udział przy danej
+  // prośbie — dokładnie wzorzec event_registrations (RSVP): każdy zalogowany
+  // zapisuje/wypisuje SIEBIE. resource:null, bo żadna rola nie miała grantu
+  // res:prayer_interactions:* (tabelę dorejestrowano po seedzie 005 → toggle
+  // działał tylko adminom). Treść modlitw (prayer_requests) pozostaje pod module:prayer.
+  prayer_interactions: T(null),
   // Widok modlitw z licznikami (features/prayers/api.ts czyta go zamiast tabeli).
   // Read-only projekcja prayer_requests → dostęp dla każdego zalogowanego (dane
   // wspólne wspólnoty, jak prayer_requests dla członka), zapis zablokowany (widok).
