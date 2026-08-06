@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { GradientIcon } from '../../../components/ui/GradientIcon';
+import { useDS, radius, font, cardShadow, space } from '../../../theme/ds';
 
 interface Props {
   title: string;
@@ -17,57 +18,34 @@ interface Props {
   children: ReactNode;
 }
 
-export const WidgetCard = ({ title, Icon, badge, badgeBg, badgeColor, action, children }: Props) => {
+export const WidgetCard = ({ title, Icon, iconFrom, iconTo, badge, badgeBg, badgeColor, action, children }: Props) => {
+  const { dark, c } = useDS();
   return (
     <View
-      className="mx-4 mb-3"
-      style={{
-        borderRadius: 20,
-        backgroundColor: '#ffffff',
-        shadowColor: '#0f172a',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
-      }}
-    >
-      <View
-        className="overflow-hidden"
-        style={{
-          borderRadius: 20,
+      style={[
+        {
+          marginHorizontal: space.screen,
+          marginBottom: space.gap,
+          borderRadius: radius.card,
+          backgroundColor: c.card,
           borderWidth: 1,
-          borderColor: '#eef0f3',
-        }}
-      >
-        <View className="flex-row items-center gap-3 px-4 pt-4 pb-3">
-          <GradientIcon Icon={Icon} size={36} iconSize={18} from="#f97316" to="#ec4899" />
-          <Text
-            className="flex-1 text-[16px]"
-            style={{
-              color: '#0c0a09',
-              letterSpacing: -0.3,
-              fontFamily: 'Inter_600SemiBold',
-            }}
-          >
-            {title}
-          </Text>
-          {action ? action : null}
-          {badge ? (
-            <View
-              className="px-2 py-0.5 rounded-md"
-              style={{ backgroundColor: badgeBg ?? '#f5f5f4' }}
-            >
-              <Text
-                className="text-[11px]"
-                style={{ color: badgeColor ?? '#1c1917', fontFamily: 'Inter_700Bold' }}
-              >
-                {badge}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-        <View>{children}</View>
+          borderColor: c.line,
+          overflow: 'hidden',
+        },
+        cardShadow(dark),
+      ]}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 15, paddingBottom: 12 }}>
+        <GradientIcon Icon={Icon} size={38} iconSize={19} from={iconFrom ?? '#FFB24D'} to={iconTo ?? '#F5911F'} />
+        <Text style={{ flex: 1, fontFamily: font.display, fontSize: 16, letterSpacing: -0.3, color: c.ink }}>{title}</Text>
+        {action ?? null}
+        {badge ? (
+          <View style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20, backgroundColor: badgeBg ?? c.ground2 }}>
+            <Text style={{ fontSize: 11, color: badgeColor ?? c.inkSoft, fontFamily: font.bold }}>{badge}</Text>
+          </View>
+        ) : null}
       </View>
+      <View>{children}</View>
     </View>
   );
 };

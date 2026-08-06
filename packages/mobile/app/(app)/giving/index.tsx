@@ -136,7 +136,7 @@ export default function GivingScreen() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
-        <PageHeader title="Dawanie" subtitle="Twoje darowizny" Icon={Gift} showBack />
+        <PageHeader title="Wsparcie" subtitle="Twoje darowizny" Icon={Gift} showBack />
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">

@@ -274,7 +274,7 @@ export default function AccountScreen() {
           Icon={Gift}
           iconTint="#059669"
           iconBg="#d1fae5"
-          title="Dawanie"
+          title="Wsparcie"
           description="Twoje darowizny i wsparcie wspólnoty"
           onPress={() => router.push('/(app)/giving')}
         />
