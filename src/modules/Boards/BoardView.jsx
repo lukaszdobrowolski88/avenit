@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   ArrowLeft, Table2, Trello, Calendar as CalIcon, GanttChartSquare, Plus, Loader2, Zap, FormInput,
-  BarChart3, GalleryThumbnails, MoreHorizontal, Pencil, Copy, Star, Trash2, Sparkles, Gauge, FileText, Activity,
+  BarChart3, GalleryThumbnails, MoreHorizontal, Pencil, Copy, Star, Trash2, Sparkles, Gauge, FileText, Activity, MapPin,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useBoardData } from './hooks/useBoardData';
@@ -15,6 +15,7 @@ import ChartView from './views/ChartView';
 import FilesGalleryView from './views/FilesGalleryView';
 import WorkloadView from './views/WorkloadView';
 import DocView from './views/DocView';
+import MapView from './views/MapView';
 import ViewToolbar from './components/ViewToolbar';
 import ItemPanel from './components/ItemPanel';
 import AutomationsPanel from './components/AutomationsPanel';
@@ -23,7 +24,7 @@ import AiSidekick from './components/AiSidekick';
 import Popover from './components/Popover';
 import { exportBoardCsv, buildCellsFromRecord } from './lib/csv';
 
-const VIEW_ICONS = { table: Table2, kanban: Trello, calendar: CalIcon, timeline: GanttChartSquare, form: FormInput, chart: BarChart3, files: GalleryThumbnails, workload: Gauge, doc: FileText };
+const VIEW_ICONS = { table: Table2, kanban: Trello, calendar: CalIcon, timeline: GanttChartSquare, form: FormInput, chart: BarChart3, files: GalleryThumbnails, workload: Gauge, doc: FileText, map: MapPin };
 const VIEW_TYPES = [
   { type: 'table', label: 'Tabela', icon: Table2 },
   { type: 'kanban', label: 'Kanban', icon: Trello },
@@ -31,6 +32,7 @@ const VIEW_TYPES = [
   { type: 'timeline', label: 'Oś czasu', icon: GanttChartSquare },
   { type: 'chart', label: 'Wykres', icon: BarChart3 },
   { type: 'workload', label: 'Obciążenie', icon: Gauge },
+  { type: 'map', label: 'Mapa', icon: MapPin },
   { type: 'doc', label: 'Dokument', icon: FileText },
   { type: 'files', label: 'Galeria plików', icon: GalleryThumbnails },
   { type: 'form', label: 'Formularz', icon: FormInput },
@@ -109,6 +111,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
       case 'chart': return <ChartView {...shared} />;
       case 'workload': return <WorkloadView {...shared} />;
       case 'doc': return <DocView {...shared} />;
+      case 'map': return <MapView {...shared} />;
       case 'files': return <FilesGalleryView {...shared} />;
       case 'form': return <FormView {...shared} />;
       case 'table':

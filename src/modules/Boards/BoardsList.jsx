@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Plus, Table2, MoreHorizontal, Trash2, Copy, Loader2, LayoutGrid, CalendarRange, CheckSquare, Users, X,
-  Folder as FolderIcon, ChevronRight, ChevronDown,
+  Folder as FolderIcon, ChevronRight, ChevronDown, Lock, Globe, UserPlus,
 } from 'lucide-react';
 import { useBoards } from './hooks/useBoards';
 import { BOARD_TEMPLATES } from './lib/templates';
@@ -191,6 +191,13 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
                               <div className="p-1.5" onClick={(e) => e.stopPropagation()}>
                                 <button onClick={() => { moveToFolder(b.id); close(); }}
                                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><FolderIcon size={14} /> Przenieś do folderu</button>
+                                <button onClick={() => { updateBoard(b.id, { visibility: b.visibility === 'private' ? 'workspace' : 'private' }); close(); }}
+                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200">
+                                  {b.visibility === 'private' ? <><Globe size={14} /> Udostępnij zespołowi</> : <><Lock size={14} /> Ustaw jako prywatną</>}</button>
+                                {b.visibility === 'private' && (
+                                  <button onClick={() => { const em = prompt('Edytorzy (e-maile, oddzielone przecinkiem):', (b.editors || []).join(', ')); if (em !== null) updateBoard(b.id, { editors: em.split(',').map(s => s.trim()).filter(Boolean) }); close(); }}
+                                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><UserPlus size={14} /> Edytorzy ({(b.editors || []).length})</button>
+                                )}
                                 <button onClick={() => { duplicateBoard(b.id); close(); }}
                                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Copy size={14} /> Duplikuj</button>
                                 <button onClick={() => { if (confirm(`Usunąć tablicę „${b.name}"?`)) deleteBoard(b.id); close(); }}

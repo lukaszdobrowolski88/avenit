@@ -27,8 +27,11 @@ export function useBoards(userEmail, userName) {
 
       const { data, error: fetchError } = await query;
       if (fetchError) throw fetchError;
-      setBoards(data || []);
-      return data || [];
+      // Filtr widoczności: prywatne widoczne dla właściciela + edytorów
+      const visible = (data || []).filter(b =>
+        b.visibility !== 'private' || b.owner_email === userEmail || (b.editors || []).includes(userEmail));
+      setBoards(visible);
+      return visible;
     } catch (err) {
       console.error('Błąd pobierania tablic:', err);
       setError(err.message);

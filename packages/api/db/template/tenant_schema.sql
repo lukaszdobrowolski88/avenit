@@ -6117,6 +6117,8 @@ CREATE TABLE IF NOT EXISTS boards (
     is_template BOOLEAN DEFAULT false,
     is_archived BOOLEAN DEFAULT false,
     owner_email TEXT,
+    visibility TEXT DEFAULT 'workspace',  -- workspace (wszyscy) | private (właściciel + edytorzy)
+    editors TEXT[] DEFAULT '{}',          -- e-maile z dostępem do prywatnej tablicy
     display_order INTEGER DEFAULT 0,
     created_by TEXT,
     -- Publiczny formularz (jak WorkForms w Monday): token + włącznik + ustawienia
