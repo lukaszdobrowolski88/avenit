@@ -250,6 +250,20 @@ export const REGISTRY = {
   push_user_preferences: T(null),
   sms_user_preferences: T(null),
 
+  // ── Projekty / Tablice (Work OS) ────────────────────────────────────────
+  // Wszystkie tabele board_* bramkowane res:<tabela>:<op> przez module:boards.
+  // Kolejność musi się zgadzać z katalogiem (permissions.test — spójność registry↔catalog).
+  boards: T('module:boards'),
+  board_groups: T('module:boards'),
+  board_columns: T('module:boards'),
+  board_items: T('module:boards'),
+  board_item_updates: T('module:boards'),
+  board_item_activity: T('module:boards'),
+  board_views: T('module:boards'),
+  board_automations: T('module:boards'),
+  board_automation_runs: T('module:boards'),
+  board_dashboards: T('module:boards'),
+
   // ── 2FA log ─────────────────────────────────────────────────────────────
   totp_auth_logs: T(null, { writeRoles: [] }), // tylko serwer pisze
 };

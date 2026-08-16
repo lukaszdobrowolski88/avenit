@@ -57,6 +57,15 @@ export const ROLE_PRESETS = {
     allow('res:conversations:read'), allow('res:conversations:create'), allow('res:conversations:update'),
     allow('res:conversation_participants:read'), allow('res:conversation_participants:create'),
     allow('res:messages:read'), allow('res:messages:create'),
+    // Projekty/Tablice — członek współpracuje: widzi wszystko, edytuje elementy i pisze aktualizacje.
+    // Zmiany strukturalne (kolumny/grupy/widoki/automatyzacje/dashboardy) zostają u liderów (wildcardy).
+    allow('module:boards'),
+    allow('res:boards:read'), allow('res:board_groups:read'), allow('res:board_columns:read'),
+    allow('res:board_views:read'), allow('res:board_dashboards:read'),
+    allow('res:board_automations:read'), allow('res:board_automation_runs:read'), allow('res:board_automation_runs:create'),
+    allow('res:board_items:read'), allow('res:board_items:create'), allow('res:board_items:update'),
+    allow('res:board_item_updates:read'), allow('res:board_item_updates:create'),
+    allow('res:board_item_activity:read'), allow('res:board_item_activity:create'),
   ],
 };
 

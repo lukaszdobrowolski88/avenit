@@ -297,6 +297,21 @@ export const MODULES = [
     fields: [],
   },
   {
+    key: 'boards', label: 'Projekty',
+    // Kolejność zasobów musi się zgadzać z rejestrem Data API (registry.js, tabele board_*).
+    resources: [
+      'boards', 'board_groups', 'board_columns', 'board_items', 'board_item_updates',
+      'board_item_activity', 'board_views', 'board_automations', 'board_automation_runs', 'board_dashboards',
+    ],
+    tabs: [],
+    actions: [
+      { key: 'manage_automations', label: 'Zarządzaj automatyzacjami' },
+      { key: 'ai', label: 'Asystent AI' },
+      { key: 'export', label: 'Eksport CSV' },
+    ],
+    fields: [],
+  },
+  {
     // Tabele app_* mają w registry resource:null (odczyt otwarty — potrzebny wszystkim
     // do konfiguracji i własnych uprawnień). Ich ZAPIS jest bramkowany akcjami manage_*
     // w warstwie Data API (SETTINGS_WRITE_CAPABILITY), nie przez CRUD.

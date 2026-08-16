@@ -199,15 +199,13 @@ DROP TRIGGER IF EXISTS trg_board_dashboards_updated_at ON board_dashboards;
 CREATE TRIGGER trg_board_dashboards_updated_at BEFORE UPDATE ON board_dashboards
     FOR EACH ROW EXECUTE FUNCTION board_touch_updated_at();
 
--- ── Rejestracja modułu + uprawnienia ────────────────────────────────
+-- ── Rejestracja modułu ───────────────────────────────────────────────
 INSERT INTO app_modules (key, label, icon, path, resource_key, display_order, is_system, component_name) VALUES
     ('boards', 'Projekty', 'LayoutGrid', '/projekty', 'module:boards', 16, true, 'BoardsModule')
 ON CONFLICT (key) DO NOTHING;
 
-INSERT INTO app_permissions (role, resource, can_read, can_write) VALUES
-    ('superadmin',     'module:boards', true,  true),
-    ('rada_starszych', 'module:boards', true,  true),
-    ('koordynator',    'module:boards', true,  true),
-    ('lider',          'module:boards', true,  true),
-    ('czlonek',        'module:boards', true,  false)
-ON CONFLICT (role, resource) DO NOTHING;
+-- Uprawnienia: system RBAC (permission_grants) — Boards jest pełnoprawnym modułem
+-- katalogu (packages/shared/src/permissions/catalog.js) i rejestru Data API
+-- (registry.js: tabele board_* → res:board_*:*). Granty ról nadaje seed presetów
+-- oraz migracja 013_boards_member_grants.sql (członek). Legacy app_permissions
+-- nie jest już używane przez resolver `can()`, więc nie zasilamy go tutaj.
