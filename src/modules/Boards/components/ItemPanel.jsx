@@ -5,6 +5,7 @@ import {
 import BoardCell from './BoardCell';
 import ColumnIcon from './ColumnIcon';
 import Popover from './Popover';
+import Modal from '../../../components/Modal';
 import { Avatar } from './cells/PeopleCell';
 import { getColumnType } from '../lib/columnTypes';
 import { useItemUpdates } from '../hooks/useItemUpdates';
@@ -120,7 +121,7 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
   ];
 
   return (
-    <div className="fixed inset-0 z-[120] flex justify-end">
+    <Modal isOpen className="flex justify-end">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-[480px] h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col animate-[slideIn_.2s_ease]">
         {/* Header */}
@@ -190,6 +191,6 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

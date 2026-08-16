@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Sparkles, Send, Loader2, User } from 'lucide-react';
+import Modal from '../../../components/Modal';
 import { askBoard } from '../lib/aiBoards';
 
 const SUGGESTIONS = [
@@ -33,7 +34,7 @@ export default function AiSidekick({ data, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex justify-end">
+    <Modal isOpen className="flex justify-end">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-[460px] h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
@@ -76,6 +77,6 @@ export default function AiSidekick({ data, onClose }) {
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Zap, Plus, Trash2, Bell, Flag, CalendarPlus, UserPlus, MessageSquarePlus, Sparkles, Loader2 } from 'lucide-react';
+import Modal from '../../../components/Modal';
 import { generateAutomationSpec } from '../lib/aiBoards';
 
 const TRIGGERS = [
@@ -102,7 +103,7 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex justify-end">
+    <Modal isOpen className="flex justify-end">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-[520px] h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
@@ -253,6 +254,6 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

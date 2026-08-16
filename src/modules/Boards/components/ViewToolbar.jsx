@@ -2,6 +2,9 @@ import React, { useState, useRef } from 'react';
 import { Search, SlidersHorizontal, ArrowUpDown, Plus, X, Filter, MoreHorizontal, Download, Upload } from 'lucide-react';
 import Popover from './Popover';
 import ColumnIcon from './ColumnIcon';
+import CustomSelect from '../../../components/CustomSelect';
+import CustomDatePicker from '../../../components/CustomDatePicker';
+import { tr } from '../../../i18n';
 import { getColumnType, cellToText } from '../lib/columnTypes';
 import { parseCsv } from '../lib/csv';
 
@@ -10,31 +13,31 @@ function FilterValue({ column, value, onChange }) {
   const t = column.type;
   if (t === 'status' || t === 'priority') {
     return (
-      <select value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none">
-        <option value="">— wybierz —</option>
-        {(column.settings?.labels || []).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
-      </select>
+      <div className="w-40">
+        <CustomSelect compact placeholder={tr('— wybierz —')} value={value ?? ''} onChange={(v) => onChange(v || null)}
+          options={column.settings?.labels || []} mapOptionToValue={(l) => l.id} mapOptionToLabel={(l) => l.title} />
+      </div>
     );
   }
   if (t === 'dropdown') {
     return (
-      <select value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none">
-        <option value="">— wybierz —</option>
-        {(column.settings?.options || []).map(o => <option key={o.id} value={o.id}>{o.title}</option>)}
-      </select>
+      <div className="w-40">
+        <CustomSelect compact placeholder={tr('— wybierz —')} value={value ?? ''} onChange={(v) => onChange(v || null)}
+          options={column.settings?.options || []} mapOptionToValue={(o) => o.id} mapOptionToLabel={(o) => o.title} />
+      </div>
     );
   }
   if (t === 'checkbox') {
     return (
-      <select value={String(value)} onChange={(e) => onChange(e.target.value === 'true')} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none">
-        <option value="true">Zaznaczone</option>
-        <option value="false">Niezaznaczone</option>
-      </select>
+      <div className="w-40">
+        <CustomSelect compact value={String(value)} onChange={(v) => onChange(v === 'true')}
+          options={[{ value: 'true', label: tr('Zaznaczone') }, { value: 'false', label: tr('Niezaznaczone') }]} />
+      </div>
     );
   }
-  if (t === 'date') return <input type="date" value={value || ''} onChange={(e) => onChange(e.target.value)} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none" />;
+  if (t === 'date') return <div className="w-40"><CustomDatePicker compact value={value || ''} onChange={(v) => onChange(v)} /></div>;
   if (t === 'number') return <input type="number" value={value ?? ''} onChange={(e) => onChange(e.target.value)} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 w-20 outline-none" />;
-  return <input value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder="wartość" className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none" />;
+  return <input value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder={tr('wartość')} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none" />;
 }
 
 function defaultOp(type) {

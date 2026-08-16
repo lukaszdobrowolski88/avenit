@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { MoreHorizontal, Trash2, Pencil } from 'lucide-react';
 import Popover from './Popover';
 import ColumnIcon from './ColumnIcon';
+import CustomSelect from '../../../components/CustomSelect';
+import { tr } from '../../../i18n';
 import { getColumnType } from '../lib/columnTypes';
 import { supabase } from '../../../lib/supabase';
 import { fetchBoardColumnsCached } from '../lib/relationCache';
@@ -64,34 +66,34 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
             )}
             {column.type === 'connect_board' && (
               <div className="px-2 py-1.5">
-                <label className="text-[11px] text-gray-400">Połącz z tablicą</label>
-                <select value={column.settings?.targetBoardId || ''} onChange={(e) => onUpdate(column.id, { settings: { ...column.settings, targetBoardId: e.target.value || null } })}
-                  className="w-full mt-1 text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none">
-                  <option value="">— wybierz tablicę —</option>
-                  {boards.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
+                <label className="text-[11px] text-gray-400">{tr('Połącz z tablicą')}</label>
+                <div className="mt-1">
+                  <CustomSelect compact placeholder={tr('— wybierz tablicę —')} value={column.settings?.targetBoardId || ''}
+                    onChange={(v) => onUpdate(column.id, { settings: { ...column.settings, targetBoardId: v || null } })}
+                    options={boards} mapOptionToValue={(b) => b.id} mapOptionToLabel={(b) => b.name} />
+                </div>
               </div>
             )}
             {column.type === 'mirror' && (
               <div className="px-2 py-1.5 space-y-1.5">
                 <div>
-                  <label className="text-[11px] text-gray-400">Przez kolumnę (połączenie)</label>
-                  <select value={column.settings?.throughColumnId || ''} onChange={(e) => onUpdate(column.id, { settings: { ...column.settings, throughColumnId: e.target.value || null, targetColumnId: null } })}
-                    className="w-full mt-1 text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none">
-                    <option value="">— wybierz —</option>
-                    {allColumns.filter(c => c.type === 'connect_board').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <label className="text-[11px] text-gray-400">{tr('Przez kolumnę (połączenie)')}</label>
+                  <div className="mt-1">
+                    <CustomSelect compact placeholder={tr('— wybierz —')} value={column.settings?.throughColumnId || ''}
+                      onChange={(v) => onUpdate(column.id, { settings: { ...column.settings, throughColumnId: v || null, targetColumnId: null } })}
+                      options={allColumns.filter(c => c.type === 'connect_board')} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[11px] text-gray-400">Odbij kolumnę</label>
-                  <select value={column.settings?.targetColumnId || ''} disabled={!throughCol} onChange={(e) => onUpdate(column.id, { settings: { ...column.settings, targetColumnId: e.target.value || null } })}
-                    className="w-full mt-1 text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none disabled:opacity-50">
-                    <option value="">— wybierz —</option>
-                    {targetCols.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                <div className={!throughCol ? 'opacity-50 pointer-events-none' : ''}>
+                  <label className="text-[11px] text-gray-400">{tr('Odbij kolumnę')}</label>
+                  <div className="mt-1">
+                    <CustomSelect compact placeholder={tr('— wybierz —')} value={column.settings?.targetColumnId || ''}
+                      onChange={(v) => onUpdate(column.id, { settings: { ...column.settings, targetColumnId: v || null } })}
+                      options={targetCols} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
+                  </div>
                 </div>
                 {allColumns.filter(c => c.type === 'connect_board').length === 0 && (
-                  <p className="text-[10px] text-amber-500">Najpierw dodaj kolumnę „Połącz tablice".</p>
+                  <p className="text-[10px] text-amber-500">{tr('Najpierw dodaj kolumnę „Połącz tablice".')}</p>
                 )}
               </div>
             )}

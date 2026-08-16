@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Activity, Loader2 } from 'lucide-react';
+import Modal from '../../../components/Modal';
 import { supabase } from '../../../lib/supabase';
 import { Avatar } from './cells/PeopleCell';
 
@@ -25,7 +26,7 @@ export default function BoardActivityPanel({ boardId, items, onClose, onOpenItem
   }, [boardId]);
 
   return (
-    <div className="fixed inset-0 z-[120] flex justify-end">
+    <Modal isOpen className="flex justify-end">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-[440px] h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
@@ -53,6 +54,6 @@ export default function BoardActivityPanel({ boardId, items, onClose, onOpenItem
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
