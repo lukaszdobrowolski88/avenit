@@ -4,10 +4,52 @@ import {
 } from 'lucide-react';
 import { useBoards } from './hooks/useBoards';
 import { BOARD_TEMPLATES } from './lib/templates';
+import { generateBoardSpec } from './lib/aiBoards';
+import { Sparkles } from 'lucide-react';
 import Popover from './components/Popover';
 
 const CARD_COLORS = ['#6366f1', '#00c875', '#e2445c', '#fdab3d', '#a25ddc', '#0086c0', '#ff5ac4'];
 const TPL_ICON = { LayoutGrid, CalendarRange, CheckSquare, Users };
+
+const AI_SUGGESTIONS = [
+  'Planowanie konferencji młodzieżowej z budżetem i zadaniami',
+  'Proces rekrutacji i opieki nad nowymi wolontariuszami',
+  'Organizacja niedzielnego nabożeństwa: służby, próby, multimedia',
+  'Kampania pomocy charytatywnej — zadania, terminy, odpowiedzialni',
+];
+
+// Generator tablic z AI (styl monday Vibe): opisz → Claude buduje tablicę.
+function AiBoardGenerator({ onGenerate, busy }) {
+  const [prompt, setPrompt] = useState('');
+  return (
+    <div className="mb-6 rounded-2xl p-[1.5px] bg-gradient-to-r from-accent-primary via-purple-400 to-accent-secondary">
+      <div className="rounded-2xl bg-white dark:bg-gray-800 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles size={18} className="text-accent-primary" />
+          <span className="font-semibold text-gray-800 dark:text-gray-100">Zbuduj tablicę z AI</span>
+          <span className="text-xs text-gray-400">— opisz proces, a Claude zbuduje gotową tablicę</span>
+        </div>
+        <div className="flex items-end gap-2">
+          <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={2}
+            placeholder="np. Planowanie chrztu: zgłoszenia, przygotowania, terminy, osoby odpowiedzialne…"
+            className="flex-1 bg-gray-100 dark:bg-gray-700/50 rounded-xl px-3 py-2 text-sm outline-none resize-none text-gray-800 dark:text-gray-100" />
+          <button onClick={() => prompt.trim() && onGenerate(prompt.trim())} disabled={busy || !prompt.trim()}
+            className="flex items-center gap-1.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-accent-primary/20 hover:opacity-90 disabled:opacity-50 shrink-0">
+            {busy ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={17} />} Generuj
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {AI_SUGGESTIONS.map(s => (
+            <button key={s} onClick={() => setPrompt(s)} disabled={busy}
+              className="text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 hover:bg-accent-primary/10 hover:text-accent-primary disabled:opacity-50">
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function TemplateChooser({ onPick, onClose, busy }) {
   return (
@@ -39,11 +81,25 @@ function TemplateChooser({ onPick, onClose, busy }) {
 }
 
 export default function BoardsList({ userEmail, userName, moduleKey = null, onOpenBoard }) {
-  const { boards, loading, fetchBoards, createFromTemplate, deleteBoard, duplicateBoard } = useBoards(userEmail, userName);
+  const { boards, loading, fetchBoards, createFromTemplate, createFromSpec, deleteBoard, duplicateBoard } = useBoards(userEmail, userName);
   const [creating, setCreating] = useState(false);
   const [chooser, setChooser] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   useEffect(() => { fetchBoards(moduleKey); }, [fetchBoards, moduleKey]);
+
+  const handleAiGenerate = async (prompt) => {
+    setAiBusy(true); setAiError('');
+    try {
+      const spec = await generateBoardSpec(prompt);
+      const res = await createFromSpec(spec, { module_key: moduleKey, color: CARD_COLORS[boards.length % CARD_COLORS.length] });
+      if (res.success) onOpenBoard(res.data.id);
+      else setAiError(res.error || 'Nie udało się utworzyć tablicy.');
+    } catch (e) {
+      setAiError(e.message || 'Błąd generowania AI.');
+    } finally { setAiBusy(false); }
+  };
 
   const handleCreate = () => setChooser(true);
 
@@ -69,6 +125,9 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
           </button>
         </div>
       )}
+
+      <AiBoardGenerator onGenerate={handleAiGenerate} busy={aiBusy} />
+      {aiError && <div className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{aiError}</div>}
 
       {loading ? (
         <div className="flex items-center justify-center h-48 text-gray-400"><Loader2 className="animate-spin" size={26} /></div>

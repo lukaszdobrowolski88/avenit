@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   ArrowLeft, Table2, Trello, Calendar as CalIcon, GanttChartSquare, Plus, Loader2, Zap, FormInput,
+  BarChart3, GalleryThumbnails, MoreHorizontal, Pencil, Copy, Star, Trash2,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useBoardData } from './hooks/useBoardData';
@@ -10,16 +11,21 @@ import KanbanView from './views/KanbanView';
 import CalendarView from './views/CalendarView';
 import TimelineView from './views/TimelineView';
 import FormView from './views/FormView';
+import ChartView from './views/ChartView';
+import FilesGalleryView from './views/FilesGalleryView';
 import ViewToolbar from './components/ViewToolbar';
 import ItemPanel from './components/ItemPanel';
 import AutomationsPanel from './components/AutomationsPanel';
+import Popover from './components/Popover';
 
-const VIEW_ICONS = { table: Table2, kanban: Trello, calendar: CalIcon, timeline: GanttChartSquare, form: FormInput };
+const VIEW_ICONS = { table: Table2, kanban: Trello, calendar: CalIcon, timeline: GanttChartSquare, form: FormInput, chart: BarChart3, files: GalleryThumbnails };
 const VIEW_TYPES = [
   { type: 'table', label: 'Tabela', icon: Table2 },
   { type: 'kanban', label: 'Kanban', icon: Trello },
   { type: 'calendar', label: 'Kalendarz', icon: CalIcon },
   { type: 'timeline', label: 'Oś czasu', icon: GanttChartSquare },
+  { type: 'chart', label: 'Wykres', icon: BarChart3 },
+  { type: 'files', label: 'Galeria plików', icon: GalleryThumbnails },
   { type: 'form', label: 'Formularz', icon: FormInput },
 ];
 
@@ -82,6 +88,8 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
       case 'kanban': return <KanbanView {...shared} />;
       case 'calendar': return <CalendarView {...shared} />;
       case 'timeline': return <TimelineView {...shared} />;
+      case 'chart': return <ChartView {...shared} />;
+      case 'files': return <FilesGalleryView {...shared} />;
       case 'form': return <FormView {...shared} />;
       case 'table':
       default: return <TableView {...shared} />;
@@ -111,15 +119,12 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
 
       {/* Zakładki widoków */}
       <div className="flex items-center gap-1 mb-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto custom-scrollbar">
-        {data.views.map(v => {
-          const Icon = VIEW_ICONS[v.type] || Table2;
-          return (
-            <button key={v.id} onClick={() => setActiveViewId(v.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 -mb-px whitespace-nowrap ${activeViewId === v.id ? 'border-accent-primary text-accent-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
-              <Icon size={15} /> {v.name}
-            </button>
-          );
-        })}
+        {data.views.map(v => (
+          <ViewTab key={v.id} view={v} active={activeViewId === v.id} onSelect={setActiveViewId} data={data}
+            canDelete={data.views.length > 1}
+            onDelete={() => { data.deleteView(v.id); if (activeViewId === v.id) setActiveViewId(data.views.find(x => x.id !== v.id)?.id); }}
+            onDuplicated={(nv) => nv && setActiveViewId(nv.id)} />
+        ))}
         <AddViewButton onAdd={(type, label) => data.addView(type, label).then(v => v && setActiveViewId(v.id))} />
       </div>
 
@@ -137,6 +142,38 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
         <AutomationsPanel automations={automations.automations} columns={data.columns} people={data.people}
           onAdd={automations.addAutomation} onUpdate={automations.updateAutomation} onDelete={automations.deleteAutomation}
           onClose={() => setShowAutomations(false)} />
+      )}
+    </div>
+  );
+}
+
+function ViewTab({ view, active, onSelect, data, canDelete, onDelete, onDuplicated }) {
+  const [renaming, setRenaming] = useState(false);
+  const [name, setName] = useState(view.name);
+  const Icon = VIEW_ICONS[view.type] || Table2;
+  const commit = () => { setRenaming(false); if (name.trim() && name !== view.name) data.updateView(view.id, { name: name.trim() }); };
+  return (
+    <div className={`flex items-center border-b-2 -mb-px ${active ? 'border-accent-primary' : 'border-transparent'}`}>
+      {renaming ? (
+        <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onBlur={commit} onKeyDown={(e) => e.key === 'Enter' && commit()}
+          className="mx-1 my-1 px-2 py-1 text-sm bg-white dark:bg-gray-700 rounded outline-none ring-2 ring-accent-primary/40 w-28" />
+      ) : (
+        <button onClick={() => onSelect(view.id)}
+          className={`flex items-center gap-1.5 pl-3 pr-1 py-2 text-sm whitespace-nowrap ${active ? 'text-accent-primary' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+          <Icon size={15} /> {view.name} {view.is_default && <Star size={11} className="fill-amber-400 text-amber-400" />}
+        </button>
+      )}
+      {active && !renaming && (
+        <Popover align="left" width={185} trigger={<button className="px-1 py-2 text-gray-400 hover:text-gray-600"><MoreHorizontal size={15} /></button>}>
+          {({ close }) => (
+            <div className="p-1.5 text-sm">
+              <button onClick={() => { setRenaming(true); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200"><Pencil size={14} /> Zmień nazwę</button>
+              <button onClick={() => { data.duplicateView(view).then(onDuplicated); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200"><Copy size={14} /> Duplikuj</button>
+              <button onClick={() => { data.setDefaultView(view.id); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200"><Star size={14} /> Ustaw domyślny</button>
+              {canDelete && <button onClick={() => { onDelete(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-red-600"><Trash2 size={14} /> Usuń widok</button>}
+            </div>
+          )}
+        </Popover>
       )}
     </div>
   );

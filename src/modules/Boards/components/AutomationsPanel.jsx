@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Zap, Plus, Trash2, Bell, Flag, CalendarPlus, UserPlus, MessageSquarePlus } from 'lucide-react';
+import { X, Zap, Plus, Trash2, Bell, Flag, CalendarPlus, UserPlus, MessageSquarePlus, Sparkles, Loader2 } from 'lucide-react';
+import { generateAutomationSpec } from '../lib/aiBoards';
 
 const TRIGGERS = [
   { type: 'status_changes_to', label: 'Gdy status zmieni się na…' },
@@ -32,6 +33,42 @@ function sentence(a, columns) {
   else if (tr.type === 'date_arrives') t = `Gdy nadejdzie „${colName(tr.columnId)}"`;
   const acts = (a.actions || []).map(ac => ACTION_TYPES.find(x => x.type === ac.type)?.label || ac.type).join(' + ');
   return `${t} → ${acts}`;
+}
+
+// Generator automatyzacji z AI (styl monday AI Workflows).
+function AiAutomationBox({ columns, onAdd }) {
+  const [prompt, setPrompt] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const run = async () => {
+    if (!prompt.trim()) return;
+    setBusy(true); setErr('');
+    try {
+      const spec = await generateAutomationSpec(prompt.trim(), columns);
+      await onAdd(spec.name || 'Automatyzacja AI', spec.trigger, spec.actions);
+      setPrompt('');
+    } catch (e) { setErr(e.message || 'Błąd generowania.'); }
+    finally { setBusy(false); }
+  };
+  return (
+    <div className="mb-4 rounded-xl p-[1.5px] bg-gradient-to-r from-accent-primary via-purple-400 to-accent-secondary">
+      <div className="rounded-xl bg-white dark:bg-gray-800 p-3">
+        <div className="flex items-center gap-1.5 mb-2 text-sm font-medium text-gray-800 dark:text-gray-100">
+          <Sparkles size={15} className="text-accent-primary" /> Opisz automatyzację, a AI ją zbuduje
+        </div>
+        <div className="flex items-end gap-2">
+          <input value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && run()}
+            placeholder="np. Gdy status = Gotowe, powiadom przypisane osoby"
+            className="flex-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2 text-sm outline-none text-gray-800 dark:text-gray-100" />
+          <button onClick={run} disabled={busy || !prompt.trim()}
+            className="flex items-center gap-1 bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-3 py-2 rounded-lg text-sm disabled:opacity-50 shrink-0">
+            {busy ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+          </button>
+        </div>
+        {err && <div className="text-xs text-red-500 mt-1.5">{err}</div>}
+      </div>
+    </div>
+  );
 }
 
 export default function AutomationsPanel({ automations, columns, people, onAdd, onUpdate, onDelete, onClose }) {
@@ -70,6 +107,7 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+          <AiAutomationBox columns={columns} onAdd={onAdd} />
           {/* Istniejące */}
           <div className="space-y-2 mb-4">
             {automations.map(a => (

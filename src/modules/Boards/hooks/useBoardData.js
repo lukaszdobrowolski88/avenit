@@ -228,13 +228,29 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
     setViews(prev => prev.filter(v => v.id !== viewId));
   }, []);
 
+  const duplicateView = useCallback(async (view) => {
+    const maxOrder = views.reduce((m, v) => Math.max(m, v.display_order || 0), -1);
+    const { data, error: e } = await supabase.from('board_views').insert({
+      board_id: boardId, name: `${view.name} (kopia)`, type: view.type, config: view.config || {},
+      owner_email: null, display_order: maxOrder + 1,
+    }).select().single();
+    if (e) { setError(e.message); return null; }
+    setViews(prev => [...prev, data]);
+    return data;
+  }, [boardId, views]);
+
+  const setDefaultView = useCallback(async (viewId) => {
+    setViews(prev => prev.map(v => ({ ...v, is_default: v.id === viewId })));
+    await Promise.all(views.map(v => supabase.from('board_views').update({ is_default: v.id === viewId }).eq('id', v.id)));
+  }, [views]);
+
   return {
     board, columns, groups, items, views, people, loading, error,
     reload: load, setBoard,
     addColumn, updateColumn, deleteColumn, reorderColumns,
     addGroup, updateGroup, deleteGroup, reorderGroups,
     addItem, updateItem, updateCell, deleteItem, moveItem, reorderItemsInGroup,
-    addView, updateView, deleteView,
+    addView, updateView, deleteView, duplicateView, setDefaultView,
     registerAutomationRunner: (fn) => { onAutomationRef.current = fn; },
   };
 }

@@ -104,6 +104,36 @@ const PROMPTS = {
       'NIE używaj innych typów. Zwróć TYLKO tablicę JSON.',
     buildUser: (input) => `Opis strony do zbudowania:\n${input}`,
   },
+  board_generate: {
+    system:
+      'Jesteś generatorem tablic projektowych (Work OS w stylu Monday) dla aplikacji kościelnej Avenit. ' +
+      'Na podstawie opisu procesu/projektu zwracasz WYŁĄCZNIE poprawny JSON (bez markdown, bez backticków, bez komentarzy) ' +
+      'o kształcie: {"name": string, "description": string, ' +
+      '"columns": [{"name": string, "type": string, "labels"?: [{"title": string, "color": string}], "options"?: [{"title": string, "color": string}], "unit"?: string}], ' +
+      '"groups": [{"name": string, "color": string}], ' +
+      '"items": [{"name": string, "group": number, "cells": {"<nazwa kolumny>": <wartość>}}]}. ' +
+      'Dozwolone typy kolumn: status, priority, text, long_text, number, date, timeline, people, dropdown, checkbox, link, rating, progress. ' +
+      'Zawsze dodaj kolumnę "Status" (type:status) z 3-4 etykietami. Kolumny status/priority WYMAGAJĄ pola "labels"; dropdown WYMAGA "options". ' +
+      'Kolory podawaj jako HEX z palety: #00c875 #fdab3d #e2445c #579bfc #a25ddc #0086c0 #ff5ac4 #9cd326 #784bd1 #c4c4c4. ' +
+      'Wartości w "cells": dla status/priority = dokładny "title" etykiety; dropdown = tablica tytułów opcji; date = "YYYY-MM-DD"; checkbox = true/false; number/rating/progress = liczba; text = string; people = pomiń (zostaw puste). ' +
+      '"group" to indeks grupy (0-based). Twórz 2-3 grupy, 3-6 kolumn, 3-8 przykładowych elementów. Cała treść po polsku. Zwróć TYLKO obiekt JSON.',
+    buildUser: (input) => `Opis tablicy/procesu do zbudowania:\n${input}`,
+  },
+  board_automation: {
+    system:
+      'Jesteś generatorem automatyzacji tablic (styl "kiedy → to" z Monday). Na podstawie opisu w języku naturalnym ' +
+      'oraz KONTEKSTU (kolumny tablicy z ich id, typami i etykietami) zwracasz WYŁĄCZNIE poprawny JSON (bez markdown/backticków) ' +
+      'o kształcie: {"name": string, "trigger": {"type": string, "columnId"?: string, "value"?: string}, ' +
+      '"actions": [{"type": string, "params": {}}]}. ' +
+      'Typy wyzwalaczy: "status_changes_to" (wymaga columnId kolumny status/priority + value = id etykiety), ' +
+      '"column_changes" (columnId), "person_assigned" (opcjonalny columnId kolumny people), "item_created", "date_arrives" (columnId kolumny date/timeline). ' +
+      'Typy akcji: "notify" {targetType:"assignee"|"creator"}, "change_status" {columnId, value(id etykiety)}, ' +
+      '"set_date" {columnId, offsetDays:number}, "assign_person" {columnId, email, name}, "create_update" {text}. ' +
+      'UŻYWAJ WYŁĄCZNIE prawdziwych id kolumn i id etykiet z KONTEKSTU (nie wymyślaj id). Jeśli czegoś nie da się zmapować, pomiń. ' +
+      'Nazwę (name) sformułuj krótko po polsku. Zwróć TYLKO obiekt JSON.',
+    buildUser: (input, contextText) =>
+      `KONTEKST (kolumny tablicy):\n${contextText || '(brak)'}\n\nOpis automatyzacji:\n${input}`,
+  },
 };
 
 // Wyciągnij tekst z odpowiedzi Anthropic (łączy bloki type: 'text').
