@@ -1,5 +1,5 @@
 import React from 'react';
-import { useModuleLabel } from '../hooks/useModuleLabel';
+import { useModuleLabel, useModuleColor } from '../hooks/useModuleLabel';
 
 // Kanoniczny nagłówek modułu (styl Giving): chip-ikona (gradient) + tytuł + podtytuł + akcje.
 // Jedno źródło prawdy dla wyglądu nagłówków w całej aplikacji.
@@ -9,11 +9,13 @@ import { useModuleLabel } from '../hooks/useModuleLabel';
 // także tutaj, w nagłówku; `title` służy wtedy jako fallback.
 export default function PageHeader({ icon: Icon, title, subtitle, actions, iconColor, className = '', moduleKey }) {
   const dynamicTitle = useModuleLabel(moduleKey, title);
+  const moduleColor = useModuleColor(moduleKey);
+  const chipColor = iconColor || moduleColor;
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       <div
         className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary"
-        style={iconColor ? { background: iconColor } : undefined}
+        style={chipColor ? { background: chipColor } : undefined}
       >
         {Icon && <Icon className="text-white" size={24} />}
       </div>

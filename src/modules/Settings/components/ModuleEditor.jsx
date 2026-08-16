@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Save, AlertCircle } from 'lucide-react';
 import IconPicker from './IconPicker';
+import { supabase } from '../../../lib/supabase';
+import { invalidateModuleLabels } from '../../../hooks/useModuleLabel';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
+
+const MODULE_COLORS = ['#6366f1', '#00c875', '#e2445c', '#fdab3d', '#a25ddc', '#0086c0', '#ff5ac4', '#579bfc', '#22c55e', '#f97316'];
 
 export default function ModuleEditor({ module, onClose, onSave, existingKeys = [] }) {
   const t = useT();
@@ -19,6 +23,25 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
 
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [color, setColor] = useState('');
+
+  // Wczytaj bieżący kolor modułu (app_settings 'module_colors') dla tego klucza.
+  useEffect(() => {
+    if (!module?.key) return;
+    supabase.from('app_settings').select('value').eq('key', 'module_colors').maybeSingle()
+      .then(({ data }) => { try { setColor(JSON.parse(data?.value || '{}')[module.key] || ''); } catch { /* noop */ } });
+  }, [module?.key]);
+
+  const saveModuleColor = async (key) => {
+    let map = {};
+    try {
+      const { data } = await supabase.from('app_settings').select('value').eq('key', 'module_colors').maybeSingle();
+      map = JSON.parse(data?.value || '{}') || {};
+    } catch { map = {}; }
+    if (color) map[key] = color; else delete map[key];
+    await supabase.from('app_settings').upsert({ key: 'module_colors', value: JSON.stringify(map) }, { onConflict: 'key' });
+    invalidateModuleLabels();
+  };
 
   // Automatyczne generowanie klucza i ścieżki z nazwy
   useEffect(() => {
@@ -76,6 +99,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
         ...form,
         resource_key: `module:${form.key}`
       });
+      await saveModuleColor(form.key);
       onClose();
     } catch (err) {
       setErrors({ submit: err.message });
@@ -193,6 +217,24 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
             {errors.icon && (
               <p className="mt-1 text-xs text-red-500">{errors.icon}</p>
             )}
+          </div>
+
+          {/* Kolor akcentu */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5 ml-1">
+              {tr('Kolor modułu')}
+            </label>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button type="button" onClick={() => setColor('')}
+                className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] text-gray-400 ${!color ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-900 border-gray-300' : 'border-gray-200 dark:border-gray-700'}`}
+                title={tr('Domyślny (gradient)')}>—</button>
+              {MODULE_COLORS.map((c) => (
+                <button type="button" key={c} onClick={() => setColor(c)}
+                  className={`w-8 h-8 rounded-full transition ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-900' : ''}`}
+                  style={{ backgroundColor: c }} />
+              ))}
+            </div>
+            <p className="mt-1.5 text-xs text-gray-400">{tr('Kolor kafelka-ikony w nagłówku modułu. „—" = domyślny gradient.')}</p>
           </div>
         </div>
 
