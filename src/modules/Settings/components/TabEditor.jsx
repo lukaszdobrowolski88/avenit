@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen, LayoutDashboard } from 'lucide-react';
+import { X, Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen, LayoutDashboard, LayoutGrid } from 'lucide-react';
 import IconPicker from './IconPicker';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
@@ -10,6 +10,7 @@ const COMPONENT_TYPES = [
   { key: 'empty', label: tr('Pusta zakładka'), icon: Layers, description: tr('Pusta strona do przyszłej rozbudowy') },
   { key: 'events', label: tr('Wydarzenia'), icon: Calendar, description: tr('Lista wydarzeń z kalendarzem') },
   { key: 'tasks', label: tr('Zadania'), icon: CheckSquare, description: 'Tablica kanban z zadaniami' },
+  { key: 'board', label: tr('Tablica projektowa'), icon: LayoutGrid, description: tr('Tablice Monday: kolumny, widoki, automatyzacje') },
   { key: 'finance', label: tr('Finanse'), icon: DollarSign, description: 'Przychody i wydatki' },
   { key: 'members', label: tr('Członkowie'), icon: Users, description: tr('Lista członków zespołu') },
   { key: 'wall', label: tr('Tablica'), icon: MessageSquare, description: 'Tablica z wpisami i komentarzami' },
@@ -56,6 +57,7 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
       const iconMap = {
         events: 'Calendar',
         tasks: 'CheckSquare',
+        board: 'LayoutGrid',
         finance: 'DollarSign',
         members: 'Users',
         wall: 'MessageSquare',

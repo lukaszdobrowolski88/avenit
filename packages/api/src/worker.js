@@ -68,6 +68,7 @@ cron.schedule('* * * * *', exclusive(() => forEachTenant('sms-dispatch', 'sms-ca
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('push-receipts', 'push-campaign-receipts')));
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('sms-receipts', 'sms-campaign-receipts')));
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('sync-mail', 'sync-mail')));
+cron.schedule('*/15 * * * *', exclusive(() => forEachTenant('board-automations', 'board-automations-run')));
 
 // Automatyzacje: co 5 min — auto-zapis nowych oraz wykonanie należnych kroków.
 cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('automation', 'automation-run')));

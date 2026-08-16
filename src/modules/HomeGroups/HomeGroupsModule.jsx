@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import CustomSelect from '../../components/CustomSelect';
+import ModuleBoard from '../Boards/ModuleBoard';
 import CustomDatePicker from '../../components/CustomDatePicker';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import {
@@ -817,8 +818,12 @@ export default function HomeGroupsModule() {
         </section>
       )}
 
-      {/* TASKS TAB */}
+      {/* TASKS TAB — nowy silnik Tablic (Monday-style) */}
       {activeTab === 'tasks' && (
+        <ModuleBoard sourceKind="home_group_tasks" moduleKey="homegroups" title="Zadania grup domowych" />
+      )}
+      {/* Stary kanban zachowany (nieaktywny) na wypadek rollbacku */}
+      {activeTab === '__legacy_tasks__' && (
         <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-4 lg:p-6 transition-colors">
           {/* Mobile: 2 rows, Desktop: 1 row */}
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
