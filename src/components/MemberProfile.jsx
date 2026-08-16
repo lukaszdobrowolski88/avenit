@@ -133,7 +133,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
             <Row icon={Users} label="Rodzina">
               {household && (
                 <div>
-                  <span className="font-medium">{household.family_name}</span>
+                  <span className="font-medium">{household.name}</span>
                   {householdMembers.length > 0 && (
                     <span className="text-gray-400"> · {householdMembers.map((m) => m.first_name).join(', ')}</span>
                   )}

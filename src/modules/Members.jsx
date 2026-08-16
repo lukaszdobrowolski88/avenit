@@ -90,7 +90,7 @@ export default function Members() {
       const [membersResult, groupsResult, householdsResult] = await Promise.all([
         withCampusFilter(supabase.from('members').select('*')).order('last_name'),
         supabase.from('home_groups').select('id, name').order('name'),
-        supabase.from('households').select('*').order('family_name')
+        supabase.from('households').select('*').order('name')
       ]);
 
       if (membersResult.error) throw membersResult.error;
@@ -565,7 +565,7 @@ export default function Members() {
                       const household = getHousehold(member.household_id);
                       return household ? (
                         <span className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded-md text-xs font-medium">
-                          <Users size={12} /> {household.family_name}
+                          <Users size={12} /> {household.name}
                           {household.phone_last_four && <span className="text-blue-500 dark:text-blue-400">(...{household.phone_last_four})</span>}
                         </span>
                       ) : (
@@ -859,9 +859,9 @@ export default function Members() {
                 placeholder={tr('Wybierz rodzinę...')}
                 value={formData.household_id}
                 onChange={(val) => setFormData({ ...formData, household_id: val })}
-                options={[{ id: '', family_name: 'Brak', phone_last_four: '' }, ...households]}
+                options={[{ id: '', name: 'Brak', phone_last_four: '' }, ...households]}
                 mapOptionToValue={(opt) => opt.id}
-                mapOptionToLabel={(opt) => opt.family_name + (opt.phone_last_four ? ` (tel. ...${opt.phone_last_four})` : '')}
+                mapOptionToLabel={(opt) => opt.name + (opt.phone_last_four ? ` (tel. ...${opt.phone_last_four})` : '')}
                 icon={Users}
               />
 

@@ -64,7 +64,7 @@ export default function MemberCheckin({
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          {household?.family_name}
+          {household?.name}
         </h1>
         {primaryContact && (
           <p className="text-base text-gray-600 dark:text-gray-400">
