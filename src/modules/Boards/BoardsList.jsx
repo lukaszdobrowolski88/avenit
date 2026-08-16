@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { tr } from '../../i18n';
 import { useCan } from '../../components/Can';
+import Modal from '../../components/Modal';
 import { useBoards } from './hooks/useBoards';
 import { BOARD_TEMPLATES } from './lib/templates';
 import { generateBoardSpec } from './lib/aiBoards';
@@ -56,11 +57,11 @@ function AiBoardGenerator({ onGenerate, busy }) {
 
 function TemplateChooser({ onPick, onClose, busy }) {
   return (
-    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
+    <Modal isOpen className="flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 max-h-[85vh] overflow-y-auto custom-scrollbar">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Wybierz szablon</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{tr('Wybierz szablon')}</h2>
           <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -79,7 +80,7 @@ function TemplateChooser({ onPick, onClose, busy }) {
           })}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

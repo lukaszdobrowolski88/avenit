@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Hash, BarChart3, PieChart, BatteryMedium, Table2 } from 'lucide-react';
+import Modal from '../../../components/Modal';
+import CustomSelect from '../../../components/CustomSelect';
+import { tr } from '../../../i18n';
 import { supabase } from '../../../lib/supabase';
 import { getColumnType } from '../lib/columnTypes';
 
@@ -30,11 +33,11 @@ export default function WidgetConfigModal({ initial, boards, onSave, onClose }) 
   };
 
   return (
-    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4">
+    <Modal isOpen className="flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{initial ? 'Edytuj widżet' : 'Nowy widżet'}</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{initial ? tr('Edytuj widżet') : tr('Nowy widżet')}</h2>
           <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
         </div>
 
@@ -58,21 +61,21 @@ export default function WidgetConfigModal({ initial, boards, onSave, onClose }) 
           </div>
 
           <label className="block">
-            <span className="text-xs text-gray-500">Tablica</span>
-            <select value={w.boardId} onChange={(e) => set({ boardId: e.target.value, columnId: undefined })}
-              className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2 outline-none">
-              {boards.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
+            <span className="text-xs text-gray-500">{tr('Tablica')}</span>
+            <div className="mt-1">
+              <CustomSelect value={w.boardId} onChange={(v) => set({ boardId: v, columnId: undefined })}
+                options={boards} mapOptionToValue={(b) => b.id} mapOptionToLabel={(b) => b.name} />
+            </div>
           </label>
 
           {(w.type === 'chart' || w.type === 'battery') && (
             <label className="block">
-              <span className="text-xs text-gray-500">Grupuj wg kolumny</span>
-              <select value={w.columnId || ''} onChange={(e) => set({ columnId: e.target.value })}
-                className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2 outline-none">
-                <option value="">— wybierz —</option>
-                {(w.type === 'battery' ? groupable.filter(c => ['status', 'priority'].includes(c.type)) : groupable).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <span className="text-xs text-gray-500">{tr('Grupuj wg kolumny')}</span>
+              <div className="mt-1">
+                <CustomSelect placeholder={tr('— wybierz —')} value={w.columnId || ''} onChange={(v) => set({ columnId: v })}
+                  options={w.type === 'battery' ? groupable.filter(c => ['status', 'priority'].includes(c.type)) : groupable}
+                  mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
+              </div>
             </label>
           )}
 
@@ -93,41 +96,46 @@ export default function WidgetConfigModal({ initial, boards, onSave, onClose }) 
           {w.type === 'number' && (
             <>
               <label className="block">
-                <span className="text-xs text-gray-500">Agregacja</span>
-                <select value={w.aggregation} onChange={(e) => set({ aggregation: e.target.value })}
-                  className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2 outline-none">
-                  <option value="count">Liczba elementów</option>
-                  <option value="sum">Suma kolumny liczbowej</option>
-                  <option value="avg">Średnia kolumny liczbowej</option>
-                </select>
+                <span className="text-xs text-gray-500">{tr('Agregacja')}</span>
+                <div className="mt-1">
+                  <CustomSelect value={w.aggregation} onChange={(v) => set({ aggregation: v })}
+                    options={[
+                      { value: 'count', label: tr('Liczba elementów') },
+                      { value: 'sum', label: tr('Suma kolumny liczbowej') },
+                      { value: 'avg', label: tr('Średnia kolumny liczbowej') },
+                    ]} />
+                </div>
               </label>
               {(w.aggregation === 'sum' || w.aggregation === 'avg') && (
                 <label className="block">
-                  <span className="text-xs text-gray-500">Kolumna liczbowa</span>
-                  <select value={w.columnId || ''} onChange={(e) => set({ columnId: e.target.value })}
-                    className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2 outline-none">
-                    <option value="">— wybierz —</option>
-                    {numberCols.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <span className="text-xs text-gray-500">{tr('Kolumna liczbowa')}</span>
+                  <div className="mt-1">
+                    <CustomSelect placeholder={tr('— wybierz —')} value={w.columnId || ''} onChange={(v) => set({ columnId: v })}
+                      options={numberCols} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
+                  </div>
                 </label>
               )}
             </>
           )}
 
           <label className="block">
-            <span className="text-xs text-gray-500">Rozmiar</span>
-            <select value={w.size} onChange={(e) => set({ size: e.target.value })}
-              className="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2 outline-none">
-              <option value="small">Mały</option><option value="medium">Średni</option><option value="large">Duży</option>
-            </select>
+            <span className="text-xs text-gray-500">{tr('Rozmiar')}</span>
+            <div className="mt-1">
+              <CustomSelect value={w.size} onChange={(v) => set({ size: v })}
+                options={[
+                  { value: 'small', label: tr('Mały') },
+                  { value: 'medium', label: tr('Średni') },
+                  { value: 'large', label: tr('Duży') },
+                ]} />
+            </div>
           </label>
         </div>
 
         <div className="flex justify-end gap-2 mt-5">
-          <button onClick={onClose} className="text-sm text-gray-500 px-4 py-2">Anuluj</button>
-          <button onClick={save} className="text-sm bg-accent-primary text-white px-4 py-2 rounded-lg">Zapisz</button>
+          <button onClick={onClose} className="text-sm text-gray-500 px-4 py-2">{tr('Anuluj')}</button>
+          <button onClick={save} className="text-sm bg-accent-primary text-white px-4 py-2 rounded-lg">{tr('Zapisz')}</button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

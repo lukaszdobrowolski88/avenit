@@ -5,6 +5,8 @@ import {
 import { pl } from 'date-fns/locale';
 import { applyView } from '../lib/viewData';
 import { findLabel } from '../lib/columnTypes';
+import CustomSelect from '../../../components/CustomSelect';
+import { tr } from '../../../i18n';
 
 const DAY_W = 30;
 const NAME_W = 220;
@@ -72,11 +74,11 @@ export default function TimelineView({ data, config, onUpdateConfig, onOpenItem 
     <div>
       {tlCols.length > 1 && (
         <div className="flex items-center gap-2 mb-3 text-sm text-gray-500">
-          Kolumna dat:
-          <select value={colId} onChange={(e) => onUpdateConfig({ timelineColumn: e.target.value })}
-            className="bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1 text-sm outline-none">
-            {tlCols.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          {tr('Kolumna dat:')}
+          <div className="w-44">
+            <CustomSelect compact value={colId} onChange={(v) => onUpdateConfig({ timelineColumn: v })}
+              options={tlCols} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
+          </div>
         </div>
       )}
       <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">

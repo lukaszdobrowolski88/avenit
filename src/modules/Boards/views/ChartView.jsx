@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { BarChart3, PieChart } from 'lucide-react';
 import { BarChart, DonutChart } from '../dashboards/Charts';
+import CustomSelect from '../../../components/CustomSelect';
+import { tr } from '../../../i18n';
 import { applyView, groupItemsByColumn } from '../lib/viewData';
 import { getColumnType } from '../lib/columnTypes';
 
@@ -26,11 +28,11 @@ export default function ChartView({ data, config, onUpdateConfig }) {
     <div>
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          Grupuj wg:
-          <select value={colId} onChange={(e) => onUpdateConfig({ chartColumn: e.target.value })}
-            className="bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1 text-sm outline-none">
-            {groupable.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          {tr('Grupuj wg:')}
+          <div className="w-48">
+            <CustomSelect compact value={colId} onChange={(v) => onUpdateConfig({ chartColumn: v })}
+              options={groupable} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
+          </div>
         </div>
         <div className="flex gap-1">
           {[{ k: 'bar', icon: BarChart3 }, { k: 'pie', icon: PieChart }].map(o => (

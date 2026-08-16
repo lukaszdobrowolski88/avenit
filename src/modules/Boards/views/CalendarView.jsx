@@ -7,6 +7,8 @@ import { pl } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { applyView } from '../lib/viewData';
 import { findLabel } from '../lib/columnTypes';
+import CustomSelect from '../../../components/CustomSelect';
+import { tr } from '../../../i18n';
 
 const WEEKDAYS = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd'];
 
@@ -56,10 +58,10 @@ export default function CalendarView({ data, config, onUpdateConfig, onOpenItem 
           <button onClick={() => setCursor(new Date())} className="ml-2 text-sm text-accent-primary">Dziś</button>
         </div>
         {dateCols.length > 1 && (
-          <select value={dateColId} onChange={(e) => onUpdateConfig({ calendarDateColumn: e.target.value })}
-            className="bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1 text-sm outline-none">
-            {dateCols.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <div className="w-44">
+            <CustomSelect compact value={dateColId} onChange={(v) => onUpdateConfig({ calendarDateColumn: v })}
+              options={dateCols} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
+          </div>
         )}
       </div>
 

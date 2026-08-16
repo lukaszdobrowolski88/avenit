@@ -4,6 +4,8 @@ import {
 } from '@dnd-kit/core';
 import { Plus, GripVertical } from 'lucide-react';
 import ItemCard from '../components/ItemCard';
+import CustomSelect from '../../../components/CustomSelect';
+import { tr } from '../../../i18n';
 import { applyView, groupItemsByColumn } from '../lib/viewData';
 import { getColumnType } from '../lib/columnTypes';
 
@@ -82,11 +84,11 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
   return (
     <div>
       <div className="flex items-center gap-2 mb-3 text-sm text-gray-500">
-        Grupuj wg:
-        <select value={groupColId} onChange={(e) => onUpdateConfig({ kanbanGroupBy: e.target.value })}
-          className="bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1 text-sm outline-none">
-          {groupableCols.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+        {tr('Grupuj wg:')}
+        <div className="w-48">
+          <CustomSelect compact value={groupColId} onChange={(v) => onUpdateConfig({ kanbanGroupBy: v })}
+            options={groupableCols} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
+        </div>
       </div>
       <DndContext sensors={sensors} onDragStart={(e) => setActiveId(e.active.id)} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
         <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-4">
