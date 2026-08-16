@@ -1,51 +1,65 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-// Dynamiczna etykieta modułu (z app_modules.label) — żeby zmiana nazwy modułu w
-// Ustawieniach była widoczna także w NAGŁÓWKU wewnątrz modułu, nie tylko w menu.
-// Współdzielony cache (singleton) — jeden fetch na sesję, subskrypcja re-renderuje
-// wszystkie nagłówki po zmianie nazwy (invalidateModuleLabels).
-let _cache = null;        // { key: label }
+// Dynamiczna etykieta + kolor modułu — żeby zmiana nazwy/koloru modułu w Ustawieniach
+// była widoczna także w NAGŁÓWKU wewnątrz modułu, nie tylko w menu. Współdzielony cache
+// (singleton): jeden fetch (app_modules.label + app_settings 'module_colors') na sesję;
+// subskrypcja re-renderuje nagłówki po zmianie (invalidateModuleLabels).
+let _labels = null;   // { key: label }
+let _colors = null;   // { key: '#hex' }
 let _inflight = null;
 const _subs = new Set();
 
-async function loadLabels() {
-  if (_cache) return _cache;
+async function loadAll() {
+  if (_labels) return;
   if (_inflight) return _inflight;
   _inflight = (async () => {
     try {
-      const { data } = await supabase.from('app_modules').select('key, label');
-      const map = {};
-      (data || []).forEach((m) => { if (m.key) map[m.key] = m.label; });
-      _cache = map;
+      const [mods, setting] = await Promise.all([
+        supabase.from('app_modules').select('key, label'),
+        supabase.from('app_settings').select('value').eq('key', 'module_colors').maybeSingle(),
+      ]);
+      const lab = {};
+      (mods.data || []).forEach((m) => { if (m.key) lab[m.key] = m.label; });
+      _labels = lab;
+      try { _colors = JSON.parse(setting.data?.value || '{}') || {}; } catch { _colors = {}; }
     } catch {
-      _cache = {};
+      _labels = _labels || {}; _colors = _colors || {};
     }
     _inflight = null;
-    _subs.forEach((fn) => fn(_cache));
-    return _cache;
+    _subs.forEach((fn) => fn());
   })();
   return _inflight;
 }
 
-// Wywołać po zmianie nazwy modułu — odświeża cache i nagłówki na żywo.
+// Wywołać po zmianie nazwy/koloru modułu — odświeża cache i nagłówki na żywo.
 export function invalidateModuleLabels() {
-  _cache = null;
-  loadLabels();
+  _labels = null; _colors = null;
+  loadAll();
 }
 
-// Zwraca etykietę modułu z bazy (z fallbackiem). Gdy key pusty → zwraca fallback.
-export function useModuleLabel(key, fallback) {
-  const [label, setLabel] = useState(() => (key && _cache?.[key]) || fallback);
+function useModuleData(key, pick, fallback) {
+  const [val, setVal] = useState(() => (key && _labels ? pick() : fallback));
   useEffect(() => {
-    if (!key) { setLabel(fallback); return; }
+    if (!key) { setVal(fallback); return; }
     let alive = true;
-    const update = (map) => { if (alive) setLabel(map[key] || fallback); };
+    const update = () => { if (alive) setVal(pick()); };
     _subs.add(update);
-    loadLabels().then(update);
+    loadAll().then(update);
     return () => { alive = false; _subs.delete(update); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, fallback]);
-  return key ? label : fallback;
+  return key ? val : fallback;
+}
+
+// Etykieta modułu z bazy (z fallbackiem). Gdy key pusty → fallback.
+export function useModuleLabel(key, fallback) {
+  return useModuleData(key, () => (_labels?.[key] || fallback), fallback);
+}
+
+// Kolor akcentu modułu (#hex) lub null.
+export function useModuleColor(key) {
+  return useModuleData(key, () => (_colors?.[key] || null), null);
 }
 
 export default useModuleLabel;

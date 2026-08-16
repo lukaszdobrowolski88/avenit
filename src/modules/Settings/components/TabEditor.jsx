@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen, LayoutDashboard, LayoutGrid, Package, GalleryThumbnails, Link2, Contact } from 'lucide-react';
+import { X, Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen, LayoutDashboard, LayoutGrid, Package, GalleryThumbnails, Link2, Contact, HelpCircle, Megaphone, BarChart3 } from 'lucide-react';
 import IconPicker from './IconPicker';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
@@ -21,6 +21,9 @@ const COMPONENT_TYPES = [
   { key: 'gallery', label: tr('Galeria zdjęć'), icon: GalleryThumbnails, description: tr('Zdjęcia z podglądem — upload i siatka miniatur') },
   { key: 'links', label: tr('Szybkie linki'), icon: Link2, description: tr('Konfigurowalne przyciski do formularzy i narzędzi') },
   { key: 'contacts', label: tr('Kontakty'), icon: Contact, description: tr('Prosta lista kontaktów: telefon, e-mail, rola') },
+  { key: 'faq', label: 'FAQ', icon: HelpCircle, description: tr('Pytania i odpowiedzi (akordeon)') },
+  { key: 'announcements', label: tr('Ogłoszenia'), icon: Megaphone, description: tr('Komunikaty z datą i przypięciem') },
+  { key: 'poll', label: tr('Ankieta'), icon: BarChart3, description: tr('Głosowanie zespołu z wynikami na żywo') },
   { key: 'custom', label: tr('Kreator graficzny'), icon: LayoutDashboard, description: tr('Zbuduj własny układ zakładki metodą przeciągnij i upuść') }
 ];
 
@@ -71,7 +74,10 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
         equipment: 'Package',
         gallery: 'GalleryThumbnails',
         links: 'Link2',
-        contacts: 'Contact'
+        contacts: 'Contact',
+        faq: 'HelpCircle',
+        announcements: 'Megaphone',
+        poll: 'BarChart3'
       };
       if (iconMap[form.component_type]) {
         setForm(prev => ({ ...prev, icon: iconMap[form.component_type] }));

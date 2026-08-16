@@ -104,6 +104,19 @@ const PROMPTS = {
       'NIE używaj innych typów. Zwróć TYLKO tablicę JSON.',
     buildUser: (input) => `Opis strony do zbudowania:\n${input}`,
   },
+  builder_module: {
+    system:
+      'Jesteś generatorem modułów aplikacji kościelnej Avenit. Na podstawie opisu użytkownika zwracasz ' +
+      'WYŁĄCZNIE poprawny JSON (bez markdown, bez backticków, bez komentarzy) o kształcie: ' +
+      '{"name": string, "icon": string, "tabs": [{"label": string, "type": string}]}. ' +
+      '"name" = krótka nazwa modułu po polsku. "icon" = nazwa ikony z lucide-react pasująca do tematu ' +
+      '(np. "Users","Calendar","Camera","Music","Heart","BookOpen","Wrench","Baby","HandHeart","Mic2","Palette","Coffee"). ' +
+      'Dozwolone typy zakładek ("type", używaj TYLKO tych): members, events, tasks, board, finance, wall, schedule, duty, ' +
+      'materials, equipment, gallery, links, contacts, faq, announcements, poll. ' +
+      'Dobierz 3-6 zakładek trafnie pasujących do opisu, w sensownej kolejności (najważniejsze najpierw). ' +
+      '"label" = krótka polska nazwa zakładki. NIE używaj innych typów ani pól. Zwróć TYLKO obiekt JSON.',
+    buildUser: (input) => `Opis modułu do zbudowania:\n${input}`,
+  },
   board_generate: {
     system:
       'Jesteś generatorem tablic projektowych (Work OS w stylu Monday) dla aplikacji kościelnej Avenit. ' +

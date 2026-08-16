@@ -9,12 +9,15 @@ import EquipmentTab from '../../shared/EquipmentTab';
 import GalleryTab from '../../shared/GalleryTab';
 import LinksTab from '../../shared/LinksTab';
 import ContactsTab from '../../shared/ContactsTab';
+import FaqTab from '../../shared/FaqTab';
+import AnnouncementsTab from '../../shared/AnnouncementsTab';
+import PollTab from '../../shared/PollTab';
 import MembersTab from './MembersTab';
 import TasksTab from './TasksTab';
 import FinanceWidget from './FinanceWidget';
 
 // Typy gotowych widgetów danych (zakładki systemowe → też elementy kreatora).
-export const WIDGET_TYPES = ['events', 'tasks', 'finance', 'members', 'wall', 'schedule', 'duty', 'materials', 'equipment', 'gallery', 'links', 'contacts'];
+export const WIDGET_TYPES = ['events', 'tasks', 'finance', 'members', 'wall', 'schedule', 'duty', 'materials', 'equipment', 'gallery', 'links', 'contacts', 'faq', 'announcements', 'poll'];
 
 // Widgety renderujące WŁASNĄ kartę-sekcję — nie owijać ich dodatkowym <section>.
 export const SELF_WRAPPING_WIDGETS = new Set(['finance']);
@@ -52,6 +55,9 @@ export default function ModuleWidget({ widgetType, moduleKey, moduleName, module
     case 'gallery':   return <GalleryTab moduleKey={moduleKey} moduleId={moduleId} tabId={tabId} canEdit={canEdit} />;
     case 'links':     return <LinksTab moduleKey={moduleKey} moduleId={moduleId} tabId={tabId} canEdit={canEdit} />;
     case 'contacts':  return <ContactsTab moduleKey={moduleKey} moduleId={moduleId} tabId={tabId} canEdit={canEdit} />;
+    case 'faq':       return <FaqTab moduleKey={moduleKey} moduleId={moduleId} tabId={tabId} canEdit={canEdit} />;
+    case 'announcements': return <AnnouncementsTab moduleKey={moduleKey} moduleId={moduleId} tabId={tabId} canEdit={canEdit} />;
+    case 'poll':      return <PollTab moduleKey={moduleKey} moduleId={moduleId} tabId={tabId} currentUserEmail={email} canEdit={canEdit} />;
     default:          return null;
   }
 }

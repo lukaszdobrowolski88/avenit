@@ -24,7 +24,7 @@ import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 
 // Sortable Tab Item
-function SortableTabItem({ tab, onEdit, onDelete, onOpenBuilder }) {
+function SortableTabItem({ tab, onEdit, onDelete, onDuplicate, onOpenBuilder }) {
   const t = useT();
   const {
     attributes,
@@ -99,6 +99,13 @@ function SortableTabItem({ tab, onEdit, onDelete, onOpenBuilder }) {
               <Pencil size={16} />
             </button>
             <button
+              onClick={() => onDuplicate(tab)}
+              className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
+              title={tr('Duplikuj zakładkę')}
+            >
+              <Icons.Copy size={16} />
+            </button>
+            <button
               onClick={() => onDelete(tab)}
               className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition opacity-0 group-hover:opacity-100"
               title={t('Usuń')}
@@ -152,6 +159,13 @@ export default function TabManager({
   const handleAddTab = () => {
     setEditingTab(null);
     setEditorOpen(true);
+  };
+
+  const handleDuplicateTab = async (tab) => {
+    const keys = new Set(tabs.map((x) => x.key));
+    let key = `${tab.key}_copy`, i = 2;
+    while (keys.has(key)) key = `${tab.key}_copy${i++}`;
+    await onAddTab(module.id, { key, label: `${tab.label} (kopia)`, icon: tab.icon, component_type: tab.component_type, layout: tab.layout });
   };
 
   const handleEditTab = (tab) => {
@@ -245,6 +259,7 @@ export default function TabManager({
                       tab={tab}
                       onEdit={handleEditTab}
                       onDelete={handleDeleteTab}
+                      onDuplicate={handleDuplicateTab}
                       onOpenBuilder={setBuilderTab}
                     />
                   ))}

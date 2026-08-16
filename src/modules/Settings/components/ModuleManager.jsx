@@ -18,15 +18,18 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useModules } from '../../../hooks/useModules';
+import { supabase } from '../../../lib/supabase';
 import ModuleEditor from './ModuleEditor';
 import TabManager from './TabManager';
-import { MODULE_TEMPLATES } from './moduleTemplates';
+import { MODULE_TEMPLATES, iconForType } from './moduleTemplates';
+import { WIDGET_TYPES } from '../../CustomModule/components/ModuleWidget';
+import { callAi } from '../../AI/lib/aiApi';
 import { invalidateModuleLabels } from '../../../hooks/useModuleLabel';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 
 // Sortable Module Item
-function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, tabCount }) {
+function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, onDuplicate, onSaveTemplate, tabCount }) {
   const t = useT();
   const {
     attributes,
@@ -122,6 +125,22 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
         >
           <Pencil size={16} />
         </button>
+        {tabCount > 0 && (
+          <button
+            onClick={() => onSaveTemplate(module)}
+            className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
+            title={tr('Zapisz jako szablon')}
+          >
+            <Icons.BookmarkPlus size={16} />
+          </button>
+        )}
+        <button
+          onClick={() => onDuplicate(module)}
+          className="p-2 text-gray-400 hover:text-accent-primary hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-lg transition opacity-0 group-hover:opacity-100"
+          title={tr('Duplikuj moduł')}
+        >
+          <Icons.Copy size={16} />
+        </button>
         {!module.is_system && (
           <button
             onClick={() => onDelete(module)}
@@ -168,6 +187,49 @@ export default function ModuleManager() {
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [createDefaults, setCreateDefaults] = useState(null); // prefill przy tworzeniu z szablonu
   const [pendingTemplate, setPendingTemplate] = useState(null); // zakładki do dołożenia po utworzeniu
+  const [userTemplates, setUserTemplates] = useState([]); // szablony zapisane przez usera (app_settings)
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState('');
+
+  const ALLOWED_TAB_TYPES = new Set([...WIDGET_TYPES, 'board', 'custom', 'empty']);
+
+  // AI: „opisz moduł" → wygeneruj spec (nazwa/ikona/zakładki) i wejdź w edytor z prefillem.
+  const handleAiGenerate = async () => {
+    const prompt = aiPrompt.trim();
+    if (!prompt || aiBusy) return;
+    setAiBusy(true); setAiError('');
+    try {
+      const text = await callAi('builder_module', prompt);
+      const clean = String(text).replace(/```json|```/g, '').trim();
+      const spec = JSON.parse(clean.slice(clean.indexOf('{'), clean.lastIndexOf('}') + 1));
+      const tabs = (spec.tabs || [])
+        .filter((tb) => ALLOWED_TAB_TYPES.has(tb.type))
+        .map((tb) => ({ component_type: tb.type, label: tb.label || tb.type, icon: iconForType(tb.type) }));
+      if (!spec.name || tabs.length === 0) throw new Error(tr('AI nie zwróciło poprawnego modułu.'));
+      setAiOpen(false); setAiPrompt('');
+      setTemplatePickerOpen(false);
+      setEditingModule(null);
+      setPendingTemplate({ tabs });
+      setCreateDefaults({ label: spec.name, icon: spec.icon || 'Sparkles' });
+      setEditorOpen(true);
+    } catch (e) {
+      setAiError(e.message || tr('Nie udało się wygenerować modułu.'));
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  React.useEffect(() => {
+    supabase.from('app_settings').select('value').eq('key', 'custom_module_templates').maybeSingle()
+      .then(({ data }) => { try { setUserTemplates(JSON.parse(data?.value || '[]')); } catch { setUserTemplates([]); } });
+  }, []);
+
+  const persistUserTemplates = async (list) => {
+    setUserTemplates(list);
+    await supabase.from('app_settings').upsert({ key: 'custom_module_templates', value: JSON.stringify(list) }, { onConflict: 'key' });
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -218,6 +280,37 @@ export default function ModuleManager() {
     setEditorOpen(true);
   };
 
+  // Duplikuj moduł — kopia (jako moduł custom) + wszystkie jego zakładki.
+  const handleDuplicateModule = async (module) => {
+    const existing = new Set(modules.map((m) => m.key));
+    let key = `${module.key}_copy`, i = 2;
+    while (existing.has(key)) key = `${module.key}_copy${i++}`;
+    const result = await addModule({
+      key, label: `${module.label} (kopia)`, icon: module.icon,
+      path: `/${key}`, resource_key: `module:${key}`, is_enabled: module.is_enabled,
+    });
+    if (result.success && result.data?.id) {
+      for (const tab of (tabs[module.id] || [])) {
+        await addTab(result.data.id, { key: tab.key, label: tab.label, icon: tab.icon, component_type: tab.component_type, layout: tab.layout });
+      }
+    }
+  };
+
+  // Zapisz moduł jako własny szablon (do palety „Nowy moduł").
+  const handleSaveTemplate = async (module) => {
+    const moduleTabs = tabs[module.id] || [];
+    const tpl = {
+      key: `user_${module.key}_${Date.now().toString(36)}`,
+      name: module.label,
+      icon: module.icon,
+      description: `${moduleTabs.length} ${tr('zakładek')}: ${moduleTabs.map((t) => t.label).join(', ')}`.slice(0, 140),
+      tabs: moduleTabs.map((t) => ({ component_type: t.component_type, label: t.label, icon: t.icon, layout: t.layout })),
+      custom: true,
+    };
+    await persistUserTemplates([...userTemplates.filter((t) => t.name !== tpl.name || !t.custom), tpl]);
+    alert(tr('Zapisano jako szablon — dostępny w „Dodaj moduł".'));
+  };
+
   const handleSaveModule = async (moduleData) => {
     if (editingModule) {
       const result = await updateModule(editingModule.id, moduleData);
@@ -225,14 +318,16 @@ export default function ModuleManager() {
     } else {
       const result = await addModule(moduleData);
       if (!result.success) throw new Error(result.error);
-      // Szablon: dołóż zestaw zakładek do nowo utworzonego modułu.
+      // Szablon: dołóż zestaw zakładek do nowo utworzonego modułu (klucze unikalne).
       if (pendingTemplate && result.data?.id) {
+        const used = new Set();
         for (const tpl of pendingTemplate.tabs) {
+          let k = tpl.key || tpl.component_type;
+          while (used.has(k)) k = `${tpl.component_type}_${Math.random().toString(36).slice(2, 5)}`;
+          used.add(k);
           await addTab(result.data.id, {
-            key: tpl.component_type,
-            label: tpl.label,
-            icon: tpl.icon,
-            component_type: tpl.component_type,
+            key: k, label: tpl.label, icon: tpl.icon,
+            component_type: tpl.component_type, layout: tpl.layout,
           });
         }
       }
@@ -326,6 +421,8 @@ export default function ModuleManager() {
                   onDelete={handleDeleteModule}
                   onToggle={toggleModule}
                   onManageTabs={handleManageTabs}
+                  onDuplicate={handleDuplicateModule}
+                  onSaveTemplate={handleSaveTemplate}
                   tabCount={(tabs[module.id] || []).length}
                 />
               ))}
@@ -351,6 +448,14 @@ export default function ModuleManager() {
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Zacznij od gotowego szablonu (moduł + zestaw zakładek) albo zbuduj od zera.')}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button onClick={() => { setTemplatePickerOpen(false); setAiError(''); setAiOpen(true); }}
+                className="flex items-start gap-3 p-4 rounded-xl border border-accent-primary/40 bg-accent-primary/5 hover:border-accent-primary hover:shadow-md text-left">
+                <span className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary"><Icons.Sparkles size={20} /></span>
+                <div>
+                  <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{tr('Zbuduj z AI')}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{tr('Opisz moduł, a AI dobierze zakładki')}</div>
+                </div>
+              </button>
               <button onClick={() => handlePickTemplate(null)}
                 className="flex items-start gap-3 p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:bg-accent-primary/5 text-left">
                 <span className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 bg-gray-100 dark:bg-gray-800 shrink-0"><Icons.Plus size={20} /></span>
@@ -359,20 +464,56 @@ export default function ModuleManager() {
                   <div className="text-xs text-gray-400 mt-0.5">{tr('Zbuduj zakładka po zakładce z palety elementów')}</div>
                 </div>
               </button>
-              {MODULE_TEMPLATES.map((tpl) => {
+              {[...MODULE_TEMPLATES, ...userTemplates].map((tpl) => {
                 const TplIcon = Icons[tpl.icon] || Icons.Square;
                 return (
-                  <button key={tpl.key} onClick={() => handlePickTemplate(tpl)}
-                    className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:shadow-md text-left">
-                    <span className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary"><TplIcon size={20} /></span>
-                    <div className="min-w-0">
-                      <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{tr(tpl.name)}</div>
-                      <div className="text-xs text-gray-400 mt-0.5 line-clamp-2">{tr(tpl.description)}</div>
-                      <div className="text-[11px] text-accent-primary mt-1">{tpl.tabs.length} {tr('zakładek')}</div>
-                    </div>
-                  </button>
+                  <div key={tpl.key} className="group relative">
+                    <button onClick={() => handlePickTemplate(tpl)}
+                      className="w-full flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:shadow-md text-left">
+                      <span className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary"><TplIcon size={20} /></span>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm flex items-center gap-1.5">{tpl.custom ? tpl.name : tr(tpl.name)}{tpl.custom && <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-accent-primary/10 text-accent-primary">{tr('własny')}</span>}</div>
+                        <div className="text-xs text-gray-400 mt-0.5 line-clamp-2">{tpl.custom ? tpl.description : tr(tpl.description)}</div>
+                        <div className="text-[11px] text-accent-primary mt-1">{tpl.tabs.length} {tr('zakładek')}</div>
+                      </div>
+                    </button>
+                    {tpl.custom && (
+                      <button onClick={() => { if (confirm(tr('Usunąć ten szablon?'))) persistUserTemplates(userTemplates.filter((x) => x.key !== tpl.key)); }}
+                        title={tr('Usuń szablon')} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"><Icons.Trash2 size={14} /></button>
+                    )}
+                  </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Module Generator Modal */}
+      {aiOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[140]">
+          <div className="absolute inset-0" onClick={() => !aiBusy && setAiOpen(false)} />
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-9 h-9 rounded-xl flex items-center justify-center text-white bg-gradient-to-br from-accent-primary to-accent-secondary"><Icons.Sparkles size={18} /></span>
+              <h4 className="font-bold text-lg text-gray-800 dark:text-white">{tr('Zbuduj moduł z AI')}</h4>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Opisz do czego moduł ma służyć — AI dobierze nazwę, ikonę i zakładki. Zestaw potwierdzisz w kolejnym kroku.')}</p>
+            <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} rows={3} autoFocus
+              placeholder={tr('np. Moduł dla zespołu fotografów: harmonogram sesji, galeria zdjęć, sprzęt i lista kontaktów')}
+              className="w-full text-sm bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2.5 outline-none resize-none" />
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {[tr('Zespół fotografów'), tr('Kawiarnia / kawiarenka'), tr('Grupa wolontariuszy'), tr('Biblioteka zasobów')].map((s) => (
+                <button key={s} onClick={() => setAiPrompt(s)} disabled={aiBusy} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-accent-primary/50">{s}</button>
+              ))}
+            </div>
+            {aiError && <div className="mt-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{aiError}</div>}
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setAiOpen(false)} disabled={aiBusy} className="text-sm text-gray-500 px-4 py-2">{tr('Anuluj')}</button>
+              <button onClick={handleAiGenerate} disabled={aiBusy || !aiPrompt.trim()}
+                className="text-sm bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-lg disabled:opacity-50 flex items-center gap-2">
+                {aiBusy ? <Icons.Loader2 size={15} className="animate-spin" /> : <Icons.Sparkles size={15} />} {aiBusy ? tr('Generuję…') : tr('Generuj')}
+              </button>
             </div>
           </div>
         </div>

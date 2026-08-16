@@ -8,7 +8,7 @@ import {
   MessageSquare, CalendarDays, UserCog, FolderOpen,
   Video, Map, Code, Timer, GalleryThumbnails,
   AppWindow, ChevronsUpDown, BookOpen, Heart, Music,
-  Hash, BarChart3, Package, Link2, Contact,
+  Hash, BarChart3, Package, Link2, Contact, HelpCircle, Megaphone,
 } from 'lucide-react';
 
 export const LAYOUT_VERSION = 1;
@@ -42,6 +42,9 @@ export const WIDGET_META = {
   gallery: { label: 'Galeria', icon: GalleryThumbnails },
   links: { label: 'Szybkie linki', icon: Link2 },
   contacts: { label: 'Kontakty', icon: Contact },
+  faq: { label: 'FAQ', icon: HelpCircle },
+  announcements: { label: 'Ogłoszenia', icon: Megaphone },
+  poll: { label: 'Ankieta', icon: BarChart3 },
 };
 
 // Definicje typów elementów. isContainer => może mieć children.
@@ -115,6 +118,9 @@ export const COLLECTION_FIELD_TYPES = [
   { type: 'date', label: 'Data' },
   { type: 'select', label: 'Lista wyboru' },
   { type: 'multiselect', label: 'Wielokrotny wybór' },
+  { type: 'status', label: 'Status (kolorowy)' },
+  { type: 'tags', label: 'Tagi' },
+  { type: 'person', label: 'Osoba (członek)' },
   { type: 'checkbox', label: 'Tak / Nie' },
   { type: 'rating', label: 'Ocena (gwiazdki)' },
   { type: 'email', label: 'E-mail' },
@@ -123,8 +129,11 @@ export const COLLECTION_FIELD_TYPES = [
   { type: 'file', label: 'Plik (URL)' },
 ];
 
-// Pola wymagające listy opcji (options).
-export const FIELDS_WITH_OPTIONS = ['select', 'multiselect'];
+// Pola wymagające listy opcji (options). 'status' = opcje z kolorem.
+export const FIELDS_WITH_OPTIONS = ['select', 'multiselect', 'status'];
+
+// Kolory dla opcji statusu (paleta w stylu Monday).
+export const STATUS_COLORS = ['#00c875', '#fdab3d', '#e2445c', '#579bfc', '#a25ddc', '#00b4d8', '#ff5ac4', '#808080'];
 
 export function newFieldKey() {
   return 'f_' + Math.random().toString(36).slice(2, 8);

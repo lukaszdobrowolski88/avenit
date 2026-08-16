@@ -1,3 +1,12 @@
+// Ikona (lucide) dla typu zakładki — używane przy tworzeniu zakładek z szablonu/AI.
+export const TYPE_ICONS = {
+  events: 'Calendar', tasks: 'CheckSquare', board: 'LayoutGrid', finance: 'DollarSign',
+  members: 'Users', wall: 'MessageSquare', schedule: 'CalendarDays', duty: 'UserCog',
+  materials: 'FolderOpen', equipment: 'Package', gallery: 'GalleryThumbnails', links: 'Link2',
+  contacts: 'Contact', faq: 'HelpCircle', announcements: 'Megaphone', poll: 'BarChart3',
+};
+export const iconForType = (type) => TYPE_ICONS[type] || 'Square';
+
 // Gotowe szablony modułów — jednym kliknięciem tworzą moduł + zestaw zakładek.
 // Każda zakładka: { component_type, label, icon }. Klucz zakładki generowany z typu.
 // component_type musi być zgodny z TabEditor.COMPONENT_TYPES / ModuleWidget.WIDGET_TYPES.
