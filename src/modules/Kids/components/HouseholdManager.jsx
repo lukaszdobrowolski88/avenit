@@ -17,7 +17,7 @@ export default function HouseholdManager() {
   const [editingHousehold, setEditingHousehold] = useState(null);
   const [expandedHousehold, setExpandedHousehold] = useState(null);
   const [formData, setFormData] = useState({
-    family_name: '',
+    name: '',
     phone_full: '',
     address: '',
     notes: '',
@@ -41,7 +41,7 @@ export default function HouseholdManager() {
             kids_students(id, full_name, birth_year, group_id),
             members(id, first_name, last_name, email, phone)
           `)
-          .order('family_name'),
+          .order('name'),
         supabase
           .from('kids_students')
           .select('id, full_name, birth_year, household_id, group_id')
@@ -74,7 +74,7 @@ export default function HouseholdManager() {
 
   const resetForm = () => {
     setFormData({
-      family_name: '',
+      name: '',
       phone_full: '',
       address: '',
       notes: '',
@@ -86,7 +86,7 @@ export default function HouseholdManager() {
 
   const handleEdit = (household) => {
     setFormData({
-      family_name: household.family_name,
+      name: household.name,
       phone_full: household.phone_full || '',
       address: household.address || '',
       notes: household.notes || '',
@@ -108,7 +108,7 @@ export default function HouseholdManager() {
   };
 
   const handleSave = async () => {
-    if (!formData.family_name.trim()) {
+    if (!formData.name.trim()) {
       alert('Nazwa rodziny jest wymagana');
       return;
     }
@@ -118,7 +118,7 @@ export default function HouseholdManager() {
 
     try {
       const householdPayload = {
-        family_name: formData.family_name.trim(),
+        name: formData.name.trim(),
         phone_full: formData.phone_full || null,
         phone_last_four: extractLastFour(phoneForSearch),
         address: formData.address || null,
@@ -289,7 +289,7 @@ export default function HouseholdManager() {
   const filteredHouseholds = households.filter(h => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
-    return h.family_name.toLowerCase().includes(term) ||
+    return h.name.toLowerCase().includes(term) ||
       h.phone_last_four?.includes(term) ||
       h.parent_contacts?.some(c =>
         c.full_name.toLowerCase().includes(term) ||
@@ -377,8 +377,8 @@ export default function HouseholdManager() {
                   </label>
                   <input
                     type="text"
-                    value={formData.family_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, family_name: e.target.value }))}
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="np. Kowalscy"
                     className={inputClasses}
                   />
@@ -677,13 +677,13 @@ export default function HouseholdManager() {
                   onClick={() => setExpandedHousehold(isExpanded ? null : household.id)}
                 >
                   <div className="w-12 h-12 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                    {household.family_name.charAt(0)}
+                    {household.name.charAt(0)}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                        {household.family_name}
+                        {household.name}
                       </h3>
                       {household.phone_last_four && (
                         <span className="bg-accent-primary-lighter dark:bg-accent-primary-darkest/40 text-accent-primary dark:text-accent-primary-light px-2 py-0.5 rounded text-xs font-mono">

@@ -505,7 +505,7 @@ export default function KidsModule() {
       const { data: g } = await withCampusFilter(supabase.from('kids_groups').select('*')).order('created_at');
       const { data: s } = await withCampusFilter(supabase.from('kids_students').select('*')).order('full_name');
       const { data: p } = await withCampusFilter(supabase.from('programs').select('*')).order('date', { ascending: false });
-      const { data: h } = await supabase.from('households').select('*').order('family_name');
+      const { data: h } = await supabase.from('households').select('*').order('name');
       setTeachers(t || []); setGroups(g || []); setStudents(s || []); setPrograms(p || []); setHouseholds(h || []);
     } catch (err) { console.error('Błąd:', err); }
     setLoading(false);
@@ -554,7 +554,7 @@ export default function KidsModule() {
   const groupStudents = currentGroup ? students.filter(s => s.group_id === currentGroup.id) : [];
   const availableStudents = students.filter(s => s.group_id !== (currentGroup?.id || -1));
   const groupOptions = groups.map(g => ({ value: g.id, label: g.name }));
-  const householdOptions = households.map(h => ({ value: h.id, label: `${h.family_name}${h.phone_last_four ? ` (tel. ...${h.phone_last_four})` : ''}` }));
+  const householdOptions = households.map(h => ({ value: h.id, label: `${h.name}${h.phone_last_four ? ` (tel. ...${h.phone_last_four})` : ''}` }));
   const availableStudentOptions = availableStudents.map(s => ({ value: s.id, label: s.full_name }));
   const materialTypeOptions = ['Lekcja', 'Kolorowanka', 'Gra', 'Film', 'Książka', 'Inne'].map(t => ({ value: t, label: t }));
 
@@ -703,7 +703,7 @@ export default function KidsModule() {
                   <td className="p-4">
                     {household ? (
                       <span className="px-2 py-1 rounded-lg text-xs font-bold bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                        {household.family_name}
+                        {household.name}
                         {household.phone_last_four && <span className="text-blue-500 dark:text-blue-400 ml-1">(...{household.phone_last_four})</span>}
                       </span>
                     ) : (

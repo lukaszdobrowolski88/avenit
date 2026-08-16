@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
 import ModuleBoard from './Boards/ModuleBoard';
 import {
-  Plus, Search, Trash2, X, FileText, Music, Calendar, Download,
+  Plus, Search, Trash2, X, FileText, Music, Calendar, Download, Video,
   AlertCircle, Paperclip, GripVertical, User, Users,
   LayoutGrid, List, CheckSquare, Filter, MessageSquare, Send,
   Check, UserX, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, DollarSign, Tag, Upload, FolderOpen, Package
