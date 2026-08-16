@@ -21,7 +21,9 @@ import { useModules } from '../../../hooks/useModules';
 import { supabase } from '../../../lib/supabase';
 import ModuleEditor from './ModuleEditor';
 import TabManager from './TabManager';
-import { MODULE_TEMPLATES } from './moduleTemplates';
+import { MODULE_TEMPLATES, iconForType } from './moduleTemplates';
+import { WIDGET_TYPES } from '../../CustomModule/components/ModuleWidget';
+import { callAi } from '../../AI/lib/aiApi';
 import { invalidateModuleLabels } from '../../../hooks/useModuleLabel';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
@@ -186,6 +188,38 @@ export default function ModuleManager() {
   const [createDefaults, setCreateDefaults] = useState(null); // prefill przy tworzeniu z szablonu
   const [pendingTemplate, setPendingTemplate] = useState(null); // zakładki do dołożenia po utworzeniu
   const [userTemplates, setUserTemplates] = useState([]); // szablony zapisane przez usera (app_settings)
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState('');
+
+  const ALLOWED_TAB_TYPES = new Set([...WIDGET_TYPES, 'board', 'custom', 'empty']);
+
+  // AI: „opisz moduł" → wygeneruj spec (nazwa/ikona/zakładki) i wejdź w edytor z prefillem.
+  const handleAiGenerate = async () => {
+    const prompt = aiPrompt.trim();
+    if (!prompt || aiBusy) return;
+    setAiBusy(true); setAiError('');
+    try {
+      const text = await callAi('builder_module', prompt);
+      const clean = String(text).replace(/```json|```/g, '').trim();
+      const spec = JSON.parse(clean.slice(clean.indexOf('{'), clean.lastIndexOf('}') + 1));
+      const tabs = (spec.tabs || [])
+        .filter((tb) => ALLOWED_TAB_TYPES.has(tb.type))
+        .map((tb) => ({ component_type: tb.type, label: tb.label || tb.type, icon: iconForType(tb.type) }));
+      if (!spec.name || tabs.length === 0) throw new Error(tr('AI nie zwróciło poprawnego modułu.'));
+      setAiOpen(false); setAiPrompt('');
+      setTemplatePickerOpen(false);
+      setEditingModule(null);
+      setPendingTemplate({ tabs });
+      setCreateDefaults({ label: spec.name, icon: spec.icon || 'Sparkles' });
+      setEditorOpen(true);
+    } catch (e) {
+      setAiError(e.message || tr('Nie udało się wygenerować modułu.'));
+    } finally {
+      setAiBusy(false);
+    }
+  };
 
   React.useEffect(() => {
     supabase.from('app_settings').select('value').eq('key', 'custom_module_templates').maybeSingle()
@@ -414,6 +448,14 @@ export default function ModuleManager() {
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Zacznij od gotowego szablonu (moduł + zestaw zakładek) albo zbuduj od zera.')}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button onClick={() => { setTemplatePickerOpen(false); setAiError(''); setAiOpen(true); }}
+                className="flex items-start gap-3 p-4 rounded-xl border border-accent-primary/40 bg-accent-primary/5 hover:border-accent-primary hover:shadow-md text-left">
+                <span className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary"><Icons.Sparkles size={20} /></span>
+                <div>
+                  <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{tr('Zbuduj z AI')}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{tr('Opisz moduł, a AI dobierze zakładki')}</div>
+                </div>
+              </button>
               <button onClick={() => handlePickTemplate(null)}
                 className="flex items-start gap-3 p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:bg-accent-primary/5 text-left">
                 <span className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 bg-gray-100 dark:bg-gray-800 shrink-0"><Icons.Plus size={20} /></span>
@@ -442,6 +484,36 @@ export default function ModuleManager() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Module Generator Modal */}
+      {aiOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[140]">
+          <div className="absolute inset-0" onClick={() => !aiBusy && setAiOpen(false)} />
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-9 h-9 rounded-xl flex items-center justify-center text-white bg-gradient-to-br from-accent-primary to-accent-secondary"><Icons.Sparkles size={18} /></span>
+              <h4 className="font-bold text-lg text-gray-800 dark:text-white">{tr('Zbuduj moduł z AI')}</h4>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Opisz do czego moduł ma służyć — AI dobierze nazwę, ikonę i zakładki. Zestaw potwierdzisz w kolejnym kroku.')}</p>
+            <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} rows={3} autoFocus
+              placeholder={tr('np. Moduł dla zespołu fotografów: harmonogram sesji, galeria zdjęć, sprzęt i lista kontaktów')}
+              className="w-full text-sm bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2.5 outline-none resize-none" />
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {[tr('Zespół fotografów'), tr('Kawiarnia / kawiarenka'), tr('Grupa wolontariuszy'), tr('Biblioteka zasobów')].map((s) => (
+                <button key={s} onClick={() => setAiPrompt(s)} disabled={aiBusy} className="text-xs px-2.5 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-accent-primary/50">{s}</button>
+              ))}
+            </div>
+            {aiError && <div className="mt-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{aiError}</div>}
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setAiOpen(false)} disabled={aiBusy} className="text-sm text-gray-500 px-4 py-2">{tr('Anuluj')}</button>
+              <button onClick={handleAiGenerate} disabled={aiBusy || !aiPrompt.trim()}
+                className="text-sm bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-lg disabled:opacity-50 flex items-center gap-2">
+                {aiBusy ? <Icons.Loader2 size={15} className="animate-spin" /> : <Icons.Sparkles size={15} />} {aiBusy ? tr('Generuję…') : tr('Generuj')}
+              </button>
             </div>
           </div>
         </div>

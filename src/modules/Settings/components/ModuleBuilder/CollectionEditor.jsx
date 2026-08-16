@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import { tr } from '../../../../i18n';
-import { COLLECTION_FIELD_TYPES, createCollectionField, FIELDS_WITH_OPTIONS } from './builderElements';
+import { COLLECTION_FIELD_TYPES, createCollectionField, FIELDS_WITH_OPTIONS, STATUS_COLORS } from './builderElements';
 import { VISIBILITY_OPERATORS } from '../../../Forms/utils/fieldTypes';
 
 const inputCls =
@@ -47,7 +47,13 @@ export default function CollectionEditor({ element, update }) {
   // Wartość opcji jest STAŁA i unikalna (niezależna od etykiety), by uniknąć kolizji
   // po usunięciu/edycji i by zapisane rekordy nie traciły odniesień.
   const newOption = (n) => ({ label: `Opcja ${n}`, value: 'opt_' + Math.random().toString(36).slice(2, 7) });
-  const addOption = (i) => patchField(i, { options: [...(fields[i].options || []), newOption((fields[i].options?.length || 0) + 1)] });
+  const addOption = (i) => {
+    const f = fields[i];
+    const cnt = f.options?.length || 0;
+    const opt = newOption(cnt + 1);
+    if (f.type === 'status') opt.color = STATUS_COLORS[cnt % STATUS_COLORS.length];
+    patchField(i, { options: [...(f.options || []), opt] });
+  };
 
   return (
     <div className="space-y-4">
@@ -62,7 +68,17 @@ export default function CollectionEditor({ element, update }) {
           <option value="list">{tr('Lista')}</option>
           <option value="table">{tr('Tabela')}</option>
           <option value="cards">{tr('Karty')}</option>
+          <option value="kanban">{tr('Kanban (grupuj po statusie)')}</option>
+          <option value="calendar">{tr('Kalendarz (po dacie)')}</option>
+          <option value="gallery">{tr('Galeria (po obrazie)')}</option>
         </select>
+        {['kanban', 'calendar', 'gallery'].includes(p.view) && (
+          <p className="mt-1 text-[11px] text-gray-400">
+            {p.view === 'kanban' && tr('Grupuje wpisy po pierwszym polu Status/Lista wyboru.')}
+            {p.view === 'calendar' && tr('Układa wpisy na siatce miesiąca wg pierwszego pola Data.')}
+            {p.view === 'gallery' && tr('Pokazuje wpisy jako kafelki wg pierwszego pola Obraz.')}
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -93,6 +109,11 @@ export default function CollectionEditor({ element, update }) {
               <div className="pl-6 space-y-1">
                 {(f.options || []).map((o, oi) => (
                   <div key={oi} className="flex items-center gap-2">
+                    {f.type === 'status' && (
+                      <button type="button" title={tr('Zmień kolor')}
+                        onClick={() => patchField(i, { options: f.options.map((x, xi) => xi === oi ? { ...x, color: STATUS_COLORS[(STATUS_COLORS.indexOf(x.color || STATUS_COLORS[oi % STATUS_COLORS.length]) + 1) % STATUS_COLORS.length] } : x) })}
+                        className="w-6 h-6 rounded-md shrink-0 border border-black/10" style={{ backgroundColor: o.color || STATUS_COLORS[oi % STATUS_COLORS.length] }} />
+                    )}
                     <input className={inputCls} value={o.label}
                       onChange={(e) => patchField(i, { options: f.options.map((x, xi) => xi === oi ? { ...x, label: e.target.value } : x) })} />
                     <button onClick={() => patchField(i, { options: f.options.filter((_, xi) => xi !== oi) })} className="p-1 text-gray-400 hover:text-red-500"><Trash2 size={13} /></button>

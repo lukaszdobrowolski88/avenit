@@ -118,6 +118,9 @@ export const COLLECTION_FIELD_TYPES = [
   { type: 'date', label: 'Data' },
   { type: 'select', label: 'Lista wyboru' },
   { type: 'multiselect', label: 'Wielokrotny wybór' },
+  { type: 'status', label: 'Status (kolorowy)' },
+  { type: 'tags', label: 'Tagi' },
+  { type: 'person', label: 'Osoba (członek)' },
   { type: 'checkbox', label: 'Tak / Nie' },
   { type: 'rating', label: 'Ocena (gwiazdki)' },
   { type: 'email', label: 'E-mail' },
@@ -126,8 +129,11 @@ export const COLLECTION_FIELD_TYPES = [
   { type: 'file', label: 'Plik (URL)' },
 ];
 
-// Pola wymagające listy opcji (options).
-export const FIELDS_WITH_OPTIONS = ['select', 'multiselect'];
+// Pola wymagające listy opcji (options). 'status' = opcje z kolorem.
+export const FIELDS_WITH_OPTIONS = ['select', 'multiselect', 'status'];
+
+// Kolory dla opcji statusu (paleta w stylu Monday).
+export const STATUS_COLORS = ['#00c875', '#fdab3d', '#e2445c', '#579bfc', '#a25ddc', '#00b4d8', '#ff5ac4', '#808080'];
 
 export function newFieldKey() {
   return 'f_' + Math.random().toString(36).slice(2, 8);

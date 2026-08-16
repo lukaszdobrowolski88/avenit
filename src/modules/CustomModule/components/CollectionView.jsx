@@ -1,8 +1,15 @@
-import React, { useState, useMemo } from 'react';
-import { Database, Plus, Pencil, Trash2, X, Save, Star, Search, ArrowUpDown, Download } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Database, Plus, Pencil, Trash2, X, Save, Star, Search, ArrowUpDown, Download, Upload, ChevronLeft, ChevronRight } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
 import { useModuleRecords } from '../../../hooks/useModuleRecords';
 import { evaluateVisibility } from '../../Forms/utils/fieldTypes';
+import { STATUS_COLORS } from '../../Settings/components/ModuleBuilder/builderElements';
+
+const statusColor = (field, value) => {
+  const o = (field.options || []).find((x) => x.value === value);
+  return o?.color || STATUS_COLORS[Math.max(0, (field.options || []).findIndex((x) => x.value === value)) % STATUS_COLORS.length];
+};
 
 function formatValue(field, value) {
   if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) return '—';
@@ -13,6 +20,16 @@ function formatValue(field, value) {
       const arr = Array.isArray(value) ? value : [value];
       return arr.map((v) => (field.options || []).find((o) => o.value === v)?.label || v).join(', ');
     }
+    case 'status': {
+      const o = (field.options || []).find((x) => x.value === value);
+      return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: statusColor(field, value) }}>{o?.label || value}</span>;
+    }
+    case 'tags': {
+      const arr = Array.isArray(value) ? value : [value];
+      return <span className="flex flex-wrap gap-1">{arr.filter(Boolean).map((t, i) => <span key={i} className="px-2 py-0.5 rounded-full text-xs bg-accent-primary/10 text-accent-primary">{t}</span>)}</span>;
+    }
+    case 'person':
+      return <span className="inline-flex items-center gap-1.5 text-sm"><span className="w-5 h-5 rounded-full bg-accent-primary/20 text-accent-primary text-[10px] font-bold flex items-center justify-center">{String(value).charAt(0).toUpperCase()}</span>{value}</span>;
     case 'currency': return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(Number(value) || 0);
     case 'rating': { const n = Math.max(0, Math.min(5, Number(value) || 0)); return '★'.repeat(n) + '☆'.repeat(5 - n); }
     case 'image': return <img src={value} alt="" className="h-10 w-10 object-cover rounded-lg" />;
@@ -25,15 +42,53 @@ function formatValue(field, value) {
 function rawValue(field, value) {
   if (value == null) return '';
   if (Array.isArray(value)) return value.map((v) => (field.options || []).find((o) => o.value === v)?.label || v).join('; ');
-  if (field.type === 'select') return (field.options || []).find((o) => o.value === value)?.label || String(value);
+  if (field.type === 'select' || field.type === 'status') return (field.options || []).find((o) => o.value === value)?.label || String(value);
   return String(value);
 }
 
 const inputCls =
   'w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light';
 
-function FieldInput({ field, value, onChange }) {
+function TagsInput({ value, onChange }) {
+  const arr = Array.isArray(value) ? value : [];
+  const [text, setText] = useState('');
+  const add = () => { const t = text.trim(); if (t && !arr.includes(t)) onChange([...arr, t]); setText(''); };
+  return (
+    <div className={inputCls + ' flex flex-wrap gap-1.5 items-center'}>
+      {arr.map((t, i) => (
+        <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-accent-primary/10 text-accent-primary">
+          {t}<button type="button" onClick={() => onChange(arr.filter((_, xi) => xi !== i))}><X size={11} /></button>
+        </span>
+      ))}
+      <input value={text} onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); add(); } }} onBlur={add}
+        placeholder={tr('dodaj tag…')} className="flex-1 min-w-[80px] bg-transparent outline-none text-sm" />
+    </div>
+  );
+}
+
+function FieldInput({ field, value, onChange, people = [] }) {
   switch (field.type) {
+    case 'status':
+      return (
+        <div className="flex flex-wrap gap-1.5">
+          {(field.options || []).map((o) => (
+            <button key={o.value} type="button" onClick={() => onChange(o.value === value ? '' : o.value)}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium text-white transition" style={{ backgroundColor: o.color || statusColor(field, o.value), opacity: value === o.value ? 1 : 0.4 }}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      );
+    case 'tags':
+      return <TagsInput value={value} onChange={onChange} />;
+    case 'person':
+      return (
+        <select className={inputCls} value={value ?? ''} onChange={(e) => onChange(e.target.value)}>
+          <option value="">{tr('— wybierz osobę —')}</option>
+          {people.map((p) => <option key={p.email || p.name} value={p.name}>{p.name}</option>)}
+        </select>
+      );
     case 'textarea':
       return <textarea rows={3} className={inputCls} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
     case 'number':
@@ -97,7 +152,7 @@ function FieldInput({ field, value, onChange }) {
   }
 }
 
-function RecordForm({ fields, initial, onCancel, onSubmit }) {
+function RecordForm({ fields, initial, onCancel, onSubmit, people = [] }) {
   const [values, setValues] = useState(() => ({ ...(initial || {}) }));
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
@@ -134,7 +189,7 @@ function RecordForm({ fields, initial, onCancel, onSubmit }) {
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1.5">
                   {f.label}{f.required ? ' *' : ''}
                 </label>
-                <FieldInput field={f} value={values[f.key]} onChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))} />
+                <FieldInput field={f} value={values[f.key]} onChange={(v) => setValues((s) => ({ ...s, [f.key]: v }))} people={people} />
               </div>
             );
           })}
@@ -148,6 +203,37 @@ function RecordForm({ fields, initial, onCancel, onSubmit }) {
       </div>
     </div>
   );
+}
+
+// Parser CSV (obsługa cudzysłowów i przecinków w polach).
+function parseCsvRows(text) {
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; }
+      else cur += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+    else if (c !== '\r') cur += c;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter((r) => r.some((x) => x.trim() !== ''));
+}
+
+// Zamiana komórki CSV (string) na wartość zgodną z typem pola.
+function coerceImport(field, cell) {
+  const v = (cell || '').trim();
+  const byLabel = (label) => (field.options || []).find((o) => o.label.toLowerCase() === label.toLowerCase())?.value || label;
+  switch (field.type) {
+    case 'number': case 'currency': case 'rating': return Number(v.replace(',', '.')) || 0;
+    case 'checkbox': return /^(tak|true|1|yes|x)$/i.test(v);
+    case 'multiselect': return v.split(/[;,]/).map((x) => byLabel(x.trim())).filter(Boolean);
+    case 'tags': return v.split(/[;,]/).map((x) => x.trim()).filter(Boolean);
+    case 'select': case 'status': return byLabel(v);
+    default: return v;
+  }
 }
 
 function exportCsv(fields, records, title) {
@@ -175,6 +261,33 @@ export default function CollectionView({ element, ctx }) {
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
+  const [people, setPeople] = useState([]);
+  const [calCursor, setCalCursor] = useState(() => { const d = new Date(); d.setDate(1); return d; });
+  const importRef = useRef(null);
+
+  const hasPerson = fields.some((f) => f.type === 'person');
+  useEffect(() => {
+    if (!hasPerson) return;
+    supabase.from('app_users').select('email, full_name, name')
+      .then(({ data }) => setPeople((data || []).map((u) => ({ email: u.email, name: u.full_name || u.name || u.email })).filter((u) => u.name)));
+  }, [hasPerson]);
+
+  const importCsv = async (file) => {
+    if (!file) return;
+    try {
+      const rows = parseCsvRows(await file.text());
+      if (rows.length < 2) { alert(tr('Plik nie zawiera danych.')); return; }
+      const colFields = rows[0].map((h) => fields.find((f) => f.label.trim().toLowerCase() === h.trim().toLowerCase()));
+      let n = 0;
+      for (const row of rows.slice(1)) {
+        const data = {};
+        row.forEach((cell, i) => { const f = colFields[i]; if (f && cell.trim() !== '') data[f.key] = coerceImport(f, cell); });
+        if (Object.keys(data).length) { await create(data); n++; }
+      }
+      alert(`${tr('Zaimportowano wpisów:')} ${n}`);
+    } catch (e) { alert(tr('Błąd importu: ') + (e.message || e)); }
+    if (importRef.current) importRef.current.value = '';
+  };
 
   const displayed = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -215,6 +328,104 @@ export default function CollectionView({ element, ctx }) {
     </div>
   );
 
+  const openEdit = (rec) => { setEditing(rec); setFormOpen(true); };
+  const groupField = fields.find((f) => f.type === 'status') || fields.find((f) => f.type === 'select');
+  const dateField = fields.find((f) => f.type === 'date');
+  const imageField = fields.find((f) => f.type === 'image');
+  const titleField = fields.find((f) => ['text', 'textarea'].includes(f.type)) || fields.find((f) => !['image', 'file'].includes(f.type)) || fields[0];
+
+  const renderKanban = () => {
+    if (!groupField) return <div className="py-10 text-center text-gray-400 text-sm">{tr('Dodaj pole Status lub Lista wyboru, aby użyć widoku Kanban.')}</div>;
+    const cols = [...(groupField.options || []).map((o) => ({ key: o.value, label: o.label, color: o.color })), { key: '__none', label: tr('Bez wartości'), color: '#cbd5e1' }];
+    return (
+      <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-2">
+        {cols.map((col) => {
+          const items = displayed.filter((r) => (r.data?.[groupField.key] || '__none') === col.key);
+          if (col.key === '__none' && items.length === 0) return null;
+          return (
+            <div key={col.key} className="w-64 shrink-0">
+              <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: col.color || statusColor(groupField, col.key) }} />
+                {col.label}<span className="text-gray-400 font-normal">{items.length}</span>
+              </div>
+              <div className="space-y-2">
+                {items.map((rec) => (
+                  <div key={rec.id} onClick={() => openEdit(rec)} className="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 cursor-pointer hover:shadow-md">
+                    <div className="font-medium text-sm text-gray-800 dark:text-gray-100 mb-1 truncate">{titleField ? formatValue(titleField, rec.data?.[titleField.key]) : tr('Wpis')}</div>
+                    {fields.filter((f) => f.key !== titleField?.key && f.key !== groupField.key).slice(0, 2).map((f) => (
+                      <div key={f.key} className="text-xs text-gray-500 truncate">{formatValue(f, rec.data?.[f.key])}</div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderGallery = () => {
+    if (!imageField) return <div className="py-10 text-center text-gray-400 text-sm">{tr('Dodaj pole Obraz, aby użyć widoku Galeria.')}</div>;
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {displayed.map((rec) => {
+          const url = rec.data?.[imageField.key];
+          return (
+            <div key={rec.id} onClick={() => openEdit(rec)} className="group cursor-pointer rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+              <div className="aspect-square bg-gray-100 dark:bg-gray-900">
+                {url ? <img src={url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><Database size={28} /></div>}
+              </div>
+              {titleField && titleField.key !== imageField.key && <div className="p-2 text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{rawValue(titleField, rec.data?.[titleField.key])}</div>}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderCalendar = () => {
+    if (!dateField) return <div className="py-10 text-center text-gray-400 text-sm">{tr('Dodaj pole Data, aby użyć widoku Kalendarz.')}</div>;
+    const y = calCursor.getFullYear(), m = calCursor.getMonth();
+    const startDay = (new Date(y, m, 1).getDay() + 6) % 7;
+    const days = new Date(y, m + 1, 0).getDate();
+    const byDate = {};
+    displayed.forEach((r) => { const d = r.data?.[dateField.key]; if (d) (byDate[d] = byDate[d] || []).push(r); });
+    const cells = [];
+    for (let i = 0; i < startDay; i++) cells.push(null);
+    for (let d = 1; d <= days; d++) cells.push(d);
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <button onClick={() => setCalCursor(new Date(y, m - 1, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><ChevronLeft size={18} /></button>
+          <span className="text-sm font-semibold capitalize">{calCursor.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' })}</span>
+          <button onClick={() => setCalCursor(new Date(y, m + 1, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><ChevronRight size={18} /></button>
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-gray-400 uppercase mb-1">
+          {[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map((d) => <div key={d}>{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((d, i) => {
+            if (!d) return <div key={i} />;
+            const key = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const items = byDate[key] || [];
+            return (
+              <div key={i} className="min-h-[64px] rounded-lg border border-gray-100 dark:border-gray-800 p-1">
+                <div className="text-[11px] text-gray-400">{d}</div>
+                {items.slice(0, 3).map((rec) => (
+                  <button key={rec.id} onClick={() => openEdit(rec)} className="block w-full text-left text-[11px] px-1 py-0.5 rounded bg-accent-primary/10 text-accent-primary truncate mt-0.5">
+                    {titleField ? rawValue(titleField, rec.data?.[titleField.key]) : tr('Wpis')}
+                  </button>
+                ))}
+                {items.length > 3 && <div className="text-[10px] text-gray-400 mt-0.5">+{items.length - 3}</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
@@ -232,6 +443,14 @@ export default function CollectionView({ element, ctx }) {
             <button onClick={() => exportCsv(fields, displayed, p.title)} className="p-2 text-gray-500 hover:text-accent-primary rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700" title={tr('Eksport CSV')}>
               <Download size={17} />
             </button>
+          )}
+          {p.allowCreate !== false && fields.length > 0 && (
+            <>
+              <input ref={importRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => importCsv(e.target.files?.[0])} />
+              <button onClick={() => importRef.current?.click()} className="p-2 text-gray-500 hover:text-accent-primary rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700" title={tr('Import CSV')}>
+                <Upload size={17} />
+              </button>
+            </>
           )}
           {p.allowCreate !== false && (
             <button onClick={() => { setEditing(null); setFormOpen(true); }}
@@ -285,6 +504,12 @@ export default function CollectionView({ element, ctx }) {
             </div>
           ))}
         </div>
+      ) : view === 'kanban' ? (
+        renderKanban()
+      ) : view === 'calendar' ? (
+        renderCalendar()
+      ) : view === 'gallery' ? (
+        renderGallery()
       ) : (
         <div className="space-y-2">
           {displayed.map((rec) => (
@@ -309,6 +534,7 @@ export default function CollectionView({ element, ctx }) {
           initial={editing?.data}
           onCancel={() => { setFormOpen(false); setEditing(null); }}
           onSubmit={submit}
+          people={people}
         />
       )}
     </div>
