@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { PermissionsProvider } from './contexts/PermissionsContext';
@@ -21,48 +21,54 @@ import useOffline from './hooks/useOffline';
 import Login from './modules/Login';
 import ResetPassword from './modules/ResetPassword';
 import TwoFactorSetup from './components/TwoFactorSetup';
-import PersonalDashboard from './modules/Dashboard/PersonalDashboard';
-import ProgramsList from './modules/Programs/ProgramsList';
-import ProgramDetail from './modules/Programs/ProgramDetail';
-import Members from './modules/Members';
-import WorshipModule from './modules/MusicTeam/WorshipModule';
-import MediaTeamModule from './modules/MediaTeamModule';
-import AtmosferaTeamModule from './modules/AtmosferaTeamModule';
-import KidsModule from './modules/Kids/KidsModule';
-import HomeGroupsModule from './modules/HomeGroups/HomeGroupsModule';
-import FinanceModule from './modules/FinanceModule';
-import GivingModule from './modules/Giving/GivingModule';
+// Publiczne strony (osobne wejścia bez logowania) — zwykły import, bo renderowane
+// w gałęziach early-return, które nie mają granicy <Suspense>.
 import GiveOnlinePage from './modules/Giving/GiveOnlinePage';
 import CampaignWidgetPage from './modules/Giving/CampaignWidgetPage';
-import AttendanceModule from './modules/Attendance/AttendanceModule';
-import AnalyticsModule from './modules/Analytics/AnalyticsModule';
-import AutomationModule from './modules/Automation/AutomationModule';
-import AiAssistantModule from './modules/AI/AiAssistantModule';
-import SermonsModule from './modules/Sermons/SermonsModule';
 import SermonPublicPage from './modules/Sermons/SermonPublicPage';
-import CareModule from './modules/Care/CareModule';
-import RoomsModule from './modules/Rooms/RoomsModule';
-import ServeModule from './modules/Serve/ServeModule';
-import RsvpModule from './modules/Rsvp/RsvpModule';
 import RsvpPublicPage from './modules/Rsvp/RsvpPublicPage';
-import GlobalSettings from './modules/Settings/GlobalSettings';
-import UserSettings from './modules/Settings/UserSettings';
-import CalendarModule from './modules/CalendarModule';
-import TeachingModule from './modules/Teaching/TeachingModule';
-import PrayerWallModule from './modules/PrayerWall/PrayerWallModule';
-import KomunikatorModule from './modules/Komunikator/KomunikatorModule';
-import MlodziezowkaModule from './modules/MlodziezowkaModule';
-import MailingModule from './modules/Mailing/MailingModule';
-import PushCampaignsModule from './modules/PushCampaigns/PushCampaignsModule';
-import SmsCampaignsModule from './modules/SmsCampaigns/SmsCampaignsModule';
-import MailModule from './modules/Mail/MailModule';
-import FormsModule from './modules/Forms/FormsModule';
 import PublicFormPage from './modules/Forms/pages/PublicFormPage';
 import PublicModulePage from './modules/CustomModule/pages/PublicModulePage';
 import PublicBoardForm from './modules/Boards/pages/PublicBoardForm';
 import AssignmentResponsePage from './modules/AssignmentResponse/AssignmentResponsePage';
-import CustomModule from './modules/CustomModule/CustomModule';
-import BoardsModule from './modules/Boards/BoardsModule';
+
+// Moduły uwierzytelnionej apki — code-splitting (React.lazy): każdy trafia do
+// osobnego chunku ładowanego dopiero przy wejściu w trasę. Skraca bundle logowania
+// (wcześniej strona logowania ciągnęła kod ~35 modułów naraz).
+const PersonalDashboard = lazy(() => import('./modules/Dashboard/PersonalDashboard'));
+const ProgramsList = lazy(() => import('./modules/Programs/ProgramsList'));
+const ProgramDetail = lazy(() => import('./modules/Programs/ProgramDetail'));
+const Members = lazy(() => import('./modules/Members'));
+const WorshipModule = lazy(() => import('./modules/MusicTeam/WorshipModule'));
+const MediaTeamModule = lazy(() => import('./modules/MediaTeamModule'));
+const AtmosferaTeamModule = lazy(() => import('./modules/AtmosferaTeamModule'));
+const KidsModule = lazy(() => import('./modules/Kids/KidsModule'));
+const HomeGroupsModule = lazy(() => import('./modules/HomeGroups/HomeGroupsModule'));
+const FinanceModule = lazy(() => import('./modules/FinanceModule'));
+const GivingModule = lazy(() => import('./modules/Giving/GivingModule'));
+const AttendanceModule = lazy(() => import('./modules/Attendance/AttendanceModule'));
+const AnalyticsModule = lazy(() => import('./modules/Analytics/AnalyticsModule'));
+const AutomationModule = lazy(() => import('./modules/Automation/AutomationModule'));
+const AiAssistantModule = lazy(() => import('./modules/AI/AiAssistantModule'));
+const SermonsModule = lazy(() => import('./modules/Sermons/SermonsModule'));
+const CareModule = lazy(() => import('./modules/Care/CareModule'));
+const RoomsModule = lazy(() => import('./modules/Rooms/RoomsModule'));
+const ServeModule = lazy(() => import('./modules/Serve/ServeModule'));
+const RsvpModule = lazy(() => import('./modules/Rsvp/RsvpModule'));
+const GlobalSettings = lazy(() => import('./modules/Settings/GlobalSettings'));
+const UserSettings = lazy(() => import('./modules/Settings/UserSettings'));
+const CalendarModule = lazy(() => import('./modules/CalendarModule'));
+const TeachingModule = lazy(() => import('./modules/Teaching/TeachingModule'));
+const PrayerWallModule = lazy(() => import('./modules/PrayerWall/PrayerWallModule'));
+const KomunikatorModule = lazy(() => import('./modules/Komunikator/KomunikatorModule'));
+const MlodziezowkaModule = lazy(() => import('./modules/MlodziezowkaModule'));
+const MailingModule = lazy(() => import('./modules/Mailing/MailingModule'));
+const PushCampaignsModule = lazy(() => import('./modules/PushCampaigns/PushCampaignsModule'));
+const SmsCampaignsModule = lazy(() => import('./modules/SmsCampaigns/SmsCampaignsModule'));
+const MailModule = lazy(() => import('./modules/Mail/MailModule'));
+const FormsModule = lazy(() => import('./modules/Forms/FormsModule'));
+const CustomModule = lazy(() => import('./modules/CustomModule/CustomModule'));
+const BoardsModule = lazy(() => import('./modules/Boards/BoardsModule'));
 import { tr } from './i18n';
 
 // Lista kluczy systemowych modułów (mają dedykowane komponenty)
@@ -72,6 +78,15 @@ const SYSTEM_MODULE_KEYS = [
   'komunikator', 'mlodziezowka', 'mailing', 'mail', 'forms', 'settings', 'push_campaigns', 'sms_campaigns',
   'attendance', 'analytics', 'automation', 'ai', 'sermons', 'care', 'rooms', 'serve', 'rsvp', 'boards'
 ];
+
+// Fallback dla granicy <Suspense> — pokazywany na czas doładowania chunku modułu (lazy).
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary"></div>
+    </div>
+  );
+}
 
 // Komponent do wyświetlania toast notifications (używa context)
 function ToastNotifications() {
@@ -460,6 +475,7 @@ function AppInner() {
               <AnnouncementBanner />
               <main className="flex-1 overflow-y-auto p-4 lg:p-6 custom-scrollbar">
               <ErrorBoundary>
+              <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<PersonalDashboard user={session.user} />} />
                 <Route path="/programs" element={<ProgramsList />} />
@@ -569,6 +585,7 @@ function AppInner() {
 
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              </Suspense>
               </ErrorBoundary>
               </main>
             </div>
