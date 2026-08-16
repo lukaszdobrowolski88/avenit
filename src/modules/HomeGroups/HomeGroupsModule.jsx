@@ -4,6 +4,8 @@ import CustomSelect from '../../components/CustomSelect';
 import ModuleBoard from '../Boards/ModuleBoard';
 import CustomDatePicker from '../../components/CustomDatePicker';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import PageHeader from '../../components/PageHeader';
+import { Home } from 'lucide-react';
 import {
   Plus, Search, Trash2, X, Users, MapPin, Calendar,
   UserPlus, BookOpen, Upload, Link as LinkIcon,
@@ -695,12 +697,7 @@ export default function HomeGroupsModule() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-          Grupy Domowe
-        </h1>
-      </div>
+      <PageHeader icon={Home} title="Grupy Domowe" />
 
       {/* Tabs */}
       <ResponsiveTabs

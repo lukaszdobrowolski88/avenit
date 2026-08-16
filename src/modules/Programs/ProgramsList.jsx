@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
+import PageHeader from '../../components/PageHeader';
+import { ClipboardList } from 'lucide-react';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useCampus } from '../../contexts/CampusContext';
 import { useT } from '../../i18n';
@@ -297,14 +299,7 @@ export default function ProgramsList() {
       <div>
         {/* Header */}
         <div className="flex items-start justify-between mb-6 sm:mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent mb-1">
-              {t('Programy')}
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
-              {t('Zarządzaj programami wydarzeń')}
-            </p>
-          </div>
+          <PageHeader icon={ClipboardList} title={t('Programy')} subtitle={t('Zarządzaj programami wydarzeń')} />
           <button
             onClick={openNewType}
             className="flex items-center gap-2 px-4 py-2.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition text-sm font-medium"

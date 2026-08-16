@@ -14,6 +14,8 @@ import EquipmentTab from './shared/EquipmentTab';
 import RolesTab from '../components/RolesTab';
 import CustomSelect from '../components/CustomSelect';
 import ResponsiveTabs from '../components/ResponsiveTabs';
+import PageHeader from '../components/PageHeader';
+import { Sparkles } from 'lucide-react';
 import { useUserRole } from '../hooks/useUserRole';
 import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
@@ -765,9 +767,7 @@ export default function MlodziezowkaModule() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary-light to-accent-secondary-light dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{t('Młodzieżówka')}</h1>
-      </div>
+      <PageHeader icon={Sparkles} title={t('Młodzieżówka')} />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs

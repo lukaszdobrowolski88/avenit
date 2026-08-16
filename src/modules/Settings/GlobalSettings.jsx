@@ -21,6 +21,8 @@ import LocalizationSettings from './components/LocalizationSettings';
 import SubscriptionInfo from './components/SubscriptionInfo';
 import { useCampus } from '../../contexts/CampusContext';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import PageHeader from '../../components/PageHeader';
+import { Settings as SettingsIcon } from 'lucide-react';
 import { tr } from '../../i18n';
 
 // Grupy nawigacji ustawień (menu po lewej).
@@ -933,9 +935,7 @@ export default function GlobalSettings() {
   return (
     <div className="flex flex-col h-full space-y-4">
       {/* NAGŁÓWEK */}
-      <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">{t('Ustawienia')}</h1>
-      </div>
+      <PageHeader icon={SettingsIcon} title={t('Ustawienia')} />
 
       {message && <div className={`p-4 rounded-xl flex items-center gap-2 cursor-pointer ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800'}`} onClick={() => setMessage(null)}>{message.type === 'success' ? <CheckCircle size={20}/> : <AlertCircle size={20}/>} {message.text}</div>}
 

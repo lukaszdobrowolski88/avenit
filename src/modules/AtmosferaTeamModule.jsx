@@ -12,6 +12,7 @@ import EquipmentTab from './shared/EquipmentTab';
 import RolesTab from '../components/RolesTab';
 import CustomSelect from '../components/CustomSelect';
 import ResponsiveTabs from '../components/ResponsiveTabs';
+import PageHeader from '../components/PageHeader';
 import { CampusBadge, useCampusBadge } from '../components/CampusBadge';
 import { useUserRole } from '../hooks/useUserRole';
 import { useTabAccess } from '../components/Can';
@@ -710,12 +711,7 @@ export default function AtmosferaTeamModule() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent flex items-center gap-3">
-          <HeartHandshake size={40} className="text-accent-primary dark:text-accent-primary-light" />
-          Atmosfera Team
-        </h1>
-      </div>
+      <PageHeader icon={HeartHandshake} title="Atmosfera Team" />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs

@@ -8,6 +8,7 @@ import TemplateGallery from './components/TemplateGallery';
 import TemplateEditor from './components/TemplateEditor';
 import CampaignStats from './components/CampaignStats';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import PageHeader from '../../components/PageHeader';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 
@@ -93,20 +94,17 @@ export default function MailingModule() {
 
   return (
     <div className="space-y-8">
-      {/* Nagłówek - identyczny styl jak inne moduły */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-          Mailing
-        </h1>
-        <button
-          data-tour="mail-new"
-          onClick={() => handleNewCampaign()}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light hover:from-accent-primary hover:to-accent-secondary text-white rounded-xl transition-all font-medium shadow-lg shadow-accent-primary-light/25 hover:shadow-xl hover:shadow-accent-primary-light/30"
-        >
-          <Plus size={18} />
-          <span className="hidden sm:inline">Nowy mail</span>
-        </button>
-      </div>
+      <PageHeader icon={Mail} title="Mailing"
+        actions={
+          <button
+            data-tour="mail-new"
+            onClick={() => handleNewCampaign()}
+            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 text-white rounded-xl transition-all font-medium shadow-md hover:shadow-lg"
+          >
+            <Plus size={18} />
+            <span className="hidden sm:inline">Nowy mail</span>
+          </button>
+        } />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs
