@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   ArrowLeft, Table2, Trello, Calendar as CalIcon, GanttChartSquare, Plus, Loader2, Zap, FormInput,
-  BarChart3, GalleryThumbnails, MoreHorizontal, Pencil, Copy, Star, Trash2,
+  BarChart3, GalleryThumbnails, MoreHorizontal, Pencil, Copy, Star, Trash2, Sparkles, Gauge,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useBoardData } from './hooks/useBoardData';
@@ -13,18 +13,22 @@ import TimelineView from './views/TimelineView';
 import FormView from './views/FormView';
 import ChartView from './views/ChartView';
 import FilesGalleryView from './views/FilesGalleryView';
+import WorkloadView from './views/WorkloadView';
 import ViewToolbar from './components/ViewToolbar';
 import ItemPanel from './components/ItemPanel';
 import AutomationsPanel from './components/AutomationsPanel';
+import AiSidekick from './components/AiSidekick';
 import Popover from './components/Popover';
+import { exportBoardCsv, buildCellsFromRecord } from './lib/csv';
 
-const VIEW_ICONS = { table: Table2, kanban: Trello, calendar: CalIcon, timeline: GanttChartSquare, form: FormInput, chart: BarChart3, files: GalleryThumbnails };
+const VIEW_ICONS = { table: Table2, kanban: Trello, calendar: CalIcon, timeline: GanttChartSquare, form: FormInput, chart: BarChart3, files: GalleryThumbnails, workload: Gauge };
 const VIEW_TYPES = [
   { type: 'table', label: 'Tabela', icon: Table2 },
   { type: 'kanban', label: 'Kanban', icon: Trello },
   { type: 'calendar', label: 'Kalendarz', icon: CalIcon },
   { type: 'timeline', label: 'Oś czasu', icon: GanttChartSquare },
   { type: 'chart', label: 'Wykres', icon: BarChart3 },
+  { type: 'workload', label: 'Obciążenie', icon: Gauge },
   { type: 'files', label: 'Galeria plików', icon: GalleryThumbnails },
   { type: 'form', label: 'Formularz', icon: FormInput },
 ];
@@ -35,6 +39,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
   const [activeViewId, setActiveViewId] = useState(null);
   const [openItem, setOpenItem] = useState(null);
   const [showAutomations, setShowAutomations] = useState(false);
+  const [showSidekick, setShowSidekick] = useState(false);
   const [updatesCount, setUpdatesCount] = useState({});
   const openedInitial = useRef(false);
 
@@ -73,6 +78,15 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
     const g = [...data.groups].sort((a, b) => a.display_order - b.display_order)[0];
     if (g) data.addItem(g.id).then(it => it && setOpenItem(it));
   };
+  const handleExport = () => exportBoardCsv(data.board, data.columns, data.items);
+  const handleImport = async (records) => {
+    const g = [...data.groups].sort((a, b) => a.display_order - b.display_order)[0];
+    if (!g || !records?.length) return;
+    for (const rec of records) {
+      const name = rec['Element'] || rec[Object.keys(rec)[0]] || 'Element';
+      await data.addItem(g.id, name, buildCellsFromRecord(rec, data.columns));
+    }
+  };
 
   if (data.loading) {
     return <div className="flex items-center justify-center h-64 text-gray-400"><Loader2 className="animate-spin" size={28} /></div>;
@@ -89,6 +103,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
       case 'calendar': return <CalendarView {...shared} />;
       case 'timeline': return <TimelineView {...shared} />;
       case 'chart': return <ChartView {...shared} />;
+      case 'workload': return <WorkloadView {...shared} />;
       case 'files': return <FilesGalleryView {...shared} />;
       case 'form': return <FormView {...shared} />;
       case 'table':
@@ -110,6 +125,10 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
           onChange={(e) => data.setBoard({ ...data.board, name: e.target.value })}
           onBlur={(e) => supabase.from('boards').update({ name: e.target.value }).eq('id', boardId)}
           className="text-2xl font-bold bg-transparent outline-none text-gray-800 dark:text-gray-100 flex-1 min-w-0" />
+        <button onClick={() => setShowSidekick(true)}
+          className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-white bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 shadow-sm">
+          <Sparkles size={15} /> AI Sidekick
+        </button>
         <button onClick={() => setShowAutomations(true)}
           className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700">
           <Zap size={15} className="text-accent-primary" /> Automatyzacje
@@ -129,7 +148,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
       </div>
 
       {(activeView?.type || 'table') !== 'form' && (
-        <ViewToolbar columns={data.columns} config={config} onUpdateConfig={onUpdateConfig} onAddItem={addItemToFirstGroup} />
+        <ViewToolbar columns={data.columns} config={config} onUpdateConfig={onUpdateConfig} onAddItem={addItemToFirstGroup} onExport={handleExport} onImport={handleImport} />
       )}
 
       {renderView()}
@@ -143,6 +162,8 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
           onAdd={automations.addAutomation} onUpdate={automations.updateAutomation} onDelete={automations.deleteAutomation}
           onClose={() => setShowAutomations(false)} />
       )}
+
+      {showSidekick && <AiSidekick data={data} onClose={() => setShowSidekick(false)} />}
     </div>
   );
 }

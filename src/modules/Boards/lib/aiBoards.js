@@ -1,4 +1,5 @@
 import { callAi } from '../../AI/lib/aiApi';
+import { cellToText } from './columnTypes';
 
 // Wyciągnij JSON z odpowiedzi AI (zdejmij ewentualne ```json ... ``` i tekst wokół).
 export function parseAiJson(text) {
@@ -33,4 +34,19 @@ export async function generateAutomationSpec(prompt, columns) {
   const spec = parseAiJson(text);
   if (!spec || !spec.trigger || !Array.isArray(spec.actions)) throw new Error('AI zwróciło nieprawidłową automatyzację.');
   return spec;
+}
+
+// AI Sidekick — odpowiedź na pytanie w języku naturalnym o dane tablicy.
+export async function askBoard(question, { board, columns, items }) {
+  const cols = (columns || []).filter(c => c.type !== 'files');
+  const rows = (items || []).filter(it => !it.parent_item_id).slice(0, 150).map(it => {
+    const row = { element: it.name };
+    for (const c of cols) {
+      const t = cellToText(c, it.cells?.[c.id]);
+      if (t) row[c.name] = t;
+    }
+    return row;
+  });
+  const context = { tablica: board?.name || '', liczba_elementow: rows.length, kolumny: cols.map(c => c.name), elementy: rows };
+  return callAi('ask_data', question, context);
 }

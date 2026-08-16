@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Search, SlidersHorizontal, ArrowUpDown, Plus, X, Filter } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Search, SlidersHorizontal, ArrowUpDown, Plus, X, Filter, MoreHorizontal, Download, Upload } from 'lucide-react';
 import Popover from './Popover';
 import ColumnIcon from './ColumnIcon';
 import { getColumnType, cellToText } from '../lib/columnTypes';
+import { parseCsv } from '../lib/csv';
 
 // Wybór wartości do filtra zależny od typu kolumny.
 function FilterValue({ column, value, onChange }) {
@@ -43,9 +44,19 @@ function defaultOp(type) {
   return 'is';
 }
 
-export default function ViewToolbar({ columns, config, onUpdateConfig, onAddItem, peopleCols }) {
+export default function ViewToolbar({ columns, config, onUpdateConfig, onAddItem, onExport, onImport }) {
   const filters = config.filters || [];
   const sorts = config.sorts || [];
+  const fileRef = useRef(null);
+
+  const onFile = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => { const { records } = parseCsv(String(reader.result || '')); onImport?.(records); };
+    reader.readAsText(f);
+    e.target.value = '';
+  };
   const filterableCols = columns.filter(c => c.type !== 'files');
 
   const addFilter = (col) => onUpdateConfig({ filters: [...filters, { columnId: col.id, op: defaultOp(col.type), value: col.type === 'checkbox' ? true : null }] });
@@ -141,6 +152,19 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, onAddItem
                 );
               })}
             </div>
+          </div>
+        )}
+      </Popover>
+
+      {/* Więcej: Eksport / Import CSV */}
+      <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} className="hidden" />
+      <Popover align="right" width={190} trigger={
+        <button className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"><MoreHorizontal size={16} /></button>
+      }>
+        {({ close }) => (
+          <div className="p-1.5">
+            <button onClick={() => { onExport?.(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Download size={14} /> Eksportuj CSV</button>
+            <button onClick={() => { fileRef.current?.click(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Upload size={14} /> Importuj CSV</button>
           </div>
         )}
       </Popover>

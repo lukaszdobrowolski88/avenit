@@ -144,6 +144,16 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
     return data;
   }, [boardId, items, userEmail, logActivity]);
 
+  const addSubitem = useCallback(async (parent, name) => {
+    const { data, error: e } = await supabase.from('board_items').insert({
+      board_id: boardId, group_id: parent.group_id, parent_item_id: parent.id,
+      name: name || '', cells: {}, display_order: 0, created_by: userEmail || null,
+    }).select().single();
+    if (e) { setError(e.message); return null; }
+    setItems(prev => [...prev, data]);
+    return data;
+  }, [boardId, userEmail]);
+
   const updateItem = useCallback(async (itemId, updates) => {
     const { data, error: e } = await supabase.from('board_items')
       .update(updates).eq('id', itemId).select().single();
@@ -249,7 +259,7 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
     reload: load, setBoard,
     addColumn, updateColumn, deleteColumn, reorderColumns,
     addGroup, updateGroup, deleteGroup, reorderGroups,
-    addItem, updateItem, updateCell, deleteItem, moveItem, reorderItemsInGroup,
+    addItem, addSubitem, updateItem, updateCell, deleteItem, moveItem, reorderItemsInGroup,
     addView, updateView, deleteView, duplicateView, setDefaultView,
     registerAutomationRunner: (fn) => { onAutomationRef.current = fn; },
   };
