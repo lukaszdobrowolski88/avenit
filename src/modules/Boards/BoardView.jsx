@@ -122,12 +122,12 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
   return (
     <div>
       {/* Nagłówek tablicy */}
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-center gap-3 mb-4">
         {!embedded && onBack && (
           <button onClick={onBack} className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><ArrowLeft size={20} /></button>
         )}
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shrink-0" style={{ backgroundColor: data.board.color || '#6366f1' }}>
-          <Table2 size={18} />
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg" style={{ backgroundColor: data.board.color || '#6366f1' }}>
+          <Table2 size={22} />
         </div>
         <input value={data.board.name}
           onChange={(e) => data.setBoard({ ...data.board, name: e.target.value })}
