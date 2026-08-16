@@ -4,6 +4,7 @@ import {
   Folder as FolderIcon, ChevronRight, ChevronDown, Lock, Globe, UserPlus,
 } from 'lucide-react';
 import { tr } from '../../i18n';
+import { useCan } from '../../components/Can';
 import { useBoards } from './hooks/useBoards';
 import { BOARD_TEMPLATES } from './lib/templates';
 import { generateBoardSpec } from './lib/aiBoards';
@@ -84,6 +85,11 @@ function TemplateChooser({ onPick, onClose, busy }) {
 
 export default function BoardsList({ userEmail, userName, moduleKey = null, onOpenBoard }) {
   const { boards, loading, fetchBoards, createFromTemplate, createFromSpec, updateBoard, deleteBoard, duplicateBoard } = useBoards(userEmail, userName);
+  // RBAC: członek współpracuje na elementach, ale nie tworzy/edytuje/usuwa tablic.
+  const canCreate = useCan('res:boards:create');
+  const canUpdate = useCan('res:boards:update');
+  const canDelete = useCan('res:boards:delete');
+  const canManageBoard = canUpdate || canCreate || canDelete;
   const [creating, setCreating] = useState(false);
   const [chooser, setChooser] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
@@ -127,7 +133,7 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
 
   return (
     <div>
-      {!moduleKey && (
+      {!moduleKey && canCreate && (
         <div className="flex justify-end mb-4">
           <button onClick={handleCreate} disabled={creating}
             className="flex items-center gap-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg hover:opacity-90 disabled:opacity-50">
@@ -136,7 +142,7 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
         </div>
       )}
 
-      <AiBoardGenerator onGenerate={handleAiGenerate} busy={aiBusy} />
+      {canCreate && <AiBoardGenerator onGenerate={handleAiGenerate} busy={aiBusy} />}
       {aiError && <div className="mb-4 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{aiError}</div>}
 
       {loading ? (
@@ -144,20 +150,24 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
       ) : boards.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
           <LayoutGrid size={44} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-          <p className="text-gray-500 dark:text-gray-400 mb-4">Nie masz jeszcze żadnej tablicy.</p>
-          <button onClick={handleCreate} disabled={creating}
-            className="inline-flex items-center gap-2 bg-accent-primary text-white px-4 py-2 rounded-xl font-medium hover:opacity-90 disabled:opacity-50">
-            <Plus size={18} /> Utwórz pierwszą tablicę
-          </button>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">{tr('Nie masz jeszcze żadnej tablicy.')}</p>
+          {canCreate ? (
+            <button onClick={handleCreate} disabled={creating}
+              className="inline-flex items-center gap-2 bg-accent-primary text-white px-4 py-2 rounded-xl font-medium hover:opacity-90 disabled:opacity-50">
+              <Plus size={18} /> {tr('Utwórz pierwszą tablicę')}
+            </button>
+          ) : (
+            <p className="text-sm text-gray-400">{tr('Poproś lidera zespołu o utworzenie tablicy.')}</p>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
-          {moduleKey && (
+          {moduleKey && canCreate && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               <button onClick={handleCreate} disabled={creating}
                 className="flex flex-col items-center justify-center gap-2 h-36 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-accent-primary hover:border-accent-primary/50">
                 {creating ? <Loader2 size={22} className="animate-spin" /> : <Plus size={22} />}
-                <span className="text-sm font-medium">Nowa tablica</span>
+                <span className="text-sm font-medium">{tr('Nowa tablica')}</span>
               </button>
             </div>
           )}
@@ -181,27 +191,29 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
                           <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: b.color || '#6366f1' }}>
                             <Table2 size={20} />
                           </div>
+                          {canManageBoard && (
                           <Popover align="right" width={190} trigger={
                             <button onClick={(e) => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 p-1"><MoreHorizontal size={18} /></button>
                           }>
                             {({ close }) => (
                               <div className="p-1.5" onClick={(e) => e.stopPropagation()}>
-                                <button onClick={() => { moveToFolder(b.id); close(); }}
-                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><FolderIcon size={14} /> Przenieś do folderu</button>
-                                <button onClick={() => { updateBoard(b.id, { visibility: b.visibility === 'private' ? 'workspace' : 'private' }); close(); }}
+                                {canUpdate && <button onClick={() => { moveToFolder(b.id); close(); }}
+                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><FolderIcon size={14} /> {tr('Przenieś do folderu')}</button>}
+                                {canUpdate && <button onClick={() => { updateBoard(b.id, { visibility: b.visibility === 'private' ? 'workspace' : 'private' }); close(); }}
                                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200">
-                                  {b.visibility === 'private' ? <><Globe size={14} /> Udostępnij zespołowi</> : <><Lock size={14} /> Ustaw jako prywatną</>}</button>
-                                {b.visibility === 'private' && (
+                                  {b.visibility === 'private' ? <><Globe size={14} /> {tr('Udostępnij zespołowi')}</> : <><Lock size={14} /> {tr('Ustaw jako prywatną')}</>}</button>}
+                                {canUpdate && b.visibility === 'private' && (
                                   <button onClick={() => { const em = prompt('Edytorzy (e-maile, oddzielone przecinkiem):', (b.editors || []).join(', ')); if (em !== null) updateBoard(b.id, { editors: em.split(',').map(s => s.trim()).filter(Boolean) }); close(); }}
-                                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><UserPlus size={14} /> Edytorzy ({(b.editors || []).length})</button>
+                                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><UserPlus size={14} /> {tr('Edytorzy')} ({(b.editors || []).length})</button>
                                 )}
-                                <button onClick={() => { duplicateBoard(b.id); close(); }}
-                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Copy size={14} /> Duplikuj</button>
-                                <button onClick={() => { if (confirm(`Usunąć tablicę „${b.name}"?`)) deleteBoard(b.id); close(); }}
-                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> Usuń</button>
+                                {canCreate && <button onClick={() => { duplicateBoard(b.id); close(); }}
+                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Copy size={14} /> {tr('Duplikuj')}</button>}
+                                {canDelete && <button onClick={() => { if (confirm(`Usunąć tablicę „${b.name}"?`)) deleteBoard(b.id); close(); }}
+                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> {tr('Usuń')}</button>}
                               </div>
                             )}
                           </Popover>
+                          )}
                         </div>
                         <h3 className="mt-3 font-semibold text-gray-800 dark:text-gray-100 line-clamp-2">{b.name}</h3>
                         {b.description && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{b.description}</p>}
