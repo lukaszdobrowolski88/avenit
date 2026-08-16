@@ -395,12 +395,12 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
         .order('start_date', { ascending: true });
 
       if (error) {
-        // Wykryj różne warianty błędu "tabela nie istnieje"
+        // Wykryj PRAWDZIWY brak tabeli (relation ... does not exist / 42P01).
+        // NIE mylić z brakiem kolumny („column ... does not exist") — to błąd schematu,
+        // nie tabeli; wcześniej gołe „does not exist" fałszywie pokazywało ekran „utwórz tabelę".
         const errMsg = error.message?.toLowerCase() || '';
         const isTableMissing = error.code === '42P01' ||
-          errMsg.includes('does not exist') ||
-          errMsg.includes('schema cache') ||
-          errMsg.includes('could not find');
+          (errMsg.includes('relation') && errMsg.includes('does not exist'));
 
         if (isTableMissing) {
           setTableExists(false);
@@ -532,13 +532,13 @@ GRANT ALL ON ${config.tableName} TO anon;`;
             Tabela nie istnieje
           </h3>
           <p className="text-yellow-700 dark:text-yellow-300 mb-4">
-            {tr('Aby korzystać z wydarzeń w tym module, utwórz tabelę w Supabase.')}
+            {tr('Ta funkcja wymaga tabeli, której nie ma jeszcze w bazie danych. Skontaktuj się z administratorem.')}
           </p>
           <div className="bg-gray-900 rounded-xl p-4 text-left overflow-x-auto">
             <pre className="text-green-400 text-xs whitespace-pre">{sqlScript}</pre>
           </div>
           <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-4">
-            {tr('Skopiuj powyższy kod i wykonaj go w Supabase SQL Editor.')}
+            {tr('Poproś administratora o utworzenie tabeli wg poniższego schematu.')}
           </p>
           <button
             onClick={() => {
