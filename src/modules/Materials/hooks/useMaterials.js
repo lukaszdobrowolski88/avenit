@@ -26,11 +26,11 @@ export default function useMaterials(folderId = null, ministryKey = null) {
         query = query.is('folder_id', null);
       }
 
-      // Filtruj po ministry_key
+      // Filtruj po team_type
       if (ministryKey) {
-        query = query.eq('ministry_key', ministryKey);
+        query = query.eq('team_type', ministryKey);
       } else {
-        query = query.is('ministry_key', null);
+        query = query.is('team_type', null);
       }
 
       const { data, error: fetchError } = await query;
@@ -82,7 +82,7 @@ export default function useMaterials(folderId = null, ministryKey = null) {
           file_size: file.size,
           mime_type: file.type || 'application/octet-stream',
           folder_id: folderId,
-          ministry_key: ministryKey,
+          team_type: ministryKey,
           uploaded_by: user.email
         })
         .select()
@@ -203,11 +203,11 @@ export default function useMaterials(folderId = null, ministryKey = null) {
         .ilike('name', `%${query}%`)
         .order('name');
 
-      // Filtruj po ministry_key
+      // Filtruj po team_type
       if (ministryKey) {
-        dbQuery = dbQuery.eq('ministry_key', ministryKey);
+        dbQuery = dbQuery.eq('team_type', ministryKey);
       } else {
-        dbQuery = dbQuery.is('ministry_key', null);
+        dbQuery = dbQuery.is('team_type', null);
       }
 
       const { data, error: searchError } = await dbQuery;

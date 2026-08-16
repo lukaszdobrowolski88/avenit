@@ -27,7 +27,7 @@ export default function FinanceWidget({ moduleKey, moduleName }) {
     try {
       const { data: budget } = await withCampusFilter(
         supabase.from('budget_items').select('*'))
-        .eq('ministry', ministry)
+        .eq('team_type', ministry)
         .eq('year', currentYear)
         .order('id', { ascending: true });
       setBudgetItems(budget || []);
@@ -35,7 +35,7 @@ export default function FinanceWidget({ moduleKey, moduleName }) {
       const { data: exp } = await supabase
         .from('expense_transactions')
         .select('*')
-        .eq('ministry', ministry)
+        .eq('team_type', ministry)
         .gte('payment_date', `${currentYear}-01-01`)
         .lte('payment_date', `${currentYear}-12-31`)
         .order('payment_date', { ascending: false });

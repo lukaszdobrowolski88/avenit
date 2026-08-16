@@ -375,7 +375,7 @@ export default function KidsModule() {
       const { data: budget, error: budgetError } = await withCampusFilter(supabase
         .from('budget_items')
         .select('*'))
-        .eq('ministry', ministryName)
+        .eq('team_type', ministryName)
         .eq('year', currentYear)
         .order('id', { ascending: true });
 
@@ -385,7 +385,7 @@ export default function KidsModule() {
       const { data: exp, error: expError } = await supabase
         .from('expense_transactions')
         .select('*')
-        .eq('ministry', ministryName)
+        .eq('team_type', ministryName)
         .gte('payment_date', `${currentYear}-01-01`)
         .lte('payment_date', `${currentYear}-12-31`)
         .order('payment_date', { ascending: false });
@@ -472,7 +472,7 @@ export default function KidsModule() {
         responsible_person: expenseForm.responsible_person,
         documents: expenseForm.documents,
         tags: expenseForm.tags,
-        ministry: expenseForm.ministry
+        team_type: expenseForm.ministry
       }]);
 
       if (error) throw error;

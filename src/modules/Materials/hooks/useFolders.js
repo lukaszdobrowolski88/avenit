@@ -29,11 +29,11 @@ export default function useFolders(ministryKey = null) {
         .select('*')
         .order('name');
 
-      // Filtruj po ministry_key
+      // Filtruj po team_type
       if (ministryKey) {
-        query = query.eq('ministry_key', ministryKey);
+        query = query.eq('team_type', ministryKey);
       } else {
-        query = query.is('ministry_key', null);
+        query = query.is('team_type', null);
       }
 
       const { data, error: fetchError } = await query;
@@ -61,7 +61,7 @@ export default function useFolders(ministryKey = null) {
         .insert({
           name: name.trim(),
           parent_id: parentId,
-          ministry_key: ministryKey,
+          team_type: ministryKey,
           created_by: user.email
         })
         .select()
