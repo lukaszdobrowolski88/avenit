@@ -39,6 +39,7 @@ const MODULES = [
   'send-assignment-invites',
   'board-form-get',
   'board-form-submit',
+  'admin-set-user-password',
 ];
 
 export async function registerFunctions(app) {

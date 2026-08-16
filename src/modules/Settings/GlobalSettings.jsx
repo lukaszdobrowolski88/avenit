@@ -5,7 +5,7 @@ import {
   List, Plus, Trash2, X, Settings, Grid, Users, Shield, BookOpen, Building2,
   CheckCircle, AlertCircle, Upload, Eye,
   Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, UserCheck, Check, ChevronDown, ChevronUp, Layers, Plug,
-  Palette, Bell, Globe, CreditCard
+  Palette, Bell, Globe, CreditCard, KeyRound, Mail, Loader2
 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import { useT } from '../../i18n';
@@ -212,6 +212,34 @@ export default function GlobalSettings() {
 
   const [userForm, setUserForm] = useState({ id: null, full_name: '', email: '', password: '', role: '', is_active: true });
   const [showUserModal, setShowUserModal] = useState(false);
+  const [adminNewPassword, setAdminNewPassword] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
+
+  // Admin: ustaw nowe hasło wskazanemu użytkownikowi (fn admin-set-user-password, bramkowany serwerowo).
+  const handleAdminSetPassword = async () => {
+    if (adminNewPassword.length < 8) return;
+    setPwBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-set-user-password', { body: { userId: userForm.id, password: adminNewPassword } });
+      if (error || data?.error) throw new Error(data?.error || error?.message || 'Błąd');
+      setMessage({ type: 'success', text: `Hasło zostało zmienione dla ${userForm.email}.` });
+      setAdminNewPassword('');
+    } catch (e) {
+      setMessage({ type: 'error', text: `Nie udało się zmienić hasła: ${e.message}` });
+    } finally { setPwBusy(false); }
+  };
+
+  // Admin: wyślij użytkownikowi e-mail z linkiem do resetu hasła (istniejący flow).
+  const handleAdminSendReset = async () => {
+    setPwBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(userForm.email, { redirectTo: `${window.location.origin}/reset-password` });
+      if (error) throw new Error(error.message);
+      setMessage({ type: 'success', text: `Link do resetu hasła wysłany na ${userForm.email}.` });
+    } catch (e) {
+      setMessage({ type: 'error', text: `Nie udało się wysłać linku: ${e.message}` });
+    } finally { setPwBusy(false); }
+  };
   const [isCreatingAuthUser, setIsCreatingAuthUser] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState([]);
   const [require2FA, setRequire2FA] = useState(false);
@@ -1111,7 +1139,7 @@ export default function GlobalSettings() {
                           </button>
                         </td>
                         <td className="p-4 text-right flex justify-end gap-2">
-                          <button onClick={() => { setUserForm({...user, password: ''}); setShowUserModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
+                          <button onClick={() => { setUserForm({...user, password: ''}); setAdminNewPassword(''); setShowUserModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
                           <button onClick={() => deleteUser(user.id)} disabled={isSuperAdmin} className={`text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 p-2 rounded-lg ${isSuperAdmin ? 'opacity-30 cursor-not-allowed' : ''}`}><Trash2 size={16}/></button>
                         </td>
                       </tr>
@@ -1209,6 +1237,24 @@ export default function GlobalSettings() {
                     placeholder={t('Wybierz lokalizację...')}
                   />
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">{t('Użytkownik przypisany do lokalizacji widzi tylko dane tej lokalizacji.')}</p>
+                </div>
+              )}
+              {userForm.id && (
+                <div className="p-3 border border-gray-200 dark:border-gray-600 rounded-xl space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase"><KeyRound size={13} /> {tr('Hasło (administrator)')}</div>
+                  <div className="flex gap-2">
+                    <input type="text" value={adminNewPassword} onChange={e => setAdminNewPassword(e.target.value)} placeholder={tr('Nowe hasło (min. 8 znaków)')}
+                      className="flex-1 p-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white text-sm" />
+                    <button type="button" onClick={handleAdminSetPassword} disabled={pwBusy || adminNewPassword.length < 8}
+                      className="px-3 py-2 bg-accent-primary text-white rounded-lg text-sm font-medium disabled:opacity-50 shrink-0 flex items-center gap-1.5">
+                      {pwBusy ? <Loader2 size={14} className="animate-spin" /> : null} {tr('Ustaw')}
+                    </button>
+                  </div>
+                  <button type="button" onClick={handleAdminSendReset} disabled={pwBusy || !userForm.email}
+                    className="w-full py-2 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                    <Mail size={15} /> {tr('Wyślij link do resetu hasła')}
+                  </button>
+                  <p className="text-[11px] text-gray-400">{tr('„Ustaw" zmienia hasło od razu. „Wyślij link" pozwala użytkownikowi ustawić hasło samodzielnie.')}</p>
                 </div>
               )}
               {!userForm.id && (
