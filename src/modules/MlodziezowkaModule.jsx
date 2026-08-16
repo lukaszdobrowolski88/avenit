@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
+import ModuleBoard from './Boards/ModuleBoard';
 import {
   Plus, Search, Trash2, X, FileText, Calendar, Download,
   AlertCircle, Paperclip, User, Users,
@@ -845,8 +846,12 @@ export default function MlodziezowkaModule() {
         </section>
       )}
 
-      {/* ZADANIA */}
+      {/* ZADANIA — nowy silnik Tablic (Monday-style) */}
       {activeTab === 'tasks' && (
+        <ModuleBoard sourceKind="mlodziezowka_tasks" moduleKey="mlodziezowka" title="Zadania młodzieżówki" />
+      )}
+      {/* Stary kanban zachowany (nieaktywny) na wypadek rollbacku */}
+      {activeTab === '__legacy_tasks__' && (
         <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-4 lg:p-6 transition-colors duration-300">
           {/* Mobile: 2 rows, Desktop: 1 row */}
           <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">

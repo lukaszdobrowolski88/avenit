@@ -76,6 +76,7 @@ const FEATURE_MIGRATIONS = [
   'optimize_programs_table.sql',
   'fix_member_id_type.sql',
   'fix_notification_link.sql',
+  'create_boards_tables.sql',
 ];
 
 // ── Dollar-quote-aware podział na instrukcje ─────────────────────────

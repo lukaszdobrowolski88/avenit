@@ -59,8 +59,10 @@ import MailModule from './modules/Mail/MailModule';
 import FormsModule from './modules/Forms/FormsModule';
 import PublicFormPage from './modules/Forms/pages/PublicFormPage';
 import PublicModulePage from './modules/CustomModule/pages/PublicModulePage';
+import PublicBoardForm from './modules/Boards/pages/PublicBoardForm';
 import AssignmentResponsePage from './modules/AssignmentResponse/AssignmentResponsePage';
 import CustomModule from './modules/CustomModule/CustomModule';
+import BoardsModule from './modules/Boards/BoardsModule';
 import { tr } from './i18n';
 
 // Lista kluczy systemowych modułów (mają dedykowane komponenty)
@@ -68,7 +70,7 @@ const SYSTEM_MODULE_KEYS = [
   'dashboard', 'programs', 'calendar', 'members', 'worship', 'media',
   'atmosfera', 'kids', 'homegroups', 'finance', 'giving', 'teaching', 'prayer',
   'komunikator', 'mlodziezowka', 'mailing', 'mail', 'forms', 'settings', 'push_campaigns', 'sms_campaigns',
-  'attendance', 'analytics', 'automation', 'ai', 'sermons', 'care', 'rooms', 'serve', 'rsvp'
+  'attendance', 'analytics', 'automation', 'ai', 'sermons', 'care', 'rooms', 'serve', 'rsvp', 'boards'
 ];
 
 // Komponent do wyświetlania toast notifications (używa context)
@@ -283,6 +285,9 @@ function AppInner() {
   // Sprawdź czy to jest publiczna strona formularza (dostępna bez logowania)
   const isPublicFormPage = window.location.pathname.startsWith('/form/');
 
+  // Publiczny formularz tablicy (Boards / WorkForms) — bez logowania
+  const isPublicBoardForm = window.location.pathname.startsWith('/formularz/');
+
   // Sprawdź czy to jest strona odpowiedzi na przypisanie (dostępna bez logowania)
   const isAssignmentResponsePage = window.location.pathname === '/assignment-response';
 
@@ -359,6 +364,18 @@ function AppInner() {
       <BrowserRouter>
         <Routes>
           <Route path="/p/:slug" element={<PublicModulePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
+  // Publiczny formularz tablicy - renderuj bez wymogu logowania
+  if (isPublicBoardForm) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/formularz/:token" element={<PublicBoardForm />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
@@ -525,6 +542,9 @@ function AppInner() {
                 } />
                 <Route path="/forms" element={
                   <ProtectedRoute resource="module:forms"><FormsModule userEmail={session.user?.email} /></ProtectedRoute>
+                } />
+                <Route path="/projekty" element={
+                  <ProtectedRoute resource="module:boards"><BoardsModule /></ProtectedRoute>
                 } />
                 <Route path="/settings" element={
                   <ProtectedRoute resource="module:settings"><GlobalSettings /></ProtectedRoute>

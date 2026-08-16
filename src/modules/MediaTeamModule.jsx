@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
+import ModuleBoard from './Boards/ModuleBoard';
 import {
   Plus, Search, Trash2, X, FileText, Music, Calendar, Download,
   AlertCircle, Paperclip, GripVertical, User, Users,
@@ -1130,8 +1131,12 @@ export default function MediaTeamModule() {
       </section>
       )}
 
-      {/* SEKCJA 2: ZADANIA */}
+      {/* SEKCJA 2: ZADANIA — nowy silnik Tablic (Monday-style) */}
       {activeTab === 'tasks' && (
+        <ModuleBoard sourceKind="media_tasks" moduleKey="media" title="Zadania Media Team" />
+      )}
+      {/* Stary kanban zachowany (nieaktywny) na wypadek rollbacku */}
+      {activeTab === '__legacy_tasks__' && (
       <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-4 lg:p-6 relative z-[40] transition-colors duration-300">
         {/* Mobile: 2 rows, Desktop: 1 row */}
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">

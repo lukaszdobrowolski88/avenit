@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, X, Loader2, CornerDownLeft, ArrowUp, ArrowDown,
   Users, Music, CalendarDays, Home, Calendar as CalendarIcon,
-  LayoutDashboard, Wallet, FileText, Settings, User,
+  LayoutDashboard, Wallet, FileText, Settings, User, LayoutGrid,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useT } from '../i18n';
@@ -25,6 +25,7 @@ const MODULES = [
   { label: tr('Grupy domowe'), path: '/home-groups', icon: Home, keywords: 'komórki spotkania' },
   { label: tr('Finanse'), path: '/finance', icon: Wallet, keywords: 'ofiary budżet kasa' },
   { label: tr('Formularze'), path: '/forms', icon: FileText, keywords: 'zapisy ankiety' },
+  { label: tr('Projekty'), path: '/projekty', icon: LayoutGrid, keywords: 'tablice zadania monday kanban projekty praca' },
   { label: tr('Ustawienia'), path: '/settings', icon: Settings, keywords: 'konfiguracja profil kościoła' },
   { label: tr('Mój profil'), path: '/profile', icon: User, keywords: 'konto ustawienia hasło' },
 ];
@@ -113,6 +114,23 @@ const SEARCHERS = [
         label: `${p.type || 'Program'}${p.date ? ' — ' + new Date(p.date).toLocaleDateString('pl-PL') : ''}`,
         sub: p.notes || '',
         path: `/programs/${p.id}`,
+      }));
+    },
+  },
+  {
+    category: 'Tablice', icon: LayoutGrid,
+    run: async (q) => {
+      const { data } = await supabase
+        .from('boards')
+        .select('id, name, description')
+        .eq('is_archived', false)
+        .ilike('name', `%${q}%`)
+        .limit(6);
+      return (data || []).map((b) => ({
+        id: `board-${b.id}`,
+        label: b.name || 'Tablica',
+        sub: b.description || '',
+        path: `/projekty?board=${b.id}`,
       }));
     },
   },

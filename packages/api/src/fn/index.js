@@ -37,6 +37,8 @@ const MODULES = [
   'ical',
   'ai-assist',
   'send-assignment-invites',
+  'board-form-get',
+  'board-form-submit',
 ];
 
 export async function registerFunctions(app) {

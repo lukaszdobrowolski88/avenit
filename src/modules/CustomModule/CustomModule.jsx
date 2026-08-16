@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import * as LucideIcons from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import BoardsModule from '../Boards/BoardsModule';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { useTabAccess } from '../../components/Can';
 import { tr } from '../../i18n';
@@ -145,6 +146,11 @@ export default function CustomModule() {
 function TabContent({ tab, moduleId, moduleKey, moduleName }) {
   if (!tab) return null;
   const type = tab.component_type || 'empty';
+
+  // Tablica projektowa (Monday-style) — pełny silnik Tablic.
+  if (type === 'board') {
+    return <BoardsModule moduleKey={moduleKey} />;
+  }
 
   // Kreator graficzny — interpretuje drzewo układu (tab.layout).
   if (type === 'custom') {

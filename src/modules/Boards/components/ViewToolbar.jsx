@@ -1,0 +1,149 @@
+import React, { useState } from 'react';
+import { Search, SlidersHorizontal, ArrowUpDown, Plus, X, Filter } from 'lucide-react';
+import Popover from './Popover';
+import ColumnIcon from './ColumnIcon';
+import { getColumnType, cellToText } from '../lib/columnTypes';
+
+// Wybór wartości do filtra zależny od typu kolumny.
+function FilterValue({ column, value, onChange }) {
+  const t = column.type;
+  if (t === 'status' || t === 'priority') {
+    return (
+      <select value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none">
+        <option value="">— wybierz —</option>
+        {(column.settings?.labels || []).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+      </select>
+    );
+  }
+  if (t === 'dropdown') {
+    return (
+      <select value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none">
+        <option value="">— wybierz —</option>
+        {(column.settings?.options || []).map(o => <option key={o.id} value={o.id}>{o.title}</option>)}
+      </select>
+    );
+  }
+  if (t === 'checkbox') {
+    return (
+      <select value={String(value)} onChange={(e) => onChange(e.target.value === 'true')} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none">
+        <option value="true">Zaznaczone</option>
+        <option value="false">Niezaznaczone</option>
+      </select>
+    );
+  }
+  if (t === 'date') return <input type="date" value={value || ''} onChange={(e) => onChange(e.target.value)} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none" />;
+  if (t === 'number') return <input type="number" value={value ?? ''} onChange={(e) => onChange(e.target.value)} className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 w-20 outline-none" />;
+  return <input value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder="wartość" className="text-sm bg-gray-100 dark:bg-gray-700/50 rounded px-2 py-1 outline-none" />;
+}
+
+function defaultOp(type) {
+  if (type === 'number') return 'eq';
+  if (type === 'date') return 'on';
+  if (['text', 'long_text', 'link'].includes(type)) return 'contains';
+  return 'is';
+}
+
+export default function ViewToolbar({ columns, config, onUpdateConfig, onAddItem, peopleCols }) {
+  const filters = config.filters || [];
+  const sorts = config.sorts || [];
+  const filterableCols = columns.filter(c => c.type !== 'files');
+
+  const addFilter = (col) => onUpdateConfig({ filters: [...filters, { columnId: col.id, op: defaultOp(col.type), value: col.type === 'checkbox' ? true : null }] });
+  const updateFilter = (i, patch) => onUpdateConfig({ filters: filters.map((f, j) => j === i ? { ...f, ...patch } : f) });
+  const removeFilter = (i) => onUpdateConfig({ filters: filters.filter((_, j) => j !== i) });
+
+  const addSort = (col) => onUpdateConfig({ sorts: [{ columnId: col.id, dir: 'asc' }] });
+  const clearSort = () => onUpdateConfig({ sorts: [] });
+
+  return (
+    <div className="flex items-center gap-2 mb-4 flex-wrap">
+      <button onClick={onAddItem} className="flex items-center gap-1.5 bg-accent-primary text-white text-sm px-3 py-1.5 rounded-lg hover:opacity-90">
+        <Plus size={15} /> Nowy element
+      </button>
+
+      <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2.5 py-1.5">
+        <Search size={14} className="text-gray-400" />
+        <input value={config.search || ''} onChange={(e) => onUpdateConfig({ search: e.target.value })} placeholder="Szukaj..."
+          className="bg-transparent text-sm outline-none w-32 text-gray-700 dark:text-gray-200" />
+      </div>
+
+      {/* Filtry */}
+      <Popover width={300} trigger={
+        <button className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg ${filters.length ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
+          <SlidersHorizontal size={14} /> Filtruj {filters.length ? `(${filters.length})` : ''}
+        </button>
+      }>
+        {() => (
+          <div className="p-3">
+            {filters.map((f, i) => {
+              const col = columns.find(c => c.id === f.columnId);
+              if (!col) return null;
+              return (
+                <div key={i} className="flex items-center gap-1.5 mb-2">
+                  <span className="text-xs text-gray-500 w-16 truncate">{col.name}</span>
+                  {col.type === 'number' && (
+                    <select value={f.op} onChange={(e) => updateFilter(i, { op: e.target.value })} className="text-xs bg-gray-100 dark:bg-gray-700/50 rounded px-1 py-1 outline-none">
+                      <option value="eq">=</option><option value="gt">&gt;</option><option value="lt">&lt;</option>
+                    </select>
+                  )}
+                  {col.type === 'date' && (
+                    <select value={f.op} onChange={(e) => updateFilter(i, { op: e.target.value })} className="text-xs bg-gray-100 dark:bg-gray-700/50 rounded px-1 py-1 outline-none">
+                      <option value="on">=</option><option value="after">po</option><option value="before">przed</option>
+                    </select>
+                  )}
+                  <FilterValue column={col} value={f.value} onChange={(v) => updateFilter(i, { value: v })} />
+                  <button onClick={() => removeFilter(i)} className="text-gray-400 hover:text-red-500 ml-auto"><X size={14} /></button>
+                </div>
+              );
+            })}
+            <Popover width={200} trigger={<button className="flex items-center gap-1 text-sm text-accent-primary mt-1"><Plus size={14} /> Dodaj filtr</button>}>
+              {({ close }) => (
+                <div className="p-1 max-h-56 overflow-y-auto custom-scrollbar">
+                  {filterableCols.map(c => {
+                    const t = getColumnType(c.type);
+                    return (
+                      <button key={c.id} onClick={() => { addFilter(c); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-left text-sm">
+                        <ColumnIcon name={t.icon} size={14} className="text-gray-400" /> {c.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </Popover>
+          </div>
+        )}
+      </Popover>
+
+      {/* Sortowanie */}
+      <Popover width={220} trigger={
+        <button className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg ${sorts.length ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
+          <ArrowUpDown size={14} /> Sortuj
+        </button>
+      }>
+        {({ close }) => (
+          <div className="p-2">
+            {sorts.length > 0 && (
+              <div className="flex items-center justify-between px-2 py-1 mb-1">
+                <span className="text-xs text-gray-500">{columns.find(c => c.id === sorts[0].columnId)?.name}</span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => onUpdateConfig({ sorts: [{ ...sorts[0], dir: sorts[0].dir === 'asc' ? 'desc' : 'asc' }] })} className="text-xs text-accent-primary">{sorts[0].dir === 'asc' ? '↑ rosnąco' : '↓ malejąco'}</button>
+                  <button onClick={clearSort} className="text-gray-400 hover:text-red-500"><X size={13} /></button>
+                </div>
+              </div>
+            )}
+            <div className="max-h-52 overflow-y-auto custom-scrollbar">
+              {columns.map(c => {
+                const t = getColumnType(c.type);
+                return (
+                  <button key={c.id} onClick={() => { addSort(c); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-left text-sm">
+                    <ColumnIcon name={t.icon} size={14} className="text-gray-400" /> {c.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </Popover>
+    </div>
+  );
+}
