@@ -3,6 +3,7 @@ import {
   Plus, Table2, MoreHorizontal, Trash2, Copy, Loader2, LayoutGrid, CalendarRange, CheckSquare, Users, X,
   Folder as FolderIcon, ChevronRight, ChevronDown, Lock, Globe, UserPlus,
 } from 'lucide-react';
+import { tr } from '../../i18n';
 import { useBoards } from './hooks/useBoards';
 import { BOARD_TEMPLATES } from './lib/templates';
 import { generateBoardSpec } from './lib/aiBoards';
@@ -127,14 +128,10 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
   return (
     <div>
       {!moduleKey && (
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Projekty</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Tablice, zadania i procesy zespołów — w stylu Monday.</p>
-          </div>
+        <div className="flex justify-end mb-4">
           <button onClick={handleCreate} disabled={creating}
-            className="flex items-center gap-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-accent-primary/20 hover:opacity-90 disabled:opacity-50">
-            {creating ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />} Nowa tablica
+            className="flex items-center gap-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg hover:opacity-90 disabled:opacity-50">
+            {creating ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />} {tr('Nowa tablica')}
           </button>
         </div>
       )}
