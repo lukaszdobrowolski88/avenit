@@ -1020,7 +1020,7 @@ export default function PrayerWallModule() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <PageHeader icon={Heart} title={t('Centrum Modlitwy')} />
+        <PageHeader moduleKey="prayer" icon={Heart} title={t('Centrum Modlitwy')} />
         <button
           data-tour="prayer-add"
           onClick={() => {

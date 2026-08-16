@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ModuleTitle from '../../components/ModuleTitle';
 import { Sparkles, BookOpen, PenLine, MessageCircle } from 'lucide-react';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import SermonAssistantTab from './tabs/SermonAssistantTab';
@@ -22,7 +23,7 @@ export default function AiAssistantModule() {
           <Sparkles className="text-white" size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Asystent AI</h1>
+          <ModuleTitle moduleKey="ai" fallback="Asystent AI" className="text-2xl font-bold text-gray-900 dark:text-white" />
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Materiały z kazań, pomoc w komunikacji i odpowiedzi na pytania — oparte na Claude
           </p>

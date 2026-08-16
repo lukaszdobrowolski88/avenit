@@ -8,7 +8,7 @@ import {
   MessageSquare, CalendarDays, UserCog, FolderOpen,
   Video, Map, Code, Timer, GalleryThumbnails,
   AppWindow, ChevronsUpDown, BookOpen, Heart, Music,
-  Hash, BarChart3,
+  Hash, BarChart3, Package, Link2, Contact,
 } from 'lucide-react';
 
 export const LAYOUT_VERSION = 1;
@@ -38,6 +38,10 @@ export const WIDGET_META = {
   schedule: { label: 'Grafik', icon: CalendarDays },
   duty: { label: 'Służby', icon: UserCog },
   materials: { label: 'Materiały', icon: FolderOpen },
+  equipment: { label: 'Wyposażenie', icon: Package },
+  gallery: { label: 'Galeria', icon: GalleryThumbnails },
+  links: { label: 'Szybkie linki', icon: Link2 },
+  contacts: { label: 'Kontakty', icon: Contact },
 };
 
 // Definicje typów elementów. isContainer => może mieć children.

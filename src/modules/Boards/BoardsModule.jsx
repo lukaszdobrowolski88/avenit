@@ -56,7 +56,7 @@ export default function BoardsModule({ moduleKey = null, initialBoardId = null }
   ];
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      <PageHeader icon={LayoutGrid} title={tr('Projekty')} subtitle={tr('Tablice, zadania i procesy zespołów')} />
+      <PageHeader moduleKey="boards" icon={LayoutGrid} title={tr('Projekty')} subtitle={tr('Tablice, zadania i procesy zespołów')} />
       <ResponsiveTabs tabs={SECTIONS} activeTab={section} onChange={setSection} />
       <div>
         {section === 'boards' && <BoardsList userEmail={user.email} userName={user.name} onOpenBoard={openBoard} />}

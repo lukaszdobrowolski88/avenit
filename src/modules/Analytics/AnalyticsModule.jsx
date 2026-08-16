@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import ModuleTitle from '../../components/ModuleTitle';
 import { BarChart3, Users, UserPlus, UserCheck, UserCircle, Gift, CalendarCheck, Filter, TrendingUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -171,7 +172,7 @@ export default function AnalyticsModule() {
             <BarChart3 className="text-white" size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analityka</h1>
+            <ModuleTitle moduleKey="analytics" fallback="Analityka" className="text-2xl font-bold text-gray-900 dark:text-white" />
             <p className="text-sm text-gray-500 dark:text-gray-400">Strategiczny obraz wzrostu, dawania i zaangażowania</p>
           </div>
         </div>

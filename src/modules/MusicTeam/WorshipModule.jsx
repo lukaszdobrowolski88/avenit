@@ -2571,7 +2571,7 @@ export default function WorshipModule() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
-      <PageHeader icon={Music} title={tr('Grupa Uwielbienia')} />
+      <PageHeader moduleKey="worship" icon={Music} title={tr('Grupa Uwielbienia')} />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs

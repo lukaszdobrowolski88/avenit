@@ -711,7 +711,7 @@ export default function AtmosferaTeamModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader icon={HeartHandshake} title="Atmosfera Team" />
+      <PageHeader moduleKey="atmosfera" icon={HeartHandshake} title="Atmosfera Team" />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs

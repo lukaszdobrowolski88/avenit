@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ModuleTitle from '../../components/ModuleTitle';
 import { Workflow, Zap, LayoutTemplate, History } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -54,7 +55,7 @@ export default function AutomationModule() {
           <Workflow className="text-white" size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Automatyzacje</h1>
+          <ModuleTitle moduleKey="automation" fallback="Automatyzacje" className="text-2xl font-bold text-gray-900 dark:text-white" />
           <p className="text-sm text-gray-500 dark:text-gray-400">Silnik automatyzacji i ścieżki asymilacji nowych gości</p>
         </div>
       </div>

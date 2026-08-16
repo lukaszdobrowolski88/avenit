@@ -381,7 +381,7 @@ function renderInner(el, ctx) {
       );
 
     case 'widget':
-      return <ModuleWidget widgetType={p.widgetType} moduleKey={ctx.moduleKey} moduleName={ctx.moduleName} />;
+      return <ModuleWidget widgetType={p.widgetType} moduleKey={ctx.moduleKey} moduleName={ctx.moduleName} moduleId={ctx.moduleId} tabId={ctx.tabId} />;
 
     case 'collection':
       return <CollectionView element={el} ctx={ctx} />;

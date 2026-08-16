@@ -729,7 +729,7 @@ const FinanceModule = () => {
 
   return (
     <div className="space-y-8">
-      <PageHeader icon={DollarSign} title="Finanse" subtitle={t('Zarządzanie budżetem i finansami kościoła')}
+      <PageHeader moduleKey="finance" icon={DollarSign} title="Finanse" subtitle={t('Zarządzanie budżetem i finansami kościoła')}
         actions={
           <CustomSelect
             value={selectedYear}

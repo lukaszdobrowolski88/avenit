@@ -152,7 +152,7 @@ function TabContent({ tab, moduleId, moduleKey, moduleName }) {
 
   // Gotowe widgety danych — przez wspólny ModuleWidget (parytet z modułami systemowymi).
   if (WIDGET_TYPES.includes(type)) {
-    return <ModuleWidget widgetType={type} moduleKey={moduleKey} moduleName={moduleName} />;
+    return <ModuleWidget widgetType={type} moduleKey={moduleKey} moduleName={moduleName} moduleId={moduleId} tabId={tab.id} />;
   }
 
   // empty / nieznany — placeholder.

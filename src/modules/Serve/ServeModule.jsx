@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ModuleTitle from '../../components/ModuleTitle';
 import { CalendarCheck, CalendarOff, Music } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -76,7 +77,7 @@ export default function ServeModule() {
           <CalendarCheck className="text-white" size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Służba</h1>
+          <ModuleTitle moduleKey="serve" fallback="Służba" className="text-2xl font-bold text-gray-900 dark:text-white" />
           <p className="text-sm text-gray-500 dark:text-gray-400">Dostępność wolontariuszy i ewidencja wykonań pieśni (CCLI)</p>
         </div>
       </div>

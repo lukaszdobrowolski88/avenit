@@ -299,7 +299,7 @@ export default function ProgramsList() {
       <div>
         {/* Header */}
         <div className="flex items-start justify-between mb-6 sm:mb-8">
-          <PageHeader icon={ClipboardList} title={t('Programy')} subtitle={t('Zarządzaj programami wydarzeń')} />
+          <PageHeader moduleKey="programs" icon={ClipboardList} title={t('Programy')} subtitle={t('Zarządzaj programami wydarzeń')} />
           <button
             onClick={openNewType}
             className="flex items-center gap-2 px-4 py-2.5 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition text-sm font-medium"

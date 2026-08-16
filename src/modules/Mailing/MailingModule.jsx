@@ -94,7 +94,7 @@ export default function MailingModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader icon={Mail} title="Mailing"
+      <PageHeader moduleKey="mailing" icon={Mail} title="Mailing"
         actions={
           <button
             data-tour="mail-new"

@@ -5,12 +5,16 @@ import WallTab from '../../shared/WallTab';
 import ScheduleTab from '../../shared/ScheduleTab';
 import DutyTab from '../../shared/DutyTab';
 import MaterialsTab from '../../shared/MaterialsTab';
+import EquipmentTab from '../../shared/EquipmentTab';
+import GalleryTab from '../../shared/GalleryTab';
+import LinksTab from '../../shared/LinksTab';
+import ContactsTab from '../../shared/ContactsTab';
 import MembersTab from './MembersTab';
 import TasksTab from './TasksTab';
 import FinanceWidget from './FinanceWidget';
 
 // Typy gotowych widgetów danych (zakładki systemowe → też elementy kreatora).
-export const WIDGET_TYPES = ['events', 'tasks', 'finance', 'members', 'wall', 'schedule', 'duty', 'materials'];
+export const WIDGET_TYPES = ['events', 'tasks', 'finance', 'members', 'wall', 'schedule', 'duty', 'materials', 'equipment', 'gallery', 'links', 'contacts'];
 
 // Widgety renderujące WŁASNĄ kartę-sekcję — nie owijać ich dodatkowym <section>.
 export const SELF_WRAPPING_WIDGETS = new Set(['finance']);
@@ -19,7 +23,7 @@ export const SELF_WRAPPING_WIDGETS = new Set(['finance']);
 // (zakładki „klasyczne") ORAZ przez kreator graficzny (element 'widget'), aby ich
 // zachowanie było IDENTYCZNE wszędzie i zgodne z modułami systemowymi. Widget sam
 // dociąga bieżącego użytkownika (email/nazwa), więc oba miejsca użycia są bezobsługowe.
-export default function ModuleWidget({ widgetType, moduleKey, moduleName, canEdit = true }) {
+export default function ModuleWidget({ widgetType, moduleKey, moduleName, moduleId, tabId, canEdit = true }) {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
 
@@ -44,6 +48,10 @@ export default function ModuleWidget({ widgetType, moduleKey, moduleName, canEdi
     case 'schedule':  return <ScheduleTab moduleKey={moduleKey} moduleName={moduleName} />;
     case 'duty':      return <DutyTab moduleKey={moduleKey} moduleName={moduleName} />;
     case 'materials': return <MaterialsTab moduleKey={moduleKey} canEdit={canEdit} />;
+    case 'equipment': return <EquipmentTab ministryKey={moduleKey} currentUserEmail={email} canEdit={canEdit} />;
+    case 'gallery':   return <GalleryTab moduleKey={moduleKey} moduleId={moduleId} tabId={tabId} canEdit={canEdit} />;
+    case 'links':     return <LinksTab moduleKey={moduleKey} moduleId={moduleId} tabId={tabId} canEdit={canEdit} />;
+    case 'contacts':  return <ContactsTab moduleKey={moduleKey} moduleId={moduleId} tabId={tabId} canEdit={canEdit} />;
     default:          return null;
   }
 }

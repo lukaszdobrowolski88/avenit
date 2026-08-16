@@ -935,7 +935,7 @@ export default function GlobalSettings() {
   return (
     <div className="flex flex-col h-full space-y-4">
       {/* NAGŁÓWEK */}
-      <PageHeader icon={SettingsIcon} title={t('Ustawienia')} />
+      <PageHeader moduleKey="settings" icon={SettingsIcon} title={t('Ustawienia')} />
 
       {message && <div className={`p-4 rounded-xl flex items-center gap-2 cursor-pointer ${message.type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800'}`} onClick={() => setMessage(null)}>{message.type === 'success' ? <CheckCircle size={20}/> : <AlertCircle size={20}/>} {message.text}</div>}
 

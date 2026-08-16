@@ -451,7 +451,7 @@ export default function Members() {
 
   return (
     <div className="space-y-8">
-      <PageHeader icon={Users} title={tr('Baza Członków')} />
+      <PageHeader moduleKey="members" icon={Users} title={tr('Baza Członków')} />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs

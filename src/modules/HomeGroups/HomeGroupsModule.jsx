@@ -697,7 +697,7 @@ export default function HomeGroupsModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader icon={Home} title="Grupy Domowe" />
+      <PageHeader moduleKey="homegroups" icon={Home} title="Grupy Domowe" />
 
       {/* Tabs */}
       <ResponsiveTabs

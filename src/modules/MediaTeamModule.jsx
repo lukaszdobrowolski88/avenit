@@ -1089,7 +1089,7 @@ export default function MediaTeamModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader icon={Video} title={t('Zespół Medialny')} />
+      <PageHeader moduleKey="media" icon={Video} title={t('Zespół Medialny')} />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs

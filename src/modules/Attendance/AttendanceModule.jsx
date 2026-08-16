@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ModuleTitle from '../../components/ModuleTitle';
 import { ClipboardCheck, ListChecks, TrendingUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -52,7 +53,7 @@ export default function AttendanceModule() {
           <ClipboardCheck className="text-white" size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Frekwencja</h1>
+          <ModuleTitle moduleKey="attendance" fallback="Frekwencja" className="text-2xl font-bold text-gray-900 dark:text-white" />
           <p className="text-sm text-gray-500 dark:text-gray-400">Obecność dorosłych na nabożeństwach, spotkaniach i modlitwach — z analityką trendów</p>
         </div>
       </div>
