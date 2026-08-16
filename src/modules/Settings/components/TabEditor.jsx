@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen, LayoutDashboard, LayoutGrid } from 'lucide-react';
+import { X, Save, AlertCircle, Calendar, CheckSquare, DollarSign, Users, MessageSquare, Layers, CalendarDays, UserCog, FolderOpen, LayoutDashboard, LayoutGrid, Package, GalleryThumbnails, Link2, Contact } from 'lucide-react';
 import IconPicker from './IconPicker';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
@@ -17,6 +17,10 @@ const COMPONENT_TYPES = [
   { key: 'schedule', label: tr('Grafik'), icon: CalendarDays, description: tr('Harmonogram służb na wydarzenia') },
   { key: 'duty', label: tr('Służby'), icon: UserCog, description: tr('Zarządzanie służbami i przypisaniami') },
   { key: 'materials', label: tr('Materiały'), icon: FolderOpen, description: 'Pliki i dokumenty do pobrania' },
+  { key: 'equipment', label: tr('Wyposażenie'), icon: Package, description: tr('Inwentarz sprzętu: stan, lokalizacja, wartość') },
+  { key: 'gallery', label: tr('Galeria zdjęć'), icon: GalleryThumbnails, description: tr('Zdjęcia z podglądem — upload i siatka miniatur') },
+  { key: 'links', label: tr('Szybkie linki'), icon: Link2, description: tr('Konfigurowalne przyciski do formularzy i narzędzi') },
+  { key: 'contacts', label: tr('Kontakty'), icon: Contact, description: tr('Prosta lista kontaktów: telefon, e-mail, rola') },
   { key: 'custom', label: tr('Kreator graficzny'), icon: LayoutDashboard, description: tr('Zbuduj własny układ zakładki metodą przeciągnij i upuść') }
 ];
 
@@ -63,7 +67,11 @@ export default function TabEditor({ tab, moduleId, moduleName, onClose, onSave, 
         wall: 'MessageSquare',
         schedule: 'CalendarDays',
         duty: 'UserCog',
-        materials: 'FolderOpen'
+        materials: 'FolderOpen',
+        equipment: 'Package',
+        gallery: 'GalleryThumbnails',
+        links: 'Link2',
+        contacts: 'Contact'
       };
       if (iconMap[form.component_type]) {
         setForm(prev => ({ ...prev, icon: iconMap[form.component_type] }));

@@ -767,7 +767,7 @@ export default function MlodziezowkaModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader icon={Sparkles} title={t('Młodzieżówka')} />
+      <PageHeader moduleKey="mlodziezowka" icon={Sparkles} title={t('Młodzieżówka')} />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs

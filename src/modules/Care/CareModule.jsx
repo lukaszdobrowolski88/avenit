@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import ModuleTitle from '../../components/ModuleTitle';
 import {
   HeartPulse, Users, SlidersHorizontal, Search, StickyNote, HeartHandshake,
   Award, Tag as TagIcon, ChevronLeft, Mail, Phone,
@@ -100,7 +101,7 @@ export default function CareModule() {
           <HeartPulse className="text-white" size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Opieka i CRM</h1>
+          <ModuleTitle moduleKey="care" fallback="Opieka i CRM" className="text-2xl font-bold text-gray-900 dark:text-white" />
           <p className="text-sm text-gray-500 dark:text-gray-400">Notatki, opieka duszpasterska, kamienie milowe, tagi i pola własne członków</p>
         </div>
       </div>

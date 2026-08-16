@@ -1083,7 +1083,7 @@ export default function TeachingModule() {
 
   return (
     <div className="space-y-8">
-      <PageHeader icon={GraduationCap} title="Nauczanie" />
+      <PageHeader moduleKey="teaching" icon={GraduationCap} title="Nauczanie" />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs

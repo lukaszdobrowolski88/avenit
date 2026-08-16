@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import ModuleTitle from '../../components/ModuleTitle';
 import {
   CalendarCheck, Plus, X, Send, ArrowLeft, Check, HelpCircle, Users, Copy, Search, Trash2, ClipboardCheck,
 } from 'lucide-react';
@@ -96,7 +97,7 @@ export default function RsvpModule() {
           <CalendarCheck className="text-white" size={24} />
         </div>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Obecność (RSVP)</h1>
+          <ModuleTitle moduleKey="rsvp" fallback="Obecność (RSVP)" className="text-2xl font-bold text-gray-900 dark:text-white" />
           <p className="text-sm text-gray-500 dark:text-gray-400">Zaproszenia „Będę / Nie będę" przez push, e-mail i SMS</p>
         </div>
         <button data-tour="rsvp-new" onClick={() => setModalOpen(true)} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md">

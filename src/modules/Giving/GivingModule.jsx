@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ModuleTitle from '../../components/ModuleTitle';
 import { Gift, LayoutDashboard, Receipt, Repeat, Target, FolderOpen, FileText, Users } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -67,7 +68,7 @@ export default function GivingModule() {
           <Gift className="text-white" size={24} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dawanie</h1>
+          <ModuleTitle moduleKey="giving" fallback="Dawanie" className="text-2xl font-bold text-gray-900 dark:text-white" />
           <p className="text-sm text-gray-500 dark:text-gray-400">Darowizny, dawanie cykliczne, kampanie i zestawienia roczne</p>
         </div>
       </div>

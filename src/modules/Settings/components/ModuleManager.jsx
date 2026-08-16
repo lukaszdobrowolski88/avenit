@@ -20,6 +20,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { useModules } from '../../../hooks/useModules';
 import ModuleEditor from './ModuleEditor';
 import TabManager from './TabManager';
+import { MODULE_TEMPLATES } from './moduleTemplates';
+import { invalidateModuleLabels } from '../../../hooks/useModuleLabel';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 
@@ -163,6 +165,9 @@ export default function ModuleManager() {
   const [tabManagerOpen, setTabManagerOpen] = useState(false);
   const [managingModule, setManagingModule] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [createDefaults, setCreateDefaults] = useState(null); // prefill przy tworzeniu z szablonu
+  const [pendingTemplate, setPendingTemplate] = useState(null); // zakładki do dołożenia po utworzeniu
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -191,7 +196,20 @@ export default function ModuleManager() {
   };
 
   const handleAddModule = () => {
+    setTemplatePickerOpen(true);
+  };
+
+  // Wybór szablonu (lub pusty moduł) → otwiera edytor modułu; zakładki dokładane po zapisie.
+  const handlePickTemplate = (template) => {
+    setTemplatePickerOpen(false);
     setEditingModule(null);
+    if (template) {
+      setPendingTemplate(template);
+      setCreateDefaults({ label: template.name, icon: template.icon });
+    } else {
+      setPendingTemplate(null);
+      setCreateDefaults(null);
+    }
     setEditorOpen(true);
   };
 
@@ -207,7 +225,21 @@ export default function ModuleManager() {
     } else {
       const result = await addModule(moduleData);
       if (!result.success) throw new Error(result.error);
+      // Szablon: dołóż zestaw zakładek do nowo utworzonego modułu.
+      if (pendingTemplate && result.data?.id) {
+        for (const tpl of pendingTemplate.tabs) {
+          await addTab(result.data.id, {
+            key: tpl.component_type,
+            label: tpl.label,
+            icon: tpl.icon,
+            component_type: tpl.component_type,
+          });
+        }
+      }
     }
+    setPendingTemplate(null);
+    setCreateDefaults(null);
+    invalidateModuleLabels(); // odśwież nazwy w nagłówkach modułów na żywo
   };
 
   const handleDeleteModule = (module) => {
@@ -270,8 +302,7 @@ export default function ModuleManager() {
       {/* Info Banner */}
       <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
         <p className="text-sm text-amber-800 dark:text-amber-300">
-          <strong>{t('Wskazówka:')}</strong> Przeciągnij moduły, aby zmienić ich kolejność w menu bocznym.
-          Moduły systemowe (z ikoną kłódki) nie mogą być usunięte, ale można je wyłączyć.
+          <strong>{t('Wskazówka:')}</strong> {tr('Kliknij ołówek, aby zmienić nazwę i ikonę dowolnego modułu (także systemowego) — nowa nazwa pojawi się w menu i w nagłówku modułu.')} {tr('Przeciągnij moduły, aby zmienić kolejność. Moduły systemowe można wyłączyć, ale nie usunąć.')}
         </p>
       </div>
 
@@ -309,11 +340,49 @@ export default function ModuleManager() {
         </div>
       )}
 
+      {/* Template Picker Modal */}
+      {templatePickerOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[130]">
+          <div className="absolute inset-0" onClick={() => setTemplatePickerOpen(false)} />
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl p-6 max-h-[85vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="font-bold text-lg text-gray-800 dark:text-white">{tr('Nowy moduł')}</h4>
+              <button onClick={() => setTemplatePickerOpen(false)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"><Icons.X size={18} /></button>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Zacznij od gotowego szablonu (moduł + zestaw zakładek) albo zbuduj od zera.')}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button onClick={() => handlePickTemplate(null)}
+                className="flex items-start gap-3 p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:bg-accent-primary/5 text-left">
+                <span className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-500 bg-gray-100 dark:bg-gray-800 shrink-0"><Icons.Plus size={20} /></span>
+                <div>
+                  <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{tr('Pusty moduł')}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{tr('Zbuduj zakładka po zakładce z palety elementów')}</div>
+                </div>
+              </button>
+              {MODULE_TEMPLATES.map((tpl) => {
+                const TplIcon = Icons[tpl.icon] || Icons.Square;
+                return (
+                  <button key={tpl.key} onClick={() => handlePickTemplate(tpl)}
+                    className="flex items-start gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-accent-primary/50 hover:shadow-md text-left">
+                    <span className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary"><TplIcon size={20} /></span>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{tr(tpl.name)}</div>
+                      <div className="text-xs text-gray-400 mt-0.5 line-clamp-2">{tr(tpl.description)}</div>
+                      <div className="text-[11px] text-accent-primary mt-1">{tpl.tabs.length} {tr('zakładek')}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Module Editor Modal */}
       {editorOpen && (
         <ModuleEditor
-          module={editingModule}
-          onClose={() => setEditorOpen(false)}
+          module={editingModule || createDefaults}
+          onClose={() => { setEditorOpen(false); setCreateDefaults(null); setPendingTemplate(null); }}
           onSave={handleSaveModule}
           existingKeys={existingKeys}
         />
