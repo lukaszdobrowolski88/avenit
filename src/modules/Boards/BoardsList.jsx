@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Plus, Table2, MoreHorizontal, Trash2, Copy, Loader2, LayoutGrid, CalendarRange, CheckSquare, Users, X,
+  Folder as FolderIcon, ChevronRight, ChevronDown,
 } from 'lucide-react';
 import { useBoards } from './hooks/useBoards';
 import { BOARD_TEMPLATES } from './lib/templates';
@@ -81,11 +82,23 @@ function TemplateChooser({ onPick, onClose, busy }) {
 }
 
 export default function BoardsList({ userEmail, userName, moduleKey = null, onOpenBoard }) {
-  const { boards, loading, fetchBoards, createFromTemplate, createFromSpec, deleteBoard, duplicateBoard } = useBoards(userEmail, userName);
+  const { boards, loading, fetchBoards, createFromTemplate, createFromSpec, updateBoard, deleteBoard, duplicateBoard } = useBoards(userEmail, userName);
   const [creating, setCreating] = useState(false);
   const [chooser, setChooser] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [collapsedFolders, setCollapsedFolders] = useState(() => new Set());
+
+  const folders = [...new Set(boards.map(b => b.folder).filter(Boolean))].sort();
+  const grouped = [
+    ...folders.map(f => ({ folder: f, list: boards.filter(b => b.folder === f) })),
+    { folder: null, list: boards.filter(b => !b.folder) },
+  ].filter(g => g.list.length > 0);
+  const moveToFolder = (id) => {
+    const name = prompt('Nazwa folderu (puste = bez folderu):', '');
+    if (name === null) return;
+    updateBoard(id, { folder: name.trim() || null });
+  };
 
   useEffect(() => { fetchBoards(moduleKey); }, [fetchBoards, moduleKey]);
 
@@ -141,38 +154,60 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="space-y-6">
           {moduleKey && (
-            <button onClick={handleCreate} disabled={creating}
-              className="flex flex-col items-center justify-center gap-2 h-36 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-accent-primary hover:border-accent-primary/50">
-              {creating ? <Loader2 size={22} className="animate-spin" /> : <Plus size={22} />}
-              <span className="text-sm font-medium">Nowa tablica</span>
-            </button>
-          )}
-          {boards.map(b => (
-            <div key={b.id} onClick={() => onOpenBoard(b.id)}
-              className="group relative h-36 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 cursor-pointer hover:shadow-lg transition-shadow flex flex-col">
-              <div className="flex items-start justify-between">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: b.color || '#6366f1' }}>
-                  <Table2 size={20} />
-                </div>
-                <Popover align="right" width={170} trigger={
-                  <button onClick={(e) => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 p-1"><MoreHorizontal size={18} /></button>
-                }>
-                  {({ close }) => (
-                    <div className="p-1.5" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={() => { duplicateBoard(b.id); close(); }}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Copy size={14} /> Duplikuj</button>
-                      <button onClick={() => { if (confirm(`Usunąć tablicę „${b.name}"?`)) deleteBoard(b.id); close(); }}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> Usuń</button>
-                    </div>
-                  )}
-                </Popover>
-              </div>
-              <h3 className="mt-3 font-semibold text-gray-800 dark:text-gray-100 line-clamp-2">{b.name}</h3>
-              {b.description && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{b.description}</p>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <button onClick={handleCreate} disabled={creating}
+                className="flex flex-col items-center justify-center gap-2 h-36 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-accent-primary hover:border-accent-primary/50">
+                {creating ? <Loader2 size={22} className="animate-spin" /> : <Plus size={22} />}
+                <span className="text-sm font-medium">Nowa tablica</span>
+              </button>
             </div>
-          ))}
+          )}
+          {grouped.map(({ folder, list }) => {
+            const isCollapsed = collapsedFolders.has(folder || '__none__');
+            return (
+              <div key={folder || '__none__'}>
+                {folders.length > 0 && (
+                  <button onClick={() => setCollapsedFolders(prev => { const n = new Set(prev); const k = folder || '__none__'; n.has(k) ? n.delete(k) : n.add(k); return n; })}
+                    className="flex items-center gap-1.5 mb-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                    {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                    <FolderIcon size={15} className="text-gray-400" /> {folder || 'Bez folderu'} <span className="text-gray-400 font-normal">{list.length}</span>
+                  </button>
+                )}
+                {!isCollapsed && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {list.map(b => (
+                      <div key={b.id} onClick={() => onOpenBoard(b.id)}
+                        className="group relative h-36 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 cursor-pointer hover:shadow-lg transition-shadow flex flex-col">
+                        <div className="flex items-start justify-between">
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{ backgroundColor: b.color || '#6366f1' }}>
+                            <Table2 size={20} />
+                          </div>
+                          <Popover align="right" width={190} trigger={
+                            <button onClick={(e) => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 p-1"><MoreHorizontal size={18} /></button>
+                          }>
+                            {({ close }) => (
+                              <div className="p-1.5" onClick={(e) => e.stopPropagation()}>
+                                <button onClick={() => { moveToFolder(b.id); close(); }}
+                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><FolderIcon size={14} /> Przenieś do folderu</button>
+                                <button onClick={() => { duplicateBoard(b.id); close(); }}
+                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Copy size={14} /> Duplikuj</button>
+                                <button onClick={() => { if (confirm(`Usunąć tablicę „${b.name}"?`)) deleteBoard(b.id); close(); }}
+                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> Usuń</button>
+                              </div>
+                            )}
+                          </Popover>
+                        </div>
+                        <h3 className="mt-3 font-semibold text-gray-800 dark:text-gray-100 line-clamp-2">{b.name}</h3>
+                        {b.description && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{b.description}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

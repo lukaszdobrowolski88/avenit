@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS boards (
     icon TEXT DEFAULT 'LayoutGrid',
     color TEXT DEFAULT '#6366f1',
     module_key TEXT,               -- gdy tablica jest osadzona jako zakładka modułu (component_type='board')
+    folder TEXT,                   -- workspace/folder grupujący tablice na liście
     source_kind TEXT,              -- ślad po ujednoliceniu (np. 'mlodziezowka_tasks')
     is_template BOOLEAN DEFAULT false,
     is_archived BOOLEAN DEFAULT false,

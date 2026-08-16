@@ -71,7 +71,54 @@ async function runActions(pool, automation, item, ctx) {
   );
 }
 
+// Czy automatyzacja cykliczna (every_period) powinna wystartować teraz?
+function isPeriodDue(trigger, lastRunAt) {
+  const now = new Date();
+  const last = lastRunAt ? new Date(lastRunAt) : null;
+  if (last && last.toDateString() === now.toDateString()) return false; // maks. raz dziennie
+  const period = trigger.period || 'daily';
+  if (period === 'daily') return true;
+  if (period === 'weekly') {
+    if (trigger.dayOfWeek != null) return now.getDay() === Number(trigger.dayOfWeek);
+    return !last || (now - last) >= 7 * 86400000;
+  }
+  if (period === 'monthly') {
+    if (trigger.dayOfMonth != null) return now.getDate() === Number(trigger.dayOfMonth);
+    return !last || now.getMonth() !== last.getMonth() || now.getFullYear() !== last.getFullYear();
+  }
+  return false;
+}
+
+async function runRecurring(pool, ctx) {
+  const { rows: autos } = await pool.query(
+    `SELECT * FROM board_automations WHERE enabled = true AND trigger->>'type' = 'every_period'`);
+  for (const a of autos) {
+    if (!isPeriodDue(a.trigger || {}, a.last_run_at)) continue;
+    for (const action of (a.actions || [])) {
+      if (action.type !== 'create_item') continue;
+      const p = action.params || {};
+      let groupId = p.groupId;
+      if (!groupId) {
+        const g = await pool.query(`SELECT id FROM board_groups WHERE board_id=$1 ORDER BY display_order LIMIT 1`, [a.board_id]);
+        groupId = g.rows[0]?.id;
+      }
+      if (!groupId) continue;
+      const ord = await pool.query(`SELECT COALESCE(MAX(display_order),-1)+1 AS n FROM board_items WHERE board_id=$1 AND group_id=$2`, [a.board_id, groupId]);
+      const { rows: it } = await pool.query(
+        `INSERT INTO board_items (board_id, group_id, name, cells, display_order, created_by)
+         VALUES ($1,$2,$3,$4::jsonb,$5,'automatyzacja') RETURNING id`,
+        [a.board_id, groupId, p.name || 'Zadanie cykliczne', JSON.stringify(p.cells || {}), ord.rows[0].n]);
+      await pool.query(`INSERT INTO board_automation_runs (automation_id, board_id, item_id, status, detail) VALUES ($1,$2,$3,'success',$4::jsonb)`,
+        [a.id, a.board_id, it[0].id, JSON.stringify({ recurring: a.trigger.period })]);
+      ctx?.log?.(`cykliczna „${a.name || a.id}" → nowy element ${it[0].id}`);
+    }
+    await pool.query(`UPDATE board_automations SET last_run_at = now() WHERE id=$1`, [a.id]);
+  }
+}
+
 export async function runForTenant(pool, ctx = {}) {
+  await runRecurring(pool, ctx).catch(e => ctx?.log?.(`recurring błąd: ${e.message}`));
+
   const { rows: autos } = await pool.query(
     `SELECT * FROM board_automations WHERE enabled = true AND trigger->>'type' = 'date_arrives'`
   );

@@ -8,6 +8,7 @@ const TRIGGERS = [
   { type: 'person_assigned', label: 'Gdy przypisano osobę' },
   { type: 'item_created', label: 'Gdy utworzono element' },
   { type: 'date_arrives', label: 'Gdy nadejdzie data… (serwer)' },
+  { type: 'every_period', label: 'Cyklicznie (co okres)… (serwer)' },
 ];
 const ACTION_TYPES = [
   { type: 'notify', label: 'Powiadom', icon: Bell },
@@ -15,7 +16,9 @@ const ACTION_TYPES = [
   { type: 'set_date', label: 'Ustaw datę', icon: CalendarPlus },
   { type: 'assign_person', label: 'Przypisz osobę', icon: UserPlus },
   { type: 'create_update', label: 'Dodaj komentarz', icon: MessageSquarePlus },
+  { type: 'create_item', label: 'Utwórz element', icon: Plus },
 ];
+const WEEKDAYS = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
 
 const statusCols = (cols) => cols.filter(c => c.type === 'status' || c.type === 'priority');
 const dateCols = (cols) => cols.filter(c => c.type === 'date' || c.type === 'timeline');
@@ -31,6 +34,7 @@ function sentence(a, columns) {
   else if (tr.type === 'person_assigned') t = 'Gdy przypisano osobę';
   else if (tr.type === 'item_created') t = 'Gdy utworzono element';
   else if (tr.type === 'date_arrives') t = `Gdy nadejdzie „${colName(tr.columnId)}"`;
+  else if (tr.type === 'every_period') t = `Cyklicznie (${tr.period === 'weekly' ? 'co tydzień' : tr.period === 'monthly' ? 'co miesiąc' : 'codziennie'})`;
   const acts = (a.actions || []).map(ac => ACTION_TYPES.find(x => x.type === ac.type)?.label || ac.type).join(' + ');
   return `${t} → ${acts}`;
 }
@@ -86,6 +90,7 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
     if (type === 'set_date') return { columnId: dateCols(columns)[0]?.id, offsetDays: 0 };
     if (type === 'assign_person') return { columnId: peopleCols(columns)[0]?.id, email: people[0]?.email, name: people[0]?.name };
     if (type === 'create_update') return { text: '' };
+    if (type === 'create_item') return { name: 'Zadanie cykliczne' };
     return {};
   }
 
@@ -156,6 +161,23 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
                     {dateCols(columns).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 )}
+                {trigger.type === 'every_period' && (
+                  <div className="flex gap-2 mt-2">
+                    <select value={trigger.period || 'daily'} onChange={(e) => setTr({ period: e.target.value })}
+                      className="flex-1 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none">
+                      <option value="daily">Codziennie</option><option value="weekly">Co tydzień</option><option value="monthly">Co miesiąc</option>
+                    </select>
+                    {trigger.period === 'weekly' && (
+                      <select value={trigger.dayOfWeek ?? 1} onChange={(e) => setTr({ dayOfWeek: Number(e.target.value) })} className="flex-1 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none">
+                        {WEEKDAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                      </select>
+                    )}
+                    {trigger.period === 'monthly' && (
+                      <input type="number" min={1} max={28} value={trigger.dayOfMonth ?? 1} onChange={(e) => setTr({ dayOfMonth: Number(e.target.value) })}
+                        className="w-20 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none" title="Dzień miesiąca" />
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Akcje */}
@@ -208,6 +230,9 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
                         )}
                         {a.type === 'create_update' && (
                           <input value={a.params.text} onChange={(e) => setAct(i, { text: e.target.value })} placeholder="Treść komentarza" className="w-full text-sm bg-gray-100 dark:bg-gray-600/50 rounded px-2 py-1 outline-none" />
+                        )}
+                        {a.type === 'create_item' && (
+                          <input value={a.params.name} onChange={(e) => setAct(i, { name: e.target.value })} placeholder="Nazwa nowego elementu" className="w-full text-sm bg-gray-100 dark:bg-gray-600/50 rounded px-2 py-1 outline-none" />
                         )}
                       </div>
                     </div>
