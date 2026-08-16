@@ -49,7 +49,7 @@ export default defineConfig({
         // served from precache, otherwise a deploy is invisible until the SW is
         // fully replaced (the recurring "stale after deploy" bug on Safari).
         globPatterns: ['**/*.{js,css,ico,png,svg,woff2}'],
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB limit
+        maximumFileSizeToCacheInBytes: 12 * 1024 * 1024, // 12MB — bundle rośnie (moduł Boards/AI); precache musi go objąć
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Zap, Plus, Trash2, Bell, Flag, CalendarPlus, UserPlus, MessageSquarePlus } from 'lucide-react';
+import { X, Zap, Plus, Trash2, Bell, Flag, CalendarPlus, UserPlus, MessageSquarePlus, Sparkles, Loader2 } from 'lucide-react';
+import { generateAutomationSpec } from '../lib/aiBoards';
 
 const TRIGGERS = [
   { type: 'status_changes_to', label: 'Gdy status zmieni się na…' },
@@ -7,6 +8,7 @@ const TRIGGERS = [
   { type: 'person_assigned', label: 'Gdy przypisano osobę' },
   { type: 'item_created', label: 'Gdy utworzono element' },
   { type: 'date_arrives', label: 'Gdy nadejdzie data… (serwer)' },
+  { type: 'every_period', label: 'Cyklicznie (co okres)… (serwer)' },
 ];
 const ACTION_TYPES = [
   { type: 'notify', label: 'Powiadom', icon: Bell },
@@ -14,7 +16,9 @@ const ACTION_TYPES = [
   { type: 'set_date', label: 'Ustaw datę', icon: CalendarPlus },
   { type: 'assign_person', label: 'Przypisz osobę', icon: UserPlus },
   { type: 'create_update', label: 'Dodaj komentarz', icon: MessageSquarePlus },
+  { type: 'create_item', label: 'Utwórz element', icon: Plus },
 ];
+const WEEKDAYS = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
 
 const statusCols = (cols) => cols.filter(c => c.type === 'status' || c.type === 'priority');
 const dateCols = (cols) => cols.filter(c => c.type === 'date' || c.type === 'timeline');
@@ -30,8 +34,45 @@ function sentence(a, columns) {
   else if (tr.type === 'person_assigned') t = 'Gdy przypisano osobę';
   else if (tr.type === 'item_created') t = 'Gdy utworzono element';
   else if (tr.type === 'date_arrives') t = `Gdy nadejdzie „${colName(tr.columnId)}"`;
+  else if (tr.type === 'every_period') t = `Cyklicznie (${tr.period === 'weekly' ? 'co tydzień' : tr.period === 'monthly' ? 'co miesiąc' : 'codziennie'})`;
   const acts = (a.actions || []).map(ac => ACTION_TYPES.find(x => x.type === ac.type)?.label || ac.type).join(' + ');
   return `${t} → ${acts}`;
+}
+
+// Generator automatyzacji z AI (styl monday AI Workflows).
+function AiAutomationBox({ columns, onAdd }) {
+  const [prompt, setPrompt] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const run = async () => {
+    if (!prompt.trim()) return;
+    setBusy(true); setErr('');
+    try {
+      const spec = await generateAutomationSpec(prompt.trim(), columns);
+      await onAdd(spec.name || 'Automatyzacja AI', spec.trigger, spec.actions);
+      setPrompt('');
+    } catch (e) { setErr(e.message || 'Błąd generowania.'); }
+    finally { setBusy(false); }
+  };
+  return (
+    <div className="mb-4 rounded-xl p-[1.5px] bg-gradient-to-r from-accent-primary via-purple-400 to-accent-secondary">
+      <div className="rounded-xl bg-white dark:bg-gray-800 p-3">
+        <div className="flex items-center gap-1.5 mb-2 text-sm font-medium text-gray-800 dark:text-gray-100">
+          <Sparkles size={15} className="text-accent-primary" /> Opisz automatyzację, a AI ją zbuduje
+        </div>
+        <div className="flex items-end gap-2">
+          <input value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && run()}
+            placeholder="np. Gdy status = Gotowe, powiadom przypisane osoby"
+            className="flex-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg px-3 py-2 text-sm outline-none text-gray-800 dark:text-gray-100" />
+          <button onClick={run} disabled={busy || !prompt.trim()}
+            className="flex items-center gap-1 bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-3 py-2 rounded-lg text-sm disabled:opacity-50 shrink-0">
+            {busy ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+          </button>
+        </div>
+        {err && <div className="text-xs text-red-500 mt-1.5">{err}</div>}
+      </div>
+    </div>
+  );
 }
 
 export default function AutomationsPanel({ automations, columns, people, onAdd, onUpdate, onDelete, onClose }) {
@@ -49,6 +90,7 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
     if (type === 'set_date') return { columnId: dateCols(columns)[0]?.id, offsetDays: 0 };
     if (type === 'assign_person') return { columnId: peopleCols(columns)[0]?.id, email: people[0]?.email, name: people[0]?.name };
     if (type === 'create_update') return { text: '' };
+    if (type === 'create_item') return { name: 'Zadanie cykliczne' };
     return {};
   }
 
@@ -70,6 +112,7 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+          <AiAutomationBox columns={columns} onAdd={onAdd} />
           {/* Istniejące */}
           <div className="space-y-2 mb-4">
             {automations.map(a => (
@@ -117,6 +160,23 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
                     className="w-full mt-2 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none">
                     {dateCols(columns).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
+                )}
+                {trigger.type === 'every_period' && (
+                  <div className="flex gap-2 mt-2">
+                    <select value={trigger.period || 'daily'} onChange={(e) => setTr({ period: e.target.value })}
+                      className="flex-1 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none">
+                      <option value="daily">Codziennie</option><option value="weekly">Co tydzień</option><option value="monthly">Co miesiąc</option>
+                    </select>
+                    {trigger.period === 'weekly' && (
+                      <select value={trigger.dayOfWeek ?? 1} onChange={(e) => setTr({ dayOfWeek: Number(e.target.value) })} className="flex-1 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none">
+                        {WEEKDAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                      </select>
+                    )}
+                    {trigger.period === 'monthly' && (
+                      <input type="number" min={1} max={28} value={trigger.dayOfMonth ?? 1} onChange={(e) => setTr({ dayOfMonth: Number(e.target.value) })}
+                        className="w-20 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none" title="Dzień miesiąca" />
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -170,6 +230,9 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
                         )}
                         {a.type === 'create_update' && (
                           <input value={a.params.text} onChange={(e) => setAct(i, { text: e.target.value })} placeholder="Treść komentarza" className="w-full text-sm bg-gray-100 dark:bg-gray-600/50 rounded px-2 py-1 outline-none" />
+                        )}
+                        {a.type === 'create_item' && (
+                          <input value={a.params.name} onChange={(e) => setAct(i, { name: e.target.value })} placeholder="Nazwa nowego elementu" className="w-full text-sm bg-gray-100 dark:bg-gray-600/50 rounded px-2 py-1 outline-none" />
                         )}
                       </div>
                     </div>

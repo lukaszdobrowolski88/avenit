@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { DEFAULT_STATUS_LABELS, GROUP_COLORS, pickColor } from '../lib/constants';
+import { DEFAULT_STATUS_LABELS, GROUP_COLORS, STATUS_COLORS, pickColor, uid } from '../lib/constants';
+
+const ALLOWED_AI_TYPES = new Set(['status', 'priority', 'text', 'long_text', 'number', 'date', 'timeline', 'people', 'dropdown', 'checkbox', 'link', 'rating', 'progress']);
 
 // Zarządzanie listą tablic (CRUD) — wzorzec jak useForms.
 export function useBoards(userEmail, userName) {
@@ -25,8 +27,11 @@ export function useBoards(userEmail, userName) {
 
       const { data, error: fetchError } = await query;
       if (fetchError) throw fetchError;
-      setBoards(data || []);
-      return data || [];
+      // Filtr widoczności: prywatne widoczne dla właściciela + edytorów
+      const visible = (data || []).filter(b =>
+        b.visibility !== 'private' || b.owner_email === userEmail || (b.editors || []).includes(userEmail));
+      setBoards(visible);
+      return visible;
     } catch (err) {
       console.error('Błąd pobierania tablic:', err);
       setError(err.message);
@@ -136,6 +141,85 @@ export function useBoards(userEmail, userName) {
     }
   }, [boards, userEmail]);
 
+  // Utwórz tablicę z specyfikacji AI (name-keyed → mapowanie na realne id).
+  const createFromSpec = useCallback(async (spec, extra = {}) => {
+    setError(null);
+    try {
+      const maxOrder = boards.reduce((m, b) => Math.max(m, b.display_order || 0), 0);
+      const { data: board, error: e } = await supabase.from('boards').insert({
+        name: (spec.name || 'Nowa tablica').slice(0, 200), description: (spec.description || '').slice(0, 500),
+        icon: 'LayoutGrid', color: extra.color || '#6366f1', module_key: extra.module_key ?? null,
+        owner_email: userEmail || null, created_by: userEmail || null, display_order: maxOrder + 1,
+      }).select().single();
+      if (e) throw e;
+
+      // Kolumny (etykiety/opcje dostają id; mapy title→id do rozwiązywania komórek)
+      const nameToCol = {};
+      let ord = 0;
+      for (const col of (spec.columns || [])) {
+        const type = ALLOWED_AI_TYPES.has(col.type) ? col.type : 'text';
+        const settings = {};
+        const labelTitleToId = {}, optionTitleToId = {};
+        if (type === 'status' || type === 'priority') {
+          settings.labels = (col.labels || DEFAULT_STATUS_LABELS).map((l, i) => {
+            const id = uid('lbl'); labelTitleToId[l.title] = id;
+            return { id, title: l.title, color: l.color || STATUS_COLORS[i % STATUS_COLORS.length] };
+          });
+        }
+        if (type === 'dropdown') {
+          settings.options = (col.options || []).map((o, i) => {
+            const id = uid('opt'); optionTitleToId[o.title] = id;
+            return { id, title: o.title, color: o.color || STATUS_COLORS[i % STATUS_COLORS.length] };
+          });
+        }
+        if (type === 'number' && col.unit) settings.unit = col.unit;
+        const { data } = await supabase.from('board_columns').insert({
+          board_id: board.id, name: col.name, type, settings, display_order: ord++, width: 160,
+        }).select().single();
+        if (data) nameToCol[col.name] = { id: data.id, type, labelTitleToId, optionTitleToId };
+      }
+
+      // Grupy
+      const groupIds = [];
+      const groups = (spec.groups && spec.groups.length) ? spec.groups : [{ name: 'Elementy', color: GROUP_COLORS[0] }];
+      for (let i = 0; i < groups.length; i++) {
+        const { data } = await supabase.from('board_groups').insert({
+          board_id: board.id, name: groups[i].name || `Grupa ${i + 1}`, color: groups[i].color || pickColor(GROUP_COLORS, i), display_order: i,
+        }).select().single();
+        groupIds.push(data?.id);
+      }
+      await supabase.from('board_views').insert({ board_id: board.id, name: 'Tabela główna', type: 'table', is_default: true, display_order: 0, config: {} });
+
+      // Elementy (cells: nazwa kolumny → id; wartości status/dropdown: title → id)
+      const items = spec.items || [];
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        const cells = {};
+        for (const [colName, val] of Object.entries(it.cells || {})) {
+          const col = nameToCol[colName];
+          if (!col) continue;
+          if (col.type === 'status' || col.type === 'priority') { const id = col.labelTitleToId[val]; if (id) cells[col.id] = id; }
+          else if (col.type === 'dropdown') { const ids = (Array.isArray(val) ? val : [val]).map(t => col.optionTitleToId[t]).filter(Boolean); if (ids.length) cells[col.id] = ids; }
+          else if (col.type === 'people') { /* pomiń — AI nie zna realnych osób */ }
+          else if (col.type === 'checkbox') cells[col.id] = !!val;
+          else if (col.type === 'number' || col.type === 'rating' || col.type === 'progress') { const n = Number(val); if (!isNaN(n)) cells[col.id] = n; }
+          else if (val != null && val !== '') cells[col.id] = String(val);
+        }
+        await supabase.from('board_items').insert({
+          board_id: board.id, group_id: groupIds[it.group ?? 0] || groupIds[0], name: String(it.name || 'Element'),
+          cells, display_order: i, created_by: userEmail || null,
+        });
+      }
+
+      setBoards(prev => [...prev, board]);
+      return { success: true, data: board };
+    } catch (err) {
+      console.error('Błąd tworzenia z AI:', err);
+      setError(err.message);
+      return { success: false, error: err.message };
+    }
+  }, [boards, userEmail]);
+
   const updateBoard = useCallback(async (boardId, updates) => {
     setError(null);
     try {
@@ -221,5 +305,5 @@ export function useBoards(userEmail, userName) {
     }
   }, [boards, userEmail]);
 
-  return { boards, loading, error, fetchBoards, createBoard, createFromTemplate, updateBoard, deleteBoard, duplicateBoard };
+  return { boards, loading, error, fetchBoards, createBoard, createFromTemplate, createFromSpec, updateBoard, deleteBoard, duplicateBoard };
 }

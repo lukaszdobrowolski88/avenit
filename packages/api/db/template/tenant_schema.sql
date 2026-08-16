@@ -6112,10 +6112,13 @@ CREATE TABLE IF NOT EXISTS boards (
     icon TEXT DEFAULT 'LayoutGrid',
     color TEXT DEFAULT '#6366f1',
     module_key TEXT,               -- gdy tablica jest osadzona jako zakładka modułu (component_type='board')
+    folder TEXT,                   -- workspace/folder grupujący tablice na liście
     source_kind TEXT,              -- ślad po ujednoliceniu (np. 'mlodziezowka_tasks')
     is_template BOOLEAN DEFAULT false,
     is_archived BOOLEAN DEFAULT false,
     owner_email TEXT,
+    visibility TEXT DEFAULT 'workspace',  -- workspace (wszyscy) | private (właściciel + edytorzy)
+    editors TEXT[] DEFAULT '{}',          -- e-maile z dostępem do prywatnej tablicy
     display_order INTEGER DEFAULT 0,
     created_by TEXT,
     -- Publiczny formularz (jak WorkForms w Monday): token + włącznik + ustawienia

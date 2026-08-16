@@ -164,7 +164,7 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
                       <ColumnIcon name={t.icon} size={13} className="text-gray-400" /> <span className="truncate">{col.name}</span>
                     </div>
                     <div className="flex-1 min-h-[36px] border border-gray-200 dark:border-gray-700 rounded-lg flex items-stretch overflow-hidden">
-                      <BoardCell column={col} value={current.cells?.[col.id]} people={data.people} item={current} columns={data.columns}
+                      <BoardCell column={col} value={current.cells?.[col.id]} people={data.people} me={data.me} item={current} columns={data.columns}
                         onChange={(v) => data.updateCell(current.id, col.id, v)} onUpdateColumn={data.updateColumn} />
                     </div>
                   </div>
