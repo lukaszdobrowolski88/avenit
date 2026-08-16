@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
+import PageHeader from '../../components/PageHeader';
 import { useUserRole } from '../../hooks/useUserRole';
 import { useT } from '../../i18n';
 import {
@@ -1019,9 +1020,7 @@ export default function PrayerWallModule() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-          {t('Centrum Modlitwy')}
-        </h1>
+        <PageHeader icon={Heart} title={t('Centrum Modlitwy')} />
         <button
           data-tour="prayer-add"
           onClick={() => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, BarChart3, MoreHorizontal, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useDashboards } from '../hooks/useDashboards';
+import { tr } from '../../../i18n';
 import DashboardView from './DashboardView';
 import Popover from '../components/Popover';
 
@@ -27,13 +28,10 @@ export default function DashboardsSection({ userEmail }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Dashboardy</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Wykresy i wskaźniki zasilane danymi z tablic.</p>
-        </div>
-        <button onClick={handleCreate} className="flex items-center gap-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2.5 rounded-xl font-medium shadow-lg shadow-accent-primary/20 hover:opacity-90">
-          <Plus size={18} /> Nowy dashboard
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Wykresy i wskaźniki zasilane danymi z tablic.')}</p>
+        <button onClick={handleCreate} className="flex items-center gap-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2.5 rounded-xl font-medium shadow-md hover:shadow-lg hover:opacity-90">
+          <Plus size={18} /> {tr('Nowy dashboard')}
         </button>
       </div>
 

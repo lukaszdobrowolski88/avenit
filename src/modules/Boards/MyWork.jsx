@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { endOfWeek, format } from 'date-fns';
 import { Loader2, AlertCircle, CalendarClock, CalendarDays, CalendarRange, Circle, CheckCircle2 } from 'lucide-react';
 import { useMyWork } from './hooks/useMyWork';
+import { tr } from '../../i18n';
 
 const BUCKETS = [
   { key: 'overdue', label: 'Zaległe', icon: AlertCircle, tone: 'text-red-500' },
@@ -33,10 +34,7 @@ export default function MyWork({ userEmail, userName, onOpenBoard }) {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Moja praca</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Elementy przypisane do Ciebie ({userName || userEmail}) ze wszystkich tablic.</p>
-      </div>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Elementy przypisane do Ciebie ({who}) ze wszystkich tablic.', { who: userName || userEmail })}</p>
 
       {loading ? (
         <div className="flex items-center justify-center h-48 text-gray-400"><Loader2 className="animate-spin" size={26} /></div>

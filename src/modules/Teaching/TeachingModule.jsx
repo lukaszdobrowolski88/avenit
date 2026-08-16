@@ -12,6 +12,8 @@ import WallTab from '../shared/WallTab';
 import MaterialsTab from '../shared/MaterialsTab';
 import CustomDatePicker from '../../components/CustomDatePicker';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import PageHeader from '../../components/PageHeader';
+import { GraduationCap } from 'lucide-react';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { tr } from '../../i18n';
 
@@ -1081,11 +1083,7 @@ export default function TeachingModule() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-          Nauczanie
-        </h1>
-      </div>
+      <PageHeader icon={GraduationCap} title="Nauczanie" />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { LayoutGrid, UserCheck, BarChart3 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { tr } from '../../i18n';
+import PageHeader from '../../components/PageHeader';
+import ResponsiveTabs from '../../components/ResponsiveTabs';
 import BoardsList from './BoardsList';
 import BoardView from './BoardView';
 import MyWork from './MyWork';
@@ -45,25 +48,21 @@ export default function BoardsModule({ moduleKey = null, initialBoardId = null }
     return <BoardsList userEmail={user.email} userName={user.name} moduleKey={moduleKey} onOpenBoard={openBoard} />;
   }
 
-  // Moduł najwyższego poziomu — przełącznik sekcji
-  const NAV = [
-    { key: 'boards', label: 'Tablice', icon: LayoutGrid },
-    { key: 'mywork', label: 'Moja praca', icon: UserCheck },
-    { key: 'dashboards', label: 'Dashboardy', icon: BarChart3 },
+  // Moduł najwyższego poziomu — przełącznik sekcji (kanon: PageHeader + ResponsiveTabs)
+  const SECTIONS = [
+    { id: 'boards', label: tr('Tablice'), icon: LayoutGrid },
+    { id: 'mywork', label: tr('Moja praca'), icon: UserCheck },
+    { id: 'dashboards', label: tr('Dashboardy'), icon: BarChart3 },
   ];
   return (
-    <div>
-      <div className="flex items-center gap-1 mb-5">
-        {NAV.map(n => (
-          <button key={n.key} onClick={() => setSection(n.key)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${section === n.key ? 'bg-accent-primary text-white' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
-            <n.icon size={15} /> {n.label}
-          </button>
-        ))}
+    <div className="max-w-7xl mx-auto space-y-6">
+      <PageHeader icon={LayoutGrid} title={tr('Projekty')} subtitle={tr('Tablice, zadania i procesy zespołów')} />
+      <ResponsiveTabs tabs={SECTIONS} activeTab={section} onChange={setSection} />
+      <div>
+        {section === 'boards' && <BoardsList userEmail={user.email} userName={user.name} onOpenBoard={openBoard} />}
+        {section === 'mywork' && <MyWork userEmail={user.email} userName={user.name} onOpenBoard={openBoard} />}
+        {section === 'dashboards' && <DashboardsSection userEmail={user.email} />}
       </div>
-      {section === 'boards' && <BoardsList userEmail={user.email} userName={user.name} onOpenBoard={openBoard} />}
-      {section === 'mywork' && <MyWork userEmail={user.email} userName={user.name} onOpenBoard={openBoard} />}
-      {section === 'dashboards' && <DashboardsSection userEmail={user.email} />}
     </div>
   );
 }

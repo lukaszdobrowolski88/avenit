@@ -15,6 +15,7 @@ import HouseholdManager from './components/HouseholdManager';
 import CustomSelect from '../../components/CustomSelect';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import PageHeader from '../../components/PageHeader';
 import { useUserRole } from '../../hooks/useUserRole';
 import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -561,9 +562,7 @@ export default function KidsModule() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{t('Małe Avenit')}</h1>
-      </div>
+      <PageHeader icon={Baby} title={t('Małe Avenit')} />
 
       {/* TABS */}
       <ResponsiveTabs

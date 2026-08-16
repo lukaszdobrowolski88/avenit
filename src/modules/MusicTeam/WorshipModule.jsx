@@ -13,6 +13,7 @@ import EquipmentTab from '../shared/EquipmentTab';
 import RolesTab from '../../components/RolesTab';
 import CustomSelect from '../../components/CustomSelect';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import PageHeader from '../../components/PageHeader';
 import { useUserRole } from '../../hooks/useUserRole';
 import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -2570,9 +2571,7 @@ export default function WorshipModule() {
 
   return (
     <div className="space-y-4 lg:space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{tr('Grupa Uwielbienia')}</h1>
-      </div>
+      <PageHeader icon={Music} title={tr('Grupa Uwielbienia')} />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs

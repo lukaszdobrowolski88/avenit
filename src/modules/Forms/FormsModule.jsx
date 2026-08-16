@@ -10,6 +10,8 @@ import {
   CreditCard
 } from 'lucide-react';
 import { useForms } from './hooks/useForms';
+import PageHeader from '../../components/PageHeader';
+import ResponsiveTabs from '../../components/ResponsiveTabs';
 import { useFormResponses } from './hooks/useFormResponses';
 import FormList from './components/FormList';
 import FormBuilder from './components/FormBuilder/FormBuilder';
@@ -223,44 +225,19 @@ export default function FormsModule({ userEmail }) {
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-accent-primary-lightest/50 via-white to-accent-secondary-lightest/50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
       <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary-light bg-clip-text text-transparent">
-              {t('Formularze')}
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {t('Twórz formularze i zbieraj odpowiedzi')}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
+        <PageHeader icon={FileText} title={t('Formularze')} subtitle={t('Twórz formularze i zbieraj odpowiedzi')}
+          actions={
             <button
               data-tour="forms-new"
               onClick={handleCreateForm}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/25 transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all"
             >
               <Plus size={18} />
               {t('Nowy formularz')}
             </button>
-          </div>
-        </div>
+          } />
 
-        <div className="flex gap-1 mt-4 p-1 bg-gray-100 dark:bg-gray-700 rounded-xl w-fit">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                activeTab === tab.id
-                  ? 'bg-white dark:bg-gray-600 text-accent-primary dark:text-accent-primary-light shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <tab.icon size={16} />
-              {t(tab.label)}
-            </button>
-          ))}
-        </div>
+        <ResponsiveTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mt-4" />
       </div>
 
       <div className="flex-1 overflow-auto p-4 md:p-6">

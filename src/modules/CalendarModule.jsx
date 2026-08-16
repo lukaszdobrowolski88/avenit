@@ -2512,10 +2512,10 @@ export default function CalendarModule() {
         {/* HEADER */}
         <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
            <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 rounded-lg text-accent-primary dark:text-accent-primary-light"><CalIcon size={24} /></div>
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary"><CalIcon className="text-white" size={24} /></div>
               <div>
-                 <h1 className="text-xl font-bold text-gray-800 dark:text-white">{t('Kalendarz')}</h1>
-                 <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Zarządzanie wydarzeniami i zadaniami')}</p>
+                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Kalendarz')}</h1>
+                 <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Zarządzanie wydarzeniami i zadaniami')}</p>
               </div>
            </div>
 

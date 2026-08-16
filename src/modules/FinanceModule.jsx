@@ -6,6 +6,7 @@ import { useCampusQuery } from '../hooks/useCampusQuery';
 import CustomSelect from '../components/CustomSelect';
 import MaterialsTab from './shared/MaterialsTab';
 import ResponsiveTabs from '../components/ResponsiveTabs';
+import PageHeader from '../components/PageHeader';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
 
@@ -728,21 +729,14 @@ const FinanceModule = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent mb-2">
-            Finanse
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">{t('Zarządzanie budżetem i finansami kościoła')}</p>
-        </div>
-        <div className="flex items-center gap-3">
+      <PageHeader icon={DollarSign} title="Finanse" subtitle={t('Zarządzanie budżetem i finansami kościoła')}
+        actions={
           <CustomSelect
             value={selectedYear}
             onChange={(val) => setSelectedYear(parseInt(val))}
             options={years.map(y => ({ value: y, label: y.toString() }))}
           />
-        </div>
-      </div>
+        } />
 
       <ResponsiveTabs
         tabs={[

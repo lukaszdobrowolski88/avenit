@@ -15,6 +15,7 @@ import AttendanceTab from './AttendanceTab';
 import MaterialsTab from './shared/MaterialsTab';
 import { useT } from '../i18n';
 import ResponsiveTabs from '../components/ResponsiveTabs';
+import PageHeader from '../components/PageHeader';
 import HouseholdManager from './Kids/components/HouseholdManager';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useCampus } from '../contexts/CampusContext';
@@ -450,11 +451,7 @@ export default function Members() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-          {tr('Baza Członków')}
-        </h1>
-      </div>
+      <PageHeader icon={Users} title={tr('Baza Członków')} />
 
       {/* TAB NAVIGATION */}
       <ResponsiveTabs

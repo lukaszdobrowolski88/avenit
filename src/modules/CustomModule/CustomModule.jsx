@@ -4,6 +4,7 @@ import * as LucideIcons from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import BoardsModule from '../Boards/BoardsModule';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import PageHeader from '../../components/PageHeader';
 import { useTabAccess } from '../../components/Can';
 import { tr } from '../../i18n';
 import ModuleWidget, { WIDGET_TYPES, SELF_WRAPPING_WIDGETS } from './components/ModuleWidget';
@@ -94,15 +95,7 @@ export default function CustomModule() {
 
   return (
     <div className="space-y-8">
-      {/* Nagłówek modułu — identyczny styl jak moduły systemowe (ikona + gradient) */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold flex items-center gap-3">
-          <HeaderIcon size={40} className="text-accent-primary dark:text-accent-primary-light" />
-          <span className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
-            {module.label}
-          </span>
-        </h1>
-      </div>
+      <PageHeader icon={HeaderIcon} title={module.label} />
 
       {visibleTabs.length > 0 && (
         <ResponsiveTabs

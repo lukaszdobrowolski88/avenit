@@ -7,6 +7,7 @@ import CampaignEditor from './components/CampaignEditor';
 import CampaignStats from './components/CampaignStats';
 import TemplateGallery from './components/TemplateGallery';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
+import PageHeader from '../../components/PageHeader';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 
@@ -74,12 +75,8 @@ export default function PushCampaignsModule() {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Push Kampanie')}</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {tr('Twórz, planuj i analizuj powiadomienia push wysyłane do web i mobile.')}
-        </p>
-      </div>
+      <PageHeader icon={Bell} title={tr('Push Kampanie')}
+        subtitle={tr('Twórz, planuj i analizuj powiadomienia push wysyłane do web i mobile.')} />
 
       <ResponsiveTabs tabs={TABS.map((x) => ({ ...x, label: t(x.label) }))} activeTab={tab} onChange={setTab} />
 
