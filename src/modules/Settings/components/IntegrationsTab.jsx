@@ -1,8 +1,133 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Loader2, Eye, EyeOff, AlertCircle, CheckCircle, MessageSquare, Copy, ExternalLink } from 'lucide-react';
+import { Save, Loader2, Eye, EyeOff, AlertCircle, CheckCircle, MessageSquare, Copy, ExternalLink, Sparkles } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import CustomSelect from '../../../components/CustomSelect';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
+
+// Konfiguracja asystenta AI (provider + model + klucz) — zapis do integration_settings
+// (ai_provider/ai_model/ai_api_key/ai_base_url); odczyt serwerowo w fn ai-assist.
+const AI_PROVIDERS = [
+  { value: 'anthropic', label: 'Anthropic (Claude)', models: ['claude-sonnet-5', 'claude-opus-4-8', 'claude-haiku-4-5-20251001'] },
+  { value: 'openai', label: 'OpenAI (GPT)', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'o3-mini'] },
+  { value: 'openai-compatible', label: tr('OpenAI-kompatybilny (własny URL)'), models: ['gpt-4o', 'llama-3.3-70b', 'mixtral-8x7b'] },
+];
+
+function AiIntegrationSection({ settings, onSaved }) {
+  const [provider, setProvider] = useState('anthropic');
+  const [model, setModel] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [keyDirty, setKeyDirty] = useState(false);
+  const [baseUrl, setBaseUrl] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [test, setTest] = useState(null);
+
+  useEffect(() => {
+    setProvider(settings.ai_provider?.value || 'anthropic');
+    setModel(settings.ai_model?.value || '');
+    setBaseUrl(settings.ai_base_url?.value || '');
+    setApiKey(''); setKeyDirty(false);
+  }, [settings]);
+
+  const keySet = !!settings.ai_api_key?.value;
+  const meta = AI_PROVIDERS.find((p) => p.value === provider) || AI_PROVIDERS[0];
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const stamp = { updated_by: user?.email, updated_at: new Date().toISOString() };
+      const rows = [
+        { key: 'ai_provider', value: provider },
+        { key: 'ai_model', value: model.trim() || null },
+        { key: 'ai_base_url', value: (provider === 'openai-compatible' ? baseUrl.trim() : '') || null },
+      ];
+      if (keyDirty) rows.push({ key: 'ai_api_key', value: apiKey.trim() || null });
+      for (const r of rows) {
+        const { error } = await supabase.from('integration_settings').upsert({ ...r, ...stamp }, { onConflict: 'key' });
+        if (error) throw error;
+      }
+      setKeyDirty(false); setApiKey('');
+      onSaved?.('Zapisano konfigurację asystenta AI.', false);
+    } catch (e) { onSaved?.('Błąd zapisu AI: ' + e.message, true); }
+    finally { setSaving(false); }
+  };
+
+  const runTest = async () => {
+    setTesting(true); setTest(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-assist', { body: { task: 'draft_message', input: 'Odpowiedz krótko: DZIAŁA' } });
+      if (error || data?.error) setTest({ ok: false, msg: data?.error || error?.message });
+      else setTest({ ok: true, msg: 'Połączenie działa — model odpowiedział.' });
+    } catch (e) { setTest({ ok: false, msg: e.message }); }
+    finally { setTesting(false); }
+  };
+
+  const fieldCls = 'w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg';
+
+  return (
+    <section>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center">
+          <Sparkles className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">{tr('Asystent AI')}</h2>
+          <p className="text-xs text-gray-500">{tr('Klucz i model używane przez asystenta AI, generator modułów i tablic.')}</p>
+        </div>
+      </div>
+
+      <div className="space-y-4 bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-5">
+        <div>
+          <label className="text-sm font-medium text-gray-900 dark:text-white block mb-1">{tr('Dostawca (LLM)')}</label>
+          <CustomSelect options={AI_PROVIDERS.map((p) => ({ value: p.value, label: p.label }))} value={provider}
+            onChange={(v) => { setProvider(v); setModel(''); }} />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-900 dark:text-white block mb-1">{tr('Model')}</label>
+          <input list="ai-models" value={model} onChange={(e) => setModel(e.target.value)} placeholder={meta.models[0]} className={fieldCls + ' font-mono'} />
+          <datalist id="ai-models">{meta.models.map((m) => <option key={m} value={m} />)}</datalist>
+          <p className="text-xs text-gray-400 mt-1">{tr('Wybierz z listy lub wpisz dokładny identyfikator modelu.')}</p>
+        </div>
+
+        {provider === 'openai-compatible' && (
+          <div>
+            <label className="text-sm font-medium text-gray-900 dark:text-white block mb-1">{tr('Base URL')}</label>
+            <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://openrouter.ai/api/v1" className={fieldCls + ' font-mono'} />
+          </div>
+        )}
+
+        <div>
+          <label className="text-sm font-medium text-gray-900 dark:text-white block mb-1">{tr('Klucz API')}</label>
+          <input type="password" value={keyDirty ? apiKey : ''} onFocus={() => setKeyDirty(true)}
+            onChange={(e) => { setKeyDirty(true); setApiKey(e.target.value); }}
+            placeholder={keySet ? '•••••••• ' + tr('(ustawiony — wpisz nowy, aby zmienić)') : tr('wklej klucz API')}
+            className={fieldCls + ' font-mono'} />
+        </div>
+
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <button onClick={runTest} disabled={testing || !keySet}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50">
+            {testing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} {tr('Testuj połączenie')}
+          </button>
+          <button onClick={save} disabled={saving}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-lg disabled:opacity-50">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {tr('Zapisz')}
+          </button>
+        </div>
+
+        {test && (
+          <div className={`p-3 rounded-lg flex items-start gap-2 ${test.ok ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'}`}>
+            {test.ok ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+            <span className="text-sm">{test.msg}</span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
 
 // Klucze SMSAPI w `integration_settings` (admin-only RLS).
 const SMSAPI_KEYS = [
@@ -143,6 +268,12 @@ export default function IntegrationsTab() {
           {message.text}
         </div>
       )}
+
+      {/* Asystent AI */}
+      <AiIntegrationSection
+        settings={settings}
+        onSaved={(text, isErr) => { setMessage({ type: isErr ? 'error' : 'success', text }); loadSettings(); }}
+      />
 
       {/* SMSAPI Section */}
       <section>
