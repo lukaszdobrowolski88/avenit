@@ -47,7 +47,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       const { data, error } = await supabase
         .from('equipment')
         .select('*')
-        .eq('ministry_key', ministryKey)
+        .eq('team_type', ministryKey)
         .order('name');
 
       if (error) throw error;
@@ -131,7 +131,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
         condition: form.condition,
         purchase_date: form.purchase_date || null,
         notes: form.notes || null,
-        ministry_key: ministryKey
+        team_type: ministryKey
       };
 
       if (editingItem) {
