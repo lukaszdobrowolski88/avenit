@@ -10,15 +10,18 @@
 //   draft_message      — szkic komunikatu (email/sms) z promptu
 //   ask_data           — odpowiedź na pytanie w języku naturalnym (na podstawie context)
 //
-// Wywołuje Anthropic Messages API (POST https://api.anthropic.com/v1/messages).
-// Nagłówki: x-api-key = process.env.ANTHROPIC_API_KEY, anthropic-version: 2023-06-01.
-// Model: claude-sonnet-5 (najnowszy Sonnet). Node 20 => globalny fetch.
+// Provider/model/klucz konfigurowane w Ustawienia → Integracje (tabela
+// integration_settings: ai_provider, ai_model, ai_api_key, ai_base_url) z fallbackiem
+// na ENV (ANTHROPIC_API_KEY/OPENAI_API_KEY). Obsługa: Anthropic (Messages) oraz
+// OpenAI i kompatybilne (Chat Completions — OpenAI/OpenRouter/Groq/lokalne).
 
 export const name = 'ai-assist';
 
-const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 8000;
+const PROVIDER_DEFAULTS = {
+  anthropic: { base: 'https://api.anthropic.com', model: 'claude-sonnet-5' },
+  openai: { base: 'https://api.openai.com/v1', model: 'gpt-4o' },
+};
 
 // Zamień kontekst (obiekt/tablica/string) na czytelny tekst do promptu.
 function contextToText(context) {
@@ -150,13 +153,53 @@ const PROMPTS = {
 };
 
 // Wyciągnij tekst z odpowiedzi Anthropic (łączy bloki type: 'text').
-function extractText(data) {
-  const blocks = Array.isArray(data?.content) ? data.content : [];
-  return blocks
-    .filter((b) => b && b.type === 'text' && typeof b.text === 'string')
-    .map((b) => b.text)
-    .join('\n')
-    .trim();
+// Wczytaj konfigurację AI z integration_settings (fallback ENV). Bez tabeli/dostępu → ENV.
+async function getAiConfig(db) {
+  let rows = [];
+  try {
+    const res = await db.query(
+      `SELECT key, value FROM integration_settings WHERE key = ANY($1::text[])`,
+      [['ai_provider', 'ai_model', 'ai_api_key', 'ai_base_url']]
+    );
+    rows = res.rows || [];
+  } catch { /* fallback ENV */ }
+  const m = new Map(rows.map((r) => [r.key, String(r.value || '').trim()]));
+  const provider = (m.get('ai_provider') || 'anthropic').toLowerCase();
+  const isAnthropic = provider === 'anthropic';
+  const def = PROVIDER_DEFAULTS[isAnthropic ? 'anthropic' : 'openai'];
+  return {
+    provider,
+    apiKey: m.get('ai_api_key') || (isAnthropic ? process.env.ANTHROPIC_API_KEY : process.env.OPENAI_API_KEY) || '',
+    model: m.get('ai_model') || def.model,
+    baseUrl: (m.get('ai_base_url') || def.base).replace(/\/+$/, ''),
+  };
+}
+
+// Wywołanie LLM zależne od providera. Zwraca { ok, status?, text?, error? }.
+async function callLLM(cfg, system, userContent) {
+  if (cfg.provider === 'anthropic') {
+    const res = await fetch(`${cfg.baseUrl}/v1/messages`, {
+      method: 'POST',
+      headers: { 'x-api-key': cfg.apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: cfg.model, max_tokens: MAX_TOKENS, system, messages: [{ role: 'user', content: userContent }] }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) return { ok: false, status: res.status, error: data?.error?.message || `Błąd API AI (HTTP ${res.status}).` };
+    if (data?.stop_reason === 'refusal') return { ok: false, status: 200, error: 'Asystent nie może zrealizować tej prośby. Zmień treść zapytania.' };
+    const text = (Array.isArray(data?.content) ? data.content : [])
+      .filter((b) => b && b.type === 'text' && typeof b.text === 'string').map((b) => b.text).join('\n').trim();
+    return { ok: true, text };
+  }
+  // openai / kompatybilne (Chat Completions)
+  const res = await fetch(`${cfg.baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${cfg.apiKey}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ model: cfg.model, max_tokens: MAX_TOKENS, messages: [{ role: 'system', content: system }, { role: 'user', content: userContent }] }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) return { ok: false, status: res.status, error: data?.error?.message || `Błąd API AI (HTTP ${res.status}).` };
+  const text = String(data?.choices?.[0]?.message?.content || '').trim();
+  return { ok: true, text };
 }
 
 export default async function handler(req, reply) {
@@ -175,60 +218,30 @@ export default async function handler(req, reply) {
       return reply.code(400).send({ error: 'Brak treści wejściowej (input) dla zadania AI.' });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
+    const cfg = await getAiConfig(req.db);
+    if (!cfg.apiKey) {
       return reply.code(500).send({
-        error:
-          'Brak konfiguracji ANTHROPIC_API_KEY na serwerze. Ustaw zmienną środowiskową z kluczem API Claude, aby korzystać z asystenta AI.',
+        error: 'Brak skonfigurowanego klucza AI. Ustaw providera, klucz i model w Ustawienia → Integracje → Asystent AI.',
       });
     }
 
     const contextText = contextToText(context);
     const userContent = spec.buildUser(inputText, contextText);
 
-    let res;
+    let out;
     try {
-      res = await fetch(ANTHROPIC_URL, {
-        method: 'POST',
-        headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          max_tokens: MAX_TOKENS,
-          // Zadania generacyjne (treść) — bez rozszerzonego myślenia dla niższej latencji.
-          thinking: { type: 'disabled' },
-          system: spec.system,
-          messages: [{ role: 'user', content: userContent }],
-        }),
-      });
+      out = await callLLM(cfg, spec.system, userContent);
     } catch (netErr) {
-      req.log.error({ err: netErr }, 'ai-assist: błąd połączenia z Anthropic');
-      return reply.code(502).send({ error: 'Nie udało się połączyć z API Claude. Spróbuj ponownie.' });
+      req.log.error({ err: netErr, provider: cfg.provider }, 'ai-assist: błąd połączenia z LLM');
+      return reply.code(502).send({ error: 'Nie udało się połączyć z API AI. Sprawdź konfigurację i spróbuj ponownie.' });
     }
 
-    let data = null;
-    try {
-      data = await res.json();
-    } catch {
-      data = null;
+    if (!out.ok) {
+      req.log.error({ status: out.status, provider: cfg.provider, model: cfg.model }, 'ai-assist: LLM zwrócił błąd');
+      return reply.code(out.status && out.status >= 400 ? out.status : 502).send({ error: out.error });
     }
 
-    if (!res.ok) {
-      const msg = data?.error?.message || `Błąd API Claude (HTTP ${res.status}).`;
-      req.log.error({ status: res.status, body: data }, 'ai-assist: Anthropic zwrócił błąd');
-      return reply.code(res.status).send({ error: msg });
-    }
-
-    if (data?.stop_reason === 'refusal') {
-      return reply.code(200).send({
-        error: 'Asystent nie może zrealizować tej prośby. Zmień treść zapytania i spróbuj ponownie.',
-      });
-    }
-
-    const result = extractText(data);
+    const result = out.text;
     if (!result) {
       return reply.code(502).send({ error: 'Asystent AI nie zwrócił treści. Spróbuj ponownie.' });
     }
