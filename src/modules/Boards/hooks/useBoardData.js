@@ -255,7 +255,7 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
   }, [views]);
 
   return {
-    board, columns, groups, items, views, people, loading, error,
+    board, columns, groups, items, views, people, loading, error, me: userEmail,
     reload: load, setBoard,
     addColumn, updateColumn, deleteColumn, reorderColumns,
     addGroup, updateGroup, deleteGroup, reorderGroups,

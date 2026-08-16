@@ -1,5 +1,5 @@
 // Podsumowania kolumn per-grupa (jak stopka grupy w Monday).
-import { findLabel, isCellEmpty } from './columnTypes';
+import { findLabel, isCellEmpty, formatDuration } from './columnTypes';
 
 // Zwraca obiekt opisujący podsumowanie kolumny dla zbioru elementów.
 // { kind: 'battery'|'number'|'count', ... }
@@ -19,6 +19,14 @@ export function summarizeColumn(column, items) {
       }
       const segments = Object.entries(buckets).map(([color, count]) => ({ color, count, pct: total ? (count / total) * 100 : 0 }));
       return { kind: 'battery', segments, total };
+    }
+    case 'vote': {
+      const sum = values.reduce((a, v) => a + (Array.isArray(v) ? v.length : 0), 0);
+      return { kind: 'number', sum, avg: 0, count: items.length };
+    }
+    case 'time_tracking': {
+      const sum = values.reduce((a, v) => a + (v?.seconds || 0), 0);
+      return { kind: 'duration', text: formatDuration(sum) };
     }
     case 'number':
     case 'rating':

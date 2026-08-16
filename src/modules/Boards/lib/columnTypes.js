@@ -175,6 +175,38 @@ export const COLUMN_TYPES = {
     defaultSettings: () => ({ throughColumnId: null, targetColumnId: null }),
     defaultValue: () => null, // wartość odbita z połączonych elementów (nie zapisywana)
   },
+  email: {
+    key: 'email', label: 'E-mail', icon: 'Mail', groupable: false, summaries: ['count'],
+    defaultSettings: () => ({}), defaultValue: () => '',
+  },
+  phone: {
+    key: 'phone', label: 'Telefon', icon: 'Phone', groupable: false, summaries: ['count'],
+    defaultSettings: () => ({}), defaultValue: () => '',
+  },
+  location: {
+    key: 'location', label: 'Lokalizacja', icon: 'MapPin', groupable: false, summaries: ['count'],
+    defaultSettings: () => ({}), defaultValue: () => '',
+  },
+  vote: {
+    key: 'vote', label: 'Głosowanie', icon: 'ThumbsUp', groupable: false, summaries: ['sum'],
+    defaultSettings: () => ({}), defaultValue: () => [], // [emaile głosujących]
+  },
+  time_tracking: {
+    key: 'time_tracking', label: 'Śledzenie czasu', icon: 'Timer', groupable: false, summaries: ['sum'],
+    defaultSettings: () => ({}), defaultValue: () => ({ seconds: 0, running: false, startedAt: null }),
+  },
+  item_id: {
+    key: 'item_id', label: 'ID elementu', icon: 'Hash', groupable: false, computed: true, summaries: [],
+    defaultSettings: () => ({}), defaultValue: () => null,
+  },
+  created_log: {
+    key: 'created_log', label: 'Utworzono', icon: 'Clock', groupable: false, computed: true, summaries: [],
+    defaultSettings: () => ({}), defaultValue: () => null,
+  },
+  last_updated: {
+    key: 'last_updated', label: 'Ostatnia zmiana', icon: 'History', groupable: false, computed: true, summaries: [],
+    defaultSettings: () => ({}), defaultValue: () => null,
+  },
 };
 
 // Kolejność w palecie „dodaj kolumnę"
@@ -182,6 +214,7 @@ export const COLUMN_TYPE_ORDER = [
   'status', 'text', 'people', 'date', 'timeline', 'number',
   'dropdown', 'priority', 'checkbox', 'long_text', 'link', 'files', 'rating', 'progress', 'formula',
   'connect_board', 'dependency', 'mirror',
+  'email', 'phone', 'location', 'vote', 'time_tracking', 'item_id', 'created_log', 'last_updated',
 ];
 
 export function getColumnType(type) {
@@ -221,6 +254,13 @@ export function resolveOptions(column, ids) {
   return (ids || []).map(id => options.find(o => o.id === id)).filter(Boolean);
 }
 
+// Formatuj sekundy → H:MM:SS (śledzenie czasu)
+export function formatDuration(totalSeconds) {
+  const s = Math.max(0, Math.floor(totalSeconds || 0));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
 // Tekstowa reprezentacja wartości (Kanban card, kalendarz, podsumowania tabelaryczne)
 export function cellToText(column, value) {
   const type = column.type;
@@ -254,6 +294,14 @@ export function cellToText(column, value) {
     case 'connect_board':
     case 'dependency':
       return (value || []).map(r => r.name).join(', ');
+    case 'vote':
+      return String((value || []).length);
+    case 'time_tracking':
+      return formatDuration(value?.seconds || 0);
+    case 'email': case 'phone': case 'location':
+      return value || '';
+    case 'item_id': case 'created_log': case 'last_updated':
+      return ''; // wyliczane z metadanych elementu (render w komórce)
     default:
       return String(value);
   }

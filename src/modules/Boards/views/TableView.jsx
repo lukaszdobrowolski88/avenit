@@ -40,11 +40,14 @@ function SummaryCell({ column, items }) {
   if (s.kind === 'number') {
     return <div className="w-full text-right px-2 text-sm font-semibold text-gray-600 dark:text-gray-300">{s.sum}</div>;
   }
+  if (s.kind === 'duration') {
+    return <div className="w-full text-right px-2 text-sm font-semibold text-gray-600 dark:text-gray-300">{s.text}</div>;
+  }
   return <div className="w-full text-center text-[11px] text-gray-400">{s.filled}/{s.total}</div>;
 }
 
 // ── Wiersz elementu (sortowalny) ─────────────────────────────────────
-function ItemRow({ item, columns, groupColor, people, onCell, onUpdateColumn, onOpen, onDelete, updatesCount,
+function ItemRow({ item, columns, groupColor, people, me, onCell, onUpdateColumn, onOpen, onDelete, updatesCount,
   selected, onToggleSelect, hasSub, subCount, expanded, onToggleExpand, onAddSub, isSub }) {
   const sortable = useSortable({ id: item.id, disabled: isSub });
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = sortable;
@@ -91,7 +94,7 @@ function ItemRow({ item, columns, groupColor, people, onCell, onUpdateColumn, on
       {/* Komórki kolumn */}
       {columns.map(col => (
         <div key={col.id} className="border-r border-gray-100 dark:border-gray-700/60 shrink-0 flex items-stretch" style={{ width: col.width || 160 }}>
-          <BoardCell column={col} value={item.cells?.[col.id]} people={people} item={item} columns={columns}
+          <BoardCell column={col} value={item.cells?.[col.id]} people={people} me={me} item={item} columns={columns}
             onChange={(v) => onCell(item.id, col.id, v)} onUpdateColumn={onUpdateColumn} />
         </div>
       ))}
@@ -103,7 +106,7 @@ function ItemRow({ item, columns, groupColor, people, onCell, onUpdateColumn, on
 }
 
 // ── Blok grupy ───────────────────────────────────────────────────────
-function GroupBlock({ group, columns, visibleItems, allItems, people, api, onOpen, updatesCountByItem, selected, onToggleSelect, expanded, onToggleExpand }) {
+function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, onOpen, updatesCountByItem, selected, onToggleSelect, expanded, onToggleExpand }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const groupItems = useMemo(
     () => visibleItems.filter(it => it.group_id === group.id),
@@ -173,7 +176,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, api, onOpe
                   const subs = allItems.filter(s => s.parent_item_id === it.id).sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
                   return (
                     <React.Fragment key={it.id}>
-                      <ItemRow item={it} columns={columns} groupColor={group.color} people={people}
+                      <ItemRow item={it} columns={columns} groupColor={group.color} people={people} me={me}
                         onCell={api.setCell} onUpdateColumn={api.updateColumn} onOpen={onOpen} onDelete={api.deleteItem}
                         updatesCount={updatesCountByItem?.[it.id] || 0}
                         selected={selected.has(it.id)} onToggleSelect={onToggleSelect}
@@ -181,7 +184,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, api, onOpe
                         onToggleExpand={() => onToggleExpand(it.id)}
                         onAddSub={(parent) => api.addSubitem(parent).then(() => onToggleExpand(parent.id, true))} />
                       {expanded.has(it.id) && subs.map(sub => (
-                        <ItemRow key={sub.id} item={sub} columns={columns} groupColor={group.color} people={people}
+                        <ItemRow key={sub.id} item={sub} columns={columns} groupColor={group.color} people={people} me={me}
                           onCell={api.setCell} onUpdateColumn={api.updateColumn} onOpen={onOpen} onDelete={api.deleteItem} isSub />
                       ))}
                     </React.Fragment>
@@ -267,7 +270,7 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
   return (
     <div className="pb-24">
       {sortedGroups.map(g => (
-        <GroupBlock key={g.id} group={g} columns={columns} visibleItems={visibleItems} allItems={items} people={people}
+        <GroupBlock key={g.id} group={g} columns={columns} visibleItems={visibleItems} allItems={items} people={people} me={data.me}
           api={api} onOpen={onOpenItem} updatesCountByItem={updatesCountByItem}
           selected={selected} onToggleSelect={toggleSelect} expanded={expanded} onToggleExpand={toggleExpand} />
       ))}

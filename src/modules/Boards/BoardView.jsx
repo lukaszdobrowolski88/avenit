@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   ArrowLeft, Table2, Trello, Calendar as CalIcon, GanttChartSquare, Plus, Loader2, Zap, FormInput,
-  BarChart3, GalleryThumbnails, MoreHorizontal, Pencil, Copy, Star, Trash2, Sparkles, Gauge,
+  BarChart3, GalleryThumbnails, MoreHorizontal, Pencil, Copy, Star, Trash2, Sparkles, Gauge, FileText, Activity,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useBoardData } from './hooks/useBoardData';
@@ -14,14 +14,16 @@ import FormView from './views/FormView';
 import ChartView from './views/ChartView';
 import FilesGalleryView from './views/FilesGalleryView';
 import WorkloadView from './views/WorkloadView';
+import DocView from './views/DocView';
 import ViewToolbar from './components/ViewToolbar';
 import ItemPanel from './components/ItemPanel';
 import AutomationsPanel from './components/AutomationsPanel';
+import BoardActivityPanel from './components/BoardActivityPanel';
 import AiSidekick from './components/AiSidekick';
 import Popover from './components/Popover';
 import { exportBoardCsv, buildCellsFromRecord } from './lib/csv';
 
-const VIEW_ICONS = { table: Table2, kanban: Trello, calendar: CalIcon, timeline: GanttChartSquare, form: FormInput, chart: BarChart3, files: GalleryThumbnails, workload: Gauge };
+const VIEW_ICONS = { table: Table2, kanban: Trello, calendar: CalIcon, timeline: GanttChartSquare, form: FormInput, chart: BarChart3, files: GalleryThumbnails, workload: Gauge, doc: FileText };
 const VIEW_TYPES = [
   { type: 'table', label: 'Tabela', icon: Table2 },
   { type: 'kanban', label: 'Kanban', icon: Trello },
@@ -29,6 +31,7 @@ const VIEW_TYPES = [
   { type: 'timeline', label: 'Oś czasu', icon: GanttChartSquare },
   { type: 'chart', label: 'Wykres', icon: BarChart3 },
   { type: 'workload', label: 'Obciążenie', icon: Gauge },
+  { type: 'doc', label: 'Dokument', icon: FileText },
   { type: 'files', label: 'Galeria plików', icon: GalleryThumbnails },
   { type: 'form', label: 'Formularz', icon: FormInput },
 ];
@@ -40,6 +43,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
   const [openItem, setOpenItem] = useState(null);
   const [showAutomations, setShowAutomations] = useState(false);
   const [showSidekick, setShowSidekick] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
   const [updatesCount, setUpdatesCount] = useState({});
   const openedInitial = useRef(false);
 
@@ -104,6 +108,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
       case 'timeline': return <TimelineView {...shared} />;
       case 'chart': return <ChartView {...shared} />;
       case 'workload': return <WorkloadView {...shared} />;
+      case 'doc': return <DocView {...shared} />;
       case 'files': return <FilesGalleryView {...shared} />;
       case 'form': return <FormView {...shared} />;
       case 'table':
@@ -134,6 +139,10 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
           <Zap size={15} className="text-accent-primary" /> Automatyzacje
           {automations.automations.length > 0 && <span className="text-xs text-gray-400">{automations.automations.length}</span>}
         </button>
+        <button onClick={() => setShowActivity(true)} title="Aktywność tablicy"
+          className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700">
+          <Activity size={15} />
+        </button>
       </div>
 
       {/* Zakładki widoków */}
@@ -147,7 +156,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
         <AddViewButton onAdd={(type, label) => data.addView(type, label).then(v => v && setActiveViewId(v.id))} />
       </div>
 
-      {(activeView?.type || 'table') !== 'form' && (
+      {!['form', 'doc'].includes(activeView?.type || 'table') && (
         <ViewToolbar columns={data.columns} config={config} onUpdateConfig={onUpdateConfig} onAddItem={addItemToFirstGroup} onExport={handleExport} onImport={handleImport} />
       )}
 
@@ -164,6 +173,11 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
       )}
 
       {showSidekick && <AiSidekick data={data} onClose={() => setShowSidekick(false)} />}
+
+      {showActivity && (
+        <BoardActivityPanel boardId={boardId} items={data.items} onClose={() => setShowActivity(false)}
+          onOpenItem={(it) => { setShowActivity(false); if (it) setOpenItem(it); }} />
+      )}
     </div>
   );
 }

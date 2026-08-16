@@ -8,11 +8,18 @@ import {
 } from './cells/BasicCells';
 import ItemLinkCell from './cells/ItemLinkCell';
 import MirrorCell from './cells/MirrorCell';
+import { EmailCell, PhoneCell, LocationCell, VoteCell, TimeTrackingCell, MetaCell } from './cells/ExtraCells';
 
 // Dyspozytor komórki — dobiera edytor do typu kolumny.
-export default function BoardCell({ column, value, onChange, onUpdateColumn, people, readOnly, item, columns }) {
+export default function BoardCell({ column, value, onChange, onUpdateColumn, people, readOnly, item, columns, me }) {
   const common = { value, onChange, readOnly };
   switch (column.type) {
+    case 'email': return <EmailCell {...common} />;
+    case 'phone': return <PhoneCell {...common} />;
+    case 'location': return <LocationCell {...common} />;
+    case 'vote': return <VoteCell value={value} onChange={onChange} me={me} readOnly={readOnly} />;
+    case 'time_tracking': return <TimeTrackingCell {...common} />;
+    case 'item_id': case 'created_log': case 'last_updated': return <MetaCell column={column} item={item} />;
     case 'progress':
       return <ProgressCell {...common} />;
     case 'formula':
