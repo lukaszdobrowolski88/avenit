@@ -20,6 +20,10 @@
 		on_demand
 	}
 
+	# Kompresja odpowiedzi tekstowych (JS/CSS/HTML/JSON). Bundle SPA ~5 MB → ~1.3 MB.
+	# Bez tego przeglądarka pobiera cały nieskompresowany bundle (wolne ładowanie).
+	encode zstd gzip
+
 	# Panel administracyjny
 	@admin host admin.{$APP_DOMAIN}
 	handle @admin {
