@@ -4,6 +4,7 @@ import { supabase, getCachedUser } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import { CARE_TYPES, careTypeLabel, formatDate } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 const CARE_ICONS = {
   wizyta: Home,
@@ -110,7 +111,7 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
 
       {/* Oś czasu */}
       {loading ? (
-        <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+        <Spinner center />
       ) : log.length === 0 ? (
         <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
           <HeartHandshake size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />

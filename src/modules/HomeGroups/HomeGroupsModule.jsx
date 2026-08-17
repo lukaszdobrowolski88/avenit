@@ -22,6 +22,7 @@ import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import Spinner from '../../components/Spinner';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -1448,7 +1449,7 @@ export default function HomeGroupsModule() {
                     {tr('Zapisz zadanie, aby dodawać komentarze.')}
                   </div>
                 ) : loadingComments ? (
-                  <div className="text-center text-gray-400 dark:text-gray-500 text-sm">{t('Ładowanie...')}</div>
+                  <Spinner center />
                 ) : comments.length === 0 ? (
                   <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">
                     {tr('Brak komentarzy. Bądź pierwszy!')}

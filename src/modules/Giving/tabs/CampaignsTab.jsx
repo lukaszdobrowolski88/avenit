@@ -5,6 +5,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { formatMoney, formatDate, memberName } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 const emptyForm = { name: '', description: '', goal_amount: '', fund_id: '', start_date: '', end_date: '', is_active: true };
 const emptyPledge = { member_id: '', donor_name: '', pledge_amount: '', note: '' };
@@ -138,7 +139,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
         <button data-tour="giving-campaign-new" onClick={openCreate} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md"><Plus size={16} /> Nowa kampania</button>
       </div>
 
-      {loading ? <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+      {loading ? <Spinner center />
       : campaigns.length === 0 ? (
         <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
           <Target size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />

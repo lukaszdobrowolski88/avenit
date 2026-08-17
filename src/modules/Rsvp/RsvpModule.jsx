@@ -8,6 +8,7 @@ import { useCampusQuery } from '../../hooks/useCampusQuery';
 import CustomSelect from '../../components/CustomSelect';
 import Modal from '../../components/Modal';
 import { toast } from '../../lib/toast';
+import Spinner from '../../components/Spinner';
 
 const EVENT_TYPES = [
   { value: 'service', label: 'Nabożeństwo' },
@@ -105,7 +106,7 @@ export default function RsvpModule() {
         )}
       />
 
-      {loading ? <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+      {loading ? <Spinner center />
       : campaigns.length === 0 ? (
         <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
           <CalendarCheck size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />

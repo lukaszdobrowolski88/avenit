@@ -5,6 +5,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { formatMoney, formatDate, frequencyLabel, memberName, GIVING_METHODS, GIVING_FREQUENCIES, computeNextRun } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 const emptyForm = {
   member_id: '', donor_name: '', fund_id: '', amount: '', frequency: 'monthly',
@@ -123,7 +124,7 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {loading ? <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+        {loading ? <Spinner center />
         : plans.length === 0 ? (
           <div className="p-12 text-center">
             <Repeat size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />

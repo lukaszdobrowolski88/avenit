@@ -3,6 +3,7 @@ import { Plus, X, Tag as TagIcon } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { TAG_COLORS } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 export default function TagsTab({ member, campusIdForInsert, withCampusFilter }) {
   const [tags, setTags] = useState([]);
@@ -94,7 +95,7 @@ export default function TagsTab({ member, campusIdForInsert, withCampusFilter })
 
       {/* Lista tagów */}
       {loading ? (
-        <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+        <Spinner center />
       ) : tags.length === 0 ? (
         <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
           <TagIcon size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />

@@ -5,6 +5,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { songLabel, programLabel, formatDate, todayIso, startOfYearIso } from '../lib/serveApi';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 const emptyForm = () => ({
   song_id: '', program_id: '', used_date: todayIso(), ccli_number: '', note: '',
@@ -171,7 +172,7 @@ export default function CcliTab({ songs, songsById, programs, programsById, camp
           <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Raport wykonań ({formatDate(dateFrom)} – {formatDate(dateTo)})</h3>
         </div>
         {loading ? (
-          <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+          <Spinner center />
         ) : report.length === 0 ? (
           <div className="p-12 text-center">
             <Music size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
@@ -210,7 +211,7 @@ export default function CcliTab({ songs, songsById, programs, programsById, camp
           <h3 className="font-semibold text-gray-900 dark:text-white text-sm">Dziennik wykonań</h3>
         </div>
         {loading ? (
-          <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+          <Spinner center />
         ) : usages.length === 0 ? (
           <div className="p-10 text-center text-gray-400 text-sm">Brak wpisów.</div>
         ) : (

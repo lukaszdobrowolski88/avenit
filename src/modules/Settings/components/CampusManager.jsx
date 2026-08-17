@@ -3,6 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import { Plus, Edit3, Trash2, X, MapPin, GripVertical, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
+import Spinner from '../../../components/Spinner';
 
 export default function CampusManager({ onMessage }) {
   const t = useT();
@@ -96,7 +97,7 @@ export default function CampusManager({ onMessage }) {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-400">{t('Ładowanie...')}</div>;
+    return <Spinner center />;
   }
 
   return (

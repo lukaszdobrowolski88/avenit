@@ -6,6 +6,7 @@ import Modal from '../../../components/Modal';
 import { slugify, formatDate, parseVideo } from '../lib/sermonsApi';
 import { bibleUrl } from '../lib/bible';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 const emptyForm = {
   title: '', speaker: '', series: '', sermon_date: new Date().toISOString().slice(0, 10),
@@ -162,7 +163,7 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
       {/* Lista */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+          <Spinner center />
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
             <Podcast size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />

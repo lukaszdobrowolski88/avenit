@@ -387,7 +387,7 @@ export default function IntegrationsTab() {
                 </code>
                 <button
                   onClick={copyWebhookUrl}
-                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-accent-primary text-white rounded-lg hover:opacity-90"
                 >
                   <Copy size={12} /> Kopiuj URL
                 </button>

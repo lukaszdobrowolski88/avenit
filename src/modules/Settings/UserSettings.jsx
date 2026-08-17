@@ -1122,7 +1122,7 @@ export default function UserSettings() {
               <button
                 onClick={handleSaveSignature}
                 disabled={savingSignature}
-                className="bg-purple-600 dark:bg-purple-500 text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition flex items-center gap-2"
+                className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:opacity-95 transition flex items-center gap-2"
               >
                 {savingSignature ? <Loader2 size={18} className="animate-spin"/> : <Save size={18}/>} Zapisz podpis
               </button>

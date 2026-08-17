@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import { formatMoney, formatDate, memberName } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 const currentYear = new Date().getFullYear();
 
@@ -151,7 +152,7 @@ export default function StatementsTab({ funds, membersById, withCampusFilter }) 
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {loading ? <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+        {loading ? <Spinner center />
         : filtered.length === 0 ? (
           <div className="p-12 text-center">
             <FileText size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />

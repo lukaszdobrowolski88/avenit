@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import CustomSelect from '../../components/CustomSelect';
 import { formatMoney, formatNumber, MONTHS, MEMBER_STATUSES, aggregateMonthly, yearOptions } from './lib/analyticsApi';
+import Spinner from '../../components/Spinner';
 
 // Wykres słupkowy miesięczny (styl jak w Giving/OverviewTab)
 function MonthlyBars({ data, format = (v) => v, highlightMonth = -1 }) {
@@ -174,7 +175,7 @@ export default function AnalyticsModule() {
       />
 
       {loading ? (
-        <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+        <Spinner center />
       ) : (
         <div className="space-y-5">
           {/* Karty statystyk */}

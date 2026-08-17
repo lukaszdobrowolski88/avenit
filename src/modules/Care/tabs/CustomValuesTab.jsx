@@ -3,6 +3,7 @@ import { Save, SlidersHorizontal, Settings2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 export default function CustomValuesTab({ member, fields, onGoToDefinitions }) {
   const [values, setValues] = useState({}); // field_key -> value
@@ -76,7 +77,7 @@ export default function CustomValuesTab({ member, fields, onGoToDefinitions }) {
     );
   };
 
-  if (loading) return <div className="p-10 text-center text-gray-400">Ładowanie...</div>;
+  if (loading) return <Spinner center />;
 
   if (!fields || fields.length === 0) {
     return (
