@@ -157,6 +157,8 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
 
 // Moduły podstawowe - nie można ich edytować ani usuwać w tym widoku
 const CORE_MODULE_KEYS = ['dashboard', 'programs', 'calendar'];
+// Moduły wtopione w inny moduł (istnieją tylko technicznie) — nie pokazuj jako osobne.
+const MERGED_INTO_OTHER = ['sermons']; // Kazania są zakładką w Nauczaniu
 
 export default function ModuleManager() {
   const t = useT();
@@ -177,7 +179,7 @@ export default function ModuleManager() {
   } = useModules();
 
   // Filtruj moduły - ukryj core modules (Pulpit, Programy, Kalendarz)
-  const managableModules = modules.filter(m => !CORE_MODULE_KEYS.includes(m.key));
+  const managableModules = modules.filter(m => !CORE_MODULE_KEYS.includes(m.key) && !MERGED_INTO_OTHER.includes(m.key));
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingModule, setEditingModule] = useState(null);
