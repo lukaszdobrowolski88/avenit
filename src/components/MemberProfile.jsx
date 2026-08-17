@@ -2,10 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, Edit2, Mail, Phone, MapPin, Home, Users, Calendar, FileText,
-  CheckCircle, CalendarClock, UserCircle2, Cake, Tag, StickyNote, CalendarCheck,
+  CheckCircle, CalendarClock, UserCircle2, Cake, Tag, StickyNote, CalendarCheck, HeartHandshake,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { tr } from '../i18n';
+import ResponsiveTabs from './ResponsiveTabs';
+import { useCan } from './Can';
+import { useCampusQuery } from '../hooks/useCampusQuery';
+import NotesTab from '../modules/Care/tabs/NotesTab';
+import CareLogTab from '../modules/Care/tabs/CareLogTab';
+import MilestonesTab from '../modules/Care/tabs/MilestonesTab';
+import TagsTab from '../modules/Care/tabs/TagsTab';
+import CustomValuesTab from '../modules/Care/tabs/CustomValuesTab';
+
+// Zakładki Opieki/CRM wtopione w profil członka (jeden widok osoby zamiast osobnego modułu).
+const CARE_TABS = [
+  { id: 'notes', label: tr('Notatki') },
+  { id: 'care', label: tr('Opieka') },
+  { id: 'milestones', label: tr('Kamienie milowe') },
+  { id: 'tags', label: tr('Tagi') },
+  { id: 'custom', label: tr('Pola własne') },
+];
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('pl-PL') : null);
 
@@ -37,6 +54,16 @@ function Row({ icon: Icon, label, children }) {
 export default function MemberProfile({ member, members = [], homeGroups = [], households = [], getMinistryLabels, onClose, onEdit }) {
   const [events, setEvents] = useState([]);
   const [attendance, setAttendance] = useState([]);
+  const canCare = useCan('module:care');
+  const { withCampusFilter, campusIdForInsert } = useCampusQuery();
+  const [careTab, setCareTab] = useState('notes');
+  const [careFields, setCareFields] = useState([]);
+
+  useEffect(() => {
+    if (!canCare) return;
+    supabase.from('member_custom_fields').select('*').order('sort_order')
+      .then(({ data }) => setCareFields(data || []));
+  }, [canCare]);
 
   useEffect(() => {
     let active = true;
@@ -92,7 +119,7 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
   return createPortal(
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onMouseDown={onClose}>
       <div
-        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[88vh] overflow-y-auto custom-scrollbar border border-gray-200 dark:border-gray-700"
+        className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[88vh] overflow-y-auto custom-scrollbar border border-gray-200 dark:border-gray-700"
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Nagłówek */}
@@ -212,6 +239,23 @@ export default function MemberProfile({ member, members = [], homeGroups = [], h
                     </span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Opieka i CRM — wtopione zakładki (widoczne tylko z dostępem do modułu Opieka) */}
+          {canCare && member?.id && (
+            <div className="py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-2">
+                <HeartHandshake size={14} /> {tr('Opieka i CRM')}
+              </div>
+              <ResponsiveTabs tabs={CARE_TABS} activeTab={careTab} onChange={setCareTab} />
+              <div className="mt-3">
+                {careTab === 'notes' && <NotesTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
+                {careTab === 'care' && <CareLogTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
+                {careTab === 'milestones' && <MilestonesTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
+                {careTab === 'tags' && <TagsTab key={member.id} member={member} campusIdForInsert={campusIdForInsert} withCampusFilter={withCampusFilter} />}
+                {careTab === 'custom' && <CustomValuesTab key={member.id} member={member} fields={careFields} onGoToDefinitions={onClose} />}
               </div>
             </div>
           )}
