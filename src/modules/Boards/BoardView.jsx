@@ -89,7 +89,10 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
   const onUpdateConfig = (patch) => activeView && data.updateView(activeView.id, { config: { ...config, ...patch } });
   const addItemToFirstGroup = () => {
     const g = [...data.groups].sort((a, b) => a.display_order - b.display_order)[0];
-    if (g) data.addItem(g.id).then(it => it && setOpenItem(it));
+    if (!g) return;
+    // Rozwiń grupę, by nowy wiersz był widoczny (dodanie do zwiniętej grupy wyglądało jak „nic się nie dzieje").
+    if (g.collapsed) data.updateGroup(g.id, { collapsed: false });
+    data.addItem(g.id).then(it => it && setOpenItem(it));
   };
   const handleExport = () => exportBoardCsv(data.board, data.columns, data.items);
   const handleImport = async (records) => {
@@ -227,23 +230,22 @@ function ViewTab({ view, active, onSelect, data, canManage, canDelete, onDelete,
 }
 
 function AddViewButton({ onAdd }) {
-  const [open, setOpen] = useState(false);
+  // Popover portaluje menu do body — inaczej dropdown był PRZYCINANY przez
+  // overflow-x-auto paska zakładek widoków (klik „+" pozornie nic nie robił).
   return (
-    <div className="relative">
-      <button onClick={() => setOpen(o => !o)} className="flex items-center gap-1 px-2 py-2 text-sm text-gray-400 hover:text-accent-primary"><Plus size={15} /></button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 z-50 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-1.5 w-44">
-            {VIEW_TYPES.map(v => (
-              <button key={v.type} onClick={() => { onAdd(v.type, v.label); setOpen(false); }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200">
-                <v.icon size={15} className="text-gray-400" /> {v.label}
-              </button>
-            ))}
-          </div>
-        </>
+    <Popover width={180} trigger={
+      <button className="flex items-center gap-1 px-2 py-2 text-sm text-gray-400 hover:text-accent-primary"><Plus size={15} /></button>
+    }>
+      {({ close }) => (
+        <div className="p-1.5">
+          {VIEW_TYPES.map(v => (
+            <button key={v.type} onClick={() => { onAdd(v.type, v.label); close(); }}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200">
+              <v.icon size={15} className="text-gray-400" /> {v.label}
+            </button>
+          ))}
+        </div>
       )}
-    </div>
+    </Popover>
   );
 }
