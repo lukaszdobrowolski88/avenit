@@ -567,8 +567,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
       {/* Header z wyszukiwaniem i filtrowaniem */}
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span className="text-3xl">{config.icon}</span>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('Wydarzenia')}</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Wydarzenia')}</h2>
         </div>
         <button
           onClick={() => setShowModal({ id: null })}
