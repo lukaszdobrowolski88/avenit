@@ -51,6 +51,31 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
 
   useEffect(() => { load(); }, [load]);
 
+  // ── Realtime: subskrybuj zmiany board_* tej tablicy i wmerguj GRANULARNIE ──
+  // (bez pełnego reloadu — nie przerywa lokalnej edycji innych komórek). Echo własnych
+  // zmian jest idempotentne (ten sam wiersz z bazy). Inne tablice/rekordy odfiltrowane.
+  useEffect(() => {
+    if (!boardId) return;
+    const setters = { board_items: setItems, board_columns: setColumns, board_groups: setGroups, board_views: setViews };
+    const apply = (table, payload) => {
+      const setter = setters[table];
+      if (!setter) return;
+      if (payload.eventType === 'DELETE') {
+        const id = payload.old?.id;
+        if (id) setter(prev => prev.filter(x => x.id !== id));
+        return;
+      }
+      const row = payload.new;
+      if (!row || (row.board_id && row.board_id !== boardId)) return;
+      setter(prev => prev.some(x => x.id === row.id) ? prev.map(x => x.id === row.id ? row : x) : [...prev, row]);
+    };
+    const ch = supabase.channel(`board-${boardId}`);
+    Object.keys(setters).forEach(t =>
+      ch.on('postgres_changes', { event: '*', schema: 'public', table: t, filter: `board_id=eq.${boardId}` }, (payload) => apply(t, payload)));
+    ch.subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [boardId]);
+
   // ── Dziennik aktywności (Faza 3) ───────────────────────────────────
   // Kolumny from_value/to_value są JSONB — skalarne wartości opakowujemy w {value},
   // by były poprawnym JSON-em (goły string np. 'done' nie skonwertuje się na jsonb).

@@ -11,7 +11,7 @@ export const supabase = createApiClient({
   apiUrl,
   tenant,
   storage: typeof localStorage !== 'undefined' ? localStorage : null,
-  realtime: false, // web: realtime wyłączony (jak dotąd) — channel() to no-op
+  realtime: true, // web: realtime WŁĄCZONY (WS /api/realtime, jak mobilka) — Boards live + notyfikacje/presence/mail
 });
 
 // Cache dla użytkownika - unikamy wielokrotnych wywołań getUser()
