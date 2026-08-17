@@ -6,7 +6,7 @@ import {
   MessageSquare, ChevronDown, ChevronUp, Image as ImageIcon, Check, Mail, ArrowLeft, FolderOpen
 } from 'lucide-react';
 import { useUserRole } from '../../hooks/useUserRole';
-import { useTabAccess, useCan } from '../../components/Can';
+import { useTabAccess } from '../../components/Can';
 import SermonsModule from '../Sermons/SermonsModule';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import WallTab from '../shared/WallTab';
@@ -971,7 +971,6 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
 export default function TeachingModule() {
   const { userRole } = useUserRole();
   const hasTabAccess = useTabAccess();
-  const canSermons = useCan('module:sermons'); // Kazania wtopione jako zakładka
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('wall');
   const [loading, setLoading] = useState(true);
@@ -1094,7 +1093,7 @@ export default function TeachingModule() {
           { id: 'schedule', label: tr('Grafik'), icon: Calendar, tour: 'teaching-schedule-tab' },
           { id: 'series', label: 'Serie', icon: BookOpen },
           ...(hasTabAccess('teaching', 'speakers') ? [{ id: 'speakers', label: tr('Mówcy'), icon: Users }] : []),
-          ...(canSermons ? [{ id: 'kazania', label: tr('Kazania'), icon: Podcast }] : []),
+          { id: 'kazania', label: tr('Kazania'), icon: Podcast },
           { id: 'files', label: tr('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
@@ -1152,7 +1151,7 @@ export default function TeachingModule() {
         </section>
       )}
 
-      {activeTab === 'kazania' && canSermons && (
+      {activeTab === 'kazania' && (
         <SermonsModule embedded />
       )}
     </div>

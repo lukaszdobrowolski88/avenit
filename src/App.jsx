@@ -50,7 +50,6 @@ const AttendanceModule = lazy(() => import('./modules/Attendance/AttendanceModul
 const AnalyticsModule = lazy(() => import('./modules/Analytics/AnalyticsModule'));
 const AutomationModule = lazy(() => import('./modules/Automation/AutomationModule'));
 const AiAssistantModule = lazy(() => import('./modules/AI/AiAssistantModule'));
-const SermonsModule = lazy(() => import('./modules/Sermons/SermonsModule'));
 const CareModule = lazy(() => import('./modules/Care/CareModule'));
 const RoomsModule = lazy(() => import('./modules/Rooms/RoomsModule'));
 const ServeModule = lazy(() => import('./modules/Serve/ServeModule'));
@@ -517,9 +516,8 @@ function AppInner() {
                 <Route path="/ai" element={
                   <ProtectedRoute resource="module:ai"><AiAssistantModule /></ProtectedRoute>
                 } />
-                <Route path="/sermons" element={
-                  <ProtectedRoute resource="module:sermons"><SermonsModule /></ProtectedRoute>
-                } />
+                {/* Kazania wtopione w Nauczanie — /sermons przekierowuje (brak osobnego modułu) */}
+                <Route path="/sermons" element={<Navigate to="/teaching" replace />} />
                 <Route path="/care" element={
                   <ProtectedRoute resource="module:care"><CareModule /></ProtectedRoute>
                 } />
