@@ -34,6 +34,7 @@ export const RESOURCE_LABELS = {
   kids_events: 'Wydarzenia dziecięce', kids_groups: 'Grupy dziecięce', kids_students: 'Dzieci',
   kids_teachers: 'Nauczyciele dziecięcy', checkin_locations: 'Lokalizacje check-in',
   checkin_sessions: 'Sesje check-in', checkins: 'Check-iny',
+  kids_parent_notifications: 'Powiadomienia rodziców',
   // Uwielbienie
   worship_events: 'Wydarzenia Uwielbienia', worship_team: 'Zespół Uwielbienia',
   songs: 'Pieśni', song_attachments: 'Załączniki pieśni',
@@ -152,7 +153,7 @@ export const MODULES = [
   },
   {
     key: 'kids', label: 'Małe Avenit',
-    resources: ['kids_groups', 'kids_students', 'kids_teachers', 'kids_events', 'checkin_locations', 'checkin_sessions', 'checkins'],
+    resources: ['kids_groups', 'kids_students', 'kids_teachers', 'kids_events', 'checkin_locations', 'checkin_sessions', 'checkins', 'kids_parent_notifications'],
     tabs: [
       { key: 'schedule', label: 'Grafik' },
       { key: 'groups', label: 'Grupy' },

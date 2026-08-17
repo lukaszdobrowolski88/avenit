@@ -103,6 +103,7 @@ export const REGISTRY = {
   checkin_locations: T('module:kids'),
   checkin_sessions: T('module:kids'),
   checkins: T('module:kids'),
+  kids_parent_notifications: T('module:kids'),
 
   // ── Grupy domowe ────────────────────────────────────────────────────────
   home_groups: T('module:homegroups', {
