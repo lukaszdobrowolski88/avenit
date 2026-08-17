@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  ArrowLeft, Table2, Trello, Calendar as CalIcon, GanttChartSquare, Plus, Loader2, Zap, FormInput,
+  ArrowLeft, Table2, Trello, Calendar as CalIcon, GanttChartSquare, Plus, Zap, FormInput,
   BarChart3, GalleryThumbnails, MoreHorizontal, Pencil, Copy, Star, Trash2, Sparkles, Gauge, FileText, Activity, MapPin,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -22,6 +22,8 @@ import AutomationsPanel from './components/AutomationsPanel';
 import BoardActivityPanel from './components/BoardActivityPanel';
 import AiSidekick from './components/AiSidekick';
 import Popover from './components/Popover';
+import Spinner from '../../components/Spinner';
+import EmptyState from '../../components/EmptyState';
 import { useCan } from '../../components/Can';
 import { exportBoardCsv, buildCellsFromRecord } from './lib/csv';
 
@@ -108,10 +110,10 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
   };
 
   if (data.loading) {
-    return <div className="flex items-center justify-center h-64 text-gray-400"><Loader2 className="animate-spin" size={28} /></div>;
+    return <Spinner center size={28} />;
   }
   if (!data.board) {
-    return <div className="text-center text-gray-400 py-12">Nie znaleziono tablicy.</div>;
+    return <EmptyState icon={Table2} title="Nie znaleziono tablicy" subtitle="Mogła zostać usunięta lub nie masz do niej dostępu." />;
   }
 
   const renderView = () => {

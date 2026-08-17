@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Zap, Plus, Trash2, Bell, Flag, CalendarPlus, UserPlus, MessageSquarePlus, Sparkles, Loader2 } from 'lucide-react';
 import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
+import Button from '../../../components/Button';
 import { generateAutomationSpec } from '../lib/aiBoards';
 
 const TRIGGERS = [
@@ -234,8 +235,8 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
               </div>
 
               <div className="flex justify-end gap-2 pt-1">
-                <button onClick={() => setCreating(false)} className="text-sm text-gray-500 px-3 py-1.5">Anuluj</button>
-                <button onClick={save} className="text-sm bg-accent-primary text-white px-4 py-1.5 rounded-lg">Zapisz automatyzację</button>
+                <Button variant="ghost" size="sm" onClick={() => setCreating(false)}>Anuluj</Button>
+                <Button size="sm" onClick={save}>Zapisz automatyzację</Button>
               </div>
             </div>
           ) : (
