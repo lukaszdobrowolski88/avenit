@@ -287,8 +287,11 @@ export function cellToText(column, value) {
       return `${(value || []).length} plik(ów)`;
     case 'number':
       return value === null ? '' : `${value}${column.settings?.unit ? ' ' + column.settings.unit : ''}`;
-    case 'rating':
-      return value ? '★'.repeat(value) : '';
+    case 'rating': {
+      // Clamp: goła '★'.repeat(value) rzuca RangeError dla wartości ujemnej/olbrzymiej (zepsute dane).
+      const n = Math.max(0, Math.min(20, Math.floor(Number(value) || 0)));
+      return n ? '★'.repeat(n) : '';
+    }
     case 'progress':
       return value != null ? `${value}%` : '';
     case 'connect_board':

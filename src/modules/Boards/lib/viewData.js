@@ -1,6 +1,6 @@
 // Zastosowanie konfiguracji widoku (filtry/sortowanie/szukanie/grupowanie)
 // do listy elementów. Wspólne dla wszystkich widoków.
-import { cellToText, findLabel } from './columnTypes';
+import { cellToText, findLabel, isCellEmpty } from './columnTypes';
 
 // Dopasowanie pojedynczego filtra {columnId, op, value} do wartości komórki.
 function matchFilter(column, cell, filter) {
@@ -9,7 +9,7 @@ function matchFilter(column, cell, filter) {
     case 'status':
     case 'priority':
       if (op === 'is_empty') return cell == null;
-      if (op === 'is_not') return cell !== value;
+      if (op === 'is_not') return cell != null && cell !== value;
       return cell === value;
     case 'people': {
       const emails = (cell || []).map(p => p.email);
@@ -71,8 +71,14 @@ export function applyView(items, columns, config = {}) {
     if (!col) continue;
     const dir = s.dir === 'desc' ? -1 : 1;
     out = [...out].sort((a, b) => {
-      const av = sortKey(col, a.cells?.[s.columnId]);
-      const bv = sortKey(col, b.cells?.[s.columnId]);
+      const ac = a.cells?.[s.columnId], bc = b.cells?.[s.columnId];
+      // Puste zawsze na końcu (jak Monday) — niezależnie od kierunku sortowania.
+      const ae = isCellEmpty(col.type, ac), be = isCellEmpty(col.type, bc);
+      if (ae && be) return 0;
+      if (ae) return 1;
+      if (be) return -1;
+      const av = sortKey(col, ac);
+      const bv = sortKey(col, bc);
       if (av < bv) return -1 * dir;
       if (av > bv) return 1 * dir;
       return 0;

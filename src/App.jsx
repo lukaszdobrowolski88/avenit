@@ -6,6 +6,7 @@ import { CampusProvider } from './contexts/CampusContext';
 import { NotificationProvider, useNotificationContext } from './contexts/NotificationContext';
 import { UnsavedChangesProvider } from './contexts/UnsavedChangesContext';
 import ToastContainer from './components/ToastNotification';
+import Toaster from './components/Toaster';
 
 import Sidebar, { SidebarProvider } from './components/Sidebar';
 import Navbar from './components/Navbar';
@@ -602,6 +603,7 @@ export default function App() {
   return (
     <I18nProvider>
       <AppInner />
+      <Toaster />
     </I18nProvider>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { toast } from '../../../lib/toast';
 import { defaultColumnSettings, defaultCellValue } from '../lib/columnTypes';
 import { GROUP_COLORS, pickColor } from '../lib/constants';
 
@@ -14,7 +15,10 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
   const [views, setViews] = useState([]);
   const [people, setPeople] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setErrorState] = useState(null);
+  // KAŻDY błąd mutacji pokazuj użytkownikowi (toast) — koniec cichych awarii „nic się nie dzieje".
+  // Opakowanie sprawia, że wszystkie istniejące setError(e.message) automatycznie robią toast.
+  const setError = useCallback((msg) => { setErrorState(msg); if (msg) toast.error(typeof msg === 'string' ? msg : 'Wystąpił błąd'); }, []);
   const onAutomationRef = useRef(null); // hook automatyzacji podpina się tu w Fazie 5
 
   const load = useCallback(async () => {
@@ -93,9 +97,10 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
 
   const reorderColumns = useCallback(async (orderedIds) => {
     setColumns(prev => orderedIds.map((id, i) => ({ ...prev.find(c => c.id === id), display_order: i })));
-    await Promise.all(orderedIds.map((id, i) =>
+    const results = await Promise.all(orderedIds.map((id, i) =>
       supabase.from('board_columns').update({ display_order: i }).eq('id', id)));
-  }, []);
+    if (results.find(r => r?.error)) { setError('Nie udało się zapisać kolejności kolumn'); load(); }
+  }, [load]);
 
   // ── Grupy ──────────────────────────────────────────────────────────
   const addGroup = useCallback(async (name) => {
@@ -125,9 +130,10 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
 
   const reorderGroups = useCallback(async (orderedIds) => {
     setGroups(prev => orderedIds.map((id, i) => ({ ...prev.find(g => g.id === id), display_order: i })));
-    await Promise.all(orderedIds.map((id, i) =>
+    const results = await Promise.all(orderedIds.map((id, i) =>
       supabase.from('board_groups').update({ display_order: i }).eq('id', id)));
-  }, []);
+    if (results.find(r => r?.error)) { setError('Nie udało się zapisać kolejności grup'); load(); }
+  }, [load]);
 
   // ── Elementy ───────────────────────────────────────────────────────
   const addItem = useCallback(async (groupId, name, cells = {}) => {
@@ -209,9 +215,10 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
       orderedIds.forEach((id, i) => { const it = map.get(id); if (it) map.set(id, { ...it, display_order: i, group_id: groupId }); });
       return Array.from(map.values());
     });
-    await Promise.all(orderedIds.map((id, i) =>
+    const results = await Promise.all(orderedIds.map((id, i) =>
       supabase.from('board_items').update({ display_order: i, group_id: groupId }).eq('id', id)));
-  }, []);
+    if (results.find(r => r?.error)) { setError('Nie udało się zapisać kolejności'); load(); }
+  }, [load]);
 
   // ── Widoki ─────────────────────────────────────────────────────────
   const addView = useCallback(async (type, name) => {

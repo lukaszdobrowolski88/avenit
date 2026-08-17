@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { toast } from '../../../lib/toast';
 
 // Wątek aktualizacji + dziennik aktywności dla pojedynczego elementu.
 export function useItemUpdates(item, boardId, { userEmail, userName } = {}) {
@@ -32,7 +33,7 @@ export function useItemUpdates(item, boardId, { userEmail, userName } = {}) {
       author_email: userEmail || null, author_name: userName || null,
       body, mentions, likes: [],
     }).select().single();
-    if (error) { console.error(error); return; }
+    if (error) { toast.error('Nie udało się dodać komentarza' + (error.message ? `: ${error.message}` : '')); return; }
     setUpdates(prev => [...prev, data]);
 
     // Powiadomienia dla wzmiankowanych osób (typ 'mention')
@@ -53,13 +54,16 @@ export function useItemUpdates(item, boardId, { userEmail, userName } = {}) {
     const likes = update.likes || [];
     const next = likes.includes(userEmail) ? likes.filter(e => e !== userEmail) : [...likes, userEmail];
     setUpdates(prev => prev.map(u => u.id === update.id ? { ...u, likes: next } : u));
-    await supabase.from('board_item_updates').update({ likes: next }).eq('id', update.id);
+    const { error } = await supabase.from('board_item_updates').update({ likes: next }).eq('id', update.id);
+    if (error) { setUpdates(prev => prev.map(u => u.id === update.id ? { ...u, likes } : u)); toast.error('Nie udało się zapisać reakcji'); }
   }, [userEmail]);
 
   const deleteUpdate = useCallback(async (id) => {
+    const prevUpdates = updates;
     setUpdates(prev => prev.filter(u => u.id !== id && u.parent_update_id !== id));
-    await supabase.from('board_item_updates').delete().eq('id', id);
-  }, []);
+    const { error } = await supabase.from('board_item_updates').delete().eq('id', id);
+    if (error) { setUpdates(prevUpdates); toast.error('Nie udało się usunąć komentarza'); }
+  }, [updates]);
 
   return { updates, activity, loading, reload: load, addUpdate, toggleLike, deleteUpdate };
 }
