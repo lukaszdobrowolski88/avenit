@@ -266,7 +266,7 @@ export default function Sidebar() {
     { path: '/serve', icon: LucideIcons.CalendarCheck, label: tr('Służba'), show: hasModuleAccess('module:serve') },
     { path: '/rsvp', icon: LucideIcons.CalendarCheck, label: tr('Obecność (RSVP)'), show: hasModuleAccess('module:rsvp') },
     { path: '/rooms', icon: LucideIcons.DoorOpen, label: tr('Rezerwacje sal'), show: hasModuleAccess('module:rooms') },
-    { path: '/sermons', icon: LucideIcons.Podcast, label: tr('Kazania'), show: hasModuleAccess('module:sermons') },
+    { path: '/sermons', icon: LucideIcons.Podcast, label: tr('Kazania'), show: false }, // Kazania wtopione w Nauczanie (zakładka)
     { path: '/automation', icon: LucideIcons.Workflow, label: tr('Automatyzacje'), show: hasModuleAccess('module:automation') },
     { path: '/analytics', icon: LucideIcons.BarChart3, label: tr('Analityka'), show: hasModuleAccess('module:analytics') },
     { path: '/ai', icon: LucideIcons.Sparkles, label: tr('Asystent AI'), show: hasModuleAccess('module:ai') },

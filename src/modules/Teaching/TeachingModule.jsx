@@ -6,14 +6,15 @@ import {
   MessageSquare, ChevronDown, ChevronUp, Image as ImageIcon, Check, Mail, ArrowLeft, FolderOpen
 } from 'lucide-react';
 import { useUserRole } from '../../hooks/useUserRole';
-import { useTabAccess } from '../../components/Can';
+import { useTabAccess, useCan } from '../../components/Can';
+import SermonsModule from '../Sermons/SermonsModule';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import WallTab from '../shared/WallTab';
 import MaterialsTab from '../shared/MaterialsTab';
 import CustomDatePicker from '../../components/CustomDatePicker';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, Podcast } from 'lucide-react';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { tr } from '../../i18n';
 
@@ -970,6 +971,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
 export default function TeachingModule() {
   const { userRole } = useUserRole();
   const hasTabAccess = useTabAccess();
+  const canSermons = useCan('module:sermons'); // Kazania wtopione jako zakładka
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('wall');
   const [loading, setLoading] = useState(true);
@@ -1092,6 +1094,7 @@ export default function TeachingModule() {
           { id: 'schedule', label: tr('Grafik'), icon: Calendar, tour: 'teaching-schedule-tab' },
           { id: 'series', label: 'Serie', icon: BookOpen },
           ...(hasTabAccess('teaching', 'speakers') ? [{ id: 'speakers', label: tr('Mówcy'), icon: Users }] : []),
+          ...(canSermons ? [{ id: 'kazania', label: tr('Kazania'), icon: Podcast }] : []),
           { id: 'files', label: tr('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
@@ -1147,6 +1150,10 @@ export default function TeachingModule() {
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <MaterialsTab moduleKey="teaching" canEdit={true} />
         </section>
+      )}
+
+      {activeTab === 'kazania' && canSermons && (
+        <SermonsModule embedded />
       )}
     </div>
   );
