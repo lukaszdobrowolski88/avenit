@@ -308,7 +308,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           Grafik
         </h2>
       </div>
