@@ -24,6 +24,27 @@ const HANDLE_W = 28;
 const NAME_MIN = 260;
 const ADDCOL_W = 44;
 
+// Uchwyt zmiany szerokości kolumny (jak w Monday) — podgląd na żywo, zapis do bazy raz na koniec.
+function ColResizeHandle({ width, onResize, onCommit }) {
+  const onDown = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const startX = e.clientX, startW = width; let lastW = startW;
+    const move = (ev) => { lastW = Math.max(80, startW + (ev.clientX - startX)); onResize(lastW); };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      document.body.style.cursor = '';
+      if (lastW !== startW) onCommit(lastW);
+    };
+    document.body.style.cursor = 'col-resize';
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  return <div onPointerDown={onDown} onClick={(e) => e.stopPropagation()}
+    className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-accent-primary/50 z-20"
+    title="Przeciągnij, by zmienić szerokość" />;
+}
+
 // ── Podsumowanie kolumny (stopka grupy) ──────────────────────────────
 function SummaryCell({ column, items }) {
   const s = summarizeColumn(column, items);
@@ -164,8 +185,11 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
               <div className="shrink-0" style={{ width: 4 }} />
               <div className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 dark:text-gray-300" style={{ flex: 1, minWidth: NAME_MIN }}>Element</div>
               {columns.map(col => (
-                <div key={col.id} className="border-r border-gray-200 dark:border-gray-700 shrink-0" style={{ width: col.width || 160 }}>
+                <div key={col.id} className="border-r border-gray-200 dark:border-gray-700 shrink-0 relative" style={{ width: col.width || 160 }}>
                   <ColumnHeader column={col} allColumns={columns} onUpdate={api.updateColumn} onDelete={api.deleteColumn} />
+                  {canEditStructure && <ColResizeHandle width={col.width || 160}
+                    onResize={(w) => api.setColumnWidthLocal(col.id, w)}
+                    onCommit={(w) => api.updateColumn(col.id, { width: w })} />}
                 </div>
               ))}
               <div className="shrink-0" style={{ width: ADDCOL_W }}>{canEditStructure && <AddColumnMenu onAdd={api.addColumn} />}</div>

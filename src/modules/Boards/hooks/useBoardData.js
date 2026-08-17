@@ -83,6 +83,12 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
     setColumns(prev => prev.map(c => c.id === columnId ? data : c));
   }, []);
 
+  // Podgląd szerokości podczas przeciągania uchwytu — tylko stan lokalny (bez zapisu do bazy).
+  // Zapis następuje raz na koniec przez updateColumn({ width }).
+  const setColumnWidthLocal = useCallback((columnId, width) => {
+    setColumns(prev => prev.map(c => c.id === columnId ? { ...c, width } : c));
+  }, []);
+
   const deleteColumn = useCallback(async (columnId) => {
     const { error: e } = await supabase.from('board_columns').delete().eq('id', columnId);
     if (e) { setError(e.message); return; }
@@ -265,7 +271,7 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
   return {
     board, columns, groups, items, views, people, loading, error, me: userEmail,
     reload: load, setBoard,
-    addColumn, updateColumn, deleteColumn, reorderColumns,
+    addColumn, updateColumn, deleteColumn, reorderColumns, setColumnWidthLocal,
     addGroup, updateGroup, deleteGroup, reorderGroups,
     addItem, addSubitem, updateItem, updateCell, deleteItem, moveItem, reorderItemsInGroup,
     addView, updateView, deleteView, duplicateView, setDefaultView,
