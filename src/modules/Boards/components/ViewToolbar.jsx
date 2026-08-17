@@ -47,7 +47,7 @@ function defaultOp(type) {
   return 'is';
 }
 
-export default function ViewToolbar({ columns, config, onUpdateConfig, onAddItem, onExport, onImport }) {
+export default function ViewToolbar({ columns, config, onUpdateConfig, search, onSearch, onAddItem, onExport, onImport }) {
   const filters = config.filters || [];
   const sorts = config.sorts || [];
   const fileRef = useRef(null);
@@ -77,7 +77,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, onAddItem
 
       <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2.5 py-1.5">
         <Search size={14} className="text-gray-400" />
-        <input value={config.search || ''} onChange={(e) => onUpdateConfig({ search: e.target.value })} placeholder="Szukaj..."
+        <input value={search || ''} onChange={(e) => onSearch(e.target.value)} placeholder="Szukaj..."
           className="bg-transparent text-sm outline-none w-32 text-gray-700 dark:text-gray-200" />
       </div>
 

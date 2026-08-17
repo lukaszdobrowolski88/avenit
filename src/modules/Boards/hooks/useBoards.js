@@ -42,7 +42,7 @@ export function useBoards(userEmail, userName) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userEmail]); // userEmail używany w filtrze prywatnych — bez tego stale-closure gubi prywatne tablice
 
   // Utwórz tablicę wraz z domyślną grupą, kolumnami i widokiem tabeli.
   const createBoard = useCallback(async (boardData = {}) => {

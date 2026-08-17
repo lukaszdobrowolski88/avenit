@@ -192,22 +192,23 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
     setItems(prev => prev.filter(it => it.id !== itemId && it.parent_item_id !== itemId));
   }, []);
 
-  // Przenieś element do innej grupy i/lub pozycji (Kanban/reorder)
+  // Przenieś element do innej grupy i/lub pozycji (Kanban/reorder między grupami).
   const moveItem = useCallback(async (itemId, toGroupId, toIndex) => {
-    setItems(prev => {
-      const moving = prev.find(it => it.id === itemId);
-      if (!moving) return prev;
-      const rest = prev.filter(it => it.id !== itemId);
-      const target = rest.filter(it => it.group_id === toGroupId).sort((a, b) => a.display_order - b.display_order);
-      const updated = { ...moving, group_id: toGroupId };
-      target.splice(toIndex ?? target.length, 0, updated);
-      const reindexed = target.map((it, i) => ({ ...it, display_order: i }));
-      const others = rest.filter(it => it.group_id !== toGroupId);
-      return [...others, ...reindexed];
-    });
-    await supabase.from('board_items').update({ group_id: toGroupId }).eq('id', itemId);
+    const moving = items.find(it => it.id === itemId);
+    if (!moving) return;
+    const rest = items.filter(it => it.id !== itemId);
+    const target = rest.filter(it => it.group_id === toGroupId).sort((a, b) => a.display_order - b.display_order);
+    target.splice(toIndex ?? target.length, 0, { ...moving, group_id: toGroupId });
+    const reindexed = target.map((it, i) => ({ ...it, display_order: i }));
+    const orderedTargetIds = reindexed.map(it => it.id);
+    const others = rest.filter(it => it.group_id !== toGroupId);
+    setItems([...others, ...reindexed]);
+    // Zapisz group_id + display_order CAŁEJ grupy docelowej (inaczej po reloadzie kolejność się miesza).
+    const results = await Promise.all(orderedTargetIds.map((id, i) =>
+      supabase.from('board_items').update({ display_order: i, group_id: toGroupId }).eq('id', id)));
+    if (results.find(r => r?.error)) { setError('Nie udało się przenieść elementu'); load(); return; }
     logActivity(itemId, 'moved', null, null, { group_id: toGroupId });
-  }, [logActivity]);
+  }, [items, logActivity, load]);
 
   const reorderItemsInGroup = useCallback(async (groupId, orderedIds) => {
     setItems(prev => {

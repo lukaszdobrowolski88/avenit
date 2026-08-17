@@ -97,7 +97,7 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
                 )}
               </div>
             )}
-            <button onClick={() => { onDelete(column.id); close(); }}
+            <button onClick={() => { if (confirm(`Usunąć kolumnę „${column.name}" i jej wartości?`)) onDelete(column.id); close(); }}
               className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600">
               <Trash2 size={14} /> Usuń kolumnę
             </button>

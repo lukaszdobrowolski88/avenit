@@ -47,6 +47,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
   const [showAutomations, setShowAutomations] = useState(false);
   const [showSidekick, setShowSidekick] = useState(false);
   const [showActivity, setShowActivity] = useState(false);
+  const [search, setSearch] = useState(''); // szukanie LOKALNE (per-sesja) — nie zapisujemy do wspólnego widoku
   const [updatesCount, setUpdatesCount] = useState({});
   const openedInitial = useRef(false);
 
@@ -86,6 +87,8 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
 
   const activeView = useMemo(() => data.views.find(v => v.id === activeViewId), [data.views, activeViewId]);
   const config = activeView?.config || {};
+  // Widoki filtrują po config + LOKALNYM szukaniu (search nie jest częścią zapisanego widoku).
+  const viewConfig = useMemo(() => ({ ...config, search }), [config, search]);
   const onUpdateConfig = (patch) => activeView && data.updateView(activeView.id, { config: { ...config, ...patch } });
   const addItemToFirstGroup = () => {
     const g = [...data.groups].sort((a, b) => a.display_order - b.display_order)[0];
@@ -113,7 +116,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
 
   const renderView = () => {
     const type = activeView?.type || 'table';
-    const shared = { data, config, onUpdateConfig, onOpenItem: setOpenItem, updatesCountByItem: updatesCount };
+    const shared = { data, config: viewConfig, onUpdateConfig, onOpenItem: setOpenItem, updatesCountByItem: updatesCount };
     switch (type) {
       case 'kanban': return <KanbanView {...shared} />;
       case 'calendar': return <CalendarView {...shared} />;
@@ -165,14 +168,14 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
         {data.views.map(v => (
           <ViewTab key={v.id} view={v} active={activeViewId === v.id} onSelect={setActiveViewId} data={data}
             canManage={canManageViews} canDelete={data.views.length > 1}
-            onDelete={() => { data.deleteView(v.id); if (activeViewId === v.id) setActiveViewId(data.views.find(x => x.id !== v.id)?.id); }}
+            onDelete={() => { if (!confirm(`Usunąć widok „${v.name}"?`)) return; data.deleteView(v.id); if (activeViewId === v.id) setActiveViewId(data.views.find(x => x.id !== v.id)?.id); }}
             onDuplicated={(nv) => nv && setActiveViewId(nv.id)} />
         ))}
         {canManageViews && <AddViewButton onAdd={(type, label) => data.addView(type, label).then(v => v && setActiveViewId(v.id))} />}
       </div>
 
       {!['form', 'doc'].includes(activeView?.type || 'table') && (
-        <ViewToolbar columns={data.columns} config={config} onUpdateConfig={onUpdateConfig} onAddItem={addItemToFirstGroup} onExport={handleExport} onImport={handleImport} />
+        <ViewToolbar columns={data.columns} config={config} onUpdateConfig={onUpdateConfig} search={search} onSearch={setSearch} onAddItem={addItemToFirstGroup} onExport={handleExport} onImport={handleImport} />
       )}
 
       {renderView()}
