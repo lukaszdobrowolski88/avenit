@@ -82,7 +82,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, onAddItem
       </div>
 
       {/* Filtry */}
-      <Popover width={340} trigger={
+      <Popover width={340} triggerClassName="inline-flex" trigger={
         <button className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg ${filters.length ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
           <SlidersHorizontal size={14} /> Filtruj {filters.length ? `(${filters.length})` : ''}
         </button>
@@ -127,7 +127,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, onAddItem
       </Popover>
 
       {/* Sortowanie */}
-      <Popover width={220} trigger={
+      <Popover width={220} triggerClassName="inline-flex" trigger={
         <button className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg ${sorts.length ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
           <ArrowUpDown size={14} /> Sortuj
         </button>
@@ -159,7 +159,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, onAddItem
 
       {/* Więcej: Eksport / Import CSV */}
       <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} className="hidden" />
-      <Popover align="right" width={190} trigger={
+      <Popover align="right" width={190} triggerClassName="inline-flex" trigger={
         <button className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"><MoreHorizontal size={16} /></button>
       }>
         {({ close }) => (
