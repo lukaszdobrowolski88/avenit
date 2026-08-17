@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import ModuleTitle from '../../components/ModuleTitle';
+import PageHeader from '../../components/PageHeader';
 import { ClipboardCheck, ListChecks, TrendingUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -47,16 +47,7 @@ export default function AttendanceModule() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Nagłówek */}
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-lg">
-          <ClipboardCheck className="text-white" size={24} />
-        </div>
-        <div>
-          <ModuleTitle moduleKey="attendance" fallback="Frekwencja" className="text-2xl font-bold text-gray-900 dark:text-white" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">Obecność dorosłych na nabożeństwach, spotkaniach i modlitwach — z analityką trendów</p>
-        </div>
-      </div>
+      <PageHeader moduleKey="attendance" icon={ClipboardCheck} title="Frekwencja" subtitle="Obecność dorosłych na nabożeństwach, spotkaniach i modlitwach — z analityką trendów" />
 
       {/* Zakładki */}
       <ResponsiveTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />

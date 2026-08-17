@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import ModuleTitle from '../../components/ModuleTitle';
+import PageHeader from '../../components/PageHeader';
 import {
   CalendarCheck, Plus, X, Send, ArrowLeft, Check, HelpCircle, Users, Copy, Search, Trash2, ClipboardCheck,
 } from 'lucide-react';
@@ -92,18 +92,17 @@ export default function RsvpModule() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-lg">
-          <CalendarCheck className="text-white" size={24} />
-        </div>
-        <div className="flex-1">
-          <ModuleTitle moduleKey="rsvp" fallback="Obecność (RSVP)" className="text-2xl font-bold text-gray-900 dark:text-white" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">Zaproszenia „Będę / Nie będę" przez push, e-mail i SMS</p>
-        </div>
-        <button data-tour="rsvp-new" onClick={() => setModalOpen(true)} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md">
-          <Plus size={16} /> Nowa kampania
-        </button>
-      </div>
+      <PageHeader
+        moduleKey="rsvp"
+        icon={CalendarCheck}
+        title="Obecność (RSVP)"
+        subtitle={'Zaproszenia „Będę / Nie będę" przez push, e-mail i SMS'}
+        actions={(
+          <button data-tour="rsvp-new" onClick={() => setModalOpen(true)} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium flex items-center gap-2 text-sm shadow-md">
+            <Plus size={16} /> Nowa kampania
+          </button>
+        )}
+      />
 
       {loading ? <div className="p-10 text-center text-gray-400">Ładowanie...</div>
       : campaigns.length === 0 ? (

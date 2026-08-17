@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import ModuleTitle from '../../components/ModuleTitle';
+import PageHeader from '../../components/PageHeader';
 import { DoorOpen, Boxes, CalendarClock, CalendarDays } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -43,16 +43,7 @@ export default function RoomsModule() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Nagłówek */}
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-lg">
-          <DoorOpen className="text-white" size={24} />
-        </div>
-        <div>
-          <ModuleTitle moduleKey="rooms" fallback="Rezerwacje sal" className="text-2xl font-bold text-gray-900 dark:text-white" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">Sale i zasoby, rezerwacje z wykrywaniem konfliktów i rezerwacje cykliczne</p>
-        </div>
-      </div>
+      <PageHeader moduleKey="rooms" icon={DoorOpen} title="Rezerwacje sal" subtitle="Sale i zasoby, rezerwacje z wykrywaniem konfliktów i rezerwacje cykliczne" />
 
       {/* Zakładki */}
       <ResponsiveTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import ModuleTitle from '../../components/ModuleTitle';
+import PageHeader from '../../components/PageHeader';
 import { Workflow, Zap, LayoutTemplate, History } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -49,16 +49,7 @@ export default function AutomationModule() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Nagłówek */}
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-lg">
-          <Workflow className="text-white" size={24} />
-        </div>
-        <div>
-          <ModuleTitle moduleKey="automation" fallback="Automatyzacje" className="text-2xl font-bold text-gray-900 dark:text-white" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">Silnik automatyzacji i ścieżki asymilacji nowych gości</p>
-        </div>
-      </div>
+      <PageHeader moduleKey="automation" icon={Workflow} title="Automatyzacje" subtitle="Silnik automatyzacji i ścieżki asymilacji nowych gości" />
 
       {/* Notka o workerze */}
       <div className="flex items-start gap-2 p-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-sm text-amber-700 dark:text-amber-300">
