@@ -259,6 +259,14 @@ function unwrapRow(row) {
 
 function sendError(reply, err, req) {
   if (err instanceof ApiError) {
+    // Loguj odmowy/awarie (403/5xx) z kontekstem — inaczej logi pokazują goły statusCode
+    // bez powodu, co uniemożliwia diagnozę „skąd 403 na /api/db".
+    if (err.status === 403 || err.status >= 500) {
+      req.log?.warn?.({
+        table: req.body?.table, op: req.body?.op,
+        role: req.user?.role, userId: req.user?.id, reason: err.message,
+      }, 'data api denied');
+    }
     return reply.code(err.status).send({ error: err.message, code: err.code });
   }
   req.log.error({ err }, 'data api error');
