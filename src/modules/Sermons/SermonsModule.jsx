@@ -12,7 +12,8 @@ const TABS = [
   { id: 'player', label: 'Podgląd / Odtwarzacz', icon: PlayCircle },
 ];
 
-export default function SermonsModule() {
+// embedded=true → renderowany jako zakładka w innym module (np. Nauczanie): bez nagłówka i wrappera.
+export default function SermonsModule({ embedded = false }) {
   const [activeTab, setActiveTab] = useState('list');
   const { withCampusFilter, campusIdForInsert, selectedCampusId } = useCampusQuery();
 
@@ -40,17 +41,19 @@ export default function SermonsModule() {
   const shared = { sermons, loading, campusIdForInsert, withCampusFilter, refresh: loadSermons };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      {/* Nagłówek */}
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-lg">
-          <Podcast className="text-white" size={24} />
+    <div className={embedded ? 'space-y-6' : 'max-w-7xl mx-auto space-y-6'}>
+      {/* Nagłówek (pomijany przy osadzeniu) */}
+      {!embedded && (
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-lg">
+            <Podcast className="text-white" size={24} />
+          </div>
+          <div>
+            <ModuleTitle moduleKey="sermons" fallback="Kazania" className="text-2xl font-bold text-gray-900 dark:text-white" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">Publiczne archiwum kazań — audio, wideo i odnośniki biblijne</p>
+          </div>
         </div>
-        <div>
-          <ModuleTitle moduleKey="sermons" fallback="Kazania" className="text-2xl font-bold text-gray-900 dark:text-white" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">Publiczne archiwum kazań — audio, wideo i odnośniki biblijne</p>
-        </div>
-      </div>
+      )}
 
       {/* Zakładki */}
       <ResponsiveTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
