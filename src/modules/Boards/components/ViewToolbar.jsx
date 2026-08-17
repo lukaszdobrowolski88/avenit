@@ -4,6 +4,7 @@ import Popover from './Popover';
 import ColumnIcon from './ColumnIcon';
 import CustomSelect from '../../../components/CustomSelect';
 import CustomDatePicker from '../../../components/CustomDatePicker';
+import Button from '../../../components/Button';
 import { tr } from '../../../i18n';
 import { getColumnType, cellToText } from '../lib/columnTypes';
 import { parseCsv } from '../lib/csv';
@@ -71,9 +72,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
 
   return (
     <div className="flex items-center gap-2 mb-4 flex-wrap">
-      <button onClick={onAddItem} className="flex items-center gap-1.5 bg-accent-primary text-white text-sm px-3 py-1.5 rounded-lg hover:opacity-90">
-        <Plus size={15} /> Nowy element
-      </button>
+      <Button size="sm" icon={Plus} onClick={onAddItem}>Nowy element</Button>
 
       <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2.5 py-1.5">
         <Search size={14} className="text-gray-400" />

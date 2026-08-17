@@ -6,6 +6,7 @@ import BoardCell from './BoardCell';
 import ColumnIcon from './ColumnIcon';
 import Popover from './Popover';
 import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 import { Avatar } from './cells/PeopleCell';
 import { getColumnType } from '../lib/columnTypes';
 import { useItemUpdates } from '../hooks/useItemUpdates';
@@ -47,11 +48,8 @@ function Composer({ people, onSend, parentId, onCancel, placeholder = 'Napisz ak
           )}
         </Popover>
         <div className="flex items-center gap-1">
-          {onCancel && <button onClick={onCancel} className="text-xs text-gray-400 px-2 py-1">Anuluj</button>}
-          <button onClick={submit} disabled={!text.trim()}
-            className="flex items-center gap-1 text-sm bg-accent-primary text-white px-3 py-1.5 rounded-lg disabled:opacity-40">
-            <Send size={14} /> Wyślij
-          </button>
+          {onCancel && <Button variant="ghost" size="sm" onClick={onCancel}>Anuluj</Button>}
+          <Button size="sm" icon={Send} onClick={submit} disabled={!text.trim()}>Wyślij</Button>
         </div>
       </div>
     </div>
