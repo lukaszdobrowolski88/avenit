@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ModuleTitle from '../../components/ModuleTitle';
+import PageHeader from '../../components/PageHeader';
 import { Sparkles, BookOpen, PenLine, MessageCircle } from 'lucide-react';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import SermonAssistantTab from './tabs/SermonAssistantTab';
@@ -17,18 +17,7 @@ export default function AiAssistantModule() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      {/* Nagłówek */}
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-lg">
-          <Sparkles className="text-white" size={24} />
-        </div>
-        <div>
-          <ModuleTitle moduleKey="ai" fallback="Asystent AI" className="text-2xl font-bold text-gray-900 dark:text-white" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Materiały z kazań, pomoc w komunikacji i odpowiedzi na pytania — oparte na Claude
-          </p>
-        </div>
-      </div>
+      <PageHeader moduleKey="ai" icon={Sparkles} title="Asystent AI" subtitle="Materiały z kazań, pomoc w komunikacji i odpowiedzi na pytania — oparte na Claude" />
 
       {/* Zakładki */}
       <ResponsiveTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />

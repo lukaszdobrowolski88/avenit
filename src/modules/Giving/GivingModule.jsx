@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import ModuleTitle from '../../components/ModuleTitle';
+import PageHeader from '../../components/PageHeader';
 import { Gift, LayoutDashboard, Receipt, Repeat, Target, FolderOpen, FileText, Users } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -62,16 +62,7 @@ export default function GivingModule() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Nagłówek */}
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-lg">
-          <Gift className="text-white" size={24} />
-        </div>
-        <div>
-          <ModuleTitle moduleKey="giving" fallback="Dawanie" className="text-2xl font-bold text-gray-900 dark:text-white" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">Darowizny, dawanie cykliczne, kampanie i zestawienia roczne</p>
-        </div>
-      </div>
+      <PageHeader moduleKey="giving" icon={Gift} title="Dawanie" subtitle="Darowizny, dawanie cykliczne, kampanie i zestawienia roczne" />
 
       {/* Zakładki */}
       <ResponsiveTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />

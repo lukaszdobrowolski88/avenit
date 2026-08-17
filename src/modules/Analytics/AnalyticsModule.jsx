@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import ModuleTitle from '../../components/ModuleTitle';
+import PageHeader from '../../components/PageHeader';
 import { BarChart3, Users, UserPlus, UserCheck, UserCircle, Gift, CalendarCheck, Filter, TrendingUp } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -165,21 +165,13 @@ export default function AnalyticsModule() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Nagłówek */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-lg">
-            <BarChart3 className="text-white" size={24} />
-          </div>
-          <div>
-            <ModuleTitle moduleKey="analytics" fallback="Analityka" className="text-2xl font-bold text-gray-900 dark:text-white" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">Strategiczny obraz wzrostu, dawania i zaangażowania</p>
-          </div>
-        </div>
-        <div className="w-full sm:w-40">
-          <CustomSelect value={year} onChange={setYear} options={years} icon={Filter} />
-        </div>
-      </div>
+      <PageHeader
+        moduleKey="analytics"
+        icon={BarChart3}
+        title="Analityka"
+        subtitle="Strategiczny obraz wzrostu, dawania i zaangażowania"
+        actions={<div className="w-full sm:w-40"><CustomSelect value={year} onChange={setYear} options={years} icon={Filter} /></div>}
+      />
 
       {loading ? (
         <div className="p-10 text-center text-gray-400">Ładowanie...</div>
