@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   X, MessageSquare, ListChecks, Activity, Send, Heart, Trash2, AtSign, CornerDownRight,
 } from 'lucide-react';
@@ -113,6 +113,9 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
 
   const roots = useMemo(() => updates.filter(u => !u.parent_update_id), [updates]);
   const repliesOf = (id) => updates.filter(u => u.parent_update_id === id);
+  // Nazwa: lokalny stan + commit na blur (koniec zapisu do bazy przy każdym znaku).
+  const [nameLocal, setNameLocal] = useState(current.name);
+  useEffect(() => { setNameLocal(current.name); }, [current.name]);
 
   const TABS = [
     { id: 'updates', label: 'Aktualizacje', icon: MessageSquare },
@@ -126,8 +129,10 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
       <div className="relative w-full max-w-[480px] h-full bg-white dark:bg-gray-800 shadow-2xl flex flex-col animate-[slideIn_.2s_ease]">
         {/* Header */}
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-start gap-2">
-          <input value={current.name} placeholder="Nazwa elementu"
-            onChange={(e) => data.updateItem(current.id, { name: e.target.value })}
+          <input value={nameLocal} placeholder="Nazwa elementu"
+            onChange={(e) => setNameLocal(e.target.value)}
+            onBlur={() => { if (nameLocal !== current.name) data.updateItem(current.id, { name: nameLocal }); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
             className="flex-1 text-lg font-semibold bg-transparent outline-none text-gray-800 dark:text-gray-100" />
           <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
         </div>

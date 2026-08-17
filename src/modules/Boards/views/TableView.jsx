@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
@@ -52,6 +52,9 @@ function ItemRow({ item, columns, groupColor, people, me, onCell, onUpdateColumn
   selected, onToggleSelect, hasSub, subCount, expanded, onToggleExpand, onAddSub, isSub }) {
   const sortable = useSortable({ id: item.id, disabled: isSub });
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = sortable;
+  // Nazwa: lokalny stan + commit na blur/Enter — inaczej zapis do bazy przy KAŻDYM znaku (lag).
+  const [nameLocal, setNameLocal] = useState(item.name);
+  useEffect(() => { setNameLocal(item.name); }, [item.name]);
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
   return (
     <div ref={setNodeRef} style={style}
@@ -75,8 +78,10 @@ function ItemRow({ item, columns, groupColor, people, me, onCell, onUpdateColumn
             {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
           </button>
         )}
-        <input value={item.name} placeholder={isSub ? 'Podelement' : 'Nazwa elementu'}
-          onChange={(e) => onCell(item.id, '__name__', e.target.value)}
+        <input value={nameLocal} placeholder={isSub ? 'Podelement' : 'Nazwa elementu'}
+          onChange={(e) => setNameLocal(e.target.value)}
+          onBlur={() => { if (nameLocal !== item.name) onCell(item.id, '__name__', nameLocal); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
           className="flex-1 min-w-0 bg-transparent text-sm text-gray-800 dark:text-gray-100 outline-none" />
         {!isSub && subCount > 0 && <span className="text-[10px] text-gray-400 shrink-0">{subCount}</span>}
         <button onClick={() => onOpen(item)} title="Otwórz" className="relative opacity-0 group-hover/row:opacity-100 text-gray-400 hover:text-accent-primary p-0.5">
@@ -146,7 +151,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
                   <button key={c} onClick={() => api.updateGroup(group.id, { color: c })} className="w-5 h-5 rounded" style={{ backgroundColor: c }} />
                 ))}
               </div>
-              <button onClick={() => { api.deleteGroup(group.id); close(); }}
+              <button onClick={() => { if (confirm(`Usunąć grupę „${group.name}" wraz z wszystkimi jej elementami?`)) api.deleteGroup(group.id); close(); }}
                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600">
                 <Trash2 size={14} /> Usuń grupę
               </button>
