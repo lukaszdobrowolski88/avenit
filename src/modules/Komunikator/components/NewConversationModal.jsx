@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function NewConversationModal({
   isOpen,
@@ -91,7 +92,7 @@ export default function NewConversationModal({
       onClose();
     } catch (err) {
       console.error('Error creating conversation:', err);
-      alert(t('Nie udało się utworzyć rozmowy'));
+      toast.error(t('Nie udało się utworzyć rozmowy'));
     } finally {
       setCreating(false);
     }
@@ -108,7 +109,7 @@ export default function NewConversationModal({
       onClose();
     } catch (err) {
       console.error('Error creating group:', err);
-      alert(t('Nie udało się utworzyć grupy'));
+      toast.error(t('Nie udało się utworzyć grupy'));
     } finally {
       setCreating(false);
     }

@@ -27,6 +27,7 @@ import { callAi } from '../../AI/lib/aiApi';
 import { invalidateModuleLabels } from '../../../hooks/useModuleLabel';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 // Sortable Module Item
 function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, onDuplicate, onSaveTemplate, tabCount }) {
@@ -310,7 +311,7 @@ export default function ModuleManager() {
       custom: true,
     };
     await persistUserTemplates([...userTemplates.filter((t) => t.name !== tpl.name || !t.custom), tpl]);
-    alert(tr('Zapisano jako szablon — dostępny w „Dodaj moduł".'));
+    toast.success(tr('Zapisano jako szablon — dostępny w „Dodaj moduł".'));
   };
 
   const handleSaveModule = async (moduleData) => {

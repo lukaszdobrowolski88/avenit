@@ -23,6 +23,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { PitchShifter } from 'soundtouchjs';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 
 // Hook to calculate dropdown position with smart positioning (up/down)
@@ -926,9 +927,9 @@ function RowInviteButton({ programId, count, onSendInvites, onRefresh }) {
     setLoading(false);
     if (res?.success) {
       await onRefresh?.();
-      if (!res.sent) alert('Nie wysłano żadnego maila — sprawdź, czy wybrane osoby mają adres e-mail w profilu.');
+      if (!res.sent) toast.success('Nie wysłano żadnego maila — sprawdź, czy wybrane osoby mają adres e-mail w profilu.');
     } else {
-      alert(res?.error || 'Nie udało się wysłać zaproszeń.');
+      toast.error(res?.error || 'Nie udało się wysłać zaproszeń.');
     }
   };
   return (
@@ -1764,7 +1765,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
         doc.save(fileName);
       } catch (error) {
         console.error('Błąd generowania PDF:', error);
-        alert(tr('Nie udało się wygenerować PDF'));
+        toast.error(tr('Nie udało się wygenerować PDF'));
         if (document.body.contains(container)) {
           document.body.removeChild(container);
         }
@@ -2229,7 +2230,7 @@ export default function WorshipModule() {
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert(tr('Błąd przesyłania pliku: ') + error.message);
+      toast.error(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -2255,7 +2256,7 @@ export default function WorshipModule() {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      alert(tr('Wypełnij wymagane pola'));
+      toast.error(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -2292,7 +2293,7 @@ export default function WorshipModule() {
       fetchFinanceData();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert(tr('Błąd zapisywania: ') + error.message);
+      toast.error(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -2385,7 +2386,7 @@ export default function WorshipModule() {
       fetchData();
       fetchWorshipRoles(); // Odśwież przypisania
     } catch (err) {
-      alert(tr('Błąd: ') + err.message);
+      toast.error(tr('Błąd: ') + err.message);
     }
   };
 
@@ -2513,7 +2514,7 @@ export default function WorshipModule() {
 
     // Sprawdź czy tag już istnieje (case-insensitive)
     if (allUniqueTags.some(t => t.toLowerCase() === trimmedTag.toLowerCase())) {
-      alert(`Tag "${trimmedTag}" już istnieje w bazie.`);
+      toast.error(`Tag "${trimmedTag}" już istnieje w bazie.`);
       return;
     }
 
@@ -2910,7 +2911,7 @@ export default function WorshipModule() {
 
               if (error) {
                 console.error('Supabase error:', error);
-                alert(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
+                toast.error(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
                 return;
               }
 
@@ -2918,7 +2919,7 @@ export default function WorshipModule() {
               fetchData();
             } catch (err) {
               console.error('Exception:', err);
-              alert(tr('Błąd: ') + (err.message || tr('Nie udało się zapisać pieśni')));
+              toast.error(tr('Błąd: ') + (err.message || tr('Nie udało się zapisać pieśni')));
             }
           }}
           onCancel={() => setShowSongModal(false)}

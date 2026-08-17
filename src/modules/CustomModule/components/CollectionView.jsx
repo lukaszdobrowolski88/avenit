@@ -5,6 +5,7 @@ import { tr } from '../../../i18n';
 import { useModuleRecords } from '../../../hooks/useModuleRecords';
 import { evaluateVisibility } from '../../Forms/utils/fieldTypes';
 import { STATUS_COLORS } from '../../Settings/components/ModuleBuilder/builderElements';
+import { toast } from '../../../lib/toast';
 
 const statusColor = (field, value) => {
   const o = (field.options || []).find((x) => x.value === value);
@@ -276,7 +277,7 @@ export default function CollectionView({ element, ctx }) {
     if (!file) return;
     try {
       const rows = parseCsvRows(await file.text());
-      if (rows.length < 2) { alert(tr('Plik nie zawiera danych.')); return; }
+      if (rows.length < 2) { toast.error(tr('Plik nie zawiera danych.')); return; }
       const colFields = rows[0].map((h) => fields.find((f) => f.label.trim().toLowerCase() === h.trim().toLowerCase()));
       let n = 0;
       for (const row of rows.slice(1)) {
@@ -284,8 +285,8 @@ export default function CollectionView({ element, ctx }) {
         row.forEach((cell, i) => { const f = colFields[i]; if (f && cell.trim() !== '') data[f.key] = coerceImport(f, cell); });
         if (Object.keys(data).length) { await create(data); n++; }
       }
-      alert(`${tr('Zaimportowano wpisów:')} ${n}`);
-    } catch (e) { alert(tr('Błąd importu: ') + (e.message || e)); }
+      toast.success(`${tr('Zaimportowano wpisów:')} ${n}`);
+    } catch (e) { toast.error(tr('Błąd importu: ') + (e.message || e)); }
     if (importRef.current) importRef.current.value = '';
   };
 

@@ -8,6 +8,7 @@ import {
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import TabHeader from '../../components/TabHeader';
+import { toast } from '../../lib/toast';
 
 const CONDITIONS = [
   { value: 'nowy', label: tr('Nowy'), color: 'green' },
@@ -78,7 +79,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       setForm(prev => ({ ...prev, photo_url: data.publicUrl }));
     } catch (err) {
       console.error('Upload error:', err);
-      alert(tr('Błąd przesyłania zdjęcia: ') + err.message);
+      toast.error(tr('Błąd przesyłania zdjęcia: ') + err.message);
     }
     setUploading(false);
   };
@@ -117,7 +118,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      alert(tr('Podaj nazwę wyposażenia'));
+      toast.error(tr('Podaj nazwę wyposażenia'));
       return;
     }
 
@@ -152,7 +153,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       fetchEquipment();
     } catch (err) {
       console.error('Save error:', err);
-      alert(tr('Błąd zapisywania: ') + err.message);
+      toast.error(tr('Błąd zapisywania: ') + err.message);
     }
   };
 
@@ -168,7 +169,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
       fetchEquipment();
     } catch (err) {
       console.error('Delete error:', err);
-      alert(tr('Błąd usuwania: ') + err.message);
+      toast.error(tr('Błąd usuwania: ') + err.message);
     }
   };
 

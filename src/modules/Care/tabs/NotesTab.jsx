@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, StickyNote, User } from 'lucide-react';
 import { supabase, getCachedUser } from '../../../lib/supabase';
 import { formatDateTime } from '../lib/careApi';
+import { toast } from '../../../lib/toast';
 
 export default function NotesTab({ member, campusIdForInsert, withCampusFilter }) {
   const [notes, setNotes] = useState([]);
@@ -29,7 +30,7 @@ export default function NotesTab({ member, campusIdForInsert, withCampusFilter }
   useEffect(() => { load(); }, [load]);
 
   const add = async () => {
-    if (!body.trim()) { alert('Wpisz treść notatki.'); return; }
+    if (!body.trim()) { toast.error('Wpisz treść notatki.'); return; }
     setSaving(true);
     try {
       const user = await getCachedUser();
@@ -43,7 +44,7 @@ export default function NotesTab({ member, campusIdForInsert, withCampusFilter }
       setBody('');
       load();
     } catch (err) {
-      alert('Nie udało się zapisać notatki: ' + (err.message || err));
+      toast.error('Nie udało się zapisać notatki: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -56,7 +57,7 @@ export default function NotesTab({ member, campusIdForInsert, withCampusFilter }
       if (error) throw error;
       load();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 

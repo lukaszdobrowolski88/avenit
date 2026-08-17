@@ -27,6 +27,7 @@ import {
 import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function ParticipantsView({ forms }) {
   const [participants, setParticipants] = useState([]);
@@ -418,7 +419,7 @@ export default function ParticipantsView({ forms }) {
       }
     } catch (error) {
       console.error('Error updating payment status:', error);
-      alert(tr('Wystąpił błąd podczas aktualizacji statusu płatności'));
+      toast.error(tr('Wystąpił błąd podczas aktualizacji statusu płatności'));
     }
   };
 
@@ -513,7 +514,7 @@ export default function ParticipantsView({ forms }) {
       setPaymentDate(new Date().toISOString().split('T')[0]);
     } catch (error) {
       console.error('Error adding payment:', error);
-      alert(tr('Wystąpił błąd podczas dodawania płatności'));
+      toast.error(tr('Wystąpił błąd podczas dodawania płatności'));
     }
   };
 

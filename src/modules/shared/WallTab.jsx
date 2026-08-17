@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
+import { toast } from '../../lib/toast';
 import {
   Send, Image, Paperclip, Link as LinkIcon, X, Heart,
   Trash2, Download, ExternalLink, Pin, FileText, Reply, CornerDownRight
@@ -104,7 +105,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
       setAttachments(prev => [...prev, ...uploadedFiles]);
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Blad przesylania pliku: ' + error.message);
+      toast.error('Blad przesylania pliku: ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -178,7 +179,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
       fetchPosts();
     } catch (err) {
       console.error('Error sending message:', err);
-      alert('Blad wysylania: ' + err.message);
+      toast.error('Blad wysylania: ' + err.message);
     }
   };
 

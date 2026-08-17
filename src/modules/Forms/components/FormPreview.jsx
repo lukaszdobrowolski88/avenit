@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Monitor, Smartphone } from 'lucide-react';
 import FormRenderer from './FormRenderer';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function FormPreview({
   title,
@@ -14,7 +15,7 @@ export default function FormPreview({
 
   const handlePreviewSubmit = (answers) => {
     console.log('Preview submit:', answers);
-    alert(tr('To jest tylko podgląd. Formularz nie został wysłany.'));
+    toast.success(tr('To jest tylko podgląd. Formularz nie został wysłany.'));
   };
 
   return (

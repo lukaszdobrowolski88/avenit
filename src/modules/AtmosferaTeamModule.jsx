@@ -19,6 +19,7 @@ import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
+import { toast } from '../lib/toast';
 
 // --- UI COMPONENTS (PORTALS) ---
 
@@ -516,7 +517,7 @@ export default function AtmosferaTeamModule() {
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert(tr('Błąd przesyłania pliku: ') + error.message);
+      toast.error(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -542,7 +543,7 @@ export default function AtmosferaTeamModule() {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      alert(tr('Wypełnij wymagane pola'));
+      toast.error(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -579,7 +580,7 @@ export default function AtmosferaTeamModule() {
       fetchFinanceData();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert(tr('Błąd zapisywania: ') + error.message);
+      toast.error(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -631,7 +632,7 @@ export default function AtmosferaTeamModule() {
 
   const saveMember = async () => {
     try {
-      if (!memberForm.full_name.trim()) return alert(tr('Imię wymagane'));
+      if (!memberForm.full_name.trim()) return toast.error(tr('Imię wymagane'));
       let memberId = memberForm.id;
 
       if (memberForm.id) {
@@ -676,7 +677,7 @@ export default function AtmosferaTeamModule() {
       fetchData();
       fetchAtmosferaRoles();
     } catch (err) {
-      alert(tr('Błąd zapisu: ') + err.message);
+      toast.error(tr('Błąd zapisu: ') + err.message);
     }
   };
 
@@ -703,7 +704,7 @@ export default function AtmosferaTeamModule() {
       if (error) throw error;
       fetchData();
     } catch (err) {
-      alert(tr('Błąd: ') + err.message);
+      toast.error(tr('Błąd: ') + err.message);
     }
   };
 

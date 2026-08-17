@@ -4,6 +4,7 @@ import { X, PlusCircle, Music, Hash, Check, Upload, FileText, Link as LinkIcon, 
 import { supabase } from '../../lib/supabase';
 import CustomSelect from '../../components/CustomSelect';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // --- STAŁE DANYCH ---
 const KEYS = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
@@ -606,7 +607,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
   }, [formData.key, editorKey]);
 
   const handleSubmit = async () => {
-    if (!formData.title) return alert(tr('Podaj tytuł pieśni'));
+    if (!formData.title) return toast.error(tr('Podaj tytuł pieśni'));
 
     // Formatuj akordy w chords_bars przed zapisem (zgodnie z wytycznymi PDF)
     // Rozmiary: główna litera = bazowy, modyfikatory = -2pt, slash/bas = -1pt, znaki przy basie = -3pt
@@ -658,7 +659,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert(tr('Błąd przesyłania pliku: ') + error.message);
+      toast.error(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -693,7 +694,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
     });
 
     if (validFiles.length === 0) {
-      alert(tr('Nieobsługiwany format pliku. Akceptowane: PDF, JPG, PNG, MP3, DOC, .pro, .pro6, .pro6pl, .pro7'));
+      toast.error(tr('Nieobsługiwany format pliku. Akceptowane: PDF, JPG, PNG, MP3, DOC, .pro, .pro6, .pro6pl, .pro7'));
       return;
     }
 
@@ -729,7 +730,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert(tr('Błąd przesyłania pliku: ') + error.message);
+      toast.error(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }

@@ -14,6 +14,7 @@ import RecipientSelector from './RecipientSelector';
 import CampaignPreview from './CampaignPreview';
 import { tr } from '../../../i18n';
 import { useCan } from '../../../components/Can';
+import { toast } from '../../../lib/toast';
 
 const STEPS = [
   { id: 'basics', label: 'Podstawy', icon: FileText },
@@ -177,7 +178,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
       onSave?.();
     } catch (err) {
       console.error('Error saving campaign:', err);
-      alert(tr('Błąd podczas zapisywania maila'));
+      toast.error(tr('Błąd podczas zapisywania maila'));
     } finally {
       setSaving(false);
     }
@@ -238,21 +239,21 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
         if (error) {
           await updateCampaign(savedCampaign.id, { status: 'scheduled' });
-          alert(`Edge Function nie jest dostępna. Mail został zapisany jako zaplanowany.`);
+          toast.error(`Edge Function nie jest dostępna. Mail został zapisany jako zaplanowany.`);
           onSave?.();
           return;
         }
 
-        alert(`Mail wysłany! Wysłano: ${data?.batch_results?.sent || 0}, Błędy: ${data?.batch_results?.failed || 0}`);
+        toast.success(`Mail wysłany! Wysłano: ${data?.batch_results?.sent || 0}, Błędy: ${data?.batch_results?.failed || 0}`);
         onSave?.();
       } catch (funcError) {
         await updateCampaign(savedCampaign.id, { status: 'scheduled' });
-        alert(`Edge Function nie jest dostępna. Mail został zapisany jako zaplanowany.`);
+        toast.error(`Edge Function nie jest dostępna. Mail został zapisany jako zaplanowany.`);
         onSave?.();
       }
     } catch (err) {
       console.error('Error sending campaign:', err);
-      alert(tr('Błąd podczas wysyłania maila'));
+      toast.error(tr('Błąd podczas wysyłania maila'));
     } finally {
       setSaving(false);
     }
@@ -260,7 +261,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
   const handleTestSend = async () => {
     if (!testEmail || !testEmail.includes('@')) {
-      alert(tr('Wprowadź poprawny adres email'));
+      toast.error(tr('Wprowadź poprawny adres email'));
       return;
     }
 
@@ -287,13 +288,13 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
       });
 
       if (error) {
-        alert(`Błąd wysyłki testowej: ${error.message}`);
+        toast.error(`Błąd wysyłki testowej: ${error.message}`);
       } else {
-        alert(`Email testowy wysłany na: ${testEmail}`);
+        toast.success(`Email testowy wysłany na: ${testEmail}`);
         setShowTestSend(false);
       }
     } catch (err) {
-      alert(tr('Błąd podczas wysyłania testowego emaila'));
+      toast.error(tr('Błąd podczas wysyłania testowego emaila'));
     } finally {
       setSaving(false);
     }
@@ -301,17 +302,17 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
 
   const handleSchedule = async () => {
     if (!formData.scheduled_at) {
-      alert(tr('Wybierz datę i godzinę wysyłki'));
+      toast.info(tr('Wybierz datę i godzinę wysyłki'));
       return;
     }
 
     try {
       setSaving(true);
       await handleSave('scheduled');
-      alert(`Mail zaplanowany na: ${new Date(formData.scheduled_at).toLocaleString('pl-PL')}`);
+      toast.error(`Mail zaplanowany na: ${new Date(formData.scheduled_at).toLocaleString('pl-PL')}`);
       setShowSchedule(false);
     } catch (err) {
-      alert(tr('Błąd podczas planowania maila'));
+      toast.error(tr('Błąd podczas planowania maila'));
     } finally {
       setSaving(false);
     }

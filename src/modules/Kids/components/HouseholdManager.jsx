@@ -6,6 +6,7 @@ import {
   User, ChevronDown, ChevronUp, Check, Loader2, Home
 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function HouseholdManager() {
   const [households, setHouseholds] = useState([]);
@@ -109,7 +110,7 @@ export default function HouseholdManager() {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      alert('Nazwa rodziny jest wymagana');
+      toast.error('Nazwa rodziny jest wymagana');
       return;
     }
 
@@ -192,7 +193,7 @@ export default function HouseholdManager() {
       resetForm();
     } catch (err) {
       console.error('Error saving household:', err);
-      alert(tr('Błąd podczas zapisywania rodziny'));
+      toast.error(tr('Błąd podczas zapisywania rodziny'));
     }
   };
 
@@ -217,7 +218,7 @@ export default function HouseholdManager() {
       await fetchData();
     } catch (err) {
       console.error('Error deleting household:', err);
-      alert(tr('Błąd podczas usuwania rodziny'));
+      toast.error(tr('Błąd podczas usuwania rodziny'));
     }
   };
 
@@ -267,7 +268,7 @@ export default function HouseholdManager() {
       setAssignStudentModal(null);
     } catch (err) {
       console.error('Error assigning student:', err);
-      alert(tr('Błąd podczas przypisywania ucznia'));
+      toast.error(tr('Błąd podczas przypisywania ucznia'));
     }
   };
 

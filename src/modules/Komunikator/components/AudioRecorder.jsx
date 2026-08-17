@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, Square, Send, X, Loader, Pause, Play } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
   const [isRecording, setIsRecording] = useState(true); // Automatycznie zaczynamy nagrywanie
@@ -97,7 +98,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
 
     } catch (err) {
       console.error('Error starting recording:', err);
-      alert(tr('Nie można uzyskać dostępu do mikrofonu. Sprawdź uprawnienia przeglądarki.'));
+      toast.error(tr('Nie można uzyskać dostępu do mikrofonu. Sprawdź uprawnienia przeglądarki.'));
     }
   };
 
@@ -178,7 +179,7 @@ export default function AudioRecorder({ onSend, onCancel, disabled = false }) {
       handleCancel();
     } catch (err) {
       console.error('Error sending voice message:', err);
-      alert(tr('Błąd podczas wysyłania wiadomości głosowej'));
+      toast.error(tr('Błąd podczas wysyłania wiadomości głosowej'));
     } finally {
       setIsSending(false);
     }

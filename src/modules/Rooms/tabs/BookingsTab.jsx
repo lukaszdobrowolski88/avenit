@@ -3,6 +3,7 @@ import { Plus, Search, Edit2, Trash2, X, CalendarClock, Repeat, AlertTriangle, C
 import { supabase, getCachedUser } from '../../../lib/supabase';
 import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
+import { toast } from '../../../lib/toast';
 import {
   toLocalInputValue, localInputToIso, formatDateTime, formatTime, formatDuration,
   addWeeks, newUuid, startOfDay,
@@ -134,12 +135,12 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
 
   // mode: 'auto' (blokuj przy kolizji), 'skip' (pomiń kolidujące), 'force' (zapisz mimo kolizji)
   const doSave = async (mode = 'auto') => {
-    if (!form.resource_id) { alert('Wybierz zasób.'); return; }
-    if (!form.title.trim()) { alert('Podaj tytuł rezerwacji.'); return; }
+    if (!form.resource_id) { toast.info('Wybierz zasób.'); return; }
+    if (!form.title.trim()) { toast.error('Podaj tytuł rezerwacji.'); return; }
     const startIso = localInputToIso(form.start_at);
     const endIso = localInputToIso(form.end_at);
-    if (!startIso || !endIso) { alert('Podaj poprawny początek i koniec.'); return; }
-    if (new Date(endIso) <= new Date(startIso)) { alert('Koniec musi być późniejszy niż początek.'); return; }
+    if (!startIso || !endIso) { toast.error('Podaj poprawny początek i koniec.'); return; }
+    if (new Date(endIso) <= new Date(startIso)) { toast.error('Koniec musi być późniejszy niż początek.'); return; }
 
     setSaving(true);
     try {
@@ -158,7 +159,7 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
 
       const toInsert = mode === 'skip' ? free : occ;
       if (toInsert.length === 0) {
-        alert('Wszystkie terminy kolidują z istniejącymi rezerwacjami — nie zapisano nic.');
+        toast.success('Wszystkie terminy kolidują z istniejącymi rezerwacjami — nie zapisano nic.');
         setSaving(false);
         return;
       }
@@ -197,11 +198,11 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
       closeModal();
       load();
       if (skipped > 0) {
-        alert(`Zapisano ${toInsert.length} rezerwacji. Pominięto ${skipped} z powodu kolizji.`);
+        toast.success(`Zapisano ${toInsert.length} rezerwacji. Pominięto ${skipped} z powodu kolizji.`);
       }
     } catch (err) {
       console.error('Save booking error:', err);
-      alert('Nie udało się zapisać rezerwacji: ' + (err.message || err));
+      toast.error('Nie udało się zapisać rezerwacji: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -225,7 +226,7 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
       }
       load();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 

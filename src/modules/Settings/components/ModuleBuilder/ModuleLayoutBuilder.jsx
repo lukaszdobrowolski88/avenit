@@ -21,6 +21,7 @@ import ElementPalette from './ElementPalette';
 import BuilderCanvas from './BuilderCanvas';
 import Inspector from './Inspector';
 import LayoutRenderer from '../../../CustomModule/components/LayoutRenderer';
+import { toast } from '../../../../lib/toast';
 
 const collisionDetection = (args) => {
   const hits = pointerWithin(args);
@@ -76,8 +77,8 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave, o
       try {
         const parsed = JSON.parse(reader.result);
         const nodes = Array.isArray(parsed?.root) ? parsed.root : Array.isArray(parsed) ? parsed : null;
-        if (nodes) setRoot(cloneTree(nodes)); else alert(tr('Nieprawidłowy plik układu'));
-      } catch { alert(tr('Nieprawidłowy plik układu')); }
+        if (nodes) setRoot(cloneTree(nodes)); else toast.error(tr('Nieprawidłowy plik układu'));
+      } catch { toast.error(tr('Nieprawidłowy plik układu')); }
     };
     reader.readAsText(file); e.target.value = ''; setMenuOpen(false);
   };

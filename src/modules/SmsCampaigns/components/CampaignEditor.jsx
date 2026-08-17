@@ -13,6 +13,7 @@ import ScheduleControl from './ScheduleControl';
 import SmsPreview from './SmsPreview';
 import { tr } from '../../../i18n';
 import { useCan } from '../../../components/Can';
+import { toast } from '../../../lib/toast';
 
 const SECTIONS = [
   { id: 'compose', label: tr('Treść') },
@@ -92,7 +93,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const handleSaveDraft = async () => {
     const err = validate();
-    if (err) { alert(err); return; }
+    if (err) { toast.error(err); return; }
     setSaving(true);
     try {
       if (campaign?.id) {
@@ -102,7 +103,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       }
       onClose?.();
     } catch (e) {
-      alert(`Błąd zapisu: ${e.message}`);
+      toast.error(`Błąd zapisu: ${e.message}`);
     } finally {
       setSaving(false);
     }
@@ -110,7 +111,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const handleSchedule = async () => {
     const err = validate();
-    if (err) { alert(err); return; }
+    if (err) { toast.error(err); return; }
     if (recipientCount === 0) {
       if (!confirm(tr('Brak odbiorców z numerem. Zapisać mimo to?'))) return;
     }
@@ -124,7 +125,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       }
       onClose?.();
     } catch (e) {
-      alert(`Błąd: ${e.message}`);
+      toast.error(`Błąd: ${e.message}`);
     } finally {
       setSaving(false);
     }
@@ -132,8 +133,8 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const handleSendNow = async () => {
     const err = validate();
-    if (err) { alert(err); return; }
-    if (recipientCount === 0) { alert(tr('Brak odbiorców z numerem')); return; }
+    if (err) { toast.error(err); return; }
+    if (recipientCount === 0) { toast.error(tr('Brak odbiorców z numerem')); return; }
     if (!confirm(`Wysłać SMS do ${recipientCount} odbiorców? Szacunkowy koszt: ${formatPLN(estimatedCost)}.`)) return;
 
     setSending(true);
@@ -148,7 +149,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       await dispatchSmsCampaign(id);
       onClose?.();
     } catch (e) {
-      alert(`Błąd wysyłki: ${e.message}`);
+      toast.error(`Błąd wysyłki: ${e.message}`);
     } finally {
       setSending(false);
     }
@@ -166,7 +167,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       return;
     }
     const phone = normalizePhone(testPhone);
-    if (!phone) { alert('Niepoprawny numer telefonu'); return; }
+    if (!phone) { toast.error('Niepoprawny numer telefonu'); return; }
 
     setSending(true);
     try {
@@ -176,13 +177,13 @@ export default function CampaignEditor({ campaign, template, onClose }) {
         sender: form.sender,
       });
       if (result?.sent === 1) {
-        alert(`Test wysłany na +${phone}\nID: ${result.smsapi_id}\nKoszt: ${result.points} pkt`);
+        toast.success(`Test wysłany na +${phone}\nID: ${result.smsapi_id}\nKoszt: ${result.points} pkt`);
       } else {
-        alert(`Błąd: ${result?.error || 'nieznany'}`);
+        toast.error(`Błąd: ${result?.error || 'nieznany'}`);
       }
       setShowTestSend(false);
     } catch (e) {
-      alert(`Błąd: ${e.message}`);
+      toast.error(`Błąd: ${e.message}`);
     } finally {
       setSending(false);
     }

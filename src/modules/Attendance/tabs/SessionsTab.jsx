@@ -4,6 +4,7 @@ import { supabase, getCachedUser } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { SESSION_TYPES, sessionTypeLabel, sessionTypeColor, sessionAttendance, memberName, formatDate } from '../lib/attendanceApi';
+import { toast } from '../../../lib/toast';
 
 const emptyForm = {
   title: '',
@@ -95,7 +96,7 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
   };
 
   const save = async () => {
-    if (!form.session_date) { alert('Podaj datę sesji.'); return; }
+    if (!form.session_date) { toast.error('Podaj datę sesji.'); return; }
     setSaving(true);
     try {
       const user = await getCachedUser();
@@ -119,7 +120,7 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
       load();
     } catch (err) {
       console.error('Save attendance session error:', err);
-      alert('Nie udało się zapisać sesji: ' + (err.message || err));
+      toast.error('Nie udało się zapisać sesji: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -132,7 +133,7 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
       if (error) throw error;
       load();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 
@@ -339,7 +340,7 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
       }
       await loadRecords();
     } catch (err) {
-      alert('Nie udało się zapisać obecności: ' + (err.message || err));
+      toast.error('Nie udało się zapisać obecności: ' + (err.message || err));
     } finally {
       setBusyId(null);
     }
@@ -355,7 +356,7 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
       setGuestName('');
       await loadRecords();
     } catch (err) {
-      alert('Nie udało się dodać gościa: ' + (err.message || err));
+      toast.error('Nie udało się dodać gościa: ' + (err.message || err));
     } finally {
       setAddingGuest(false);
     }
@@ -367,7 +368,7 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
       if (error) throw error;
       await loadRecords();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 

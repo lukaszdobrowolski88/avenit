@@ -3,6 +3,7 @@ import { Plus, Phone, Mail, Pencil, Trash2, Contact, Loader2, X, Search } from '
 import Modal from '../../components/Modal';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // Gotowy element „Lista kontaktów" — prosta baza kontaktów per moduł.
 // Dane w module_records (collection_key='contacts').
@@ -17,7 +18,7 @@ function ContactModal({ initial, onClose, onSave }) {
   });
   const [saving, setSaving] = useState(false);
   const submit = async () => {
-    if (!form.name.trim()) { alert(tr('Podaj imię i nazwisko')); return; }
+    if (!form.name.trim()) { toast.error(tr('Podaj imię i nazwisko')); return; }
     setSaving(true); await onSave({ ...form, name: form.name.trim() }); setSaving(false);
   };
   const field = (key, label, placeholder, type = 'text') => (

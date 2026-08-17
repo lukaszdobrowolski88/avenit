@@ -3,6 +3,7 @@ import { Plus, Trash2, HeartHandshake, Phone, Mail, Heart, Users, Home } from 'l
 import { supabase, getCachedUser } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import { CARE_TYPES, careTypeLabel, formatDate } from '../lib/careApi';
+import { toast } from '../../../lib/toast';
 
 const CARE_ICONS = {
   wizyta: Home,
@@ -49,7 +50,7 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
   useEffect(() => { load(); }, [load]);
 
   const add = async () => {
-    if (!form.care_date) { alert('Podaj datę kontaktu.'); return; }
+    if (!form.care_date) { toast.error('Podaj datę kontaktu.'); return; }
     setSaving(true);
     try {
       const user = await getCachedUser();
@@ -65,7 +66,7 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
       setForm(emptyForm());
       load();
     } catch (err) {
-      alert('Nie udało się zapisać kontaktu: ' + (err.message || err));
+      toast.error('Nie udało się zapisać kontaktu: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -78,7 +79,7 @@ export default function CareLogTab({ member, campusIdForInsert, withCampusFilter
       if (error) throw error;
       load();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 

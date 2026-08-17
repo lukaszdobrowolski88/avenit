@@ -21,6 +21,7 @@ import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -431,7 +432,7 @@ export default function KidsModule() {
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert(tr('Błąd przesyłania pliku: ') + error.message);
+      toast.error(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -457,7 +458,7 @@ export default function KidsModule() {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      alert(tr('Wypełnij wymagane pola'));
+      toast.error(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -494,7 +495,7 @@ export default function KidsModule() {
       fetchFinanceData();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert(tr('Błąd zapisywania: ') + error.message);
+      toast.error(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -512,7 +513,7 @@ export default function KidsModule() {
   }
 
   const saveTeacher = async () => {
-    if (!teacherForm.full_name) return alert(tr('Podaj imię'));
+    if (!teacherForm.full_name) return toast.error(tr('Podaj imię'));
     try {
       if (teacherForm.id) {
         const { error } = await supabase.from('kids_teachers').update({
@@ -535,19 +536,19 @@ export default function KidsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd zapisywania nauczyciela:', err);
-      alert(tr('Błąd zapisywania: ') + err.message);
+      toast.error(tr('Błąd zapisywania: ') + err.message);
     }
   };
   const deleteTeacher = async (id) => { if (confirm(tr('Usunąć?'))) { await supabase.from('kids_teachers').delete().eq('id', id); fetchData(); } };
-  const saveGroup = async () => { if (!groupForm.name) return alert(tr('Podaj nazwę')); const payload = { name: groupForm.name, room: groupForm.room, age_range: groupForm.age_range, teacher_ids: groupForm.teacher_ids }; try { if (groupForm.id) await supabase.from('kids_groups').update(payload).eq('id', groupForm.id); else await supabase.from('kids_groups').insert([{ ...payload, materials: [], campus_id: campusIdForInsert }]); setShowGroupModal(false); fetchData(); } catch (err) { alert(err.message); } };
+  const saveGroup = async () => { if (!groupForm.name) return toast.error(tr('Podaj nazwę')); const payload = { name: groupForm.name, room: groupForm.room, age_range: groupForm.age_range, teacher_ids: groupForm.teacher_ids }; try { if (groupForm.id) await supabase.from('kids_groups').update(payload).eq('id', groupForm.id); else await supabase.from('kids_groups').insert([{ ...payload, materials: [], campus_id: campusIdForInsert }]); setShowGroupModal(false); fetchData(); } catch (err) { toast.error(err.message); } };
   const deleteGroup = async (id) => { if (confirm(tr('Usunąć?'))) { await supabase.from('kids_groups').delete().eq('id', id); fetchData(); } };
-  const saveGlobalStudent = async () => { if (!globalStudentForm.full_name) return alert(tr('Podaj imię')); const payload = { full_name: globalStudentForm.full_name, birth_year: globalStudentForm.birth_year, parent_info: globalStudentForm.parent_info, notes: globalStudentForm.notes, group_id: globalStudentForm.group_id ? parseInt(globalStudentForm.group_id) : null, household_id: globalStudentForm.household_id || null }; try { if (globalStudentForm.id) await supabase.from('kids_students').update(payload).eq('id', globalStudentForm.id); else await supabase.from('kids_students').insert([{ ...payload, campus_id: campusIdForInsert }]); setShowGlobalStudentModal(false); fetchData(); } catch (err) { alert(err.message); } };
+  const saveGlobalStudent = async () => { if (!globalStudentForm.full_name) return toast.error(tr('Podaj imię')); const payload = { full_name: globalStudentForm.full_name, birth_year: globalStudentForm.birth_year, parent_info: globalStudentForm.parent_info, notes: globalStudentForm.notes, group_id: globalStudentForm.group_id ? parseInt(globalStudentForm.group_id) : null, household_id: globalStudentForm.household_id || null }; try { if (globalStudentForm.id) await supabase.from('kids_students').update(payload).eq('id', globalStudentForm.id); else await supabase.from('kids_students').insert([{ ...payload, campus_id: campusIdForInsert }]); setShowGlobalStudentModal(false); fetchData(); } catch (err) { toast.error(err.message); } };
   const deleteStudent = async (id) => { if(confirm(tr('Usunąć?'))) { await supabase.from('kids_students').delete().eq('id', id); fetchData(); } };
   const openEditStudent = (s) => { setGlobalStudentForm({ id: s.id, full_name: s.full_name, birth_year: s.birth_year, parent_info: s.parent_info, notes: s.notes, group_id: s.group_id, household_id: s.household_id }); setShowGlobalStudentModal(true); };
-  const attachStudentToGroup = async () => { if (!attachStudentId) return alert('Wybierz ucznia'); await supabase.from('kids_students').update({ group_id: currentGroup.id }).eq('id', attachStudentId); setAddStudentId(''); fetchData(); };
+  const attachStudentToGroup = async () => { if (!attachStudentId) return toast.info('Wybierz ucznia'); await supabase.from('kids_students').update({ group_id: currentGroup.id }).eq('id', attachStudentId); setAddStudentId(''); fetchData(); };
   const detachStudentFromGroup = async (studentId) => { await supabase.from('kids_students').update({ group_id: null }).eq('id', studentId); fetchData(); };
   const handleMaterialFileUpload = async (file) => { if (!file) return null; const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${file.name.split('.').pop()}`; const { error } = await supabase.storage.from('kids-materials').upload(fileName, file); if (error) throw error; const { data } = supabase.storage.from('kids-materials').getPublicUrl(fileName); return { url: data.publicUrl, name: file.name }; };
-  const addMaterial = async () => { if (!materialForm.title) return alert(tr('Podaj nazwę')); setUploading(true); try { let attachmentData = null; if (materialForm.attachment) attachmentData = await handleMaterialFileUpload(materialForm.attachment); const newMaterial = { id: Date.now(), title: materialForm.title, type: materialForm.type, date: new Date().toISOString(), attachmentUrl: attachmentData?.url || null, attachmentName: attachmentData?.name || null }; const updatedMaterials = [...(currentGroup.materials || []), newMaterial]; await supabase.from('kids_groups').update({ materials: updatedMaterials }).eq('id', currentGroup.id); setMaterialForm({ title: '', type: 'Lekcja', attachment: null }); fetchData(); } catch (err) { alert(err.message); } finally { setUploading(false); } };
+  const addMaterial = async () => { if (!materialForm.title) return toast.error(tr('Podaj nazwę')); setUploading(true); try { let attachmentData = null; if (materialForm.attachment) attachmentData = await handleMaterialFileUpload(materialForm.attachment); const newMaterial = { id: Date.now(), title: materialForm.title, type: materialForm.type, date: new Date().toISOString(), attachmentUrl: attachmentData?.url || null, attachmentName: attachmentData?.name || null }; const updatedMaterials = [...(currentGroup.materials || []), newMaterial]; await supabase.from('kids_groups').update({ materials: updatedMaterials }).eq('id', currentGroup.id); setMaterialForm({ title: '', type: 'Lekcja', attachment: null }); fetchData(); } catch (err) { toast.error(err.message); } finally { setUploading(false); } };
   const deleteMaterial = async (mid) => { if(!confirm(tr('Usunąć?'))) return; const um = currentGroup.materials.filter(m => m.id !== mid); await supabase.from('kids_groups').update({ materials: um }).eq('id', currentGroup.id); fetchData(); };
   const handleProgramUpdate = async (id, updates) => { setPrograms(prev => prev.map(p => p.id === id ? { ...p, ...updates, szkolka: { ...p.szkolka, ...updates.szkolka } } : p)); await supabase.from('programs').update(updates).eq('id', id); };
   const filteredStudents = students.filter(s => s.full_name.toLowerCase().includes(studentFilter.toLowerCase()));

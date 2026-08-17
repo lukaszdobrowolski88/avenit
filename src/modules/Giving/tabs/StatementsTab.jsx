@@ -3,6 +3,7 @@ import { FileText, Printer, Search } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import { formatMoney, formatDate, memberName } from '../lib/givingApi';
+import { toast } from '../../../lib/toast';
 
 const currentYear = new Date().getFullYear();
 
@@ -120,7 +121,7 @@ export default function StatementsTab({ funds, membersById, withCampusFilter }) 
       <script>window.onload=function(){window.print();}</script>
       </body></html>`;
     const w = window.open('', '_blank');
-    if (!w) { alert('Zezwól na wyskakujące okna, aby wydrukować zestawienie.'); return; }
+    if (!w) { toast.info('Zezwól na wyskakujące okna, aby wydrukować zestawienie.'); return; }
     w.document.write(html); w.document.close();
   };
 

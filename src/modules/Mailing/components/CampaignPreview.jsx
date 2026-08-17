@@ -3,6 +3,7 @@ import { X, Monitor, Smartphone, Send, Loader, Eye, Mail, User, Sparkles } from 
 import { supabase } from '../../../lib/supabase';
 import { personalizeHtml } from '../utils/emailVariables';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function CampaignPreview({ subject, htmlContent, onClose }) {
   const [viewMode, setViewMode] = useState('desktop'); // 'desktop' | 'mobile'
@@ -21,7 +22,7 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
 
   const handleSendTest = async () => {
     if (!testEmail.trim()) {
-      alert('Podaj adres email');
+      toast.error('Podaj adres email');
       return;
     }
 
@@ -42,14 +43,14 @@ export default function CampaignPreview({ subject, htmlContent, onClose }) {
       }
 
       if (data?.success) {
-        alert(`Email testowy wysłany na: ${testEmail}`);
+        toast.success(`Email testowy wysłany na: ${testEmail}`);
         setShowTestForm(false);
       } else {
         throw new Error(data?.error || tr('Nie udało się wysłać'));
       }
     } catch (err) {
       console.error('Error sending test:', err);
-      alert(`Błąd podczas wysyłania testu: ${err.message}`);
+      toast.error(`Błąd podczas wysyłania testu: ${err.message}`);
     } finally {
       setSending(false);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Save, SlidersHorizontal, Settings2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
+import { toast } from '../../../lib/toast';
 
 export default function CustomValuesTab({ member, fields, onGoToDefinitions }) {
   const [values, setValues] = useState({}); // field_key -> value
@@ -49,7 +50,7 @@ export default function CustomValuesTab({ member, fields, onGoToDefinitions }) {
       setDirty(false);
       load();
     } catch (err) {
-      alert('Nie udało się zapisać pól własnych: ' + (err.message || err));
+      toast.error('Nie udało się zapisać pól własnych: ' + (err.message || err));
     } finally {
       setSaving(false);
     }

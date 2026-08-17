@@ -9,6 +9,7 @@ import { STATUS_CONFIG } from '../constants';
 import { useT } from '../../../i18n';
 import { formatPLN } from '../utils/smsEncoding';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 const STATUS_ICON = {
   draft: FileText, scheduled: Clock, sending: Send, sent: CheckCircle,
@@ -25,18 +26,18 @@ export default function CampaignList({ campaigns, onEdit, onNew, onViewStats, on
 
   const handleDelete = async (c) => {
     if (!confirm(`Usunąć kampanię "${c.name}"?`)) return;
-    try { await deleteCampaign(c.id); onRefresh?.(); } catch (e) { alert(e.message); }
+    try { await deleteCampaign(c.id); onRefresh?.(); } catch (e) { toast.error(e.message); }
     setMenuOpen(null);
   };
 
   const handleDuplicate = async (c) => {
-    try { await duplicateCampaign(c.id); onRefresh?.(); } catch (e) { alert(e.message); }
+    try { await duplicateCampaign(c.id); onRefresh?.(); } catch (e) { toast.error(e.message); }
     setMenuOpen(null);
   };
 
   const handleCancel = async (c) => {
     if (!confirm(`Anulować zaplanowaną kampanię "${c.name}"?`)) return;
-    try { await cancelCampaign(c.id); onRefresh?.(); } catch (e) { alert(e.message); }
+    try { await cancelCampaign(c.id); onRefresh?.(); } catch (e) { toast.error(e.message); }
     setMenuOpen(null);
   };
 

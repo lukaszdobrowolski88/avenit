@@ -23,6 +23,7 @@ import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
+import { toast } from '../lib/toast';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -710,7 +711,7 @@ export default function MediaTeamModule() {
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert(tr('Błąd przesyłania pliku: ') + error.message);
+      toast.error(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -736,7 +737,7 @@ export default function MediaTeamModule() {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      alert(tr('Wypełnij wymagane pola'));
+      toast.error(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -773,7 +774,7 @@ export default function MediaTeamModule() {
       fetchFinanceData();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert(tr('Błąd zapisywania: ') + error.message);
+      toast.error(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -866,7 +867,7 @@ export default function MediaTeamModule() {
       fetchComments(taskForm.id);
     } catch (err) {
       console.error('Błąd dodawania komentarza:', err);
-      alert(tr('Nie udało się dodać komentarza'));
+      toast.error(tr('Nie udało się dodać komentarza'));
     }
   };
 
@@ -929,7 +930,7 @@ export default function MediaTeamModule() {
   const saveMember = async () => {
     try {
       if (!memberForm.full_name.trim()) {
-        alert(tr('Imię i nazwisko jest wymagane'));
+        toast.error(tr('Imię i nazwisko jest wymagane'));
         return;
       }
       let memberId = memberForm.id;
@@ -979,7 +980,7 @@ export default function MediaTeamModule() {
       await fetchMediaRoles();
     } catch (err) {
       console.error('Błąd zapisywania członka:', err);
-      alert(tr('Błąd: ') + err.message);
+      toast.error(tr('Błąd: ') + err.message);
     }
   };
 
@@ -1007,7 +1008,7 @@ export default function MediaTeamModule() {
         await fetchData();
       } catch (err) {
         console.error('Błąd usuwania członka:', err);
-        alert(tr('Błąd: ') + err.message);
+        toast.error(tr('Błąd: ') + err.message);
       }
     }
   };
@@ -1015,7 +1016,7 @@ export default function MediaTeamModule() {
   const saveTask = async () => {
     try {
       if (!taskForm.title.trim()) {
-        alert(tr('Tytuł zadania jest wymagany'));
+        toast.error(tr('Tytuł zadania jest wymagany'));
         return;
       }
       const taskData = {
@@ -1042,7 +1043,7 @@ export default function MediaTeamModule() {
       await fetchData();
     } catch (err) {
       console.error('Błąd zapisywania zadania:', err);
-      alert(tr('Błąd: ') + err.message);
+      toast.error(tr('Błąd: ') + err.message);
     }
   };
 
@@ -1054,7 +1055,7 @@ export default function MediaTeamModule() {
         await fetchData();
       } catch (err) {
         console.error('Błąd usuwania zadania:', err);
-        alert(tr('Błąd: ') + err.message);
+        toast.error(tr('Błąd: ') + err.message);
       }
     }
   };

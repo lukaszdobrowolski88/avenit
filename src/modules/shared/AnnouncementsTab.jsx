@@ -3,6 +3,7 @@ import { Plus, Pin, PinOff, Pencil, Trash2, Megaphone, Loader2, X } from 'lucide
 import Modal from '../../components/Modal';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // Gotowy element „Ogłoszenia" — komunikaty z datą i przypięciem. Dane w
 // module_records (collection_key='announcements'), izolowane per moduł.
@@ -13,7 +14,7 @@ function AnnModal({ initial, onClose, onSave }) {
   });
   const [saving, setSaving] = useState(false);
   const submit = async () => {
-    if (!form.title.trim()) { alert(tr('Podaj tytuł ogłoszenia')); return; }
+    if (!form.title.trim()) { toast.error(tr('Podaj tytuł ogłoszenia')); return; }
     setSaving(true); await onSave({ ...form, title: form.title.trim() }); setSaving(false);
   };
   return (

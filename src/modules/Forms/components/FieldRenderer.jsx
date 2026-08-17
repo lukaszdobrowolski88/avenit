@@ -3,6 +3,7 @@ import { Upload, X, File, MapPin, Calendar, Clock, DollarSign, Users, ImageIcon,
 import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function FieldRenderer({
   field,
@@ -24,7 +25,7 @@ export default function FieldRenderer({
 
     for (const file of filesToUpload) {
       if (file.size > maxSize) {
-        alert(`Plik "${file.name}" przekracza maksymalny rozmiar ${field.fileConfig?.maxSize || 10} MB`);
+        toast.error(`Plik "${file.name}" przekracza maksymalny rozmiar ${field.fileConfig?.maxSize || 10} MB`);
         return;
       }
     }
@@ -67,7 +68,7 @@ export default function FieldRenderer({
       }
     } catch (err) {
       console.error('Upload error:', err);
-      alert(tr('Błąd podczas przesyłania pliku'));
+      toast.error(tr('Błąd podczas przesyłania pliku'));
     } finally {
       setUploadProgress(null);
     }
@@ -431,11 +432,11 @@ export default function FieldRenderer({
 
         for (const file of filesToUpload) {
           if (file.size > maxSize) {
-            alert(`Plik "${file.name}" przekracza maksymalny rozmiar ${imageConfig.maxSize || 5} MB`);
+            toast.error(`Plik "${file.name}" przekracza maksymalny rozmiar ${imageConfig.maxSize || 5} MB`);
             return;
           }
           if (!file.type.startsWith('image/')) {
-            alert(`Plik "${file.name}" nie jest obrazem`);
+            toast.error(`Plik "${file.name}" nie jest obrazem`);
             return;
           }
         }
@@ -478,7 +479,7 @@ export default function FieldRenderer({
           }
         } catch (err) {
           console.error('Image upload error:', err);
-          alert(tr('Błąd podczas przesyłania obrazu'));
+          toast.error(tr('Błąd podczas przesyłania obrazu'));
         } finally {
           setUploadProgress(null);
         }

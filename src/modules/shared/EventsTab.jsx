@@ -7,6 +7,7 @@ import TabHeader from '../../components/TabHeader';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -254,7 +255,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
 
   const handleSubmit = async () => {
     if (!form.title.trim()) {
-      alert(tr('Tytuł wydarzenia jest wymagany'));
+      toast.error(tr('Tytuł wydarzenia jest wymagany'));
       return;
     }
 
@@ -451,7 +452,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
         setShowModal(null);
         return;
       }
-      alert(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
     } else {
       setShowModal(null);
       fetchEvents();
@@ -546,7 +547,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
           <button
             onClick={() => {
               navigator.clipboard.writeText(sqlScript);
-              alert('Skopiowano do schowka!');
+              toast.success('Skopiowano do schowka!');
             }}
             className="mt-4 px-4 py-2 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition"
           >

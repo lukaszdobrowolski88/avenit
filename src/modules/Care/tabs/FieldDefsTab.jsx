@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
 import { FIELD_TYPES, fieldTypeLabel, slugifyFieldKey } from '../lib/careApi';
+import { toast } from '../../../lib/toast';
 
 const emptyForm = { label: '', field_type: 'text', optionsText: '' };
 
@@ -25,7 +26,7 @@ export default function FieldDefsTab({ fields, refreshFields }) {
   };
 
   const save = async () => {
-    if (!form.label.trim()) { alert('Podaj etykietę pola.'); return; }
+    if (!form.label.trim()) { toast.error('Podaj etykietę pola.'); return; }
     setSaving(true);
     try {
       const options = form.field_type === 'select'
@@ -56,7 +57,7 @@ export default function FieldDefsTab({ fields, refreshFields }) {
       setModalOpen(false);
       refreshFields();
     } catch (err) {
-      alert('Nie udało się zapisać pola: ' + (err.message || err));
+      toast.error('Nie udało się zapisać pola: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -69,7 +70,7 @@ export default function FieldDefsTab({ fields, refreshFields }) {
       if (error) throw error;
       refreshFields();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 

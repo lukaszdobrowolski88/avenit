@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Users, Receipt, Printer, Download, Search, ArrowLeft, TrendingUp, Calendar } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatMoney, formatDate, memberName, methodLabel, statusLabel } from '../lib/givingApi';
+import { toast } from '../../../lib/toast';
 
 const currentYear = new Date().getFullYear();
 
@@ -101,7 +102,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
     }).sort((a, b) => (a.donation_date || '').localeCompare(b.donation_date || ''));
 
     if (items.length === 0) {
-      alert(`Brak darowizn uprawniających do odpisu PIT dla tej osoby w roku ${currentYear}.`);
+      toast.error(`Brak darowizn uprawniających do odpisu PIT dla tej osoby w roku ${currentYear}.`);
       return;
     }
     const total = items.reduce((s, d) => s + (Number(d.amount) || 0), 0);
@@ -147,7 +148,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
       <script>window.onload=function(){window.print();}</script>
       </body></html>`;
     const w = window.open('', '_blank');
-    if (!w) { alert('Zezwól na wyskakujące okna, aby wydrukować zestawienie.'); return; }
+    if (!w) { toast.info('Zezwól na wyskakujące okna, aby wydrukować zestawienie.'); return; }
     w.document.write(html); w.document.close();
   };
 

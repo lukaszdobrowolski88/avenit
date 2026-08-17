@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase, getCachedUser } from '../../../../lib/supabase';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { tr } from '../../../../i18n';
+import { toast } from '../../../../lib/toast';
 
 export default function SessionManager({ onSessionChange }) {
   const [sessions, setSessions] = useState([]);
@@ -63,7 +64,7 @@ export default function SessionManager({ onSessionChange }) {
       if (onSessionChange) onSessionChange(data);
     } catch (err) {
       console.error('Error creating session:', err);
-      alert(tr('Błąd podczas tworzenia sesji'));
+      toast.error(tr('Błąd podczas tworzenia sesji'));
     }
   };
 
@@ -104,7 +105,7 @@ export default function SessionManager({ onSessionChange }) {
       setSessions(prev => prev.filter(s => s.id !== sessionId));
     } catch (err) {
       console.error('Error deleting session:', err);
-      alert(tr('Błąd podczas usuwania sesji'));
+      toast.error(tr('Błąd podczas usuwania sesji'));
     }
   };
 

@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import Modal from '../../components/Modal';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // Gotowy element „Galeria zdjęć" — upload obrazów + siatka miniatur z podglądem
 // (lightbox). Pliki trafiają do storage (bucket 'materials', ścieżka gallery/<moduleKey>/),
@@ -27,7 +28,7 @@ export default function GalleryTab({ moduleKey, moduleId, tabId, canEdit = true 
         const { data: pub } = supabase.storage.from('materials').getPublicUrl(path);
         await create({ url: pub?.publicUrl || '', storage_path: path, caption: '' });
       } catch (err) {
-        alert(tr('Błąd wgrywania: ') + (err.message || err));
+        toast.error(tr('Błąd wgrywania: ') + (err.message || err));
       }
     }
     setUploading(false);

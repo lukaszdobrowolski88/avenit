@@ -3,6 +3,7 @@ import { Plus, ExternalLink, Pencil, Trash2, Link as LinkIcon, Loader2, X } from
 import Modal from '../../components/Modal';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // Gotowy element „Szybkie linki" — konfigurowalne przyciski/odnośniki (do formularzy,
 // dokumentów, narzędzi). Dane w module_records (collection_key='links'), izolowane per moduł.
@@ -17,7 +18,7 @@ function LinkModal({ initial, onClose, onSave }) {
   const normalizeUrl = (u) => (u && !/^https?:\/\//i.test(u) && !u.startsWith('/') ? `https://${u}` : u);
 
   const submit = async () => {
-    if (!form.label.trim() || !form.url.trim()) { alert(tr('Podaj nazwę i adres linku')); return; }
+    if (!form.label.trim() || !form.url.trim()) { toast.error(tr('Podaj nazwę i adres linku')); return; }
     setSaving(true);
     await onSave({ ...form, label: form.label.trim(), url: normalizeUrl(form.url.trim()) });
     setSaving(false);

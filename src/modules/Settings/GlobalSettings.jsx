@@ -24,6 +24,7 @@ import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // Grupy nawigacji ustawień (menu po lewej).
 const SETTINGS_NAV = [
@@ -433,7 +434,7 @@ export default function GlobalSettings() {
       await supabase.from('app_settings').upsert({ key: 'org_logo_url', value: data.publicUrl }, { onConflict: 'key' });
       fetchData();
       window.location.reload(); 
-    } catch (err) { alert(tr('Błąd uploadu')); }
+    } catch (err) { toast.error(tr('Błąd uploadu')); }
   };
 
   const toggleModule = async (key, currentValue) => {
@@ -444,7 +445,7 @@ export default function GlobalSettings() {
   };
 
   const saveUser = async () => {
-    if (!userForm.email || !userForm.role) return alert('Wymagany Email i Rola');
+    if (!userForm.email || !userForm.role) return toast.error('Wymagany Email i Rola');
 
     setIsCreatingAuthUser(true);
 
@@ -624,7 +625,7 @@ export default function GlobalSettings() {
       setRequire2FA(false);
       fetchData();
     } catch (err) {
-      alert(tr('Błąd zapisu: ') + err.message);
+      toast.error(tr('Błąd zapisu: ') + err.message);
     } finally {
       setIsCreatingAuthUser(false);
     }
@@ -633,7 +634,7 @@ export default function GlobalSettings() {
   const deleteUser = async (id) => {
     const user = users.find(u => u.id === id);
     if (user?.is_super_admin) {
-      return alert(tr('Nie można usunąć superadmina!'));
+      return toast.error(tr('Nie można usunąć superadmina!'));
     }
 
     if(confirm(tr('Usunąć użytkownika? To również usunie jego konto z systemu autentykacji.'))) {
@@ -647,7 +648,7 @@ export default function GlobalSettings() {
         fetchData();
         setMessage({ type: 'success', text: tr('Użytkownik został usunięty') });
       } catch (err) {
-        alert(tr('Błąd usuwania: ') + err.message);
+        toast.error(tr('Błąd usuwania: ') + err.message);
       }
     }
   };

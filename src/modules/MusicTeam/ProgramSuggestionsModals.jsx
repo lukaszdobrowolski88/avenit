@@ -16,6 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 const KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
@@ -113,9 +114,9 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
       }]);
       if (error) {
         if (error.code === '23505') {
-          alert(tr('Ta pieśń jest już przypisana do tego programu.'));
+          toast.error(tr('Ta pieśń jest już przypisana do tego programu.'));
         } else {
-          alert(tr('Błąd zapisu: ') + error.message);
+          toast.error(tr('Błąd zapisu: ') + error.message);
         }
         setSaving(false);
         return;
@@ -123,7 +124,7 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
       onSaved?.();
       onClose();
     } catch (err) {
-      alert(tr('Błąd: ') + err.message);
+      toast.error(tr('Błąd: ') + err.message);
       setSaving(false);
     }
   };
@@ -497,9 +498,9 @@ function ProgramSongsEditor({ program, songs, onBack, onClose }) {
     }]).select().single();
     if (error) {
       if (error.code === '23505') {
-        alert(tr('Ta pieśń jest już przypisana do tego programu.'));
+        toast.error(tr('Ta pieśń jest już przypisana do tego programu.'));
       } else {
-        alert(tr('Błąd: ') + error.message);
+        toast.error(tr('Błąd: ') + error.message);
       }
       return;
     }
