@@ -1,10 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Plus, Pencil, Check } from 'lucide-react';
 import { useBoardsBundle } from '../hooks/useDashboards';
+import { useCan } from '../../../components/Can';
 import { WidgetCard } from './Widgets';
 import WidgetConfigModal from './WidgetConfigModal';
 
 export default function DashboardView({ dashboard, allBoards, onUpdate, onBack }) {
+  // RBAC: edycja układu dashboardu = res:board_dashboards:update (członek ma tylko odczyt).
+  const canEdit = useCan('res:board_dashboards:update');
   const [editing, setEditing] = useState(false);
   const [configWidget, setConfigWidget] = useState(null); // {} nowy | widget istniejący
   const layout = dashboard.layout || [];
@@ -27,16 +30,18 @@ export default function DashboardView({ dashboard, allBoards, onUpdate, onBack }
         {editing && allBoards.length > 0 && (
           <button onClick={() => setConfigWidget({})} className="flex items-center gap-1.5 bg-accent-primary text-white text-sm px-3 py-1.5 rounded-lg"><Plus size={15} /> Widżet</button>
         )}
-        <button onClick={() => setEditing(e => !e)}
-          className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border ${editing ? 'border-accent-primary text-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
-          {editing ? <><Check size={15} /> Gotowe</> : <><Pencil size={15} /> Edytuj</>}
-        </button>
+        {canEdit && (
+          <button onClick={() => setEditing(e => !e)}
+            className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border ${editing ? 'border-accent-primary text-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
+            {editing ? <><Check size={15} /> Gotowe</> : <><Pencil size={15} /> Edytuj</>}
+          </button>
+        )}
       </div>
 
       {layout.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl">
           <p className="text-gray-500 dark:text-gray-400 mb-4">Pusty dashboard. Dodaj pierwszy widżet z danych tablic.</p>
-          {allBoards.length > 0
+          {canEdit && allBoards.length > 0
             ? <button onClick={() => { setEditing(true); setConfigWidget({}); }} className="inline-flex items-center gap-2 bg-accent-primary text-white px-4 py-2 rounded-xl"><Plus size={18} /> Dodaj widżet</button>
             : <p className="text-sm text-gray-400">Najpierw utwórz tablicę z danymi.</p>}
         </div>
