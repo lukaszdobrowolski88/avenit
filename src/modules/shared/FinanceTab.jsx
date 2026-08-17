@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
+import TabHeader from '../../components/TabHeader';
 
 export default function FinanceTab({ ministry, budgetItems = [], expenses = [], onAddExpense, onRefresh }) {
   const t = useT();
@@ -37,18 +38,15 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
 
   return (
     <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Budżet i Wydatki: {ministry}
-        </h2>
+      <TabHeader title={tr('Finanse')} subtitle={`${tr('Budżet i wydatki')}: ${ministry}`} actions={
         <button
           onClick={onAddExpense}
           className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
         >
           <Plus size={18} />
-          Dodaj wydatek
+          {tr('Dodaj wydatek')}
         </button>
-      </div>
+      } />
 
       {budgetItems.length === 0 ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">

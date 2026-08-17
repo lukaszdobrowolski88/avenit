@@ -16,6 +16,7 @@ import RolesTab from '../components/RolesTab';
 import CustomSelect from '../components/CustomSelect';
 import { CampusBadge, useCampusBadge } from '../components/CampusBadge';
 import ResponsiveTabs from '../components/ResponsiveTabs';
+import TabHeader from '../components/TabHeader';
 import PageHeader from '../components/PageHeader';
 import { useUserRole } from '../hooks/useUserRole';
 import { useTabAccess } from '../components/Can';
@@ -1117,9 +1118,7 @@ export default function MediaTeamModule() {
       {/* SEKCJA 1: GRAFIK MEDIA TEAM */}
       {activeTab === 'schedule' && (
       <section data-tour="media-grafik-section" className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 relative z-[50] transition-colors duration-300">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Grafik Media Team</h2>
-        </div>
+        <TabHeader title="Grafik" />
         <ScheduleTable
           programs={programs}
           mediaTeam={team}
@@ -1136,10 +1135,9 @@ export default function MediaTeamModule() {
       )}
       {activeTab === 'members' && (
       <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 relative z-[30] transition-colors duration-300">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Członkowie ({team.length})</h2>
+        <TabHeader title={`Członkowie (${team.length})`} actions={
           <button onClick={() => { setMemberForm({ id: null, full_name: '', role: '', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj członka</button>
-        </div>
+        } />
         <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[700px]">

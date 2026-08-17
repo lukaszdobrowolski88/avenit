@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Plus, Trash2, X, Check, Edit2, Users, ChevronDown } from 'lucide-react';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
+import TabHeader from './TabHeader';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -284,23 +285,21 @@ export default function RolesTab({ teamType, teamMembers, memberTable, onUpdate 
 
   return (
     <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{t('Służby')}</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {tr('Zarządzaj służbami i przypisuj do nich członków zespołu')}
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            setRoleForm({ id: null, name: '', field_key: '', description: '' });
-            setShowRoleModal(true);
-          }}
-          className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
-        >
-          <Plus size={18} /> Dodaj służbę
-        </button>
-      </div>
+      <TabHeader
+        title={t('Służby')}
+        subtitle={tr('Zarządzaj służbami i przypisuj do nich członków zespołu')}
+        actions={
+          <button
+            onClick={() => {
+              setRoleForm({ id: null, name: '', field_key: '', description: '' });
+              setShowRoleModal(true);
+            }}
+            className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
+          >
+            <Plus size={18} /> {tr('Dodaj służbę')}
+          </button>
+        }
+      />
 
       {roles.length === 0 ? (
         <div className="text-center py-12 text-gray-400 dark:text-gray-500">
