@@ -574,7 +574,7 @@ const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
            
            <div className="flex gap-2">
               <button onClick={onClose} className="px-4 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition">{t('Anuluj')}</button>
-              <button onClick={handleSubmit} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center gap-2 shadow-lg shadow-blue-500/30 transition"><Save size={16} /> {t('Zapisz')}</button>
+              <button onClick={handleSubmit} className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:opacity-95 flex items-center gap-2 shadow-md transition"><Save size={16} /> {t('Zapisz')}</button>
            </div>
         </div>
       </div>

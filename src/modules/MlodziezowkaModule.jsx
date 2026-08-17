@@ -22,6 +22,7 @@ import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
+import Spinner from '../components/Spinner';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -1007,7 +1008,7 @@ export default function MlodziezowkaModule() {
                 <button onClick={() => setShowTaskModal(false)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition"><X size={20} className="text-gray-500 dark:text-gray-400"/></button>
               </div>
               <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 custom-scrollbar">
-                {!taskForm.id ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">{t('Zapisz zadanie, aby dodawać komentarze.')}</div> : loadingComments ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm">{t('Ładowanie...')}</div> : comments.length === 0 ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">{t('Brak komentarzy. Bądź pierwszy!')}</div> : comments.map(comment => (
+                {!taskForm.id ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">{t('Zapisz zadanie, aby dodawać komentarze.')}</div> : loadingComments ? <Spinner center /> : comments.length === 0 ? <div className="text-center text-gray-400 dark:text-gray-500 text-sm mt-10">{t('Brak komentarzy. Bądź pierwszy!')}</div> : comments.map(comment => (
                   <div key={comment.id} className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div className="flex justify-between items-start mb-1">
                       <span className="font-bold text-xs text-accent-primary dark:text-accent-secondary-light">{comment.author_name}</span>

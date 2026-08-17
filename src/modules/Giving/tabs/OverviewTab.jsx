@@ -3,6 +3,7 @@ import { TrendingUp, Calendar, Users, Receipt, ArrowRight } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatMoney, formatDate, donorLabel, methodLabel } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 export default function OverviewTab({ funds, membersById, withCampusFilter, onNavigate }) {
   const [donations, setDonations] = useState([]);
@@ -62,7 +63,7 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
     { label: 'Darowizn', value: stats.count, icon: Receipt, tint: 'from-amber-500 to-orange-500' },
   ];
 
-  if (loading) return <div className="p-10 text-center text-gray-400">Ładowanie...</div>;
+  if (loading) return <Spinner center />;
 
   const giveUrl = `${window.location.origin}/give`;
   const copyGiveLink = () => {

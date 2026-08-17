@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { TrendingUp, Calendar, Users, Repeat, BarChart3 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { SESSION_TYPES, sessionTypeLabel, sessionTypeColor, sessionAttendance, weekStart, shortDate } from '../lib/attendanceApi';
+import Spinner from '../../../components/Spinner';
 
 const WEEKS = 12;
 
@@ -114,7 +115,7 @@ export default function TrendsTab({ withCampusFilter }) {
     { label: `Retencja (${stats.last4Count} sesje)`, value: stats.retention, icon: Repeat, tint: 'from-violet-500 to-purple-500' },
   ];
 
-  if (loading) return <div className="p-10 text-center text-gray-400">Ładowanie...</div>;
+  if (loading) return <Spinner center />;
 
   if (sessions.length === 0) {
     return (

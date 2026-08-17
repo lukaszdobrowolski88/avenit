@@ -3,6 +3,7 @@ import { Users, Receipt, Printer, Download, Search, ArrowLeft, TrendingUp, Calen
 import { supabase } from '../../../lib/supabase';
 import { formatMoney, formatDate, memberName, methodLabel, statusLabel } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 const currentYear = new Date().getFullYear();
 
@@ -199,7 +200,7 @@ export default function DonorsTab({ funds, membersById, withCampusFilter }) {
             </div>
             <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
               {loading ? (
-                <div className="p-8 text-center text-gray-400 text-sm">Ładowanie...</div>
+                <Spinner center />
               ) : filtered.length === 0 ? (
                 <div className="p-8 text-center text-gray-400 text-sm">Brak darczyńców.</div>
               ) : (

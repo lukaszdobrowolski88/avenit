@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import { MILESTONE_TYPES, milestoneTypeLabel, formatDate } from '../lib/careApi';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 const MILESTONE_ICONS = {
   'nawrócenie': Flag,
@@ -107,7 +108,7 @@ export default function MilestonesTab({ member, campusIdForInsert, withCampusFil
 
       {/* Lista */}
       {loading ? (
-        <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+        <Spinner center />
       ) : items.length === 0 ? (
         <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
           <Award size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />

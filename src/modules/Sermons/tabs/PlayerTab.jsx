@@ -3,6 +3,7 @@ import { PlayCircle } from 'lucide-react';
 import CustomSelect from '../../../components/CustomSelect';
 import SermonPlayer from '../components/SermonPlayer';
 import { formatDate } from '../lib/sermonsApi';
+import Spinner from '../../../components/Spinner';
 
 export default function PlayerTab({ sermons, loading }) {
   const [selectedId, setSelectedId] = useState('');
@@ -22,7 +23,7 @@ export default function PlayerTab({ sermons, loading }) {
   const selected = useMemo(() => (sermons || []).find(s => s.id === selectedId) || null, [sermons, selectedId]);
 
   if (loading) {
-    return <div className="p-10 text-center text-gray-400">Ładowanie...</div>;
+    return <Spinner center />;
   }
 
   if ((sermons || []).length === 0) {

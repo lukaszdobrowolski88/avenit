@@ -4,6 +4,7 @@ import { supabase, getCachedUser } from '../../../lib/supabase';
 import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 import {
   toLocalInputValue, localInputToIso, formatDateTime, formatTime, formatDuration,
   addWeeks, newUuid, startOfDay,
@@ -264,7 +265,7 @@ export default function BookingsTab({ resources, campusIdForInsert, withCampusFi
       {/* Lista */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+          <Spinner center />
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
             <CalendarClock size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />

@@ -14,6 +14,7 @@ import TagsTab from './tabs/TagsTab';
 import CustomValuesTab from './tabs/CustomValuesTab';
 import FieldDefsTab from './tabs/FieldDefsTab';
 import { memberName, memberInitials } from './lib/careApi';
+import Spinner from '../../components/Spinner';
 
 const VIEW_TABS = [
   { id: 'people', label: 'Kartoteka', icon: Users },
@@ -121,7 +122,7 @@ export default function CareModule() {
               </div>
               <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
                 {membersLoading ? (
-                  <div className="p-8 text-center text-gray-400 text-sm">Ładowanie...</div>
+                  <Spinner center />
                 ) : filtered.length === 0 ? (
                   <div className="p-8 text-center text-gray-400 text-sm">Brak osób.</div>
                 ) : (

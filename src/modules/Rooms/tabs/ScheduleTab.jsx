@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
+import Spinner from '../../../components/Spinner';
 import {
   formatTime, formatDuration, startOfDay, startOfWeek, addDays, rangesOverlap,
 } from '../lib/roomsApi';
@@ -98,7 +99,7 @@ export default function ScheduleTab({ resources, withCampusFilter }) {
       </div>
 
       {loading ? (
-        <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+        <Spinner center />
       ) : (
         <div className={`grid gap-3 ${view === 'week' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-7' : 'grid-cols-1'}`}>
           {days.map((day, i) => {

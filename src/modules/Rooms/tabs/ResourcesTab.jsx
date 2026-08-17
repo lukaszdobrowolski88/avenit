@@ -5,6 +5,7 @@ import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
 import { RESOURCE_TYPES, typeLabel, PRESET_COLORS } from '../lib/roomsApi';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 const emptyForm = { name: '', type: 'room', capacity: '', color: '#3b82f6', location: '', is_active: true };
 
@@ -76,7 +77,7 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {loading && (
-          <div className="col-span-full p-10 text-center text-gray-400">Ładowanie...</div>
+          <Spinner center />
         )}
         {!loading && (resources || []).length === 0 && (
           <div className="col-span-full p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">

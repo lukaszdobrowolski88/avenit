@@ -5,6 +5,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { formatMoney, formatDate, methodLabel, statusLabel, donorLabel, memberName, GIVING_METHODS, GIVING_STATUSES } from '../lib/givingApi';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 const currentYear = new Date().getFullYear();
 
@@ -196,7 +197,7 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
       {/* Lista */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+          <Spinner center />
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
             <Receipt size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />

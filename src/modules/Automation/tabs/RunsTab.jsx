@@ -3,6 +3,7 @@ import { History, RefreshCw, Filter } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import { RUN_STATUSES, statusLabel, formatDateTime, memberName } from '../lib/automationApi';
+import Spinner from '../../../components/Spinner';
 
 export default function RunsTab({ membersById, withCampusFilter }) {
   const [runs, setRuns] = useState([]);
@@ -69,7 +70,7 @@ export default function RunsTab({ membersById, withCampusFilter }) {
 
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+          <Spinner center />
         ) : runs.length === 0 ? (
           <div className="p-12 text-center">
             <History size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />

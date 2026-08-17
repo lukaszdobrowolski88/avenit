@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Podcast, ArrowLeft } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import SermonPlayer from './components/SermonPlayer';
+import Spinner from '../../components/Spinner';
 
 /**
  * Publiczna strona pojedynczego kazania — dostępna bez logowania pod /sermon/:slug.
@@ -59,7 +60,7 @@ export default function SermonPublicPage() {
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-gray-400">Ładowanie...</div>
+          <Spinner center />
         ) : notFound || !sermon ? (
           <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
             <Podcast size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />

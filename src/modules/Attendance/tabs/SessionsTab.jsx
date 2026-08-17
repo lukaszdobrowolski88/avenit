@@ -5,6 +5,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { SESSION_TYPES, sessionTypeLabel, sessionTypeColor, sessionAttendance, memberName, formatDate } from '../lib/attendanceApi';
 import { toast } from '../../../lib/toast';
+import Spinner from '../../../components/Spinner';
 
 const emptyForm = {
   title: '',
@@ -181,7 +182,7 @@ export default function SessionsTab({ members, membersById, campusIdForInsert, w
       {/* Lista */}
       <div data-tour="att-session-list" className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {loading ? (
-          <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+          <Spinner center />
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
             <ClipboardList size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
@@ -420,7 +421,7 @@ function SessionDetail({ session, members, membersById, onBack, onCountChange })
           </div>
           <div data-tour="att-mark" className="max-h-[420px] overflow-y-auto custom-scrollbar">
             {loading ? (
-              <div className="p-10 text-center text-gray-400">Ładowanie...</div>
+              <Spinner center />
             ) : filteredMembers.length === 0 ? (
               <div className="p-10 text-center text-gray-400">Brak członków w bazie dla tego kampusu.</div>
             ) : (
