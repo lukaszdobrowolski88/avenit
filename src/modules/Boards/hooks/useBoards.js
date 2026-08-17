@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { toast } from '../../../lib/toast';
 import { DEFAULT_STATUS_LABELS, GROUP_COLORS, STATUS_COLORS, pickColor, uid } from '../lib/constants';
 
 const ALLOWED_AI_TYPES = new Set(['status', 'priority', 'text', 'long_text', 'number', 'date', 'timeline', 'people', 'dropdown', 'checkbox', 'link', 'rating', 'progress']);
@@ -8,7 +9,9 @@ const ALLOWED_AI_TYPES = new Set(['status', 'priority', 'text', 'long_text', 'nu
 export function useBoards(userEmail, userName) {
   const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setErrorState] = useState(null);
+  // Pokaż każdy błąd użytkownikowi (toast) — koniec cichych awarii przy tworzeniu/usuwaniu tablic.
+  const setError = useCallback((msg) => { setErrorState(msg); if (msg) toast.error(typeof msg === 'string' ? msg : 'Wystąpił błąd'); }, []);
 
   // moduleKey (opcjonalny) — filtruje tablice osadzone w danym module (zakładka board)
   const fetchBoards = useCallback(async (moduleKey = null) => {
