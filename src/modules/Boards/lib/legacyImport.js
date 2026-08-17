@@ -58,6 +58,18 @@ export async function importLegacyTasks({ sourceKind, moduleKey = null, title, u
   if (tagsCol) colIds.tags = await addCol('Etykiety', 'dropdown', { multi: true, options: tagVals.map((t, i) => ({ id: slug(t) || `t${i}`, title: t, color: STATUS_COLORS[i % STATUS_COLORS.length] })) });
   if (descCol) colIds.desc = await addCol('Opis', 'long_text', {});
 
+  // Gdy źródło nie ma ŻADNYCH pól strukturalnych — dodaj domyślny zestaw, by tablica
+  // była od razu użyteczna (inaczej 0 kolumn: pusta „Kolumny", Kalendarz bez daty).
+  if (Object.keys(colIds).length === 0) {
+    colIds.status = await addCol('Status', 'status', { labels: [
+      { id: 'todo', title: 'Do zrobienia', color: '#579bfc' },
+      { id: 'doing', title: 'W toku', color: '#fdab3d' },
+      { id: 'done', title: 'Gotowe', color: '#00c875' },
+    ] });
+    colIds.people = await addCol('Osoby', 'people', {});
+    colIds.due = await addCol('Termin', 'date', {});
+  }
+
   // Grupy = statusy (lub jedna domyślna)
   const groupByStatus = {};
   if (statuses.length) {

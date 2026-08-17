@@ -214,7 +214,7 @@ function ViewTab({ view, active, onSelect, data, canManage, canDelete, onDelete,
         </button>
       )}
       {active && !renaming && canManage && (
-        <Popover align="left" width={185} trigger={<button className="px-1 py-2 text-gray-400 hover:text-gray-600"><MoreHorizontal size={15} /></button>}>
+        <Popover align="left" width={185} triggerClassName="inline-flex" trigger={<button className="px-1 py-2 text-gray-400 hover:text-gray-600"><MoreHorizontal size={15} /></button>}>
           {({ close }) => (
             <div className="p-1.5 text-sm">
               <button onClick={() => { setRenaming(true); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200"><Pencil size={14} /> Zmień nazwę</button>
@@ -233,7 +233,7 @@ function AddViewButton({ onAdd }) {
   // Popover portaluje menu do body — inaczej dropdown był PRZYCINANY przez
   // overflow-x-auto paska zakładek widoków (klik „+" pozornie nic nie robił).
   return (
-    <Popover width={180} trigger={
+    <Popover width={180} triggerClassName="inline-flex" trigger={
       <button className="flex items-center gap-1 px-2 py-2 text-sm text-gray-400 hover:text-accent-primary"><Plus size={15} /></button>
     }>
       {({ close }) => (
