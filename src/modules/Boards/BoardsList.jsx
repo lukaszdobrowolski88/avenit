@@ -84,6 +84,32 @@ function TemplateChooser({ onPick, onClose, busy }) {
   );
 }
 
+// Mały modal z pojedynczym polem tekstowym — zamiennik natywnego prompt().
+function InputModal({ title, label, initial = '', placeholder, onSubmit, onClose }) {
+  const [val, setVal] = useState(initial);
+  const submit = () => onSubmit(val);
+  return (
+    <Modal isOpen className="flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">{title}</h2>
+          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
+        </div>
+        {label && <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</label>}
+        <input autoFocus value={val} onChange={(e) => setVal(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') onClose(); }}
+          placeholder={placeholder}
+          className="w-full text-sm bg-gray-100 dark:bg-gray-700/50 rounded-xl px-3 py-2 outline-none text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-accent-primary/40" />
+        <div className="flex justify-end gap-2 mt-4">
+          <button onClick={onClose} className="text-sm text-gray-500 px-3 py-1.5">{tr('Anuluj')}</button>
+          <button onClick={submit} className="text-sm bg-accent-primary text-white px-4 py-1.5 rounded-lg hover:opacity-90">{tr('Zapisz')}</button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 export default function BoardsList({ userEmail, userName, moduleKey = null, onOpenBoard }) {
   const { boards, loading, fetchBoards, createFromTemplate, createFromSpec, updateBoard, deleteBoard, duplicateBoard } = useBoards(userEmail, userName);
   // RBAC: członek współpracuje na elementach, ale nie tworzy/edytuje/usuwa tablic.
@@ -96,17 +122,20 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState('');
   const [collapsedFolders, setCollapsedFolders] = useState(() => new Set());
+  const [inputModal, setInputModal] = useState(null);
 
   const folders = [...new Set(boards.map(b => b.folder).filter(Boolean))].sort();
   const grouped = [
     ...folders.map(f => ({ folder: f, list: boards.filter(b => b.folder === f) })),
     { folder: null, list: boards.filter(b => !b.folder) },
   ].filter(g => g.list.length > 0);
-  const moveToFolder = (id) => {
-    const name = prompt('Nazwa folderu (puste = bez folderu):', '');
-    if (name === null) return;
-    updateBoard(id, { folder: name.trim() || null });
-  };
+  const moveToFolder = (id, currentFolder) => setInputModal({
+    title: tr('Przenieś do folderu'),
+    label: tr('Nazwa folderu (puste = bez folderu):'),
+    initial: currentFolder || '',
+    placeholder: tr('np. Projekty 2026'),
+    onSubmit: (name) => { updateBoard(id, { folder: name.trim() || null }); setInputModal(null); },
+  });
 
   useEffect(() => { fetchBoards(moduleKey); }, [fetchBoards, moduleKey]);
 
@@ -198,13 +227,19 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
                           }>
                             {({ close }) => (
                               <div className="p-1.5" onClick={(e) => e.stopPropagation()}>
-                                {canUpdate && <button onClick={() => { moveToFolder(b.id); close(); }}
+                                {canUpdate && <button onClick={() => { moveToFolder(b.id, b.folder); close(); }}
                                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><FolderIcon size={14} /> {tr('Przenieś do folderu')}</button>}
                                 {canUpdate && <button onClick={() => { updateBoard(b.id, { visibility: b.visibility === 'private' ? 'workspace' : 'private' }); close(); }}
                                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200">
                                   {b.visibility === 'private' ? <><Globe size={14} /> {tr('Udostępnij zespołowi')}</> : <><Lock size={14} /> {tr('Ustaw jako prywatną')}</>}</button>}
                                 {canUpdate && b.visibility === 'private' && (
-                                  <button onClick={() => { const em = prompt('Edytorzy (e-maile, oddzielone przecinkiem):', (b.editors || []).join(', ')); if (em !== null) updateBoard(b.id, { editors: em.split(',').map(s => s.trim()).filter(Boolean) }); close(); }}
+                                  <button onClick={() => { setInputModal({
+                                      title: tr('Edytorzy'),
+                                      label: tr('E-maile oddzielone przecinkiem'),
+                                      initial: (b.editors || []).join(', '),
+                                      placeholder: 'jan@…, anna@…',
+                                      onSubmit: (em) => { updateBoard(b.id, { editors: em.split(',').map(s => s.trim()).filter(Boolean) }); setInputModal(null); },
+                                    }); close(); }}
                                     className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><UserPlus size={14} /> {tr('Edytorzy')} ({(b.editors || []).length})</button>
                                 )}
                                 {canCreate && <button onClick={() => { duplicateBoard(b.id); close(); }}
@@ -229,6 +264,7 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
       )}
 
       {chooser && <TemplateChooser onPick={handlePick} onClose={() => setChooser(false)} busy={creating} />}
+      {inputModal && <InputModal {...inputModal} onClose={() => setInputModal(null)} />}
     </div>
   );
 }

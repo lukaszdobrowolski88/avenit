@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Zap, Plus, Trash2, Bell, Flag, CalendarPlus, UserPlus, MessageSquarePlus, Sparkles, Loader2 } from 'lucide-react';
 import Modal from '../../../components/Modal';
+import CustomSelect from '../../../components/CustomSelect';
 import { generateAutomationSpec } from '../lib/aiBoards';
 
 const TRIGGERS = [
@@ -134,44 +135,39 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
               {/* Wyzwalacz */}
               <div>
                 <div className="text-xs font-semibold text-gray-500 mb-1">KIEDY</div>
-                <select value={trigger.type} onChange={(e) => setTr({ type: e.target.value, columnId: e.target.value === 'date_arrives' ? dateCols(columns)[0]?.id : statusCols(columns)[0]?.id })}
-                  className="w-full text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-2 outline-none">
-                  {TRIGGERS.map(t => <option key={t.type} value={t.type}>{t.label}</option>)}
-                </select>
+                <CustomSelect compact value={trigger.type}
+                  onChange={(v) => setTr({ type: v, columnId: v === 'date_arrives' ? dateCols(columns)[0]?.id : statusCols(columns)[0]?.id })}
+                  options={TRIGGERS} mapOptionToValue={(t) => t.type} mapOptionToLabel={(t) => t.label} />
                 {trigger.type === 'status_changes_to' && (
                   <div className="flex gap-2 mt-2">
-                    <select value={trigger.columnId} onChange={(e) => setTr({ columnId: e.target.value, value: statusCols(columns).find(c => c.id === e.target.value)?.settings?.labels?.[0]?.id })}
-                      className="flex-1 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none">
-                      {statusCols(columns).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                    <select value={trigger.value} onChange={(e) => setTr({ value: e.target.value })}
-                      className="flex-1 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none">
-                      {(statusCols(columns).find(c => c.id === trigger.columnId)?.settings?.labels || []).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
-                    </select>
+                    <div className="flex-1"><CustomSelect compact value={trigger.columnId}
+                      onChange={(v) => setTr({ columnId: v, value: statusCols(columns).find(c => c.id === v)?.settings?.labels?.[0]?.id })}
+                      options={statusCols(columns)} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} /></div>
+                    <div className="flex-1"><CustomSelect compact value={trigger.value}
+                      onChange={(v) => setTr({ value: v })}
+                      options={statusCols(columns).find(c => c.id === trigger.columnId)?.settings?.labels || []}
+                      mapOptionToValue={(l) => l.id} mapOptionToLabel={(l) => l.title} /></div>
                   </div>
                 )}
                 {(trigger.type === 'column_changes') && (
-                  <select value={trigger.columnId} onChange={(e) => setTr({ columnId: e.target.value })}
-                    className="w-full mt-2 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none">
-                    {columns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <div className="mt-2"><CustomSelect compact value={trigger.columnId}
+                    onChange={(v) => setTr({ columnId: v })}
+                    options={columns} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} /></div>
                 )}
                 {trigger.type === 'date_arrives' && (
-                  <select value={trigger.columnId} onChange={(e) => setTr({ columnId: e.target.value })}
-                    className="w-full mt-2 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none">
-                    {dateCols(columns).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <div className="mt-2"><CustomSelect compact value={trigger.columnId}
+                    onChange={(v) => setTr({ columnId: v })}
+                    options={dateCols(columns)} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} /></div>
                 )}
                 {trigger.type === 'every_period' && (
                   <div className="flex gap-2 mt-2">
-                    <select value={trigger.period || 'daily'} onChange={(e) => setTr({ period: e.target.value })}
-                      className="flex-1 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none">
-                      <option value="daily">Codziennie</option><option value="weekly">Co tydzień</option><option value="monthly">Co miesiąc</option>
-                    </select>
+                    <div className="flex-1"><CustomSelect compact value={trigger.period || 'daily'}
+                      onChange={(v) => setTr({ period: v })}
+                      options={[{ value: 'daily', label: 'Codziennie' }, { value: 'weekly', label: 'Co tydzień' }, { value: 'monthly', label: 'Co miesiąc' }]} /></div>
                     {trigger.period === 'weekly' && (
-                      <select value={trigger.dayOfWeek ?? 1} onChange={(e) => setTr({ dayOfWeek: Number(e.target.value) })} className="flex-1 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 outline-none">
-                        {WEEKDAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}
-                      </select>
+                      <div className="flex-1"><CustomSelect compact value={trigger.dayOfWeek ?? 1}
+                        onChange={(v) => setTr({ dayOfWeek: Number(v) })}
+                        options={WEEKDAYS.map((d, i) => ({ value: i, label: d }))} /></div>
                     )}
                     {trigger.period === 'monthly' && (
                       <input type="number" min={1} max={28} value={trigger.dayOfMonth ?? 1} onChange={(e) => setTr({ dayOfMonth: Number(e.target.value) })}
@@ -188,45 +184,40 @@ export default function AutomationsPanel({ automations, columns, people, onAdd, 
                   {actions.map((a, i) => (
                     <div key={i} className="bg-white dark:bg-gray-700 rounded-lg p-2 border border-gray-200 dark:border-gray-600">
                       <div className="flex items-center gap-2">
-                        <select value={a.type} onChange={(e) => setActType(i, e.target.value)} className="flex-1 text-sm bg-transparent outline-none">
-                          {ACTION_TYPES.map(t => <option key={t.type} value={t.type}>{t.label}</option>)}
-                        </select>
+                        <div className="flex-1"><CustomSelect compact value={a.type} onChange={(v) => setActType(i, v)}
+                          options={ACTION_TYPES} mapOptionToValue={(t) => t.type} mapOptionToLabel={(t) => t.label} /></div>
                         {actions.length > 1 && <button onClick={() => setActions(list => list.filter((_, j) => j !== i))}><X size={14} className="text-gray-400 hover:text-red-500" /></button>}
                       </div>
                       <div className="mt-1.5">
                         {a.type === 'notify' && (
-                          <select value={a.params.targetType} onChange={(e) => setAct(i, { targetType: e.target.value })} className="w-full text-sm bg-gray-100 dark:bg-gray-600/50 rounded px-2 py-1 outline-none">
-                            <option value="assignee">przypisane osoby</option>
-                            <option value="creator">twórcę elementu</option>
-                          </select>
+                          <CustomSelect compact value={a.params.targetType} onChange={(v) => setAct(i, { targetType: v })}
+                            options={[{ value: 'assignee', label: 'przypisane osoby' }, { value: 'creator', label: 'twórcę elementu' }]} />
                         )}
                         {a.type === 'change_status' && (
                           <div className="flex gap-2">
-                            <select value={a.params.columnId} onChange={(e) => setAct(i, { columnId: e.target.value, value: statusCols(columns).find(c => c.id === e.target.value)?.settings?.labels?.[0]?.id })} className="flex-1 text-sm bg-gray-100 dark:bg-gray-600/50 rounded px-2 py-1 outline-none">
-                              {statusCols(columns).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                            <select value={a.params.value} onChange={(e) => setAct(i, { value: e.target.value })} className="flex-1 text-sm bg-gray-100 dark:bg-gray-600/50 rounded px-2 py-1 outline-none">
-                              {(statusCols(columns).find(c => c.id === a.params.columnId)?.settings?.labels || []).map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
-                            </select>
+                            <div className="flex-1"><CustomSelect compact value={a.params.columnId}
+                              onChange={(v) => setAct(i, { columnId: v, value: statusCols(columns).find(c => c.id === v)?.settings?.labels?.[0]?.id })}
+                              options={statusCols(columns)} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} /></div>
+                            <div className="flex-1"><CustomSelect compact value={a.params.value} onChange={(v) => setAct(i, { value: v })}
+                              options={statusCols(columns).find(c => c.id === a.params.columnId)?.settings?.labels || []}
+                              mapOptionToValue={(l) => l.id} mapOptionToLabel={(l) => l.title} /></div>
                           </div>
                         )}
                         {a.type === 'set_date' && (
                           <div className="flex gap-2 items-center">
-                            <select value={a.params.columnId} onChange={(e) => setAct(i, { columnId: e.target.value })} className="flex-1 text-sm bg-gray-100 dark:bg-gray-600/50 rounded px-2 py-1 outline-none">
-                              {dateCols(columns).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                            <span className="text-xs text-gray-500">dziś +</span>
+                            <div className="flex-1"><CustomSelect compact value={a.params.columnId} onChange={(v) => setAct(i, { columnId: v })}
+                              options={dateCols(columns)} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} /></div>
+                            <span className="text-xs text-gray-500 shrink-0">dziś +</span>
                             <input type="number" value={a.params.offsetDays} onChange={(e) => setAct(i, { offsetDays: Number(e.target.value) })} className="w-16 text-sm bg-gray-100 dark:bg-gray-600/50 rounded px-2 py-1 outline-none" />
                           </div>
                         )}
                         {a.type === 'assign_person' && (
                           <div className="flex gap-2">
-                            <select value={a.params.columnId} onChange={(e) => setAct(i, { columnId: e.target.value })} className="flex-1 text-sm bg-gray-100 dark:bg-gray-600/50 rounded px-2 py-1 outline-none">
-                              {peopleCols(columns).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                            </select>
-                            <select value={a.params.email} onChange={(e) => { const p = people.find(x => x.email === e.target.value); setAct(i, { email: p?.email, name: p?.name }); }} className="flex-1 text-sm bg-gray-100 dark:bg-gray-600/50 rounded px-2 py-1 outline-none">
-                              {people.map(p => <option key={p.email} value={p.email}>{p.name}</option>)}
-                            </select>
+                            <div className="flex-1"><CustomSelect compact value={a.params.columnId} onChange={(v) => setAct(i, { columnId: v })}
+                              options={peopleCols(columns)} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} /></div>
+                            <div className="flex-1"><CustomSelect compact value={a.params.email}
+                              onChange={(v) => { const p = people.find(x => x.email === v); setAct(i, { email: p?.email, name: p?.name }); }}
+                              options={people} mapOptionToValue={(p) => p.email} mapOptionToLabel={(p) => p.name} /></div>
                           </div>
                         )}
                         {a.type === 'create_update' && (

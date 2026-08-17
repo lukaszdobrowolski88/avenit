@@ -82,7 +82,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, onAddItem
       </div>
 
       {/* Filtry */}
-      <Popover width={300} trigger={
+      <Popover width={340} trigger={
         <button className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg ${filters.length ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
           <SlidersHorizontal size={14} /> Filtruj {filters.length ? `(${filters.length})` : ''}
         </button>
@@ -96,14 +96,12 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, onAddItem
                 <div key={i} className="flex items-center gap-1.5 mb-2">
                   <span className="text-xs text-gray-500 w-16 truncate">{col.name}</span>
                   {col.type === 'number' && (
-                    <select value={f.op} onChange={(e) => updateFilter(i, { op: e.target.value })} className="text-xs bg-gray-100 dark:bg-gray-700/50 rounded px-1 py-1 outline-none">
-                      <option value="eq">=</option><option value="gt">&gt;</option><option value="lt">&lt;</option>
-                    </select>
+                    <div className="w-14 shrink-0"><CustomSelect compact value={f.op} onChange={(v) => updateFilter(i, { op: v })}
+                      options={[{ value: 'eq', label: '=' }, { value: 'gt', label: '>' }, { value: 'lt', label: '<' }]} /></div>
                   )}
                   {col.type === 'date' && (
-                    <select value={f.op} onChange={(e) => updateFilter(i, { op: e.target.value })} className="text-xs bg-gray-100 dark:bg-gray-700/50 rounded px-1 py-1 outline-none">
-                      <option value="on">=</option><option value="after">po</option><option value="before">przed</option>
-                    </select>
+                    <div className="w-16 shrink-0"><CustomSelect compact value={f.op} onChange={(v) => updateFilter(i, { op: v })}
+                      options={[{ value: 'on', label: '=' }, { value: 'after', label: tr('po') }, { value: 'before', label: tr('przed') }]} /></div>
                   )}
                   <FilterValue column={col} value={f.value} onChange={(v) => updateFilter(i, { value: v })} />
                   <button onClick={() => removeFilter(i)} className="text-gray-400 hover:text-red-500 ml-auto"><X size={14} /></button>
