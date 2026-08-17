@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  DndContext, closestCenter, PointerSensor, useSensor, useSensors,
+  DndContext, closestCorners, PointerSensor, TouchSensor, useSensor, useSensors, useDroppable,
 } from '@dnd-kit/core';
 import {
-  SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
+  SortableContext, verticalListSortingStrategy, useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
@@ -17,6 +17,7 @@ import Popover from '../components/Popover';
 import { useCan } from '../../../components/Can';
 import { summarizeColumn } from '../lib/summaries';
 import { applyView } from '../lib/viewData';
+import { resolveDragEnd } from '../lib/dnd';
 import { GROUP_COLORS } from '../lib/constants';
 
 const HANDLE_W = 28;
@@ -113,20 +114,13 @@ function ItemRow({ item, columns, groupColor, people, me, onCell, onUpdateColumn
 
 // ── Blok grupy ───────────────────────────────────────────────────────
 function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, onOpen, updatesCountByItem, canDeleteItems, canEditStructure, selected, onToggleSelect, expanded, onToggleExpand }) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const groupItems = useMemo(
     () => visibleItems.filter(it => it.group_id === group.id),
     [visibleItems, group.id]
   );
   const collapsed = group.collapsed;
-
-  const onDragEnd = (e) => {
-    const { active, over } = e;
-    if (!over || active.id === over.id) return;
-    const ids = groupItems.map(i => i.id);
-    const next = arrayMove(ids, ids.indexOf(active.id), ids.indexOf(over.id));
-    api.reorderItemsInGroup(group.id, next);
-  };
+  // Strefa upuszczania grupy — pozwala przeciągnąć element także do PUSTEJ grupy (DnD na poziomie tablicy).
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: group.id });
 
   const totalWidth = HANDLE_W + 4 + NAME_MIN + columns.reduce((s, c) => s + (c.width || 160), 0) + ADDCOL_W;
 
@@ -177,8 +171,8 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
               <div className="shrink-0" style={{ width: ADDCOL_W }}>{canEditStructure && <AddColumnMenu onAdd={api.addColumn} />}</div>
             </div>
 
-            {/* Wiersze */}
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            {/* Wiersze — droppable grupy (jeden DndContext jest na poziomie tablicy) */}
+            <div ref={setDropRef} className={isOver ? 'bg-accent-primary/5 transition-colors' : ''}>
               <SortableContext items={groupItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
                 {groupItems.map(it => {
                   const subs = allItems.filter(s => s.parent_item_id === it.id).sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
@@ -199,16 +193,16 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
                   );
                 })}
               </SortableContext>
-            </DndContext>
 
-            {/* Dodaj element */}
-            <div className="flex items-center bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700/60">
-              <div className="shrink-0" style={{ width: HANDLE_W }} />
-              <div className="shrink-0" style={{ width: 4, backgroundColor: group.color, opacity: 0.4 }} />
-              <button onClick={() => api.addItem(group.id)}
-                className="flex items-center gap-1.5 px-2 py-2 text-sm text-gray-400 hover:text-accent-primary" style={{ flex: 1, minWidth: NAME_MIN }}>
-                <Plus size={15} /> Dodaj element
-              </button>
+              {/* Dodaj element */}
+              <div className="flex items-center bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700/60">
+                <div className="shrink-0" style={{ width: HANDLE_W }} />
+                <div className="shrink-0" style={{ width: 4, backgroundColor: group.color, opacity: 0.4 }} />
+                <button onClick={() => api.addItem(group.id)}
+                  className="flex items-center gap-1.5 px-2 py-2 text-sm text-gray-400 hover:text-accent-primary" style={{ flex: 1, minWidth: NAME_MIN }}>
+                  <Plus size={15} /> Dodaj element
+                </button>
+              </div>
             </div>
 
             {/* Podsumowania */}
@@ -278,14 +272,33 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
   const bulkMove = (groupId) => { selected.forEach(id => data.moveItem(id, groupId)); clearSelection(); };
   const bulkDelete = () => { if (confirm(`Usunąć zaznaczone elementy (${selected.size})?`)) { selected.forEach(id => data.deleteItem(id)); clearSelection(); } };
 
+  // ── DnD na poziomie CAŁEJ tablicy (jeden kontekst) → przeciąganie MIĘDZY grupami ──
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
+  );
+  const dragSortActive = (config.sorts?.length || 0) > 0; // przy aktywnym sortowaniu ręczna kolejność nie ma sensu
+
+  const onDragEnd = ({ active, over }) => {
+    const action = resolveDragEnd({
+      activeId: active.id, overId: over?.id ?? null,
+      items, groupIds: sortedGroups.map(g => g.id), visibleItems, sortActive: dragSortActive,
+    });
+    if (!action) return;
+    if (action.type === 'reorder') data.reorderItemsInGroup(action.groupId, action.orderedIds);
+    else data.moveItem(action.itemId, action.toGroup, action.toIndex);
+  };
+
   return (
     <div className="pb-24">
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
       {sortedGroups.map(g => (
         <GroupBlock key={g.id} group={g} columns={columns} visibleItems={visibleItems} allItems={items} people={people} me={data.me}
           api={api} onOpen={onOpenItem} updatesCountByItem={updatesCountByItem}
           canDeleteItems={canDeleteItems} canEditStructure={canEditStructure}
           selected={selected} onToggleSelect={toggleSelect} expanded={expanded} onToggleExpand={toggleExpand} />
       ))}
+      </DndContext>
       {canEditStructure && (
         <button onClick={() => data.addGroup()}
           className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-accent-primary rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/40">
