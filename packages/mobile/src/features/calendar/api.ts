@@ -130,22 +130,23 @@ const fetchGenericEvents = async (
 };
 
 const fetchMinistry = async (
-  table: string,
   source: EventSource,
   fromIso: string,
   toIso: string,
   scope: CampusScope,
 ): Promise<AgendaEvent[]> => {
+  // Wydarzenia modułów służb zunifikowane w module_events (team_type == source dla tych 5).
   const base = supabase
-    .from(table)
-    .select('id, title, description, start_date, end_date, location, campus_id');
+    .from('module_events')
+    .select('id, title, description, start_date, end_date, location, campus_id')
+    .eq('team_type', source);
   const { data, error } = await scope
     .withCampusFilter(base)
     .gte('start_date', fromIso)
     .lte('start_date', toIso)
     .order('start_date', { ascending: true });
   if (error) {
-    console.warn(`[agenda] ${table} skipped:`, error.message);
+    console.warn(`[agenda] module_events(${source}) skipped:`, error.message);
     return [];
   }
   return (data ?? []).flatMap((row: any) => {
@@ -210,7 +211,7 @@ export const useAgenda = (
       const [programs, events, ...ministries] = await Promise.all([
         fetchPrograms(fromIso, toIso, scope),
         fetchGenericEvents(fromIso, toIso, scope),
-        ...MINISTRY_TABLES.map((m) => fetchMinistry(m.table, m.source, fromIso, toIso, scope)),
+        ...MINISTRY_TABLES.map((m) => fetchMinistry(m.source, fromIso, toIso, scope)),
       ]);
 
       const myProgramIds = await fetchMyAssignedProgramIds(userEmail);

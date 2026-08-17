@@ -897,11 +897,7 @@ export default function CalendarModule() {
     const { data: task } = await supabase.from('tasks').select('*');
     const { data: eventsData } = await withCampusFilter(supabase.from('events').select('*'));
     const { data: mlodziezowkaEvents } = await withCampusFilter(supabase.from('mlodziezowka_events').select('*'));
-    const { data: worshipEvents } = await withCampusFilter(supabase.from('worship_events').select('*'));
-    const { data: mediaEvents } = await withCampusFilter(supabase.from('media_events').select('*'));
-    const { data: atmosferaEvents } = await withCampusFilter(supabase.from('atmosfera_events').select('*'));
-    const { data: kidsEvents } = await withCampusFilter(supabase.from('kids_events').select('*'));
-    const { data: homegroupsEvents } = await withCampusFilter(supabase.from('homegroups_events').select('*'));
+    const { data: moduleEvents } = await withCampusFilter(supabase.from('module_events').select('*'));
     const all = [];
 
     prog?.forEach(p => all.push({ id: p.id, type: 'program', team: 'program', title: p.title || tr('Nabożeństwo'), date: new Date(p.date), raw: p }));
@@ -980,116 +976,29 @@ export default function CalendarModule() {
         });
     });
 
-    // Wydarzenia z Zespołu Uwielbienia
-    worshipEvents?.forEach(ev => {
+    // Wydarzenia modułów służb (zunifikowane module_events; dyskryminator team_type)
+    const TEAM_META = {
+      worship:    { emoji: '🎵', team: 'worship',   type: 'worship_event' },
+      media:      { emoji: '🎬', team: 'media',     type: 'media_event' },
+      atmosfera:  { emoji: '💚', team: 'atmosfera', type: 'atmosfera_event' },
+      kids:       { emoji: '👶', team: 'kids',      type: 'kids_event' },
+      homegroups: { emoji: '🏠', team: 'groups',    type: 'homegroups_event' },
+    };
+    moduleEvents?.forEach(ev => {
         if (!ev.start_date) return;
         const d = new Date(ev.start_date);
         if (isNaN(d.getTime())) return;
-
+        const meta = TEAM_META[ev.team_type] || { emoji: '📅', team: ev.team_type || 'module', type: 'module_event' };
         let timeStr = '00:00';
         if (ev.start_date.includes('T')) {
-            const timePart = ev.start_date.split('T')[1];
-            const [h, m] = timePart.split(':');
+            const [h, m] = ev.start_date.split('T')[1].split(':');
             timeStr = `${h}:${m}`;
         }
-
         all.push({
-            id: `worship_${ev.id}`,
-            type: 'worship_event',
-            team: 'worship',
-            title: `🎵 ${ev.title}`,
-            date: d,
-            raw: { ...ev, due_time: timeStr }
-        });
-    });
-
-    // Wydarzenia z Media Team
-    mediaEvents?.forEach(ev => {
-        if (!ev.start_date) return;
-        const d = new Date(ev.start_date);
-        if (isNaN(d.getTime())) return;
-
-        let timeStr = '00:00';
-        if (ev.start_date.includes('T')) {
-            const timePart = ev.start_date.split('T')[1];
-            const [h, m] = timePart.split(':');
-            timeStr = `${h}:${m}`;
-        }
-
-        all.push({
-            id: `media_${ev.id}`,
-            type: 'media_event',
-            team: 'media',
-            title: `🎬 ${ev.title}`,
-            date: d,
-            raw: { ...ev, due_time: timeStr }
-        });
-    });
-
-    // Wydarzenia z Atmosfera Team
-    atmosferaEvents?.forEach(ev => {
-        if (!ev.start_date) return;
-        const d = new Date(ev.start_date);
-        if (isNaN(d.getTime())) return;
-
-        let timeStr = '00:00';
-        if (ev.start_date.includes('T')) {
-            const timePart = ev.start_date.split('T')[1];
-            const [h, m] = timePart.split(':');
-            timeStr = `${h}:${m}`;
-        }
-
-        all.push({
-            id: `atmosfera_${ev.id}`,
-            type: 'atmosfera_event',
-            team: 'atmosfera',
-            title: `💚 ${ev.title}`,
-            date: d,
-            raw: { ...ev, due_time: timeStr }
-        });
-    });
-
-    // Wydarzenia z Małe Avenit (Kids)
-    kidsEvents?.forEach(ev => {
-        if (!ev.start_date) return;
-        const d = new Date(ev.start_date);
-        if (isNaN(d.getTime())) return;
-
-        let timeStr = '00:00';
-        if (ev.start_date.includes('T')) {
-            const timePart = ev.start_date.split('T')[1];
-            const [h, m] = timePart.split(':');
-            timeStr = `${h}:${m}`;
-        }
-
-        all.push({
-            id: `kids_${ev.id}`,
-            type: 'kids_event',
-            team: 'kids',
-            title: `👶 ${ev.title}`,
-            date: d,
-            raw: { ...ev, due_time: timeStr }
-        });
-    });
-
-    // Wydarzenia z Grup Domowych
-    homegroupsEvents?.forEach(ev => {
-        if (!ev.start_date) return;
-        const d = new Date(ev.start_date);
-        if (isNaN(d.getTime())) return;
-
-        let timeStr = '00:00';
-        if (ev.start_date.includes('T')) {
-            const timePart = ev.start_date.split('T')[1];
-            const [h, m] = timePart.split(':');
-            timeStr = `${h}:${m}`;
-        }
-
-        all.push({
-            id: `homegroups_${ev.id}`,
-            type: 'homegroups_event',
-            team: 'groups',
-            title: `🏠 ${ev.title}`,
+            id: `${ev.team_type}_${ev.id}`,
+            type: meta.type,
+            team: meta.team,
+            title: `${meta.emoji} ${ev.title}`,
             date: d,
             raw: { ...ev, due_time: timeStr }
         });
@@ -1189,10 +1098,10 @@ export default function CalendarModule() {
   const handleSaveWorshipEvent = async (id, eventData) => {
     let error = null;
     if (id) {
-      const { error: e } = await supabase.from('worship_events').update(eventData).eq('id', id);
+      const { error: e } = await supabase.from('module_events').update(eventData).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('worship_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
+      const { error: e } = await supabase.from('module_events').insert([{ ...eventData, team_type: 'worship', campus_id: campusIdForInsert }]);
       error = e;
     }
     if (error) {
@@ -1205,7 +1114,7 @@ export default function CalendarModule() {
 
   const handleDeleteWorshipEvent = async (id) => {
     if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('worship_events').delete().eq('id', id);
+      await supabase.from('module_events').delete().eq('id', id);
       setModals({...modals, worshipEvent: null});
       fetchEvents();
     }
@@ -1215,10 +1124,10 @@ export default function CalendarModule() {
   const handleSaveMediaEvent = async (id, eventData) => {
     let error = null;
     if (id) {
-      const { error: e } = await supabase.from('media_events').update(eventData).eq('id', id);
+      const { error: e } = await supabase.from('module_events').update(eventData).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('media_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
+      const { error: e } = await supabase.from('module_events').insert([{ ...eventData, team_type: 'media', campus_id: campusIdForInsert }]);
       error = e;
     }
     if (error) {
@@ -1231,7 +1140,7 @@ export default function CalendarModule() {
 
   const handleDeleteMediaEvent = async (id) => {
     if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('media_events').delete().eq('id', id);
+      await supabase.from('module_events').delete().eq('id', id);
       setModals({...modals, mediaEvent: null});
       fetchEvents();
     }
@@ -1241,10 +1150,10 @@ export default function CalendarModule() {
   const handleSaveAtmosferaEvent = async (id, eventData) => {
     let error = null;
     if (id) {
-      const { error: e } = await supabase.from('atmosfera_events').update(eventData).eq('id', id);
+      const { error: e } = await supabase.from('module_events').update(eventData).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('atmosfera_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
+      const { error: e } = await supabase.from('module_events').insert([{ ...eventData, team_type: 'atmosfera', campus_id: campusIdForInsert }]);
       error = e;
     }
     if (error) {
@@ -1257,7 +1166,7 @@ export default function CalendarModule() {
 
   const handleDeleteAtmosferaEvent = async (id) => {
     if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('atmosfera_events').delete().eq('id', id);
+      await supabase.from('module_events').delete().eq('id', id);
       setModals({...modals, atmosferaEvent: null});
       fetchEvents();
     }
@@ -1267,10 +1176,10 @@ export default function CalendarModule() {
   const handleSaveKidsEvent = async (id, eventData) => {
     let error = null;
     if (id) {
-      const { error: e } = await supabase.from('kids_events').update(eventData).eq('id', id);
+      const { error: e } = await supabase.from('module_events').update(eventData).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('kids_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
+      const { error: e } = await supabase.from('module_events').insert([{ ...eventData, team_type: 'kids', campus_id: campusIdForInsert }]);
       error = e;
     }
     if (error) {
@@ -1283,7 +1192,7 @@ export default function CalendarModule() {
 
   const handleDeleteKidsEvent = async (id) => {
     if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('kids_events').delete().eq('id', id);
+      await supabase.from('module_events').delete().eq('id', id);
       setModals({...modals, kidsEvent: null});
       fetchEvents();
     }
@@ -1293,10 +1202,10 @@ export default function CalendarModule() {
   const handleSaveHomegroupsEvent = async (id, eventData) => {
     let error = null;
     if (id) {
-      const { error: e } = await supabase.from('homegroups_events').update(eventData).eq('id', id);
+      const { error: e } = await supabase.from('module_events').update(eventData).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('homegroups_events').insert([{ ...eventData, campus_id: campusIdForInsert }]);
+      const { error: e } = await supabase.from('module_events').insert([{ ...eventData, team_type: 'homegroups', campus_id: campusIdForInsert }]);
       error = e;
     }
     if (error) {
@@ -1309,7 +1218,7 @@ export default function CalendarModule() {
 
   const handleDeleteHomegroupsEvent = async (id) => {
     if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from('homegroups_events').delete().eq('id', id);
+      await supabase.from('module_events').delete().eq('id', id);
       setModals({...modals, homegroupsEvent: null});
       fetchEvents();
     }

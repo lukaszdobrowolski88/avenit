@@ -65,6 +65,9 @@ export const REGISTRY = {
   schedule_assignments: T('module:programs'),
   events: T('module:calendar'),
   ministry_events: T('module:calendar'),
+  // Zunifikowane wydarzenia modułów służb (team_type). Widoczne w kalendarzu dla
+  // wszystkich (jak events), zapis przez EventsTab modułu; scoping po team_type w kliencie.
+  module_events: T(null),
   // Zapisy (RSVP) — każdy zalogowany może zapisać/wypisać siebie (jak notifications/user_presence).
   event_registrations: T(null),
   tasks: T('module:calendar'),
