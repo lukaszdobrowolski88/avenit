@@ -28,7 +28,7 @@ export const MINISTRY_META: Record<MinistryKey, MinistryMeta> = {
     bg: '#fce7f3',
     gradFrom: '#ec4899',
     gradTo: '#f97316',
-    eventsTable: 'worship_events',
+    eventsTable: 'module_events',
     teamType: 'worship',
   },
   media: {
@@ -40,7 +40,7 @@ export const MINISTRY_META: Record<MinistryKey, MinistryMeta> = {
     bg: '#ffedd5',
     gradFrom: '#f97316',
     gradTo: '#facc15',
-    eventsTable: 'media_events',
+    eventsTable: 'module_events',
     teamType: 'media',
   },
   atmosfera: {
@@ -52,7 +52,7 @@ export const MINISTRY_META: Record<MinistryKey, MinistryMeta> = {
     bg: '#ccfbf1',
     gradFrom: '#14b8a6',
     gradTo: '#06b6d4',
-    eventsTable: 'atmosfera_events',
+    eventsTable: 'module_events',
     teamType: 'atmosfera',
   },
   kids: {
@@ -64,7 +64,7 @@ export const MINISTRY_META: Record<MinistryKey, MinistryMeta> = {
     bg: '#fef3c7',
     gradFrom: '#eab308',
     gradTo: '#f59e0b',
-    eventsTable: 'kids_events',
+    eventsTable: 'module_events',
     teamType: 'kids',
   },
   mlodziezowka: {
@@ -289,7 +289,8 @@ export const useMinistryEvents = (
   return useQuery({
     queryKey: ['teams', 'events', ministry, selectedCampusId],
     queryFn: async (): Promise<MinistryEvent[]> => {
-      const base = supabase.from(meta.eventsTable).select('*');
+      let base: any = supabase.from(meta.eventsTable).select('*');
+      if (meta.teamType) base = base.eq('team_type', meta.teamType); // module_events (nie mlodziezowka)
       const { data, error } = await withCampusFilter(base)
         .gte('start_date', new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString())
         .order('start_date', { ascending: true })
@@ -325,6 +326,7 @@ export const useCreateMinistryEvent = (
         location: input.location,
         created_by: input.authorEmail,
         campus_id: campusIdForInsert,
+        ...(meta.teamType ? { team_type: meta.teamType } : {}), // module_events wymaga team_type
       });
       if (error) throw error;
     },

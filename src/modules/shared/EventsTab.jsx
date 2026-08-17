@@ -143,7 +143,7 @@ const CustomDatePicker = ({ label, value, onChange }) => {
 // hookowego `t` z useT() (nie istnieje w tym zasięgu → ReferenceError, biały ekran).
 const MINISTRY_CONFIG = {
   worship: {
-    tableName: 'worship_events',
+    tableName: 'module_events', teamType: 'worship',
     icon: '🎵',
     title: tr('Zespół Uwielbienia'),
     defaultType: 'proba',
@@ -157,7 +157,7 @@ const MINISTRY_CONFIG = {
     color: 'purple'
   },
   media: {
-    tableName: 'media_events',
+    tableName: 'module_events', teamType: 'media',
     icon: '🎬',
     title: 'Media Team',
     defaultType: 'produkcja',
@@ -170,7 +170,7 @@ const MINISTRY_CONFIG = {
     color: 'orange'
   },
   atmosfera: {
-    tableName: 'atmosfera_events',
+    tableName: 'module_events', teamType: 'atmosfera',
     icon: '💚',
     title: 'Atmosfera Team',
     defaultType: 'spotkanie',
@@ -183,7 +183,7 @@ const MINISTRY_CONFIG = {
     color: 'teal'
   },
   kids: {
-    tableName: 'kids_events',
+    tableName: 'module_events', teamType: 'kids',
     icon: '👶',
     title: tr('Małe Avenit'),
     defaultType: 'zajecia',
@@ -197,7 +197,7 @@ const MINISTRY_CONFIG = {
     color: 'yellow'
   },
   homegroups: {
-    tableName: 'homegroups_events',
+    tableName: 'module_events', teamType: 'homegroups',
     icon: '🏠',
     title: 'Grupy Domowe',
     defaultType: 'spotkanie',
@@ -221,7 +221,7 @@ function getModuleConfig(ministry) {
 
   // Dla niestandardowych modułów - użyj domyślnej konfiguracji z dynamiczną nazwą tabeli
   return {
-    tableName: `custom_${ministry}_events`,
+    tableName: 'module_events', teamType: ministry,
     icon: '📅',
     title: 'Wydarzenia',
     defaultType: 'spotkanie',
@@ -391,6 +391,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
       const { data, error } = await withCampusFilter(supabase
         .from(config.tableName)
         .select('*'))
+        .eq('team_type', config.teamType)
         .gte('start_date', todayISO)
         .order('start_date', { ascending: true });
 
@@ -429,6 +430,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     } else {
       const { error: e } = await supabase.from(config.tableName).insert([{
         ...eventData,
+        team_type: config.teamType,
         created_by: userEmail,
         campus_id: campusIdForInsert
       }]);
