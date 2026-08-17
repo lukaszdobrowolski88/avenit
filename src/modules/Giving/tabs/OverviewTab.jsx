@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { TrendingUp, Calendar, Users, Receipt, ArrowRight } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatMoney, formatDate, donorLabel, methodLabel } from '../lib/givingApi';
+import { toast } from '../../../lib/toast';
 
 export default function OverviewTab({ funds, membersById, withCampusFilter, onNavigate }) {
   const [donations, setDonations] = useState([]);
@@ -65,7 +66,7 @@ export default function OverviewTab({ funds, membersById, withCampusFilter, onNa
 
   const giveUrl = `${window.location.origin}/give`;
   const copyGiveLink = () => {
-    try { navigator.clipboard.writeText(giveUrl); alert('Skopiowano link do dawania online.'); }
+    try { navigator.clipboard.writeText(giveUrl); toast.success('Skopiowano link do dawania online.'); }
     catch { window.prompt('Link do dawania online:', giveUrl); }
   };
 

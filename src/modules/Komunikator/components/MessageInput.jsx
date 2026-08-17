@@ -5,6 +5,7 @@ import { formatFileSize, isImageFile } from '../utils/messageHelpers';
 import AudioRecorder from './AudioRecorder';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabled = false, placeholder = tr('Napisz wiadomość...'), replyingTo = null, onCancelReply }, ref) {
   const t = useT();
@@ -69,7 +70,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
 
     // Limit 10 plików
     if (attachments.length + fileArray.length > 10) {
-      alert(t('Maksymalnie 10 załączników na wiadomość'));
+      toast.error(t('Maksymalnie 10 załączników na wiadomość'));
       return;
     }
 
@@ -85,7 +86,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
 
         // Limit 10MB
         if (file.size > 10 * 1024 * 1024) {
-          alert(`Plik "${file.name}" przekracza limit 10MB`);
+          toast.error(`Plik "${file.name}" przekracza limit 10MB`);
           continue;
         }
 
@@ -119,7 +120,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
       setAttachments(prev => [...prev, ...uploadedFiles]);
     } catch (err) {
       console.error('Error uploading files:', err);
-      alert(t('Błąd podczas przesyłania plików'));
+      toast.error(t('Błąd podczas przesyłania plików'));
     } finally {
       setUploading(false);
       setUploadProgress(0);

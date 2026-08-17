@@ -3,6 +3,7 @@ import { Plus, Trash2, Award, Flag, Droplets, BadgeCheck, Heart, Star } from 'lu
 import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import { MILESTONE_TYPES, milestoneTypeLabel, formatDate } from '../lib/careApi';
+import { toast } from '../../../lib/toast';
 
 const MILESTONE_ICONS = {
   'nawrócenie': Flag,
@@ -62,7 +63,7 @@ export default function MilestonesTab({ member, campusIdForInsert, withCampusFil
       setForm(emptyForm());
       load();
     } catch (err) {
-      alert('Nie udało się zapisać kamienia milowego: ' + (err.message || err));
+      toast.error('Nie udało się zapisać kamienia milowego: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -75,7 +76,7 @@ export default function MilestonesTab({ member, campusIdForInsert, withCampusFil
       if (error) throw error;
       load();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 

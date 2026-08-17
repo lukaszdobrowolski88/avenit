@@ -11,6 +11,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function InvoicesList() {
   const [invoices, setInvoices] = useState([]);
@@ -42,7 +43,7 @@ export default function InvoicesList() {
       await redirectToPayment(invoiceId);
     } catch (err) {
       console.error('Error initiating payment:', err);
-      alert(tr('Wystąpił błąd podczas inicjowania płatności. Spróbuj ponownie.'));
+      toast.error(tr('Wystąpił błąd podczas inicjowania płatności. Spróbuj ponownie.'));
     } finally {
       setPayingInvoice(null);
     }
@@ -53,7 +54,7 @@ export default function InvoicesList() {
     if (pdfUrl) {
       window.open(pdfUrl, '_blank');
     } else {
-      alert(tr('PDF faktury nie jest jeszcze dostępny.'));
+      toast.error(tr('PDF faktury nie jest jeszcze dostępny.'));
     }
   };
 

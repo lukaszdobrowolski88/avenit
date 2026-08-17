@@ -5,6 +5,7 @@ import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { slugify, formatDate, parseVideo } from '../lib/sermonsApi';
 import { bibleUrl } from '../lib/bible';
+import { toast } from '../../../lib/toast';
 
 const emptyForm = {
   title: '', speaker: '', series: '', sermon_date: new Date().toISOString().slice(0, 10),
@@ -72,7 +73,7 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
   };
 
   const save = async () => {
-    if (!form.title.trim()) { alert('Podaj tytuł kazania.'); return; }
+    if (!form.title.trim()) { toast.error('Podaj tytuł kazania.'); return; }
     setSaving(true);
     try {
       const user = await getCachedUser();
@@ -103,7 +104,7 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
       refresh();
     } catch (err) {
       console.error('Save sermon error:', err);
-      alert('Nie udało się zapisać kazania: ' + (err.message || err));
+      toast.error('Nie udało się zapisać kazania: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -116,12 +117,12 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
       if (error) throw error;
       refresh();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 
   const copyPublicLink = async (item) => {
-    if (!item.slug) { alert('To kazanie nie ma jeszcze slugu — otwórz edycję i zapisz, aby go wygenerować.'); return; }
+    if (!item.slug) { toast.error('To kazanie nie ma jeszcze slugu — otwórz edycję i zapisz, aby go wygenerować.'); return; }
     const url = `${window.location.origin}/sermon/${item.slug}`;
     try {
       await navigator.clipboard.writeText(url);

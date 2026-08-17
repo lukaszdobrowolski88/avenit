@@ -21,6 +21,7 @@ import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -167,7 +168,7 @@ export default function HomeGroupsModule() {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.description || !expenseForm.responsible_person) {
-      alert(tr('Wypełnij wymagane pola'));
+      toast.error(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -204,7 +205,7 @@ export default function HomeGroupsModule() {
       fetchFinanceData();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert(tr('Błąd zapisywania: ') + error.message);
+      toast.error(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -224,7 +225,7 @@ export default function HomeGroupsModule() {
       if (tasksRes.data) setTasks(tasksRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
-      alert(tr('Błąd pobierania danych: ') + error.message);
+      toast.error(tr('Błąd pobierania danych: ') + error.message);
     } finally {
       setLoading(false);
     }
@@ -232,7 +233,7 @@ export default function HomeGroupsModule() {
 
   const handleSaveGroup = async () => {
     if (!groupForm.name?.trim()) {
-      alert(tr('Podaj nazwę grupy'));
+      toast.error(tr('Podaj nazwę grupy'));
       return;
     }
 
@@ -267,13 +268,13 @@ export default function HomeGroupsModule() {
       closeModal();
     } catch (error) {
       console.error('Error saving group:', error);
-      alert(tr('Błąd zapisywania grupy: ') + error.message);
+      toast.error(tr('Błąd zapisywania grupy: ') + error.message);
     }
   };
 
   const handleSavePerson = async (type) => {
     if (!personForm.full_name?.trim()) {
-      alert(tr('Podaj imię i nazwisko'));
+      toast.error(tr('Podaj imię i nazwisko'));
       return;
     }
 
@@ -307,7 +308,7 @@ export default function HomeGroupsModule() {
       closeModal();
     } catch (error) {
       console.error('Error saving person:', error);
-      alert(tr('Błąd zapisywania: ') + error.message);
+      toast.error(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -328,7 +329,7 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (error) {
       console.error('Error deleting:', error);
-      alert(tr('Błąd usuwania: ') + error.message);
+      toast.error(tr('Błąd usuwania: ') + error.message);
     }
   };
 
@@ -407,7 +408,7 @@ export default function HomeGroupsModule() {
 
   const saveTask = async () => {
     if (!taskForm.title?.trim()) {
-      alert(tr('Tytuł zadania jest wymagany'));
+      toast.error(tr('Tytuł zadania jest wymagany'));
       return;
     }
 
@@ -436,7 +437,7 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd zapisywania zadania:', err);
-      alert(tr('Błąd zapisywania zadania: ') + err.message);
+      toast.error(tr('Błąd zapisywania zadania: ') + err.message);
     }
   };
 
@@ -449,7 +450,7 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd usuwania zadania:', err);
-      alert(tr('Błąd usuwania zadania: ') + err.message);
+      toast.error(tr('Błąd usuwania zadania: ') + err.message);
     }
   };
 
@@ -538,7 +539,7 @@ export default function HomeGroupsModule() {
       fetchTaskComments(taskForm.id);
     } catch (err) {
       console.error('Błąd dodawania komentarza:', err);
-      alert(tr('Błąd dodawania komentarza: ') + err.message);
+      toast.error(tr('Błąd dodawania komentarza: ') + err.message);
     }
   };
 
@@ -556,7 +557,7 @@ export default function HomeGroupsModule() {
   // Members modal functions
   const attachMemberToGroup = async () => {
     if (!attachMemberId) {
-      alert(tr('Wybierz członka'));
+      toast.info(tr('Wybierz członka'));
       return;
     }
 
@@ -571,7 +572,7 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd dodawania członka:', err);
-      alert(tr('Błąd dodawania członka: ') + err.message);
+      toast.error(tr('Błąd dodawania członka: ') + err.message);
     }
   };
 
@@ -588,14 +589,14 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd odłączania członka:', err);
-      alert(tr('Błąd odłączania członka: ') + err.message);
+      toast.error(tr('Błąd odłączania członka: ') + err.message);
     }
   };
 
   // Materials functions
   const addMaterial = async () => {
     if (!materialForm.title?.trim()) {
-      alert(tr('Podaj nazwę materiału'));
+      toast.error(tr('Podaj nazwę materiału'));
       return;
     }
 
@@ -638,7 +639,7 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd dodawania materiału:', err);
-      alert(tr('Błąd dodawania materiału: ') + err.message);
+      toast.error(tr('Błąd dodawania materiału: ') + err.message);
     } finally {
       setUploading(false);
     }
@@ -659,7 +660,7 @@ export default function HomeGroupsModule() {
       fetchData();
     } catch (err) {
       console.error('Błąd usuwania materiału:', err);
-      alert(tr('Błąd usuwania materiału: ') + err.message);
+      toast.error(tr('Błąd usuwania materiału: ') + err.message);
     }
   };
 

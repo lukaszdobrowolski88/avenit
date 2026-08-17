@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useRecipientsSource, ROLE_OPTIONS, normalizePhone } from '../../shared/recipients';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 const SEGMENT_GROUPS = [
   { id: 'all', label: tr('Wszyscy'), icon: Users },
@@ -75,7 +76,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
       if (norm) valid.push(norm); else invalid.push(raw);
     });
     if (!valid.length) {
-      alert(`Brak poprawnych numerów. Niepoprawne: ${invalid.join(', ')}`);
+      toast.error(`Brak poprawnych numerów. Niepoprawne: ${invalid.join(', ')}`);
       return;
     }
     const set = new Set(customPhones);
@@ -84,7 +85,7 @@ export default function RecipientSelector({ segments = [], onChange }) {
     next.push({ type: 'custom_phone', id: 'custom_phone', name: 'Numery telefonów', phones: Array.from(set), exclude: false });
     onChange(next);
     setPhonesInput('');
-    if (invalid.length) alert(`Pominięto niepoprawne: ${invalid.join(', ')}`);
+    if (invalid.length) toast.error(`Pominięto niepoprawne: ${invalid.join(', ')}`);
   };
 
   const removeCustomPhone = (phone) => {

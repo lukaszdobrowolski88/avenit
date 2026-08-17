@@ -13,6 +13,7 @@ import ScheduleControl from './ScheduleControl';
 import PushPreview from './PushPreview';
 import { tr } from '../../../i18n';
 import { useCan } from '../../../components/Can';
+import { toast } from '../../../lib/toast';
 
 const SECTIONS = [
   { id: 'compose', label: tr('Treść') },
@@ -92,7 +93,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const handleSaveDraft = async () => {
     const err = validate();
-    if (err) { alert(err); return; }
+    if (err) { toast.error(err); return; }
     setSaving(true);
     try {
       if (campaign?.id) {
@@ -102,7 +103,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       }
       onClose?.();
     } catch (e) {
-      alert(`Błąd zapisu: ${e.message}`);
+      toast.error(`Błąd zapisu: ${e.message}`);
     } finally {
       setSaving(false);
     }
@@ -110,7 +111,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const handleSchedule = async () => {
     const err = validate();
-    if (err) { alert(err); return; }
+    if (err) { toast.error(err); return; }
     if (recipientCount === 0) {
       if (!confirm(tr('Brak odbiorców pasujących do segmentów. Zapisać mimo to?'))) return;
     }
@@ -124,7 +125,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       }
       onClose?.();
     } catch (e) {
-      alert(`Błąd: ${e.message}`);
+      toast.error(`Błąd: ${e.message}`);
     } finally {
       setSaving(false);
     }
@@ -132,8 +133,8 @@ export default function CampaignEditor({ campaign, template, onClose }) {
 
   const handleSendNow = async () => {
     const err = validate();
-    if (err) { alert(err); return; }
-    if (recipientCount === 0) { alert(tr('Brak odbiorców')); return; }
+    if (err) { toast.error(err); return; }
+    if (recipientCount === 0) { toast.error(tr('Brak odbiorców')); return; }
     if (!confirm(`Wysłać kampanię do ${recipientCount} odbiorców?`)) return;
 
     setSending(true);
@@ -148,7 +149,7 @@ export default function CampaignEditor({ campaign, template, onClose }) {
       await dispatchCampaign(id);
       onClose?.();
     } catch (e) {
-      alert(`Błąd wysyłki: ${e.message}`);
+      toast.error(`Błąd wysyłki: ${e.message}`);
     } finally {
       setSending(false);
     }
@@ -174,10 +175,10 @@ export default function CampaignEditor({ campaign, template, onClose }) {
         actions,
         data: { ...form.data, test: true },
       });
-      alert(`Test wysłany do ${testEmail}`);
+      toast.success(`Test wysłany do ${testEmail}`);
       setShowTestSend(false);
     } catch (e) {
-      alert(`Błąd: ${e.message}`);
+      toast.error(`Błąd: ${e.message}`);
     } finally {
       setSending(false);
     }

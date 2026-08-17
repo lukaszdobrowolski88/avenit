@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Heart, Clock, Lock, Star, Sparkles, HeartHandshake, XCircle, UserPlus, X, Ghost, User, UserX, Loader2, CheckCircle, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 const CATEGORIES = {
   zdrowie: { label: tr('Zdrowie'), color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: '❤️' },
@@ -534,7 +535,7 @@ export default function MyPrayersWidget({ prayers, userEmail, onRefresh, size = 
       onRefresh?.();
     } catch (err) {
       console.error('Error saving prayer:', err);
-      alert(tr('Błąd zapisu: ') + err.message);
+      toast.error(tr('Błąd zapisu: ') + err.message);
     } finally {
       setIsSubmitting(false);
     }

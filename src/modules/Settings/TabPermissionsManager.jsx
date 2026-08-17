@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // Definicja modułów i ich zakładek
 const MODULE_TABS = {
@@ -150,7 +151,7 @@ export function hasTabAccess(module, tab, userRole) {
 
     // W przeglądarce nie możemy bezpośrednio zapisać pliku,
     // więc pokazujemy komunikat, że zmiany wymagają restartu
-    alert(tr('Uprawnienia zaktualizowane. Odśwież stronę, aby zmiany weszły w życie.'));
+    toast.error(tr('Uprawnienia zaktualizowane. Odśwież stronę, aby zmiany weszły w życie.'));
     window.location.reload();
   };
 

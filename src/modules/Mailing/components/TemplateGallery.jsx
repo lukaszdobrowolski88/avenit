@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTemplates, TEMPLATE_CATEGORIES } from '../hooks/useTemplates';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 const CATEGORY_ICONS = {
   general: FileText,
@@ -76,7 +77,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
 
   const handleDelete = async (template) => {
     if (template.is_system) {
-      alert(tr('Nie można usunąć szablonu systemowego'));
+      toast.error(tr('Nie można usunąć szablonu systemowego'));
       return;
     }
     if (!confirm(`Czy na pewno chcesz usunąć szablon "${template.name}"?`)) return;
@@ -84,7 +85,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
     try {
       await deleteTemplate(template.id);
     } catch (err) {
-      alert(tr('Błąd podczas usuwania szablonu'));
+      toast.error(tr('Błąd podczas usuwania szablonu'));
     }
     setMenuOpen(null);
   };
@@ -93,7 +94,7 @@ export default function TemplateGallery({ onSelectTemplate, onEditTemplate, onCr
     try {
       await duplicateTemplate(template.id);
     } catch (err) {
-      alert(tr('Błąd podczas duplikowania szablonu'));
+      toast.error(tr('Błąd podczas duplikowania szablonu'));
     }
     setMenuOpen(null);
   };

@@ -13,6 +13,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // --- MODAL OSTRZEŻENIA O NIEZAPISANYCH ZMIANACH ---
 
@@ -1278,7 +1279,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
       onClose();
     } catch (error) {
       console.error('Błąd usuwania programu:', error);
-      alert(tr('Wystąpił błąd podczas usuwania nabożeństwa.'));
+      toast.error(tr('Wystąpił błąd podczas usuwania nabożeństwa.'));
     }
   };
 
@@ -1381,7 +1382,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
 
   const handleSaveAndUploadPDF = async (songPagesMode = 'lyrics') => {
     if (!program || !program.date) {
-      alert(tr('Najpierw wybierz datę programu.'));
+      toast.info(tr('Najpierw wybierz datę programu.'));
       return;
     }
 
@@ -1406,13 +1407,13 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
       const result = await savePDFToSupabase(program, freshSongsMap, teamRolesForPDF, songPagesMode);
 
       if (result.success) {
-        alert(tr('PDF został pobrany i zapisany w chmurze!'));
+        toast.error(tr('PDF został pobrany i zapisany w chmurze!'));
       } else {
-        alert(tr('PDF pobrany na dysk, ale wystąpił błąd zapisu w chmurze.'));
+        toast.error(tr('PDF pobrany na dysk, ale wystąpił błąd zapisu w chmurze.'));
       }
     } catch (error) {
       console.error('Critical error saving PDF:', error);
-      alert(tr('Wystąpił błąd podczas generowania PDF.'));
+      toast.error(tr('Wystąpił błąd podczas generowania PDF.'));
     } finally {
       setIsLoading(false);
     }
@@ -1429,7 +1430,7 @@ export default function ProgramEditorModal({ programId, onClose, onSave, onDelet
       await generatePPT(program, songsMap);
     } catch (error) {
       console.error('Błąd generowania PPT:', error);
-      alert(tr('Nie udało się wygenerować prezentacji.'));
+      toast.error(tr('Nie udało się wygenerować prezentacji.'));
     }
   };
 

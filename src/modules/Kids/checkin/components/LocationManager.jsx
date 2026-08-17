@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { tr } from '../../../../i18n';
+import { toast } from '../../../../lib/toast';
 
 export default function LocationManager({ onLocationsChange }) {
   const [locations, setLocations] = useState([]);
@@ -102,7 +103,7 @@ export default function LocationManager({ onLocationsChange }) {
       fetchLocations();
     } catch (err) {
       console.error('Error saving location:', err);
-      alert(tr('Błąd podczas zapisywania sali'));
+      toast.error(tr('Błąd podczas zapisywania sali'));
     }
   };
 
@@ -139,7 +140,7 @@ export default function LocationManager({ onLocationsChange }) {
       setLocations(prev => prev.filter(l => l.id !== locationId));
     } catch (err) {
       console.error('Error deleting location:', err);
-      alert(tr('Nie można usunąć sali - może być używana w check-inach'));
+      toast.error(tr('Nie można usunąć sali - może być używana w check-inach'));
     }
   };
 

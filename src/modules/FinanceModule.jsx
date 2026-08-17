@@ -9,6 +9,7 @@ import ResponsiveTabs from '../components/ResponsiveTabs';
 import PageHeader from '../components/PageHeader';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
+import { toast } from '../lib/toast';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -360,10 +361,10 @@ const FinanceModule = () => {
 
       setAccountBalances(balanceData);
       setShowBalanceModal(false);
-      alert(tr('Stan kont zapisany pomyślnie'));
+      toast.success(tr('Stan kont zapisany pomyślnie'));
     } catch (error) {
       console.error('Error saving balances:', error);
-      alert(tr('Błąd zapisywania: ') + error.message);
+      toast.error(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -436,7 +437,7 @@ const FinanceModule = () => {
 
   const saveBudgetItem = async () => {
     if (!budgetForm.category || !budgetForm.planned_amount) {
-      alert(tr('Wypełnij wymagane pola'));
+      toast.error(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -471,7 +472,7 @@ const FinanceModule = () => {
       fetchBudgetItems();
     } catch (error) {
       console.error('Error saving budget item:', error);
-      alert(tr('Błąd zapisywania: ') + error.message);
+      toast.error(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -488,13 +489,13 @@ const FinanceModule = () => {
       fetchBudgetItems();
     } catch (error) {
       console.error('Error deleting budget item:', error);
-      alert(tr('Błąd usuwania: ') + error.message);
+      toast.error(tr('Błąd usuwania: ') + error.message);
     }
   };
 
   const saveIncome = async () => {
     if (!incomeForm.date || !incomeForm.amount || !incomeForm.source) {
-      alert(tr('Wypełnij wymagane pola'));
+      toast.error(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -533,7 +534,7 @@ const FinanceModule = () => {
       fetchIncomeTransactions();
     } catch (error) {
       console.error('Error saving income:', error);
-      alert(tr('Błąd zapisywania: ') + error.message);
+      toast.error(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -550,7 +551,7 @@ const FinanceModule = () => {
       fetchIncomeTransactions();
     } catch (error) {
       console.error('Error deleting income:', error);
-      alert(tr('Błąd usuwania: ') + error.message);
+      toast.error(tr('Błąd usuwania: ') + error.message);
     }
   };
 
@@ -589,7 +590,7 @@ const FinanceModule = () => {
       });
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert(tr('Błąd przesyłania pliku: ') + error.message);
+      toast.error(tr('Błąd przesyłania pliku: ') + error.message);
     } finally {
       setUploadingFile(false);
     }
@@ -604,7 +605,7 @@ const FinanceModule = () => {
 
   const saveExpense = async () => {
     if (!expenseForm.payment_date || !expenseForm.amount || !expenseForm.contractor || !expenseForm.category || !expenseForm.description || !expenseForm.responsible_person) {
-      alert(tr('Wypełnij wymagane pola'));
+      toast.error(tr('Wypełnij wymagane pola'));
       return;
     }
 
@@ -649,7 +650,7 @@ const FinanceModule = () => {
       fetchExpenseTransactions();
     } catch (error) {
       console.error('Error saving expense:', error);
-      alert(tr('Błąd zapisywania: ') + error.message);
+      toast.error(tr('Błąd zapisywania: ') + error.message);
     }
   };
 
@@ -666,7 +667,7 @@ const FinanceModule = () => {
       fetchExpenseTransactions();
     } catch (error) {
       console.error('Error deleting expense:', error);
-      alert(tr('Błąd usuwania: ') + error.message);
+      toast.error(tr('Błąd usuwania: ') + error.message);
     }
   };
 

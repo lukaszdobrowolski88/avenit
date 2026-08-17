@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
 import { getMinistryName } from '../utils/messageHelpers';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 // Ikony dla kanałów służb
 const ministryIcons = {
@@ -123,7 +124,7 @@ export default function GroupSettingsModal({
       setAllUsers(prev => prev.filter(u => u.email !== email));
     } catch (err) {
       console.error('Error adding participant:', err);
-      alert(tr('Nie udało się dodać uczestnika'));
+      toast.error(tr('Nie udało się dodać uczestnika'));
     } finally {
       setSaving(false);
     }
@@ -153,7 +154,7 @@ export default function GroupSettingsModal({
       onUpdate?.();
     } catch (err) {
       console.error('Error removing participant:', err);
-      alert(tr('Nie udało się usunąć uczestnika'));
+      toast.error(tr('Nie udało się usunąć uczestnika'));
     } finally {
       setSaving(false);
     }
@@ -174,7 +175,7 @@ export default function GroupSettingsModal({
       onUpdate?.();
     } catch (err) {
       console.error('Error changing role:', err);
-      alert(tr('Nie udało się zmienić roli'));
+      toast.error(tr('Nie udało się zmienić roli'));
     } finally {
       setSaving(false);
     }
@@ -200,7 +201,7 @@ export default function GroupSettingsModal({
       onUpdate?.();
     } catch (err) {
       console.error('Error updating name:', err);
-      alert(tr('Nie udało się zmienić nazwy'));
+      toast.error(tr('Nie udało się zmienić nazwy'));
     } finally {
       setSaving(false);
     }

@@ -9,6 +9,7 @@ import DragDropEmailBuilder from './DragDropEmailBuilder';
 import EmailEditor from './EmailEditor';
 import CampaignPreview from './CampaignPreview';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 const CATEGORY_ICONS = {
   general: FileText,
@@ -79,7 +80,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
 
   const handleSave = async () => {
     if (!formData.name.trim()) {
-      alert(tr('Podaj nazwę szablonu'));
+      toast.error(tr('Podaj nazwę szablonu'));
       setCurrentStep(0);
       return;
     }
@@ -96,7 +97,7 @@ export default function TemplateEditor({ template, onClose, onSave }) {
       onSave?.();
     } catch (err) {
       console.error('Error saving template:', err);
-      alert(tr('Błąd podczas zapisywania szablonu'));
+      toast.error(tr('Błąd podczas zapisywania szablonu'));
     } finally {
       setSaving(false);
     }

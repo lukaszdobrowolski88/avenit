@@ -3,6 +3,7 @@ import { Plus, ChevronDown, Pencil, Trash2, HelpCircle, Loader2, X } from 'lucid
 import Modal from '../../components/Modal';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // Gotowy element „FAQ" — pytania i odpowiedzi (akordeon). Dane w module_records
 // (collection_key='faq'), izolowane per moduł.
@@ -10,7 +11,7 @@ function FaqModal({ initial, onClose, onSave }) {
   const [form, setForm] = useState({ question: initial?.question || '', answer: initial?.answer || '' });
   const [saving, setSaving] = useState(false);
   const submit = async () => {
-    if (!form.question.trim()) { alert(tr('Podaj pytanie')); return; }
+    if (!form.question.trim()) { toast.error(tr('Podaj pytanie')); return; }
     setSaving(true); await onSave({ ...form, question: form.question.trim() }); setSaving(false);
   };
   return (

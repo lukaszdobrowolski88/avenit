@@ -3,6 +3,7 @@ import { Plus, BarChart3, Pencil, Trash2, Loader2, X, Check, Lock, Unlock } from
 import Modal from '../../components/Modal';
 import { useModuleRecords } from '../../hooks/useModuleRecords';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // Gotowy element „Ankieta / głosowanie" — pytanie + opcje, głosy zapisywane w rekordzie
 // (data.voters = { email: optionId }). Dane w module_records (collection_key='polls').
@@ -19,7 +20,7 @@ function PollModal({ initial, onClose, onSave }) {
 
   const submit = async () => {
     const opts = options.map((o) => ({ ...o, text: o.text.trim() })).filter((o) => o.text);
-    if (!question.trim() || opts.length < 2) { alert(tr('Podaj pytanie i min. 2 opcje')); return; }
+    if (!question.trim() || opts.length < 2) { toast.error(tr('Podaj pytanie i min. 2 opcje')); return; }
     setSaving(true);
     await onSave({ question: question.trim(), options: opts, voters: initial?.voters || {}, closed: initial?.closed || false });
     setSaving(false);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles, Plus, Mail, MessageSquare, Bell, ClipboardList, Tag, Clock, ArrowRight } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { TEMPLATES, triggerLabel, actionLabel } from '../lib/automationApi';
+import { toast } from '../../../lib/toast';
 
 const ACTION_ICONS = {
   send_email: Mail,
@@ -47,7 +48,7 @@ export default function TemplatesTab({ campusIdForInsert, onNavigate }) {
       if (onNavigate) onNavigate('workflows');
     } catch (err) {
       console.error('Create from template error:', err);
-      alert('Nie udało się utworzyć automatyzacji z szablonu: ' + (err.message || err));
+      toast.error('Nie udało się utworzyć automatyzacji z szablonu: ' + (err.message || err));
     } finally {
       setCreatingKey(null);
     }

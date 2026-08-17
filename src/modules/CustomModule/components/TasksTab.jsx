@@ -8,6 +8,7 @@ import {
 import CustomSelect from '../../../components/CustomSelect';
 import { tr } from '../../../i18n';
 import { useCampusQuery } from '../../../hooks/useCampusQuery';
+import { toast } from '../../../lib/toast';
 
 const STATUSES = ['Do zrobienia', 'W trakcie', 'Gotowe'];
 
@@ -354,7 +355,7 @@ export default function TasksTab({ moduleKey, moduleName, currentUserEmail }) {
       fetchTasks();
     } catch (err) {
       console.error('Błąd zapisu:', err);
-      alert(tr('Błąd zapisu zadania: ') + err.message);
+      toast.error(tr('Błąd zapisu zadania: ') + err.message);
     }
   };
 
@@ -482,7 +483,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
           <button
             onClick={() => {
               navigator.clipboard.writeText(sqlScript);
-              alert('Skopiowano do schowka!');
+              toast.success('Skopiowano do schowka!');
             }}
             className="mt-4 px-4 py-2 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition"
           >

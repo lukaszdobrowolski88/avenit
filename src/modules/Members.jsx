@@ -20,6 +20,7 @@ import HouseholdManager from './Kids/components/HouseholdManager';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useCampus } from '../contexts/CampusContext';
 import { tr } from '../i18n';
+import { toast } from '../lib/toast';
 
 // --- STAŁE DANE ---
 
@@ -177,7 +178,7 @@ export default function Members() {
       const { id, ...dataToSave } = formData;
 
       if (!dataToSave.first_name || !dataToSave.last_name) {
-        alert(tr('Imię i nazwisko są wymagane'));
+        toast.error(tr('Imię i nazwisko są wymagane'));
         setSaving(false);
         return;
       }
@@ -219,7 +220,7 @@ export default function Members() {
           .eq('id', id);
         if (error) {
           console.error('Supabase update error:', error);
-          alert(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
+          toast.error(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
           setSaving(false);
           return;
         }
@@ -229,7 +230,7 @@ export default function Members() {
           .insert([dataToSave]);
         if (error) {
           console.error('Supabase insert error:', error);
-          alert(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
+          toast.error(tr('Błąd zapisu: ') + (error.message || JSON.stringify(error)));
           setSaving(false);
           return;
         }
@@ -242,7 +243,7 @@ export default function Members() {
       fetchData();
     } catch (error) {
       console.error('Błąd zapisu:', error);
-      alert(tr('Wystąpił błąd podczas zapisywania.'));
+      toast.error(tr('Wystąpił błąd podczas zapisywania.'));
     } finally {
       setSaving(false);
     }
@@ -330,12 +331,12 @@ export default function Members() {
     if (!file) return;
 
     if (file.type !== 'application/pdf') {
-      alert(tr('Proszę wybrać plik PDF'));
+      toast.error(tr('Proszę wybrać plik PDF'));
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert(tr('Plik jest za duży. Maksymalny rozmiar to 10MB'));
+      toast.error(tr('Plik jest za duży. Maksymalny rozmiar to 10MB'));
       return;
     }
 
@@ -360,7 +361,7 @@ export default function Members() {
       }));
     } catch (error) {
       console.error('Błąd uploadu:', error);
-      alert(tr('Błąd podczas przesyłania pliku'));
+      toast.error(tr('Błąd podczas przesyłania pliku'));
     } finally {
       setUploading(false);
     }

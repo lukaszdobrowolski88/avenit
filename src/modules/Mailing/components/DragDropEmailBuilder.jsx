@@ -14,6 +14,7 @@ import { supabase } from '../../../lib/supabase';
 import { EMAIL_VARIABLES } from '../utils/emailVariables';
 import BlockTextEditor from './BlockTextEditor';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 // Definicje bloków
 const BLOCK_TYPES = {
@@ -1755,7 +1756,7 @@ function BackgroundEditor({ backgroundColor, backgroundGradient, backgroundImage
         onBlur?.();
       } catch (err) {
         console.error('Error uploading image:', err);
-        alert(tr('Błąd podczas przesyłania obrazu'));
+        toast.error(tr('Błąd podczas przesyłania obrazu'));
       }
     };
 
@@ -2531,7 +2532,7 @@ function PropertyField({ label, type, value, onChange, onBlur, min, max, step, o
         onBlur?.();
       } catch (err) {
         console.error('Error uploading image:', err);
-        alert(tr('Błąd podczas przesyłania obrazu'));
+        toast.error(tr('Błąd podczas przesyłania obrazu'));
       }
     };
 

@@ -22,6 +22,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 const PROGRAM_ELEMENTS = [
   'Wstęp', 'Uwielbienie', 'Modlitwa', 'Czytanie', 'Kazanie',
@@ -972,7 +973,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                         const file = e.target.files?.[0];
                         if (!file) return;
                         if (file.size > 10 * 1024 * 1024) {
-                          alert(tr('Plik jest za duży (max 10MB)'));
+                          toast.error(tr('Plik jest za duży (max 10MB)'));
                           return;
                         }
                         try {
@@ -984,7 +985,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                           handleChange('customAttachments', [...(item.customAttachments || []), newAtt]);
                         } catch (err) {
                           console.error('Upload error:', err);
-                          alert(tr('Błąd uploadu pliku'));
+                          toast.error(tr('Błąd uploadu pliku'));
                         }
                         e.target.value = '';
                       }}
@@ -2231,11 +2232,11 @@ export default function ProgramDetail() {
         .insert([templateData]);
 
       if (error) throw error;
-      alert(tr('Szablon został zapisany!'));
+      toast.error(tr('Szablon został zapisany!'));
       fetchTemplates();
     } catch (err) {
       console.error('Błąd zapisywania szablonu:', err);
-      alert(tr('Nie udało się zapisać szablonu.'));
+      toast.error(tr('Nie udało się zapisać szablonu.'));
     }
   };
 
@@ -2468,7 +2469,7 @@ export default function ProgramDetail() {
     }
 
     if (result.error) {
-      alert(tr('Błąd zapisu: ') + result.error.message);
+      toast.error(tr('Błąd zapisu: ') + result.error.message);
       return;
     }
 
@@ -2486,7 +2487,7 @@ export default function ProgramDetail() {
       setProgram(result.data[0]);
     }
     setOriginalProgram(JSON.parse(JSON.stringify(program)));
-    alert('Zapisano!');
+    toast.success('Zapisano!');
   };
 
   const syncWorshipAssignments = async (programId) => {
@@ -2599,7 +2600,7 @@ export default function ProgramDetail() {
 
   const handleSaveAndUploadPDF = async (customOptions = null) => {
     if (!program || !program.date) {
-      alert(tr('Najpierw wybierz lub utwórz program.'));
+      toast.info(tr('Najpierw wybierz lub utwórz program.'));
       return;
     }
 
@@ -2634,13 +2635,13 @@ export default function ProgramDetail() {
       const result = await savePDFToSupabase(program, freshSongsMap, teamRolesForPDF, optionsToUse);
 
       if (result.success) {
-        alert(tr('PDF został pobrany i zapisany w chmurze!'));
+        toast.error(tr('PDF został pobrany i zapisany w chmurze!'));
       } else {
-        alert(tr('PDF pobrany na dysk, ale wystąpił błąd zapisu w chmurze.'));
+        toast.error(tr('PDF pobrany na dysk, ale wystąpił błąd zapisu w chmurze.'));
       }
     } catch (error) {
       console.error('Critical error saving PDF:', error);
-      alert(tr('Wystąpił błąd podczas generowania PDF.'));
+      toast.error(tr('Wystąpił błąd podczas generowania PDF.'));
     } finally {
       setIsLoading(false);
     }
@@ -2661,19 +2662,19 @@ export default function ProgramDetail() {
       }
     } catch (err) {
       console.error(`Błąd generowania ${type}:`, err);
-      alert(`Wystąpił błąd podczas generowania ${type}`);
+      toast.error(`Wystąpił błąd podczas generowania ${type}`);
     }
   };
 
   const handleExportProPresenter = async () => {
     if (!program || !program.schedule || program.schedule.length === 0) {
-      alert(tr('Brak elementów w programie do eksportu.'));
+      toast.error(tr('Brak elementów w programie do eksportu.'));
       return;
     }
 
     const songItems = program.schedule.filter(item => item.type === 'song' && item.songId);
     if (songItems.length === 0) {
-      alert(tr('Brak pieśni w programie. Eksport ProPresenter wymaga co najmniej jednej pieśni.'));
+      toast.error(tr('Brak pieśni w programie. Eksport ProPresenter wymaga co najmniej jednej pieśni.'));
       return;
     }
 
@@ -2689,24 +2690,24 @@ export default function ProgramDetail() {
       const result = await exportToProPresenter(program, songsMap);
 
       if (result.success) {
-        alert(`Eksport zakończony pomyślnie!\n\nWyeksportowano ${result.songsCount} pieśni.\n\nRozpakuj pobrany plik ZIP i zaimportuj pliki do ProPresenter.`);
+        toast.success(`Eksport zakończony pomyślnie!\n\nWyeksportowano ${result.songsCount} pieśni.\n\nRozpakuj pobrany plik ZIP i zaimportuj pliki do ProPresenter.`);
       }
     } catch (err) {
       console.error('Błąd eksportu do ProPresenter:', err);
-      alert(tr('Wystąpił błąd podczas eksportu do ProPresenter.'));
+      toast.error(tr('Wystąpił błąd podczas eksportu do ProPresenter.'));
     }
   };
 
   const handleSendEmail = async () => {
     if (!program || !program.date) {
-      alert(tr('Najpierw wybierz lub utwórz program.'));
+      toast.info(tr('Najpierw wybierz lub utwórz program.'));
       return;
     }
 
     const recipients = getAllRecipients(program, worshipTeam);
 
     if (recipients.length === 0) {
-      alert(tr('Brak adresów e-mail do wysyłki. Upewnij się, że członkowie zespołu mają przypisane adresy e-mail.'));
+      toast.error(tr('Brak adresów e-mail do wysyłki. Upewnij się, że członkowie zespołu mają przypisane adresy e-mail.'));
       return;
     }
 
@@ -2768,10 +2769,10 @@ export default function ProgramDetail() {
         throw error;
       }
 
-      alert(tr('Program został wysłany!'));
+      toast.success(tr('Program został wysłany!'));
     } catch (error) {
       console.error('Error sending email:', error);
-      alert(tr('Wystąpił błąd podczas wysyłania.'));
+      toast.error(tr('Wystąpił błąd podczas wysyłania.'));
     } finally {
       setIsSending(false);
     }

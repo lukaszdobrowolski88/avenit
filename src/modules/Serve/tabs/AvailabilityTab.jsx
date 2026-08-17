@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { memberName, formatDate, todayIso, isUpcoming } from '../lib/serveApi';
+import { toast } from '../../../lib/toast';
 
 const emptyForm = { member_id: '', start_date: todayIso(), end_date: todayIso(), reason: '' };
 
@@ -54,9 +55,9 @@ export default function AvailabilityTab({ members, membersById, campusIdForInser
   const openCreate = () => { setForm(emptyForm); setModalOpen(true); };
 
   const save = async () => {
-    if (!form.member_id) { alert('Wskaż wolontariusza.'); return; }
-    if (!form.start_date || !form.end_date) { alert('Podaj zakres dat (od–do).'); return; }
-    if (form.end_date < form.start_date) { alert('Data „do" nie może być wcześniejsza niż data „od".'); return; }
+    if (!form.member_id) { toast.error('Wskaż wolontariusza.'); return; }
+    if (!form.start_date || !form.end_date) { toast.error('Podaj zakres dat (od–do).'); return; }
+    if (form.end_date < form.start_date) { toast.error('Data „do" nie może być wcześniejsza niż data „od".'); return; }
     setSaving(true);
     try {
       const payload = {
@@ -72,7 +73,7 @@ export default function AvailabilityTab({ members, membersById, campusIdForInser
       load();
     } catch (err) {
       console.error('Save blockout error:', err);
-      alert('Nie udało się zapisać niedostępności: ' + (err.message || err));
+      toast.error('Nie udało się zapisać niedostępności: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -85,7 +86,7 @@ export default function AvailabilityTab({ members, membersById, campusIdForInser
       if (error) throw error;
       load();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 

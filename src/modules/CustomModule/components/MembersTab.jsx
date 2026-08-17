@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { Plus, Search, Trash2, X, User, Mail, Phone, Check, Edit2 } from 'lucide-react';
 import { tr } from '../../../i18n';
 import { useCampusQuery } from '../../../hooks/useCampusQuery';
+import { toast } from '../../../lib/toast';
 
 export default function MembersTab({ moduleKey, moduleName }) {
   const { withCampusFilter, campusIdForInsert } = useCampusQuery();
@@ -168,7 +169,7 @@ export default function MembersTab({ moduleKey, moduleName }) {
       fetchModuleRoles();
     } catch (err) {
       console.error('Błąd zapisu:', err);
-      alert(tr('Błąd zapisu członka: ') + err.message);
+      toast.error(tr('Błąd zapisu członka: ') + err.message);
     }
   };
 
@@ -265,7 +266,7 @@ GRANT ALL ON ${tableName} TO anon;`;
           <button
             onClick={() => {
               navigator.clipboard.writeText(sqlScript);
-              alert('Skopiowano do schowka!');
+              toast.success('Skopiowano do schowka!');
             }}
             className="mt-4 px-4 py-2 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition"
           >

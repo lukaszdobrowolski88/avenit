@@ -27,6 +27,7 @@ import {
 import { supabase } from '../../../lib/supabase';
 import { formatPrice } from '../utils/fieldTypes';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function PaymentsView({ forms }) {
   const [payments, setPayments] = useState([]);
@@ -301,7 +302,7 @@ export default function PaymentsView({ forms }) {
       fetchAllPayments();
     } catch (err) {
       console.error('Error adding payment:', err);
-      alert(tr('Wystąpił błąd podczas dodawania płatności'));
+      toast.error(tr('Wystąpił błąd podczas dodawania płatności'));
     }
   };
 
@@ -440,7 +441,7 @@ export default function PaymentsView({ forms }) {
       setSelectedPayment(null);
     } catch (error) {
       console.error('Error updating payment:', error);
-      alert(tr('Wystąpił błąd podczas aktualizacji płatności'));
+      toast.error(tr('Wystąpił błąd podczas aktualizacji płatności'));
     }
   };
 

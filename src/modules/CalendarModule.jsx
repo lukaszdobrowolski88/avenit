@@ -15,6 +15,7 @@ import EventRSVP from '../components/EventRSVP';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
+import { toast } from '../lib/toast';
 
 // --- MODAL POTWIERDZENIA USUNIĘCIA ---
 
@@ -312,7 +313,7 @@ const ModalAddEvent = ({ initialEvent, category, onClose, onSave, onDelete }) =>
   }, [initialEvent, category]);
 
   const handleSubmit = async () => {
-    if (!event.title) return alert(tr('Podaj tytuł wydarzenia'));
+    if (!event.title) return toast.error(tr('Podaj tytuł wydarzenia'));
 
     const payload = {
       title: event.title,
@@ -511,7 +512,7 @@ const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
   };
 
   const handleSubmit = () => {
-    if (!task.title) return alert(tr('Podaj tytuł'));
+    if (!task.title) return toast.error(tr('Podaj tytuł'));
 
     const dateStr = task.due_date;
     const timeStr = task.due_time || '00:00';
@@ -706,7 +707,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry }) => {
 
   const handleSubmit = async () => {
     if (!eventForm.title.trim()) {
-      alert(tr('Tytuł wydarzenia jest wymagany'));
+      toast.error(tr('Tytuł wydarzenia jest wymagany'));
       return;
     }
 
@@ -1018,7 +1019,7 @@ export default function CalendarModule() {
       }
 
       if (error) {
-          alert(`Błąd zapisu: ${error.message}`);
+          toast.error(`Błąd zapisu: ${error.message}`);
           console.error(error);
       } else {
           fetchEvents(); 
@@ -1051,7 +1052,7 @@ export default function CalendarModule() {
     }
 
     if (error) {
-      alert(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
       console.error(error);
     } else {
       fetchEvents();
@@ -1078,7 +1079,7 @@ export default function CalendarModule() {
     }
 
     if (error) {
-      alert(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
       console.error(error);
     } else {
       setModals({...modals, mlodziezowkaEvent: null});
@@ -1105,7 +1106,7 @@ export default function CalendarModule() {
       error = e;
     }
     if (error) {
-      alert(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
     } else {
       setModals({...modals, worshipEvent: null});
       fetchEvents();
@@ -1131,7 +1132,7 @@ export default function CalendarModule() {
       error = e;
     }
     if (error) {
-      alert(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
     } else {
       setModals({...modals, mediaEvent: null});
       fetchEvents();
@@ -1157,7 +1158,7 @@ export default function CalendarModule() {
       error = e;
     }
     if (error) {
-      alert(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
     } else {
       setModals({...modals, atmosferaEvent: null});
       fetchEvents();
@@ -1183,7 +1184,7 @@ export default function CalendarModule() {
       error = e;
     }
     if (error) {
-      alert(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
     } else {
       setModals({...modals, kidsEvent: null});
       fetchEvents();
@@ -1209,7 +1210,7 @@ export default function CalendarModule() {
       error = e;
     }
     if (error) {
-      alert(`Błąd zapisu wydarzenia: ${error.message}`);
+      toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
     } else {
       setModals({...modals, homegroupsEvent: null});
       fetchEvents();
@@ -1263,7 +1264,7 @@ export default function CalendarModule() {
       }]).select().single();
 
       if (error) {
-        alert(tr('Błąd tworzenia nabożeństwa: ') + error.message);
+        toast.error(tr('Błąd tworzenia nabożeństwa: ') + error.message);
         return;
       }
 

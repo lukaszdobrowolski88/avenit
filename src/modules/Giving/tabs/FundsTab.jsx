@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, X, FolderOpen } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import Modal from '../../../components/Modal';
+import { toast } from '../../../lib/toast';
 
 const PRESET_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#64748b'];
 const emptyForm = { name: '', description: '', color: '#10b981', is_tax_deductible: true, is_active: true };
@@ -20,7 +21,7 @@ export default function FundsTab({ funds, campusIdForInsert, refreshShared }) {
   };
 
   const save = async () => {
-    if (!form.name.trim()) { alert('Podaj nazwę funduszu.'); return; }
+    if (!form.name.trim()) { toast.error('Podaj nazwę funduszu.'); return; }
     setSaving(true);
     try {
       const payload = {
@@ -39,7 +40,7 @@ export default function FundsTab({ funds, campusIdForInsert, refreshShared }) {
       setModalOpen(false);
       refreshShared();
     } catch (err) {
-      alert('Nie udało się zapisać funduszu: ' + (err.message || err));
+      toast.error('Nie udało się zapisać funduszu: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -52,7 +53,7 @@ export default function FundsTab({ funds, campusIdForInsert, refreshShared }) {
       if (error) throw error;
       refreshShared();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 

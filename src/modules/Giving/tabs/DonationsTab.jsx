@@ -4,6 +4,7 @@ import { supabase, getCachedUser } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { formatMoney, formatDate, methodLabel, statusLabel, donorLabel, memberName, GIVING_METHODS, GIVING_STATUSES } from '../lib/givingApi';
+import { toast } from '../../../lib/toast';
 
 const currentYear = new Date().getFullYear();
 
@@ -82,9 +83,9 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
   };
 
   const save = async () => {
-    if (!form.amount || Number(form.amount) <= 0) { alert('Podaj kwotę darowizny.'); return; }
+    if (!form.amount || Number(form.amount) <= 0) { toast.error('Podaj kwotę darowizny.'); return; }
     if (!form.member_id && !form.donor_name && !form.is_anonymous) {
-      alert('Wskaż członka lub podaj imię i nazwisko darczyńcy (albo zaznacz „Anonimowo").'); return;
+      toast.error('Wskaż członka lub podaj imię i nazwisko darczyńcy (albo zaznacz „Anonimowo").'); return;
     }
     setSaving(true);
     try {
@@ -116,7 +117,7 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
       load();
     } catch (err) {
       console.error('Save donation error:', err);
-      alert('Nie udało się zapisać darowizny: ' + (err.message || err));
+      toast.error('Nie udało się zapisać darowizny: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -129,7 +130,7 @@ export default function DonationsTab({ funds, members, membersById, campusIdForI
       if (error) throw error;
       load();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 

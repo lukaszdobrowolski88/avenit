@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { formatMoney, formatDate, memberName } from '../lib/givingApi';
+import { toast } from '../../../lib/toast';
 
 const emptyForm = { name: '', description: '', goal_amount: '', fund_id: '', start_date: '', end_date: '', is_active: true };
 const emptyPledge = { member_id: '', donor_name: '', pledge_amount: '', note: '' };
@@ -77,7 +78,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
   };
 
   const save = async () => {
-    if (!form.name.trim()) { alert('Podaj nazwę kampanii.'); return; }
+    if (!form.name.trim()) { toast.error('Podaj nazwę kampanii.'); return; }
     setSaving(true);
     try {
       const payload = {
@@ -95,7 +96,7 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
       setModalOpen(false);
       load();
     } catch (err) {
-      alert('Nie udało się zapisać kampanii: ' + (err.message || err));
+      toast.error('Nie udało się zapisać kampanii: ' + (err.message || err));
     } finally { setSaving(false); }
   };
 
@@ -105,12 +106,12 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
       const { error } = await supabase.from('giving_campaigns').delete().eq('id', c.id);
       if (error) throw error;
       load();
-    } catch (err) { alert('Nie udało się usunąć: ' + (err.message || err)); }
+    } catch (err) { toast.error('Nie udało się usunąć: ' + (err.message || err)); }
   };
 
   const openPledge = (c) => { setPledgeModal(c); setPledgeForm(emptyPledge); };
   const savePledge = async () => {
-    if (!pledgeForm.pledge_amount || Number(pledgeForm.pledge_amount) <= 0) { alert('Podaj kwotę deklaracji.'); return; }
+    if (!pledgeForm.pledge_amount || Number(pledgeForm.pledge_amount) <= 0) { toast.error('Podaj kwotę deklaracji.'); return; }
     try {
       const { error } = await supabase.from('giving_pledges').insert({
         campaign_id: pledgeModal.id, member_id: pledgeForm.member_id || null,
@@ -120,12 +121,12 @@ export default function CampaignsTab({ funds, members, membersById, campusIdForI
       if (error) throw error;
       setPledgeModal(null);
       load();
-    } catch (err) { alert('Nie udało się zapisać deklaracji: ' + (err.message || err)); }
+    } catch (err) { toast.error('Nie udało się zapisać deklaracji: ' + (err.message || err)); }
   };
   const removePledge = async (p) => {
     if (!confirm('Usunąć deklarację?')) return;
     try { await supabase.from('giving_pledges').delete().eq('id', p.id); load(); }
-    catch (err) { alert('Błąd: ' + (err.message || err)); }
+    catch (err) { toast.error('Błąd: ' + (err.message || err)); }
   };
 
   const pledgeName = (p) => p.member_id && membersById?.[p.member_id] ? memberName(membersById[p.member_id]) : (p.donor_name || '—');

@@ -12,6 +12,7 @@ import {
   Save
 } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function PlansManager() {
   const { getPlans, createPlan, updatePlan, deactivatePlan, loading } = usePlans();
@@ -105,7 +106,7 @@ export default function PlansManager() {
       setShowForm(false);
       loadPlans();
     } catch (err) {
-      alert(tr('Błąd zapisu: ') + err.message);
+      toast.error(tr('Błąd zapisu: ') + err.message);
     }
   };
 

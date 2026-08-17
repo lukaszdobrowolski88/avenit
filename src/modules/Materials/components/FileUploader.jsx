@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Upload, X, FileText, Image, Loader } from 'lucide-react';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 // Formatowanie rozmiaru pliku
 function formatFileSize(bytes) {
@@ -71,7 +72,7 @@ export default function FileUploader({
     // Waliduj rozmiar plików
     const validFiles = files.filter(file => {
       if (file.size > maxFileSize) {
-        alert(`Plik "${file.name}" przekracza limit ${formatFileSize(maxFileSize)}`);
+        toast.error(`Plik "${file.name}" przekracza limit ${formatFileSize(maxFileSize)}`);
         return false;
       }
       return true;

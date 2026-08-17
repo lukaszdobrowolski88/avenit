@@ -4,6 +4,7 @@ import { useSmsTemplates } from '../hooks/useSmsTemplates';
 import { SENDER_MAX, BODY_MAX } from '../constants';
 import { smsAnalysis } from '../utils/smsEncoding';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function TemplateGallery({ onUseTemplate }) {
   const { templates, loading, createTemplate, updateTemplate, deleteTemplate } = useSmsTemplates();
@@ -13,9 +14,9 @@ export default function TemplateGallery({ onUseTemplate }) {
   const handleNew = () => { setEditing(null); setShowEditor(true); };
   const handleEdit = (t) => { setEditing(t); setShowEditor(true); };
   const handleDelete = async (t) => {
-    if (t.is_system) { alert(tr('Nie można usunąć szablonu systemowego.')); return; }
+    if (t.is_system) { toast.error(tr('Nie można usunąć szablonu systemowego.')); return; }
     if (!confirm(`Usunąć szablon "${t.name}"?`)) return;
-    try { await deleteTemplate(t.id); } catch (e) { alert(e.message); }
+    try { await deleteTemplate(t.id); } catch (e) { toast.error(e.message); }
   };
 
   if (loading) return <div className="p-8 text-center text-gray-500">{tr('Ładowanie...')}</div>;
@@ -81,7 +82,7 @@ export default function TemplateGallery({ onUseTemplate }) {
               if (editing) await updateTemplate(editing.id, data);
               else await createTemplate(data);
               setShowEditor(false);
-            } catch (e) { alert(e.message); }
+            } catch (e) { toast.error(e.message); }
           }}
         />
       )}
@@ -99,7 +100,7 @@ function TemplateEditor({ template, onClose, onSave }) {
   const a = smsAnalysis(form.body);
 
   const handleSave = async () => {
-    if (!form.name || !form.body) { alert(tr('Wypełnij wszystkie pola')); return; }
+    if (!form.name || !form.body) { toast.error(tr('Wypełnij wszystkie pola')); return; }
     setSaving(true);
     try { await onSave(form); } finally { setSaving(false); }
   };

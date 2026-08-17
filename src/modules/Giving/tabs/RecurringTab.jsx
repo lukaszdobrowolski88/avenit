@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { formatMoney, formatDate, frequencyLabel, memberName, GIVING_METHODS, GIVING_FREQUENCIES, computeNextRun } from '../lib/givingApi';
+import { toast } from '../../../lib/toast';
 
 const emptyForm = {
   member_id: '', donor_name: '', fund_id: '', amount: '', frequency: 'monthly',
@@ -59,8 +60,8 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
   };
 
   const save = async () => {
-    if (!form.amount || Number(form.amount) <= 0) { alert('Podaj kwotę.'); return; }
-    if (!form.member_id && !form.donor_name) { alert('Wskaż członka lub podaj darczyńcę.'); return; }
+    if (!form.amount || Number(form.amount) <= 0) { toast.error('Podaj kwotę.'); return; }
+    if (!form.member_id && !form.donor_name) { toast.error('Wskaż członka lub podaj darczyńcę.'); return; }
     setSaving(true);
     try {
       const payload = {
@@ -82,7 +83,7 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
       setModalOpen(false);
       load();
     } catch (err) {
-      alert('Nie udało się zapisać planu: ' + (err.message || err));
+      toast.error('Nie udało się zapisać planu: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -93,7 +94,7 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
       const { error } = await supabase.from('giving_recurring').update({ is_active: !p.is_active }).eq('id', p.id);
       if (error) throw error;
       load();
-    } catch (err) { alert('Błąd: ' + (err.message || err)); }
+    } catch (err) { toast.error('Błąd: ' + (err.message || err)); }
   };
 
   const remove = async (p) => {
@@ -102,7 +103,7 @@ export default function RecurringTab({ funds, members, membersById, campusIdForI
       const { error } = await supabase.from('giving_recurring').delete().eq('id', p.id);
       if (error) throw error;
       load();
-    } catch (err) { alert('Nie udało się usunąć: ' + (err.message || err)); }
+    } catch (err) { toast.error('Nie udało się usunąć: ' + (err.message || err)); }
   };
 
   const donorName = (p) => p.member_id && membersById?.[p.member_id] ? memberName(membersById[p.member_id]) : (p.donor_name || '—');

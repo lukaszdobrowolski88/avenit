@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { Plus, Trash2, X, Check, Edit2, Users, ChevronDown } from 'lucide-react';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -219,7 +220,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
   };
 
   const saveRole = async () => {
-    if (!roleForm.name.trim()) return alert(tr('Podaj nazwę służby'));
+    if (!roleForm.name.trim()) return toast.error(tr('Podaj nazwę służby'));
 
     // Generuj field_key z nazwy jeśli nie podano
     const fieldKey = roleForm.field_key.trim() || roleForm.name.toLowerCase()
@@ -246,7 +247,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
       setRoleForm({ id: null, name: '', field_key: '', description: '' });
       fetchData();
     } catch (err) {
-      alert(tr('Błąd zapisu: ') + err.message);
+      toast.error(tr('Błąd zapisu: ') + err.message);
     }
   };
 
@@ -257,7 +258,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
       await supabase.from('team_roles').delete().eq('id', id);
       fetchData();
     } catch (err) {
-      alert(tr('Błąd usuwania: ') + err.message);
+      toast.error(tr('Błąd usuwania: ') + err.message);
     }
   };
 
@@ -287,7 +288,7 @@ export default function DutyTab({ moduleKey, moduleName }) {
       fetchData();
     } catch (err) {
       console.error('Błąd aktualizacji przypisań:', err);
-      alert(tr('Błąd aktualizacji: ') + err.message);
+      toast.error(tr('Błąd aktualizacji: ') + err.message);
     }
   };
 

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { CheckSquare, List, LayoutGrid, Clock, CheckCircle, Circle, Plus, X, Save, Calendar, ChevronLeft, ChevronRight, Trash2, Lock, Users, Video, User } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 const STATUS_CONFIG = {
   todo: {
@@ -265,7 +266,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
       onClose();
     } catch (error) {
       console.error('Error saving task:', error);
-      alert(tr('Błąd zapisu: ') + error.message);
+      toast.error(tr('Błąd zapisu: ') + error.message);
     } finally {
       setSaving(false);
     }
@@ -291,7 +292,7 @@ const TaskModal = ({ isOpen, onClose, onSave, onDelete, initialTask, userName, u
       onClose();
     } catch (error) {
       console.error('Error deleting task:', error);
-      alert(tr('Błąd usuwania: ') + error.message);
+      toast.error(tr('Błąd usuwania: ') + error.message);
     }
   };
 

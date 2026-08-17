@@ -7,6 +7,7 @@ import { useFormResponses } from '../hooks/useFormResponses';
 import { useFormEmails } from '../hooks/useFormEmails';
 import { checkSeatAvailability } from '../utils/fieldTypes';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function PublicFormPage() {
   const { formId } = useParams();
@@ -124,7 +125,7 @@ export default function PublicFormPage() {
       }
     } catch (err) {
       console.error('Error submitting form:', err);
-      alert(tr('Wystąpił błąd podczas wysyłania formularza. Spróbuj ponownie.'));
+      toast.error(tr('Wystąpił błąd podczas wysyłania formularza. Spróbuj ponownie.'));
     } finally {
       setIsSubmitting(false);
     }

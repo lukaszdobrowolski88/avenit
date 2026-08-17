@@ -4,6 +4,7 @@ import { supabase, getCachedUser } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
 import { songLabel, programLabel, formatDate, todayIso, startOfYearIso } from '../lib/serveApi';
+import { toast } from '../../../lib/toast';
 
 const emptyForm = () => ({
   song_id: '', program_id: '', used_date: todayIso(), ccli_number: '', note: '',
@@ -64,8 +65,8 @@ export default function CcliTab({ songs, songsById, programs, programsById, camp
   const openCreate = () => { setForm(emptyForm()); setModalOpen(true); };
 
   const save = async () => {
-    if (!form.song_id) { alert('Wybierz pieśń.'); return; }
-    if (!form.used_date) { alert('Podaj datę wykonania.'); return; }
+    if (!form.song_id) { toast.info('Wybierz pieśń.'); return; }
+    if (!form.used_date) { toast.error('Podaj datę wykonania.'); return; }
     setSaving(true);
     try {
       const user = await getCachedUser();
@@ -84,7 +85,7 @@ export default function CcliTab({ songs, songsById, programs, programsById, camp
       load();
     } catch (err) {
       console.error('Save song usage error:', err);
-      alert('Nie udało się zapisać wykonania: ' + (err.message || err));
+      toast.error('Nie udało się zapisać wykonania: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -97,7 +98,7 @@ export default function CcliTab({ songs, songsById, programs, programsById, camp
       if (error) throw error;
       load();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 

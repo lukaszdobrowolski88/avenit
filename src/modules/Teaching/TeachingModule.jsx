@@ -17,6 +17,7 @@ import PageHeader from '../../components/PageHeader';
 import { GraduationCap, Podcast } from 'lucide-react';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { tr } from '../../i18n';
+import { toast } from '../../lib/toast';
 
 // ================== TABLE SELECT COMPONENT ==================
 
@@ -324,13 +325,13 @@ function SpeakersSection({ speakers, onAdd, onEdit, onDelete }) {
       setForm(prev => ({ ...prev, photo_url: data.publicUrl }));
     } catch (err) {
       console.error('Upload error:', err);
-      alert(tr('Błąd przesyłania zdjęcia'));
+      toast.error(tr('Błąd przesyłania zdjęcia'));
     }
     setUploading(false);
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return alert(tr('Podaj imię i nazwisko mówcy'));
+    if (!form.name.trim()) return toast.error(tr('Podaj imię i nazwisko mówcy'));
 
     if (editingSpeaker) {
       await onEdit(editingSpeaker.id, form);
@@ -571,7 +572,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
       setForm(prev => ({ ...prev, graphics: [...prev.graphics, ...uploadedFiles] }));
     } catch (err) {
       console.error('Upload error:', err);
-      alert(tr('Błąd przesyłania pliku'));
+      toast.error(tr('Błąd przesyłania pliku'));
     }
     setUploading(false);
   };
@@ -581,7 +582,7 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) return alert(tr('Podaj nazwę serii'));
+    if (!form.name.trim()) return toast.error(tr('Podaj nazwę serii'));
 
     if (editingSeries) {
       await onEdit(editingSeries.id, form);
@@ -1021,40 +1022,40 @@ export default function TeachingModule() {
   // SPEAKERS CRUD
   const addSpeaker = async (data) => {
     const { error } = await supabase.from('teaching_speakers').insert([data]);
-    if (error) { alert(tr('Błąd: ') + error.message); return; }
+    if (error) { toast.error(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const editSpeaker = async (id, data) => {
     const { error } = await supabase.from('teaching_speakers').update(data).eq('id', id);
-    if (error) { alert(tr('Błąd: ') + error.message); return; }
+    if (error) { toast.error(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const deleteSpeaker = async (id) => {
     if (!confirm(tr('Usunąć tego mówcę?'))) return;
     const { error } = await supabase.from('teaching_speakers').delete().eq('id', id);
-    if (error) { alert(tr('Błąd: ') + error.message); return; }
+    if (error) { toast.error(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   // SERIES CRUD
   const addSeries = async (data) => {
     const { error } = await supabase.from('teaching_series').insert([data]);
-    if (error) { alert(tr('Błąd: ') + error.message); return; }
+    if (error) { toast.error(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const editSeries = async (id, data) => {
     const { error } = await supabase.from('teaching_series').update(data).eq('id', id);
-    if (error) { alert(tr('Błąd: ') + error.message); return; }
+    if (error) { toast.error(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const deleteSeries = async (id) => {
     if (!confirm(tr('Usunąć tę serię?'))) return;
     const { error } = await supabase.from('teaching_series').delete().eq('id', id);
-    if (error) { alert(tr('Błąd: ') + error.message); return; }
+    if (error) { toast.error(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 

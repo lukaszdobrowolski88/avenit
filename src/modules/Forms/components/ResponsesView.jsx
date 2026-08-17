@@ -27,6 +27,7 @@ import { exportToCSV, exportToJSON, formatAnswerForExport } from '../utils/expor
 import { formatPrice } from '../utils/fieldTypes';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function ResponsesView({ form }) {
   const [selectedParticipant, setSelectedParticipant] = useState(null);
@@ -281,7 +282,7 @@ export default function ResponsesView({ form }) {
       setPaymentDate(new Date().toISOString().split('T')[0]);
     } catch (error) {
       console.error('Error adding payment:', error);
-      alert(tr('Wystąpił błąd podczas dodawania płatności'));
+      toast.error(tr('Wystąpił błąd podczas dodawania płatności'));
     }
   };
 

@@ -7,6 +7,7 @@ import {
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 const STATUS_CONFIG = {
   draft: {
@@ -77,7 +78,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
       await deleteCampaign(campaign.id);
       onRefresh?.();
     } catch (err) {
-      alert(tr('Błąd podczas usuwania maila'));
+      toast.error(tr('Błąd podczas usuwania maila'));
     }
     setMenuOpen(null);
   };
@@ -87,7 +88,7 @@ export default function CampaignList({ campaigns, onEdit, onRefresh, onViewStats
       await duplicateCampaign(campaign.id);
       onRefresh?.();
     } catch (err) {
-      alert(tr('Błąd podczas duplikowania maila'));
+      toast.error(tr('Błąd podczas duplikowania maila'));
     }
     setMenuOpen(null);
   };

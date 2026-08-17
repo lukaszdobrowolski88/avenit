@@ -17,6 +17,7 @@ import {
 import { supabase } from '../../../lib/supabase';
 import { EMAIL_VARIABLES } from '../utils/emailVariables';
 import { tr } from '../../../i18n';
+import { toast } from '../../../lib/toast';
 
 export default function EmailEditor({ content, onChange, placeholder = tr('Napisz treść wiadomości...') }) {
   const editor = useEditor({
@@ -85,7 +86,7 @@ export default function EmailEditor({ content, onChange, placeholder = tr('Napis
         editor?.chain().focus().setImage({ src: urlData.publicUrl }).run();
       } catch (err) {
         console.error('Error uploading image:', err);
-        alert(tr('Błąd podczas przesyłania obrazu'));
+        toast.error(tr('Błąd podczas przesyłania obrazu'));
       }
     };
 

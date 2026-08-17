@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
 import { RESOURCE_TYPES, typeLabel, PRESET_COLORS } from '../lib/roomsApi';
+import { toast } from '../../../lib/toast';
 
 const emptyForm = { name: '', type: 'room', capacity: '', color: '#3b82f6', location: '', is_active: true };
 
@@ -24,7 +25,7 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
   };
 
   const save = async () => {
-    if (!form.name.trim()) { alert('Podaj nazwę zasobu.'); return; }
+    if (!form.name.trim()) { toast.error('Podaj nazwę zasobu.'); return; }
     setSaving(true);
     try {
       const payload = {
@@ -47,7 +48,7 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
       refreshShared();
     } catch (err) {
       console.error('Save resource error:', err);
-      alert('Nie udało się zapisać zasobu: ' + (err.message || err));
+      toast.error('Nie udało się zapisać zasobu: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -60,7 +61,7 @@ export default function ResourcesTab({ resources, loading, campusIdForInsert, re
       if (error) throw error;
       refreshShared();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 

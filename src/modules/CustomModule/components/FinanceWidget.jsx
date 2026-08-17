@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { useCampusQuery } from '../../../hooks/useCampusQuery';
 import { tr } from '../../../i18n';
 import FinanceTab from '../../shared/FinanceTab';
+import { toast } from '../../../lib/toast';
 
 // Samowystarczalny widget finansów dla modułu własnego — PARYTET z modułami
 // systemowymi (np. MediaTeamModule): sam pobiera budget_items + expense_transactions
@@ -49,7 +50,7 @@ export default function FinanceWidget({ moduleKey, moduleName }) {
 
   const saveExpense = async () => {
     if (!form.payment_date || !form.amount || !form.contractor || !form.description || !form.responsible_person) {
-      alert(tr('Wypełnij wymagane pola'));
+      toast.error(tr('Wypełnij wymagane pola'));
       return;
     }
     try {
@@ -70,7 +71,7 @@ export default function FinanceWidget({ moduleKey, moduleName }) {
       setForm(emptyForm);
       fetchFinanceData();
     } catch (err) {
-      alert(tr('Błąd zapisywania: ') + err.message);
+      toast.error(tr('Błąd zapisywania: ') + err.message);
     }
   };
 

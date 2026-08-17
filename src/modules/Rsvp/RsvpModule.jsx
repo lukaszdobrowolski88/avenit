@@ -7,6 +7,7 @@ import { supabase, getCachedUser } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import CustomSelect from '../../components/CustomSelect';
 import Modal from '../../components/Modal';
+import { toast } from '../../lib/toast';
 
 const EVENT_TYPES = [
   { value: 'service', label: 'Nabożeństwo' },
@@ -182,10 +183,10 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
   }, [members, search]);
 
   const create = async () => {
-    if (!form.title.trim()) { alert('Podaj tytuł.'); return; }
+    if (!form.title.trim()) { toast.error('Podaj tytuł.'); return; }
     const chans = Object.entries(channels).filter(([, v]) => v).map(([k]) => k);
-    if (!chans.length) { alert('Wybierz co najmniej jeden kanał.'); return; }
-    if (!recipients.length) { alert('Brak odbiorców dla wybranej grupy.'); return; }
+    if (!chans.length) { toast.info('Wybierz co najmniej jeden kanał.'); return; }
+    if (!recipients.length) { toast.error('Brak odbiorców dla wybranej grupy.'); return; }
     setSaving(true);
     try {
       const user = await getCachedUser();
@@ -220,7 +221,7 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
       }
       onCreated();
     } catch (err) {
-      alert('Nie udało się utworzyć kampanii: ' + (err.message || err));
+      toast.error('Nie udało się utworzyć kampanii: ' + (err.message || err));
     } finally { setSaving(false); }
   };
 
@@ -357,21 +358,21 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
       const { data, error } = await supabase.functions.invoke('rsvp-send', { body: { campaign_id: campaign.id } });
       if (error || data?.error) throw new Error(data?.error || error?.message);
       const s = data.stats || {};
-      alert(`Wysłano. E-mail: ${s.email || 0}, SMS: ${s.sms || 0}, Push: ${s.push || 0}${s.failed ? `, niepowodzeń: ${s.failed}` : ''}.`);
+      toast.success(`Wysłano. E-mail: ${s.email || 0}, SMS: ${s.sms || 0}, Push: ${s.push || 0}${s.failed ? `, niepowodzeń: ${s.failed}` : ''}.`);
       onChanged();
     } catch (err) {
-      alert('Nie udało się wysłać: ' + (err.message || err));
+      toast.error('Nie udało się wysłać: ' + (err.message || err));
     } finally { setSending(false); }
   };
 
   const copyLink = (token) => {
     const url = `${window.location.origin}/rsvp/${token}`;
-    try { navigator.clipboard.writeText(url); alert('Skopiowano link.'); } catch { window.prompt('Link:', url); }
+    try { navigator.clipboard.writeText(url); toast.success('Skopiowano link.'); } catch { window.prompt('Link:', url); }
   };
 
   const createAttendance = async () => {
     const yes = invs.filter(i => i.status === 'yes');
-    if (!yes.length) { alert('Brak odpowiedzi „Będę" — nie ma z czego utworzyć frekwencji.'); return; }
+    if (!yes.length) { toast.error('Brak odpowiedzi „Będę" — nie ma z czego utworzyć frekwencji.'); return; }
     if (!confirm(`Utworzyć sesję frekwencji i oznaczyć ${yes.length} obecnych (odpowiedzi „Będę")?`)) return;
     setCreatingAtt(true);
     try {
@@ -392,9 +393,9 @@ function CampaignDetail({ campaign, invitations, onBack, onChanged }) {
         const { error: e2 } = await supabase.from('attendance_records').insert(records);
         if (e2) throw e2;
       }
-      alert(`Utworzono sesję frekwencji: ${yes.length} obecnych${guests ? ` (+${guests} osób)` : ''}. Znajdziesz ją w module Frekwencja.`);
+      toast.success(`Utworzono sesję frekwencji: ${yes.length} obecnych${guests ? ` (+${guests} osób)` : ''}. Znajdziesz ją w module Frekwencja.`);
     } catch (err) {
-      alert('Nie udało się utworzyć frekwencji: ' + (err.message || err) + '\n(Wymagany aktywny moduł Frekwencja.)');
+      toast.error('Nie udało się utworzyć frekwencji: ' + (err.message || err) + '\n(Wymagany aktywny moduł Frekwencja.)');
     } finally { setCreatingAtt(false); }
   };
 

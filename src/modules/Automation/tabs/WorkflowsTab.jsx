@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, X, Zap, ArrowUp, ArrowDown, GripVertical, Workflow
 import { supabase } from '../../../lib/supabase';
 import CustomSelect from '../../../components/CustomSelect';
 import Modal from '../../../components/Modal';
+import { toast } from '../../../lib/toast';
 import {
   TRIGGER_TYPES, ACTION_TYPES, ACTION_CONFIG_FIELDS,
   triggerLabel, actionLabel, stepSummary, emptyStep,
@@ -30,7 +31,7 @@ export default function WorkflowsTab({ campusIdForInsert, withCampusFilter, memb
   })), [members]);
 
   const doEnroll = async () => {
-    if (!enrollMemberId) { alert('Wybierz osobę.'); return; }
+    if (!enrollMemberId) { toast.info('Wybierz osobę.'); return; }
     setEnrolling(true);
     try {
       const { data, error } = await supabase.functions.invoke('automation-run', {
@@ -38,9 +39,9 @@ export default function WorkflowsTab({ campusIdForInsert, withCampusFilter, memb
       });
       if (error || data?.error) throw new Error(data?.error || error?.message);
       setEnrollWf(null); setEnrollMemberId('');
-      alert('Osoba zapisana do ścieżki — należne kroki zostaną wykonane.');
+      toast.error('Osoba zapisana do ścieżki — należne kroki zostaną wykonane.');
     } catch (err) {
-      alert('Nie udało się zapisać: ' + (err.message || err));
+      toast.error('Nie udało się zapisać: ' + (err.message || err));
     } finally { setEnrolling(false); }
   };
 
@@ -114,7 +115,7 @@ export default function WorkflowsTab({ campusIdForInsert, withCampusFilter, memb
   )));
 
   const save = async () => {
-    if (!form.name.trim()) { alert('Podaj nazwę automatyzacji.'); return; }
+    if (!form.name.trim()) { toast.error('Podaj nazwę automatyzacji.'); return; }
     setSaving(true);
     try {
       const wfPayload = {
@@ -155,7 +156,7 @@ export default function WorkflowsTab({ campusIdForInsert, withCampusFilter, memb
       load();
     } catch (err) {
       console.error('Save workflow error:', err);
-      alert('Nie udało się zapisać automatyzacji: ' + (err.message || err));
+      toast.error('Nie udało się zapisać automatyzacji: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -170,7 +171,7 @@ export default function WorkflowsTab({ campusIdForInsert, withCampusFilter, memb
       if (error) throw error;
       setWorkflows(ws => ws.map(w => (w.id === wf.id ? { ...w, is_active: !w.is_active } : w)));
     } catch (err) {
-      alert('Nie udało się zmienić statusu: ' + (err.message || err));
+      toast.error('Nie udało się zmienić statusu: ' + (err.message || err));
     }
   };
 
@@ -181,7 +182,7 @@ export default function WorkflowsTab({ campusIdForInsert, withCampusFilter, memb
       if (error) throw error;
       load();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 

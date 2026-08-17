@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, X, Tag as TagIcon } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { TAG_COLORS } from '../lib/careApi';
+import { toast } from '../../../lib/toast';
 
 export default function TagsTab({ member, campusIdForInsert, withCampusFilter }) {
   const [tags, setTags] = useState([]);
@@ -31,8 +32,8 @@ export default function TagsTab({ member, campusIdForInsert, withCampusFilter })
 
   const add = async () => {
     const t = tag.trim();
-    if (!t) { alert('Wpisz nazwę tagu.'); return; }
-    if (tags.some(x => (x.tag || '').toLowerCase() === t.toLowerCase())) { alert('Ten tag już istnieje.'); return; }
+    if (!t) { toast.error('Wpisz nazwę tagu.'); return; }
+    if (tags.some(x => (x.tag || '').toLowerCase() === t.toLowerCase())) { toast.error('Ten tag już istnieje.'); return; }
     setSaving(true);
     try {
       const { error } = await supabase.from('member_tags').insert({
@@ -45,7 +46,7 @@ export default function TagsTab({ member, campusIdForInsert, withCampusFilter })
       setTag('');
       load();
     } catch (err) {
-      alert('Nie udało się dodać tagu: ' + (err.message || err));
+      toast.error('Nie udało się dodać tagu: ' + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -57,7 +58,7 @@ export default function TagsTab({ member, campusIdForInsert, withCampusFilter })
       if (error) throw error;
       load();
     } catch (err) {
-      alert('Nie udało się usunąć: ' + (err.message || err));
+      toast.error('Nie udało się usunąć: ' + (err.message || err));
     }
   };
 
