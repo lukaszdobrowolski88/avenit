@@ -14,6 +14,7 @@ import BoardCell from '../components/BoardCell';
 import ColumnHeader from '../components/ColumnHeader';
 import AddColumnMenu from '../components/AddColumnMenu';
 import Popover from '../components/Popover';
+import { useCan } from '../../../components/Can';
 import { summarizeColumn } from '../lib/summaries';
 import { applyView } from '../lib/viewData';
 import { GROUP_COLORS } from '../lib/constants';
@@ -47,7 +48,7 @@ function SummaryCell({ column, items }) {
 }
 
 // ── Wiersz elementu (sortowalny) ─────────────────────────────────────
-function ItemRow({ item, columns, groupColor, people, me, onCell, onUpdateColumn, onOpen, onDelete, updatesCount,
+function ItemRow({ item, columns, groupColor, people, me, onCell, onUpdateColumn, onOpen, onDelete, canDelete, updatesCount,
   selected, onToggleSelect, hasSub, subCount, expanded, onToggleExpand, onAddSub, isSub }) {
   const sortable = useSortable({ id: item.id, disabled: isSub });
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = sortable;
@@ -99,14 +100,14 @@ function ItemRow({ item, columns, groupColor, people, me, onCell, onUpdateColumn
         </div>
       ))}
       <div className="flex items-center justify-center shrink-0" style={{ width: ADDCOL_W }}>
-        <button onClick={() => onDelete(item.id)} className="opacity-0 group-hover/row:opacity-100 text-gray-300 hover:text-red-500 p-1"><Trash2 size={13} /></button>
+        {canDelete && <button onClick={() => onDelete(item.id)} className="opacity-0 group-hover/row:opacity-100 text-gray-300 hover:text-red-500 p-1"><Trash2 size={13} /></button>}
       </div>
     </div>
   );
 }
 
 // ── Blok grupy ───────────────────────────────────────────────────────
-function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, onOpen, updatesCountByItem, selected, onToggleSelect, expanded, onToggleExpand }) {
+function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, onOpen, updatesCountByItem, canDeleteItems, canEditStructure, selected, onToggleSelect, expanded, onToggleExpand }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const groupItems = useMemo(
     () => visibleItems.filter(it => it.group_id === group.id),
@@ -131,8 +132,9 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
         <button onClick={() => api.updateGroup(group.id, { collapsed: !collapsed })} className="p-0.5">
           {collapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
         </button>
-        <GroupTitle group={group} onRename={(name) => api.updateGroup(group.id, { name })} />
+        <GroupTitle group={group} canEdit={canEditStructure} onRename={(name) => api.updateGroup(group.id, { name })} />
         <span className="text-xs text-gray-400 font-normal">{groupItems.length}</span>
+        {canEditStructure && (
         <Popover align="left" width={180} trigger={
           <button className="text-gray-300 hover:text-gray-500 p-0.5"><MoreHorizontal size={16} /></button>
         }>
@@ -151,6 +153,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
             </div>
           )}
         </Popover>
+        )}
       </div>
 
       {!collapsed && (
@@ -166,7 +169,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
                   <ColumnHeader column={col} allColumns={columns} onUpdate={api.updateColumn} onDelete={api.deleteColumn} />
                 </div>
               ))}
-              <div className="shrink-0" style={{ width: ADDCOL_W }}><AddColumnMenu onAdd={api.addColumn} /></div>
+              <div className="shrink-0" style={{ width: ADDCOL_W }}>{canEditStructure && <AddColumnMenu onAdd={api.addColumn} />}</div>
             </div>
 
             {/* Wiersze */}
@@ -177,7 +180,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
                   return (
                     <React.Fragment key={it.id}>
                       <ItemRow item={it} columns={columns} groupColor={group.color} people={people} me={me}
-                        onCell={api.setCell} onUpdateColumn={api.updateColumn} onOpen={onOpen} onDelete={api.deleteItem}
+                        onCell={api.setCell} onUpdateColumn={api.updateColumn} onOpen={onOpen} onDelete={api.deleteItem} canDelete={canDeleteItems}
                         updatesCount={updatesCountByItem?.[it.id] || 0}
                         selected={selected.has(it.id)} onToggleSelect={onToggleSelect}
                         hasSub={subs.length > 0} subCount={subs.length} expanded={expanded.has(it.id)}
@@ -185,7 +188,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
                         onAddSub={(parent) => api.addSubitem(parent).then(() => onToggleExpand(parent.id, true))} />
                       {expanded.has(it.id) && subs.map(sub => (
                         <ItemRow key={sub.id} item={sub} columns={columns} groupColor={group.color} people={people} me={me}
-                          onCell={api.setCell} onUpdateColumn={api.updateColumn} onOpen={onOpen} onDelete={api.deleteItem} isSub />
+                          onCell={api.setCell} onUpdateColumn={api.updateColumn} onOpen={onOpen} onDelete={api.deleteItem} canDelete={canDeleteItems} isSub />
                       ))}
                     </React.Fragment>
                   );
@@ -222,7 +225,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
   );
 }
 
-function GroupTitle({ group, onRename }) {
+function GroupTitle({ group, canEdit, onRename }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(group.name);
   if (editing) {
@@ -233,7 +236,7 @@ function GroupTitle({ group, onRename }) {
         className="font-semibold text-sm bg-white dark:bg-gray-700 rounded px-1 outline-none ring-2 ring-current/30" style={{ color: 'inherit' }} />
     );
   }
-  return <span className="font-semibold text-sm cursor-pointer" onDoubleClick={() => setEditing(true)}>{group.name}</span>;
+  return <span className={`font-semibold text-sm ${canEdit ? 'cursor-pointer' : ''}`} onDoubleClick={() => canEdit && setEditing(true)}>{group.name}</span>;
 }
 
 // ── Widok Tabela ─────────────────────────────────────────────────────
@@ -241,6 +244,9 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
   const { columns, groups, items, people } = data;
   const [selected, setSelected] = useState(() => new Set());
   const [expanded, setExpanded] = useState(() => new Set());
+  // RBAC: członek dodaje/edytuje elementy, ale nie usuwa ich ani nie zmienia struktury (kolumny/grupy).
+  const canDeleteItems = useCan('res:board_items:delete');
+  const canEditStructure = useCan('res:board_columns:create');
 
   const api = {
     ...data,
@@ -272,12 +278,15 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
       {sortedGroups.map(g => (
         <GroupBlock key={g.id} group={g} columns={columns} visibleItems={visibleItems} allItems={items} people={people} me={data.me}
           api={api} onOpen={onOpenItem} updatesCountByItem={updatesCountByItem}
+          canDeleteItems={canDeleteItems} canEditStructure={canEditStructure}
           selected={selected} onToggleSelect={toggleSelect} expanded={expanded} onToggleExpand={toggleExpand} />
       ))}
-      <button onClick={() => data.addGroup()}
-        className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-accent-primary rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/40">
-        <Plus size={16} /> Dodaj grupę
-      </button>
+      {canEditStructure && (
+        <button onClick={() => data.addGroup()}
+          className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-500 hover:text-accent-primary rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/40">
+          <Plus size={16} /> Dodaj grupę
+        </button>
+      )}
 
       {/* Pasek operacji masowych */}
       {selected.size > 0 && (
@@ -305,7 +314,7 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
               </div>
             )}
           </Popover>
-          <button onClick={bulkDelete} className="text-sm px-3 py-1.5 rounded-lg text-red-300 hover:bg-red-500/20">Usuń</button>
+          {canDeleteItems && <button onClick={bulkDelete} className="text-sm px-3 py-1.5 rounded-lg text-red-300 hover:bg-red-500/20">Usuń</button>}
           <button onClick={clearSelection} className="p-1.5 rounded-lg hover:bg-white/10"><X size={16} /></button>
         </div>
       )}

@@ -22,6 +22,7 @@ import AutomationsPanel from './components/AutomationsPanel';
 import BoardActivityPanel from './components/BoardActivityPanel';
 import AiSidekick from './components/AiSidekick';
 import Popover from './components/Popover';
+import { useCan } from '../../components/Can';
 import { exportBoardCsv, buildCellsFromRecord } from './lib/csv';
 
 const VIEW_ICONS = { table: Table2, kanban: Trello, calendar: CalIcon, timeline: GanttChartSquare, form: FormInput, chart: BarChart3, files: GalleryThumbnails, workload: Gauge, doc: FileText, map: MapPin };
@@ -48,6 +49,12 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
   const [showActivity, setShowActivity] = useState(false);
   const [updatesCount, setUpdatesCount] = useState({});
   const openedInitial = useRef(false);
+
+  // RBAC: członek współpracuje na elementach, ale nie zmienia struktury/nazwy tablicy,
+  // nie zarządza widokami ani automatyzacjami (koordynator/lider/rada mają wildcardy).
+  const canUpdateBoard = useCan('res:boards:update');
+  const canManageViews = useCan('res:board_views:create');
+  const canManageAutomations = useCan('res:board_automations:create');
 
   // Deep-link: otwórz wskazany element po załadowaniu (z powiadomień/@wzmianek/Mojej pracy)
   useEffect(() => {
@@ -129,19 +136,21 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
         <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg" style={{ backgroundColor: data.board.color || '#6366f1' }}>
           <Table2 size={22} />
         </div>
-        <input value={data.board.name}
+        <input value={data.board.name} readOnly={!canUpdateBoard}
           onChange={(e) => data.setBoard({ ...data.board, name: e.target.value })}
-          onBlur={(e) => supabase.from('boards').update({ name: e.target.value }).eq('id', boardId)}
-          className="text-2xl font-bold bg-transparent outline-none text-gray-800 dark:text-gray-100 flex-1 min-w-0" />
+          onBlur={(e) => { if (canUpdateBoard) supabase.from('boards').update({ name: e.target.value }).eq('id', boardId); }}
+          className={`text-2xl font-bold bg-transparent outline-none text-gray-800 dark:text-gray-100 flex-1 min-w-0 ${canUpdateBoard ? '' : 'cursor-default'}`} />
         <button onClick={() => setShowSidekick(true)}
           className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-white bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 shadow-sm">
           <Sparkles size={15} /> AI Sidekick
         </button>
-        <button onClick={() => setShowAutomations(true)}
-          className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700">
-          <Zap size={15} className="text-accent-primary" /> Automatyzacje
-          {automations.automations.length > 0 && <span className="text-xs text-gray-400">{automations.automations.length}</span>}
-        </button>
+        {canManageAutomations && (
+          <button onClick={() => setShowAutomations(true)}
+            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700">
+            <Zap size={15} className="text-accent-primary" /> Automatyzacje
+            {automations.automations.length > 0 && <span className="text-xs text-gray-400">{automations.automations.length}</span>}
+          </button>
+        )}
         <button onClick={() => setShowActivity(true)} title="Aktywność tablicy"
           className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700">
           <Activity size={15} />
@@ -152,11 +161,11 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
       <div className="flex items-center gap-1 mb-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto custom-scrollbar">
         {data.views.map(v => (
           <ViewTab key={v.id} view={v} active={activeViewId === v.id} onSelect={setActiveViewId} data={data}
-            canDelete={data.views.length > 1}
+            canManage={canManageViews} canDelete={data.views.length > 1}
             onDelete={() => { data.deleteView(v.id); if (activeViewId === v.id) setActiveViewId(data.views.find(x => x.id !== v.id)?.id); }}
             onDuplicated={(nv) => nv && setActiveViewId(nv.id)} />
         ))}
-        <AddViewButton onAdd={(type, label) => data.addView(type, label).then(v => v && setActiveViewId(v.id))} />
+        {canManageViews && <AddViewButton onAdd={(type, label) => data.addView(type, label).then(v => v && setActiveViewId(v.id))} />}
       </div>
 
       {!['form', 'doc'].includes(activeView?.type || 'table') && (
@@ -185,7 +194,7 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
   );
 }
 
-function ViewTab({ view, active, onSelect, data, canDelete, onDelete, onDuplicated }) {
+function ViewTab({ view, active, onSelect, data, canManage, canDelete, onDelete, onDuplicated }) {
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(view.name);
   const Icon = VIEW_ICONS[view.type] || Table2;
@@ -201,7 +210,7 @@ function ViewTab({ view, active, onSelect, data, canDelete, onDelete, onDuplicat
           <Icon size={15} /> {view.name} {view.is_default && <Star size={11} className="fill-amber-400 text-amber-400" />}
         </button>
       )}
-      {active && !renaming && (
+      {active && !renaming && canManage && (
         <Popover align="left" width={185} trigger={<button className="px-1 py-2 text-gray-400 hover:text-gray-600"><MoreHorizontal size={15} /></button>}>
           {({ close }) => (
             <div className="p-1.5 text-sm">
