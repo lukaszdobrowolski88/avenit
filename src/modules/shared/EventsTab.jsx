@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
+import TabHeader from '../../components/TabHeader';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
@@ -564,18 +565,15 @@ GRANT ALL ON ${config.tableName} TO anon;`;
 
   return (
     <div className="space-y-6">
-      {/* Header z wyszukiwaniem i filtrowaniem */}
-      <div className="flex flex-col md:flex-row justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Wydarzenia')}</h2>
-        </div>
+      {/* Nagłówek */}
+      <TabHeader className="!mb-0" title={t('Wydarzenia')} actions={
         <button
           onClick={() => setShowModal({ id: null })}
           className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
         >
-          <Plus size={18}/> Dodaj wydarzenie
+          <Plus size={18}/> {t('Dodaj wydarzenie')}
         </button>
-      </div>
+      } />
 
       {/* Filtry */}
       <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row gap-4">

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
+import TabHeader from '../../components/TabHeader';
 
 const CONDITIONS = [
   { value: 'nowy', label: tr('Nowy'), color: 'green' },
@@ -201,19 +202,10 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
   return (
     <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 p-4 lg:p-6 transition-colors">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Package className="text-accent-primary-light" size={24} />
-            {tr('Wyposażenie')}
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Łącznie: {equipment.length} przedmiotów | Wartość: {totalValue.toLocaleString('pl-PL')} zł
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          {/* Search */}
+      <TabHeader
+        title={tr('Wyposażenie')}
+        subtitle={`${tr('Łącznie')}: ${equipment.length} ${tr('przedmiotów')} | ${tr('Wartość')}: ${totalValue.toLocaleString('pl-PL')} zł`}
+        actions={<>
           <div className="relative flex-1 sm:flex-none">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -224,8 +216,6 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
               className="w-full sm:w-48 pl-9 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light text-gray-700 dark:text-gray-200"
             />
           </div>
-
-          {/* Add button */}
           {canEdit && (
             <button
               onClick={openAddModal}
@@ -235,8 +225,8 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
               <span className="hidden sm:inline">{t('Dodaj')}</span>
             </button>
           )}
-        </div>
-      </div>
+        </>}
+      />
 
       {/* Equipment Grid */}
       {filteredEquipment.length === 0 ? (
