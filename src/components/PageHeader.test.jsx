@@ -7,7 +7,10 @@ import { Gift } from 'lucide-react';
 vi.mock('../hooks/useModuleLabel', () => ({
   useModuleLabel: (_k, fallback) => fallback,
   useModuleColor: () => null,
+  useModuleCover: () => null,
 }));
+// CoverPicker zależy od kontekstu uprawnień/supabase — w teście PageHeader nieistotny.
+vi.mock('./CoverPicker', () => ({ default: () => null }));
 
 describe('PageHeader', () => {
   it('renderuje tytuł, podtytuł i akcje', () => {

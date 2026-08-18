@@ -1,5 +1,6 @@
 import React from 'react';
-import { useModuleLabel, useModuleColor } from '../hooks/useModuleLabel';
+import { useModuleLabel, useModuleColor, useModuleCover } from '../hooks/useModuleLabel';
+import CoverPicker from './CoverPicker';
 
 // Kanoniczny nagłówek modułu w stylu Monday: OKŁADKA (kolorowy baner) + duża ikona z białą
 // obwódką nachodząca na okładkę + tytuł + podtytuł + akcje. Jedno źródło prawdy dla całej apki.
@@ -10,8 +11,13 @@ import { useModuleLabel, useModuleColor } from '../hooks/useModuleLabel';
 export default function PageHeader({ icon: Icon, title, subtitle, actions, iconColor, className = '', moduleKey, cover = true }) {
   const dynamicTitle = useModuleLabel(moduleKey, title);
   const moduleColor = useModuleColor(moduleKey);
+  const coverCfg = useModuleCover(moduleKey);
   const chipColor = iconColor || moduleColor;
   const chipStyle = chipColor ? { background: chipColor } : undefined;
+  // Tło okładki: wybrana okładka (obraz/gradient/kolor) > kolor modułu > gradient marki (z klasy).
+  const coverStyle = coverCfg?.type === 'image'
+    ? { backgroundImage: `url("${coverCfg.value}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : (coverCfg?.value ? { background: coverCfg.value } : chipStyle);
 
   if (!cover) {
     return (
@@ -31,8 +37,9 @@ export default function PageHeader({ icon: Icon, title, subtitle, actions, iconC
   return (
     <div className={className}>
       {/* Okładka */}
-      <div className="h-24 sm:h-28 rounded-2xl relative overflow-hidden bg-gradient-to-r from-accent-primary to-accent-secondary" style={chipStyle}>
-        <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/15" />
+      <div className="h-24 sm:h-28 rounded-2xl relative overflow-hidden bg-gradient-to-r from-accent-primary to-accent-secondary" style={coverStyle}>
+        {coverCfg?.type !== 'image' && <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/15" />}
+        <div className="absolute top-2 right-2"><CoverPicker moduleKey={moduleKey} /></div>
       </div>
       {/* Nagłówek nakładający się na okładkę */}
       <div className="flex items-end gap-4 -mt-9 px-1 relative">
