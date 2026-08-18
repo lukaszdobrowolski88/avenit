@@ -16,7 +16,7 @@ export default function AiAssistantModule() {
   const [activeTab, setActiveTab] = useState('sermon');
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader moduleKey="ai" icon={Sparkles} title="Asystent AI" subtitle="Materiały z kazań, pomoc w komunikacji i odpowiedzi na pytania — oparte na Claude" />
 
       {/* Zakładki */}

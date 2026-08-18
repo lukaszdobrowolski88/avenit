@@ -1,5 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import { CampusProvider } from './contexts/CampusContext';
@@ -131,6 +131,15 @@ function OfflineBanner() {
       {tr('Brak połączenia z internetem. Niektóre funkcje mogą być niedostępne.')}
     </div>
   );
+}
+
+// Jedno źródło prawdy szerokości modułów: standard = max-w-7xl wyśrodkowany (spójne wcięcia
+// w całej apce). Pełnoekranowe powłoki (Pulpit/Komunikator/Mail) idą na całą szerokość.
+const FULL_BLEED_PATHS = new Set(['/', '/komunikator', '/mail']);
+function ModuleContainer({ children }) {
+  const { pathname } = useLocation();
+  const full = FULL_BLEED_PATHS.has(pathname);
+  return <div className={full ? 'w-full' : 'w-full max-w-7xl mx-auto'}>{children}</div>;
 }
 
 function AppInner() {
@@ -476,6 +485,7 @@ function AppInner() {
               <main className="flex-1 overflow-y-auto p-4 lg:p-6 custom-scrollbar">
               <ErrorBoundary>
               <Suspense fallback={<PageLoader />}>
+              <ModuleContainer>
               <Routes>
                 <Route path="/" element={<PersonalDashboard user={session.user} />} />
                 <Route path="/programs" element={<ProgramsList />} />
@@ -584,6 +594,7 @@ function AppInner() {
 
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              </ModuleContainer>
               </Suspense>
               </ErrorBoundary>
               </main>
