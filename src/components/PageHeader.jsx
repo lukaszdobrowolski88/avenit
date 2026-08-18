@@ -35,19 +35,21 @@ export default function PageHeader({ icon: Icon, title, subtitle, actions, iconC
   }
 
   return (
-    <div className={`w-full ${className}`}>
-      {/* Okładka — pełny baner (nie cienki pasek); wysokość w rem skaluje się z gęstością UI */}
-      <div className="h-28 sm:h-36 rounded-2xl relative overflow-hidden bg-gradient-to-r from-accent-primary to-accent-secondary" style={coverStyle}>
+    <div className={`w-full relative ${className}`}>
+      {/* Okładka — pełny, wyższy baner (nie cienki pasek). overflow-hidden clipuje obraz/gradient
+          do zaokrąglonych rogów; DLATEGO CoverPicker jest PONIŻEJ, poza tym boxem. */}
+      <div className="h-40 sm:h-52 rounded-2xl relative overflow-hidden bg-gradient-to-r from-accent-primary to-accent-secondary" style={coverStyle}>
         {coverCfg?.type !== 'image' && <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/15" />}
-        <div className="absolute top-3 right-3"><CoverPicker moduleKey={moduleKey} /></div>
       </div>
+      {/* „Zmień okładkę" POZA okładką (jej overflow-hidden obcinał panel wyboru gradientu) */}
+      <div className="absolute top-3 right-3 z-30"><CoverPicker moduleKey={moduleKey} /></div>
       {/* Nagłówek nakładający się na okładkę — duża ikona jak w Monday */}
-      <div className="flex items-end gap-4 -mt-11 sm:-mt-12 px-1 relative">
+      <div className="flex items-end gap-4 -mt-12 sm:-mt-14 px-1 relative">
         <div
-          className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center shadow-lg shrink-0 ring-4 ring-white dark:ring-gray-900 bg-gradient-to-br from-accent-primary to-accent-secondary"
+          className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center shadow-lg shrink-0 ring-4 ring-white dark:ring-gray-900 bg-gradient-to-br from-accent-primary to-accent-secondary"
           style={chipStyle}
         >
-          {Icon && <Icon className="text-white w-9 h-9 sm:w-10 sm:h-10" />}
+          {Icon && <Icon className="text-white w-10 h-10 sm:w-12 sm:h-12" />}
         </div>
         <div className="min-w-0 flex-1 pb-1.5">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white truncate leading-tight">{dynamicTitle}</h1>
