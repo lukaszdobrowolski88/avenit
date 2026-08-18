@@ -1,19 +1,23 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import {
   startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
-  format, addMonths, isSameMonth, isSameDay, parseISO,
+  format, addMonths, addDays, differenceInCalendarDays, isSameMonth, isSameDay, parseISO,
 } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { applyView } from '../lib/viewData';
 import { findLabel } from '../lib/columnTypes';
 import CustomSelect from '../../../components/CustomSelect';
+import { useCan } from '../../../components/Can';
 import { tr } from '../../../i18n';
 
 const WEEKDAYS = ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Nd'];
 
 export default function CalendarView({ data, config, onUpdateConfig, onOpenItem }) {
   const [cursor, setCursor] = useState(() => new Date());
+  const dragItem = useRef(null);
+  const canUpdate = useCan('res:board_items:update');
+  const canCreate = useCan('res:board_items:create');
 
   const dateCols = data.columns.filter(c => c.type === 'date' || c.type === 'timeline');
   const dateColId = config.calendarDateColumn || dateCols[0]?.id;
@@ -44,6 +48,32 @@ export default function CalendarView({ data, config, onUpdateConfig, onOpenItem 
     return map;
   }, [items, dateColId]);
 
+  // Przenieś element na inny dzień (dla timeline zachowaj długość: przesuń start i end).
+  const rescheduleTo = (it, dayKey) => {
+    if (!canUpdate) return;
+    if (dateCol.type === 'timeline') {
+      const v = it.cells?.[dateColId] || {};
+      let end = null;
+      if (v.start && v.end) {
+        const dur = differenceInCalendarDays(parseISO(v.end), parseISO(v.start));
+        end = format(addDays(parseISO(dayKey), Math.max(0, dur)), 'yyyy-MM-dd');
+      }
+      data.updateCell(it.id, dateColId, { start: dayKey, end });
+    } else {
+      data.updateCell(it.id, dateColId, dayKey);
+    }
+  };
+
+  // Utwórz nowy element na klikniętym dniu (pierwsza grupa) i otwórz panel.
+  const createOnDay = async (dayKey) => {
+    if (!canCreate) return;
+    const g = [...data.groups].sort((a, b) => (a.display_order || 0) - (b.display_order || 0))[0];
+    if (!g) return;
+    const cells = { [dateColId]: dateCol.type === 'timeline' ? { start: dayKey, end: null } : dayKey };
+    const it = await data.addItem(g.id, '', cells);
+    if (it) onOpenItem(it);
+  };
+
   if (!dateCol) {
     return <div className="text-center py-16 text-gray-400 text-sm">Dodaj kolumnę typu Data lub Oś czasu, aby użyć widoku Kalendarz.</div>;
   }
@@ -73,14 +103,27 @@ export default function CalendarView({ data, config, onUpdateConfig, onOpenItem 
           const muted = !isSameMonth(day, cursor);
           const today = isSameDay(day, new Date());
           return (
-            <div key={key} className={`bg-white dark:bg-gray-800 min-h-[92px] p-1.5 ${muted ? 'opacity-40' : ''}`}>
-              <div className={`text-xs mb-1 ${today ? 'bg-accent-primary text-white w-5 h-5 rounded-full flex items-center justify-center' : 'text-gray-400'}`}>{format(day, 'd')}</div>
+            <div key={key}
+              onDragOver={(e) => { if (canUpdate && dragItem.current) e.preventDefault(); }}
+              onDrop={() => { if (dragItem.current) { rescheduleTo(dragItem.current, key); dragItem.current = null; } }}
+              className={`group relative bg-white dark:bg-gray-800 min-h-[92px] p-1.5 ${muted ? 'opacity-40' : ''}`}>
+              <div className="flex items-center justify-between mb-1">
+                <div className={`text-xs ${today ? 'bg-accent-primary text-white w-5 h-5 rounded-full flex items-center justify-center' : 'text-gray-400'}`}>{format(day, 'd')}</div>
+                {canCreate && (
+                  <button onClick={() => createOnDay(key)} title="Dodaj na ten dzień"
+                    className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-accent-primary"><Plus size={13} /></button>
+                )}
+              </div>
               <div className="space-y-1">
                 {dayItems.slice(0, 3).map(it => {
                   const l = statusCol ? findLabel(statusCol, it.cells?.[statusCol.id]) : null;
                   return (
-                    <button key={it.id} onClick={() => onOpenItem(it)}
-                      className="w-full text-left text-[11px] px-1.5 py-0.5 rounded truncate text-white"
+                    <button key={it.id}
+                      draggable={canUpdate}
+                      onDragStart={() => { dragItem.current = it; }}
+                      onDragEnd={() => { dragItem.current = null; }}
+                      onClick={() => onOpenItem(it)}
+                      className="w-full text-left text-[11px] px-1.5 py-0.5 rounded truncate text-white cursor-pointer"
                       style={{ backgroundColor: l ? l.color : '#579bfc' }}>
                       {it.name || 'Bez nazwy'}
                     </button>
