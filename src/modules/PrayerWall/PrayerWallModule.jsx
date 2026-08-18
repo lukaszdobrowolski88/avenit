@@ -1019,19 +1019,23 @@ export default function PrayerWallModule() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <PageHeader moduleKey="prayer" icon={Heart} title={t('Centrum Modlitwy')} />
-        <button
-          data-tour="prayer-add"
-          onClick={() => {
-            setEditingRequest(null);
-            setIsModalOpen(true);
-          }}
-          className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
-        >
-          <Plus size={18} /> {t('Dodaj intencję')}
-        </button>
-      </div>
+      <PageHeader
+        moduleKey="prayer"
+        icon={Heart}
+        title={t('Centrum Modlitwy')}
+        actions={
+          <button
+            data-tour="prayer-add"
+            onClick={() => {
+              setEditingRequest(null);
+              setIsModalOpen(true);
+            }}
+            className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white px-4 py-2 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
+          >
+            <Plus size={18} /> {t('Dodaj intencję')}
+          </button>
+        }
+      />
 
       {/* Główna sekcja */}
       <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6">

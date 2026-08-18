@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Image as ImageIcon, RotateCcw, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { usePermissions } from '../contexts/PermissionsContext';
+import { useCan } from './Can';
 import { invalidateModuleLabels } from '../hooks/useModuleLabel';
 import { toast } from '../lib/toast';
 
@@ -22,12 +22,15 @@ const GRADIENTS = [
 const COLORS = ['#6366f1', '#00c875', '#e2445c', '#fdab3d', '#a25ddc', '#0086c0', '#ff5ac4', '#579bfc', '#037f4c', '#333333'];
 
 export default function CoverPicker({ moduleKey }) {
-  const { subject } = usePermissions();
+  // Zmiana okładki = ta sama bramka co dostęp do Ustawień (tam żyje wygląd modułów:
+  // nazwa/kolor). Dzięki temu widzą ją wszyscy zarządzający (np. rada_starszych),
+  // nie tylko techniczny superadmin (subject.isAdmin obejmował tylko jego).
+  const canEdit = useCan('module:settings');
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const fileRef = useRef(null);
-  if (!moduleKey || !subject?.isAdmin) return null;
+  if (!moduleKey || !canEdit) return null;
 
   // Upload pliku obrazu (jak avatary/logo — bucket public-assets) → okładka = image URL.
   const uploadFile = async (e) => {
