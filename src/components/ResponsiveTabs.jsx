@@ -25,13 +25,22 @@ export default function ResponsiveTabs({ tabs, activeTab, onChange, className = 
     }
   }, [activeTab]);
 
+  // Styl Monday: zakładki jako wiersz z dolną linią; aktywna = podkreślenie akcentem
+  // (nie wypełniony gradient-pill). Lekko, czysto — wspólne dla mobile i desktop.
+  const tabClass = (isActive) =>
+    `flex-shrink-0 flex items-center gap-2 px-3.5 py-2.5 -mb-px border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
+      isActive
+        ? 'border-accent-primary text-accent-primary'
+        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+    }`;
+
   return (
     <div className={className}>
-      {/* Mobile - Horizontal scrollable tabs */}
-      <div className="lg:hidden -mx-4 px-4">
+      {/* Mobile - przewijalny wiersz z podkreśleniem */}
+      <div className="lg:hidden -mx-4 px-4 border-b border-gray-200 dark:border-gray-700">
         <div
           ref={scrollContainerRef}
-          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-smooth"
+          className="flex gap-1 overflow-x-auto scrollbar-hide scroll-smooth"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {tabs.map(tab => {
@@ -43,25 +52,19 @@ export default function ResponsiveTabs({ tabs, activeTab, onChange, className = 
                 ref={isActive ? activeTabRef : null}
                 data-tour={tab.tour}
                 onClick={() => onChange(tab.id)}
-                className={`flex-shrink-0 px-4 py-2.5 rounded-full font-medium text-sm transition-all duration-200 flex items-center gap-2 ${
-                  isActive
-                    ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-lg shadow-accent-primary-light/30'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light dark:hover:border-accent-primary hover:text-accent-primary dark:hover:text-accent-primary-light'
-                }`}
+                className={tabClass(isActive)}
               >
-                {TabIcon && <TabIcon size={16} className={isActive ? 'text-white' : ''} />}
-                <span className="whitespace-nowrap">{tab.label}</span>
+                {TabIcon && <TabIcon size={16} />}
+                <span>{tab.label}</span>
               </button>
             );
           })}
         </div>
-        {/* Gradient fade na krawędziach */}
-        <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-gray-50 dark:from-gray-900 to-transparent lg:hidden" style={{ display: 'none' }} />
       </div>
 
-      {/* Desktop tabs */}
-      <div className="hidden lg:block">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-2 inline-flex gap-2 flex-wrap">
+      {/* Desktop - wiersz z podkreśleniem */}
+      <div className="hidden lg:block border-b border-gray-200 dark:border-gray-700">
+        <div className="flex gap-1 flex-wrap">
           {tabs.map(tab => {
             const TabIcon = tab.icon;
             const isActive = tab.id === activeTab;
@@ -70,11 +73,7 @@ export default function ResponsiveTabs({ tabs, activeTab, onChange, className = 
                 key={tab.id}
                 data-tour={tab.tour}
                 onClick={() => onChange(tab.id)}
-                className={`px-4 xl:px-6 py-2.5 rounded-xl font-medium transition text-sm flex items-center gap-2 ${
-                  isActive
-                    ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white shadow-md'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-                }`}
+                className={tabClass(isActive)}
               >
                 {TabIcon && <TabIcon size={16} />}
                 {tab.label}
