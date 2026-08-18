@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Image as ImageIcon, RotateCcw } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Image as ImageIcon, RotateCcw, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { usePermissions } from '../contexts/PermissionsContext';
 import { invalidateModuleLabels } from '../hooks/useModuleLabel';
@@ -26,7 +26,29 @@ export default function CoverPicker({ moduleKey }) {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
+  const fileRef = useRef(null);
   if (!moduleKey || !subject?.isAdmin) return null;
+
+  // Upload pliku obrazu (jak avatary/logo — bucket public-assets) → okładka = image URL.
+  const uploadFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Wybierz plik graficzny'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Maksymalny rozmiar to 5 MB'); return; }
+    setBusy(true);
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const fileName = `cover-${moduleKey}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('public-assets').upload(fileName, file);
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from('public-assets').getPublicUrl(fileName);
+      await save({ type: 'image', value: data.publicUrl });
+    } catch {
+      toast.error('Nie udało się wgrać pliku');
+      setBusy(false);
+    }
+  };
 
   const save = async (cover) => {
     setBusy(true);
@@ -47,9 +69,10 @@ export default function CoverPicker({ moduleKey }) {
 
   return (
     <div className="relative">
+      <input ref={fileRef} type="file" accept="image/*" onChange={uploadFile} className="hidden" />
       <button onClick={() => setOpen((o) => !o)} disabled={busy}
-        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white/90 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 shadow-sm hover:bg-white dark:hover:bg-gray-900 backdrop-blur-sm">
-        <ImageIcon size={13} /> Zmień okładkę
+        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white/90 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 shadow-sm hover:bg-white dark:hover:bg-gray-900 backdrop-blur-sm disabled:opacity-70">
+        {busy ? <Loader2 size={13} className="animate-spin" /> : <ImageIcon size={13} />} Zmień okładkę
       </button>
       {open && (
         <>
@@ -67,9 +90,13 @@ export default function CoverPicker({ moduleKey }) {
                 <button key={c} onClick={() => save({ type: 'color', value: c })} className="h-9 rounded-lg ring-1 ring-black/5 hover:scale-105 transition" style={{ background: c }} />
               ))}
             </div>
-            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Obraz (URL)</div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Obraz</div>
+            <button onClick={() => fileRef.current?.click()} disabled={busy}
+              className="w-full flex items-center justify-center gap-2 py-2 mb-1.5 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 hover:border-accent-primary/50 hover:text-accent-primary disabled:opacity-50">
+              <Upload size={14} /> Prześlij plik
+            </button>
             <div className="flex gap-1.5">
-              <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…"
+              <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="…lub wklej URL"
                 onKeyDown={(e) => { if (e.key === 'Enter' && url.trim()) save({ type: 'image', value: url.trim() }); }}
                 className="flex-1 min-w-0 text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1.5 outline-none text-gray-800 dark:text-gray-100" />
               <button onClick={() => url.trim() && save({ type: 'image', value: url.trim() })}
