@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MoreHorizontal, Trash2, Pencil } from 'lucide-react';
+import { MoreHorizontal, Trash2, Pencil, ArrowLeft, ArrowRight } from 'lucide-react';
 import Popover from './Popover';
 import ColumnIcon from './ColumnIcon';
 import CustomSelect from '../../../components/CustomSelect';
@@ -9,12 +9,23 @@ import { supabase } from '../../../lib/supabase';
 import { fetchBoardColumnsCached } from '../lib/relationCache';
 
 // Nagłówek kolumny: ikona typu + nazwa (edycja) + menu (ustawienia/usuń).
-export default function ColumnHeader({ column, allColumns = [], onUpdate, onDelete }) {
+export default function ColumnHeader({ column, allColumns = [], onUpdate, onDelete, onReorder }) {
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(column.name);
   const [boards, setBoards] = useState([]);
   const [targetCols, setTargetCols] = useState([]);
   const t = getColumnType(column.type);
+
+  // Reorder kolumn (menu w lewo/prawo) — bez ryzykownego drag na duplikowanym nagłówku.
+  const sortedCols = [...allColumns].sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+  const idx = sortedCols.findIndex(c => c.id === column.id);
+  const move = (dir) => {
+    const j = idx + dir;
+    if (!onReorder || j < 0 || j >= sortedCols.length) return;
+    const ids = sortedCols.map(c => c.id);
+    [ids[idx], ids[j]] = [ids[j], ids[idx]];
+    onReorder(ids);
+  };
 
   useEffect(() => {
     if (column.type !== 'connect_board') return;
@@ -49,6 +60,18 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
               className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200">
               <Pencil size={14} /> Zmień nazwę
             </button>
+            {onReorder && (
+              <div className="flex gap-1">
+                <button onClick={() => { move(-1); close(); }} disabled={idx <= 0}
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed">
+                  <ArrowLeft size={14} /> W lewo
+                </button>
+                <button onClick={() => { move(1); close(); }} disabled={idx >= sortedCols.length - 1}
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed">
+                  W prawo <ArrowRight size={14} />
+                </button>
+              </div>
+            )}
             {column.type === 'number' && (
               <div className="px-2 py-1.5">
                 <label className="text-[11px] text-gray-400">Jednostka</label>
