@@ -186,7 +186,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
               <div className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 dark:text-gray-300" style={{ flex: 1, minWidth: NAME_MIN }}>Element</div>
               {columns.map(col => (
                 <div key={col.id} className="border-r border-gray-200 dark:border-gray-700 shrink-0 relative" style={{ width: col.width || 160 }}>
-                  <ColumnHeader column={col} allColumns={columns} onUpdate={api.updateColumn} onDelete={api.deleteColumn} />
+                  <ColumnHeader column={col} allColumns={columns} onUpdate={api.updateColumn} onDelete={api.deleteColumn} onReorder={canEditStructure ? api.reorderColumns : undefined} />
                   {canEditStructure && <ColResizeHandle width={col.width || 160}
                     onResize={(w) => api.setColumnWidthLocal(col.id, w)}
                     onCommit={(w) => api.updateColumn(col.id, { width: w })} />}
