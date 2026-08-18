@@ -35,14 +35,17 @@ export default function PageHeader({ icon: Icon, title, subtitle, actions, iconC
   }
 
   return (
-    <div className={`w-full relative ${className}`}>
+    <div className={`w-full relative group ${className}`}>
       {/* Okładka — pełny, wyższy baner (nie cienki pasek). overflow-hidden clipuje obraz/gradient
           do zaokrąglonych rogów; DLATEGO CoverPicker jest PONIŻEJ, poza tym boxem. */}
-      <div className="h-40 sm:h-52 rounded-2xl relative overflow-hidden bg-gradient-to-r from-accent-primary to-accent-secondary" style={coverStyle}>
+      <div className="h-56 sm:h-72 rounded-2xl relative overflow-hidden bg-gradient-to-r from-accent-primary to-accent-secondary" style={coverStyle}>
         {coverCfg?.type !== 'image' && <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/15" />}
       </div>
-      {/* „Zmień okładkę" POZA okładką (jej overflow-hidden obcinał panel wyboru gradientu) */}
-      <div className="absolute top-3 right-3 z-30"><CoverPicker moduleKey={moduleKey} /></div>
+      {/* „Zmień okładkę" POZA okładką (overflow-hidden obcinał panel). Na desktopie pojawia się
+          dopiero po najechaniu na nagłówek (group-hover); na mobile bez hovera — zawsze. */}
+      <div className="absolute top-3 right-3 z-30 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity duration-200">
+        <CoverPicker moduleKey={moduleKey} />
+      </div>
       {/* Nagłówek nakładający się na okładkę — duża ikona jak w Monday */}
       <div className="flex items-end gap-4 -mt-12 sm:-mt-14 px-1 relative">
         <div
