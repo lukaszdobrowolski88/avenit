@@ -19,6 +19,17 @@
   --accent-secondary-darkest: 113 63 18; /* yellow-900 */
 }
 
+/* Kompaktowa skala UI. Tailwind liczy fonty I odstępy w `rem`, więc font-size na <html>
+   proporcjonalnie skaluje CAŁĄ apkę (jak Monday ≈14px). Mniejsze monitory = 14px (gęściej
+   mieści się na ekranie); duże desktopy dostają odrobinę luzu. Breakpointy Tailwinda są w px,
+   więc się nie przesuwają. Zmiana bazy tutaj = jedno źródło prawdy dla gęstości interfejsu. */
+html {
+  font-size: 14px;
+}
+@media (min-width: 1920px) {
+  html { font-size: 15px; }
+}
+
 html, body {
   font-family: 'Inter', sans-serif;
   background-color: #f3f4f6;
