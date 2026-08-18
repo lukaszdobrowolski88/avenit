@@ -35,7 +35,7 @@ export default function PageHeader({ icon: Icon, title, subtitle, actions, iconC
   }
 
   return (
-    <div className={className}>
+    <div className={`w-full ${className}`}>
       {/* Okładka */}
       <div className="h-24 sm:h-28 rounded-2xl relative overflow-hidden bg-gradient-to-r from-accent-primary to-accent-secondary" style={coverStyle}>
         {coverCfg?.type !== 'image' && <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/15" />}
