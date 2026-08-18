@@ -69,15 +69,20 @@ function SummaryCell({ column, items }) {
   return <div className="w-full text-center text-[11px] text-gray-400">{s.filled}/{s.total}</div>;
 }
 
-// ── Wiersz elementu (sortowalny) ─────────────────────────────────────
-function ItemRow({ item, columns, groupColor, people, me, onCell, onUpdateColumn, onOpen, onDelete, canDelete, updatesCount,
+// ── Wiersz elementu (sortowalny + memoizowany) ───────────────────────
+const ItemRow = React.memo(function ItemRow({ item, columns, groupColor, people, me, onCell, onUpdateColumn, onOpen, onDelete, canDelete, updatesCount,
   selected, onToggleSelect, hasSub, subCount, expanded, onToggleExpand, onAddSub, isSub }) {
   const sortable = useSortable({ id: item.id, disabled: isSub });
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = sortable;
   // Nazwa: lokalny stan + commit na blur/Enter — inaczej zapis do bazy przy KAŻDYM znaku (lag).
   const [nameLocal, setNameLocal] = useState(item.name);
   useEffect(() => { setNameLocal(item.name); }, [item.name]);
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+  // content-visibility:auto = natywna wirtualizacja przeglądarki (pomija render wierszy poza
+  // ekranem). contain-intrinsic-size 'auto 38px' pamięta realną wysokość → bez skoków scrolla.
+  const style = {
+    transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1,
+    contentVisibility: isDragging ? 'visible' : 'auto', containIntrinsicSize: 'auto 38px',
+  };
   return (
     <div ref={setNodeRef} style={style}
       className={`flex items-stretch border-b border-gray-100 dark:border-gray-700/60 hover:bg-gray-50/70 dark:hover:bg-gray-700/30 group/row min-h-[38px] ${isSub ? 'bg-gray-50/50 dark:bg-gray-800/40' : 'bg-white dark:bg-gray-800'}`}>
@@ -131,7 +136,13 @@ function ItemRow({ item, columns, groupColor, people, me, onCell, onUpdateColumn
       </div>
     </div>
   );
-}
+}, (a, b) => (
+  // Re-render tylko gdy zmienią się DANE wiersza (callbacki logicznie stałe — ignorujemy ich tożsamość).
+  a.item === b.item && a.columns === b.columns && a.groupColor === b.groupColor &&
+  a.people === b.people && a.me === b.me && a.canDelete === b.canDelete &&
+  a.updatesCount === b.updatesCount && a.selected === b.selected && a.hasSub === b.hasSub &&
+  a.subCount === b.subCount && a.expanded === b.expanded && a.isSub === b.isSub
+));
 
 // ── Blok grupy ───────────────────────────────────────────────────────
 function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, onOpen, updatesCountByItem, canDeleteItems, canEditStructure, selected, onToggleSelect, expanded, onToggleExpand }) {
