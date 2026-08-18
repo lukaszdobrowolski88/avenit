@@ -2830,7 +2830,7 @@ export default function ProgramDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 -m-4 lg:-m-6 p-4 md:p-6 lg:p-8">
+    <div>
       <div className="space-y-6">
 
         {/* EDYCJA PROGRAMU */}

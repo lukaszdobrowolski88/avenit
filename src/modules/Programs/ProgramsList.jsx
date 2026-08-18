@@ -295,7 +295,7 @@ export default function ProgramsList() {
   const colorOptions = ['#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#1e40af', '#7c3aed'];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 -m-4 lg:-m-6 p-4 md:p-6 lg:p-8">
+    <div>
       <div>
         {/* Header */}
         <div className="mb-6 sm:mb-8">
