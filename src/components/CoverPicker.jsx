@@ -19,7 +19,21 @@ const GRADIENTS = [
   'linear-gradient(120deg,#11998e,#38ef7d)',
   'linear-gradient(120deg,#1f2937,#4b5563)',
 ];
+// Bardzo jasne, „muśnięte" gradienty — subtelne tło, ledwie zabarwione.
+const PASTELS = [
+  'linear-gradient(120deg,#f6f9fc,#e9eef5)',
+  'linear-gradient(120deg,#fdfbfb,#ebedee)',
+  'linear-gradient(120deg,#eef2f7,#dbe4ef)',
+  'linear-gradient(120deg,#e0eafc,#cfdef3)',
+  'linear-gradient(120deg,#f3e7e9,#e3eeff)',
+  'linear-gradient(120deg,#fff1eb,#e7f3fb)',
+  'linear-gradient(120deg,#f9f9f9,#e8f0fe)',
+  'linear-gradient(120deg,#fdfcfb,#f0e6dd)',
+  'linear-gradient(120deg,#ebf4f5,#f9efe7)',
+  'linear-gradient(120deg,#eafbf2,#e6efe9)',
+];
 const COLORS = ['#6366f1', '#00c875', '#e2445c', '#fdab3d', '#a25ddc', '#0086c0', '#ff5ac4', '#579bfc', '#037f4c', '#333333'];
+const isHex = (v) => /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test((v || '').trim());
 
 export default function CoverPicker({ moduleKey }) {
   // Zmiana okładki = ta sama bramka co dostęp do Ustawień (tam żyje wygląd modułów:
@@ -28,6 +42,7 @@ export default function CoverPicker({ moduleKey }) {
   const canEdit = useCan('module:settings');
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState('');
+  const [custom, setCustom] = useState('#6366f1'); // własny kolor (hex)
   const [busy, setBusy] = useState(false);
   const fileRef = useRef(null);
   if (!moduleKey || !canEdit) return null;
@@ -80,11 +95,17 @@ export default function CoverPicker({ moduleKey }) {
       {open && (
         <>
           <div className="fixed inset-0 z-[90]" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 z-[100] w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-3">
+          <div className="absolute right-0 top-full mt-2 z-[100] w-72 max-h-[70vh] overflow-y-auto custom-scrollbar bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-3">
             <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Gradient</div>
             <div className="grid grid-cols-5 gap-2 mb-3">
               {GRADIENTS.map((g) => (
                 <button key={g} onClick={() => save({ type: 'gradient', value: g })} className="h-9 rounded-lg ring-1 ring-black/5 hover:scale-105 transition" style={{ background: g }} />
+              ))}
+            </div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Pastele (delikatne)</div>
+            <div className="grid grid-cols-5 gap-2 mb-3">
+              {PASTELS.map((g) => (
+                <button key={g} onClick={() => save({ type: 'gradient', value: g })} className="h-9 rounded-lg ring-1 ring-black/10 hover:scale-105 transition" style={{ background: g }} />
               ))}
             </div>
             <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Kolor</div>
@@ -92,6 +113,16 @@ export default function CoverPicker({ moduleKey }) {
               {COLORS.map((c) => (
                 <button key={c} onClick={() => save({ type: 'color', value: c })} className="h-9 rounded-lg ring-1 ring-black/5 hover:scale-105 transition" style={{ background: c }} />
               ))}
+            </div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Własny kolor</div>
+            <div className="flex gap-1.5 items-center mb-3">
+              <input type="color" value={isHex(custom) ? custom : '#6366f1'} onChange={(e) => setCustom(e.target.value)}
+                className="w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent cursor-pointer shrink-0 p-0.5" title="Wybierz kolor" />
+              <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="#RRGGBB"
+                onKeyDown={(e) => { if (e.key === 'Enter' && isHex(custom)) save({ type: 'color', value: custom.trim() }); }}
+                className="flex-1 min-w-0 text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1.5 outline-none text-gray-800 dark:text-gray-100" />
+              <button onClick={() => isHex(custom) && save({ type: 'color', value: custom.trim() })} disabled={!isHex(custom)}
+                className="px-3 rounded-lg bg-accent-primary text-white text-sm shrink-0 disabled:opacity-40">OK</button>
             </div>
             <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Obraz</div>
             <button onClick={() => fileRef.current?.click()} disabled={busy}
