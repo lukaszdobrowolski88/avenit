@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   parseISO, differenceInCalendarDays, eachDayOfInterval, format, addDays, min as dMin, max as dMax, isSameMonth,
 } from 'date-fns';
@@ -6,16 +6,61 @@ import { pl } from 'date-fns/locale';
 import { applyView } from '../lib/viewData';
 import { findLabel } from '../lib/columnTypes';
 import CustomSelect from '../../../components/CustomSelect';
+import { useCan } from '../../../components/Can';
 import { tr } from '../../../i18n';
 
 const DAY_W = 30;
 const NAME_W = 220;
+const fmt = (d) => format(d, 'yyyy-MM-dd');
+
+// Pasek Gantta: przeciąganie (przesuń, zachowaj długość) + resize krawędzi. Podgląd na żywo
+// przez lokalny stan; commit dat na koniec. Bez ruchu = klik otwiera element.
+function TimelineBar({ item, start, end, offset, length, color, editable, resizable, onUpdate, onOpen }) {
+  const [drag, setDrag] = useState(null); // { mode:'move'|'left'|'right', dx }
+  const startDrag = (mode) => (e) => {
+    if (!editable) { onOpen(); return; }
+    e.stopPropagation(); e.preventDefault();
+    const startX = e.clientX; let dx = 0, moved = false;
+    const move = (ev) => { dx = Math.round((ev.clientX - startX) / DAY_W); if (Math.abs(ev.clientX - startX) > 3) moved = true; setDrag({ mode, dx }); };
+    const up = () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
+      setDrag(null);
+      if (!moved && mode === 'move') { onOpen(); return; }
+      if (!dx) return;
+      if (mode === 'move') onUpdate(fmt(addDays(start, dx)), fmt(addDays(end, dx)));
+      else if (mode === 'left') { const ns = addDays(start, dx); onUpdate(fmt(ns <= end ? ns : end), fmt(end)); }
+      else { const ne = addDays(end, dx); onUpdate(fmt(start), fmt(ne >= start ? ne : start)); }
+    };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+  };
+  let left = offset * DAY_W + 2, width = Math.max(length * DAY_W - 4, DAY_W - 4);
+  if (drag) {
+    if (drag.mode === 'move') left += drag.dx * DAY_W;
+    else if (drag.mode === 'left') { left += drag.dx * DAY_W; width -= drag.dx * DAY_W; }
+    else width += drag.dx * DAY_W;
+    width = Math.max(DAY_W - 4, width);
+  }
+  return (
+    <div onPointerDown={startDrag('move')} title={item.name}
+      className={`absolute h-6 rounded-full text-[11px] text-white px-2 truncate flex items-center hover:brightness-110 ${editable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
+      style={{ top: 8, left, width, backgroundColor: color }}>
+      {editable && resizable && <div onPointerDown={startDrag('left')} className="absolute left-0 top-0 h-full w-1.5 cursor-ew-resize" />}
+      <span className="truncate">{item.name}</span>
+      {editable && resizable && <div onPointerDown={startDrag('right')} className="absolute right-0 top-0 h-full w-1.5 cursor-ew-resize" />}
+    </div>
+  );
+}
 
 export default function TimelineView({ data, config, onUpdateConfig, onOpenItem }) {
   const tlCols = data.columns.filter(c => c.type === 'timeline' || c.type === 'date');
   const colId = config.timelineColumn || data.columns.find(c => c.type === 'timeline')?.id || tlCols[0]?.id;
   const col = data.columns.find(c => c.id === colId);
   const statusCol = data.columns.find(c => c.type === 'status' || c.type === 'priority');
+  const canUpdate = useCan('res:board_items:update');
+  const updateBar = (item, ns, ne) => {
+    if (col?.type === 'timeline') data.updateCell(item.id, colId, { start: ns, end: ne });
+    else data.updateCell(item.id, colId, ns); // kolumna Data = pojedynczy dzień
+  };
 
   const items = useMemo(() => applyView(data.items, data.columns, config), [data.items, data.columns, config]);
 
@@ -109,11 +154,9 @@ export default function TimelineView({ data, config, onUpdateConfig, onOpenItem 
                   <div key={item.id} className="flex items-center border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30" style={{ height: ROW_H }}>
                     <div className="shrink-0 border-r border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 truncate px-3" style={{ width: NAME_W }}>{item.name || 'Bez nazwy'}</div>
                     <div className="relative" style={{ width: totalW, height: ROW_H }}>
-                      <button onClick={() => onOpenItem(item)} title={item.name}
-                        className="absolute h-6 rounded-full text-[11px] text-white px-2 truncate flex items-center hover:brightness-110"
-                        style={{ top: (ROW_H - 24) / 2, left: offset * DAY_W + 2, width: Math.max(length * DAY_W - 4, DAY_W - 4), backgroundColor: l ? l.color : '#6366f1' }}>
-                        {item.name}
-                      </button>
+                      <TimelineBar item={item} start={start} end={end} offset={offset} length={length}
+                        color={l ? l.color : '#6366f1'} editable={canUpdate} resizable={col.type === 'timeline'}
+                        onUpdate={(ns, ne) => updateBar(item, ns, ne)} onOpen={() => onOpenItem(item)} />
                     </div>
                   </div>
                 );
