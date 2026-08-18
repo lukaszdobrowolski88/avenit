@@ -36,24 +36,24 @@ export default function PageHeader({ icon: Icon, title, subtitle, actions, iconC
 
   return (
     <div className={`w-full ${className}`}>
-      {/* Okładka */}
-      <div className="h-24 sm:h-28 rounded-2xl relative overflow-hidden bg-gradient-to-r from-accent-primary to-accent-secondary" style={coverStyle}>
+      {/* Okładka — pełny baner (nie cienki pasek); wysokość w rem skaluje się z gęstością UI */}
+      <div className="h-28 sm:h-36 rounded-2xl relative overflow-hidden bg-gradient-to-r from-accent-primary to-accent-secondary" style={coverStyle}>
         {coverCfg?.type !== 'image' && <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-black/15" />}
-        <div className="absolute top-2 right-2"><CoverPicker moduleKey={moduleKey} /></div>
+        <div className="absolute top-3 right-3"><CoverPicker moduleKey={moduleKey} /></div>
       </div>
-      {/* Nagłówek nakładający się na okładkę */}
-      <div className="flex items-end gap-4 -mt-9 px-1 relative">
+      {/* Nagłówek nakładający się na okładkę — duża ikona jak w Monday */}
+      <div className="flex items-end gap-4 -mt-11 sm:-mt-12 px-1 relative">
         <div
-          className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl flex items-center justify-center shadow-lg shrink-0 ring-4 ring-white dark:ring-gray-900 bg-gradient-to-br from-accent-primary to-accent-secondary"
+          className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl flex items-center justify-center shadow-lg shrink-0 ring-4 ring-white dark:ring-gray-900 bg-gradient-to-br from-accent-primary to-accent-secondary"
           style={chipStyle}
         >
-          {Icon && <Icon className="text-white" size={30} />}
+          {Icon && <Icon className="text-white w-9 h-9 sm:w-10 sm:h-10" />}
         </div>
-        <div className="min-w-0 flex-1 pb-1">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white truncate">{dynamicTitle}</h1>
+        <div className="min-w-0 flex-1 pb-1.5">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white truncate leading-tight">{dynamicTitle}</h1>
           {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{subtitle}</p>}
         </div>
-        {actions && <div className="pb-1 flex items-center gap-2 flex-wrap justify-end shrink-0">{actions}</div>}
+        {actions && <div className="pb-1.5 flex items-center gap-2 flex-wrap justify-end shrink-0">{actions}</div>}
       </div>
     </div>
   );
