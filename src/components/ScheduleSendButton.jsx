@@ -9,10 +9,12 @@ import { deriveAssignments, assignmentFor, countToNotify, statusSummary } from '
 //   hook = useScheduleAssignments() (createAssignment/removeAssignment/sendInvitesForProgram)
 export default function ScheduleSendButton({
   program, teamType, roleColumns, members, assignments,
-  hook, currentUser, onRefresh, canSend = true,
+  hook, currentUser, onRefresh, canSend = true, gridData,
 }) {
   const [loading, setLoading] = useState(false);
-  const derived = deriveAssignments(program?.produkcja || {}, roleColumns, members);
+  // gridData = obiekt siatki { roleKey: "Imię1, Imię2" } — różne pole per moduł
+  // (MediaTeam: produkcja, Atmosfera: atmosfera_team, Kids: szkolka).
+  const derived = deriveAssignments(gridData || program?.produkcja || {}, roleColumns, members);
   const count = countToNotify(derived, assignments, program.id, teamType);
   const sum = statusSummary(assignments, program.id, teamType);
 
