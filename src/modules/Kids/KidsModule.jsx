@@ -17,6 +17,8 @@ import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import ResponsiveTabs from '../../components/ResponsiveTabs';
 import PageHeader from '../../components/PageHeader';
 import { useUserRole } from '../../hooks/useUserRole';
+import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
+import ScheduleSendButton from '../../components/ScheduleSendButton';
 import { useTabAccess } from '../../components/Can';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
@@ -243,7 +245,7 @@ const AbsenceMultiSelect = ({ options, value, onChange }) => {
 };
 
 // --- TABELA GRAFIKU ---
-const ScheduleTable = ({ programs, teachers, groups, onUpdateProgram }) => {
+const ScheduleTable = ({ programs, teachers, groups, onUpdateProgram, assignments = [], scheduleHook, currentUser, onRefreshAssignments }) => {
   const [expandedMonths, setExpandedMonths] = useState({});
   const { getCampus } = useCampusBadge();
   const groupedPrograms = programs.reduce((acc, prog) => { if (!prog.date) return acc; const d = new Date(prog.date); const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; if (!acc[k]) acc[k] = []; acc[k].push(prog); return acc; }, {});
@@ -282,9 +284,22 @@ const ScheduleTable = ({ programs, teachers, groups, onUpdateProgram }) => {
                       return (
                         <tr key={prog.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                           <td className="p-4 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs border-r border-gray-100 dark:border-gray-800">
-                            <div className="flex flex-col gap-1 items-start">
+                            <div className="flex flex-col gap-1.5 items-start">
                               <span>{new Date(prog.date).toLocaleDateString('pl-PL', {day:'2-digit', month:'2-digit', year:'numeric'})}</span>
                               <CampusBadge campus={getCampus(prog.campus_id)} />
+                              {scheduleHook && (
+                                <ScheduleSendButton
+                                  program={prog}
+                                  teamType="kids"
+                                  gridData={prog.szkolka}
+                                  roleColumns={dynamicColumns.map(c => ({ key: String(c.id), label: c.label }))}
+                                  members={teachers}
+                                  assignments={assignments}
+                                  hook={scheduleHook}
+                                  currentUser={currentUser}
+                                  onRefresh={onRefreshAssignments}
+                                />
+                              )}
                             </div>
                           </td>
                           <td className="p-2 border-r border-gray-100 dark:border-gray-800"><input className="w-full bg-transparent rounded px-2 py-1.5 text-xs outline-none font-semibold text-accent-primary dark:text-accent-primary-light placeholder-accent-primary-lighter dark:placeholder-gray-600 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 focus:bg-accent-primary-lightest dark:focus:bg-accent-primary-darkest/20 transition" placeholder="Temat..." defaultValue={prog.szkolka?.temat || ''} onBlur={e => updateField(prog.id, 'temat', e.target.value)} /></td>
@@ -319,6 +334,12 @@ export default function KidsModule() {
   const [programs, setPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState({ email: '', name: '' });
+  // Powiadomienia grafiku (ten sam silnik co Grupa Uwielbienia): mail + push + akceptacja.
+  const { assignments: schedAssignments, fetchAssignmentsForPrograms, createAssignment, removeAssignment, sendInvitesForProgram } = useScheduleAssignments();
+  useEffect(() => {
+    const ids = programs.map((p) => p.id).filter(Boolean);
+    if (ids.length) fetchAssignmentsForPrograms(ids);
+  }, [programs, fetchAssignmentsForPrograms]);
   const [uploading, setUploading] = useState(false);
   const [studentFilter, setStudentFilter] = useState('');
   const [showGroupModal, setShowGroupModal] = useState(false);
@@ -601,7 +622,11 @@ export default function KidsModule() {
       {activeTab === 'schedule' && (
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
           <div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Grafik Nauczycieli</h2></div>
-          <ScheduleTable programs={programs} teachers={teachers} groups={groups} onUpdateProgram={handleProgramUpdate} />
+          <ScheduleTable programs={programs} teachers={teachers} groups={groups} onUpdateProgram={handleProgramUpdate}
+            assignments={schedAssignments}
+            scheduleHook={{ createAssignment, removeAssignment, sendInvitesForProgram }}
+            currentUser={currentUser}
+            onRefreshAssignments={() => fetchAssignmentsForPrograms(programs.map((p) => p.id).filter(Boolean))} />
         </section>
       )}
 
