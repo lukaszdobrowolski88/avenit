@@ -58,7 +58,9 @@ function Composer({ people, onSend, parentId, onCancel, placeholder = 'Napisz ak
 
 function UpdateItem({ u, replies, people, userEmail, onLike, onDelete, onReply }) {
   const [replying, setReplying] = useState(false);
-  const liked = (u.likes || []).includes(userEmail);
+  // likes bywa nie-tablicą (domyślny {} w JSONB) — normalizuj, by .includes/.length nie wywalały panelu.
+  const likes = Array.isArray(u.likes) ? u.likes : [];
+  const liked = likes.includes(userEmail);
   return (
     <div className="py-3 border-b border-gray-100 dark:border-gray-700/60">
       <div className="flex items-start gap-2">
@@ -71,7 +73,7 @@ function UpdateItem({ u, replies, people, userEmail, onLike, onDelete, onReply }
           <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap mt-0.5">{u.body}</p>
           <div className="flex items-center gap-3 mt-1">
             <button onClick={() => onLike(u)} className={`flex items-center gap-1 text-xs ${liked ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}>
-              <Heart size={13} className={liked ? 'fill-red-500' : ''} /> {(u.likes || []).length || ''}
+              <Heart size={13} className={liked ? 'fill-red-500' : ''} /> {likes.length || ''}
             </button>
             <button onClick={() => setReplying(r => !r)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-accent-primary">
               <CornerDownRight size={13} /> Odpowiedz
