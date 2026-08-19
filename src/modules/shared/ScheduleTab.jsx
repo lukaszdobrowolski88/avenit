@@ -5,6 +5,8 @@ import { ChevronUp, ChevronDown, Check, UserX } from 'lucide-react';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
+import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
+import ScheduleSendButton from '../../components/ScheduleSendButton';
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -133,6 +135,20 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   const [memberRoles, setMemberRoles] = useState([]);
   const [expandedMonths, setExpandedMonths] = useState({});
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState({ email: '', name: '' });
+
+  // Powiadomienia grafiku (ten sam silnik co Grupa Uwielbienia). team_type = klucz modułu,
+  // więc KAŻDY moduł z Kreatora (szablon/ręczny) z zakładką Grafik dostaje wysyłkę automatycznie.
+  const { assignments: schedAssignments, fetchAssignmentsForPrograms, createAssignment, removeAssignment, sendInvitesForProgram } = useScheduleAssignments();
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) setCurrentUser({ email: data.user.email, name: data.user.user_metadata?.full_name || data.user.email });
+    });
+  }, []);
+  useEffect(() => {
+    const ids = programs.map((p) => p.id).filter(Boolean);
+    if (ids.length) fetchAssignmentsForPrograms(ids);
+  }, [programs, fetchAssignmentsForPrograms]);
 
   const memberTableName = `custom_${moduleKey}_members`;
   const scheduleFieldKey = `custom_${moduleKey}_schedule`;
@@ -359,9 +375,20 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                           .map((prog) => (
                             <tr key={prog.id} className="hover:bg-white/60 dark:hover:bg-gray-700/30 transition relative">
                               <td className="p-3 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs">
-                                <div className="flex flex-col gap-1 items-start">
+                                <div className="flex flex-col gap-1.5 items-start">
                                   <span>{formatDateShort(prog.date)}</span>
                                   <CampusBadge campus={getCampus(prog.campus_id)} />
+                                  <ScheduleSendButton
+                                    program={prog}
+                                    teamType={moduleKey}
+                                    gridData={prog[scheduleFieldKey]}
+                                    roleColumns={columns}
+                                    members={members}
+                                    assignments={schedAssignments}
+                                    hook={{ createAssignment, removeAssignment, sendInvitesForProgram }}
+                                    currentUser={currentUser}
+                                    onRefresh={() => fetchAssignmentsForPrograms(programs.map((p) => p.id).filter(Boolean))}
+                                  />
                                 </div>
                               </td>
                               {columns.map(col => (
