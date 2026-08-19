@@ -61,7 +61,7 @@ export default async function handler(req, reply) {
     const programTitle = progRows[0].title?.trim() || 'Nabożeństwo';
 
     const { rows: all } = await req.db.query(
-      `SELECT id, role_key, assigned_name, assigned_email, assigned_by_name, status, email_sent_at
+      `SELECT id, role_key, role_label, assigned_name, assigned_email, assigned_by_name, status, email_sent_at
          FROM schedule_assignments WHERE program_id = $1`,
       [programId]
     );
@@ -77,6 +77,12 @@ export default async function handler(req, reply) {
       byPerson.get(key).roles.push(a);
     }
 
+    // Etykieta roli w mailu: preferuj zapisaną role_label (grafiki zespołowe mają dynamiczne
+    // role, np. „Prezentacja"), a dla worship — mapę ROLE_NAMES / fallback do klucza.
+    for (const p of byPerson.values()) {
+      p.roleLabels = p.roles.map((r) => r.role_label || roleName(r.role_key));
+    }
+
     // Ten sam mechanizm co reszta maili systemowych: SendGrid lub SMTP.
     const emailReady = !!(config.SENDGRID_API_KEY || config.DEFAULT_SMTP_HOST);
     if (!emailReady) {
@@ -87,7 +93,7 @@ export default async function handler(req, reply) {
     let failed = 0;
     for (const person of byPerson.values()) {
       const token = crypto.randomUUID();
-      const roleLabels = person.roles.map((r) => roleName(r.role_key));
+      const roleLabels = person.roleLabels;
       const acceptUrl = `${origin}/assignment-response?token=${token}&action=accept`;
       const rejectUrl = `${origin}/assignment-response?token=${token}&action=reject`;
       const html = emailHtml({ assignedByName: person.by || 'Administrator', roles: roleLabels, programDate, programTitle, acceptUrl, rejectUrl });
