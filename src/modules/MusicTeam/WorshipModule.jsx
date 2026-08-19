@@ -2604,7 +2604,7 @@ export default function WorshipModule() {
           assignments={assignments}
           onCreateAssignment={createAssignment}
           onRemoveAssignment={removeAssignment}
-          onSendInvites={sendInvitesForProgram}
+          onSendInvites={(pid) => sendInvitesForProgram(pid, 'worship')}
           onRefreshAssignments={() => fetchAssignmentsForPrograms(programs.map(p => p.id))}
         />
       </section>

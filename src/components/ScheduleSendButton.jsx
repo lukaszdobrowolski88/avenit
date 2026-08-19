@@ -41,8 +41,8 @@ export default function ScheduleSendButton({
           await hook.removeAssignment(program.id, teamType, a.role_key, a.assigned_name);
         }
       }
-      // 3) Wyślij — silnik dedupuje po email_sent_at (nie wyśle dwa razy tej samej osobie).
-      const res = await hook.sendInvitesForProgram(program.id);
+      // 3) Wyślij — scope po teamType; silnik dedupuje po email_sent_at (nie wyśle 2× tej samej osobie).
+      const res = await hook.sendInvitesForProgram(program.id, teamType);
       await onRefresh?.();
       if (res?.success) {
         if (res.sent > 0) toast.success(`Wysłano powiadomienia: ${res.sent}`);

@@ -376,10 +376,10 @@ export function useScheduleAssignments() {
    * Wsadowa wysyłka zaproszeń dla programu (daty). Jeden łączony e-mail + push per osoba,
    * tylko do osób, którym wcześniej nie wysłano dla tej daty. Zwraca { success, sent, skipped }.
    */
-  const sendInvitesForProgram = useCallback(async (programId) => {
+  const sendInvitesForProgram = useCallback(async (programId, teamType) => {
     try {
       const { data, error } = await supabase.functions.invoke('send-assignment-invites', {
-        body: { programId, baseUrl: window.location.origin },
+        body: { programId, teamType, baseUrl: window.location.origin },
       });
       if (error || data?.error) return { success: false, error: data?.error || error?.message };
       return { success: true, ...data };

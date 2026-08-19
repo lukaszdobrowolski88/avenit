@@ -51,7 +51,7 @@ ${rolesHtml}
 
 export default async function handler(req, reply) {
   try {
-    const { programId, baseUrl } = req.body || {};
+    const { programId, teamType, baseUrl } = req.body || {};
     if (!programId) return reply.code(400).send({ error: 'Brak programId' });
     const origin = String(baseUrl || `https://${req.headers.host}`).replace(/\/+$/, '');
 
@@ -60,10 +60,12 @@ export default async function handler(req, reply) {
     const programDate = new Date(progRows[0].date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const programTitle = progRows[0].title?.trim() || 'Nabożeństwo';
 
+    // Scope po team_type: programy są WSPÓLNE dla zespołów, więc bez tego filtra wysyłka
+    // z jednego grafiku ruszyłaby przypisania innego zespołu dla tej samej daty.
     const { rows: all } = await req.db.query(
       `SELECT id, role_key, role_label, assigned_name, assigned_email, assigned_by_name, status, email_sent_at
-         FROM schedule_assignments WHERE program_id = $1`,
-      [programId]
+         FROM schedule_assignments WHERE program_id = $1${teamType ? ' AND team_type = $2' : ''}`,
+      teamType ? [programId, teamType] : [programId]
     );
 
     // Grupuj oczekujące, NIEwysłane przypisania (z e-mailem) per osoba. Wysyłamy do każdego,
@@ -113,8 +115,8 @@ export default async function handler(req, reply) {
       // Wspólny token + stempel wysyłki na wszystkich (niewysłanych) przypisaniach osoby.
       await req.db.query(
         `UPDATE schedule_assignments SET token = $1, email_sent_at = now()
-          WHERE program_id = $2 AND lower(assigned_email) = $3 AND status = 'pending' AND email_sent_at IS NULL`,
-        [token, programId, person.email.toLowerCase()]
+          WHERE program_id = $2 AND lower(assigned_email) = $3 AND status = 'pending' AND email_sent_at IS NULL${teamType ? ' AND team_type = $4' : ''}`,
+        teamType ? [token, programId, person.email.toLowerCase(), teamType] : [token, programId, person.email.toLowerCase()]
       );
       sent++;
 
