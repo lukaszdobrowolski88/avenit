@@ -19,6 +19,8 @@ import ResponsiveTabs from '../components/ResponsiveTabs';
 import TabHeader from '../components/TabHeader';
 import PageHeader from '../components/PageHeader';
 import { useUserRole } from '../hooks/useUserRole';
+import { useScheduleAssignments } from '../hooks/useScheduleAssignments';
+import ScheduleSendButton from '../components/ScheduleSendButton';
 import { useTabAccess } from '../components/Can';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useT } from '../i18n';
@@ -370,7 +372,7 @@ const AbsenceMultiSelect = ({ options, value, onChange }) => {
   );
 };
 
-const ScheduleTable = ({ programs, mediaTeam, onUpdateProgram, roles, memberRoles = [] }) => {
+const ScheduleTable = ({ programs, mediaTeam, onUpdateProgram, roles, memberRoles = [], assignments = [], scheduleHook, currentUser, onRefreshAssignments }) => {
   const { getCampus } = useCampusBadge();
   const [expandedMonths, setExpandedMonths] = useState({});
 
@@ -502,9 +504,21 @@ const ScheduleTable = ({ programs, mediaTeam, onUpdateProgram, roles, memberRole
                         return (
                           <tr key={prog.id} className="hover:bg-white/60 dark:hover:bg-gray-700/30 transition relative">
                             <td className="p-3 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs">
-                              <div className="flex flex-col gap-1 items-start">
+                              <div className="flex flex-col gap-1.5 items-start">
                                 <span>{formatDateShort(prog.date)}</span>
                                 <CampusBadge campus={getCampus(prog.campus_id)} />
+                                {scheduleHook && (
+                                  <ScheduleSendButton
+                                    program={prog}
+                                    teamType="media"
+                                    roleColumns={columns}
+                                    members={mediaTeam}
+                                    assignments={assignments}
+                                    hook={scheduleHook}
+                                    currentUser={currentUser}
+                                    onRefresh={onRefreshAssignments}
+                                  />
+                                )}
                               </div>
                             </td>
                             {columns.map(col => (
@@ -558,6 +572,13 @@ export default function MediaTeamModule() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUserEmail, setCurrentUserEmail] = useState(null);
+
+  // Powiadomienia grafiku (ten sam silnik co Grupa Uwielbienia): mail + push + akceptacja.
+  const { assignments: schedAssignments, fetchAssignmentsForPrograms, createAssignment, removeAssignment, sendInvitesForProgram } = useScheduleAssignments();
+  useEffect(() => {
+    const ids = programs.map((p) => p.id).filter(Boolean);
+    if (ids.length) fetchAssignmentsForPrograms(ids);
+  }, [programs, fetchAssignmentsForPrograms]);
 
   const [viewMode, setViewMode] = useState('kanban');
   const [filterScope, setFilterScope] = useState('all');
@@ -1127,6 +1148,10 @@ export default function MediaTeamModule() {
           onUpdateProgram={handleProgramUpdate}
           roles={mediaRoles}
           memberRoles={memberRoles}
+          assignments={schedAssignments}
+          scheduleHook={{ createAssignment, removeAssignment, sendInvitesForProgram }}
+          currentUser={{ email: currentUserEmail, name: team.find((m) => m.email === currentUserEmail)?.full_name || '' }}
+          onRefreshAssignments={() => fetchAssignmentsForPrograms(programs.map((p) => p.id).filter(Boolean))}
         />
       </section>
       )}
