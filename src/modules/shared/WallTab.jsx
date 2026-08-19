@@ -6,6 +6,11 @@ import {
   Trash2, Download, ExternalLink, Pin, FileText, Reply, CornerDownRight
 } from 'lucide-react';
 
+// wall_posts.likes ma być tablicą e-maili, ale część rekordów bywa nie-tablicą
+// (np. {} z domyślnej wartości JSONB). Normalizujemy przy KAŻDYM odczycie, żeby
+// .includes()/.filter()/.length nie wywalały modułu (był crash w Grupie Uwielbienia).
+const asLikes = (v) => (Array.isArray(v) ? v : []);
+
 export default function WallTab({ ministry, currentUserEmail, currentUserName }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -200,7 +205,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
   };
 
   const toggleLike = async (post) => {
-    const currentLikes = post.likes || [];
+    const currentLikes = asLikes(post.likes);
     const hasLiked = currentLikes.includes(currentUserEmail);
 
     const newLikes = hasLiked
@@ -346,7 +351,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
 
                 {datePosts.map((post, idx) => {
                   const isOwn = post.author_email === currentUserEmail;
-                  const hasLiked = (post.likes || []).includes(currentUserEmail);
+                  const hasLiked = asLikes(post.likes).includes(currentUserEmail);
                   const avatar = getUserAvatar(post.author_email);
                   const showAvatar = idx === 0 || datePosts[idx - 1]?.author_email !== post.author_email;
 
@@ -495,8 +500,8 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
                             >
                               <Heart size={12} fill={hasLiked ? 'currentColor' : 'none'} />
                             </button>
-                            {(post.likes || []).length > 0 && (
-                              <span className="text-[10px] text-gray-500">{post.likes.length}</span>
+                            {asLikes(post.likes).length > 0 && (
+                              <span className="text-[10px] text-gray-500">{asLikes(post.likes).length}</span>
                             )}
                             {isOwn && (
                               <>
