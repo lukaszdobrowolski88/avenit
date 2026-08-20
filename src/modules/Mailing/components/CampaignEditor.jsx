@@ -763,7 +763,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
             {/* Header with gradient */}
-            <div className="bg-gradient-to-r from-amber-500 to-accent-secondary-light p-6">
+            <div className="bg-gradient-to-r from-accent-primary to-accent-secondary-light p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-white/20 backdrop-blur-sm rounded-xl">
@@ -800,7 +800,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 value={formData.scheduled_at ? formData.scheduled_at.slice(0, 16) : ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, scheduled_at: e.target.value ? new Date(e.target.value).toISOString() : null }))}
                 min={new Date().toISOString().slice(0, 16)}
-                className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all mb-6"
+                className="w-full px-5 py-4 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-accent-primary/50 focus:border-amber-500 transition-all mb-6"
               />
 
               {formData.scheduled_at && (
@@ -822,7 +822,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
                 <button
                   onClick={handleSchedule}
                   disabled={saving || !formData.scheduled_at}
-                  className="group flex-1 px-5 py-3.5 bg-gradient-to-r from-amber-500 to-accent-secondary-light hover:from-amber-600 hover:to-accent-secondary text-white rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 font-medium shadow-lg shadow-amber-500/30 hover:shadow-xl transition-all"
+                  className="group flex-1 px-5 py-3.5 bg-gradient-to-r from-accent-primary to-accent-secondary-light hover:from-accent-primary-dark hover:to-accent-secondary text-white rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 font-medium shadow-lg shadow-accent-primary/30 hover:shadow-xl transition-all"
                 >
                   {saving ? <Loader size={16} className="animate-spin" /> : <Clock size={16} className="group-hover:scale-110 transition-transform" />}
                   Zaplanuj

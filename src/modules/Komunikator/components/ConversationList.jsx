@@ -272,7 +272,7 @@ export default function ConversationList({
             onClick={() => setActiveFilter('starred')}
             className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1.5 ${
               activeFilter === 'starred'
-                ? 'bg-gradient-to-r from-yellow-400 to-accent-secondary-light text-white shadow-md shadow-yellow-500/30'
+                ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md shadow-accent-primary/30'
                 : 'bg-white/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50'
             }`}
           >

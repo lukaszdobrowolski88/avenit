@@ -308,7 +308,7 @@ export default function CampaignStats({ campaigns }) {
                           title="Dostarczone (nie otwarte)"
                         />
                         <div
-                          className="bg-gradient-to-r from-amber-400 to-accent-secondary-light transition-all duration-500"
+                          className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light transition-all duration-500"
                           style={{ width: `${(campaign.bounced_count || 0) / (campaign.total_recipients || 1) * 100}%` }}
                           title="Odbite"
                         />
@@ -321,7 +321,7 @@ export default function CampaignStats({ campaigns }) {
                           <span className="w-2.5 h-2.5 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full shadow-sm" /> Dostarczone
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-amber-400 to-accent-secondary-light rounded-full shadow-sm" /> Odbite
+                          <span className="w-2.5 h-2.5 bg-gradient-to-r from-accent-primary-light to-accent-secondary-light rounded-full shadow-sm" /> Odbite
                         </span>
                       </div>
                     </div>
@@ -359,7 +359,7 @@ function StatCard({ icon: Icon, label, value, subValue, color }) {
       text: 'text-accent-primary dark:text-accent-primary-light'
     },
     amber: {
-      gradient: 'from-amber-500 to-accent-secondary-light',
+      gradient: 'from-accent-primary to-accent-secondary-light',
       bg: 'bg-amber-50 dark:bg-amber-900/20',
       text: 'text-amber-600 dark:text-amber-400'
     },
