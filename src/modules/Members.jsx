@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Spinner from '../components/Spinner';
 import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabase';
 import {
@@ -444,7 +445,7 @@ export default function Members() {
   if (loading) {
     return (
       <div className="p-10 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary dark:border-accent-primary-light mx-auto"></div>
+        <Spinner size={48} className="mx-auto" />
         <div className="mt-4 text-gray-600 dark:text-gray-400">{tr('Ładowanie bazy członków...')}</div>
       </div>
     );
@@ -768,7 +769,7 @@ export default function Members() {
                       <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:border-accent-primary-light dark:hover:border-accent-primary-light transition bg-white/50 dark:bg-gray-800/50">
                         <div className="flex flex-col items-center justify-center">
                           {uploading ? (
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-accent-primary"></div>
+                            <Spinner size={24} />
                           ) : (
                             <>
                               <Upload size={24} className="text-gray-400 mb-2" />

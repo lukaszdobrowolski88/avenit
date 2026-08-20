@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import Spinner from '../../../components/Spinner';
 import {
   Download,
   Trash2,
@@ -311,7 +312,7 @@ export default function ResponsesView({ form }) {
   if (loading && responses.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary-light"></div>
+        <Spinner size={32} />
       </div>
     );
   }

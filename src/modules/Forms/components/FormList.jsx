@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import Spinner from '../../../components/Spinner';
 import { createPortal } from 'react-dom';
 import {
   FileText,
@@ -182,7 +183,7 @@ export default function FormList({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary-light"></div>
+        <Spinner size={32} />
       </div>
     );
   }

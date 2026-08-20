@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Spinner from '../../components/Spinner';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -195,7 +196,7 @@ export default function EquipmentTab({ ministryKey, currentUserEmail, canEdit = 
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent-primary"></div>
+        <Spinner size={40} />
       </div>
     );
   }

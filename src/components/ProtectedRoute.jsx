@@ -1,4 +1,5 @@
 import React from 'react';
+import Spinner from './Spinner';
 import { Navigate } from 'react-router-dom';
 import { usePermissions } from '../contexts/PermissionsContext';
 
@@ -10,7 +11,7 @@ export default function ProtectedRoute({ children, resource }) {
   if (!ready) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary"></div>
+        <Spinner size={32} />
       </div>
     );
   }

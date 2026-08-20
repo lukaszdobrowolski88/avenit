@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Spinner from '../../components/Spinner';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../lib/toast';
 import {
@@ -297,7 +298,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent-primary"></div>
+        <Spinner size={40} />
       </div>
     );
   }
@@ -713,7 +714,7 @@ export default function WallTab({ ministry, currentUserEmail, currentUserName })
 
         {uploading && (
           <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-accent-primary-light"></div>
+            <Spinner size={12} />
             Przesylanie...
           </div>
         )}
