@@ -1863,7 +1863,7 @@ function SongDetailsModal({ song, onClose, onEdit }) {
                             <select
                                 value={targetKey}
                                 onChange={(e) => setTargetKey(e.target.value)}
-                                className="h-8 px-3 text-sm font-bold bg-white dark:bg-gray-800 border border-purple-300 dark:border-purple-600 rounded-lg text-purple-700 dark:text-purple-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                className="h-8 px-3 text-sm font-bold bg-white dark:bg-gray-800 border border-purple-300 dark:border-purple-600 rounded-lg text-purple-700 dark:text-purple-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent-primary"
                             >
                                 {KEYS.map((k) => (
                                     <option key={k} value={k}>{k}</option>

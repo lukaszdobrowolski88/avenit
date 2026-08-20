@@ -1198,7 +1198,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                   <select
                     value={item.teamAssignments?.audio || ''}
                     onChange={(e) => handleTeamAssignment('audio', e.target.value)}
-                    className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-blue-200/80 dark:border-blue-700/50 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition"
+                    className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-blue-200/80 dark:border-blue-700/50 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary/20 outline-none transition"
                   >
                     <option value="">{tr('— Wybierz osobę —')}</option>
                     {mediaTeam.map(member => (
@@ -1211,7 +1211,7 @@ const ItemEditPanel = ({ item, songs, songSuggestions = [], worshipTeam = [], me
                   <select
                     value={item.teamAssignments?.visual || ''}
                     onChange={(e) => handleTeamAssignment('visual', e.target.value)}
-                    className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-blue-200/80 dark:border-blue-700/50 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition"
+                    className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-blue-200/80 dark:border-blue-700/50 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary/20 outline-none transition"
                   >
                     <option value="">{tr('— Wybierz osobę —')}</option>
                     {mediaTeam.map(member => (

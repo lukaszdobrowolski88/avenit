@@ -142,7 +142,7 @@ export default function AddonsSettings({ settings, onChange }) {
                     type="checkbox"
                     checked={item.required || false}
                     onChange={(e) => updateItem(index, 'required', e.target.checked)}
-                    className="w-4 h-4 text-purple-500 border-gray-300 rounded focus:ring-purple-500"
+                    className="w-4 h-4 text-purple-500 border-gray-300 rounded focus:ring-accent-primary"
                   />
                   <span className="text-xs text-gray-600 dark:text-gray-400">Wymagany</span>
                 </label>

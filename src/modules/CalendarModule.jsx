@@ -551,7 +551,7 @@ const ModalAddTask = ({ initialTask, onClose, onSave, onDelete }) => {
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Tytuł')}</label>
-            <input autoFocus className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-500/20 outline-none" value={task.title} onChange={e => setTask({...task, title: e.target.value})} placeholder={t('Co jest do zrobienia?')} />
+            <input autoFocus className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-accent-primary/20 outline-none" value={task.title} onChange={e => setTask({...task, title: e.target.value})} placeholder={t('Co jest do zrobienia?')} />
           </div>
           <div className="grid grid-cols-2 gap-4">
              <div><label className="block text-xs font-bold text-gray-500 uppercase mb-1">{t('Kategoria')}</label><CustomSelect value={task.team} onChange={v => setTask({...task, team: v})} options={Object.entries(TEAMS).filter(([k]) => k !== 'program').map(([k, v]) => ({ value: k, label: v.label }))} /></div>

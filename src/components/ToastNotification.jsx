@@ -13,7 +13,7 @@ const typeIcons = {
 // Kolory dla typów
 const typeColors = {
   message: 'from-blue-500 to-cyan-500',
-  mention: 'from-purple-500 to-accent-primary-light',
+  mention: 'from-accent-primary to-accent-secondary',
   task: 'from-green-500 to-emerald-500',
   event: 'from-accent-primary-light to-accent-secondary-light',
   system: 'from-gray-500 to-gray-600'
