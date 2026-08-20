@@ -6,7 +6,9 @@ import { GROUP_COLORS, pickColor } from '../lib/constants';
 
 // Silnik danych pojedynczej tablicy: ładuje kolumny, grupy, elementy, widoki,
 // listę osób organizacji, oraz udostępnia wszystkie mutacje. Po każdej mutacji
-// aktualizuje stan lokalny (web ma realtime wyłączony — polegamy na optymistyce).
+// aktualizuje stan lokalny optymistycznie, a subskrypcja realtime dosypuje zmiany
+// z innych sesji. Optymistyczne wstawki i realtime dedupują po id (INSERT z bazy
+// może wyprzedzić odpowiedź na własny insert), więc nie powstają duplikaty.
 export function useBoardData(boardId, { userEmail, userName } = {}) {
   const [board, setBoard] = useState(null);
   const [columns, setColumns] = useState([]);
@@ -97,7 +99,7 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
       settings: defaultColumnSettings(type), display_order: maxOrder + 1, width: 160,
     }).select().single();
     if (e) { setError(e.message); return null; }
-    setColumns(prev => [...prev, data]);
+    setColumns(prev => prev.some(c => c.id === data.id) ? prev : [...prev, data]);
     return data;
   }, [boardId, columns]);
 
@@ -141,7 +143,7 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
       color: pickColor(GROUP_COLORS, groups.length), display_order: maxOrder + 1,
     }).select().single();
     if (e) { setError(e.message); return null; }
-    setGroups(prev => [...prev, data]);
+    setGroups(prev => prev.some(g => g.id === data.id) ? prev : [...prev, data]);
     return data;
   }, [boardId, groups]);
 
@@ -175,7 +177,9 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
       display_order: maxOrder + 1, created_by: userEmail || null,
     }).select().single();
     if (e) { setError(e.message); return null; }
-    setItems(prev => [...prev, data]);
+    // Dedup po id: realtime INSERT może dojść ZANIM rozwiąże się to `await`
+    // (baza commituje i broadcastuje wcześniej), więc bez tego byłyby dwa wiersze.
+    setItems(prev => prev.some(it => it.id === data.id) ? prev : [...prev, data]);
     logActivity(data.id, 'created');
     if (onAutomationRef.current) onAutomationRef.current({ type: 'item_created', item: data });
     return data;
@@ -187,7 +191,7 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
       name: name || '', cells: {}, display_order: 0, created_by: userEmail || null,
     }).select().single();
     if (e) { setError(e.message); return null; }
-    setItems(prev => [...prev, data]);
+    setItems(prev => prev.some(it => it.id === data.id) ? prev : [...prev, data]);
     return data;
   }, [boardId, userEmail]);
 
@@ -260,7 +264,7 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
       owner_email: null, display_order: maxOrder + 1,
     }).select().single();
     if (e) { setError(e.message); return null; }
-    setViews(prev => [...prev, data]);
+    setViews(prev => prev.some(v => v.id === data.id) ? prev : [...prev, data]);
     return data;
   }, [boardId, views]);
 
@@ -284,7 +288,7 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
       owner_email: null, display_order: maxOrder + 1,
     }).select().single();
     if (e) { setError(e.message); return null; }
-    setViews(prev => [...prev, data]);
+    setViews(prev => prev.some(v => v.id === data.id) ? prev : [...prev, data]);
     return data;
   }, [boardId, views]);
 
