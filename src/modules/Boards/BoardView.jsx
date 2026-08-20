@@ -24,6 +24,7 @@ import AiSidekick from './components/AiSidekick';
 import Popover from './components/Popover';
 import Spinner from '../../components/Spinner';
 import EmptyState from '../../components/EmptyState';
+import Button from '../../components/Button';
 import { useCan } from '../../components/Can';
 import { exportBoardCsv, buildCellsFromRecord } from './lib/csv';
 
@@ -136,33 +137,26 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
 
   return (
     <div>
-      {/* Nagłówek tablicy */}
-      <div className="flex items-center gap-3 mb-4">
-        {!embedded && onBack && (
-          <button onClick={onBack} className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><ArrowLeft size={20} /></button>
-        )}
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg" style={{ backgroundColor: data.board.color || '#6366f1' }}>
-          <Table2 size={22} />
+      {/* Nagłówek tablicy — kanon TabHeader (flat, jak pozostałe zakładki) */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {!embedded && onBack && (
+            <button onClick={onBack} className="p-1.5 -ml-1.5 shrink-0 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><ArrowLeft size={20} /></button>
+          )}
+          <input value={data.board.name} readOnly={!canUpdateBoard}
+            onChange={(e) => data.setBoard({ ...data.board, name: e.target.value })}
+            onBlur={(e) => { if (canUpdateBoard) supabase.from('boards').update({ name: e.target.value }).eq('id', boardId); }}
+            className={`text-2xl font-bold bg-transparent outline-none text-gray-900 dark:text-white w-full min-w-0 truncate ${canUpdateBoard ? 'rounded-lg px-1 -mx-1 focus:ring-2 focus:ring-accent-primary/30' : 'cursor-default'}`} />
         </div>
-        <input value={data.board.name} readOnly={!canUpdateBoard}
-          onChange={(e) => data.setBoard({ ...data.board, name: e.target.value })}
-          onBlur={(e) => { if (canUpdateBoard) supabase.from('boards').update({ name: e.target.value }).eq('id', boardId); }}
-          className={`text-2xl font-bold bg-transparent outline-none text-gray-800 dark:text-gray-100 flex-1 min-w-0 ${canUpdateBoard ? '' : 'cursor-default'}`} />
-        <button onClick={() => setShowSidekick(true)}
-          className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-white bg-gradient-to-r from-accent-primary to-accent-secondary hover:opacity-90 shadow-sm">
-          <Sparkles size={15} /> AI Sidekick
-        </button>
-        {canManageAutomations && (
-          <button onClick={() => setShowAutomations(true)}
-            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700">
-            <Zap size={15} className="text-accent-primary" /> Automatyzacje
-            {automations.automations.length > 0 && <span className="text-xs text-gray-400">{automations.automations.length}</span>}
-          </button>
-        )}
-        <button onClick={() => setShowActivity(true)} title="Aktywność tablicy"
-          className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700">
-          <Activity size={15} />
-        </button>
+        <div className="flex items-center gap-2 flex-wrap sm:justify-end shrink-0">
+          <Button size="sm" variant="primary" icon={Sparkles} onClick={() => setShowSidekick(true)}>AI Sidekick</Button>
+          {canManageAutomations && (
+            <Button size="sm" variant="outline" icon={Zap} onClick={() => setShowAutomations(true)}>
+              Automatyzacje{automations.automations.length > 0 && <span className="text-xs text-gray-400 ml-1">{automations.automations.length}</span>}
+            </Button>
+          )}
+          <Button size="sm" variant="outline" icon={Activity} onClick={() => setShowActivity(true)} title="Aktywność tablicy" className="!px-2" />
+        </div>
       </div>
 
       {/* Zakładki widoków */}
