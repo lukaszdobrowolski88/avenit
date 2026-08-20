@@ -1383,7 +1383,7 @@ const DynamicTeamSection = ({ title, dataKey, program, setProgram, roles, teamMe
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{title}</h3>
+        <h3 className="font-bold text-lg text-gray-900 dark:text-white">{title}</h3>
       </div>
       <div className="space-y-4">
         {teamMembers.length > 0 ? (
@@ -1529,7 +1529,7 @@ const SzkolkaSection = ({ program, setProgram, kidsGroups, kidsTeachers }) => {
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{tr('Szkółka Niedzielna')}</h3>
+        <h3 className="font-bold text-lg text-gray-900 dark:text-white">{tr('Szkółka Niedzielna')}</h3>
       </div>
       <div className="space-y-4">
         <div>
@@ -1708,7 +1708,7 @@ const DynamicScenaSection = ({
   return (
     <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-6 h-full hover:shadow-xl transition relative z-0">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-bold text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Scena</h3>
+        <h3 className="font-bold text-lg text-gray-900 dark:text-white">Scena</h3>
       </div>
       <div className="space-y-4">
         {allFields.map(field => {
@@ -3131,7 +3131,7 @@ export default function ProgramDetail() {
           {isSectionVisible('zespol') && (
           <div data-tour="prog-team" className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 dark:border-gray-700/50 p-4 lg:p-6 mb-4 lg:mb-6 hover:shadow-xl transition relative z-50">
             <div className="flex justify-between items-center mb-4 lg:mb-6">
-              <h3 className="font-bold text-base lg:text-lg bg-gradient-to-r from-accent-primary-dark to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{t('Zespół Uwielbienia')}</h3>
+              <h3 className="font-bold text-base lg:text-lg text-gray-900 dark:text-white">{t('Zespół Uwielbienia')}</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
               {(worshipRoles.length > 0

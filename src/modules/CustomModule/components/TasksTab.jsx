@@ -505,7 +505,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
     <div>
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           Zadania ({filteredTasks.length})
         </h2>
         <div className="flex items-center gap-3">
@@ -691,7 +691,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
             {/* Lewa kolumna - formularz */}
             <div className="w-3/5 p-8 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">
               <div className="flex justify-between mb-6">
-                <h3 className="font-bold text-2xl bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
+                <h3 className="font-bold text-2xl text-gray-900 dark:text-white">
                   {editingTask?.id ? 'Edycja zadania' : 'Nowe zadanie'}
                 </h3>
               </div>

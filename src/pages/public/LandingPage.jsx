@@ -132,7 +132,7 @@ export default function LandingPage() {
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
             {tr('Nowoczesne zarządzanie')}
             <br />
-            <span className="bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
+            <span className="text-gray-900 dark:text-white">
               {tr('Twoim kościołem')}
             </span>
           </h1>

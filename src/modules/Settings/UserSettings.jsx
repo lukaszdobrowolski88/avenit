@@ -484,7 +484,7 @@ export default function UserSettings() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-10">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{t('Mój Profil')}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('Mój Profil')}</h1>
       </div>
 
       {message && (

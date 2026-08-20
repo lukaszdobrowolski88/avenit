@@ -95,7 +95,7 @@ export default function ForwardMessageModal({
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center shadow-lg shadow-accent-primary-light/20">
               <Forward size={18} className="text-white" />
             </div>
-            <h2 className="text-lg font-bold bg-gradient-to-r from-accent-primary to-accent-secondary-light bg-clip-text text-transparent">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
               {tr('Przekaż wiadomość')}
             </h2>
           </div>
