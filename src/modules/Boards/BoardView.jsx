@@ -98,7 +98,12 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
     if (!g) return;
     // Rozwiń grupę, by nowy wiersz był widoczny (dodanie do zwiniętej grupy wyglądało jak „nic się nie dzieje").
     if (g.collapsed) data.updateGroup(g.id, { collapsed: false });
-    data.addItem(g.id).then(it => it && setOpenItem(it));
+    // W tabeli (jak w Monday): dodaj wiersz i ustaw kursor w jego nazwie (TableView reaguje na
+    // focusItemId) — bez pustej szuflady, która wyglądała na „niedziałającą". W widokach bez
+    // inline-nazwy (kanban/kalendarz/oś czasu…) otwórz szufladę, by nazwać/skonfigurować element.
+    const inlineName = (activeView?.type || 'table') === 'table';
+    if (inlineName) data.addItem(g.id);
+    else data.addItem(g.id).then(it => it && setOpenItem(it));
   };
   const handleExport = () => exportBoardCsv(data.board, data.columns, data.items);
   const handleImport = async (records) => {

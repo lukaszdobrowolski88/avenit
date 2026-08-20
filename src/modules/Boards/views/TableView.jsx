@@ -105,7 +105,7 @@ const ItemRow = React.memo(function ItemRow({ item, columns, groupColor, people,
             {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
           </button>
         )}
-        <input value={nameLocal} placeholder={isSub ? 'Podelement' : 'Nazwa elementu'}
+        <input value={nameLocal} placeholder={isSub ? 'Podelement' : 'Nazwa elementu'} data-item-name={item.id}
           onChange={(e) => setNameLocal(e.target.value)}
           onBlur={() => { if (nameLocal !== item.name) onCell(item.id, '__name__', nameLocal); }}
           onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
@@ -281,6 +281,16 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
   // RBAC: członek dodaje/edytuje elementy, ale nie usuwa ich ani nie zmienia struktury (kolumny/grupy).
   const canDeleteItems = useCan('res:board_items:delete');
   const canEditStructure = useCan('res:board_columns:create');
+
+  // Po dodaniu elementu (toolbar „Nowy element" lub „Dodaj element" w grupie) ustaw kursor
+  // w nazwie świeżego wiersza i przewiń do niego — zamiast otwierać pustą szufladę.
+  useEffect(() => {
+    const id = data.focusItemId;
+    if (!id) return;
+    const el = document.querySelector(`input[data-item-name="${id}"]`);
+    if (el) { el.focus(); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+    data.clearFocusItem();
+  }, [data.focusItemId]);
 
   const api = {
     ...data,
