@@ -54,35 +54,8 @@ export const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 };
 
-// Pobieranie inicjałów z imienia
-export const getInitials = (name) => {
-  if (!name) return '?';
-  const parts = name.split(' ');
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-};
-
-// Generowanie koloru na podstawie stringa (dla avatarów)
-export const stringToColor = (str) => {
-  if (!str) return '#6b7280';
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const colors = [
-    '#ec4899', // pink
-    '#8b5cf6', // purple
-    '#3b82f6', // blue
-    '#14b8a6', // teal
-    '#22c55e', // green
-    '#f59e0b', // amber
-    '#ef4444', // red
-    '#6366f1', // indigo
-  ];
-  return colors[Math.abs(hash) % colors.length];
-};
+// getInitials + stringToColor → wspólne źródło prawdy (src/utils/text.js). Re-eksport dla kompatybilności.
+export { getInitials, stringToColor } from '../../../utils/text';
 
 // Mapowanie kluczy służb na nazwy
 export const ministryKeyToName = {

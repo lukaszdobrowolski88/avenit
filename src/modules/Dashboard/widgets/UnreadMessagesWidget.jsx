@@ -3,28 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Users, Music, Zap, Sparkles, Baby, Home, Heart, UserCheck, Shield, ChevronRight, Inbox } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { tr } from '../../../i18n';
-
-// Helper do generowania koloru z emaila
-function stringToColor(str) {
-  if (!str) return '#6366f1';
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const colors = [
-    '#ec4899', '#f97316', '#eab308', '#22c55e', '#14b8a6',
-    '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7'
-  ];
-  return colors[Math.abs(hash) % colors.length];
-}
-
-// Helper do pobierania inicjałów
-function getInitials(name) {
-  if (!name) return '?';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-}
+import { getInitials, stringToColor } from '../../../utils/text';
 
 // Ikony dla kanałów służb
 const ministryIcons = {
