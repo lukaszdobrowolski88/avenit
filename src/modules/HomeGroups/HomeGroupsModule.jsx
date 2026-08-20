@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Button from '../../components/Button';
 import { supabase } from '../../lib/supabase';
 import CustomSelect from '../../components/CustomSelect';
 import ModuleBoard from '../Boards/ModuleBoard';
@@ -735,14 +736,9 @@ export default function HomeGroupsModule() {
                   className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light outline-none"
                 />
               </div>
-              <button
-                data-tour="hg-add-group"
-                onClick={() => openModal('group')}
-                className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
-              >
-                <Plus size={18} />
+              <Button data-tour="hg-add-group" onClick={() => openModal('group')} icon={Plus}>
                 {tr('Dodaj Grupę')}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -838,13 +834,9 @@ export default function HomeGroupsModule() {
                   className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light outline-none"
                 />
               </div>
-              <button
-                onClick={() => openModal('leader')}
-                className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
-              >
-                <Plus size={18} />
+              <Button onClick={() => openModal('leader')} icon={Plus}>
                 Dodaj Lidera
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -913,13 +905,9 @@ export default function HomeGroupsModule() {
                   className="pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-accent-primary-light outline-none"
                 />
               </div>
-              <button
-                onClick={() => openModal('member')}
-                className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"
-              >
-                <Plus size={18} />
+              <Button onClick={() => openModal('member')} icon={Plus}>
                 {tr('Dodaj Członka')}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -1166,13 +1154,9 @@ export default function HomeGroupsModule() {
               >
                 Anuluj
               </button>
-              <button
-                data-tour="hg-group-save"
-                onClick={() => modalType === 'group' ? handleSaveGroup() : handleSavePerson(modalType)}
-                className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold rounded-xl hover:shadow-lg transition"
-              >
+              <Button size="lg" data-tour="hg-group-save" onClick={() => modalType === 'group' ? handleSaveGroup() : handleSavePerson(modalType)}>
                 Zapisz
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1424,12 +1408,12 @@ export default function HomeGroupsModule() {
                       {tr('Usuń zadanie')}
                     </button>
                   )}
-                  <button
+                  <Button
                     onClick={saveTask}
-                    className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white font-bold rounded-xl hover:shadow-lg transition"
-                  >
+                    
+                   size="lg">
                     Zapisz zmiany
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -1573,12 +1557,12 @@ export default function HomeGroupsModule() {
               >
                 Anuluj
               </button>
-              <button
+              <Button
                 onClick={saveExpense}
-                className="px-6 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition"
-              >
+                
+               size="lg">
                 Zapisz wydatek
-              </button>
+              </Button>
             </div>
           </div>
         </div>
