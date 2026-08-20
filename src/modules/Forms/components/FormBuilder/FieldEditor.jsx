@@ -695,7 +695,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
               onChange={(e) => handleChange('defaultValue', e.target.value)}
               placeholder={field.type === 'location' ? tr('np. Sala główna, ul. Przykładowa 1') :
                            field.type.includes('date') ? '' : 'np. 10:00'}
-              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary dark:text-white"
             />
             <p className="text-xs text-gray-400 mt-1">
               {tr('Ta wartość będzie wyświetlana w nagłówku formularza')}
@@ -724,7 +724,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
                   maxSeats: e.target.value ? parseInt(e.target.value) : null
                 }
               })}
-              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary dark:text-white"
               placeholder="Bez limitu"
             />
           </div>
@@ -750,7 +750,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
                 })}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary dark:peer-focus:ring-accent-primary rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
             </label>
           </div>
 
@@ -775,7 +775,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
                 })}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary dark:peer-focus:ring-accent-primary rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
             </label>
           </div>
 
@@ -795,7 +795,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
                       waitlistSeats: e.target.value ? parseInt(e.target.value) : null
                     }
                   })}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary dark:text-white"
                   placeholder="Bez limitu (nieograniczona lista)"
                 />
                 <p className="text-xs text-gray-400 mt-1">
@@ -816,7 +816,7 @@ export default function FieldEditor({ field, allFields = [], onUpdate }) {
                     }
                   })}
                   rows={2}
-                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:text-white resize-none"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary dark:text-white resize-none"
                   placeholder={tr('Miejsca podstawowe zostały wyczerpane. Możesz zapisać się na listę rezerwową.')}
                 />
               </div>

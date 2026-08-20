@@ -1093,7 +1093,7 @@ export default function UserSettings() {
   <p style="margin: 5px 0 0; color: #666; font-size: 12px;">Tel: +48 123 456 789</p>
 </div>`}
                     rows={10}
-                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-purple-500 dark:focus:border-purple-400 outline-none transition resize-none font-mono text-sm"
+                    className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:border-accent-primary dark:focus:border-accent-primary outline-none transition resize-none font-mono text-sm"
                   />
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
                     Wskazówka: Możesz skopiować podpis z Gmail, Outlook lub wygenerować go w narzędziach online.

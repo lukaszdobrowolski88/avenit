@@ -1307,7 +1307,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               clientId: e.target.value
                             })}
                             placeholder={tr('Twój PayPal Client ID')}
-                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary"
                           />
                           <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
                             Znajdziesz go w{' '}
@@ -1341,7 +1341,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               })}
                               className="sr-only peer"
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary dark:peer-focus:ring-accent-primary rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
                           </label>
                         </div>
 
@@ -1357,7 +1357,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                               description: e.target.value
                             })}
                             placeholder={tr('np. Opłata za wydarzenie')}
-                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-blue-200 dark:border-blue-700 rounded-lg text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary/20 focus:border-accent-primary"
                           />
                         </div>
                       </div>
@@ -1553,7 +1553,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                     onChange={(e) => handleEmailsChange('enabled', e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-primary dark:peer-focus:ring-accent-primary rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-500"></div>
                 </label>
               </div>
 
@@ -1888,7 +1888,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                             id="admin-custom"
                             checked={localSettings.emails?.adminNotification?.useCustomTemplate || false}
                             onChange={(e) => handleEmailTypeChange('adminNotification', 'useCustomTemplate', e.target.checked)}
-                            className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500"
+                            className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-accent-primary"
                           />
                           <label htmlFor="admin-custom" className="text-sm text-gray-700 dark:text-gray-300">
                             Uzyj wlasnego szablonu
