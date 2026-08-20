@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import EmptyState from '../components/EmptyState';
+import Spinner from '../components/Spinner';
 import { DollarSign, TrendingUp, Receipt, Calendar, Plus, Upload, Tag, X, FileText, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Users, Building2, Settings, Banknote, CreditCard, FolderOpen } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { createPortal } from 'react-dom';
@@ -767,13 +769,9 @@ const FinanceModule = () => {
           </div>
 
           {loading ? (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              {tr('Ładowanie...')}
-            </div>
+            <Spinner center />
           ) : budgetItems.length === 0 ? (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              Brak pozycji budżetowych na rok {selectedYear}
-            </div>
+            <EmptyState title={`Brak pozycji budżetowych na rok ${selectedYear}`} />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -1098,13 +1096,9 @@ const FinanceModule = () => {
           </div>
 
           {loading ? (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              {tr('Ładowanie...')}
-            </div>
+            <Spinner center />
           ) : filteredIncomeTransactions.length === 0 ? (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              {incomeTransactions.length === 0 ? `Brak wpływów na rok ${selectedYear}` : tr('Brak wpływów pasujących do filtrów')}
-            </div>
+            <EmptyState title={incomeTransactions.length === 0 ? `Brak wpływów na rok ${selectedYear}` : tr('Brak wpływów pasujących do filtrów')} />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -1272,13 +1266,9 @@ const FinanceModule = () => {
           </div>
 
           {loading ? (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              {tr('Ładowanie...')}
-            </div>
+            <Spinner center />
           ) : filteredExpenseTransactions.length === 0 ? (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              {expenseTransactions.length === 0 ? `Brak wydatków na rok ${selectedYear}` : tr('Brak wydatków pasujących do filtrów')}
-            </div>
+            <EmptyState title={expenseTransactions.length === 0 ? `Brak wydatków na rok ${selectedYear}` : tr('Brak wydatków pasujących do filtrów')} />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
