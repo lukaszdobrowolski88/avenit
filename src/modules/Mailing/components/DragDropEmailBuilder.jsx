@@ -681,7 +681,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
           {/* Gotowe szablony */}
           <div className="p-4 bg-gradient-to-b from-transparent to-gray-50/50 dark:to-gray-800/50">
             <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <div className="p-1 bg-gradient-to-br from-amber-400 to-accent-secondary-light rounded-md">
+              <div className="p-1 bg-gradient-to-br from-accent-primary-light to-accent-secondary-light rounded-md">
                 <Wand2 size={10} className="text-white" />
               </div>
               Gotowe sekcje
@@ -698,7 +698,7 @@ export default function DragDropEmailBuilder({ content, jsonBlocks, onChange, on
                 };
                 const iconBg = {
                   pink: 'from-accent-primary-light to-accent-primary',
-                  amber: 'from-amber-400 to-accent-secondary-light',
+                  amber: 'from-accent-primary-light to-accent-secondary-light',
                   green: 'from-green-400 to-emerald-500',
                   blue: 'from-blue-400 to-indigo-500',
                   purple: 'from-purple-400 to-violet-500'

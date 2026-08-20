@@ -1752,7 +1752,7 @@ export default function FormSettings({ settings, fields, onUpdate, onClose }) {
                             id="reminder-custom"
                             checked={localSettings.emails?.reminderEmail?.useCustomTemplate || false}
                             onChange={(e) => handleEmailTypeChange('reminderEmail', 'useCustomTemplate', e.target.checked)}
-                            className="w-4 h-4 text-amber-600 bg-white border-gray-300 rounded focus:ring-amber-500"
+                            className="w-4 h-4 text-amber-600 bg-white border-gray-300 rounded focus:ring-accent-primary"
                           />
                           <label htmlFor="reminder-custom" className="text-sm text-gray-700 dark:text-gray-300">
                             Uzyj wlasnego szablonu

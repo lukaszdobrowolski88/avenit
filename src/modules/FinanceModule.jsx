@@ -1575,7 +1575,7 @@ const FinanceModule = () => {
                   'from-accent-primary-light to-rose-500',
                   'from-blue-500 to-indigo-500',
                   'from-green-500 to-emerald-500',
-                  'from-yellow-500 to-accent-secondary-light',
+                  'from-accent-primary to-accent-secondary-light',
                   'from-purple-500 to-violet-500',
                   'from-cyan-500 to-teal-500'
                 ];

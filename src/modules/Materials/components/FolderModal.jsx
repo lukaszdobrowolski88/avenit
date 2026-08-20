@@ -74,7 +74,7 @@ export default function FolderModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-accent-primary-lightest/50 to-accent-secondary-lightest/50 dark:from-gray-800/50 dark:to-gray-800/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-accent-secondary-light flex items-center justify-center shadow-lg shadow-accent-secondary-light/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center shadow-lg shadow-accent-secondary-light/20">
               {mode === 'create' ? (
                 <FolderPlus size={18} className="text-white" />
               ) : (

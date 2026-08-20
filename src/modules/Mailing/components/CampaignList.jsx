@@ -24,7 +24,7 @@ const STATUS_CONFIG = {
     bg: 'bg-amber-100 dark:bg-amber-900/30',
     textColor: 'text-amber-700 dark:text-amber-400',
     iconColor: 'text-amber-500',
-    gradient: 'from-amber-400 to-accent-secondary-light'
+    gradient: 'from-accent-primary-light to-accent-secondary-light'
   },
   sending: {
     label: tr('Wysyłanie...'),

@@ -271,7 +271,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                   type="checkbox"
                   checked={markAsAnswered}
                   onChange={(e) => setMarkAsAnswered(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-amber-500 focus:ring-amber-500"
+                  className="w-5 h-5 rounded border-gray-300 text-amber-500 focus:ring-accent-primary"
                 />
                 <Star className="w-5 h-5 text-amber-500" />
                 <div>
@@ -289,7 +289,7 @@ function PrayerModal({ isOpen, onClose, onSubmit, editingRequest, isLoading }) {
                     onChange={(e) => setTestimony(e.target.value)}
                     placeholder={tr('Opisz, jak Bóg odpowiedział na Twoją modlitwę...')}
                     rows={3}
-                    className="w-full px-4 py-3 rounded-xl border border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500/50 dark:text-white resize-none"
+                    className="w-full px-4 py-3 rounded-xl border border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-accent-primary/50 dark:text-white resize-none"
                   />
                 </div>
               )}
