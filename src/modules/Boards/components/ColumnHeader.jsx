@@ -51,7 +51,7 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
       ) : (
         <span className="flex-1 truncate cursor-pointer" onDoubleClick={() => setRenaming(true)}>{column.name}</span>
       )}
-      <Popover align="right" width={200} trigger={
+      <Popover align="right" width={200} triggerClassName="shrink-0" trigger={
         <button className="opacity-0 group-hover/col:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5"><MoreHorizontal size={15} /></button>
       }>
         {({ close }) => (

@@ -222,7 +222,7 @@ export default function BoardsList({ userEmail, userName, moduleKey = null, onOp
                             <Table2 size={20} />
                           </div>
                           {canManageBoard && (
-                          <Popover align="right" width={190} trigger={
+                          <Popover align="right" width={190} triggerClassName="shrink-0" trigger={
                             <button onClick={(e) => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 p-1"><MoreHorizontal size={18} /></button>
                           }>
                             {({ close }) => (
