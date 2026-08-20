@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import EmptyState from '../../../../components/EmptyState';
 import { supabase } from '../../../../lib/supabase';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { tr } from '../../../../i18n';
@@ -273,9 +274,7 @@ export default function LocationManager({ onLocationsChange }) {
           {tr('Ładowanie...')}
         </div>
       ) : locations.length === 0 ? (
-        <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-          {tr('Brak sal. Dodaj pierwszą salę dla dzieci.')}
-        </div>
+        <EmptyState title={tr('Brak sal. Dodaj pierwszą salę dla dzieci.')} />
       ) : (
         <div className="flex flex-col gap-3">
           {locations.map((location) => (

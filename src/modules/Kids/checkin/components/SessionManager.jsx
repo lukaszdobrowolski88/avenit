@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import EmptyState from '../../../../components/EmptyState';
 import { supabase, getCachedUser } from '../../../../lib/supabase';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { tr } from '../../../../i18n';
@@ -205,9 +206,7 @@ export default function SessionManager({ onSessionChange }) {
           {tr('Ładowanie...')}
         </div>
       ) : sessions.length === 0 ? (
-        <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-          {tr('Brak sesji. Utwórz pierwszą sesję check-in.')}
-        </div>
+        <EmptyState title={tr('Brak sesji. Utwórz pierwszą sesję check-in.')} />
       ) : (
         <div className="flex flex-col gap-3">
           {sessions.map((session) => (
