@@ -17,6 +17,8 @@ import MaterialsTab from './shared/MaterialsTab';
 import { useT } from '../i18n';
 import ResponsiveTabs from '../components/ResponsiveTabs';
 import PageHeader from '../components/PageHeader';
+import Button from '../components/Button';
+import EmptyState from '../components/EmptyState';
 import HouseholdManager from './Kids/components/HouseholdManager';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useCampus } from '../contexts/CampusContext';
@@ -469,7 +471,7 @@ export default function Members() {
 
       {/* MEMBERS TAB */}
       {activeTab === 'members' && (
-      <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 transition-colors duration-300">
+      <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300">
 
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
           <div className="flex-1 w-full md:w-auto flex items-center gap-3">
@@ -492,13 +494,9 @@ export default function Members() {
           </div>
 
           <Can cap="res:members:create">
-          <button
-            data-tour="member-add"
-            onClick={() => openModal()}
-            className="bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white text-sm px-6 py-2.5 rounded-xl font-bold hover:shadow-lg hover:shadow-accent-primary-light/30 transition flex items-center gap-2 whitespace-nowrap"
-          >
-            <Plus size={18} /> {t('Dodaj osobę')}
-          </button>
+          <Button data-tour="member-add" onClick={() => openModal()} icon={Plus} className="whitespace-nowrap">
+            {t('Dodaj osobę')}
+          </Button>
           </Can>
         </div>
 
@@ -520,7 +518,7 @@ export default function Members() {
           </div>
         )}
 
-        <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
           <table className="w-full text-left text-sm min-w-[800px]">
             <thead className="bg-gradient-to-r from-accent-primary-lightest/80 to-accent-secondary-lightest/80 dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 text-gray-700 dark:text-gray-300 font-bold border-b border-gray-200/50 dark:border-gray-700/50">
@@ -633,9 +631,7 @@ export default function Members() {
           </div>
 
           {filteredMembers.length === 0 && (
-            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-              {tr('Brak wyników do wyświetlenia')}
-            </div>
+            <EmptyState icon={Users} title={tr('Brak wyników do wyświetlenia')} />
           )}
         </div>
       </section>
@@ -648,14 +644,14 @@ export default function Members() {
 
       {/* HOUSEHOLDS TAB */}
       {activeTab === 'households' && (
-        <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 overflow-hidden transition-colors duration-300">
+        <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-300">
           <HouseholdManager />
         </section>
       )}
 
       {/* FILES TAB */}
       {activeTab === 'files' && (
-        <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 overflow-hidden transition-colors duration-300">
+        <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-300">
           <MaterialsTab moduleKey="members" canEdit={true} />
         </section>
       )}
@@ -663,7 +659,7 @@ export default function Members() {
       {/* MODAL */}
       {showModal && document.body && createPortal(
         <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100] transition-opacity">
-          <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-2xl p-8 border border-white/20 dark:border-gray-700/50 relative animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-2xl p-8 border border-gray-200 dark:border-gray-700 relative animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
 
             <div className="flex justify-between items-center mb-8">
               <h3 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
@@ -922,15 +918,10 @@ export default function Members() {
               </div>
 
               <div className="pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
-                <button onClick={() => setShowModal(false)} className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Anuluj')}</button>
-                <button
-                  data-tour="member-save"
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-8 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light text-white font-bold rounded-xl hover:shadow-lg hover:shadow-accent-primary-light/30 transition disabled:opacity-50"
-                >
+                <Button variant="outline" size="lg" onClick={() => setShowModal(false)}>{tr('Anuluj')}</Button>
+                <Button size="lg" data-tour="member-save" onClick={handleSave} loading={saving}>
                   {saving ? 'Zapisywanie...' : 'Zapisz'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
