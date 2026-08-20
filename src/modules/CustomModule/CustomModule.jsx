@@ -12,7 +12,7 @@ import ModuleWidget, { WIDGET_TYPES, SELF_WRAPPING_WIDGETS } from './components/
 import LayoutRenderer from './components/LayoutRenderer';
 
 const CARD_CLASS =
-  'bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 relative z-[50] transition-colors duration-300';
+  'bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[50] transition-colors duration-300';
 
 export default function CustomModule() {
   const { moduleKey: paramKey } = useParams();

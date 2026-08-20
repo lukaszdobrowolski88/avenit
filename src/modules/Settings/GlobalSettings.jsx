@@ -975,7 +975,7 @@ export default function GlobalSettings() {
 
       <div className="flex gap-6 flex-1 min-h-0">
         {/* MENU PO LEWEJ (desktop) */}
-        <nav className="hidden lg:flex flex-col w-60 shrink-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700 p-3 overflow-y-auto">
+        <nav className="hidden lg:flex flex-col w-60 shrink-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 overflow-y-auto">
           {SETTINGS_NAV.map((section) => (
             <div key={section.group} className="mb-2">
               <div className="px-3 pt-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{t(section.group)}</div>
@@ -1002,7 +1002,7 @@ export default function GlobalSettings() {
         </nav>
 
         {/* TREŚĆ */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700 p-6 lg:p-8 flex-1 overflow-y-auto transition-colors">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 lg:p-8 flex-1 overflow-y-auto transition-colors">
         {activeNav && (
           <div className="flex items-center gap-2.5 mb-6 lg:hidden">
             <activeNav.icon size={22} className="text-accent-primary" />
@@ -1203,7 +1203,7 @@ export default function GlobalSettings() {
       {/* MODAL DODAWANIA UŻYTKOWNIKA (DARK MODE) */}
       {showUserModal && document.body && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border border-white/20 dark:border-gray-700 max-h-[calc(100vh-2rem)] flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-2rem)] flex flex-col">
             <div className="flex justify-between items-center px-6 pt-6 pb-4 flex-shrink-0">
               <h3 className="font-bold text-xl text-gray-800 dark:text-white">{t('Użytkownik')}</h3>
               <button onClick={() => setShowUserModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"><X/></button>

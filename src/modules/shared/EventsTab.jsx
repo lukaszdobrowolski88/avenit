@@ -276,7 +276,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
 
   return createPortal(
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-white/20 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700">
         <div className="flex justify-between mb-6">
           <h3 className="font-bold text-xl text-gray-800 dark:text-white flex items-center gap-2">
             <span className="text-2xl">{config.icon}</span>

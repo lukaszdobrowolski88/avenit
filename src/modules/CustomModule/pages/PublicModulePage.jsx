@@ -44,7 +44,7 @@ export default function PublicModulePage() {
           <Icon size={32} className="text-accent-primary dark:text-accent-primary-light" />
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{data.tabLabel || data.moduleLabel}</h1>
         </div>
-        <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <LayoutRenderer layout={data.layout} publicMode moduleName={data.moduleLabel} />
         </div>
         <div className="text-center mt-6 text-xs text-gray-400 dark:text-gray-600">Avenit</div>

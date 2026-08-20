@@ -686,7 +686,7 @@ GRANT ALL ON ${commentsTableName} TO anon;`;
       {/* Modal zadania - identyczny jak w MediaTeam */}
       {showModal && document.body && createPortal(
         <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto transition-opacity">
-          <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-4xl p-0 border border-white/20 dark:border-gray-700/50 my-8 flex overflow-hidden h-[80vh] animate-in fade-in zoom-in duration-200">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-4xl p-0 border border-gray-200 dark:border-gray-700 my-8 flex overflow-hidden h-[80vh] animate-in fade-in zoom-in duration-200">
 
             {/* Lewa kolumna - formularz */}
             <div className="w-3/5 p-8 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">

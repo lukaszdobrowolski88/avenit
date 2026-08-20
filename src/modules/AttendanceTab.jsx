@@ -68,7 +68,7 @@ export default function AttendanceTab({ members = [] }) {
   };
 
   return (
-    <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6">
+    <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex flex-col md:flex-row md:items-end gap-4 mb-5">
         <div className="w-full md:w-48">
           <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">{tr('Data')}</label>

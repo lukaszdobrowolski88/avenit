@@ -114,7 +114,7 @@ export default function MailingModule() {
       />
 
       {/* Zawartość - identyczny styl jak inne moduły */}
-      <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 relative z-[50] transition-colors duration-300">
+      <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[50] transition-colors duration-300">
         {loading && activeTab === 'campaigns' ? (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader className="w-10 h-10 text-accent-primary-light animate-spin" />

@@ -131,7 +131,7 @@ export function AddSongToProgramModal({ song, onClose, onSaved }) {
 
   return createPortal(
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-white/20 dark:border-gray-700 max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700 max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="font-bold text-xl text-gray-800 dark:text-white">Dodaj do programu</h3>
@@ -315,7 +315,7 @@ export function ProgramsSongsManagerModal({ songs, onClose }) {
 
   return createPortal(
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-3xl border border-white/20 dark:border-gray-700 max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-3xl border border-gray-200 dark:border-gray-700 max-h-[90vh] flex flex-col">
         {!selectedProgram ? (
           <>
             <div className="flex justify-between items-center px-6 pt-6 pb-3">
