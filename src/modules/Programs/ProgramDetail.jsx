@@ -1772,7 +1772,7 @@ const UnsavedChangesModal = ({ isOpen, onClose, onSave, onDiscard }) => {
 
   return createPortal(
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-white/20 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-4 mb-4">
           <div className="w-12 h-12 bg-accent-secondary-lighter dark:bg-accent-secondary/30 rounded-full flex items-center justify-center flex-shrink-0">
             <AlertTriangle size={24} className="text-accent-secondary dark:text-accent-secondary-light" />
@@ -1811,7 +1811,7 @@ const TemplateModal = ({ isOpen, onClose, templates, onLoad, onDelete }) => {
 
   return createPortal(
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95 duration-200">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-white/20 dark:border-gray-700 max-h-[80vh] flex flex-col">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-gray-200 dark:border-gray-700 max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
             <FileText size={20} className="text-accent-primary-light" />
@@ -1934,7 +1934,7 @@ function PrintOptionsModalBody({ printOptions, setPrintOptions, onClose, onGener
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl border border-white/20 dark:border-gray-700 max-h-[calc(100vh-2rem)] flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-2rem)] flex flex-col">
         {/* HEADER */}
         <div className="flex justify-between items-start px-6 pt-6 pb-4 flex-shrink-0 border-b border-gray-100 dark:border-gray-700">
           <div>

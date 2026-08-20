@@ -305,7 +305,7 @@ function BuilderShell({ tab, moduleId, moduleName, moduleKey, onClose, onSave, o
               </button>
             ))}
           </div>
-          <div className={`mx-auto bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 transition-all ${device === 'mobile' ? 'max-w-[390px]' : 'max-w-3xl'}`}>
+          <div className={`mx-auto bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-all ${device === 'mobile' ? 'max-w-[390px]' : 'max-w-3xl'}`}>
             <LayoutRenderer layout={{ version: LAYOUT_VERSION, root, settings }} moduleId={moduleId} moduleKey={moduleKey} moduleName={moduleName} tabId={tab?.id} device={device} />
           </div>
         </div>

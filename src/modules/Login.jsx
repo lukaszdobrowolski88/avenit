@@ -136,7 +136,7 @@ export default function Login() {
         </div>
 
         <form
-          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-8 shadow-2xl rounded-2xl max-w-md w-full border border-white/20 dark:border-gray-700/50 relative z-10 animate-in fade-in zoom-in duration-300"
+          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-8 shadow-2xl rounded-2xl max-w-md w-full border border-gray-200 dark:border-gray-700 relative z-10 animate-in fade-in zoom-in duration-300"
           onSubmit={handleVerify2FA}
         >
           <div className="flex justify-center mb-6">
@@ -212,7 +212,7 @@ export default function Login() {
       </div>
 
       <form
-        className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-8 shadow-2xl rounded-2xl max-w-md w-full border border-white/20 dark:border-gray-700/50 relative z-10 animate-in fade-in zoom-in duration-300"
+        className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-8 shadow-2xl rounded-2xl max-w-md w-full border border-gray-200 dark:border-gray-700 relative z-10 animate-in fade-in zoom-in duration-300"
         onSubmit={handleLogin}
       >
         <div className="flex justify-center mb-6">

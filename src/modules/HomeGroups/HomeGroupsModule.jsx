@@ -719,7 +719,7 @@ export default function HomeGroupsModule() {
 
       {/* GROUPS TAB */}
       {activeTab === 'groups' && (
-        <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 transition-colors">
+        <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
               Grupy Domowe ({filteredGroups.length})
@@ -996,7 +996,7 @@ export default function HomeGroupsModule() {
 
       {/* FILES TAB */}
       {activeTab === 'files' && (
-        <section className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/20 dark:border-gray-700/50 overflow-hidden transition-colors">
+        <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors">
           <MaterialsTab moduleKey="homegroups" canEdit={true} />
         </section>
       )}
@@ -1013,7 +1013,7 @@ export default function HomeGroupsModule() {
       {/* MODAL: Group/Leader/Member */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl border border-white/20 dark:border-gray-700 flex flex-col max-h-[90vh]">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="font-bold text-2xl bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
                 {editingItem ? 'Edytuj' : 'Dodaj'} {modalType === 'group' ? tr('Grupę') : modalType === 'leader' ? 'Lidera' : tr('Członka')}
@@ -1181,7 +1181,7 @@ export default function HomeGroupsModule() {
       {/* MODAL: Group Members */}
       {showGroupMembersModal && currentGroup && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-3xl border border-white/20 dark:border-gray-700 flex flex-col max-h-[80vh]">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-3xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[80vh]">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="font-bold text-xl text-gray-800 dark:text-white">
                 Członkowie: {currentGroup.name}
@@ -1257,7 +1257,7 @@ export default function HomeGroupsModule() {
       {/* MODAL: Materials */}
       {showMaterialsModal && currentGroup && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl border border-white/20 dark:border-gray-700 flex flex-col max-h-[80vh]">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[80vh]">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <h3 className="font-bold text-xl text-gray-800 dark:text-white">Materiały: {currentGroup.name}</h3>
               <button onClick={() => setShowMaterialsModal(false)} className="text-gray-500 dark:text-gray-400">
@@ -1349,7 +1349,7 @@ export default function HomeGroupsModule() {
       {/* MODAL: Task */}
       {showTaskModal && (
         <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto transition-opacity">
-          <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-4xl p-0 border border-white/20 dark:border-gray-700/50 my-8 flex overflow-hidden h-[80vh] animate-in fade-in zoom-in duration-200">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-4xl p-0 border border-gray-200 dark:border-gray-700 my-8 flex overflow-hidden h-[80vh] animate-in fade-in zoom-in duration-200">
 
             <div className="w-3/5 p-8 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">
               <div className="flex justify-between mb-6">
@@ -1495,7 +1495,7 @@ export default function HomeGroupsModule() {
       {/* MODAL: Add Expense */}
       {showExpenseModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl p-6 border border-white/20 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-2xl p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between mb-6">
               <h3 className="font-bold text-xl text-gray-800 dark:text-white">
                 Dodaj wydatek - {expenseForm.ministry}

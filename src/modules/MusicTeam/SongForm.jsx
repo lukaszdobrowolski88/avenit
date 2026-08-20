@@ -1083,7 +1083,7 @@ export default function SongForm({ initialData, onSave, onCancel, allTags = [] }
 
   return createPortal(
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-6xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700 flex flex-col max-h-[92vh] my-4">
+      <div className="bg-white dark:bg-gray-900 w-full max-w-6xl rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col max-h-[92vh] my-4">
         
         {/* HEADER */}
         <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-700">
