@@ -18,11 +18,15 @@ export default function Popover({ trigger, children, className = '', width, onOp
       const popH = popRef.current?.offsetHeight || 280;
       const spaceBelow = window.innerHeight - rect.bottom;
       const openUp = spaceBelow < popH && rect.top > spaceBelow;
-      const left = align === 'right' ? rect.right - (width || rect.width) : rect.left;
+      const w = width || rect.width;
+      const rawLeft = align === 'right' ? rect.right - w : rect.left;
+      // Clamp do widoku w obu osiach — inaczej popover przy prawej krawędzi (np. „+" dodaj
+      // kolumnę na końcu tabeli) wychodzi poza ekran i jest obcięty.
+      const left = Math.max(8, Math.min(rawLeft, window.innerWidth - w - 8));
       setCoords({
-        top: openUp ? rect.top - (popH + 4) : rect.bottom + 4,
-        left: Math.max(8, left),
-        minWidth: width || rect.width,
+        top: Math.max(8, openUp ? rect.top - (popH + 4) : rect.bottom + 4),
+        left,
+        minWidth: w,
       });
     };
     update();

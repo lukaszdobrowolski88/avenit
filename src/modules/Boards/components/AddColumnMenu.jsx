@@ -9,6 +9,7 @@ export default function AddColumnMenu({ onAdd }) {
   return (
     <Popover
       width={240}
+      align="right"
       trigger={
         <div className="h-full w-full flex items-center justify-center text-gray-400 hover:text-accent-primary hover:bg-gray-50 dark:hover:bg-gray-700/40" title="Dodaj kolumnę">
           <Plus size={16} />
