@@ -349,7 +349,7 @@ export default function CampaignEditor({ campaign, templateId, onClose, onSave }
           >
             <X size={20} className="text-gray-500" />
           </button>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
             {campaign ? 'Edytuj mail' : 'Nowy mail'}
           </h1>
         </div>

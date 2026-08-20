@@ -662,7 +662,7 @@ export default function Members() {
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-2xl p-8 border border-gray-200 dark:border-gray-700 relative animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
 
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formData.id ? 'Edytuj dane' : 'Nowa osoba'}
               </h3>
               <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-full transition">

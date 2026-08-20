@@ -230,7 +230,7 @@ export default function ConversationList({
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center shadow-lg shadow-accent-primary-light/20">
               <MessageSquare size={16} className="text-white" />
             </div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-accent-primary to-accent-secondary-light bg-clip-text text-transparent">
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">
               Komunikator
             </h1>
           </div>

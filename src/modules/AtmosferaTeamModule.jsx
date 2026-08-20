@@ -763,7 +763,7 @@ export default function AtmosferaTeamModule() {
       {activeTab === 'schedule' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[50] transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{tr('Grafik')}</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Grafik')}</h2>
         </div>
         <ScheduleTable
           programs={programs}
@@ -783,7 +783,7 @@ export default function AtmosferaTeamModule() {
       {activeTab === 'members' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[30] transition-colors duration-300">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Członkowie ({team.length})</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Członkowie ({team.length})</h2>
           <button onClick={() => { setMemberForm({ id: null, full_name: '', role: 'Atmosfera', email: '', phone: '' }); setSelectedMemberRoles([]); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj</button>
         </div>
         <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">

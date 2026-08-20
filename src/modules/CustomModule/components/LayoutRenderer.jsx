@@ -14,7 +14,7 @@ function StatWidget({ el, ctx }) {
   const { records } = useModuleRecords({ moduleId: ctx.moduleId, moduleKey: ctx.moduleKey, tabId: ctx.tabId, collectionKey: el.props?.collectionKey });
   return (
     <div className="p-6 rounded-2xl bg-gradient-to-br from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/30 dark:to-accent-secondary-darkest/30 text-center">
-      <div className="text-4xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">{records.length}</div>
+      <div className="text-4xl font-bold text-gray-900 dark:text-white">{records.length}</div>
       <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">{el.props?.label || tr('Liczba wpisów')}</div>
     </div>
   );

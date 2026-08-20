@@ -115,7 +115,7 @@ export default function ModuleEditor({ module, onClose, onSave, existingKeys = [
       <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-700">
         {/* Header */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <h3 className="font-bold text-xl bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
+          <h3 className="font-bold text-xl text-gray-900 dark:text-white">
             {isEditing ? tr('Edytuj moduł') : tr('Nowy moduł')}
           </h3>
           <button

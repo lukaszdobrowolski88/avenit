@@ -789,7 +789,7 @@ export default function MlodziezowkaModule() {
       {activeTab === 'events' && (
         <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary-light to-accent-secondary-light dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Wydarzenia ({events.length})</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Wydarzenia ({events.length})</h2>
             <button data-tour="mlodz-event-add" onClick={() => { setEventForm({ id: null, title: '', description: '', start_date: '', event_time: '', location: '', max_participants: '', event_type: 'spotkanie' }); setShowEventModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj wydarzenie</button>
           </div>
 
@@ -855,7 +855,7 @@ export default function MlodziezowkaModule() {
       {activeTab === 'leaders' && (
         <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary-light to-accent-secondary-light dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Liderzy ({leaders.length})</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Liderzy ({leaders.length})</h2>
             <button onClick={() => { setLeaderForm({ id: null, full_name: '', email: '', phone: '', role: '' }); setShowLeaderModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj lidera</button>
           </div>
           <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
@@ -894,7 +894,7 @@ export default function MlodziezowkaModule() {
       {activeTab === 'members' && (
         <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-accent-primary-light to-accent-secondary-light dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">Członkowie ({members.length})</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Członkowie ({members.length})</h2>
             <button onClick={() => { setMemberForm({ id: null, full_name: '', email: '', phone: '', birth_date: '', notes: '' }); setShowMemberModal(true); }} className="bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg transition flex items-center gap-2"><Plus size={18}/> Dodaj członka</button>
           </div>
           <div className="bg-white/50 dark:bg-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
@@ -950,7 +950,7 @@ export default function MlodziezowkaModule() {
 
             <div className="w-3/5 p-8 overflow-y-auto border-r border-gray-200/50 dark:border-gray-700/50 custom-scrollbar">
               <div className="flex justify-between mb-6">
-                <h3 className="font-bold text-2xl bg-gradient-to-r from-accent-primary-light to-accent-secondary-light dark:from-accent-primary-light dark:to-accent-secondary-light bg-clip-text text-transparent">{taskForm.id ? 'Edycja zadania' : 'Nowe zadanie'}</h3>
+                <h3 className="font-bold text-2xl text-gray-900 dark:text-white">{taskForm.id ? 'Edycja zadania' : 'Nowe zadanie'}</h3>
               </div>
               <div className="space-y-5">
                 <div>
