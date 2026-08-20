@@ -764,7 +764,7 @@ export default function MlodziezowkaModule() {
     }
   };
 
-  if (loading) return <div className="p-10 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary dark:border-accent-secondary-light mx-auto"></div></div>;
+  if (loading) return <div className="p-10 text-center"><Spinner size={48} className="mx-auto" /></div>;
   if (error) return <div className="p-10 text-red-600 dark:text-red-400">Błąd: {error}</div>;
 
   return (

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import Spinner from '../../components/Spinner';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import PageHeader from '../../components/PageHeader';
@@ -1011,7 +1012,7 @@ export default function PrayerWallModule() {
   if (roleLoading || loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary dark:border-accent-primary-light"></div>
+        <Spinner size={48} />
       </div>
     );
   }

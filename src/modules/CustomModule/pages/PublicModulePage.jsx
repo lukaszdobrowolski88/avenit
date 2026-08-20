@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Spinner from '../../../components/Spinner';
 import { useParams } from 'react-router-dom';
 import * as LucideIcons from 'lucide-react';
 import LayoutRenderer from '../components/LayoutRenderer';
@@ -22,7 +23,7 @@ export default function PublicModulePage() {
   }, [slug]);
 
   if (state === 'loading') {
-    return <div className="min-h-screen grid place-items-center bg-gray-50 dark:bg-gray-950"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent-primary" /></div>;
+    return <div className="min-h-screen grid place-items-center bg-gray-50 dark:bg-gray-950"><Spinner size={40} /></div>;
   }
   if (state !== 'ok') {
     return (

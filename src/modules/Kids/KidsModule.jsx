@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Spinner from '../../components/Spinner';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -580,7 +581,7 @@ export default function KidsModule() {
   const availableStudentOptions = availableStudents.map(s => ({ value: s.id, label: s.full_name }));
   const materialTypeOptions = ['Lekcja', 'Kolorowanka', 'Gra', 'Film', 'Książka', 'Inne'].map(t => ({ value: t, label: t }));
 
-  if (loading) return <div className="p-10 text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mx-auto"></div></div>;
+  if (loading) return <div className="p-10 text-center"><Spinner size={48} className="mx-auto" /></div>;
 
   return (
     <div className="space-y-8">

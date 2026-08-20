@@ -1,4 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
+import Spinner from './components/Spinner';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { PermissionsProvider } from './contexts/PermissionsContext';
@@ -83,7 +84,7 @@ const SYSTEM_MODULE_KEYS = [
 function PageLoader() {
   return (
     <div className="flex items-center justify-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary"></div>
+      <Spinner size={32} />
     </div>
   );
 }
@@ -295,7 +296,7 @@ function AppInner() {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary mx-auto mb-4"></div>
+          <Spinner size={48} className="mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-300 font-medium">{tr('Ładowanie...')}</p>
         </div>
       </div>

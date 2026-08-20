@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Spinner from '../../components/Spinner';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import { ChevronUp, ChevronDown, Check, UserX } from 'lucide-react';
@@ -316,7 +317,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   if (loading) {
     return (
       <div className="p-10 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary mx-auto"></div>
+        <Spinner size={32} className="mx-auto" />
       </div>
     );
   }

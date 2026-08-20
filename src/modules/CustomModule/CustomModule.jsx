@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Spinner from '../../components/Spinner';
 import { useParams, useLocation } from 'react-router-dom';
 import * as LucideIcons from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -74,7 +75,7 @@ export default function CustomModule() {
   if (loading) {
     return (
       <div className="p-10 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-primary dark:border-accent-primary-light mx-auto"></div>
+        <Spinner size={48} className="mx-auto" />
       </div>
     );
   }

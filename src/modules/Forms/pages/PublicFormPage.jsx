@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Spinner from '../../../components/Spinner';
 import { useParams } from 'react-router-dom';
 import { AlertCircle, Lock } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
@@ -134,7 +135,7 @@ export default function PublicFormPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-accent-primary-lightest/50 via-white to-accent-secondary-lightest/50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-accent-primary-lighter border-t-accent-primary-light"></div>
+        <Spinner size={48} />
       </div>
     );
   }
