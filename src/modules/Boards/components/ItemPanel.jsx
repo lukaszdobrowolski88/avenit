@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  X, MessageSquare, Activity, Send, Heart, Trash2, AtSign, CornerDownRight, MoreHorizontal, Copy, AlignLeft, Plus,
+  X, MessageSquare, Activity, Send, Heart, Trash2, AtSign, CornerDownRight, MoreHorizontal, Copy, AlignLeft, Plus, Maximize2, ArrowLeft,
 } from 'lucide-react';
 import BoardCell from './BoardCell';
 import ColumnIcon from './ColumnIcon';
@@ -108,8 +108,9 @@ function UpdateItem({ u, replies, people, userEmail, onLike, onDelete, onReply }
   );
 }
 
-// Wiersz podzadania (zadanie zagnieżdżone w elemencie głównym).
-function SubitemRow({ sub, statusCol, onRename, onCell, onUpdateColumn, onDelete }) {
+// Wiersz podzadania (zadanie zagnieżdżone). Klik „Otwórz" wchodzi w podzadanie
+// jak w pełne zadanie (te same opcje). Nazwa i status edytowalne inline.
+function SubitemRow({ sub, statusCol, subCount, onRename, onCell, onUpdateColumn, onDelete, onOpen }) {
   const [name, setName] = useState(sub.name);
   useEffect(() => { setName(sub.name); }, [sub.name]);
   return (
@@ -120,12 +121,14 @@ function SubitemRow({ sub, statusCol, onRename, onCell, onUpdateColumn, onDelete
         onBlur={() => { if (name !== sub.name) onRename(sub.id, name); }}
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
         className="flex-1 min-w-0 text-sm bg-transparent outline-none text-gray-700 dark:text-gray-200" />
+      {subCount > 0 && <span className="text-[10px] text-gray-400 shrink-0 flex items-center gap-0.5"><CornerDownRight size={10} />{subCount}</span>}
       {statusCol && (
         <div className="w-28 h-7 rounded-md border border-gray-200 dark:border-gray-700 shrink-0 flex items-stretch overflow-hidden">
           <BoardCell column={statusCol} value={sub.cells?.[statusCol.id]} item={sub} columns={[statusCol]}
             onChange={(v) => onCell(sub.id, statusCol.id, v)} onUpdateColumn={onUpdateColumn} />
         </div>
       )}
+      <button onClick={() => onOpen(sub)} className="opacity-0 group-hover/sub:opacity-100 text-gray-400 hover:text-accent-primary shrink-0 p-0.5" title="Otwórz podzadanie"><Maximize2 size={13} /></button>
       <button onClick={() => onDelete(sub.id)} className="opacity-0 group-hover/sub:opacity-100 text-gray-300 hover:text-red-500 shrink-0 p-0.5" title="Usuń podzadanie"><Trash2 size={13} /></button>
     </div>
   );
@@ -133,7 +136,14 @@ function SubitemRow({ sub, statusCol, onRename, onCell, onUpdateColumn, onDelete
 
 export default function ItemPanel({ item, data, onClose, userEmail, userName }) {
   const [tab, setTab] = useState('updates');
-  const current = data.items.find(i => i.id === item.id) || item;
+  // Drill-in: podzadanie otwiera się jak pełne zadanie. `viewItemId` = aktualnie
+  // oglądany element, `trail` = ścieżka rodziców do powrotu. Reset przy zmianie itemu.
+  const [viewItemId, setViewItemId] = useState(item.id);
+  const [trail, setTrail] = useState([]);
+  useEffect(() => { setViewItemId(item.id); setTrail([]); setTab('updates'); }, [item.id]);
+  const current = data.items.find(i => i.id === viewItemId) || item;
+  const openSubitem = (sub) => { setTrail(t => [...t, current]); setViewItemId(sub.id); setTab('updates'); };
+  const goBack = () => { setTrail(t => { const n = [...t]; const p = n.pop(); if (p) setViewItemId(p.id); return n; }); setTab('updates'); };
   const { updates, activity, addUpdate, toggleLike, deleteUpdate } = useItemUpdates(current, data.board?.id, { userEmail, userName });
 
   const roots = useMemo(() => updates.filter(u => !u.parent_update_id), [updates]);
@@ -159,21 +169,32 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
     [data.items, current.id]
   );
   const statusCol = data.columns.find(c => c.type === 'status' || c.type === 'priority');
+  const parent = current.parent_item_id ? data.items.find(i => i.id === current.parent_item_id) : null;
   const [newSub, setNewSub] = useState('');
   const addSub = () => { const n = newSub.trim(); if (!n) return; data.addSubitem(current, n); setNewSub(''); };
 
   const duplicate = async () => {
-    const copy = await data.addItem(current.group_id, `${current.name || 'Element'} (kopia)`, { ...(current.cells || {}) });
-    if (copy && current.description) data.updateItem(copy.id, { description: current.description });
-    onClose();
+    let copy;
+    if (current.parent_item_id) {
+      copy = await data.addSubitem({ id: current.parent_item_id, group_id: current.group_id }, `${current.name || 'Podzadanie'} (kopia)`);
+      if (copy) data.updateItem(copy.id, { cells: { ...(current.cells || {}) }, description: current.description || null });
+    } else {
+      copy = await data.addItem(current.group_id, `${current.name || 'Element'} (kopia)`, { ...(current.cells || {}) });
+      if (copy && current.description) data.updateItem(copy.id, { description: current.description });
+    }
+    if (trail.length) goBack(); else onClose();
   };
-  const remove = () => { if (confirm('Usunąć ten element?')) { data.deleteItem(current.id); onClose(); } };
+  const remove = () => { if (confirm('Usunąć ten element?')) { data.deleteItem(current.id); if (trail.length) goBack(); else onClose(); } };
 
   return (
     <Modal isOpen onClose={onClose} size="lg" className="!p-0 !overflow-hidden !max-h-[85vh] flex flex-col animate-modal-pop">
       {/* Nagłówek */}
       <div className="shrink-0 px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-start gap-2">
+          {trail.length > 0 && (
+            <button onClick={goBack} title="Wróć do elementu nadrzędnego"
+              className="p-1.5 -ml-1 mt-0.5 shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"><ArrowLeft size={18} /></button>
+          )}
           <input value={nameLocal} placeholder="Nazwa elementu"
             onChange={(e) => setNameLocal(e.target.value)}
             onBlur={() => { if (nameLocal !== current.name) data.updateItem(current.id, { name: nameLocal }); }}
@@ -194,7 +215,7 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
         </div>
         <div className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-400 min-w-0">
           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: groupColor }} />
-          <span className="truncate">{data.board?.name}{group ? ` › ${group.name}` : ''}</span>
+          <span className="truncate">{data.board?.name}{group ? ` › ${group.name}` : ''}{parent ? ` › ${parent.name || 'element'}` : ''}</span>
         </div>
       </div>
 
@@ -250,8 +271,9 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
           <div className="divide-y divide-gray-100 dark:divide-gray-800">
             {subitems.map(sub => (
               <SubitemRow key={sub.id} sub={sub} statusCol={statusCol}
+                subCount={data.items.filter(i => i.parent_item_id === sub.id).length}
                 onRename={(id, n) => data.updateItem(id, { name: n })}
-                onCell={data.updateCell} onUpdateColumn={data.updateColumn} onDelete={data.deleteItem} />
+                onCell={data.updateCell} onUpdateColumn={data.updateColumn} onDelete={data.deleteItem} onOpen={openSubitem} />
             ))}
           </div>
           <div className="flex items-center gap-2 mt-1">
