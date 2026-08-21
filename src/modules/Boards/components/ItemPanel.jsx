@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  X, MessageSquare, ListChecks, Activity, Send, Heart, Trash2, AtSign, CornerDownRight,
+  X, MessageSquare, Activity, Send, Heart, Trash2, AtSign, CornerDownRight, MoreHorizontal, Copy, AlignLeft,
 } from 'lucide-react';
 import BoardCell from './BoardCell';
 import ColumnIcon from './ColumnIcon';
@@ -113,75 +113,123 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
 
   const roots = useMemo(() => updates.filter(u => !u.parent_update_id), [updates]);
   const repliesOf = (id) => updates.filter(u => u.parent_update_id === id);
-  // Nazwa: lokalny stan + commit na blur (koniec zapisu do bazy przy każdym znaku).
+  // Nazwa + opis: lokalny stan, commit na blur (koniec zapisu do bazy przy każdym znaku).
   const [nameLocal, setNameLocal] = useState(current.name);
   useEffect(() => { setNameLocal(current.name); }, [current.name]);
+  const [descLocal, setDescLocal] = useState(current.description || '');
+  useEffect(() => { setDescLocal(current.description || ''); }, [current.description]);
 
   const TABS = [
-    { id: 'updates', label: 'Aktualizacje', icon: MessageSquare },
-    { id: 'values', label: 'Kolumny', icon: ListChecks },
+    { id: 'updates', label: 'Aktualizacje', icon: MessageSquare, count: roots.length },
     { id: 'activity', label: 'Aktywność', icon: Activity },
   ];
 
   const group = data.groups?.find(g => g.id === current.group_id);
   const groupColor = group?.color || data.board?.color || '#6366f1';
 
+  const duplicate = async () => {
+    const copy = await data.addItem(current.group_id, `${current.name || 'Element'} (kopia)`, { ...(current.cells || {}) });
+    if (copy && current.description) data.updateItem(copy.id, { description: current.description });
+    onClose();
+  };
+  const remove = () => { if (confirm('Usunąć ten element?')) { data.deleteItem(current.id); onClose(); } };
+
   return (
-    <Modal isOpen onClose={onClose} size="lg" className="!p-0 animate-modal-pop">
-      {/* Nagłówek + zakładki (przyklejone) */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 rounded-t-2xl">
-        <div className="h-1.5 rounded-t-2xl" style={{ backgroundColor: groupColor }} />
-        <div className="flex items-start gap-3 px-6 pt-4 pb-3">
-          <div className="flex-1 min-w-0">
-            <input value={nameLocal} placeholder="Nazwa elementu"
-              onChange={(e) => setNameLocal(e.target.value)}
-              onBlur={() => { if (nameLocal !== current.name) data.updateItem(current.id, { name: nameLocal }); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-              className="w-full text-xl font-bold bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-400 placeholder:font-semibold" />
-            <div className="flex items-center gap-1.5 mt-1 text-xs text-gray-400 min-w-0">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: groupColor }} />
-              <span className="truncate">{data.board?.name}{group ? ` › ${group.name}` : ''}</span>
-            </div>
-          </div>
+    <Modal isOpen onClose={onClose} size="xl" className="!p-0 !overflow-hidden !max-h-[85vh] flex flex-col animate-modal-pop">
+      {/* Nagłówek */}
+      <div className="shrink-0 px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-start gap-2">
+          <input value={nameLocal} placeholder="Nazwa elementu"
+            onChange={(e) => setNameLocal(e.target.value)}
+            onBlur={() => { if (nameLocal !== current.name) data.updateItem(current.id, { name: nameLocal }); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+            className="flex-1 min-w-0 text-xl font-bold bg-transparent outline-none text-gray-900 dark:text-white placeholder:text-gray-400" />
+          <Popover align="right" width={180} triggerClassName="shrink-0" trigger={
+            <button className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition" title="Więcej"><MoreHorizontal size={18} /></button>
+          }>
+            {({ close }) => (
+              <div className="p-1.5">
+                <button onClick={() => { duplicate(); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Copy size={14} /> Duplikuj</button>
+                <button onClick={() => { close(); remove(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-sm text-red-600"><Trash2 size={14} /> Usuń element</button>
+              </div>
+            )}
+          </Popover>
           <button onClick={onClose} aria-label="Zamknij"
             className="p-1.5 -mr-1 shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"><X size={18} /></button>
         </div>
-        <div className="flex gap-1 px-4 border-b border-gray-100 dark:border-gray-800">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-accent-primary text-accent-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
-              <t.icon size={15} /> {t.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-400 min-w-0">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: groupColor }} />
+          <span className="truncate">{data.board?.name}{group ? ` › ${group.name}` : ''}</span>
         </div>
       </div>
 
-      {/* Treść */}
-      <div className="px-6 py-5">
-        {tab === 'updates' && (
-          <div>
-            <Composer people={data.people} onSend={(t, m) => addUpdate(t, m)} />
-            <div className="mt-2">
-              {roots.length === 0 && <div className="text-center text-sm text-gray-400 py-10">Brak aktualizacji. Napisz pierwszą!</div>}
-              {roots.map(u => (
-                <UpdateItem key={u.id} u={u} replies={repliesOf(u.id)} people={data.people} userEmail={userEmail}
-                  onLike={toggleLike} onDelete={deleteUpdate} onReply={(t, m, pid) => addUpdate(t, m, pid)} />
-              ))}
-            </div>
+      {/* Ciało: główna kolumna + panel właściwości */}
+      <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
+        {/* Główna kolumna */}
+        <div className="flex-1 min-w-0 flex flex-col md:min-h-0">
+          {/* Opis */}
+          <div className="shrink-0 px-6 pt-4">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400 mb-1.5"><AlignLeft size={13} /> Opis</div>
+            <textarea value={descLocal} onChange={(e) => setDescLocal(e.target.value)}
+              onBlur={() => { if (descLocal !== (current.description || '')) data.updateItem(current.id, { description: descLocal || null }); }}
+              placeholder="Dodaj opis, kontekst, linki…" rows={2}
+              className="w-full text-sm rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-transparent focus:border-accent-primary/40 focus:bg-white dark:focus:bg-gray-800 p-3 outline-none resize-none text-gray-700 dark:text-gray-200 placeholder:text-gray-400 transition" />
           </div>
-        )}
+          {/* Zakładki */}
+          <div className="shrink-0 flex gap-1 px-6 mt-3 border-b border-gray-100 dark:border-gray-800">
+            {TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-accent-primary text-accent-primary' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+                <t.icon size={15} /> {t.label}
+                {t.count > 0 && <span className="text-xs text-gray-400">{t.count}</span>}
+              </button>
+            ))}
+          </div>
+          {/* Treść zakładki */}
+          <div className="md:flex-1 md:min-h-0 md:overflow-y-auto custom-scrollbar px-6 py-4">
+            {tab === 'updates' && (
+              <div>
+                <Composer people={data.people} onSend={(t, m) => addUpdate(t, m)} />
+                <div className="mt-2">
+                  {roots.length === 0 && <div className="text-center text-sm text-gray-400 py-10">Brak aktualizacji. Napisz pierwszą!</div>}
+                  {roots.map(u => (
+                    <UpdateItem key={u.id} u={u} replies={repliesOf(u.id)} people={data.people} userEmail={userEmail}
+                      onLike={toggleLike} onDelete={deleteUpdate} onReply={(t, m, pid) => addUpdate(t, m, pid)} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {tab === 'activity' && (
+              <div className="space-y-3">
+                {activity.length === 0 && <div className="text-center text-sm text-gray-400 py-10">Brak historii aktywności</div>}
+                {activity.map(a => (
+                  <div key={a.id} className="flex items-start gap-2 text-sm">
+                    <Avatar person={{ email: a.actor_email, name: a.actor_name || a.actor_email || '?' }} size={24} />
+                    <div>
+                      <span className="text-gray-700 dark:text-gray-200">{a.actor_name || a.actor_email || 'System'}</span>{' '}
+                      <span className="text-gray-500">{ACTION_LABEL[a.action] || a.action}</span>
+                      <div className="text-[11px] text-gray-400">{timeAgo(a.created_at)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
-        {tab === 'values' && (
-          <div className="space-y-0.5">
-            {data.columns.length === 0 && <div className="text-center text-sm text-gray-400 py-10">Brak kolumn</div>}
+        {/* Panel właściwości */}
+        <aside className="md:w-72 shrink-0 border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-900/40 md:overflow-y-auto custom-scrollbar p-4">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-3">Właściwości</div>
+          {data.columns.length === 0 && <div className="text-sm text-gray-400">Brak kolumn</div>}
+          <div className="space-y-3">
             {data.columns.map(col => {
               const t = getColumnType(col.type);
               return (
-                <div key={col.id} className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
-                  <div className="w-36 shrink-0 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                    <ColumnIcon name={t.icon} size={14} className="text-gray-400 shrink-0" /> <span className="truncate">{col.name}</span>
+                <div key={col.id}>
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <ColumnIcon name={t.icon} size={13} className="text-gray-400 shrink-0" /> <span className="truncate">{col.name}</span>
                   </div>
-                  <div className="flex-1 min-h-[34px] rounded-lg bg-gray-50/70 dark:bg-gray-800/40 hover:bg-gray-100 dark:hover:bg-gray-800/70 flex items-stretch overflow-hidden transition">
+                  <div className="min-h-[34px] rounded-lg bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 flex items-stretch overflow-hidden">
                     <BoardCell column={col} value={current.cells?.[col.id]} people={data.people} me={data.me} item={current} columns={data.columns}
                       onChange={(v) => data.updateCell(current.id, col.id, v)} onUpdateColumn={data.updateColumn} />
                   </div>
@@ -189,23 +237,7 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
               );
             })}
           </div>
-        )}
-
-        {tab === 'activity' && (
-          <div className="space-y-3">
-            {activity.length === 0 && <div className="text-center text-sm text-gray-400 py-10">Brak historii aktywności</div>}
-            {activity.map(a => (
-              <div key={a.id} className="flex items-start gap-2 text-sm">
-                <Avatar person={{ email: a.actor_email, name: a.actor_name || a.actor_email || '?' }} size={24} />
-                <div>
-                  <span className="text-gray-700 dark:text-gray-200">{a.actor_name || a.actor_email || 'System'}</span>{' '}
-                  <span className="text-gray-500">{ACTION_LABEL[a.action] || a.action}</span>
-                  <div className="text-[11px] text-gray-400">{timeAgo(a.created_at)}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        </aside>
       </div>
     </Modal>
   );

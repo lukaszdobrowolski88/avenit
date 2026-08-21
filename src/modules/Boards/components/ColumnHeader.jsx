@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MoreHorizontal, Trash2, Pencil, ArrowLeft, ArrowRight } from 'lucide-react';
 import Popover from './Popover';
 import ColumnIcon from './ColumnIcon';
+import LabelsEditor from './LabelsEditor';
 import CustomSelect from '../../../components/CustomSelect';
 import { tr } from '../../../i18n';
 import { getColumnType } from '../lib/columnTypes';
@@ -51,7 +52,7 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
       ) : (
         <span className="flex-1 truncate cursor-pointer" onDoubleClick={() => setRenaming(true)}>{column.name}</span>
       )}
-      <Popover align="right" width={200} triggerClassName="shrink-0" trigger={
+      <Popover align="right" width={(column.type === 'status' || column.type === 'priority') ? 280 : 200} triggerClassName="shrink-0" trigger={
         <button className="opacity-0 group-hover/col:opacity-100 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5"><MoreHorizontal size={15} /></button>
       }>
         {({ close }) => (
@@ -70,6 +71,14 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
                   className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed">
                   W prawo <ArrowRight size={14} />
                 </button>
+              </div>
+            )}
+            {(column.type === 'status' || column.type === 'priority') && (
+              <div className="px-2 py-1.5">
+                <label className="text-[11px] text-gray-400">Etykiety statusu</label>
+                <div className="mt-1.5">
+                  <LabelsEditor column={column} onUpdateColumn={onUpdate} />
+                </div>
               </div>
             )}
             {column.type === 'number' && (
