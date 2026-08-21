@@ -5,15 +5,19 @@ import ColumnIcon from './ColumnIcon';
 import { COLUMN_TYPES, COLUMN_TYPE_ORDER } from '../lib/columnTypes';
 
 // Przycisk „+" w nagłówku tabeli → paleta typów kolumn.
-export default function AddColumnMenu({ onAdd }) {
+// `trigger` pozwala użyć własnego wyzwalacza (np. „+ Dodaj pole" w modalu elementu).
+export default function AddColumnMenu({ onAdd, trigger, align = 'right', triggerClassName }) {
   return (
     <Popover
       width={240}
-      align="right"
+      align={align}
+      triggerClassName={triggerClassName}
       trigger={
+        trigger || (
         <div className="h-full w-full flex items-center justify-center text-gray-400 hover:text-accent-primary hover:bg-gray-50 dark:hover:bg-gray-700/40" title="Dodaj kolumnę">
           <Plus size={16} />
         </div>
+        )
       }
     >
       {({ close }) => (

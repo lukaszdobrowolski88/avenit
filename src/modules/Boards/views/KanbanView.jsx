@@ -11,18 +11,18 @@ import { tr } from '../../../i18n';
 import { applyView, groupItemsByColumn } from '../lib/viewData';
 import { getColumnType } from '../lib/columnTypes';
 
-function DraggableCard({ item, columns, onOpen, updatesCount, disabled }) {
+function DraggableCard({ item, columns, onOpen, updatesCount, subCount, disabled }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: item.id, disabled });
   const style = { transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined, opacity: isDragging ? 0.3 : 1 };
   return (
     <div ref={setNodeRef} style={style} className="mb-2">
-      <ItemCard item={item} columns={columns} onOpen={onOpen} updatesCount={updatesCount}
+      <ItemCard item={item} columns={columns} onOpen={onOpen} updatesCount={updatesCount} subCount={subCount}
         dragHandleProps={disabled ? undefined : { ...attributes, ...listeners, className: 'cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600', children: <GripVertical size={14} /> }} />
     </div>
   );
 }
 
-function KanbanColumn({ col, columns, onOpen, onAdd, updatesCountByItem, disabled }) {
+function KanbanColumn({ col, columns, onOpen, onAdd, updatesCountByItem, subCountByItem, disabled }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.key });
   return (
     <div className="w-72 shrink-0 flex flex-col">
@@ -34,7 +34,7 @@ function KanbanColumn({ col, columns, onOpen, onAdd, updatesCountByItem, disable
       <div ref={setNodeRef}
         className={`flex-1 rounded-xl p-2 min-h-[120px] transition-colors ${isOver ? 'bg-accent-primary/10 ring-2 ring-accent-primary/30' : 'bg-gray-50 dark:bg-gray-800/50'}`}>
         {col.items.map(it => (
-          <DraggableCard key={it.id} item={it} columns={columns} onOpen={onOpen} updatesCount={updatesCountByItem?.[it.id] || 0} disabled={disabled} />
+          <DraggableCard key={it.id} item={it} columns={columns} onOpen={onOpen} updatesCount={updatesCountByItem?.[it.id] || 0} subCount={subCountByItem?.[it.id] || 0} disabled={disabled} />
         ))}
         {onAdd && (
           <button onClick={() => onAdd(col)} className="w-full flex items-center gap-1.5 px-2 py-2 text-sm text-gray-400 hover:text-accent-primary">
@@ -56,6 +56,11 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
 
   const visibleItems = useMemo(() => applyView(data.items, data.columns, config), [data.items, data.columns, config]);
   const kanbanCols = useMemo(() => groupCol ? groupItemsByColumn(visibleItems, groupCol) : [], [visibleItems, groupCol]);
+  const subCountByItem = useMemo(() => {
+    const m = {};
+    data.items.forEach(it => { if (it.parent_item_id) m[it.parent_item_id] = (m[it.parent_item_id] || 0) + 1; });
+    return m;
+  }, [data.items]);
 
   if (!groupCol) {
     return <div className="text-center py-16 text-gray-400 text-sm">Dodaj kolumnę typu Status, Priorytet, Lista lub Osoby, aby użyć widoku Kanban.</div>;
@@ -119,7 +124,7 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
         <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-4">
           {kanbanCols.map(col => (
             <KanbanColumn key={col.key} col={col} columns={data.columns} onOpen={onOpenItem}
-              onAdd={dragDisabled ? null : addToColumn} updatesCountByItem={updatesCountByItem} disabled={dragDisabled} />
+              onAdd={dragDisabled ? null : addToColumn} updatesCountByItem={updatesCountByItem} subCountByItem={subCountByItem} disabled={dragDisabled} />
           ))}
         </div>
         <DragOverlay>

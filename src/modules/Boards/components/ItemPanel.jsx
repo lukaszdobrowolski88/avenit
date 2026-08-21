@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  X, MessageSquare, Activity, Send, Heart, Trash2, AtSign, CornerDownRight, MoreHorizontal, Copy, AlignLeft,
+  X, MessageSquare, Activity, Send, Heart, Trash2, AtSign, CornerDownRight, MoreHorizontal, Copy, AlignLeft, Plus,
 } from 'lucide-react';
 import BoardCell from './BoardCell';
 import ColumnIcon from './ColumnIcon';
 import Popover from './Popover';
+import AddColumnMenu from './AddColumnMenu';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
+import { useCan } from '../../../components/Can';
 import { Avatar } from './cells/PeopleCell';
 import { getColumnType } from '../lib/columnTypes';
 import { useItemUpdates } from '../hooks/useItemUpdates';
@@ -126,6 +128,7 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
 
   const group = data.groups?.find(g => g.id === current.group_id);
   const groupColor = group?.color || data.board?.color || '#6366f1';
+  const canEditStructure = useCan('res:board_columns:create');
 
   const duplicate = async () => {
     const copy = await data.addItem(current.group_id, `${current.name || 'Element'} (kopia)`, { ...(current.cells || {}) });
@@ -220,16 +223,17 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
         {/* Panel właściwości */}
         <aside className="md:w-72 shrink-0 border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 bg-gray-50/40 dark:bg-gray-900/40 md:overflow-y-auto custom-scrollbar p-4">
           <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-3">Właściwości</div>
-          {data.columns.length === 0 && <div className="text-sm text-gray-400">Brak kolumn</div>}
+          {data.columns.length === 0 && <div className="text-sm text-gray-400">Brak pól — dodaj pierwsze poniżej.</div>}
           <div className="space-y-3">
             {data.columns.map(col => {
               const t = getColumnType(col.type);
+              const tall = col.type === 'long_text';
               return (
                 <div key={col.id}>
                   <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-1">
                     <ColumnIcon name={t.icon} size={13} className="text-gray-400 shrink-0" /> <span className="truncate">{col.name}</span>
                   </div>
-                  <div className="min-h-[34px] rounded-lg bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 flex items-stretch overflow-hidden">
+                  <div className={`${tall ? 'min-h-[36px]' : 'h-9'} rounded-lg bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 flex items-stretch overflow-hidden transition-colors`}>
                     <BoardCell column={col} value={current.cells?.[col.id]} people={data.people} me={data.me} item={current} columns={data.columns}
                       onChange={(v) => data.updateCell(current.id, col.id, v)} onUpdateColumn={data.updateColumn} />
                   </div>
@@ -237,6 +241,16 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
               );
             })}
           </div>
+          {canEditStructure && (
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+              <AddColumnMenu onAdd={data.addColumn} align="right" triggerClassName="block w-full"
+                trigger={
+                  <button className="w-full flex items-center gap-1.5 text-sm text-gray-500 hover:text-accent-primary px-1 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                    <Plus size={15} /> Dodaj pole (status, priorytet, tagi, pliki…)
+                  </button>
+                } />
+            </div>
+          )}
         </aside>
       </div>
     </Modal>
