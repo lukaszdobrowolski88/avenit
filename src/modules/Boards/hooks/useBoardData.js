@@ -18,6 +18,9 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
   const [people, setPeople] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setErrorState] = useState(null);
+  // Sygnał „świeżo dodany element" — tabela ustawia fokus na nazwie nowego wiersza
+  // (jak w Monday: klik „Nowy element" → wiersz z kursorem w nazwie, bez szuflady).
+  const [focusItemId, setFocusItemId] = useState(null);
   // KAŻDY błąd mutacji pokazuj użytkownikowi (toast) — koniec cichych awarii „nic się nie dzieje".
   // Opakowanie sprawia, że wszystkie istniejące setError(e.message) automatycznie robią toast.
   const setError = useCallback((msg) => { setErrorState(msg); if (msg) toast.error(typeof msg === 'string' ? msg : 'Wystąpił błąd'); }, []);
@@ -180,6 +183,7 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
     // Dedup po id: realtime INSERT może dojść ZANIM rozwiąże się to `await`
     // (baza commituje i broadcastuje wcześniej), więc bez tego byłyby dwa wiersze.
     setItems(prev => prev.some(it => it.id === data.id) ? prev : [...prev, data]);
+    setFocusItemId(data.id);
     logActivity(data.id, 'created');
     if (onAutomationRef.current) onAutomationRef.current({ type: 'item_created', item: data });
     return data;
@@ -303,6 +307,7 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
     addColumn, updateColumn, deleteColumn, reorderColumns, setColumnWidthLocal,
     addGroup, updateGroup, deleteGroup, reorderGroups,
     addItem, addSubitem, updateItem, updateCell, deleteItem, moveItem, reorderItemsInGroup,
+    focusItemId, clearFocusItem: () => setFocusItemId(null),
     addView, updateView, deleteView, duplicateView, setDefaultView,
     registerAutomationRunner: (fn) => { onAutomationRef.current = fn; },
   };
