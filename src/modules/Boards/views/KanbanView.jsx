@@ -2,9 +2,11 @@ import React, { useMemo, useState } from 'react';
 import {
   DndContext, PointerSensor, useSensor, useSensors, useDraggable, useDroppable, DragOverlay,
 } from '@dnd-kit/core';
-import { Plus, GripVertical } from 'lucide-react';
+import { Plus, GripVertical, Settings2 } from 'lucide-react';
 import ItemCard from '../components/ItemCard';
 import CustomSelect from '../../../components/CustomSelect';
+import Popover from '../components/Popover';
+import LabelsEditor from '../components/LabelsEditor';
 import { tr } from '../../../i18n';
 import { applyView, groupItemsByColumn } from '../lib/viewData';
 import { getColumnType } from '../lib/columnTypes';
@@ -67,6 +69,15 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
     else if (groupCol.type === 'checkbox') data.updateCell(itemId, groupCol.id, key === 'true');
   };
 
+  // Wartość komórki dla nowego elementu dodawanego w danej kolumnie Kanban.
+  const groupCellsFor = (key) => {
+    if (key === '__empty__') return {};
+    if (groupCol.type === 'status' || groupCol.type === 'priority') return { [groupCol.id]: key };
+    if (groupCol.type === 'dropdown') return { [groupCol.id]: [key] };
+    if (groupCol.type === 'checkbox') return { [groupCol.id]: key === 'true' };
+    return {};
+  };
+
   const onDragEnd = (e) => {
     setActiveId(null);
     const { active, over } = e;
@@ -76,7 +87,9 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
 
   const addToColumn = (col) => {
     const firstGroup = [...data.groups].sort((a, b) => a.display_order - b.display_order)[0];
-    data.addItem(firstGroup?.id).then(item => { if (item && col.key !== '__empty__') applyGroupValue(item.id, col.key); });
+    // Ustaw wartość kolumny grupującej OD RAZU przy tworzeniu — inaczej updateCell w .then
+    // działa na nieaktualnym stanie (element jeszcze nie w items) i status przepadał.
+    data.addItem(firstGroup?.id, '', groupCellsFor(col.key));
   };
 
   const activeItem = activeId ? visibleItems.find(i => i.id === activeId) : null;
@@ -89,6 +102,18 @@ export default function KanbanView({ data, config, onUpdateConfig, onOpenItem, u
           <CustomSelect compact value={groupColId} onChange={(v) => onUpdateConfig({ kanbanGroupBy: v })}
             options={groupableCols} mapOptionToValue={(c) => c.id} mapOptionToLabel={(c) => c.name} />
         </div>
+        {(groupCol.type === 'status' || groupCol.type === 'priority') && (
+          <Popover align="left" width={280} triggerClassName="" trigger={
+            <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              <Settings2 size={14} /> {tr('Zarządzaj statusami')}
+            </button>
+          }>
+            <div className="p-3">
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">{tr('Etykiety')}: {groupCol.name}</div>
+              <LabelsEditor column={groupCol} onUpdateColumn={data.updateColumn} />
+            </div>
+          </Popover>
+        )}
       </div>
       <DndContext sensors={sensors} onDragStart={(e) => setActiveId(e.active.id)} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
         <div className="flex gap-3 overflow-x-auto custom-scrollbar pb-4">
