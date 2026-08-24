@@ -284,6 +284,53 @@ export function useDashboardData(userEmail) {
         });
       }
 
+      // 4. Zadania z Tablic (Projekty) — elementy, w których jestem w kolumnie „Osoby".
+      try {
+        const [peopleColsRes, boardsRes, metaColsRes] = await Promise.all([
+          supabase.from('board_columns').select('id, board_id').eq('type', 'people'),
+          supabase.from('boards').select('id, name').eq('is_archived', false),
+          supabase.from('board_columns').select('id, board_id, type, settings').in('type', ['status', 'date', 'timeline']),
+        ]);
+        const peopleCols = peopleColsRes.data || [];
+        if (peopleCols.length) {
+          const boardName = new Map((boardsRes.data || []).map(b => [b.id, b.name]));
+          const colsByBoard = {};
+          peopleCols.forEach(c => { (colsByBoard[c.board_id] ||= []).push(c.id); });
+          const statusByBoard = {}, dateByBoard = {};
+          (metaColsRes.data || []).forEach(c => {
+            if (c.type === 'status' && !statusByBoard[c.board_id]) statusByBoard[c.board_id] = c;
+            if ((c.type === 'date' || c.type === 'timeline') && !dateByBoard[c.board_id]) dateByBoard[c.board_id] = c;
+          });
+          const boardIds = [...new Set(peopleCols.map(c => c.board_id))];
+          const { data: items } = await supabase.from('board_items').select('id, name, cells, board_id, description').in('board_id', boardIds);
+          const emailLc = userEmail.toLowerCase();
+          (items || []).forEach(it => {
+            const assigned = (colsByBoard[it.board_id] || []).some(colId => {
+              const v = it.cells?.[colId];
+              return Array.isArray(v) && v.some(p => (p?.email || '').toLowerCase() === emailLc);
+            });
+            if (!assigned) return;
+            let status = 'todo';
+            const sc = statusByBoard[it.board_id];
+            if (sc) {
+              const lbl = (sc.settings?.labels || []).find(l => l.id === it.cells?.[sc.id]);
+              const title = (lbl?.title || '').toLowerCase();
+              if (/gotow|zrobion|zakończ|ukończ|done|zamkni/.test(title)) status = 'done';
+              else if (/trakc|toku|progress|realiz/.test(title)) status = 'in_progress';
+            }
+            let due = null;
+            const dc = dateByBoard[it.board_id];
+            if (dc) { const dv = it.cells?.[dc.id]; due = typeof dv === 'string' ? dv : (dv?.start || null); }
+            allTasks.push({
+              id: it.id, title: it.name || 'Element', description: it.description || null,
+              due_date: due, status, source: 'board', source_label: boardName.get(it.board_id) || 'Tablica',
+              original_id: it.id, original_table: 'board_items',
+              link: `/projekty?board=${it.board_id}&item=${it.id}`,
+            });
+          });
+        }
+      } catch (e) { console.error('Error fetching board tasks:', e); }
+
       // Sortuj wszystkie zadania według due_date
       allTasks.sort((a, b) => {
         if (!a.due_date && !b.due_date) return 0;

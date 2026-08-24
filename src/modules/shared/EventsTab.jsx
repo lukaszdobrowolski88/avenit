@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import TabHeader from '../../components/TabHeader';
+import TimeInput from '../../components/TimeInput';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
@@ -306,11 +307,11 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Godzina rozpoczęcia')}</label>
-              <input type="time" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white" value={form.start_time || ''} onChange={e => setForm({...form, start_time: e.target.value})} />
+              <TimeInput className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800" value={form.start_time || ''} onChange={v => setForm({...form, start_time: v})} />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Godzina zakończenia')}</label>
-              <input type="time" className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white" value={form.end_time || ''} onChange={e => setForm({...form, end_time: e.target.value})} />
+              <TimeInput className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800" value={form.end_time || ''} onChange={v => setForm({...form, end_time: v})} />
             </div>
           </div>
 
