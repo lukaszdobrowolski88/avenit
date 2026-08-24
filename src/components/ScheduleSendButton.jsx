@@ -27,12 +27,15 @@ export default function ScheduleSendButton({
         if (!d.email) continue;
         wanted.add(`${d.roleKey}|${d.name}`);
         if (assignmentFor(assignments, program.id, teamType, d.roleKey, d.name)) continue;
-        await hook.createAssignment({
+        const cr = await hook.createAssignment({
           programId: program.id, teamType, roleKey: d.roleKey, roleLabel: d.roleLabel,
           assignedName: d.name, assignedEmail: d.email,
           assignedByEmail: currentUser?.email || '', assignedByName: currentUser?.name || 'Administrator',
           isSelfAssignment: false,
         });
+        // Nie połykaj cichej porażki (np. brak uprawnień) — inaczej „Wyślij (3)" kończy się
+        // mylącym „Brak nowych osób", choć w bazie nic nie powstało.
+        if (cr && cr.success === false) throw new Error(cr.error || 'Nie udało się zapisać przypisania (uprawnienia?).');
       }
       // 2) Sprzątanie: usuń przypisania osób, których już nie ma w siatce.
       for (const a of assignments || []) {
