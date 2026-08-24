@@ -440,7 +440,11 @@ export function fieldColumns(resource) { return FIELD_COLUMNS[resource] || []; }
 
 // Mapowanie op Data API -> capability CRUD dla zasobu.
 export function crudCapability(resource, op) {
-  const map = { select: 'read', insert: 'create', update: 'update', delete: 'delete' };
+  // 'upsert' (insert-or-update) traktujemy jak 'create' — bez tego op wpadał do fallbacku
+  // `${op}` i dawał nieistniejącą capability res:<resource>:upsert, którą miał TYLKO
+  // superadmin (bypass). Przez to np. lider nie mógł wysłać powiadomień grafiku
+  // (createAssignment robi .upsert() → 403 po cichu → „Brak nowych osób do powiadomienia").
+  const map = { select: 'read', insert: 'create', update: 'update', delete: 'delete', upsert: 'create' };
   return `res:${resource}:${map[op] || op}`;
 }
 
