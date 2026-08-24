@@ -39,6 +39,11 @@ const SOURCE_CONFIG = {
     color: 'text-blue-500',
     bgColor: 'bg-blue-100 dark:bg-blue-900/30',
   },
+  board: {
+    icon: LayoutGrid,
+    color: 'text-indigo-500',
+    bgColor: 'bg-indigo-100 dark:bg-indigo-900/30',
+  },
 };
 
 // ============================================
@@ -446,7 +451,9 @@ export default function MyTasksWidget({ tasks, userEmail, userName, onRefresh })
   const completedTasks = tasks.filter(t => t.status === 'done');
 
   const handleTaskClick = (task) => {
-    // Otwórz modal dla wszystkich zadań (osobistych i z innych modułów)
+    // Zadania z Tablic (Projekty) edytuje się na tablicy — otwórz element w module.
+    if (task.source === 'board' && task.link) { window.location.href = task.link; return; }
+    // Pozostałe źródła edytowalne w miejscu (osobiste / grupy / media).
     setModalState({ isOpen: true, task });
   };
 
