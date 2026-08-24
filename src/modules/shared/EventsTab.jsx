@@ -262,7 +262,11 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
     const eventData = {
       title: form.title.trim(),
       description: form.description.trim(),
-      start_date: form.start_date ? new Date(form.start_date + (form.start_time ? 'T' + form.start_time : 'T00:00:00')).toISOString() : null,
+      // Godzina „wall-clock" bez konwersji strefy. Wcześniej new Date(...).toISOString()
+      // przesuwał lokalną godzinę do UTC (11:00 → 09:00Z), a odczyt (start_date.split('T')[1])
+      // czytał surowy string → każdy zapis ucinał offset (2h) i kumulował się (10→8→6…).
+      // Zapis jako jawne UTC sprawia, że odczytana godzina zawsze równa się wpisanej.
+      start_date: form.start_date ? `${form.start_date}T${form.start_time || '00:00'}:00.000Z` : null,
       end_time: form.end_time || null,
       location: form.location,
       max_participants: form.max_participants ? parseInt(form.max_participants) : null,

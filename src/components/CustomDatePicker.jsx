@@ -42,8 +42,12 @@ function useDropdownPosition(triggerRef, isOpen) {
 export default function CustomDatePicker({ label, value, onChange, placeholder = tr('Wybierz datę'), compact = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
+  const [view, setView] = useState('days'); // 'days' | 'months' | 'years' — szybka nawigacja (np. data urodzenia)
   const triggerRef = useRef(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
+
+  // Po zamknięciu wróć do widoku dni (następne otwarcie startuje standardowo).
+  useEffect(() => { if (!isOpen) setView('days'); }, [isOpen]);
 
   useEffect(() => {
     if (value) setViewDate(new Date(value));
@@ -62,15 +66,15 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  const handlePrevMonth = (e) => {
+  // Nawigacja strzałkami zależna od widoku: dni → miesiąc, miesiące → rok, lata → 12 lat.
+  const step = (dir) => (e) => {
     e.stopPropagation();
-    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1));
+    if (view === 'days') setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + dir, 1));
+    else if (view === 'months') setViewDate(new Date(viewDate.getFullYear() + dir, viewDate.getMonth(), 1));
+    else setViewDate(new Date(viewDate.getFullYear() + dir * 12, viewDate.getMonth(), 1));
   };
-
-  const handleNextMonth = (e) => {
-    e.stopPropagation();
-    setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1));
-  };
+  const pickYear = (y) => { setViewDate(new Date(y, viewDate.getMonth(), 1)); setView('months'); };
+  const pickMonth = (m) => { setViewDate(new Date(viewDate.getFullYear(), m, 1)); setView('days'); };
 
   const handleDayClick = (day) => {
     const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
@@ -94,6 +98,9 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
 
   const monthName = viewDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
   const displayValue = value ? new Date(value).toLocaleDateString('pl-PL') : '';
+  const decadeStart = Math.floor(viewDate.getFullYear() / 12) * 12;
+  const monthShort = Array.from({ length: 12 }, (_, i) => new Date(2000, i, 1).toLocaleDateString('pl-PL', { month: 'short' }));
+  const selDate = value ? new Date(value) : null;
 
   return (
     <div className="relative w-full">
@@ -128,11 +135,15 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
           }}
         >
           <div className="flex justify-between items-center mb-4">
-            <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronLeft size={18}/></button>
-            <span className="text-sm font-bold text-gray-800 dark:text-gray-200 capitalize">{monthName}</span>
-            <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronRight size={18}/></button>
+            <button onClick={step(-1)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronLeft size={18}/></button>
+            <button onClick={(e) => { e.stopPropagation(); setView(view === 'years' ? 'days' : 'years'); }}
+              className="text-sm font-bold text-gray-800 dark:text-gray-200 capitalize px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+              {view === 'days' ? monthName : view === 'months' ? viewDate.getFullYear() : `${decadeStart} – ${decadeStart + 11}`}
+            </button>
+            <button onClick={step(1)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-600 dark:text-gray-400"><ChevronRight size={18}/></button>
           </div>
 
+          {view === 'days' && (<>
           <div className="grid grid-cols-7 gap-1 mb-2">
             {[tr('Pn'), tr('Wt'), tr('Śr'), tr('Cz'), tr('Pt'), tr('So'), tr('Nd')].map(d => (
               <div key={d} className="text-center text-[10px] font-bold text-gray-400 uppercase">{d}</div>
@@ -164,6 +175,31 @@ export default function CustomDatePicker({ label, value, onChange, placeholder =
               );
             })}
           </div>
+          </>)}
+
+          {view === 'months' && (
+            <div className="grid grid-cols-3 gap-2">
+              {monthShort.map((m, i) => {
+                const isSel = selDate && selDate.getFullYear() === viewDate.getFullYear() && selDate.getMonth() === i;
+                return (
+                  <button key={i} onClick={() => pickMonth(i)}
+                    className={`py-2.5 rounded-lg text-sm font-medium capitalize transition ${isSel ? 'bg-accent-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{m}</button>
+                );
+              })}
+            </div>
+          )}
+
+          {view === 'years' && (
+            <div className="grid grid-cols-3 gap-2">
+              {Array.from({ length: 12 }, (_, i) => decadeStart + i).map(y => {
+                const isSel = selDate && selDate.getFullYear() === y;
+                return (
+                  <button key={y} onClick={() => pickYear(y)}
+                    className={`py-2.5 rounded-lg text-sm font-medium transition ${isSel ? 'bg-accent-primary text-white' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{y}</button>
+                );
+              })}
+            </div>
+          )}
         </div>,
         document.body
       )}
