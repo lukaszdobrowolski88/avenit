@@ -42,8 +42,8 @@ const VIEW_TYPES = [
   { type: 'form', label: 'Formularz', icon: FormInput },
 ];
 
-export default function BoardView({ boardId, userEmail, userName, onBack, embedded = false, initialItemId = null }) {
-  const data = useBoardData(boardId, { userEmail, userName });
+export default function BoardView({ boardId, userEmail, userName, onBack, embedded = false, initialItemId = null, scopeEmails = undefined }) {
+  const data = useBoardData(boardId, { userEmail, userName, scopeEmails });
   const automations = useBoardAutomations(boardId, data, { userEmail, userName });
   const [activeViewId, setActiveViewId] = useState(null);
   const [openItem, setOpenItem] = useState(null);

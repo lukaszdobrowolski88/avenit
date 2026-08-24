@@ -9,7 +9,7 @@ import { GROUP_COLORS, pickColor } from '../lib/constants';
 // aktualizuje stan lokalny optymistycznie, a subskrypcja realtime dosypuje zmiany
 // z innych sesji. Optymistyczne wstawki i realtime dedupują po id (INSERT z bazy
 // może wyprzedzić odpowiedź na własny insert), więc nie powstają duplikaty.
-export function useBoardData(boardId, { userEmail, userName } = {}) {
+export function useBoardData(boardId, { userEmail, userName, scopeEmails } = {}) {
   const [board, setBoard] = useState(null);
   const [columns, setColumns] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -45,14 +45,21 @@ export function useBoardData(boardId, { userEmail, userName } = {}) {
       setGroups(grps.data || []);
       setItems(its.data || []);
       setViews((vws.data && vws.data.length) ? vws.data : []);
-      setPeople((ppl.data || []).map(u => ({ email: u.email, name: u.full_name || u.name || u.email, avatar_url: u.avatar_url })));
+      let people = (ppl.data || []).map(u => ({ email: u.email, name: u.full_name || u.name || u.email, avatar_url: u.avatar_url }));
+      // Tablica osadzona w module (np. MediaTeam) zawęża picker „Osoby" do członków
+      // zespołu. Samodzielne „Projekty" nie przekazują scopeEmails → pełna lista.
+      if (Array.isArray(scopeEmails)) {
+        const allow = new Set(scopeEmails.map(e => (e || '').toLowerCase()));
+        people = people.filter(p => allow.has((p.email || '').toLowerCase()));
+      }
+      setPeople(people);
     } catch (err) {
       console.error('Błąd ładowania tablicy:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [boardId]);
+  }, [boardId, scopeEmails]);
 
   useEffect(() => { load(); }, [load]);
 
