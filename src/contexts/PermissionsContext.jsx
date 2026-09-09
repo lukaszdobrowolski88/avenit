@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase, getCachedUser } from '../lib/supabase';
 import { applyColorPreset, applyCustomColors } from '../lib/colorPresets';
-import { applyFont, applyBackground, applyScale, applyRadius, applySidebar, injectCustomFont } from '../lib/appearance';
+import { applyFont, applyBackground, applyScale, applyRadius, applySidebar, injectCustomFont, applyHeadingFont, applyBgPattern, setBgUrl, applySidebarWidth, applyMotion, applyScrollbar } from '../lib/appearance';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 
@@ -110,6 +110,12 @@ export function PermissionsProvider({ children }) {
           const us = settings.find((s) => s.key === 'ui_scale')?.value;  if (us) applyScale(us);
           const ur = settings.find((s) => s.key === 'ui_radius')?.value; if (ur) applyRadius(ur);
           const usb = settings.find((s) => s.key === 'ui_sidebar')?.value; if (usb) applySidebar(usb);
+          const uh = settings.find((s) => s.key === 'ui_font_heading')?.value; if (uh) applyHeadingFont(uh);
+          const ubu = settings.find((s) => s.key === 'ui_bg_url')?.value; if (ubu) setBgUrl(ubu);
+          const upt = settings.find((s) => s.key === 'ui_bg_pattern')?.value; if (upt) applyBgPattern(upt);
+          const usw = settings.find((s) => s.key === 'ui_sidebar_w')?.value; if (usw) applySidebarWidth(usw);
+          const umo = settings.find((s) => s.key === 'ui_motion')?.value; if (umo) applyMotion(umo);
+          const usc = settings.find((s) => s.key === 'ui_scrollbar')?.value; if (usc) applyScrollbar(usc);
         }
       } catch (err) {
         console.error('Error loading permissions:', err);

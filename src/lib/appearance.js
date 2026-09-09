@@ -54,9 +54,35 @@ export const SIDEBAR_OPTIONS = {
   accent: { label: 'W kolorze akcentu' },
 };
 
+// Czcionka nagłówków — osobny krój dla h1–h4. 'body' = ten sam co treść (usuwa zmienną).
+export const HEADING_FONT_OPTIONS = {
+  body: { label: 'Jak treść', stack: null },
+  ...FONT_OPTIONS,
+};
+
+// Deseń / obraz tła — nakładany na tło powłoki (prześwituje pod treścią). Gradienty korzystają
+// z kolorów akcentu (--accent-*), więc pasują do wybranej palety. 'custom' = wgrany obraz.
+export const BG_PATTERN_OPTIONS = {
+  none:    { label: 'Brak', image: 'none', size: 'auto' },
+  dots:    { label: 'Kropki', image: 'radial-gradient(rgb(var(--accent-primary) / 0.10) 1px, transparent 1px)', size: '20px 20px' },
+  grid:    { label: 'Siatka', image: 'linear-gradient(rgb(var(--accent-primary) / 0.07) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--accent-primary) / 0.07) 1px, transparent 1px)', size: '28px 28px' },
+  aurora:  { label: 'Zorza', image: 'radial-gradient(60% 55% at 15% 5%, rgb(var(--accent-primary-light) / 0.28) 0%, transparent 60%), radial-gradient(55% 55% at 95% 10%, rgb(var(--accent-secondary-light) / 0.24) 0%, transparent 60%)', size: 'cover' },
+  glow:    { label: 'Poświata', image: 'radial-gradient(80% 60% at 50% 0%, rgb(var(--accent-primary-light) / 0.22) 0%, transparent 70%)', size: 'cover' },
+  diagonal:{ label: 'Ukośne', image: 'repeating-linear-gradient(45deg, rgb(var(--accent-primary) / 0.05) 0px, rgb(var(--accent-primary) / 0.05) 2px, transparent 2px, transparent 14px)', size: 'auto' },
+};
+
+// Szerokość paska bocznego (rozwiniętego). Kolaps (w-20) bez zmian.
+export const SIDEBAR_WIDTH_OPTIONS = {
+  narrow: { label: 'Wąski',        rem: '14rem' },
+  normal: { label: 'Standardowy',  rem: '16rem' },
+  wide:   { label: 'Szeroki',      rem: '18rem' },
+};
+
 const K = {
   font: 'ui_font', bg: 'ui_bg', scale: 'ui_scale',
   radius: 'ui_radius', sidebar: 'ui_sidebar', fontUrl: 'ui_font_url',
+  heading: 'ui_font_heading', pattern: 'ui_bg_pattern', bgUrl: 'ui_bg_url',
+  sidebarW: 'ui_sidebar_w', motion: 'ui_motion', scrollbar: 'ui_scrollbar',
 };
 const root = () => document.documentElement;
 
@@ -111,12 +137,60 @@ export function applySidebar(key) {
   try { window.dispatchEvent(new CustomEvent('appearance:sidebar', { detail: k })); } catch { /* ignore */ }
 }
 
+export function applyHeadingFont(key) {
+  const o = HEADING_FONT_OPTIONS[key] || HEADING_FONT_OPTIONS.body;
+  const stack = key === 'custom' ? FONT_OPTIONS.custom.stack : o.stack;
+  if (stack) root().style.setProperty('--app-font-heading', stack);
+  else root().style.removeProperty('--app-font-heading');
+  localStorage.setItem(K.heading, key);
+}
+
+export function applyBgPattern(key) {
+  if (key === 'custom') {
+    const u = getBgUrl();
+    root().style.setProperty('--app-bg-image', u ? `url("${u}")` : 'none');
+    root().style.setProperty('--app-bg-size', 'cover');
+    localStorage.setItem(K.pattern, 'custom');
+    return;
+  }
+  const o = BG_PATTERN_OPTIONS[key] || BG_PATTERN_OPTIONS.none;
+  root().style.setProperty('--app-bg-image', o.image);
+  root().style.setProperty('--app-bg-size', o.size);
+  localStorage.setItem(K.pattern, key);
+}
+
+export function setBgUrl(url) { if (url) localStorage.setItem(K.bgUrl, url); }
+
+export function applySidebarWidth(key) {
+  const o = SIDEBAR_WIDTH_OPTIONS[key] || SIDEBAR_WIDTH_OPTIONS.normal;
+  root().style.setProperty('--sidebar-w', o.rem);
+  localStorage.setItem(K.sidebarW, key);
+}
+
+export function applyMotion(key) {
+  const reduced = key === 'reduced';
+  root().classList.toggle('reduce-motion', reduced);
+  localStorage.setItem(K.motion, reduced ? 'reduced' : 'full');
+}
+
+export function applyScrollbar(key) {
+  const accent = key === 'accent';
+  root().classList.toggle('scrollbar-accent', accent);
+  localStorage.setItem(K.scrollbar, accent ? 'accent' : 'default');
+}
+
 export const getFont       = () => localStorage.getItem(K.font)    || 'inter';
 export const getBackground = () => localStorage.getItem(K.bg)      || 'slate';
 export const getScale      = () => localStorage.getItem(K.scale)   || 'default';
 export const getRadius     = () => localStorage.getItem(K.radius)  || 'default';
 export const getSidebar    = () => localStorage.getItem(K.sidebar) || 'theme';
-export const getFontUrl    = () => localStorage.getItem(K.fontUrl) || '';
+export const getFontUrl     = () => localStorage.getItem(K.fontUrl)   || '';
+export const getHeadingFont = () => localStorage.getItem(K.heading)   || 'body';
+export const getBgPattern   = () => localStorage.getItem(K.pattern)   || 'none';
+export const getBgUrl       = () => localStorage.getItem(K.bgUrl)     || '';
+export const getSidebarWidth= () => localStorage.getItem(K.sidebarW)  || 'normal';
+export const getMotion      = () => localStorage.getItem(K.motion)    || 'full';
+export const getScrollbar   = () => localStorage.getItem(K.scrollbar) || 'default';
 
 // Zastosuj z localStorage od razu przy imporcie (zanim wyrenderuje się React).
 const storedFontUrl = getFontUrl();
@@ -126,3 +200,8 @@ applyBackground(getBackground());
 applyScale(getScale());
 applyRadius(getRadius());
 applySidebar(getSidebar());
+applyHeadingFont(getHeadingFont());
+applyBgPattern(getBgPattern());
+applySidebarWidth(getSidebarWidth());
+applyMotion(getMotion());
+applyScrollbar(getScrollbar());
