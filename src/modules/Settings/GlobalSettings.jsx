@@ -526,19 +526,23 @@ export default function GlobalSettings() {
 
     try {
       if (userForm.id) {
-        // Edycja istniejącego użytkownika
-        const payload = {
-          full_name: userForm.full_name || '',
-          email: userForm.email,
-          role: userForm.role,
-          is_active: userForm.is_active,
-          campus_id: userForm.campus_id || null
-        };
-        const { error: updateError } = await supabase.from('app_users').update(payload).eq('id', userForm.id);
+        // Edycja przez FUNKCJĘ SERWEROWĄ: synchronizuje status z is_active, zapisuje totp_required,
+        // pilnuje unikalności e-maila i guardów (self / ostatni admin) + audyt.
+        const { error: updateError } = await supabase.functions.invoke('admin-update-user', {
+          body: {
+            userId: userForm.id,
+            full_name: userForm.full_name || '',
+            email: userForm.email,
+            role: userForm.role,
+            is_active: userForm.is_active,
+            campus_id: userForm.campus_id || null,
+            totp_required: require2FA,
+          },
+        });
         if (updateError) {
           throw new Error(`Błąd aktualizacji: ${updateError.message}`);
         }
-        fetchData();
+        fetchData(); loadAccountEvents();
         setMessage({ type: 'success', text: tr('Zaktualizowano użytkownika') });
       } else {
         // Tworzenie nowego użytkownika
@@ -674,28 +678,28 @@ export default function GlobalSettings() {
     }
   };
 
+  // Usuwanie/blokada/reset 2FA przez FUNKCJE SERWEROWE: rewokacja sesji, sprzątanie, guardy
+  // (nie usuń/zablokuj siebie ani ostatniego admina) i audyt — patrz fn/delete-user, set-user-status.
   const deleteUser = async (id) => {
-    const user = users.find(u => u.id === id);
-    if (user?.is_super_admin) {
-      return toast.error(tr('Nie można usunąć superadmina!'));
-    }
-
-    if(confirm(tr('Usunąć użytkownika? To również usunie jego konto z systemu autentykacji.'))) {
-      try {
-        // Usuń z tabeli app_users
-        await supabase.from('app_users').delete().eq('id', id);
-
-        // TODO: Można też usunąć z Supabase Auth, ale wymaga admin API
-        // const { error } = await supabase.auth.admin.deleteUser(user.auth_user_id);
-
-        fetchData();
-        setMessage({ type: 'success', text: tr('Użytkownik został usunięty') });
-      } catch (err) {
-        toast.error(tr('Błąd usuwania: ') + err.message);
-      }
-    }
+    if (!confirm(tr('Usunąć użytkownika? Operacja jest nieodwracalna (usuwa konto i wylogowuje sesje).'))) return;
+    const { error } = await supabase.functions.invoke('delete-user', { body: { userId: id } });
+    if (error) { toast.error(error.message || tr('Błąd usuwania')); return; }
+    fetchData(); loadAccountEvents();
+    setMessage({ type: 'success', text: tr('Użytkownik został usunięty') });
   };
-  const toggleUserStatus = async (user) => { await supabase.from('app_users').update({ is_active: !user.is_active }).eq('id', user.id); fetchData(); };
+  const toggleUserStatus = async (user) => {
+    const active = !user.is_active;
+    if (!active && !confirm(tr('Zablokować użytkownika? Zostanie natychmiast wylogowany.'))) return;
+    const { error } = await supabase.functions.invoke('set-user-status', { body: { userId: user.id, active } });
+    if (error) { toast.error(error.message || tr('Nie udało się zmienić statusu')); return; }
+    fetchData(); loadAccountEvents();
+  };
+  const resetUser2FA = async (user) => {
+    if (!confirm(tr('Zresetować 2FA temu użytkownikowi? Skonfiguruje je od nowa przy kolejnym logowaniu.'))) return;
+    const { error } = await supabase.functions.invoke('admin-reset-2fa', { body: { userId: user.id } });
+    setMessage(error ? { type: 'error', text: error.message || tr('Błąd resetu 2FA') } : { type: 'success', text: tr('Zresetowano 2FA') });
+    fetchData(); loadAccountEvents();
+  };
 
   // Funkcja do scalania zduplikowanych członków we wszystkich tabelach służb
   const mergeDuplicateMembers = async () => {
@@ -1030,7 +1034,7 @@ export default function GlobalSettings() {
       ? { type: 'error', text: error.message || 'Nie udało się wysłać' }
       : { type: 'success', text: 'Wysłano ponownie link weryfikacyjny' });
   };
-  const ACTION_LABEL = { registered: 'Rejestracja', verified: 'Potwierdzenie e-mail', approved: 'Zatwierdzenie', rejected: 'Odrzucenie', created: 'Utworzenie (admin)' };
+  const ACTION_LABEL = { registered: 'Rejestracja', verified: 'Potwierdzenie e-mail', approved: 'Zatwierdzenie', rejected: 'Odrzucenie', created: 'Utworzenie (admin)', edited: 'Edycja', deleted: 'Usunięcie', blocked: 'Zablokowanie', unblocked: 'Odblokowanie', reset_2fa: 'Reset 2FA' };
 
   const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
 
@@ -1354,8 +1358,11 @@ export default function GlobalSettings() {
                           </button>
                         </td>
                         <td className="p-4 text-right flex justify-end gap-2">
-                          <button onClick={() => { setUserForm({...user, password: ''}); setAdminNewPassword(''); setShowUserModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
-                          <button onClick={() => deleteUser(user.id)} disabled={isSuperAdmin} className={`text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 p-2 rounded-lg ${isSuperAdmin ? 'opacity-30 cursor-not-allowed' : ''}`}><Trash2 size={16}/></button>
+                          <button onClick={() => { setUserForm({...user, password: ''}); setAdminNewPassword(''); setShowUserModal(true); }} title={t('Edytuj')} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
+                          {user.totp_enabled && (
+                            <button onClick={() => resetUser2FA(user)} title={tr('Zresetuj 2FA')} className="text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-gray-600 p-2 rounded-lg"><KeyRound size={16}/></button>
+                          )}
+                          <button onClick={() => deleteUser(user.id)} title={t('Usuń')} className="text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Trash2 size={16}/></button>
                         </td>
                       </tr>
                     );

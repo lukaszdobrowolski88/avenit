@@ -45,6 +45,10 @@ const MODULES = [
   'reject-user',
   'resend-verification',
   'account-events',
+  'admin-update-user',
+  'set-user-status',
+  'delete-user',
+  'admin-reset-2fa',
 ];
 
 export async function registerFunctions(app) {
