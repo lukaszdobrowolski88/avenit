@@ -496,6 +496,22 @@ export default function GlobalSettings() {
     } catch (err) { toast.error(tr('Błąd uploadu')); }
   };
 
+  // Wgranie własnego tła ekranu logowania → storage + app_settings (czytane przez Login.jsx).
+  const handleLoginBgUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `login-bg-${Date.now()}.${fileExt}`;
+      await supabase.storage.from('public-assets').upload(fileName, file);
+      const { data } = supabase.storage.from('public-assets').getPublicUrl(fileName);
+      await supabase.from('app_settings').upsert({ key: 'login_bg_url', value: data.publicUrl }, { onConflict: 'key' });
+      await supabase.from('app_settings').upsert({ key: 'login_bg', value: 'custom' }, { onConflict: 'key' });
+      fetchData();
+      toast.success(tr('Wgrano tło logowania'));
+    } catch (err) { toast.error(tr('Błąd uploadu')); }
+  };
+
   const toggleModule = async (key, currentValue) => {
     const newValue = currentValue === 'true' ? 'false' : 'true';
     await supabase.from('app_settings').update({ value: newValue }).eq('key', key);
@@ -1235,7 +1251,7 @@ export default function GlobalSettings() {
 
         {/* --- TAB: WYGLĄD --- */}
         {activeTab === 'appearance' && (
-          <AppearanceSettings get={getSetting} save={saveSetting} logoUrl={logoUrl} onLogoUpload={handleLogoUpload} onFontUpload={handleFontUpload} onBgUpload={handleBgUpload} />
+          <AppearanceSettings get={getSetting} save={saveSetting} logoUrl={logoUrl} onLogoUpload={handleLogoUpload} onFontUpload={handleFontUpload} onBgUpload={handleBgUpload} onLoginBgUpload={handleLoginBgUpload} />
         )}
 
         {/* --- TAB: REGIONALNE --- */}

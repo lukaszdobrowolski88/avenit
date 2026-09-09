@@ -70,6 +70,29 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 html.scrollbar-accent ::-webkit-scrollbar-thumb { background: rgb(var(--accent-primary-light)); }
 html.scrollbar-accent ::-webkit-scrollbar-thumb:hover { background: rgb(var(--accent-primary)); }
 
+/* Tryb OLED (czysta czerń) — TYLKO w trybie ciemnym. Jednym zestawem reguł remapuje wszystkie
+   ciemne powierzchnie (te same klasy Tailwinda w całej apce) na czerń/prawie-czerń. Wyższa
+   specyficzność niż `.dark .dark:bg-*`, więc wygrywa. Akcenty/gradienty (inne klasy) nietknięte. */
+html.oled.dark .app-shell-bg { background-color: #000 !important; }
+html.oled.dark .dark\:bg-gray-900,
+html.oled.dark .dark\:bg-gray-900\/50,
+html.oled.dark .dark\:bg-gray-900\/60 { background-color: #000 !important; }
+html.oled.dark .dark\:bg-gray-800,
+html.oled.dark .dark\:bg-gray-800\/30,
+html.oled.dark .dark\:bg-gray-800\/40,
+html.oled.dark .dark\:bg-gray-800\/50,
+html.oled.dark .dark\:bg-gray-800\/70,
+html.oled.dark .dark\:bg-gray-800\/80,
+html.oled.dark .dark\:bg-gray-800\/90 { background-color: #0a0a0a !important; }
+html.oled.dark .dark\:bg-gray-700,
+html.oled.dark .dark\:bg-gray-700\/50 { background-color: #161616 !important; }
+html.oled.dark .dark\:border-gray-700,
+html.oled.dark .dark\:border-gray-800 { border-color: #242424 !important; }
+/* Globalne reguły elementów (input/select/textarea/table/thead) — bg via .dark <element>. */
+html.oled.dark input, html.oled.dark select, html.oled.dark textarea { background-color: #0a0a0a !important; }
+html.oled.dark table { background-color: #000 !important; }
+html.oled.dark thead { background-color: #0a0a0a !important; }
+
 #root {
   overflow-x: hidden;
   max-width: 100vw;

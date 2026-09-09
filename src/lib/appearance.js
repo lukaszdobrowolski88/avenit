@@ -78,11 +78,24 @@ export const SIDEBAR_WIDTH_OPTIONS = {
   wide:   { label: 'Szeroki',      rem: '18rem' },
 };
 
+// Tło ekranu logowania — pełnoekranowe gradienty (lub własny obraz jako 'custom').
+// 'accent' korzysta z koloru marki. Login.jsx czyta login_bg/login_bg_url z app_settings.
+export const LOGIN_BG_OPTIONS = {
+  default: { label: 'Domyślne', css: null },
+  accent:  { label: 'Kolor marki', css: 'linear-gradient(135deg, rgb(var(--accent-primary)) 0%, rgb(var(--accent-secondary)) 100%)' },
+  ocean:   { label: 'Ocean', css: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)' },
+  sunset:  { label: 'Zachód', css: 'linear-gradient(135deg, #f97316 0%, #db2777 100%)' },
+  forest:  { label: 'Las', css: 'linear-gradient(135deg, #059669 0%, #0d9488 100%)' },
+  aurora:  { label: 'Zorza', css: 'radial-gradient(60% 60% at 20% 20%, #6366f1 0%, transparent 60%), radial-gradient(50% 50% at 90% 30%, #db2777 0%, transparent 60%), #0f172a' },
+  night:   { label: 'Noc', css: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' },
+};
+
 const K = {
   font: 'ui_font', bg: 'ui_bg', scale: 'ui_scale',
   radius: 'ui_radius', sidebar: 'ui_sidebar', fontUrl: 'ui_font_url',
   heading: 'ui_font_heading', pattern: 'ui_bg_pattern', bgUrl: 'ui_bg_url',
   sidebarW: 'ui_sidebar_w', motion: 'ui_motion', scrollbar: 'ui_scrollbar',
+  oled: 'ui_oled',
 };
 const root = () => document.documentElement;
 
@@ -179,6 +192,13 @@ export function applyScrollbar(key) {
   localStorage.setItem(K.scrollbar, accent ? 'accent' : 'default');
 }
 
+// Tryb OLED (czysta czerń) — działa tylko w trybie ciemnym (CSS: html.oled.dark ...).
+export function applyOled(key) {
+  const on = key === 'on';
+  root().classList.toggle('oled', on);
+  localStorage.setItem(K.oled, on ? 'on' : 'off');
+}
+
 export const getFont       = () => localStorage.getItem(K.font)    || 'inter';
 export const getBackground = () => localStorage.getItem(K.bg)      || 'slate';
 export const getScale      = () => localStorage.getItem(K.scale)   || 'default';
@@ -191,6 +211,7 @@ export const getBgUrl       = () => localStorage.getItem(K.bgUrl)     || '';
 export const getSidebarWidth= () => localStorage.getItem(K.sidebarW)  || 'normal';
 export const getMotion      = () => localStorage.getItem(K.motion)    || 'full';
 export const getScrollbar   = () => localStorage.getItem(K.scrollbar) || 'default';
+export const getOled        = () => localStorage.getItem(K.oled)      || 'off';
 
 // Zastosuj z localStorage od razu przy imporcie (zanim wyrenderuje się React).
 const storedFontUrl = getFontUrl();
@@ -205,3 +226,4 @@ applyBgPattern(getBgPattern());
 applySidebarWidth(getSidebarWidth());
 applyMotion(getMotion());
 applyScrollbar(getScrollbar());
+applyOled(getOled());

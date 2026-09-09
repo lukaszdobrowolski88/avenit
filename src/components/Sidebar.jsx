@@ -9,6 +9,7 @@ import { useUnsavedChanges } from '../contexts/UnsavedChangesContext';
 import { supabase } from '../lib/supabase';
 import { useT } from '../i18n';
 import { getSidebar } from '../lib/appearance';
+import { useModuleColors } from '../hooks/useModuleLabel';
 
 // Komponent Tooltip zgodny z layoutem aplikacji - używa Portal
 function Tooltip({ children, text, show }) {
@@ -122,6 +123,9 @@ export default function Sidebar() {
     return () => window.removeEventListener('appearance:sidebar', h);
   }, []);
   const sidebarWrap = sidebarStyle === 'accent' ? 'dark sidebar-accent' : sidebarStyle === 'dark' ? 'dark' : '';
+
+  // Kolory per-moduł (Ustawienia → Moduły) — kolorują ikony i aktywną pozycję w menu.
+  const moduleColors = useModuleColors();
 
   // Stan zwinięcia sidebara (z localStorage) - tylko dla desktop
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -260,9 +264,9 @@ export default function Sidebar() {
   // macierzy nie działało). can() jest permisywny do czasu załadowania grantów, więc nie
   // migają na starcie; standardowe role i tak mają te granty (preset/wildcard).
   const coreLinks = [
-    { path: '/', icon: LayoutDashboard, label: tr('Pulpit'), show: true },
-    { path: '/programs', icon: FileText, label: tr('Programy'), show: hasModuleAccess('module:programs') },
-    { path: '/calendar', icon: Calendar, label: tr('Kalendarz'), show: hasModuleAccess('module:calendar') },
+    { path: '/', icon: LayoutDashboard, label: tr('Pulpit'), show: true, key: 'dashboard' },
+    { path: '/programs', icon: FileText, label: tr('Programy'), show: hasModuleAccess('module:programs'), key: 'programs' },
+    { path: '/calendar', icon: Calendar, label: tr('Kalendarz'), show: hasModuleAccess('module:calendar'), key: 'calendar' },
   ];
 
   // Statyczne linki modułów (fallback jeśli brak danych z bazy)
@@ -305,7 +309,8 @@ export default function Sidebar() {
         path: mod.path,
         icon: getIconComponent(mod.icon),
         label: mod.label,
-        show: hasModuleAccess(mod.resource_key)
+        show: hasModuleAccess(mod.resource_key),
+        key: mod.key,
       }));
   };
 
@@ -369,6 +374,7 @@ export default function Sidebar() {
         ) : (
           allLinks.filter(l => l.show).map(link => {
             const isActive = active === link.path;
+            const mColor = moduleColors[link.key || link.path.replace(/^\//, '')] || null;
 
             // Obsługa kliknięcia z sprawdzeniem niezapisanych zmian
             const handleLinkClick = (e) => {
@@ -389,9 +395,10 @@ export default function Sidebar() {
                   to={link.path}
                   data-tour={`nav-${link.path}`}
                   onClick={handleLinkClick}
+                  style={isActive && mColor ? { background: mColor, boxShadow: `0 10px 15px -3px ${mColor}59` } : undefined}
                   className={`flex items-center ${isCollapsed && !isMobile ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-xl transition-all group ${isActive ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-lg shadow-accent-primary-light/30 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-gray-700 hover:text-accent-primary dark:hover:text-white'}`}
                 >
-                  <link.icon size={20} className={`shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-accent-primary-light dark:group-hover:text-white transition-colors'}`} />
+                  <link.icon size={20} style={!isActive && mColor ? { color: mColor } : undefined} className={`shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-accent-primary-light dark:group-hover:text-white transition-colors'}`} />
                   {(isMobile || !isCollapsed) && <span className="text-sm truncate">{t(link.label)}</span>}
                 </Link>
               </Tooltip>
