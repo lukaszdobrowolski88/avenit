@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase, getCachedUser } from '../lib/supabase';
 import { applyColorPreset, applyCustomColors } from '../lib/colorPresets';
+import { applyFont, applyBackground, applyScale } from '../lib/appearance';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 
@@ -102,6 +103,10 @@ export function PermissionsProvider({ children }) {
               if (cd) { try { const p = JSON.parse(cd); applyCustomColors(p.primary, p.secondary); } catch { /* ignore */ } }
             } else applyColorPreset(cp);
           }
+          // Wygląd org-wide: czcionka, tło, rozmiar interfejsu (nadpisuje localStorage z serwera).
+          const uf = settings.find((s) => s.key === 'ui_font')?.value;   if (uf) applyFont(uf);
+          const ub = settings.find((s) => s.key === 'ui_bg')?.value;     if (ub) applyBackground(ub);
+          const us = settings.find((s) => s.key === 'ui_scale')?.value;  if (us) applyScale(us);
         }
       } catch (err) {
         console.error('Error loading permissions:', err);
