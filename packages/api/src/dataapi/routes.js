@@ -1,7 +1,7 @@
 // POST /api/db — pojedynczy endpoint zapytań (odpowiednik PostgREST dla klienta
 // zgodnego z supabase-js). Autoryzacja per tabela/rola w registry.js.
 import { buildQuery, buildWhere, ApiError, quoteIdent } from './querybuilder.js';
-import { canAccess, getTableRule, invalidatePermissions, requireCapability } from './registry.js';
+import { canAccess, getTableRule, invalidatePermissions, requireCapability, loadGrants } from './registry.js';
 import { fieldColumns, crudCapability } from '@avenit/shared/src/permissions/catalog.js';
 import { emitChange } from '../realtime/hub.js';
 import { notifyOnWrite } from '../realtime/push-hooks.js';
@@ -33,9 +33,21 @@ export default async function dataApiRoutes(app) {
     const q = req.body || {};
     try {
       const { rows: userRows } = await req.db.query(
-        `SELECT is_super_admin FROM app_users WHERE id = $1`, [req.user.id]
+        `SELECT is_super_admin, campus_id, role FROM app_users WHERE id = $1`, [req.user.id]
       );
-      const user = { ...req.user, is_super_admin: userRows[0]?.is_super_admin };
+      const user = {
+        ...req.user,
+        is_super_admin: userRows[0]?.is_super_admin,
+        campus_id: userRows[0]?.campus_id ?? null,
+        role: userRows[0]?.role ?? req.user.role,
+      };
+
+      // Twarda izolacja kampusów (Faza 4): osoba z przypisanym kampusem i BEZ roli admina
+      // widzi/edytuje tylko dane swojego kampusu (albo bez kampusu). Uśpione, gdy campus_id
+      // = null (obecnie wszyscy) → q.__campusScope niedodawany → SQL bez zmian.
+      const { adminRoles } = await loadGrants(req.db, req.tenant.db_name);
+      const isAdmin = user.is_super_admin || adminRoles.has(user.role);
+      if (!isAdmin && user.campus_id != null) q.__campusScope = { campusId: user.campus_id };
 
       const access = await canAccess({
         pool: req.db,
