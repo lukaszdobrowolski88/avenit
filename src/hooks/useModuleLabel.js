@@ -71,4 +71,18 @@ export function useModuleCover(key) {
   return useModuleData(key, () => (_covers?.[key] || null), null);
 }
 
+// Cała mapa kolorów modułów { key: '#hex' } — jeden hook, żeby móc kolorować listę pozycji
+// (np. ikony w pasku bocznym) bez wywoływania useModuleColor w pętli (reguły hooków).
+export function useModuleColors() {
+  const [map, setMap] = useState(() => _colors || {});
+  useEffect(() => {
+    let alive = true;
+    const update = () => { if (alive) setMap({ ...(_colors || {}) }); };
+    _subs.add(update);
+    loadAll().then(update);
+    return () => { alive = false; _subs.delete(update); };
+  }, []);
+  return map;
+}
+
 export default useModuleLabel;

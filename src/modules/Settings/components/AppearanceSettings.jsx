@@ -1,15 +1,15 @@
 import React from 'react';
-import { Palette, Moon, Image as ImageIcon, Upload, Type, Heading, PaintBucket, Wallpaper, Ruler, Frame, PanelLeft, Sparkles, Check } from 'lucide-react';
+import { Palette, Moon, Image as ImageIcon, Upload, Type, Heading, PaintBucket, Wallpaper, Ruler, Frame, PanelLeft, Sparkles, LogIn, Check } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { SettingsCard, SettingRow, Toggle, SelectSetting } from './SettingsUI';
 import ColorPresetPicker from './ColorPresetPicker';
 import {
   FONT_OPTIONS, HEADING_FONT_OPTIONS, BACKGROUND_OPTIONS, BG_PATTERN_OPTIONS,
-  SCALE_OPTIONS, RADIUS_OPTIONS, SIDEBAR_OPTIONS, SIDEBAR_WIDTH_OPTIONS,
+  SCALE_OPTIONS, RADIUS_OPTIONS, SIDEBAR_OPTIONS, SIDEBAR_WIDTH_OPTIONS, LOGIN_BG_OPTIONS,
   applyFont, applyHeadingFont, applyBackground, applyBgPattern, applyScale, applyRadius,
-  applySidebar, applySidebarWidth, applyMotion, applyScrollbar,
+  applySidebar, applySidebarWidth, applyMotion, applyScrollbar, applyOled,
   getFont, getHeadingFont, getBackground, getBgPattern, getBgUrl, getScale, getRadius,
-  getSidebar, getSidebarWidth, getMotion, getScrollbar, getFontUrl,
+  getSidebar, getSidebarWidth, getMotion, getScrollbar, getFontUrl, getOled,
 } from '../../../lib/appearance';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
@@ -55,7 +55,7 @@ function SidebarPreview({ variant }) {
 }
 
 // Wygląd i personalizacja: logo, kolory, czcionki, tło+deseń, rozmiar, radius, pasek, efekty.
-export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, onFontUpload, onBgUpload }) {
+export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, onFontUpload, onBgUpload, onLoginBgUpload }) {
   const t = useT();
 
   // Wartości: najpierw org-wide (app_settings), potem lokalny wybór (localStorage) jako fallback.
@@ -69,9 +69,13 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
   const sidebarW = get('ui_sidebar_w') || getSidebarWidth();
   const motion = get('ui_motion') || getMotion();
   const scrollbar = get('ui_scrollbar') || getScrollbar();
+  const oled = get('ui_oled') || getOled();
   const hasCustomFont = !!(get('custom_font_url') || getFontUrl());
   const customBgUrl = get('ui_bg_url') || getBgUrl();
   const hasCustomBg = !!customBgUrl;
+  const loginBg = get('login_bg') || 'default';
+  const loginBgUrl = get('login_bg_url') || '';
+  const hasLoginBg = !!loginBgUrl;
 
   const pickFont = (k) => { applyFont(k); save('ui_font', k); };
   const pickHeading = (k) => { applyHeadingFont(k); save('ui_font_heading', k); };
@@ -83,6 +87,8 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
   const pickSidebarW = (k) => { applySidebarWidth(k); save('ui_sidebar_w', k); };
   const pickMotion = (k) => { applyMotion(k); save('ui_motion', k); };
   const pickScrollbar = (k) => { applyScrollbar(k); save('ui_scrollbar', k); };
+  const pickOled = (k) => { applyOled(k); save('ui_oled', k); };
+  const pickLoginBg = (k) => { save('login_bg', k); };
 
   // Karty 'custom' widoczne tylko, gdy organizacja wgrała odpowiedni zasób.
   const fontEntries = Object.entries(FONT_OPTIONS).filter(([k]) => k !== 'custom' || hasCustomFont);
@@ -252,12 +258,57 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
 
       {/* --- EFEKTY I WYKOŃCZENIE --- */}
       <SettingsCard title="Efekty i wykończenie" description={tr('Drobne akcenty wizualne i dostępność.')} icon={Sparkles}>
+        <SettingRow label={tr('Tryb OLED (czysta czerń)')} hint={tr('Czarne tło i powierzchnie w trybie ciemnym')}>
+          <Toggle checked={oled === 'on'} onChange={(v) => pickOled(v ? 'on' : 'off')} />
+        </SettingRow>
         <SettingRow label={tr('Pasek przewijania w kolorze akcentu')} hint={tr('Suwak przewijania w kolorze przewodnim')}>
           <Toggle checked={scrollbar === 'accent'} onChange={(v) => pickScrollbar(v ? 'accent' : 'default')} />
         </SettingRow>
         <SettingRow label={tr('Ogranicz animacje')} hint={tr('Wyłącza przejścia i animacje w całej aplikacji')} last>
           <Toggle checked={motion === 'reduced'} onChange={(v) => pickMotion(v ? 'reduced' : 'full')} />
         </SettingRow>
+      </SettingsCard>
+
+      {/* --- EKRAN LOGOWANIA --- */}
+      <SettingsCard title="Ekran logowania" description={tr('Personalizacja strony logowania (widoczna przed zalogowaniem).')} icon={LogIn}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Nagłówek powitalny')}</label>
+            <input type="text" defaultValue={get('login_title') || ''} onBlur={(e) => save('login_title', e.target.value)} placeholder="Witaj ponownie" className="w-full" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Podtytuł')}</label>
+            <input type="text" defaultValue={get('login_subtitle') || ''} onBlur={(e) => save('login_subtitle', e.target.value)} placeholder={tr('Zaloguj się do Avenit')} className="w-full" />
+          </div>
+          <div>
+            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{tr('Tło')}</div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+              {Object.entries(LOGIN_BG_OPTIONS).map(([key, opt]) => (
+                <PickCard key={key} selected={loginBg === key} onClick={() => pickLoginBg(key)}>
+                  <div className="h-12 rounded-xl border border-gray-200/70 dark:border-gray-700 mb-2 bg-gray-100 dark:bg-gray-800" style={opt.css ? { background: opt.css } : undefined} />
+                  <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 truncate text-center">{opt.label}</div>
+                </PickCard>
+              ))}
+              {hasLoginBg && (
+                <PickCard selected={loginBg === 'custom'} onClick={() => pickLoginBg('custom')}>
+                  <div className="h-12 rounded-xl border border-gray-200/70 dark:border-gray-700 mb-2" style={{ backgroundImage: `url("${loginBgUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                  <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 truncate text-center">{tr('Własny obraz')}</div>
+                </PickCard>
+              )}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => document.getElementById('loginbg-upload-appearance').click()}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light/60 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 transition"
+              >
+                <Upload size={15} /> {hasLoginBg ? tr('Zmień obraz tła') : tr('Wgraj obraz tła')}
+              </button>
+              <input id="loginbg-upload-appearance" type="file" className="hidden" accept="image/*" onChange={onLoginBgUpload} />
+              <span className="text-xs text-gray-400">JPG · PNG · WEBP</span>
+            </div>
+          </div>
+        </div>
       </SettingsCard>
 
       <SettingsCard title="Interfejs" description={tr('Domyślny wygląd dla nowych użytkowników.')} icon={Moon}>

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useTwoFactor } from '../hooks/useTwoFactor';
 import { Shield, ArrowLeft } from 'lucide-react';
 import { tr, useT } from '../i18n';
+import { LOGIN_BG_OPTIONS } from '../lib/appearance';
 
 export default function Login() {
   const t = useT();
@@ -11,6 +12,10 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [logoUrl, setLogoUrl] = useState(() => localStorage.getItem('app_logo_cache') || null);
+  const [loginBg, setLoginBg] = useState(null);
+  const [loginBgUrl, setLoginBgUrl] = useState(null);
+  const [loginTitle, setLoginTitle] = useState('');
+  const [loginSubtitle, setLoginSubtitle] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
 
@@ -21,26 +26,34 @@ export default function Login() {
 
   const { verifyLoginCode, checkTwoFactorStatus, loading: verifyLoading } = useTwoFactor();
 
-  // Pobierz logo organizacji przy starcie (w tle odśwież cache)
+  // Pobierz branding logowania przy starcie (logo, tło, teksty powitalne). Publiczny odczyt.
   useEffect(() => {
-    const fetchLogo = async () => {
+    const fetchBranding = async () => {
       try {
         const { data } = await supabase
           .from('app_settings')
-          .select('value')
-          .eq('key', 'org_logo_url')
-          .single();
-
-        if (data?.value) {
-          setLogoUrl(data.value);
-          localStorage.setItem('app_logo_cache', data.value);
-        }
+          .select('key, value')
+          .in('key', ['org_logo_url', 'login_bg', 'login_bg_url', 'login_title', 'login_subtitle']);
+        const m = {};
+        (data || []).forEach((s) => { m[s.key] = s.value; });
+        if (m.org_logo_url) { setLogoUrl(m.org_logo_url); localStorage.setItem('app_logo_cache', m.org_logo_url); }
+        if (m.login_bg) setLoginBg(m.login_bg);
+        if (m.login_bg_url) setLoginBgUrl(m.login_bg_url);
+        if (m.login_title) setLoginTitle(m.login_title);
+        if (m.login_subtitle) setLoginSubtitle(m.login_subtitle);
       } catch (err) {
-        console.error("Błąd pobierania logo:", err);
+        console.error('Błąd pobierania brandingu:', err);
       }
     };
-    fetchLogo();
+    fetchBranding();
   }, []);
+
+  // Styl tła ekranu logowania (własny obraz / gradient presetu / domyślne).
+  const loginBgStyle = (() => {
+    if (loginBg === 'custom' && loginBgUrl) return { backgroundImage: `url("${loginBgUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' };
+    const css = LOGIN_BG_OPTIONS[loginBg]?.css;
+    return css ? { background: css } : undefined;
+  })();
 
   const handleLogin = async e => {
     e.preventDefault();
@@ -204,12 +217,14 @@ export default function Login() {
   }
 
   return (
-    <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
-      {/* Tło ozdobne */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-accent-primary-light/20 dark:bg-accent-primary/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-accent-secondary-light/20 dark:bg-accent-secondary/10 rounded-full blur-3xl"></div>
-      </div>
+    <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 relative overflow-hidden" style={loginBgStyle}>
+      {/* Tło ozdobne (widoczne przy domyślnym tle) */}
+      {!loginBgStyle && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-accent-primary-light/20 dark:bg-accent-primary/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-[20%] -right-[5%] w-[30%] h-[30%] bg-accent-secondary-light/20 dark:bg-accent-secondary/10 rounded-full blur-3xl"></div>
+        </div>
+      )}
 
       <form
         className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-8 shadow-2xl rounded-2xl max-w-md w-full border border-gray-200 dark:border-gray-700 relative z-10 animate-in fade-in zoom-in duration-300"
@@ -230,12 +245,12 @@ export default function Login() {
         </div>
 
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">
-          {showForgotPassword ? tr('Resetuj hasło') : 'Witaj ponownie'}
+          {showForgotPassword ? tr('Resetuj hasło') : (loginTitle || 'Witaj ponownie')}
         </h1>
         <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
           {showForgotPassword
             ? tr('Podaj adres e-mail, a wyślemy Ci link do zresetowania hasła')
-            : tr('Zaloguj się do Avenit')}
+            : (loginSubtitle || tr('Zaloguj się do Avenit'))}
         </p>
 
         <div className="mb-5">
