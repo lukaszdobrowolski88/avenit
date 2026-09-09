@@ -12,7 +12,6 @@ const CampusContext = createContext({
   loading: false
 });
 
-const ADMIN_ROLES = ['superadmin', 'rada_starszych'];
 const STORAGE_KEY = 'selected_campus_id';
 
 export function CampusProvider({ children }) {
@@ -20,9 +19,14 @@ export function CampusProvider({ children }) {
   const [selectedCampusId, setSelectedCampusIdState] = useState(null);
   const [userCampusId, setUserCampusId] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  // „Widzi wszystkie kampusy" = rola admina (app_roles.is_admin — jedyne źródło prawdy)
+  // LUB osoba bez przypisanego kampusu. Wcześniej rada_starszych była zaszyta jako
+  // zawsze-wszystkie, co blokowało radę per-kampus. Teraz: przypisz komuś kampus → widzi
+  // swój; zostaw pusty → widzi wszystkie. Działa dla każdej roli, w tym rady.
+  const [adminRoles, setAdminRoles] = useState(['superadmin']);
   const [loading, setLoading] = useState(false);
 
-  const isAdmin = ADMIN_ROLES.includes(userRole);
+  const isAdmin = adminRoles.includes(userRole);
   const canSwitchCampus = isAdmin || !userCampusId;
 
   // Fetch campuses + user's primary campus
@@ -59,8 +63,15 @@ export function CampusProvider({ children }) {
         setUserCampusId(primaryCampusId);
         setUserRole(role);
 
-        // Determine initial selectedCampusId
-        if (primaryCampusId && !ADMIN_ROLES.includes(role)) {
+        // Role admina = app_roles.is_admin (źródło prawdy). Fallback: superadmin.
+        const rolesResult = await supabase.from('app_roles').select('key, is_admin');
+        const admins = (rolesResult.data || []).filter((r) => r.is_admin).map((r) => r.key);
+        const adminList = admins.length ? admins : ['superadmin'];
+        setAdminRoles(adminList);
+
+        // Osoba z przypisanym kampusem (i nie-admin) startuje zablokowana na swoim kampusie;
+        // brak kampusu lub admin → może przełączać / widzi wszystkie.
+        if (primaryCampusId && !adminList.includes(role)) {
           setSelectedCampusIdState(primaryCampusId);
         } else {
           const stored = localStorage.getItem(STORAGE_KEY);
