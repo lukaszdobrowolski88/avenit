@@ -27,6 +27,7 @@ export default function PermissionsAdmin() {
   const [expanded, setExpanded] = useState(() => new Set());
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const [q, setQ] = useState(''); // szukajka uprawnień w macierzy
 
   // Macierz = katalog statyczny (moduły systemowe) + moduły własne doklejone z DB.
   const groups = useMemo(() => dynamicCapabilityGroups(dbModules, dbTabs), [dbModules, dbTabs]);
@@ -55,6 +56,18 @@ export default function PermissionsAdmin() {
   // Granty roli / usera → resolver do pokazania efektywnej wartości.
   const roleGrants = (roleKey) => grants.filter((x) => x.role === roleKey && !x.user_id);
   const userGrants = (userId) => grants.filter((x) => x.user_id === userId && !x.role);
+
+  // Szukajka: filtruje wiersze uprawnień po etykiecie/kluczu; przy aktywnej frazie
+  // grupy są rozwinięte, a puste (bez trafień) ukryte.
+  const searching = q.trim().length > 0;
+  const filterRows = (rows) => {
+    const s = q.trim().toLowerCase();
+    return s ? rows.filter((r) => tr(r.label).toLowerCase().includes(s) || r.cap.toLowerCase().includes(s)) : rows;
+  };
+  const searchInput = (
+    <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Szukaj uprawnienia… (np. „usuwanie”, „media”, „kwota”)')}
+      className="w-full mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+  );
 
   // Ustaw jawny grant (exact) dla roli lub usera.
   const setGrant = async ({ role = null, userId = null, capability, allowed }) => {
@@ -95,9 +108,13 @@ export default function PermissionsAdmin() {
             {tr('Ta rola ma pełny, nieograniczony dostęp (administrator).')}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div>
+            {searchInput}
+            <div className="space-y-2">
             {groups.map((grp) => {
-              const open = expanded.has(grp.key);
+              const rows = filterRows(grp.rows);
+              if (searching && rows.length === 0) return null;
+              const open = searching || expanded.has(grp.key);
               return (
                 <div key={grp.key} className="border border-gray-100 dark:border-gray-700 rounded-lg overflow-hidden">
                   <button onClick={() => toggleModule(grp.key)} className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-800 text-left">
@@ -106,7 +123,7 @@ export default function PermissionsAdmin() {
                   </button>
                   {open && (
                     <div className="divide-y divide-gray-50 dark:divide-gray-800">
-                      {grp.rows.map((rowItem) => {
+                      {rows.map((rowItem) => {
                         const val = resolver.can(rowItem.cap);
                         return (
                           <label key={rowItem.cap} className="flex items-center justify-between px-4 py-1.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
@@ -120,6 +137,7 @@ export default function PermissionsAdmin() {
                 </div>
               );
             })}
+            </div>
           </div>
         )}
       </div>
@@ -174,9 +192,12 @@ export default function PermissionsAdmin() {
         {user && (
           <>
             <p className="text-xs text-gray-500 mb-2">{tr('Domyślnie użytkownik dziedziczy uprawnienia ze swojej roli. Zaznacz, aby nadpisać.')} {uGrants.length > 0 && <button className="text-rose-500 underline ml-2" onClick={async () => { for (const g of uGrants) await supabase.from('permission_grants').delete().eq('id', g.id); await load(); }}>{tr('Wyczyść nadpisania')}</button>}</p>
+            {searchInput}
             <div className="space-y-2">
               {groups.map((grp) => {
-                const open = expanded.has('u-' + grp.key);
+                const rows = filterRows(grp.rows);
+                if (searching && rows.length === 0) return null;
+                const open = searching || expanded.has('u-' + grp.key);
                 return (
                   <div key={grp.key} className="border border-gray-100 dark:border-gray-700 rounded-lg overflow-hidden">
                     <button onClick={() => setExpanded((p) => { const n = new Set(p); const k = 'u-' + grp.key; n.has(k) ? n.delete(k) : n.add(k); return n; })} className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-800 text-left">
@@ -185,7 +206,7 @@ export default function PermissionsAdmin() {
                     </button>
                     {open && (
                       <div className="divide-y divide-gray-50 dark:divide-gray-800">
-                        {grp.rows.map((rowItem) => {
+                        {rows.map((rowItem) => {
                           const override = uGrants.find((g) => g.capability === rowItem.cap);
                           const roleVal = roleRes ? roleRes.can(rowItem.cap) : false;
                           const eff = override ? override.allowed : roleVal;
