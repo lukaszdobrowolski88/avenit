@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 import { supabase, getCachedUser } from '../lib/supabase';
 import { applyColorPreset, applyCustomColors } from '../lib/colorPresets';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
+import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 
 const PermissionsContext = createContext({
   can: () => true,
@@ -68,8 +69,18 @@ export function PermissionsProvider({ children }) {
         const subj = me ? { role: me.role, userId: me.id, isAdmin: adminSet.includes(me.role) } : null;
         const g = grantsRes.data || [];
 
+        // Granty z PRZYNALEŻNOŚCI DO SŁUŻB bieżącego użytkownika — dokładane ADDYTYWNIE, żeby
+        // UI odzwierciedlał to samo co backend. Osobne zapytanie (brak tabeli przed migracją 025
+        // → puste, nie psuje reszty). Kampus pomijamy (Faza 4).
+        let memGrants = [];
+        if (me?.id) {
+          const mmRes = await supabase.from('ministry_memberships').select('ministry_key, role').eq('user_id', me.id);
+          if (mmRes.data) memGrants = ministryGrants(mmRes.data).map((x) => ({ role: null, user_id: me.id, capability: x.capability, allowed: x.allowed }));
+        }
+        const gAll = memGrants.length ? [...g, ...memGrants] : g;
+
         setAdminRoles(adminSet); localStorage.setItem(CACHE_KEYS.adminRoles, JSON.stringify(adminSet));
-        setGrants(g); localStorage.setItem(CACHE_KEYS.grants, JSON.stringify(g));
+        setGrants(gAll); localStorage.setItem(CACHE_KEYS.grants, JSON.stringify(gAll));
         if (subj) { setSubject(subj); localStorage.setItem(CACHE_KEYS.subject, JSON.stringify(subj)); }
         setReady(true);
 

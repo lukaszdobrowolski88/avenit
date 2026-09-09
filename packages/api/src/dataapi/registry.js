@@ -14,6 +14,7 @@
 
 import { can, makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { SETTINGS_WRITE_CAPABILITY, crudCapability } from '@avenit/shared/src/permissions/catalog.js';
+import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 
 export const ADMIN_ROLES = ['superadmin', 'rada_starszych'];
 
@@ -36,6 +37,9 @@ export const REGISTRY = {
   app_permissions: T(null), // legacy (zastąpione przez permission_grants)
   app_roles: T(null),
   permission_grants: T(null),
+  // Przynależność do służb (osoba×służba×kampus×rola). Odczyt otwarty (kto jest w jakiej
+  // służbie); zapis bramkowany manage_users (SETTINGS_WRITE_CAPABILITY) w canAccess.
+  ministry_memberships: T(null),
   app_modules: T(null),
   app_module_tabs: T(null),
   // Rekordy własnych kolekcji kreatora. Dostęp egzekwowany PER MODUŁ (module_key)
@@ -315,6 +319,23 @@ export async function loadGrants(pool, dbName) {
     grants = g.rows;
     const r = await pool.query(`SELECT key FROM app_roles WHERE is_admin = true`);
     adminRoles = new Set(r.rows.map((x) => x.key));
+    // Granty z PRZYNALEŻNOŚCI DO SŁUŻB (ministry_memberships) — dokładane per-osoba,
+    // ADDYTYWNIE (tylko allowed:true). Osobny try: brak tabeli (przed migracją 025) lub błąd
+    // → po prostu bez tych grantów; NIE przełącza w tryb legacy. Kampus tu pomijamy (Faza 4).
+    try {
+      const mm = await pool.query(`SELECT user_id, ministry_key, role FROM ministry_memberships`);
+      const byUser = new Map();
+      for (const row of mm.rows) {
+        if (!row.user_id) continue;
+        if (!byUser.has(row.user_id)) byUser.set(row.user_id, []);
+        byUser.get(row.user_id).push(row);
+      }
+      for (const [userId, mems] of byUser) {
+        for (const g of ministryGrants(mems)) {
+          grants.push({ role: null, user_id: userId, capability: g.capability, allowed: g.allowed });
+        }
+      }
+    } catch { /* brak tabeli/błąd → bez grantów przynależności */ }
   } catch {
     // Brak nowych tabel (np. przed migracją) — fallback do starego app_permissions.
     grants = null;

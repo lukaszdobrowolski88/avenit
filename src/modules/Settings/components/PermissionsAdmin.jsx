@@ -4,7 +4,9 @@ import { tr } from '../../../i18n';
 import { dynamicCapabilityGroups } from '@avenit/shared/src/permissions/catalog.js';
 import { ROLE_PRESETS, BUILTIN_ROLES } from '@avenit/shared/src/permissions/presets.js';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
-import { ChevronDown, ChevronRight, Shield, Plus, Trash2, Users, Sliders } from 'lucide-react';
+import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
+import { ChevronDown, ChevronRight, Shield, Plus, Trash2, Users, Sliders, HeartHandshake } from 'lucide-react';
+import MinistryMemberships from './MinistryMemberships';
 
 const KIND_STYLE = {
   module: 'font-semibold text-gray-800 dark:text-gray-100',
@@ -21,22 +23,27 @@ export default function PermissionsAdmin() {
   const [users, setUsers] = useState([]);
   const [dbModules, setDbModules] = useState([]); // moduły własne (kreator) → macierz
   const [dbTabs, setDbTabs] = useState([]);
+  const [memberships, setMemberships] = useState([]); // ministry_memberships (do efektywnego widoku)
   const [selectedRole, setSelectedRole] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [expanded, setExpanded] = useState(() => new Set());
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const [q, setQ] = useState(''); // szukajka uprawnień w macierzy
+  const [userQ, setUserQ] = useState(''); // szukajka osób
+  const [copyFrom, setCopyFrom] = useState(''); // źródło do skopiowania nadpisań: 'role:x' | 'user:id'
 
   // Macierz = katalog statyczny (moduły systemowe) + moduły własne doklejone z DB.
   const groups = useMemo(() => dynamicCapabilityGroups(dbModules, dbTabs), [dbModules, dbTabs]);
 
   const load = async () => {
-    const [r, g, u, mods, tabs] = await Promise.all([
+    const [r, g, u, mods, tabs, mem] = await Promise.all([
       supabase.from('app_roles').select('*').order('display_order'),
       supabase.from('permission_grants').select('*'),
       supabase.from('app_users').select('id, email, full_name, name, role').order('created_at'),
       supabase.from('app_modules').select('id, key, label, is_system').order('display_order'),
       supabase.from('app_module_tabs').select('module_id, key, label').order('display_order'),
+      supabase.from('ministry_memberships').select('user_id, ministry_key, role'), // brak tabeli → data null
     ]);
     const rolesData = r.data || [];
     setRoles(rolesData);
@@ -44,6 +51,7 @@ export default function PermissionsAdmin() {
     setUsers(u.data || []);
     setDbModules(mods.data || []);
     setDbTabs(tabs.data || []);
+    setMemberships(mem.data || []);
     if (!selectedRole && rolesData.length) setSelectedRole(rolesData.find((x) => !x.is_admin)?.key || rolesData[0].key);
   };
   useEffect(() => { load().catch((e) => setErr(e.message)); }, []);
@@ -54,6 +62,18 @@ export default function PermissionsAdmin() {
   // Granty roli / usera → resolver do pokazania efektywnej wartości.
   const roleGrants = (roleKey) => grants.filter((x) => x.role === roleKey && !x.user_id);
   const userGrants = (userId) => grants.filter((x) => x.user_id === userId && !x.role);
+
+  // Szukajka: filtruje wiersze uprawnień po etykiecie/kluczu; przy aktywnej frazie
+  // grupy są rozwinięte, a puste (bez trafień) ukryte.
+  const searching = q.trim().length > 0;
+  const filterRows = (rows) => {
+    const s = q.trim().toLowerCase();
+    return s ? rows.filter((r) => tr(r.label).toLowerCase().includes(s) || r.cap.toLowerCase().includes(s)) : rows;
+  };
+  const searchInput = (
+    <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Szukaj uprawnienia… (np. „usuwanie”, „media”, „kwota”)')}
+      className="w-full mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+  );
 
   // Ustaw jawny grant (exact) dla roli lub usera.
   const setGrant = async ({ role = null, userId = null, capability, allowed }) => {
@@ -72,6 +92,20 @@ export default function PermissionsAdmin() {
     setErr('');
     try { await supabase.from('permission_grants').delete().eq('id', grantRow.id); await load(); }
     catch (e) { setErr(e.message); }
+  };
+
+  // Kopiuje JAWNE granty źródła (roli albo innej osoby) jako nadpisania docelowej osoby.
+  // Zastępuje dotychczasowe nadpisania targetu (potwierdzenie w UI).
+  const copyGrantsToUser = async (targetUserId, source) => {
+    setErr('');
+    try {
+      const src = source.startsWith('role:') ? roleGrants(source.slice(5)) : userGrants(source.slice(5));
+      for (const g of userGrants(targetUserId)) await supabase.from('permission_grants').delete().eq('id', g.id);
+      if (src.length) {
+        await supabase.from('permission_grants').insert(src.map((g) => ({ role: null, user_id: targetUserId, capability: g.capability, allowed: g.allowed })));
+      }
+      await load(); flash(tr('Skopiowano uprawnienia'));
+    } catch (e) { setErr(e.message); }
   };
 
   // ── Macierz roli ──
@@ -94,9 +128,13 @@ export default function PermissionsAdmin() {
             {tr('Ta rola ma pełny, nieograniczony dostęp (administrator).')}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div>
+            {searchInput}
+            <div className="space-y-2">
             {groups.map((grp) => {
-              const open = expanded.has(grp.key);
+              const rows = filterRows(grp.rows);
+              if (searching && rows.length === 0) return null;
+              const open = searching || expanded.has(grp.key);
               return (
                 <div key={grp.key} className="border border-gray-100 dark:border-gray-700 rounded-lg overflow-hidden">
                   <button onClick={() => toggleModule(grp.key)} className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-800 text-left">
@@ -105,7 +143,7 @@ export default function PermissionsAdmin() {
                   </button>
                   {open && (
                     <div className="divide-y divide-gray-50 dark:divide-gray-800">
-                      {grp.rows.map((rowItem) => {
+                      {rows.map((rowItem) => {
                         const val = resolver.can(rowItem.cap);
                         return (
                           <label key={rowItem.cap} className="flex items-center justify-between px-4 py-1.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
@@ -119,6 +157,7 @@ export default function PermissionsAdmin() {
                 </div>
               );
             })}
+            </div>
           </div>
         )}
       </div>
@@ -162,20 +201,56 @@ export default function PermissionsAdmin() {
     const user = users.find((u) => u.id === selectedUser);
     const uGrants = user ? userGrants(user.id) : [];
     const role = user ? roles.find((r) => r.key === user.role) : null;
-    const roleRes = role ? makeResolver(roleGrants(role.key), { role: role.key, isAdmin: role.is_admin }) : null;
+    // Baza dziedziczona = granty ROLI + granty z PRZYNALEŻNOŚCI DO SŁUŻB (tak samo liczy backend).
+    const memGrants = user ? ministryGrants(memberships.filter((m) => m.user_id === user.id)).map((x) => ({ role: null, user_id: user.id, capability: x.capability, allowed: x.allowed })) : [];
+    const baseGrants = role ? [...roleGrants(role.key), ...memGrants] : memGrants;
+    const baseRes = user ? makeResolver(baseGrants, { role: role?.key, userId: user.id, isAdmin: role?.is_admin }) : null;
+    const effRes = user ? makeResolver([...baseGrants, ...uGrants], { role: role?.key, userId: user.id, isAdmin: role?.is_admin }) : null;
+    const accessModules = user && effRes && !role?.is_admin ? groups.filter((gg) => effRes.can(`module:${gg.key}`)) : [];
     return (
       <div>
         <label className="block text-sm text-gray-500 mb-1">{tr('Użytkownik')}</label>
-        <select value={selectedUser || ''} onChange={(e) => setSelectedUser(e.target.value || null)} className="mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm">
-          <option value="">{tr('— Wybierz osobę —')}</option>
-          {users.map((u) => <option key={u.id} value={u.id}>{u.full_name || u.name || u.email} ({u.role})</option>)}
-        </select>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <input value={userQ} onChange={(e) => setUserQ(e.target.value)} placeholder={tr('Szukaj osoby…')}
+            className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm min-w-[180px]" />
+          <select value={selectedUser || ''} onChange={(e) => setSelectedUser(e.target.value || null)} className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm min-w-[240px]">
+            <option value="">{tr('— Wybierz osobę —')}</option>
+            {users.filter((u) => { const s = userQ.trim().toLowerCase(); return !s || (u.full_name || u.name || u.email || '').toLowerCase().includes(s) || (u.email || '').toLowerCase().includes(s); })
+              .map((u) => <option key={u.id} value={u.id}>{u.full_name || u.name || u.email} ({u.role})</option>)}
+          </select>
+        </div>
         {user && (
           <>
-            <p className="text-xs text-gray-500 mb-2">{tr('Domyślnie użytkownik dziedziczy uprawnienia ze swojej roli. Zaznacz, aby nadpisać.')} {uGrants.length > 0 && <button className="text-rose-500 underline ml-2" onClick={async () => { for (const g of uGrants) await supabase.from('permission_grants').delete().eq('id', g.id); await load(); }}>{tr('Wyczyść nadpisania')}</button>}</p>
+            {role?.is_admin ? (
+              <div className="text-sm mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">{tr('Administrator — pełny, nieograniczony dostęp.')}</div>
+            ) : (
+              <div className="text-xs mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 leading-relaxed">
+                <span className="font-semibold text-gray-700 dark:text-gray-200">{tr('Co ta osoba realnie może')}:</span> {tr('rola')} <b>{role?.label || user.role}</b>
+                {memGrants.length > 0 && <> · {tr('przynależność do służb')}: <b>{memberships.filter((m) => m.user_id === user.id).length}</b></>}
+                {accessModules.length > 0 ? <> · {tr('dostęp do modułów')}: {accessModules.map((g) => tr(g.label)).join(', ')}</> : <> · <span className="text-gray-400">{tr('brak dostępu do modułów')}</span></>}
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mb-2">{tr('Wartość „dziedz.” = z roli i służb. Zaznacz, aby nadpisać dla tej osoby.')} {uGrants.length > 0 && <button className="text-rose-500 underline ml-2" onClick={async () => { for (const g of uGrants) await supabase.from('permission_grants').delete().eq('id', g.id); await load(); }}>{tr('Wyczyść nadpisania')}</button>}</p>
+            <div className="flex flex-wrap items-center gap-2 mb-3 text-sm">
+              <span className="text-gray-500">{tr('Kopiuj nadpisania z')}:</span>
+              <select value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)} className="px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm">
+                <option value="">{tr('— wybierz źródło —')}</option>
+                <optgroup label={tr('Role')}>
+                  {roles.filter((r) => !r.is_admin).map((r) => <option key={`role:${r.key}`} value={`role:${r.key}`}>{tr('Rola')}: {r.label}</option>)}
+                </optgroup>
+                <optgroup label={tr('Osoby')}>
+                  {users.filter((u) => u.id !== user.id).map((u) => <option key={`user:${u.id}`} value={`user:${u.id}`}>{u.full_name || u.name || u.email}</option>)}
+                </optgroup>
+              </select>
+              <button disabled={!copyFrom} onClick={() => { if (window.confirm(tr('Zastąpić nadpisania tej osoby skopiowanymi?'))) copyGrantsToUser(user.id, copyFrom); }}
+                className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50">{tr('Kopiuj')}</button>
+            </div>
+            {searchInput}
             <div className="space-y-2">
               {groups.map((grp) => {
-                const open = expanded.has('u-' + grp.key);
+                const rows = filterRows(grp.rows);
+                if (searching && rows.length === 0) return null;
+                const open = searching || expanded.has('u-' + grp.key);
                 return (
                   <div key={grp.key} className="border border-gray-100 dark:border-gray-700 rounded-lg overflow-hidden">
                     <button onClick={() => setExpanded((p) => { const n = new Set(p); const k = 'u-' + grp.key; n.has(k) ? n.delete(k) : n.add(k); return n; })} className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 dark:bg-gray-800 text-left">
@@ -184,13 +259,13 @@ export default function PermissionsAdmin() {
                     </button>
                     {open && (
                       <div className="divide-y divide-gray-50 dark:divide-gray-800">
-                        {grp.rows.map((rowItem) => {
+                        {rows.map((rowItem) => {
                           const override = uGrants.find((g) => g.capability === rowItem.cap);
-                          const roleVal = roleRes ? roleRes.can(rowItem.cap) : false;
+                          const roleVal = baseRes ? baseRes.can(rowItem.cap) : false;
                           const eff = override ? override.allowed : roleVal;
                           return (
                             <div key={rowItem.cap} className="flex items-center justify-between px-4 py-1.5">
-                              <span className={`text-sm ${KIND_STYLE[rowItem.kind] || ''}`}>{tr(rowItem.label)}<span className="text-[10px] text-gray-400 ml-2">{tr('rola')}: {roleVal ? '✓' : '—'}</span></span>
+                              <span className={`text-sm ${KIND_STYLE[rowItem.kind] || ''}`}>{tr(rowItem.label)}<span className="text-[10px] text-gray-400 ml-2">{tr('dziedz.')}: {roleVal ? '✓' : '—'}</span></span>
                               <div className="row" style={{ gap: 6 }}>
                                 <input type="checkbox" checked={eff} onChange={(e) => setGrant({ userId: user.id, capability: rowItem.cap, allowed: e.target.checked })} />
                                 {override && <button className="text-[10px] text-gray-400 underline" onClick={() => clearGrant(override)}>{tr('reset')}</button>}
@@ -213,7 +288,7 @@ export default function PermissionsAdmin() {
   return (
     <div>
       <div className="row" style={{ gap: 8, marginBottom: 16 }}>
-        {[['matrix', tr('Macierz ról'), Sliders], ['roles', tr('Role'), Shield], ['users', tr('Użytkownicy'), Users]].map(([k, label, Icon]) => (
+        {[['matrix', tr('Macierz ról'), Sliders], ['roles', tr('Role'), Shield], ['ministries', tr('Służby'), HeartHandshake], ['users', tr('Użytkownicy'), Users]].map(([k, label, Icon]) => (
           <button key={k} onClick={() => setView(k)} className={`px-3 py-1.5 rounded-lg text-sm font-medium inline-flex items-center gap-1.5 transition ${view === k ? 'bg-accent-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}>
             <Icon size={15} /> {label}
           </button>
@@ -223,6 +298,7 @@ export default function PermissionsAdmin() {
       {err && <div className="err mb-2">{err}</div>}
       {view === 'matrix' && <RoleMatrix />}
       {view === 'roles' && <RolesManager />}
+      {view === 'ministries' && <MinistryMemberships />}
       {view === 'users' && <UserOverrides />}
     </div>
   );
