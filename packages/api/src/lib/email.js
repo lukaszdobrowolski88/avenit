@@ -113,3 +113,39 @@ export async function sendResetPasswordEmail(to, link) {
     text: `Ustaw nowe hasło: ${link} (link ważny 1 godzinę)`,
   });
 }
+
+// Rejestracja (tryb otwarty): potwierdzenie adresu e-mail.
+export async function sendVerifyEmail(to, link) {
+  return sendEmail({
+    to,
+    subject: 'Potwierdź adres e-mail — Avenit',
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <h2>Witaj w Avenit</h2>
+        <p>Dziękujemy za rejestrację. Aby aktywować konto, potwierdź swój adres e-mail.</p>
+        <p style="margin: 24px 0;">
+          <a href="${link}" style="background: #d97706; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Potwierdź e-mail</a>
+        </p>
+        <p style="color: #6b7280; font-size: 13px;">Link jest ważny przez 24 godziny. Jeśli to nie Ty — zignoruj tę wiadomość.</p>
+      </div>`,
+    text: `Potwierdź e-mail: ${link} (link ważny 24 godziny)`,
+  });
+}
+
+// Rejestracja (tryb „za zgodą administratora"): powiadomienie administratorów o nowym koncie.
+export async function sendAdminNewUserEmail(to, { email, name, link }) {
+  return sendEmail({
+    to,
+    subject: 'Nowe konto oczekuje na zatwierdzenie — Avenit',
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <h2>Prośba o dostęp</h2>
+        <p><strong>${name || email}</strong> (${email}) zarejestrował się i oczekuje na zatwierdzenie konta.</p>
+        <p style="margin: 24px 0;">
+          <a href="${link}" style="background: #d97706; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Przejdź do ustawień</a>
+        </p>
+        <p style="color: #6b7280; font-size: 13px;">Zatwierdź lub odrzuć w: Ustawienia → Użytkownicy → Oczekujący.</p>
+      </div>`,
+    text: `Nowe konto oczekuje na zatwierdzenie: ${name || email} (${email}). Ustawienia → Użytkownicy.`,
+  });
+}

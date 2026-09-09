@@ -277,13 +277,25 @@ export function createApiClient({
       return { data: { user: payload.user, session: next }, error: null };
     },
 
-    async signUp({ email, password }) {
-      // Samodzielna rejestracja użytkowników nie jest wspierana w modelu tenantowym —
-      // konta zakłada admin kościoła (lub panel platformy).
-      return {
-        data: { user: null, session: null },
-        error: { message: 'Rejestracja odbywa się przez administratora' },
-      };
+    async signUp({ email, password, full_name } = {}) {
+      // Samodzielna rejestracja — serwer decyduje wg trybu tenanta (closed/approval/open).
+      // Nie loguje od razu: wynik to status ('pending') + powód ('email' | 'admin').
+      const { res, payload } = await requestJson('/api/auth/register', { email, password, full_name });
+      if (!res.ok) {
+        return { data: { user: null, session: null }, error: { message: payload?.error || 'Nie udało się utworzyć konta', status: res.status } };
+      }
+      return { data: { user: null, session: null, status: payload?.status || null, reason: payload?.reason || null }, error: null };
+    },
+
+    // Publiczny tryb rejestracji tenanta (do pokazania „Zarejestruj się" na ekranie logowania).
+    async getRegistrationConfig() {
+      try {
+        const res = await request('/api/auth/registration-config');
+        const payload = await res.json().catch(() => ({}));
+        return { mode: payload?.mode || 'closed' };
+      } catch {
+        return { mode: 'closed' };
+      }
     },
 
     async signOut() {

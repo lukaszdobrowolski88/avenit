@@ -5,7 +5,7 @@ import {
   List, Plus, Trash2, X, Settings, Grid, Users, Shield, BookOpen, Building2,
   CheckCircle, AlertCircle, Upload, Eye,
   Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, UserCheck, Check, ChevronDown, ChevronUp, Layers, Plug,
-  Palette, Bell, Globe, CreditCard, KeyRound, Mail, Loader2
+  Palette, Bell, Globe, CreditCard, KeyRound, Mail, Loader2, UserPlus, Clock
 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import { useT } from '../../i18n';
@@ -1034,6 +1034,20 @@ export default function GlobalSettings() {
       : [...prev, { key, value: v }]);
     setMessage({ type: 'success', text: 'Zapisano' });
   };
+
+  // Rejestracja: kolejka oczekujących na zatwierdzenie administratora + akcje.
+  const pendingUsers = users.filter(u => u.status === 'pending' && u.pending_kind === 'admin');
+  const approveUser = async (id) => {
+    await supabase.from('app_users').update({ status: 'active', is_active: true, pending_kind: null }).eq('id', id);
+    fetchData();
+    setMessage({ type: 'success', text: 'Konto zatwierdzone' });
+  };
+  const rejectUser = async (id) => {
+    if (!confirm(tr('Odrzucić i usunąć to zgłoszenie rejestracji?'))) return;
+    await supabase.from('app_users').delete().eq('id', id);
+    fetchData();
+  };
+
   const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
 
   return (
@@ -1190,6 +1204,69 @@ export default function GlobalSettings() {
                 <button onClick={() => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setShowUserModal(true); }} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition"><Plus size={18}/> Dodaj Użytkownika</button>
               </div>
             </div>
+
+            {/* Konfiguracja: kto i jak może zakładać konta */}
+            <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800">
+              <h3 className="font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2"><UserPlus size={18}/> {t('Zakładanie kont')}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Kto i jak może uzyskać konto w aplikacji.')}</p>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {[
+                  { v: 'closed', label: tr('Zamknięta'), desc: tr('Tylko administrator tworzy konta') },
+                  { v: 'approval', label: tr('Za zgodą administratora'), desc: tr('Można się rejestrować, konto wymaga zatwierdzenia') },
+                  { v: 'open', label: tr('Otwarta'), desc: tr('Rejestracja z potwierdzeniem e-mail') },
+                ].map(opt => {
+                  const active = (getSetting('registration_mode') || 'closed') === opt.v;
+                  return (
+                    <button
+                      key={opt.v}
+                      type="button"
+                      onClick={() => saveSetting('registration_mode', opt.v)}
+                      className={`text-left rounded-xl border-2 p-3 transition ${active ? 'border-accent-primary ring-2 ring-accent-primary/30 bg-accent-primary-lightest/40 dark:bg-gray-700' : 'border-gray-200 dark:border-gray-600 hover:border-accent-primary-light/60'}`}
+                    >
+                      <div className="font-semibold text-sm text-gray-800 dark:text-gray-100">{opt.label}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{opt.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              {(getSetting('registration_mode') || 'closed') !== 'closed' && (
+                <div className="grid sm:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Domyślna rola nowych kont')}</label>
+                    <select value={getSetting('registration_default_role') || ''} onChange={e => saveSetting('registration_default_role', e.target.value)} className="w-full">
+                      <option value="">{tr('(najniższa — członek)')}</option>
+                      {definedRoles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Dozwolone domeny e-mail (opcjonalnie)')}</label>
+                    <input type="text" defaultValue={getSetting('registration_allowed_domains') || ''} onBlur={e => saveSetting('registration_allowed_domains', e.target.value)} placeholder="np. schwro.pl, parafia.pl" className="w-full" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Kolejka: oczekujący na zatwierdzenie (tryb „za zgodą administratora") */}
+            {pendingUsers.length > 0 && (
+              <div className="mb-6 rounded-xl border border-amber-200 dark:border-amber-900/40 p-5 bg-amber-50/60 dark:bg-amber-900/10">
+                <h3 className="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2"><Clock size={18}/> {tr('Oczekujący na zatwierdzenie')} ({pendingUsers.length})</h3>
+                <div className="space-y-2">
+                  {pendingUsers.map(u => (
+                    <div key={u.id} className="flex items-center justify-between gap-3 bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm text-gray-800 dark:text-gray-100 truncate">{u.full_name || u.email}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{u.email} · {definedRoles.find(r => r.key === u.role)?.label || u.role}</div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button onClick={() => approveUser(u.id)} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600 transition">{tr('Zatwierdź')}</button>
+                        <button onClick={() => rejectUser(u.id)} className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Odrzuć')}</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
               <table className="w-full text-sm text-left bg-white dark:bg-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4">{t('Użytkownik')}</th><th className="p-4">{t('Email')}</th><th className="p-4">{t('Rola')}</th>{campuses.length > 0 && <th className="p-4">{t('Lokalizacja')}</th>}<th className="p-4">{t('Status')}</th><th className="p-4 text-right">{t('Akcje')}</th></tr></thead>
