@@ -22,6 +22,29 @@ const loginSchema = z.object({
   remember: z.boolean().optional(),
 });
 
+const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  full_name: z.string().max(120).optional(),
+});
+
+// Konfiguracja rejestracji tenanta (app_settings). Domyślnie zamknięta (tylko admin tworzy konta).
+async function getRegConfig(db) {
+  const { rows } = await db.query(
+    `SELECT key, value FROM app_settings WHERE key IN
+      ('registration_mode','registration_default_role','registration_default_campus','registration_allowed_domains')`
+  );
+  const m = {};
+  rows.forEach((r) => { m[r.key] = r.value; });
+  return {
+    mode: m.registration_mode || 'closed',
+    role: m.registration_default_role || null,
+    campus: m.registration_default_campus || null,
+    domains: String(m.registration_allowed_domains || '')
+      .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
+  };
+}
+
 const cookieOpts = (req) => ({
   httpOnly: true,
   secure: isProd,
@@ -47,7 +70,7 @@ export default async function authRoutes(app) {
       const { rows } = await req.db.query(
         `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id,
                 password_hash, totp_enabled, totp_secret, totp_backup_codes,
-                onboarding, last_login_at
+                onboarding, last_login_at, status, pending_kind
            FROM app_users WHERE lower(email) = lower($1)`,
         [email]
       );
@@ -56,7 +79,13 @@ export default async function authRoutes(app) {
       if (!user || !(await verifyPassword(password, user.password_hash))) {
         return reply.code(401).send({ error: 'Błędny e-mail lub hasło' });
       }
-      if (!user.is_active) {
+      if (!user.is_active || user.status === 'pending' || user.status === 'blocked') {
+        if (user.status === 'pending' && user.pending_kind === 'email') {
+          return reply.code(403).send({ error: 'Potwierdź adres e-mail — sprawdź skrzynkę.' });
+        }
+        if (user.status === 'pending') {
+          return reply.code(403).send({ error: 'Konto oczekuje na zatwierdzenie przez administratora.' });
+        }
         return reply.code(403).send({ error: 'Konto jest zablokowane' });
       }
 
@@ -300,6 +329,89 @@ export default async function authRoutes(app) {
       [rows[0].user_id]
     );
     return reply.send({ ok: true });
+  });
+
+  // Publiczna, minimalna konfiguracja rejestracji — Login pyta, czy pokazać „Zarejestruj się".
+  app.get('/api/auth/registration-config', { preHandler: app.requireTenant }, async (req, reply) => {
+    const cfg = await getRegConfig(req.db);
+    return reply.send({ mode: cfg.mode });
+  });
+
+  // Samodzielna rejestracja konta — zależnie od trybu tenanta (closed/approval/open).
+  app.post(
+    '/api/auth/register',
+    { preHandler: app.requireTenant, config: { rateLimit: { max: 5, timeWindow: '15 minutes' } } },
+    async (req, reply) => {
+      const body = registerSchema.safeParse(req.body);
+      if (!body.success) return reply.code(400).send({ error: 'Nieprawidłowe dane (e-mail i hasło min. 8 znaków)' });
+      const { email, password, full_name } = body.data;
+
+      const cfg = await getRegConfig(req.db);
+      if (cfg.mode !== 'approval' && cfg.mode !== 'open') {
+        return reply.code(403).send({ error: 'Rejestracja jest wyłączona' });
+      }
+      const domain = String(email.split('@')[1] || '').toLowerCase();
+      if (cfg.domains.length && !cfg.domains.includes(domain)) {
+        return reply.code(400).send({ error: 'Rejestracja dozwolona tylko dla wybranych domen e-mail' });
+      }
+      const { rows: exist } = await req.db.query(`SELECT id FROM app_users WHERE lower(email) = lower($1)`, [email]);
+      if (exist[0]) return reply.code(409).send({ error: 'Konto z tym adresem e-mail już istnieje' });
+
+      const role = cfg.role || 'czlonek';
+      const passwordHash = await hashPassword(password);
+      const base = `https://${req.tenant.subdomain}.${config.APP_DOMAIN}`;
+
+      if (cfg.mode === 'open') {
+        // Otwarta: konto powstaje, ale aktywne dopiero po potwierdzeniu e-mail.
+        const raw = crypto.randomBytes(32).toString('base64url');
+        const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
+        await req.db.query(
+          `INSERT INTO app_users
+             (email, full_name, name, role, is_active, status, pending_kind, email_verified, verify_token_hash, verify_expires, password_hash, campus_id)
+           VALUES ($1,$2,$2,$3,false,'pending','email',false,$4, now() + interval '24 hours',$5,$6)`,
+          [email, full_name || '', role, tokenHash, passwordHash, cfg.campus]
+        );
+        const { sendVerifyEmail } = await import('../lib/email.js');
+        await sendVerifyEmail(email, `${base}/api/auth/verify-email?token=${raw}`).catch((err) =>
+          req.log.error({ err }, 'verify email failed')
+        );
+        return reply.code(202).send({ status: 'pending', reason: 'email' });
+      }
+
+      // Za zgodą administratora: konto nieaktywne, oczekuje na zatwierdzenie.
+      await req.db.query(
+        `INSERT INTO app_users
+           (email, full_name, name, role, is_active, status, pending_kind, email_verified, password_hash, campus_id)
+         VALUES ($1,$2,$2,$3,false,'pending','admin',false,$4,$5)`,
+        [email, full_name || '', role, passwordHash, cfg.campus]
+      );
+      const { rows: admins } = await req.db.query(
+        `SELECT u.email FROM app_users u JOIN app_roles r ON u.role = r.key
+          WHERE r.is_admin = true AND u.is_active = true AND u.email IS NOT NULL`
+      );
+      if (admins.length) {
+        const { sendAdminNewUserEmail } = await import('../lib/email.js');
+        await sendAdminNewUserEmail(admins.map((a) => a.email), { email, name: full_name, link: `${base}/settings` })
+          .catch((err) => req.log.error({ err }, 'admin notify failed'));
+      }
+      return reply.code(202).send({ status: 'pending', reason: 'admin' });
+    }
+  );
+
+  // Potwierdzenie e-mail (klik z linku) → aktywacja konta i przekierowanie do logowania.
+  app.get('/api/auth/verify-email', { preHandler: app.requireTenant }, async (req, reply) => {
+    const raw = String(req.query?.token || '');
+    const base = `https://${req.tenant.subdomain}.${config.APP_DOMAIN}`;
+    if (!raw) return reply.redirect(`${base}/?verify=invalid`);
+    const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
+    const { rows } = await req.db.query(
+      `UPDATE app_users
+          SET status='active', is_active=true, email_verified=true, verify_token_hash=NULL, verify_expires=NULL
+        WHERE verify_token_hash = $1 AND verify_expires > now() AND status='pending' AND pending_kind='email'
+        RETURNING id`,
+      [tokenHash]
+    );
+    return reply.redirect(`${base}/?verify=${rows[0] ? 'ok' : 'expired'}`);
   });
 
   // Konfiguracja 2FA dla zalogowanego użytkownika (generacja sekretu + włączenie).

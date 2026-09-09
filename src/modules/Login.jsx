@@ -17,6 +17,10 @@ export default function Login() {
   const [loginTitle, setLoginTitle] = useState('');
   const [loginSubtitle, setLoginSubtitle] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [regMode, setRegMode] = useState('closed'); // 'closed' | 'approval' | 'open'
+  const [showRegister, setShowRegister] = useState(false);
+  const [regName, setRegName] = useState('');
+  const [info, setInfo] = useState('');
   const [resetEmailSent, setResetEmailSent] = useState(false);
 
   // Stan dla 2FA
@@ -46,7 +50,26 @@ export default function Login() {
       }
     };
     fetchBranding();
+    // Tryb rejestracji (czy pokazać „Zarejestruj się") + komunikat po potwierdzeniu e-mail.
+    supabase.auth.getRegistrationConfig?.().then((c) => setRegMode(c?.mode || 'closed')).catch(() => {});
+    const v = new URLSearchParams(window.location.search).get('verify');
+    if (v === 'ok') setInfo(tr('E-mail potwierdzony — możesz się zalogować.'));
+    else if (v === 'expired') setInfo(tr('Link weryfikacyjny wygasł lub został już użyty.'));
   }, []);
+
+  // Rejestracja konta (serwer decyduje wg trybu tenanta).
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true); setError(''); setInfo('');
+    const { data, error: regErr } = await supabase.auth.signUp({ email, password, full_name: regName });
+    setLoading(false);
+    if (regErr) { setError(regErr.message || tr('Nie udało się utworzyć konta')); return; }
+    setInfo(data?.reason === 'email'
+      ? tr('Konto utworzone. Sprawdź e-mail, aby je potwierdzić.')
+      : tr('Konto utworzone. Oczekuje na zatwierdzenie przez administratora.'));
+    setShowRegister(false);
+    setPassword('');
+  };
 
   // Styl tła ekranu logowania (własny obraz / gradient presetu / domyślne).
   const loginBgStyle = (() => {
@@ -228,7 +251,7 @@ export default function Login() {
 
       <form
         className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl p-8 shadow-2xl rounded-2xl max-w-md w-full border border-gray-200 dark:border-gray-700 relative z-10 animate-in fade-in zoom-in duration-300"
-        onSubmit={handleLogin}
+        onSubmit={showRegister ? handleRegister : handleLogin}
       >
         <div className="flex justify-center mb-6">
           {logoUrl ? (
@@ -245,13 +268,34 @@ export default function Login() {
         </div>
 
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2 text-center">
-          {showForgotPassword ? tr('Resetuj hasło') : (loginTitle || 'Witaj ponownie')}
+          {showRegister ? tr('Załóż konto') : showForgotPassword ? tr('Resetuj hasło') : (loginTitle || 'Witaj ponownie')}
         </h1>
         <p className="text-gray-500 dark:text-gray-400 text-center text-sm mb-8">
-          {showForgotPassword
-            ? tr('Podaj adres e-mail, a wyślemy Ci link do zresetowania hasła')
-            : (loginSubtitle || tr('Zaloguj się do Avenit'))}
+          {showRegister
+            ? tr('Wypełnij dane, aby utworzyć konto')
+            : showForgotPassword
+              ? tr('Podaj adres e-mail, a wyślemy Ci link do zresetowania hasła')
+              : (loginSubtitle || tr('Zaloguj się do Avenit'))}
         </p>
+
+        {info && (
+          <div className="mb-6 p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm text-center">
+            {info}
+          </div>
+        )}
+
+        {showRegister && (
+          <div className="mb-5">
+            <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{tr('Imię i nazwisko')}</label>
+            <input
+              type="text"
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
+              value={regName}
+              onChange={e => setRegName(e.target.value)}
+              placeholder="Jan Kowalski"
+            />
+          </div>
+        )}
 
         <div className="mb-5">
           <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">E-mail</label>
@@ -286,7 +330,29 @@ export default function Login() {
           </div>
         )}
 
-        {!showForgotPassword ? (
+        {showRegister ? (
+          <>
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-bold py-3.5 rounded-xl shadow-lg hover:shadow-accent-primary-light/25 transition transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  {tr('Rejestracja...')}
+                </span>
+              ) : tr('Zarejestruj się')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowRegister(false); setError(''); setInfo(''); }}
+              className="w-full mt-4 text-sm text-gray-500 dark:text-gray-400 hover:text-accent-primary dark:hover:text-accent-primary-light transition"
+            >
+              {tr('← Powrót do logowania')}
+            </button>
+          </>
+        ) : !showForgotPassword ? (
           <>
             <button
               type="submit"
@@ -308,6 +374,16 @@ export default function Login() {
             >
               {tr('Nie pamiętam hasła')}
             </button>
+
+            {regMode !== 'closed' && (
+              <button
+                type="button"
+                onClick={() => { setShowRegister(true); setError(''); setInfo(''); }}
+                className="w-full mt-2 text-sm font-medium text-accent-primary dark:text-accent-primary-light hover:underline transition"
+              >
+                {tr('Nie masz konta? Zarejestruj się')}
+              </button>
+            )}
           </>
         ) : (
           <>
