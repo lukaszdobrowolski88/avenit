@@ -122,8 +122,10 @@ export const MODULES = [
     fields: [
       { resource: 'members', column: 'phone', label: 'Telefon' },
       { resource: 'members', column: 'email', label: 'E-mail' },
+      { resource: 'members', column: 'address', label: 'Adres' },
       { resource: 'members', column: 'notes', label: 'Notatki' },
       { resource: 'members', column: 'birth_date', label: 'Data urodzenia' },
+      { resource: 'members', column: 'status', label: 'Status członkostwa' },
       { resource: 'members', column: 'membership_declaration_url', label: 'Deklaracja członkowska' },
     ],
   },
@@ -200,7 +202,11 @@ export const MODULES = [
       { key: 'export', label: 'Eksport finansów' },
     ],
     fields: [
-      { resource: 'finance_transactions', column: 'amount', label: 'Kwota' },
+      { resource: 'finance_transactions', column: 'amount', label: 'Kwota (transakcje)' },
+      { resource: 'expenses', column: 'amount', label: 'Kwota wydatku' },
+      { resource: 'income_transactions', column: 'amount', label: 'Kwota wpływu' },
+      { resource: 'expense_transactions', column: 'amount', label: 'Kwota transakcji' },
+      { resource: 'income_transactions', column: 'notes', label: 'Notatki wpływu' },
     ],
   },
   {
