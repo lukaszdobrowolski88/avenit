@@ -244,11 +244,14 @@ export default function Sidebar() {
     return moduleSettings[moduleKey] && hasModuleAccess(moduleResourceMap[moduleKey]);
   };
 
-  // Stałe linki nawigacyjne (zawsze widoczne)
+  // Linki „rdzeniowe". Pulpit widoczny dla wszystkich; Programy i Kalendarz bramkowane
+  // zdolnością module:<mod> (wcześniej były zaszyte na show:true → odebranie dostępu w
+  // macierzy nie działało). can() jest permisywny do czasu załadowania grantów, więc nie
+  // migają na starcie; standardowe role i tak mają te granty (preset/wildcard).
   const coreLinks = [
     { path: '/', icon: LayoutDashboard, label: tr('Pulpit'), show: true },
-    { path: '/programs', icon: FileText, label: tr('Programy'), show: true },
-    { path: '/calendar', icon: Calendar, label: tr('Kalendarz'), show: true },
+    { path: '/programs', icon: FileText, label: tr('Programy'), show: hasModuleAccess('module:programs') },
+    { path: '/calendar', icon: Calendar, label: tr('Kalendarz'), show: hasModuleAccess('module:calendar') },
   ];
 
   // Statyczne linki modułów (fallback jeśli brak danych z bazy)
