@@ -53,6 +53,15 @@ const schema = z.object({
   DEFAULT_SMTP_PORT: z.coerce.number().optional(),
   DEFAULT_SMTP_USER: z.string().optional(),
   DEFAULT_SMTP_PASS: z.string().optional(),
+
+  // SSO platformowe (jedna aplikacja OAuth na dostawcę dla WSZYSTKICH tenantów).
+  // Jeden URI przekierowania: https://app.APP_DOMAIN/api/auth/oauth/<provider>/callback
+  // Tenant tylko włącza SSO; może też podać własne poświadczenia (per-tenant override).
+  SSO_GOOGLE_CLIENT_ID: z.string().optional(),
+  SSO_GOOGLE_CLIENT_SECRET: z.string().optional(),
+  SSO_MICROSOFT_CLIENT_ID: z.string().optional(),
+  SSO_MICROSOFT_CLIENT_SECRET: z.string().optional(),
+  SSO_MICROSOFT_TENANT: z.string().default('common'),
 });
 
 export const config = schema.parse(process.env);

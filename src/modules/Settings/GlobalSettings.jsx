@@ -1394,7 +1394,8 @@ export default function GlobalSettings() {
             {/* SSO — logowanie przez Google / Microsoft */}
             <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800">
               <h3 className="font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2"><KeyRound size={18}/> {tr('Logowanie zewnętrzne (SSO)')}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Pozwól logować się kontem Google lub Microsoft. Skonfiguruj aplikację OAuth u dostawcy i wklej dane poniżej.')}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{tr('Pozwól logować się kontem Google lub Microsoft. Wystarczy JEDNA aplikacja OAuth na dostawcę — obsłuży wszystkie subdomeny (tenant przenoszony w state).')}</p>
+              <p className="text-xs text-gray-400 mb-4">{tr('Client ID/Secret możesz zostawić puste — wtedy użyte zostaną wspólne poświadczenia platformy (o ile skonfigurowane).')}</p>
               {[{ p: 'google', label: 'Google' }, { p: 'microsoft', label: 'Microsoft' }].map(({ p, label }) => (
                 <div key={p} className="mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2 cursor-pointer select-none">
@@ -1411,7 +1412,7 @@ export default function GlobalSettings() {
                       <input type="text" defaultValue={getSetting('sso_microsoft_tenant') || 'common'} onBlur={e => saveSetting('sso_microsoft_tenant', e.target.value || 'common')} placeholder="Tenant (np. common / organizations / <id>)" className="w-full" />
                     )}
                   </div>
-                  <p className="text-xs text-gray-400 mt-1.5">{tr('URI przekierowania (wklej u dostawcy)')}: <span className="font-mono text-gray-500 dark:text-gray-400 break-all">{window.location.origin}/api/auth/oauth/{p}/callback</span></p>
+                  <p className="text-xs text-gray-400 mt-1.5">{tr('URI przekierowania (jeden dla wszystkich subdomen — wklej u dostawcy)')}: <span className="font-mono text-gray-500 dark:text-gray-400 break-all">https://app.{window.location.hostname.split('.').slice(1).join('.')}/api/auth/oauth/{p}/callback</span></p>
                 </div>
               ))}
               <div className="grid sm:grid-cols-2 gap-3">

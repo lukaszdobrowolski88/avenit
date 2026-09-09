@@ -15,35 +15,8 @@ import {
 } from './tokens.js';
 import { config, isProd } from '../config.js';
 import { validatePassword, getPasswordPolicy } from '../lib/password-policy.js';
-import { decryptPassword } from '../lib/mailcrypto.js';
+import { resolveProviderCreds, ssoAvailability, signState, ssoRedirectUri, SSO_PROVIDERS } from '../lib/sso.js';
 import crypto from 'node:crypto';
-
-// Provider OIDC (Google, Microsoft) — endpointy authorize/token.
-const SSO_PROVIDERS = {
-  google: {
-    authUrl: () => 'https://accounts.google.com/o/oauth2/v2/auth',
-    tokenUrl: () => 'https://oauth2.googleapis.com/token',
-    scope: 'openid email profile',
-  },
-  microsoft: {
-    authUrl: (t) => `https://login.microsoftonline.com/${t || 'common'}/oauth2/v2.0/authorize`,
-    tokenUrl: (t) => `https://login.microsoftonline.com/${t || 'common'}/oauth2/v2.0/token`,
-    scope: 'openid email profile',
-  },
-};
-const SSO_SECRET = () => config.MAIL_ENCRYPTION_SECRET || config.JWT_SECRET;
-
-async function getSSOConfig(db) {
-  const { rows } = await db.query(`SELECT key, value FROM app_settings WHERE key LIKE 'sso\\_%'`);
-  const m = {};
-  rows.forEach((r) => { m[r.key] = r.value; });
-  return {
-    google: { enabled: m.sso_google_enabled === 'on', clientId: m.sso_google_client_id || '', secretEnc: m.sso_google_client_secret_enc || '' },
-    microsoft: { enabled: m.sso_microsoft_enabled === 'on', clientId: m.sso_microsoft_client_id || '', secretEnc: m.sso_microsoft_client_secret_enc || '', tenant: m.sso_microsoft_tenant || 'common' },
-    autoProvision: m.sso_auto_provision === 'on',
-    defaultRole: m.sso_default_role || null,
-  };
-}
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -331,107 +304,34 @@ export default async function authRoutes(app) {
     return reply.send({ ok: true });
   });
 
-  // ── SSO (OIDC: Google / Microsoft) ─────────────────────────────────────────
-  // Publiczna informacja: którzy dostawcy są włączeni (przyciski na ekranie logowania).
+  // ── SSO (OIDC: Google / Microsoft) — model wielotenantowy ──────────────────
+  // JEDEN URI przekierowania (app.<domena>) dla wszystkich subdomen; tenant w `state`.
+  // Callback jest globalny (packages/api/src/auth/sso-callback.js), bo trafia na host app.<domena>.
+
+  // Dostępni dostawcy + wspólna baza URI przekierowania (do przycisków logowania i konfiguracji).
   app.get('/api/auth/sso-config', { preHandler: app.requireTenant }, async (req, reply) => {
-    const cfg = await getSSOConfig(req.db);
-    return reply.send({
-      google: cfg.google.enabled && !!cfg.google.clientId,
-      microsoft: cfg.microsoft.enabled && !!cfg.microsoft.clientId,
-    });
+    return reply.send(await ssoAvailability(req.db));
   });
 
-  // Start OAuth: redirect do dostawcy z podpisanym state + nonce w cookie (CSRF).
+  // Start OAuth (z subdomeny tenanta): redirect do dostawcy ze WSPÓLNYM redirect_uri + state (tenant).
   app.get('/api/auth/oauth/:provider/start', { preHandler: app.requireTenant }, async (req, reply) => {
     const provider = String(req.params.provider || '');
     const P = SSO_PROVIDERS[provider];
     const base = `https://${req.tenant.subdomain}.${config.APP_DOMAIN}`;
     if (!P) return reply.redirect(`${base}/login?sso=error`);
-    const cfg = await getSSOConfig(req.db);
-    const pc = cfg[provider];
-    if (!pc?.enabled || !pc.clientId) return reply.redirect(`${base}/login?sso=disabled`);
+    const creds = await resolveProviderCreds(req.db, provider);
+    if (!creds.enabled || !creds.clientId) return reply.redirect(`${base}/login?sso=disabled`);
 
     const nonce = crypto.randomBytes(16).toString('base64url');
-    const exp = Date.now() + 10 * 60 * 1000;
-    const payload = Buffer.from(`${provider}.${nonce}.${exp}`).toString('base64url');
-    const sig = crypto.createHmac('sha256', config.JWT_SECRET).update(payload).digest('hex');
-    reply.setCookie('avenit_oauth', nonce, { httpOnly: true, secure: isProd, sameSite: 'lax', path: '/', maxAge: 600 });
+    const state = signState({ provider, tenant: req.tenant.subdomain, nonce, exp: Date.now() + 10 * 60 * 1000 });
+    // Cookie na domenie NADRZĘDNEJ — czytelne także na centralnym callbacku app.<domena>.
+    reply.setCookie('avenit_oauth', nonce, { httpOnly: true, secure: isProd, sameSite: 'lax', path: '/', domain: `.${config.APP_DOMAIN}`, maxAge: 600 });
 
-    const redirectUri = `${base}/api/auth/oauth/${provider}/callback`;
     const params = new URLSearchParams({
-      client_id: pc.clientId, redirect_uri: redirectUri, response_type: 'code',
-      scope: P.scope, state: `${payload}.${sig}`, prompt: 'select_account',
+      client_id: creds.clientId, redirect_uri: ssoRedirectUri(provider), response_type: 'code',
+      scope: P.scope, state, prompt: 'select_account',
     });
-    return reply.redirect(`${P.authUrl(pc.tenant)}?${params.toString()}`);
-  });
-
-  // Callback OAuth: weryfikacja state, wymiana code→token, e-mail z id_token, sesja przez bilet.
-  app.get('/api/auth/oauth/:provider/callback', { preHandler: app.requireTenant }, async (req, reply) => {
-    const provider = String(req.params.provider || '');
-    const P = SSO_PROVIDERS[provider];
-    const base = `https://${req.tenant.subdomain}.${config.APP_DOMAIN}`;
-    const fail = (r) => reply.redirect(`${base}/login?sso=${r}`);
-    if (!P) return fail('error');
-
-    // Weryfikacja state (HMAC + exp + nonce z cookie).
-    const state = String(req.query?.state || '');
-    const [payload, sig] = state.split('.');
-    const nonceCookie = req.cookies?.avenit_oauth || '';
-    reply.clearCookie('avenit_oauth', { path: '/' });
-    if (!payload || !sig) return fail('error');
-    const expectSig = crypto.createHmac('sha256', config.JWT_SECRET).update(payload).digest('hex');
-    if (sig.length !== expectSig.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectSig))) return fail('error');
-    let sp, snonce, sexp;
-    try { [sp, snonce, sexp] = Buffer.from(payload, 'base64url').toString().split('.'); } catch { return fail('error'); }
-    if (sp !== provider || snonce !== nonceCookie || Number(sexp) < Date.now()) return fail('error');
-
-    const code = String(req.query?.code || '');
-    if (!code) return fail('error');
-
-    const cfg = await getSSOConfig(req.db);
-    const pc = cfg[provider];
-    if (!pc?.enabled || !pc.clientId || !pc.secretEnc) return fail('disabled');
-    let clientSecret = '';
-    try { clientSecret = await decryptPassword(pc.secretEnc, SSO_SECRET()); } catch { return fail('error'); }
-
-    const redirectUri = `${base}/api/auth/oauth/${provider}/callback`;
-    let idToken;
-    try {
-      const tokRes = await fetch(P.tokenUrl(pc.tenant), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ client_id: pc.clientId, client_secret: clientSecret, code, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
-      });
-      const tok = await tokRes.json();
-      if (!tokRes.ok || !tok.id_token) { req.log.error({ status: tokRes.status }, 'oauth token exchange failed'); return fail('error'); }
-      idToken = JSON.parse(Buffer.from(tok.id_token.split('.')[1], 'base64url').toString());
-    } catch (err) { req.log.error({ err }, 'oauth exchange error'); return fail('error'); }
-
-    const email = String(idToken.email || '').toLowerCase();
-    const name = idToken.name || idToken.given_name || '';
-    if (!email) return fail('error');
-
-    // Znajdź lub (opcjonalnie) utwórz konto.
-    const { rows: found } = await req.db.query(`SELECT id, is_active, status FROM app_users WHERE lower(email) = lower($1)`, [email]);
-    let user = found[0];
-    if (!user) {
-      if (!cfg.autoProvision) return fail('nouser');
-      const ins = await req.db.query(
-        `INSERT INTO app_users (email, full_name, name, role, is_active, status, email_verified, password_hash)
-         VALUES ($1,$2,$2,$3,true,'active',true,'') RETURNING id, is_active, status`,
-        [email, name, cfg.defaultRole || 'czlonek']
-      );
-      user = ins.rows[0];
-      const { logAccountEvent } = await import('../lib/account-audit.js');
-      await logAccountEvent(req.db, { email, action: 'created', actor: `sso:${provider}` });
-    }
-    if (!user.is_active || user.status === 'pending' || user.status === 'blocked') return fail('inactive');
-
-    // Bilet jednorazowy → SPA wymieni na sesję (jak SSO z app.<domena>).
-    const raw = crypto.randomBytes(32).toString('base64url');
-    const codeHash = crypto.createHash('sha256').update(raw).digest('hex');
-    await req.db.query(`INSERT INTO login_tickets (user_id, code_hash, expires_at) VALUES ($1, $2, now() + interval '5 minutes')`, [user.id, codeHash]);
-    return reply.redirect(`${base}/login?ticket=${raw}`);
+    return reply.redirect(`${P.authUrl(creds.msTenant)}?${params.toString()}`);
   });
 
   app.get('/api/auth/me', { preHandler: app.requireUser }, async (req, reply) => {
