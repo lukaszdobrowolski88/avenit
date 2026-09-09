@@ -489,9 +489,15 @@ function AppInner() {
               <ModuleContainer>
               <Routes>
                 <Route path="/" element={<PersonalDashboard user={session.user} />} />
-                <Route path="/programs" element={<ProgramsList />} />
-                <Route path="/programs/:id" element={<ProgramDetail />} />
-                <Route path="/calendar" element={<CalendarModule />} />
+                <Route path="/programs" element={
+                  <ProtectedRoute resource="module:programs"><ProgramsList /></ProtectedRoute>
+                } />
+                <Route path="/programs/:id" element={
+                  <ProtectedRoute resource="module:programs"><ProgramDetail /></ProtectedRoute>
+                } />
+                <Route path="/calendar" element={
+                  <ProtectedRoute resource="module:calendar"><CalendarModule /></ProtectedRoute>
+                } />
                 <Route path="/members" element={
                   <ProtectedRoute resource="module:members"><Members /></ProtectedRoute>
                 } />

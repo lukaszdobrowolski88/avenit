@@ -408,6 +408,11 @@ export async function canAccess({ pool, dbName, table, op, user }) {
   const resolver = makeResolver(grants, subject);
 
   if (rule.resource && rule.resource.startsWith('module:')) {
+    // Kaskada moduł → dane: dostęp do MODUŁU (module:<key>) jest warunkiem wstępnym dla jego
+    // danych. Bez tego rola z szerokim res:* (np. rada_starszych z grantem '*') czytałaby dane
+    // modułu mimo odebrania module:X w macierzy. Standardowe role mają module:X (preset/wildcard),
+    // więc nic nie tracą — działa dopiero jawny deny (o to chodzi).
+    if (!resolver.can(rule.resource)) return { ok: false, reason: `Brak dostępu do modułu ${rule.resource}` };
     // Zasób modułu → CRUD per zasób (res:<table>:<op>).
     const cap = crudCapability(table, op);
     if (!resolver.can(cap)) return { ok: false, reason: `Brak uprawnienia ${cap}` };
