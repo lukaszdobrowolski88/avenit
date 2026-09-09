@@ -1,8 +1,9 @@
-// Admin: wyloguj użytkownika ze wszystkich urządzeń (rewokacja wszystkich sesji) + audyt.
-import { getCaller, isAdmin, loadTarget, revokeSessions } from '../lib/user-admin.js';
+// Admin: zdejmij TYLKO czasową blokadę logowania (anty-brute-force). Nie zmienia is_active/status,
+// więc nie odblokowuje celowo zablokowanego konta — czyści jedynie licznik prób i locked_until.
+import { getCaller, isAdmin, loadTarget } from '../lib/user-admin.js';
 import { logAccountEvent } from '../lib/account-audit.js';
 
-export const name = 'force-logout-user';
+export const name = 'unlock-login';
 export const isPublic = false;
 
 export default async function handler(req, reply) {
@@ -12,11 +13,8 @@ export default async function handler(req, reply) {
   if (!userId) return reply.code(400).send({ error: 'Brak użytkownika.' });
   const target = await loadTarget(req.db, userId);
   if (!target) return reply.code(404).send({ error: 'Nie znaleziono użytkownika.' });
-  if (target.is_super_admin && !caller.is_super_admin) {
-    return reply.code(403).send({ error: 'Tylko super-administrator może wylogować super-administratora.' });
-  }
 
-  await revokeSessions(req.db, userId);
-  await logAccountEvent(req.db, { email: target.email, action: 'logged_out', actor: caller.email });
+  await req.db.query('UPDATE app_users SET failed_login_count = 0, locked_until = NULL WHERE id = $1', [userId]);
+  await logAccountEvent(req.db, { email: target.email, action: 'unlocked_login', actor: caller.email });
   return reply.send({ success: true });
 }

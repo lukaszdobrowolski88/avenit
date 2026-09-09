@@ -59,7 +59,10 @@ export default async function handler(req, reply) {
   const newStatus = newActive ? 'active' : (target.status === 'pending' ? 'pending' : 'blocked');
   await req.db.query(
     `UPDATE app_users SET email = $1, full_name = $2, name = $2, role = $3,
-            is_active = $4, status = $5, totp_required = $6, campus_id = $7 WHERE id = $8`,
+            is_active = $4, status = $5, totp_required = $6, campus_id = $7,
+            pending_kind = CASE WHEN $4 THEN NULL ELSE pending_kind END,
+            email_verified = CASE WHEN $4 THEN true ELSE email_verified END
+       WHERE id = $8`,
     [email, fullName, role, newActive, newStatus, totpRequired, campusId, userId]
   );
   if (!newActive) await revokeSessions(req.db, userId);

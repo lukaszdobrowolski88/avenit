@@ -660,6 +660,7 @@ export default function GlobalSettings() {
       setSelectedTeams([]);
       setRequire2FA(false);
       fetchData();
+      loadAccountEvents();
     } catch (err) {
       toast.error(tr('Błąd zapisu: ') + err.message);
     } finally {
@@ -696,8 +697,8 @@ export default function GlobalSettings() {
     loadAccountEvents();
   };
   const unlockLogin = async (user) => {
-    // Zdejmuje blokadę logowania po nieudanych próbach (set-user-status active=true zeruje licznik/locked_until).
-    const { error } = await supabase.functions.invoke('set-user-status', { body: { userId: user.id, active: true } });
+    // Zdejmuje TYLKO blokadę anty-brute-force (nie rusza is_active — nie odblokowuje zablokowanego konta).
+    const { error } = await supabase.functions.invoke('unlock-login', { body: { userId: user.id } });
     if (error) { toast.error(error.message || tr('Błąd')); return; }
     fetchData(); loadAccountEvents();
     setMessage({ type: 'success', text: tr('Odblokowano logowanie') });
@@ -733,18 +734,32 @@ export default function GlobalSettings() {
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'uzytkownicy.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   };
+  const parseCsvLine = (line) => {
+    const out = []; let cur = ''; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQ) {
+        if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+        else cur += ch;
+      } else if (ch === '"') inQ = true;
+      else if (ch === ',') { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out.map(s => s.trim());
+  };
   const importUsersCsv = async (e) => {
     const file = e.target.files[0]; if (!file) return;
     const lines = (await file.text()).split(/\r?\n/).filter(l => l.trim());
     if (!lines.length) { e.target.value = ''; return; }
-    const header = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+    const header = parseCsvLine(lines[0]).map(h => h.toLowerCase());
     const ie = header.findIndex(h => h.includes('mail'));
     const inm = header.findIndex(h => h.includes('imi') || h.includes('name') || h.includes('nazw'));
     const ir = header.findIndex(h => h.includes('rol'));
     if (ie < 0) { toast.error(tr('Brak kolumny e-mail w pliku CSV')); e.target.value = ''; return; }
     let ok = 0, fail = 0;
     for (const line of lines.slice(1)) {
-      const cells = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
+      const cells = parseCsvLine(line);
       const email = cells[ie]; if (!email || !email.includes('@')) continue;
       const roleCell = ir >= 0 ? cells[ir] : '';
       const role = definedRoles.find(r => r.key === roleCell || r.label === roleCell)?.key || 'czlonek';
@@ -1067,6 +1082,8 @@ export default function GlobalSettings() {
   const emailPendingUsers = users.filter(u => u.status === 'pending' && u.pending_kind === 'email');
   const [userSearch, setUserSearch] = useState('');
   const [userStatusFilter, setUserStatusFilter] = useState('all');
+  // Zmiana filtra/wyszukiwarki czyści zaznaczenie — akcje masowe nigdy nie dotkną kont spoza widoku.
+  useEffect(() => { setSelectedUserIds(new Set()); }, [userSearch, userStatusFilter]);
   const filteredUsers = users.filter(u => {
     const q = userSearch.trim().toLowerCase();
     const roleLabel = (definedRoles.find(r => r.key === u.role)?.label || u.role || '').toLowerCase();
@@ -1099,7 +1116,7 @@ export default function GlobalSettings() {
       ? { type: 'error', text: error.message || 'Nie udało się wysłać' }
       : { type: 'success', text: 'Wysłano ponownie link weryfikacyjny' });
   };
-  const ACTION_LABEL = { registered: 'Rejestracja', verified: 'Potwierdzenie e-mail', approved: 'Zatwierdzenie', rejected: 'Odrzucenie', created: 'Utworzenie (admin)', edited: 'Edycja', deleted: 'Usunięcie', blocked: 'Zablokowanie', unblocked: 'Odblokowanie', reset_2fa: 'Reset 2FA', logged_out: 'Wylogowanie (wszędzie)' };
+  const ACTION_LABEL = { registered: 'Rejestracja', verified: 'Potwierdzenie e-mail', approved: 'Zatwierdzenie', rejected: 'Odrzucenie', created: 'Utworzenie (admin)', edited: 'Edycja', deleted: 'Usunięcie', blocked: 'Zablokowanie', unblocked: 'Odblokowanie', reset_2fa: 'Reset 2FA', logged_out: 'Wylogowanie (wszędzie)', unlocked_login: 'Odblokowanie logowania' };
 
   const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
 

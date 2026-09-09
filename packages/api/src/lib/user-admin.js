@@ -3,14 +3,16 @@
 
 export async function getCaller(db, userId) {
   const { rows } = await db.query(
-    `SELECT u.id, u.email, u.is_super_admin, COALESCE(r.is_admin, false) AS role_admin
+    `SELECT u.id, u.email, u.is_active, u.is_super_admin, COALESCE(r.is_admin, false) AS role_admin
        FROM app_users u LEFT JOIN app_roles r ON u.role = r.key WHERE u.id = $1`,
     [userId]
   );
   return rows[0] || null;
 }
 
-export const isAdmin = (caller) => !!(caller && (caller.is_super_admin || caller.role_admin));
+// Uprawnienia admina wymagają AKTYWNEGO konta — zablokowany admin traci moc natychmiast
+// (mimo ważnego access tokena do ~15 min), bo bramka sprawdza żywy is_active z bazy.
+export const isAdmin = (caller) => !!(caller && caller.is_active && (caller.is_super_admin || caller.role_admin));
 
 export async function loadTarget(db, id) {
   const { rows } = await db.query(

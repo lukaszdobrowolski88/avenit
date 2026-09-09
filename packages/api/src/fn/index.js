@@ -51,6 +51,7 @@ const MODULES = [
   'admin-reset-2fa',
   'force-logout-user',
   'resend-invite',
+  'unlock-login',
 ];
 
 export async function registerFunctions(app) {

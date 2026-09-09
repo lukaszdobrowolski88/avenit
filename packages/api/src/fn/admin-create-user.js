@@ -38,7 +38,7 @@ export default async function handler(req, reply) {
   const { rows } = await req.db.query(
     `INSERT INTO app_users
        (email, full_name, name, role, is_active, status, email_verified, password_hash, campus_id, totp_required, invited_at)
-     VALUES ($1,$2,$2,$3,$4,$5,true,$6,$7,$8, now()) RETURNING id`,
+     VALUES ($1,$2,$2,$3,$4,$5,true,$6,$7,$8, CASE WHEN $4 THEN now() ELSE NULL END) RETURNING id`,
     [email, full_name, role, isActive, isActive ? 'active' : 'blocked', await hashPassword(randomPw), campusId, totpRequired]
   );
 

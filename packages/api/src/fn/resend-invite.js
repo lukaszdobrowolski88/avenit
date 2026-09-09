@@ -13,6 +13,9 @@ export default async function handler(req, reply) {
   if (!userId) return reply.code(400).send({ error: 'Brak użytkownika.' });
   const target = await loadTarget(req.db, userId);
   if (!target) return reply.code(404).send({ error: 'Nie znaleziono użytkownika.' });
+  if (target.is_super_admin && !caller.is_super_admin) {
+    return reply.code(403).send({ error: 'Tylko super-administrator może zapraszać/resetować super-administratora.' });
+  }
 
   const raw = crypto.randomBytes(32).toString('base64url');
   const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');

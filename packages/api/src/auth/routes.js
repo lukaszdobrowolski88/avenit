@@ -103,8 +103,9 @@ export default async function authRoutes(app) {
         return reply.code(401).send({ error: 'Błędny e-mail lub hasło' });
       }
       // Czasowa blokada po zbyt wielu nieudanych próbach (anty-brute-force, próg 5 / 15 min).
+      // Ten sam komunikat co przy błędnym haśle — bez ujawniania istnienia/stanu konta (bez enumeracji).
       if (user.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
-        return reply.code(403).send({ error: 'Zbyt wiele nieudanych prób logowania. Spróbuj ponownie za kilka minut.' });
+        return reply.code(401).send({ error: 'Błędny e-mail lub hasło' });
       }
       if (!(await verifyPassword(password, user.password_hash))) {
         const count = (user.failed_login_count || 0) + 1;
@@ -359,7 +360,8 @@ export default async function authRoutes(app) {
       [tokenHash]
     );
     if (!rows[0]) return reply.code(400).send({ error: 'Link wygasł lub został użyty' });
-    await req.db.query(`UPDATE app_users SET password_hash = $1, invited_at = NULL WHERE id = $2`, [
+    // Ustaw hasło + zdejmij ewentualną blokadę logowania (anty-brute-force) + znacznik zaproszenia.
+    await req.db.query(`UPDATE app_users SET password_hash = $1, invited_at = NULL, failed_login_count = 0, locked_until = NULL WHERE id = $2`, [
       await hashPassword(String(password)),
       rows[0].user_id,
     ]);
