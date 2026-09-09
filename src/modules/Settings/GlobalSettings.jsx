@@ -25,6 +25,7 @@ import PageHeader from '../../components/PageHeader';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
+import { injectCustomFont, applyFont } from '../../lib/appearance';
 
 // Grupy nawigacji ustawień (menu po lewej).
 const SETTINGS_NAV = [
@@ -456,6 +457,24 @@ export default function GlobalSettings() {
       await supabase.from('app_settings').upsert({ key: 'org_logo_url', value: data.publicUrl }, { onConflict: 'key' });
       fetchData();
       window.location.reload(); 
+    } catch (err) { toast.error(tr('Błąd uploadu')); }
+  };
+
+  // Wgranie własnej czcionki brandowej (woff2/woff/ttf/otf) → storage + @font-face na żywo.
+  const handleFontUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `org-font-${Date.now()}.${fileExt}`;
+      await supabase.storage.from('public-assets').upload(fileName, file);
+      const { data } = supabase.storage.from('public-assets').getPublicUrl(fileName);
+      await supabase.from('app_settings').upsert({ key: 'custom_font_url', value: data.publicUrl }, { onConflict: 'key' });
+      await supabase.from('app_settings').upsert({ key: 'ui_font', value: 'custom' }, { onConflict: 'key' });
+      injectCustomFont(data.publicUrl);
+      applyFont('custom');
+      fetchData();
+      toast.success(tr('Wgrano czcionkę'));
     } catch (err) { toast.error(tr('Błąd uploadu')); }
   };
 
@@ -1198,7 +1217,7 @@ export default function GlobalSettings() {
 
         {/* --- TAB: WYGLĄD --- */}
         {activeTab === 'appearance' && (
-          <AppearanceSettings get={getSetting} save={saveSetting} logoUrl={logoUrl} onLogoUpload={handleLogoUpload} />
+          <AppearanceSettings get={getSetting} save={saveSetting} logoUrl={logoUrl} onLogoUpload={handleLogoUpload} onFontUpload={handleFontUpload} />
         )}
 
         {/* --- TAB: REGIONALNE --- */}
