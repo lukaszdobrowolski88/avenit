@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -263,22 +263,44 @@ export default function GlobalSettings() {
   // Dynamiczne moduły i zakładki z bazy danych
   const [dbModules, setDbModules] = useState([]);
   const [dbTabs, setDbTabs] = useState({});
+  const [dbRoles, setDbRoles] = useState([]); // role z app_roles (wraz z własnymi)
 
-  const definedRoles = [
-    { key: 'superadmin', label: 'Super Administrator' },
-    { key: 'rada_starszych', label: 'Rada Starszych' },
-    { key: 'koordynator', label: 'Koordynator' },
-    { key: 'lider', label: t('Lider Służby') },
-    { key: 'czlonek', label: t('Członek') }
-  ];
+  // Lista ról do przypisania osobie. Wcześniej zaszyta na sztywno → role własne
+  // (np. Księgowość, Administracja) NIE były przypisywalne. Teraz czytamy app_roles;
+  // fallback do wbudowanych, gdy tabela pusta/nieobecna.
+  const BUILTIN_ROLE_LABELS = {
+    superadmin: 'Super Administrator', rada_starszych: 'Rada Starszych',
+    koordynator: 'Koordynator', lider: t('Lider Służby'), czlonek: t('Członek'),
+  };
+  const definedRoles = useMemo(() => {
+    if (dbRoles && dbRoles.length) {
+      return dbRoles.map(r => ({ key: r.key, label: r.label || BUILTIN_ROLE_LABELS[r.key] || r.key }));
+    }
+    return [
+      { key: 'superadmin', label: 'Super Administrator' },
+      { key: 'rada_starszych', label: 'Rada Starszych' },
+      { key: 'koordynator', label: 'Koordynator' },
+      { key: 'lider', label: t('Lider Służby') },
+      { key: 'czlonek', label: t('Członek') },
+    ];
+  }, [dbRoles, t]);
 
 
   useEffect(() => {
     fetchData();
     fetchDbModules();
+    fetchRoles();
     loadTabPermissions();
     loadUserPermissions();
   }, []);
+
+  // Pobierz role (app_roles) — do listy przypisania i etykiet ról.
+  const fetchRoles = async () => {
+    try {
+      const { data, error } = await supabase.from('app_roles').select('key, label, display_order').order('display_order', { ascending: true });
+      if (!error && data) setDbRoles(data);
+    } catch { /* brak tabeli → fallback do wbudowanych */ }
+  };
 
   // Pobierz moduły i zakładki z bazy danych
   const fetchDbModules = async () => {
