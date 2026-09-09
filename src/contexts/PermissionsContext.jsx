@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase, getCachedUser } from '../lib/supabase';
 import { applyColorPreset, applyCustomColors } from '../lib/colorPresets';
-import { applyFont, applyBackground, applyScale } from '../lib/appearance';
+import { applyFont, applyBackground, applyScale, applyRadius, applySidebar, injectCustomFont } from '../lib/appearance';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 
@@ -103,10 +103,13 @@ export function PermissionsProvider({ children }) {
               if (cd) { try { const p = JSON.parse(cd); applyCustomColors(p.primary, p.secondary); } catch { /* ignore */ } }
             } else applyColorPreset(cp);
           }
-          // Wygląd org-wide: czcionka, tło, rozmiar interfejsu (nadpisuje localStorage z serwera).
+          // Wygląd org-wide: czcionka, tło, rozmiar, zaokrąglenie, pasek boczny, font własny.
+          const ufu = settings.find((s) => s.key === 'custom_font_url')?.value; if (ufu) injectCustomFont(ufu);
           const uf = settings.find((s) => s.key === 'ui_font')?.value;   if (uf) applyFont(uf);
           const ub = settings.find((s) => s.key === 'ui_bg')?.value;     if (ub) applyBackground(ub);
           const us = settings.find((s) => s.key === 'ui_scale')?.value;  if (us) applyScale(us);
+          const ur = settings.find((s) => s.key === 'ui_radius')?.value; if (ur) applyRadius(ur);
+          const usb = settings.find((s) => s.key === 'ui_sidebar')?.value; if (usb) applySidebar(usb);
         }
       } catch (err) {
         console.error('Error loading permissions:', err);

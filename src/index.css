@@ -42,6 +42,13 @@ html, body {
 .app-shell-bg { background-color: var(--app-bg, #f9fafb); }
 .dark .app-shell-bg { background-color: var(--app-bg-dark, #111827); }
 
+/* Styl paska bocznego (Ustawienia → Wygląd). 'Ciemny'/'Akcent' → Sidebar owija się klasą
+   .dark (jasny tekst). 'Akcent' dokłada tło w kolorze przewodnim na sam panel. */
+.sidebar-accent .app-sidebar-panel {
+  background: linear-gradient(180deg, rgb(var(--accent-primary-dark)) 0%, rgb(var(--accent-primary-darkest)) 100%) !important;
+  border-color: rgb(var(--accent-primary-darkest)) !important;
+}
+
 #root {
   overflow-x: hidden;
   max-width: 100vw;

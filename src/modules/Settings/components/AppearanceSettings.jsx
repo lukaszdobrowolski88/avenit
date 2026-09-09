@@ -1,12 +1,12 @@
 import React from 'react';
-import { Palette, Moon, Image as ImageIcon, Upload, Type, PaintBucket, Ruler, Check } from 'lucide-react';
+import { Palette, Moon, Image as ImageIcon, Upload, Type, PaintBucket, Ruler, Frame, PanelLeft, Check } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { SettingsCard, SettingRow, Toggle, SelectSetting } from './SettingsUI';
 import ColorPresetPicker from './ColorPresetPicker';
 import {
-  FONT_OPTIONS, BACKGROUND_OPTIONS, SCALE_OPTIONS,
-  applyFont, applyBackground, applyScale,
-  getFont, getBackground, getScale,
+  FONT_OPTIONS, BACKGROUND_OPTIONS, SCALE_OPTIONS, RADIUS_OPTIONS, SIDEBAR_OPTIONS,
+  applyFont, applyBackground, applyScale, applyRadius, applySidebar,
+  getFont, getBackground, getScale, getRadius, getSidebar, getFontUrl,
 } from '../../../lib/appearance';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
@@ -33,18 +33,44 @@ function PickCard({ selected, onClick, children, className = '' }) {
   );
 }
 
-// Wygląd i personalizacja: logo, motyw kolorystyczny, czcionka, tło, rozmiar, tryb ciemny.
-export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload }) {
+// Mini-podgląd okna aplikacji dla stylu paska bocznego.
+function SidebarPreview({ variant }) {
+  const strip =
+    variant === 'dark' ? 'bg-gray-800'
+    : variant === 'accent' ? 'bg-gradient-to-b from-accent-primary to-accent-secondary'
+    : 'bg-white dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600';
+  return (
+    <div className="h-16 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 flex mb-2">
+      <div className={`w-1/3 ${strip} flex flex-col gap-1 p-1.5`}>
+        <span className="h-1.5 rounded-full bg-white/70" />
+        <span className="h-1.5 rounded-full bg-white/40" />
+        <span className="h-1.5 rounded-full bg-white/40" />
+      </div>
+      <div className="flex-1 bg-gray-50 dark:bg-gray-900" />
+    </div>
+  );
+}
+
+// Wygląd i personalizacja: logo, kolory, czcionka (+własna), tło, rozmiar, zaokrąglenie, pasek.
+export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, onFontUpload }) {
   const t = useT();
 
   // Wartości: najpierw org-wide (app_settings), potem lokalny wybór (localStorage) jako fallback.
   const font = get('ui_font') || getFont();
   const bg = get('ui_bg') || getBackground();
   const scale = get('ui_scale') || getScale();
+  const radius = get('ui_radius') || getRadius();
+  const sidebar = get('ui_sidebar') || getSidebar();
+  const hasCustomFont = !!(get('custom_font_url') || getFontUrl());
 
   const pickFont = (k) => { applyFont(k); save('ui_font', k); };
   const pickBg = (k) => { applyBackground(k); save('ui_bg', k); };
   const pickScale = (k) => { applyScale(k); save('ui_scale', k); };
+  const pickRadius = (k) => { applyRadius(k); save('ui_radius', k); };
+  const pickSidebar = (k) => { applySidebar(k); save('ui_sidebar', k); };
+
+  // Karta 'custom' widoczna tylko, gdy organizacja wgrała czcionkę.
+  const fontEntries = Object.entries(FONT_OPTIONS).filter(([k]) => k !== 'custom' || hasCustomFont);
 
   return (
     <div className="max-w-3xl">
@@ -75,12 +101,23 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload })
       {/* --- CZCIONKA --- */}
       <SettingsCard title="Czcionka" description={tr('Krój pisma w całej aplikacji.')} icon={Type}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {Object.entries(FONT_OPTIONS).map(([key, opt]) => (
+          {fontEntries.map(([key, opt]) => (
             <PickCard key={key} selected={font === key} onClick={() => pickFont(key)}>
               <div className="text-3xl leading-none text-gray-900 dark:text-white mb-1.5" style={{ fontFamily: opt.stack }}>Aa</div>
               <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate" style={{ fontFamily: opt.stack }}>{opt.label}</div>
             </PickCard>
           ))}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => document.getElementById('font-upload-appearance').click()}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light/60 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 transition"
+          >
+            <Upload size={15} /> {hasCustomFont ? tr('Zmień własną czcionkę') : tr('Wgraj własną czcionkę')}
+          </button>
+          <input id="font-upload-appearance" type="file" className="hidden" accept=".woff2,.woff,.ttf,.otf,font/*" onChange={onFontUpload} />
+          <span className="text-xs text-gray-400">woff2 · woff · ttf · otf</span>
         </div>
       </SettingsCard>
 
@@ -106,6 +143,33 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload })
             <PickCard key={key} selected={scale === key} onClick={() => pickScale(key)} className="flex flex-col items-center justify-center text-center">
               <div className="text-gray-900 dark:text-white font-semibold leading-none mb-1.5" style={{ fontSize: opt.px || '14px' }}>Aa</div>
               <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 leading-tight">{opt.label}</div>
+            </PickCard>
+          ))}
+        </div>
+      </SettingsCard>
+
+      {/* --- ZAOKRĄGLENIE ROGÓW --- */}
+      <SettingsCard title="Zaokrąglenie rogów" description={tr('Promień kart, przycisków i pól w całej aplikacji.')} icon={Frame}>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {Object.entries(RADIUS_OPTIONS).map(([key, opt]) => {
+            const s = opt.scale ? parseFloat(opt.scale) : 1;
+            return (
+              <PickCard key={key} selected={radius === key} onClick={() => pickRadius(key)} className="flex flex-col items-center justify-center text-center">
+                <div className="w-14 h-9 bg-accent-primary/20 border-2 border-accent-primary mb-2" style={{ borderRadius: `${Math.round(12 * s)}px` }} />
+                <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 leading-tight">{opt.label}</div>
+              </PickCard>
+            );
+          })}
+        </div>
+      </SettingsCard>
+
+      {/* --- PASEK BOCZNY --- */}
+      <SettingsCard title="Pasek boczny" description={tr('Wygląd menu bocznego niezależnie od motywu.')} icon={PanelLeft}>
+        <div className="grid grid-cols-3 gap-3">
+          {Object.entries(SIDEBAR_OPTIONS).map(([key, opt]) => (
+            <PickCard key={key} selected={sidebar === key} onClick={() => pickSidebar(key)}>
+              <SidebarPreview variant={key} />
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate text-center">{opt.label}</div>
             </PickCard>
           ))}
         </div>

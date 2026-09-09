@@ -8,6 +8,7 @@ import { usePermissions } from '../contexts/PermissionsContext';
 import { useUnsavedChanges } from '../contexts/UnsavedChangesContext';
 import { supabase } from '../lib/supabase';
 import { useT } from '../i18n';
+import { getSidebar } from '../lib/appearance';
 
 // Komponent Tooltip zgodny z layoutem aplikacji - używa Portal
 function Tooltip({ children, text, show }) {
@@ -111,6 +112,16 @@ export default function Sidebar() {
 
   // Sidebar jest gotowy gdy mamy rolę i granty
   const sidebarReady = !roleLoading && userRole && ready;
+
+  // Styl paska bocznego (Ustawienia → Wygląd): 'theme' | 'dark' | 'accent'. Owija panele
+  // klasą .dark (jasny tekst niezależnie od motywu); 'accent' dokłada tło akcentu (CSS).
+  const [sidebarStyle, setSidebarStyle] = useState(getSidebar);
+  useEffect(() => {
+    const h = () => setSidebarStyle(getSidebar());
+    window.addEventListener('appearance:sidebar', h);
+    return () => window.removeEventListener('appearance:sidebar', h);
+  }, []);
+  const sidebarWrap = sidebarStyle === 'accent' ? 'dark sidebar-accent' : sidebarStyle === 'dark' ? 'dark' : '';
 
   // Stan zwinięcia sidebara (z localStorage) - tylko dla desktop
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -419,9 +430,9 @@ export default function Sidebar() {
   );
 
   return (
-    <>
+    <div className={sidebarWrap} style={{ display: 'contents' }}>
       {/* Desktop Sidebar */}
-      <div className={`hidden lg:flex ${isCollapsed ? 'w-20' : 'w-64'} bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700 shadow-lg flex-col transition-all duration-300 h-full relative z-40`}>
+      <div className={`app-sidebar-panel hidden lg:flex ${isCollapsed ? 'w-20' : 'w-64'} bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700 shadow-lg flex-col transition-all duration-300 h-full relative z-40`}>
         {/* Przycisk zwijania */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -443,9 +454,9 @@ export default function Sidebar() {
       )}
 
       {/* Mobile Sidebar Drawer */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-white dark:bg-gray-800 shadow-2xl z-[60] transform transition-transform duration-300 ease-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`app-sidebar-panel lg:hidden fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-white dark:bg-gray-800 shadow-2xl z-[60] transform transition-transform duration-300 ease-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <SidebarContent isMobile={true} />
       </div>
-    </>
+    </div>
   );
 }
