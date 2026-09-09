@@ -1,15 +1,15 @@
 import React from 'react';
-import { Palette, Moon, Image as ImageIcon, Upload, Type, Heading, PaintBucket, Wallpaper, Ruler, Frame, PanelLeft, Sparkles, LogIn, Check } from 'lucide-react';
+import { Palette, Moon, Image as ImageIcon, Upload, Type, Heading, PaintBucket, Wallpaper, Ruler, Frame, PanelLeft, Sparkles, LogIn, Code2, Download, RotateCcw, Check } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { SettingsCard, SettingRow, Toggle, SelectSetting } from './SettingsUI';
 import ColorPresetPicker from './ColorPresetPicker';
 import {
   FONT_OPTIONS, HEADING_FONT_OPTIONS, BACKGROUND_OPTIONS, BG_PATTERN_OPTIONS,
-  SCALE_OPTIONS, RADIUS_OPTIONS, SIDEBAR_OPTIONS, SIDEBAR_WIDTH_OPTIONS, LOGIN_BG_OPTIONS,
+  SCALE_OPTIONS, RADIUS_OPTIONS, SIDEBAR_OPTIONS, SIDEBAR_WIDTH_OPTIONS, LOGIN_BG_OPTIONS, THEME_KEYS,
   applyFont, applyHeadingFont, applyBackground, applyBgPattern, applyScale, applyRadius,
-  applySidebar, applySidebarWidth, applyMotion, applyScrollbar, applyOled,
+  applySidebar, applySidebarWidth, applyMotion, applyScrollbar, applyOled, injectCustomCss, clearThemeLocal,
   getFont, getHeadingFont, getBackground, getBgPattern, getBgUrl, getScale, getRadius,
-  getSidebar, getSidebarWidth, getMotion, getScrollbar, getFontUrl, getOled,
+  getSidebar, getSidebarWidth, getMotion, getScrollbar, getFontUrl, getOled, getCustomCss,
 } from '../../../lib/appearance';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
@@ -89,6 +89,44 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
   const pickScrollbar = (k) => { applyScrollbar(k); save('ui_scrollbar', k); };
   const pickOled = (k) => { applyOled(k); save('ui_oled', k); };
   const pickLoginBg = (k) => { save('login_bg', k); };
+
+  const customCss = get('custom_css') || getCustomCss();
+
+  // Eksport całego motywu (klucze wyglądu z app_settings) do pliku JSON.
+  const exportTheme = async () => {
+    const { data } = await supabase.from('app_settings').select('key, value');
+    const settings = {};
+    (data || []).forEach((r) => { if (THEME_KEYS.includes(r.key) || r.key.startsWith('custom_color_preset_')) settings[r.key] = r.value; });
+    const blob = new Blob([JSON.stringify({ _type: 'avenit-theme', version: 1, settings }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'motyw-avenit.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  // Import motywu z pliku JSON → upsert kluczy + przeładowanie (czyste zastosowanie).
+  const importTheme = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const settings = parsed.settings || parsed;
+      const rows = Object.entries(settings)
+        .filter(([k]) => THEME_KEYS.includes(k) || k.startsWith('custom_color_preset_'))
+        .map(([key, value]) => ({ key, value: String(value) }));
+      if (!rows.length) { alert(tr('Plik nie zawiera ustawień motywu')); return; }
+      await supabase.from('app_settings').upsert(rows, { onConflict: 'key' });
+      window.location.reload();
+    } catch { alert(tr('Nieprawidłowy plik motywu')); }
+  };
+
+  // Przywróć domyślny wygląd — usuń klucze motywu i lokalny stan, przeładuj.
+  const resetTheme = async () => {
+    if (!confirm(tr('Przywrócić domyślny wygląd? Bieżące ustawienia wyglądu zostaną usunięte.'))) return;
+    await supabase.from('app_settings').delete().in('key', THEME_KEYS);
+    await supabase.from('app_settings').delete().like('key', 'custom_color_preset_%');
+    clearThemeLocal();
+    window.location.reload();
+  };
 
   // Karty 'custom' widoczne tylko, gdy organizacja wgrała odpowiedni zasób.
   const fontEntries = Object.entries(FONT_OPTIONS).filter(([k]) => k !== 'custom' || hasCustomFont);
@@ -326,6 +364,36 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
         <SettingRow label="Kompaktowy widok" hint={tr('Mniejsze odstępy, więcej treści na ekranie')} last>
           <Toggle checked={(get('appearance_compact') ?? 'false') === 'true'} onChange={(v) => save('appearance_compact', String(v))} />
         </SettingRow>
+      </SettingsCard>
+
+      {/* --- ZAAWANSOWANE: WŁASNY CSS + EKSPORT/IMPORT/RESET --- */}
+      <SettingsCard title="Zaawansowane" description={tr('Własny CSS i zarządzanie całym motywem.')} icon={Code2}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Własny CSS')}</label>
+            <textarea
+              defaultValue={customCss}
+              onBlur={(e) => { injectCustomCss(e.target.value); save('custom_css', e.target.value); }}
+              placeholder=":root { /* własne reguły */ }"
+              rows={6}
+              spellCheck={false}
+              className="w-full font-mono text-xs"
+            />
+            <p className="text-xs text-gray-400 mt-1.5">{tr('Reguły stosowane globalnie w całej aplikacji. Zaawansowane — błędny CSS może zepsuć wygląd.')}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <button type="button" onClick={exportTheme} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light/60 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 transition">
+              <Download size={15} /> {tr('Eksportuj motyw')}
+            </button>
+            <button type="button" onClick={() => document.getElementById('theme-import-appearance').click()} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light/60 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 transition">
+              <Upload size={15} /> {tr('Importuj motyw')}
+            </button>
+            <input id="theme-import-appearance" type="file" className="hidden" accept="application/json,.json" onChange={importTheme} />
+            <button type="button" onClick={resetTheme} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+              <RotateCcw size={15} /> {tr('Przywróć domyślne')}
+            </button>
+          </div>
+        </div>
       </SettingsCard>
     </div>
   );
