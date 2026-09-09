@@ -6,11 +6,14 @@ import { Plus, Trash2, Shield, UserRound } from 'lucide-react';
 // Faza 1: przypisywanie osób do SŁUŻB. Jeden wiersz = osoba w danej służbie jako
 // lider albo członek, na konkretnym kampusie albo globalnie (kampus pusty = wszystkie).
 // Zapis idzie do ministry_memberships → backend wyprowadza z tego granty per-osoba.
-export default function MinistryMemberships() {
+export default function MinistryMemberships({ userId = null }) {
+  const embedded = userId != null && userId !== ''; // osadzone w widoku osoby → bez własnego selektora
   const [users, setUsers] = useState([]);
   const [modules, setModules] = useState([]);
   const [campuses, setCampuses] = useState([]);
-  const [selectedUser, setSelectedUser] = useState('');
+  const [internalUser, setInternalUser] = useState('');
+  const selectedUser = embedded ? userId : internalUser;
+  const setSelectedUser = setInternalUser;
   const [userQ, setUserQ] = useState('');
   const [rows, setRows] = useState([]);
   const [addForm, setAddForm] = useState({ ministry_key: '', role: 'member', campus_id: '' });
@@ -78,19 +81,22 @@ export default function MinistryMemberships() {
 
   return (
     <div>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-        {tr('Przypisz osobę do służb. Lider prowadzi służbę (pełny zakres), członek współpracuje. Kampus określa zasięg; „Wszystkie kampusy” = globalnie.')}
-      </p>
-
-      <label className="block text-sm text-gray-500 mb-1">{tr('Osoba')}</label>
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <input value={userQ} onChange={(e) => setUserQ(e.target.value)} placeholder={tr('Szukaj osoby…')} className={`${selInput} min-w-[180px]`} />
-        <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} className={`${selInput} min-w-[240px]`}>
-          <option value="">{tr('— Wybierz osobę —')}</option>
-          {users.filter((u) => { const s = userQ.trim().toLowerCase(); return !s || (userName(u) || '').toLowerCase().includes(s) || (u.email || '').toLowerCase().includes(s); })
-            .map((u) => <option key={u.id} value={u.id}>{userName(u)} ({u.role})</option>)}
-        </select>
-      </div>
+      {!embedded && (
+        <>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+            {tr('Przypisz osobę do służb. Lider prowadzi służbę (pełny zakres), członek współpracuje. Kampus określa zasięg; „Wszystkie kampusy” = globalnie.')}
+          </p>
+          <label className="block text-sm text-gray-500 mb-1">{tr('Osoba')}</label>
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <input value={userQ} onChange={(e) => setUserQ(e.target.value)} placeholder={tr('Szukaj osoby…')} className={`${selInput} min-w-[180px]`} />
+            <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} className={`${selInput} min-w-[240px]`}>
+              <option value="">{tr('— Wybierz osobę —')}</option>
+              {users.filter((u) => { const s = userQ.trim().toLowerCase(); return !s || (userName(u) || '').toLowerCase().includes(s) || (u.email || '').toLowerCase().includes(s); })
+                .map((u) => <option key={u.id} value={u.id}>{userName(u)} ({u.role})</option>)}
+            </select>
+          </div>
+        </>
+      )}
 
       {err && <div className="text-rose-500 text-sm mb-2">{err}</div>}
 
