@@ -4,6 +4,7 @@ import { tr } from '../../../i18n';
 import { dynamicCapabilityGroups } from '@avenit/shared/src/permissions/catalog.js';
 import { ROLE_PRESETS, BUILTIN_ROLES } from '@avenit/shared/src/permissions/presets.js';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
+import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 import { ChevronDown, ChevronRight, Shield, Plus, Trash2, Users, Sliders, HeartHandshake } from 'lucide-react';
 import MinistryMemberships from './MinistryMemberships';
 
@@ -22,6 +23,7 @@ export default function PermissionsAdmin() {
   const [users, setUsers] = useState([]);
   const [dbModules, setDbModules] = useState([]); // moduły własne (kreator) → macierz
   const [dbTabs, setDbTabs] = useState([]);
+  const [memberships, setMemberships] = useState([]); // ministry_memberships (do efektywnego widoku)
   const [selectedRole, setSelectedRole] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [expanded, setExpanded] = useState(() => new Set());
@@ -33,12 +35,13 @@ export default function PermissionsAdmin() {
   const groups = useMemo(() => dynamicCapabilityGroups(dbModules, dbTabs), [dbModules, dbTabs]);
 
   const load = async () => {
-    const [r, g, u, mods, tabs] = await Promise.all([
+    const [r, g, u, mods, tabs, mem] = await Promise.all([
       supabase.from('app_roles').select('*').order('display_order'),
       supabase.from('permission_grants').select('*'),
       supabase.from('app_users').select('id, email, full_name, name, role').order('created_at'),
       supabase.from('app_modules').select('id, key, label, is_system').order('display_order'),
       supabase.from('app_module_tabs').select('module_id, key, label').order('display_order'),
+      supabase.from('ministry_memberships').select('user_id, ministry_key, role'), // brak tabeli → data null
     ]);
     const rolesData = r.data || [];
     setRoles(rolesData);
@@ -46,6 +49,7 @@ export default function PermissionsAdmin() {
     setUsers(u.data || []);
     setDbModules(mods.data || []);
     setDbTabs(tabs.data || []);
+    setMemberships(mem.data || []);
     if (!selectedRole && rolesData.length) setSelectedRole(rolesData.find((x) => !x.is_admin)?.key || rolesData[0].key);
   };
   useEffect(() => { load().catch((e) => setErr(e.message)); }, []);
@@ -181,7 +185,12 @@ export default function PermissionsAdmin() {
     const user = users.find((u) => u.id === selectedUser);
     const uGrants = user ? userGrants(user.id) : [];
     const role = user ? roles.find((r) => r.key === user.role) : null;
-    const roleRes = role ? makeResolver(roleGrants(role.key), { role: role.key, isAdmin: role.is_admin }) : null;
+    // Baza dziedziczona = granty ROLI + granty z PRZYNALEŻNOŚCI DO SŁUŻB (tak samo liczy backend).
+    const memGrants = user ? ministryGrants(memberships.filter((m) => m.user_id === user.id)).map((x) => ({ role: null, user_id: user.id, capability: x.capability, allowed: x.allowed })) : [];
+    const baseGrants = role ? [...roleGrants(role.key), ...memGrants] : memGrants;
+    const baseRes = user ? makeResolver(baseGrants, { role: role?.key, userId: user.id, isAdmin: role?.is_admin }) : null;
+    const effRes = user ? makeResolver([...baseGrants, ...uGrants], { role: role?.key, userId: user.id, isAdmin: role?.is_admin }) : null;
+    const accessModules = user && effRes && !role?.is_admin ? groups.filter((gg) => effRes.can(`module:${gg.key}`)) : [];
     return (
       <div>
         <label className="block text-sm text-gray-500 mb-1">{tr('Użytkownik')}</label>
@@ -191,7 +200,16 @@ export default function PermissionsAdmin() {
         </select>
         {user && (
           <>
-            <p className="text-xs text-gray-500 mb-2">{tr('Domyślnie użytkownik dziedziczy uprawnienia ze swojej roli. Zaznacz, aby nadpisać.')} {uGrants.length > 0 && <button className="text-rose-500 underline ml-2" onClick={async () => { for (const g of uGrants) await supabase.from('permission_grants').delete().eq('id', g.id); await load(); }}>{tr('Wyczyść nadpisania')}</button>}</p>
+            {role?.is_admin ? (
+              <div className="text-sm mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">{tr('Administrator — pełny, nieograniczony dostęp.')}</div>
+            ) : (
+              <div className="text-xs mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 leading-relaxed">
+                <span className="font-semibold text-gray-700 dark:text-gray-200">{tr('Co ta osoba realnie może')}:</span> {tr('rola')} <b>{role?.label || user.role}</b>
+                {memGrants.length > 0 && <> · {tr('przynależność do służb')}: <b>{memberships.filter((m) => m.user_id === user.id).length}</b></>}
+                {accessModules.length > 0 ? <> · {tr('dostęp do modułów')}: {accessModules.map((g) => tr(g.label)).join(', ')}</> : <> · <span className="text-gray-400">{tr('brak dostępu do modułów')}</span></>}
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mb-2">{tr('Wartość „dziedz.” = z roli i służb. Zaznacz, aby nadpisać dla tej osoby.')} {uGrants.length > 0 && <button className="text-rose-500 underline ml-2" onClick={async () => { for (const g of uGrants) await supabase.from('permission_grants').delete().eq('id', g.id); await load(); }}>{tr('Wyczyść nadpisania')}</button>}</p>
             {searchInput}
             <div className="space-y-2">
               {groups.map((grp) => {
@@ -208,11 +226,11 @@ export default function PermissionsAdmin() {
                       <div className="divide-y divide-gray-50 dark:divide-gray-800">
                         {rows.map((rowItem) => {
                           const override = uGrants.find((g) => g.capability === rowItem.cap);
-                          const roleVal = roleRes ? roleRes.can(rowItem.cap) : false;
+                          const roleVal = baseRes ? baseRes.can(rowItem.cap) : false;
                           const eff = override ? override.allowed : roleVal;
                           return (
                             <div key={rowItem.cap} className="flex items-center justify-between px-4 py-1.5">
-                              <span className={`text-sm ${KIND_STYLE[rowItem.kind] || ''}`}>{tr(rowItem.label)}<span className="text-[10px] text-gray-400 ml-2">{tr('rola')}: {roleVal ? '✓' : '—'}</span></span>
+                              <span className={`text-sm ${KIND_STYLE[rowItem.kind] || ''}`}>{tr(rowItem.label)}<span className="text-[10px] text-gray-400 ml-2">{tr('dziedz.')}: {roleVal ? '✓' : '—'}</span></span>
                               <div className="row" style={{ gap: 6 }}>
                                 <input type="checkbox" checked={eff} onChange={(e) => setGrant({ userId: user.id, capability: rowItem.cap, allowed: e.target.checked })} />
                                 {override && <button className="text-[10px] text-gray-400 underline" onClick={() => clearGrant(override)}>{tr('reset')}</button>}
