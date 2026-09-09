@@ -25,7 +25,7 @@ import PageHeader from '../../components/PageHeader';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
-import { injectCustomFont, applyFont } from '../../lib/appearance';
+import { injectCustomFont, applyFont, setBgUrl, applyBgPattern } from '../../lib/appearance';
 
 // Grupy nawigacji ustawień (menu po lewej).
 const SETTINGS_NAV = [
@@ -475,6 +475,24 @@ export default function GlobalSettings() {
       applyFont('custom');
       fetchData();
       toast.success(tr('Wgrano czcionkę'));
+    } catch (err) { toast.error(tr('Błąd uploadu')); }
+  };
+
+  // Wgranie własnego obrazu tła aplikacji → storage + zastosowanie na żywo.
+  const handleBgUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `org-bg-${Date.now()}.${fileExt}`;
+      await supabase.storage.from('public-assets').upload(fileName, file);
+      const { data } = supabase.storage.from('public-assets').getPublicUrl(fileName);
+      await supabase.from('app_settings').upsert({ key: 'ui_bg_url', value: data.publicUrl }, { onConflict: 'key' });
+      await supabase.from('app_settings').upsert({ key: 'ui_bg_pattern', value: 'custom' }, { onConflict: 'key' });
+      setBgUrl(data.publicUrl);
+      applyBgPattern('custom');
+      fetchData();
+      toast.success(tr('Wgrano tło'));
     } catch (err) { toast.error(tr('Błąd uploadu')); }
   };
 
@@ -1217,7 +1235,7 @@ export default function GlobalSettings() {
 
         {/* --- TAB: WYGLĄD --- */}
         {activeTab === 'appearance' && (
-          <AppearanceSettings get={getSetting} save={saveSetting} logoUrl={logoUrl} onLogoUpload={handleLogoUpload} onFontUpload={handleFontUpload} />
+          <AppearanceSettings get={getSetting} save={saveSetting} logoUrl={logoUrl} onLogoUpload={handleLogoUpload} onFontUpload={handleFontUpload} onBgUpload={handleBgUpload} />
         )}
 
         {/* --- TAB: REGIONALNE --- */}

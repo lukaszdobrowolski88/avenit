@@ -39,7 +39,13 @@ html, body {
 
 /* Tło powłoki aplikacji — sterowane w Ustawienia → Wygląd (--app-bg / --app-bg-dark).
    Fallbacki odwzorowują dawne bg-gray-50 / bg-gray-900, więc bez wyboru wygląd bez zmian. */
-.app-shell-bg { background-color: var(--app-bg, #f9fafb); }
+.app-shell-bg {
+  background-color: var(--app-bg, #f9fafb);
+  background-image: var(--app-bg-image, none);
+  background-size: var(--app-bg-size, auto);
+  background-position: center;
+  background-attachment: fixed;
+}
 .dark .app-shell-bg { background-color: var(--app-bg-dark, #111827); }
 
 /* Styl paska bocznego (Ustawienia → Wygląd). 'Ciemny'/'Akcent' → Sidebar owija się klasą
@@ -48,6 +54,21 @@ html, body {
   background: linear-gradient(180deg, rgb(var(--accent-primary-dark)) 0%, rgb(var(--accent-primary-darkest)) 100%) !important;
   border-color: rgb(var(--accent-primary-darkest)) !important;
 }
+
+/* Czcionka nagłówków (Ustawienia → Wygląd). Domyślnie inherit = ten sam krój co treść. */
+h1, h2, h3, h4 { font-family: var(--app-font-heading, inherit); }
+
+/* Redukcja ruchu — wyłącza animacje/przejścia w całej apce (dostępność / preferencja). */
+html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after {
+  transition-duration: 0.001ms !important;
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+}
+
+/* Pasek przewijania w kolorze akcentu (opcjonalny akcent wizualny). */
+html.scrollbar-accent ::-webkit-scrollbar-thumb { background: rgb(var(--accent-primary-light)); }
+html.scrollbar-accent ::-webkit-scrollbar-thumb:hover { background: rgb(var(--accent-primary)); }
 
 #root {
   overflow-x: hidden;

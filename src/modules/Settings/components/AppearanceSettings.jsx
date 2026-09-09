@@ -1,12 +1,15 @@
 import React from 'react';
-import { Palette, Moon, Image as ImageIcon, Upload, Type, PaintBucket, Ruler, Frame, PanelLeft, Check } from 'lucide-react';
+import { Palette, Moon, Image as ImageIcon, Upload, Type, Heading, PaintBucket, Wallpaper, Ruler, Frame, PanelLeft, Sparkles, Check } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { SettingsCard, SettingRow, Toggle, SelectSetting } from './SettingsUI';
 import ColorPresetPicker from './ColorPresetPicker';
 import {
-  FONT_OPTIONS, BACKGROUND_OPTIONS, SCALE_OPTIONS, RADIUS_OPTIONS, SIDEBAR_OPTIONS,
-  applyFont, applyBackground, applyScale, applyRadius, applySidebar,
-  getFont, getBackground, getScale, getRadius, getSidebar, getFontUrl,
+  FONT_OPTIONS, HEADING_FONT_OPTIONS, BACKGROUND_OPTIONS, BG_PATTERN_OPTIONS,
+  SCALE_OPTIONS, RADIUS_OPTIONS, SIDEBAR_OPTIONS, SIDEBAR_WIDTH_OPTIONS,
+  applyFont, applyHeadingFont, applyBackground, applyBgPattern, applyScale, applyRadius,
+  applySidebar, applySidebarWidth, applyMotion, applyScrollbar,
+  getFont, getHeadingFont, getBackground, getBgPattern, getBgUrl, getScale, getRadius,
+  getSidebar, getSidebarWidth, getMotion, getScrollbar, getFontUrl,
 } from '../../../lib/appearance';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
@@ -51,26 +54,40 @@ function SidebarPreview({ variant }) {
   );
 }
 
-// Wygląd i personalizacja: logo, kolory, czcionka (+własna), tło, rozmiar, zaokrąglenie, pasek.
-export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, onFontUpload }) {
+// Wygląd i personalizacja: logo, kolory, czcionki, tło+deseń, rozmiar, radius, pasek, efekty.
+export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, onFontUpload, onBgUpload }) {
   const t = useT();
 
   // Wartości: najpierw org-wide (app_settings), potem lokalny wybór (localStorage) jako fallback.
   const font = get('ui_font') || getFont();
+  const headingFont = get('ui_font_heading') || getHeadingFont();
   const bg = get('ui_bg') || getBackground();
+  const pattern = get('ui_bg_pattern') || getBgPattern();
   const scale = get('ui_scale') || getScale();
   const radius = get('ui_radius') || getRadius();
   const sidebar = get('ui_sidebar') || getSidebar();
+  const sidebarW = get('ui_sidebar_w') || getSidebarWidth();
+  const motion = get('ui_motion') || getMotion();
+  const scrollbar = get('ui_scrollbar') || getScrollbar();
   const hasCustomFont = !!(get('custom_font_url') || getFontUrl());
+  const customBgUrl = get('ui_bg_url') || getBgUrl();
+  const hasCustomBg = !!customBgUrl;
 
   const pickFont = (k) => { applyFont(k); save('ui_font', k); };
+  const pickHeading = (k) => { applyHeadingFont(k); save('ui_font_heading', k); };
   const pickBg = (k) => { applyBackground(k); save('ui_bg', k); };
+  const pickPattern = (k) => { applyBgPattern(k); save('ui_bg_pattern', k); };
   const pickScale = (k) => { applyScale(k); save('ui_scale', k); };
   const pickRadius = (k) => { applyRadius(k); save('ui_radius', k); };
   const pickSidebar = (k) => { applySidebar(k); save('ui_sidebar', k); };
+  const pickSidebarW = (k) => { applySidebarWidth(k); save('ui_sidebar_w', k); };
+  const pickMotion = (k) => { applyMotion(k); save('ui_motion', k); };
+  const pickScrollbar = (k) => { applyScrollbar(k); save('ui_scrollbar', k); };
 
-  // Karta 'custom' widoczna tylko, gdy organizacja wgrała czcionkę.
+  // Karty 'custom' widoczne tylko, gdy organizacja wgrała odpowiedni zasób.
   const fontEntries = Object.entries(FONT_OPTIONS).filter(([k]) => k !== 'custom' || hasCustomFont);
+  const headingEntries = Object.entries(HEADING_FONT_OPTIONS).filter(([k]) => k !== 'custom' || hasCustomFont);
+  const headingStack = (k) => (k === 'body' ? undefined : k === 'custom' ? FONT_OPTIONS.custom.stack : HEADING_FONT_OPTIONS[k]?.stack);
 
   return (
     <div className="max-w-3xl">
@@ -98,7 +115,7 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
         <ColorPresetPicker currentPreset={get('color_preset') || 'pink-orange'} />
       </SettingsCard>
 
-      {/* --- CZCIONKA --- */}
+      {/* --- CZCIONKA TREŚCI --- */}
       <SettingsCard title="Czcionka" description={tr('Krój pisma w całej aplikacji.')} icon={Type}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {fontEntries.map(([key, opt]) => (
@@ -121,7 +138,19 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
         </div>
       </SettingsCard>
 
-      {/* --- TŁO APLIKACJI --- */}
+      {/* --- CZCIONKA NAGŁÓWKÓW --- */}
+      <SettingsCard title="Czcionka nagłówków" description={tr('Osobny krój dla tytułów (opcjonalnie).')} icon={Heading}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {headingEntries.map(([key, opt]) => (
+            <PickCard key={key} selected={headingFont === key} onClick={() => pickHeading(key)}>
+              <div className="text-3xl leading-none text-gray-900 dark:text-white mb-1.5" style={{ fontFamily: headingStack(key) }}>Aa</div>
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate" style={{ fontFamily: headingStack(key) }}>{opt.label}</div>
+            </PickCard>
+          ))}
+        </div>
+      </SettingsCard>
+
+      {/* --- TŁO APLIKACJI (KOLOR) --- */}
       <SettingsCard title="Tło aplikacji" description={tr('Kolor tła — osobno dla trybu jasnego i ciemnego.')} icon={PaintBucket}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {Object.entries(BACKGROUND_OPTIONS).map(([key, opt]) => (
@@ -133,6 +162,41 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
               <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{opt.label}</div>
             </PickCard>
           ))}
+        </div>
+      </SettingsCard>
+
+      {/* --- DESEŃ / OBRAZ TŁA --- */}
+      <SettingsCard title="Deseń i obraz tła" description={tr('Delikatny wzór lub własny obraz w tle aplikacji.')} icon={Wallpaper}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {Object.entries(BG_PATTERN_OPTIONS).map(([key, opt]) => (
+            <PickCard key={key} selected={pattern === key} onClick={() => pickPattern(key)}>
+              <div
+                className="h-14 rounded-xl border border-gray-200/70 dark:border-gray-700 mb-2 bg-gray-50 dark:bg-gray-800"
+                style={{ backgroundImage: opt.image, backgroundSize: opt.size, backgroundPosition: 'center' }}
+              />
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{opt.label}</div>
+            </PickCard>
+          ))}
+          {hasCustomBg && (
+            <PickCard selected={pattern === 'custom'} onClick={() => pickPattern('custom')}>
+              <div
+                className="h-14 rounded-xl border border-gray-200/70 dark:border-gray-700 mb-2"
+                style={{ backgroundImage: `url("${customBgUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+              />
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate">{tr('Własny obraz')}</div>
+            </PickCard>
+          )}
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => document.getElementById('bg-upload-appearance').click()}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light/60 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 transition"
+          >
+            <Upload size={15} /> {hasCustomBg ? tr('Zmień obraz tła') : tr('Wgraj obraz tła')}
+          </button>
+          <input id="bg-upload-appearance" type="file" className="hidden" accept="image/*" onChange={onBgUpload} />
+          <span className="text-xs text-gray-400">JPG · PNG · WEBP</span>
         </div>
       </SettingsCard>
 
@@ -163,8 +227,8 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
         </div>
       </SettingsCard>
 
-      {/* --- PASEK BOCZNY --- */}
-      <SettingsCard title="Pasek boczny" description={tr('Wygląd menu bocznego niezależnie od motywu.')} icon={PanelLeft}>
+      {/* --- PASEK BOCZNY (STYL + SZEROKOŚĆ) --- */}
+      <SettingsCard title="Pasek boczny" description={tr('Wygląd i szerokość menu bocznego.')} icon={PanelLeft}>
         <div className="grid grid-cols-3 gap-3">
           {Object.entries(SIDEBAR_OPTIONS).map(([key, opt]) => (
             <PickCard key={key} selected={sidebar === key} onClick={() => pickSidebar(key)}>
@@ -173,6 +237,27 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
             </PickCard>
           ))}
         </div>
+        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mt-4 mb-2">{tr('Szerokość')}</div>
+        <div className="grid grid-cols-3 gap-3">
+          {Object.entries(SIDEBAR_WIDTH_OPTIONS).map(([key, opt]) => (
+            <PickCard key={key} selected={sidebarW === key} onClick={() => pickSidebarW(key)} className="flex flex-col items-center justify-center text-center">
+              <div className="flex justify-center mb-2">
+                <div className="h-8 bg-accent-primary/20 border-2 border-accent-primary rounded-md" style={{ width: key === 'narrow' ? '22px' : key === 'wide' ? '42px' : '32px' }} />
+              </div>
+              <div className="text-[11px] font-medium text-gray-600 dark:text-gray-300 leading-tight">{opt.label}</div>
+            </PickCard>
+          ))}
+        </div>
+      </SettingsCard>
+
+      {/* --- EFEKTY I WYKOŃCZENIE --- */}
+      <SettingsCard title="Efekty i wykończenie" description={tr('Drobne akcenty wizualne i dostępność.')} icon={Sparkles}>
+        <SettingRow label={tr('Pasek przewijania w kolorze akcentu')} hint={tr('Suwak przewijania w kolorze przewodnim')}>
+          <Toggle checked={scrollbar === 'accent'} onChange={(v) => pickScrollbar(v ? 'accent' : 'default')} />
+        </SettingRow>
+        <SettingRow label={tr('Ogranicz animacje')} hint={tr('Wyłącza przejścia i animacje w całej aplikacji')} last>
+          <Toggle checked={motion === 'reduced'} onChange={(v) => pickMotion(v ? 'reduced' : 'full')} />
+        </SettingRow>
       </SettingsCard>
 
       <SettingsCard title="Interfejs" description={tr('Domyślny wygląd dla nowych użytkowników.')} icon={Moon}>

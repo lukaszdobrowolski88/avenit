@@ -432,7 +432,10 @@ export default function Sidebar() {
   return (
     <div className={sidebarWrap} style={{ display: 'contents' }}>
       {/* Desktop Sidebar */}
-      <div className={`app-sidebar-panel hidden lg:flex ${isCollapsed ? 'w-20' : 'w-64'} bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700 shadow-lg flex-col transition-all duration-300 h-full relative z-40`}>
+      <div
+        className={`app-sidebar-panel hidden lg:flex ${isCollapsed ? 'w-20' : ''} bg-white/80 dark:bg-gray-800/90 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700 shadow-lg flex-col transition-all duration-300 h-full relative z-40`}
+        style={isCollapsed ? undefined : { width: 'var(--sidebar-w, 16rem)' }}
+      >
         {/* Przycisk zwijania */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
