@@ -314,6 +314,23 @@ export function createApiClient({
       }
     },
 
+    // Aktywne sesje (urządzenia) bieżącego użytkownika.
+    async getSessions() {
+      try {
+        const res = await request('/api/auth/sessions');
+        return await res.json().catch(() => ({ sessions: [] }));
+      } catch {
+        return { sessions: [] };
+      }
+    },
+
+    // Wyloguj ze wszystkich innych urządzeń.
+    async logoutOthers() {
+      await loadSession();
+      const { res } = await requestJson('/api/auth/logout-others', { refresh_token: session?.refresh_token });
+      return { ok: res.ok };
+    },
+
     async signOut() {
       try {
         await requestJson('/api/auth/logout', { refresh_token: session?.refresh_token });

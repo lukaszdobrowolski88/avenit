@@ -700,6 +700,12 @@ export default function GlobalSettings() {
     setMessage(error ? { type: 'error', text: error.message || tr('Błąd resetu 2FA') } : { type: 'success', text: tr('Zresetowano 2FA') });
     fetchData(); loadAccountEvents();
   };
+  const forceLogoutUser = async (id) => {
+    if (!confirm(tr('Wylogować użytkownika ze wszystkich urządzeń?'))) return;
+    const { error } = await supabase.functions.invoke('force-logout-user', { body: { userId: id } });
+    setMessage(error ? { type: 'error', text: error.message || tr('Błąd') } : { type: 'success', text: tr('Wylogowano ze wszystkich urządzeń') });
+    loadAccountEvents();
+  };
 
   // Funkcja do scalania zduplikowanych członków we wszystkich tabelach służb
   const mergeDuplicateMembers = async () => {
@@ -1010,6 +1016,16 @@ export default function GlobalSettings() {
   // Rejestracja: kolejki oczekujących + audyt. Akcje = funkcje serwerowe (bramka admina + maile + log).
   const pendingUsers = users.filter(u => u.status === 'pending' && u.pending_kind === 'admin');
   const emailPendingUsers = users.filter(u => u.status === 'pending' && u.pending_kind === 'email');
+  const [userSearch, setUserSearch] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState('all');
+  const filteredUsers = users.filter(u => {
+    const q = userSearch.trim().toLowerCase();
+    const roleLabel = (definedRoles.find(r => r.key === u.role)?.label || u.role || '').toLowerCase();
+    const matchesQ = !q || (u.full_name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || roleLabel.includes(q);
+    const st = u.status || (u.is_active ? 'active' : 'blocked');
+    const matchesS = userStatusFilter === 'all' || st === userStatusFilter;
+    return matchesQ && matchesS;
+  });
   const [accountEvents, setAccountEvents] = useState([]);
   const loadAccountEvents = async () => {
     const { data } = await supabase.functions.invoke('account-events');
@@ -1034,7 +1050,7 @@ export default function GlobalSettings() {
       ? { type: 'error', text: error.message || 'Nie udało się wysłać' }
       : { type: 'success', text: 'Wysłano ponownie link weryfikacyjny' });
   };
-  const ACTION_LABEL = { registered: 'Rejestracja', verified: 'Potwierdzenie e-mail', approved: 'Zatwierdzenie', rejected: 'Odrzucenie', created: 'Utworzenie (admin)', edited: 'Edycja', deleted: 'Usunięcie', blocked: 'Zablokowanie', unblocked: 'Odblokowanie', reset_2fa: 'Reset 2FA' };
+  const ACTION_LABEL = { registered: 'Rejestracja', verified: 'Potwierdzenie e-mail', approved: 'Zatwierdzenie', rejected: 'Odrzucenie', created: 'Utworzenie (admin)', edited: 'Edycja', deleted: 'Usunięcie', blocked: 'Zablokowanie', unblocked: 'Odblokowanie', reset_2fa: 'Reset 2FA', logged_out: 'Wylogowanie (wszędzie)' };
 
   const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
 
@@ -1274,6 +1290,17 @@ export default function GlobalSettings() {
               )}
             </div>
 
+            {/* Bezpieczeństwo logowania */}
+            <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800">
+              <h3 className="font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2"><Shield size={18}/> {tr('Bezpieczeństwo logowania')}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Wymogi bezpieczeństwa dla wszystkich kont.')}</p>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                <input type="checkbox" className="w-4 h-4" checked={getSetting('require_2fa_all') === 'on'} onChange={e => saveSetting('require_2fa_all', e.target.checked ? 'on' : 'off')} />
+                {tr('Wymagaj dwuetapowej weryfikacji (2FA) od wszystkich użytkowników')}
+              </label>
+              <p className="text-xs text-gray-400 mt-2">{tr('Konta bez 2FA zostaną poproszone o konfigurację przy następnym logowaniu. Zbyt wiele nieudanych prób czasowo blokuje logowanie.')}</p>
+            </div>
+
             {/* Kolejka: oczekujący na zatwierdzenie (tryb „za zgodą administratora") */}
             {pendingUsers.length > 0 && (
               <div className="mb-6 rounded-xl border border-amber-200 dark:border-amber-900/40 p-5 bg-amber-50/60 dark:bg-amber-900/10">
@@ -1333,11 +1360,20 @@ export default function GlobalSettings() {
               </details>
             )}
 
+            <div className="flex flex-col sm:flex-row gap-3 mb-3">
+              <input type="text" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder={tr('Szukaj po imieniu, e-mailu, roli…')} className="flex-1" />
+              <select value={userStatusFilter} onChange={e => setUserStatusFilter(e.target.value)} className="sm:w-56">
+                <option value="all">{tr('Wszystkie statusy')}</option>
+                <option value="active">{tr('Aktywni')}</option>
+                <option value="blocked">{tr('Zablokowani')}</option>
+                <option value="pending">{tr('Oczekujący')}</option>
+              </select>
+            </div>
             <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
               <table className="w-full text-sm text-left bg-white dark:bg-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4">{t('Użytkownik')}</th><th className="p-4">{t('Email')}</th><th className="p-4">{t('Rola')}</th>{campuses.length > 0 && <th className="p-4">{t('Lokalizacja')}</th>}<th className="p-4">{t('Status')}</th><th className="p-4 text-right">{t('Akcje')}</th></tr></thead>
+                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4">{t('Użytkownik')}</th><th className="p-4">{t('Email')}</th><th className="p-4">{t('Rola')}</th>{campuses.length > 0 && <th className="p-4">{t('Lokalizacja')}</th>}<th className="p-4">{t('Status')}</th><th className="p-4">{t('Ostatnie logowanie')}</th><th className="p-4 text-right">{t('Akcje')}</th></tr></thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
-                  {users.map(user => {
+                  {filteredUsers.map(user => {
                     const roleLabel = definedRoles.find(r => r.key === user.role)?.label || user.role;
                     const isSuperAdmin = user.is_super_admin === true;
                     return (
@@ -1357,6 +1393,7 @@ export default function GlobalSettings() {
                             {user.is_active ? <UserCheck size={12}/> : <UserX size={12}/>} {user.is_active ? 'Aktywny' : 'Zablokowany'}
                           </button>
                         </td>
+                        <td className="p-4 text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : <span className="text-gray-300 dark:text-gray-600">{tr('nigdy')}</span>}</td>
                         <td className="p-4 text-right flex justify-end gap-2">
                           <button onClick={() => { setUserForm({...user, password: ''}); setAdminNewPassword(''); setRequire2FA(!!user.totp_required); setShowUserModal(true); }} title={t('Edytuj')} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
                           {user.totp_enabled && (
@@ -1477,6 +1514,10 @@ export default function GlobalSettings() {
                     <Mail size={15} /> {tr('Wyślij link do resetu hasła')}
                   </button>
                   <p className="text-[11px] text-gray-400">{tr('„Ustaw" zmienia hasło od razu. „Wyślij link" pozwala użytkownikowi ustawić hasło samodzielnie.')}</p>
+                  <button type="button" onClick={() => forceLogoutUser(userForm.id)}
+                    className="w-full py-2 border border-amber-200 dark:border-amber-900/50 rounded-lg text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center justify-center gap-2">
+                    <UserX size={15} /> {tr('Wyloguj ze wszystkich urządzeń')}
+                  </button>
                 </div>
               )}
               {!userForm.id && (

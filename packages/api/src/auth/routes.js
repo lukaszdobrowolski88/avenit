@@ -10,6 +10,7 @@ import {
   storeRefreshToken,
   rotateRefreshToken,
   revokeRefreshToken,
+  hashRefreshToken,
   AUD_TENANT,
 } from './tokens.js';
 import { config, isProd } from '../config.js';
@@ -92,13 +93,26 @@ export default async function authRoutes(app) {
       const { rows } = await req.db.query(
         `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id,
                 password_hash, totp_enabled, totp_secret, totp_backup_codes,
-                onboarding, last_login_at, status, pending_kind
+                onboarding, last_login_at, status, pending_kind, failed_login_count, locked_until
            FROM app_users WHERE lower(email) = lower($1)`,
         [email]
       );
       const user = rows[0];
       // Jednolity komunikat — nie zdradzamy, czy konto istnieje.
-      if (!user || !(await verifyPassword(password, user.password_hash))) {
+      if (!user) {
+        return reply.code(401).send({ error: 'Błędny e-mail lub hasło' });
+      }
+      // Czasowa blokada po zbyt wielu nieudanych próbach (anty-brute-force, próg 5 / 15 min).
+      if (user.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
+        return reply.code(403).send({ error: 'Zbyt wiele nieudanych prób logowania. Spróbuj ponownie za kilka minut.' });
+      }
+      if (!(await verifyPassword(password, user.password_hash))) {
+        const count = (user.failed_login_count || 0) + 1;
+        if (count >= 5) {
+          await req.db.query(`UPDATE app_users SET failed_login_count = 0, locked_until = now() + interval '15 minutes' WHERE id = $1`, [user.id]);
+        } else {
+          await req.db.query(`UPDATE app_users SET failed_login_count = $1 WHERE id = $2`, [count, user.id]);
+        }
         return reply.code(401).send({ error: 'Błędny e-mail lub hasło' });
       }
       if (!user.is_active || user.status === 'pending' || user.status === 'blocked') {
@@ -129,7 +143,11 @@ export default async function authRoutes(app) {
         if (!ok) return reply.code(401).send({ error: 'Nieprawidłowy kod weryfikacyjny' });
       }
 
-      await req.db.query(`UPDATE app_users SET last_login_at = now() WHERE id = $1`, [user.id]);
+      // Sukces — reset licznika nieudanych prób + znacznik logowania.
+      await req.db.query(
+        `UPDATE app_users SET last_login_at = now(), failed_login_count = 0, locked_until = NULL WHERE id = $1`,
+        [user.id]
+      );
 
       const accessToken = await signAccessToken({
         userId: user.id,
@@ -478,6 +496,38 @@ export default async function authRoutes(app) {
       await logAccountEvent(req.db, { email: rows[0].email, action: 'verified', actor: 'self' });
     }
     return reply.redirect(`${base}/?verify=${rows[0] ? 'ok' : 'expired'}`);
+  });
+
+  // Aktywne sesje bieżącego użytkownika (urządzenia). Oznacza bieżącą sesję.
+  app.get('/api/auth/sessions', { preHandler: app.requireUser }, async (req, reply) => {
+    const cur = req.cookies?.avenit_rt || req.headers['x-refresh-token'] || '';
+    const curHash = cur ? hashRefreshToken(cur) : null;
+    const { rows } = await req.db.query(
+      `SELECT id, user_agent, created_at, token_hash FROM refresh_tokens
+        WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > now() ORDER BY created_at DESC`,
+      [req.user.id]
+    );
+    return reply.send({
+      sessions: rows.map((r) => ({
+        id: r.id, user_agent: r.user_agent, created_at: r.created_at,
+        current: curHash != null && r.token_hash === curHash,
+      })),
+    });
+  });
+
+  // Wyloguj ze wszystkich innych urządzeń (rewokacja wszystkich sesji poza bieżącą).
+  app.post('/api/auth/logout-others', { preHandler: app.requireUser }, async (req, reply) => {
+    const cur = req.body?.refresh_token || req.cookies?.avenit_rt || '';
+    const curHash = cur ? hashRefreshToken(cur) : null;
+    if (curHash) {
+      await req.db.query(
+        `UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL AND token_hash <> $2`,
+        [req.user.id, curHash]
+      );
+    } else {
+      await req.db.query('UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL', [req.user.id]);
+    }
+    return reply.send({ ok: true });
   });
 
   // Konfiguracja 2FA dla zalogowanego użytkownika (generacja sekretu + włączenie).

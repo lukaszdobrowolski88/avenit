@@ -49,6 +49,7 @@ const MODULES = [
   'set-user-status',
   'delete-user',
   'admin-reset-2fa',
+  'force-logout-user',
 ];
 
 export async function registerFunctions(app) {

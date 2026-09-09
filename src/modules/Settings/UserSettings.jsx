@@ -94,6 +94,20 @@ export default function UserSettings() {
     check2FA();
   }, [formData.email, checkTwoFactorStatus]);
 
+  // Aktywne sesje (urządzenia) użytkownika + „wyloguj pozostałe".
+  const [sessions, setSessions] = useState([]);
+  const loadSessions = async () => {
+    const r = await supabase.auth.getSessions?.().catch(() => null);
+    setSessions(r?.sessions || []);
+  };
+  useEffect(() => { loadSessions(); }, []);
+  const handleLogoutOthers = async () => {
+    if (!confirm(tr('Wylogować ze wszystkich innych urządzeń?'))) return;
+    await supabase.auth.logoutOthers?.();
+    loadSessions();
+    setMessage({ type: 'success', text: tr('Wylogowano z pozostałych urządzeń') });
+  };
+
   // Pobierz podpis email
   useEffect(() => {
     const fetchMailSignature = async () => {
@@ -1170,6 +1184,31 @@ export default function UserSettings() {
                 {saving ? <Loader2 size={18} className="animate-spin"/> : <Lock size={18}/>} Zmień hasło
               </button>
             </div>
+          </div>
+
+          {/* Aktywne sesje (urządzenia) */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 transition-colors duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{tr('Aktywne sesje')}</h3>
+              {sessions.length > 1 && (
+                <button onClick={handleLogoutOthers} className="text-sm font-medium text-red-600 dark:text-red-400 hover:underline">{tr('Wyloguj pozostałe')}</button>
+              )}
+            </div>
+            {sessions.length === 0 ? (
+              <p className="text-sm text-gray-400">{tr('Brak aktywnych sesji do wyświetlenia.')}</p>
+            ) : (
+              <div className="space-y-2">
+                {sessions.map(s => (
+                  <div key={s.id} className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div className="min-w-0">
+                      <div className="text-sm text-gray-800 dark:text-gray-200 truncate">{s.user_agent || tr('Nieznane urządzenie')}</div>
+                      <div className="text-xs text-gray-400">{tr('Zalogowano')}: {new Date(s.created_at).toLocaleString()}</div>
+                    </div>
+                    {s.current && <span className="text-xs font-semibold text-green-600 dark:text-green-400 shrink-0">{tr('ta sesja')}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>
