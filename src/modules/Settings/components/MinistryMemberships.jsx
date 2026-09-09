@@ -11,6 +11,7 @@ export default function MinistryMemberships() {
   const [modules, setModules] = useState([]);
   const [campuses, setCampuses] = useState([]);
   const [selectedUser, setSelectedUser] = useState('');
+  const [userQ, setUserQ] = useState('');
   const [rows, setRows] = useState([]);
   const [addForm, setAddForm] = useState({ ministry_key: '', role: 'member', campus_id: '' });
   const [err, setErr] = useState('');
@@ -82,10 +83,14 @@ export default function MinistryMemberships() {
       </p>
 
       <label className="block text-sm text-gray-500 mb-1">{tr('Osoba')}</label>
-      <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} className={`${selInput} mb-4 min-w-[260px]`}>
-        <option value="">{tr('— Wybierz osobę —')}</option>
-        {users.map((u) => <option key={u.id} value={u.id}>{userName(u)} ({u.role})</option>)}
-      </select>
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <input value={userQ} onChange={(e) => setUserQ(e.target.value)} placeholder={tr('Szukaj osoby…')} className={`${selInput} min-w-[180px]`} />
+        <select value={selectedUser} onChange={(e) => setSelectedUser(e.target.value)} className={`${selInput} min-w-[240px]`}>
+          <option value="">{tr('— Wybierz osobę —')}</option>
+          {users.filter((u) => { const s = userQ.trim().toLowerCase(); return !s || (userName(u) || '').toLowerCase().includes(s) || (u.email || '').toLowerCase().includes(s); })
+            .map((u) => <option key={u.id} value={u.id}>{userName(u)} ({u.role})</option>)}
+        </select>
+      </div>
 
       {err && <div className="text-rose-500 text-sm mb-2">{err}</div>}
 

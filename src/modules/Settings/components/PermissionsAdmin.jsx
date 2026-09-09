@@ -30,6 +30,8 @@ export default function PermissionsAdmin() {
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [q, setQ] = useState(''); // szukajka uprawnień w macierzy
+  const [userQ, setUserQ] = useState(''); // szukajka osób
+  const [copyFrom, setCopyFrom] = useState(''); // źródło do skopiowania nadpisań: 'role:x' | 'user:id'
 
   // Macierz = katalog statyczny (moduły systemowe) + moduły własne doklejone z DB.
   const groups = useMemo(() => dynamicCapabilityGroups(dbModules, dbTabs), [dbModules, dbTabs]);
@@ -90,6 +92,20 @@ export default function PermissionsAdmin() {
     setErr('');
     try { await supabase.from('permission_grants').delete().eq('id', grantRow.id); await load(); }
     catch (e) { setErr(e.message); }
+  };
+
+  // Kopiuje JAWNE granty źródła (roli albo innej osoby) jako nadpisania docelowej osoby.
+  // Zastępuje dotychczasowe nadpisania targetu (potwierdzenie w UI).
+  const copyGrantsToUser = async (targetUserId, source) => {
+    setErr('');
+    try {
+      const src = source.startsWith('role:') ? roleGrants(source.slice(5)) : userGrants(source.slice(5));
+      for (const g of userGrants(targetUserId)) await supabase.from('permission_grants').delete().eq('id', g.id);
+      if (src.length) {
+        await supabase.from('permission_grants').insert(src.map((g) => ({ role: null, user_id: targetUserId, capability: g.capability, allowed: g.allowed })));
+      }
+      await load(); flash(tr('Skopiowano uprawnienia'));
+    } catch (e) { setErr(e.message); }
   };
 
   // ── Macierz roli ──
@@ -194,10 +210,15 @@ export default function PermissionsAdmin() {
     return (
       <div>
         <label className="block text-sm text-gray-500 mb-1">{tr('Użytkownik')}</label>
-        <select value={selectedUser || ''} onChange={(e) => setSelectedUser(e.target.value || null)} className="mb-3 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm">
-          <option value="">{tr('— Wybierz osobę —')}</option>
-          {users.map((u) => <option key={u.id} value={u.id}>{u.full_name || u.name || u.email} ({u.role})</option>)}
-        </select>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <input value={userQ} onChange={(e) => setUserQ(e.target.value)} placeholder={tr('Szukaj osoby…')}
+            className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm min-w-[180px]" />
+          <select value={selectedUser || ''} onChange={(e) => setSelectedUser(e.target.value || null)} className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm min-w-[240px]">
+            <option value="">{tr('— Wybierz osobę —')}</option>
+            {users.filter((u) => { const s = userQ.trim().toLowerCase(); return !s || (u.full_name || u.name || u.email || '').toLowerCase().includes(s) || (u.email || '').toLowerCase().includes(s); })
+              .map((u) => <option key={u.id} value={u.id}>{u.full_name || u.name || u.email} ({u.role})</option>)}
+          </select>
+        </div>
         {user && (
           <>
             {role?.is_admin ? (
@@ -210,6 +231,20 @@ export default function PermissionsAdmin() {
               </div>
             )}
             <p className="text-xs text-gray-500 mb-2">{tr('Wartość „dziedz.” = z roli i służb. Zaznacz, aby nadpisać dla tej osoby.')} {uGrants.length > 0 && <button className="text-rose-500 underline ml-2" onClick={async () => { for (const g of uGrants) await supabase.from('permission_grants').delete().eq('id', g.id); await load(); }}>{tr('Wyczyść nadpisania')}</button>}</p>
+            <div className="flex flex-wrap items-center gap-2 mb-3 text-sm">
+              <span className="text-gray-500">{tr('Kopiuj nadpisania z')}:</span>
+              <select value={copyFrom} onChange={(e) => setCopyFrom(e.target.value)} className="px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm">
+                <option value="">{tr('— wybierz źródło —')}</option>
+                <optgroup label={tr('Role')}>
+                  {roles.filter((r) => !r.is_admin).map((r) => <option key={`role:${r.key}`} value={`role:${r.key}`}>{tr('Rola')}: {r.label}</option>)}
+                </optgroup>
+                <optgroup label={tr('Osoby')}>
+                  {users.filter((u) => u.id !== user.id).map((u) => <option key={`user:${u.id}`} value={`user:${u.id}`}>{u.full_name || u.name || u.email}</option>)}
+                </optgroup>
+              </select>
+              <button disabled={!copyFrom} onClick={() => { if (window.confirm(tr('Zastąpić nadpisania tej osoby skopiowanymi?'))) copyGrantsToUser(user.id, copyFrom); }}
+                className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 disabled:opacity-50">{tr('Kopiuj')}</button>
+            </div>
             {searchInput}
             <div className="space-y-2">
               {groups.map((grp) => {
