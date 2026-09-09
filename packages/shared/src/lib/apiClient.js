@@ -277,24 +277,36 @@ export function createApiClient({
       return { data: { user: payload.user, session: next }, error: null };
     },
 
-    async signUp({ email, password, full_name } = {}) {
+    async signUp({ email, password, full_name, captcha_token, captcha_answer, website } = {}) {
       // Samodzielna rejestracja — serwer decyduje wg trybu tenanta (closed/approval/open).
       // Nie loguje od razu: wynik to status ('pending') + powód ('email' | 'admin').
-      const { res, payload } = await requestJson('/api/auth/register', { email, password, full_name });
+      const { res, payload } = await requestJson('/api/auth/register', {
+        email, password, full_name, captcha_token, captcha_answer, website,
+      });
       if (!res.ok) {
         return { data: { user: null, session: null }, error: { message: payload?.error || 'Nie udało się utworzyć konta', status: res.status } };
       }
       return { data: { user: null, session: null, status: payload?.status || null, reason: payload?.reason || null }, error: null };
     },
 
-    // Publiczny tryb rejestracji tenanta (do pokazania „Zarejestruj się" na ekranie logowania).
+    // Publiczny tryb rejestracji tenanta (do pokazania „Zarejestruj się" + czy captcha wymagana).
     async getRegistrationConfig() {
       try {
         const res = await request('/api/auth/registration-config');
         const payload = await res.json().catch(() => ({}));
-        return { mode: payload?.mode || 'closed' };
+        return { mode: payload?.mode || 'closed', captcha: payload?.captcha !== false };
       } catch {
-        return { mode: 'closed' };
+        return { mode: 'closed', captcha: true };
+      }
+    },
+
+    // Pobierz świeże wyzwanie captcha (token + pytanie do przepisania).
+    async getCaptcha() {
+      try {
+        const res = await request('/api/auth/captcha');
+        return await res.json().catch(() => null);
+      } catch {
+        return null;
       }
     },
 

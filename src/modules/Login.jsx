@@ -21,6 +21,10 @@ export default function Login() {
   const [showRegister, setShowRegister] = useState(false);
   const [regName, setRegName] = useState('');
   const [info, setInfo] = useState('');
+  const [regCaptcha, setRegCaptcha] = useState(true);
+  const [captcha, setCaptcha] = useState(null); // { token, question }
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
+  const [honeypot, setHoneypot] = useState('');
   const [resetEmailSent, setResetEmailSent] = useState(false);
 
   // Stan dla 2FA
@@ -51,24 +55,42 @@ export default function Login() {
     };
     fetchBranding();
     // Tryb rejestracji (czy pokazać „Zarejestruj się") + komunikat po potwierdzeniu e-mail.
-    supabase.auth.getRegistrationConfig?.().then((c) => setRegMode(c?.mode || 'closed')).catch(() => {});
+    supabase.auth.getRegistrationConfig?.().then((c) => {
+      setRegMode(c?.mode || 'closed');
+      setRegCaptcha(c?.captcha !== false);
+    }).catch(() => {});
     const v = new URLSearchParams(window.location.search).get('verify');
     if (v === 'ok') setInfo(tr('E-mail potwierdzony — możesz się zalogować.'));
     else if (v === 'expired') setInfo(tr('Link weryfikacyjny wygasł lub został już użyty.'));
   }, []);
 
+  // Pobierz świeże wyzwanie captcha (nowe przy każdym wejściu/nieudanej próbie).
+  const loadCaptcha = () => { supabase.auth.getCaptcha?.().then((c) => setCaptcha(c)).catch(() => {}); };
+
+  const openRegister = () => {
+    setShowRegister(true); setError(''); setInfo('');
+    if (regCaptcha) loadCaptcha();
+  };
+
   // Rejestracja konta (serwer decyduje wg trybu tenanta).
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true); setError(''); setInfo('');
-    const { data, error: regErr } = await supabase.auth.signUp({ email, password, full_name: regName });
+    const { data, error: regErr } = await supabase.auth.signUp({
+      email, password, full_name: regName,
+      captcha_token: captcha?.token, captcha_answer: captchaAnswer, website: honeypot,
+    });
     setLoading(false);
-    if (regErr) { setError(regErr.message || tr('Nie udało się utworzyć konta')); return; }
+    if (regErr) {
+      setError(regErr.message || tr('Nie udało się utworzyć konta'));
+      if (regCaptcha) { loadCaptcha(); setCaptchaAnswer(''); }
+      return;
+    }
     setInfo(data?.reason === 'email'
       ? tr('Konto utworzone. Sprawdź e-mail, aby je potwierdzić.')
       : tr('Konto utworzone. Oczekuje na zatwierdzenie przez administratora.'));
     setShowRegister(false);
-    setPassword('');
+    setPassword(''); setCaptchaAnswer('');
   };
 
   // Styl tła ekranu logowania (własny obraz / gradient presetu / domyślne).
@@ -324,6 +346,35 @@ export default function Login() {
           </div>
         )}
 
+        {showRegister && regCaptcha && captcha && (
+          <div className="mb-6">
+            <label className="block mb-1.5 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">
+              {tr('Weryfikacja')}: {captcha.question} = ?
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-accent-primary-light/20 focus:border-accent-primary-light outline-none transition"
+              value={captchaAnswer}
+              onChange={e => setCaptchaAnswer(e.target.value)}
+              required
+              placeholder={tr('Wynik działania')}
+            />
+          </div>
+        )}
+
+        {showRegister && (
+          <input
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            value={honeypot}
+            onChange={e => setHoneypot(e.target.value)}
+            style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+          />
+        )}
+
         {error && (
           <div className="mb-6 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 text-sm text-center">
             {error}
@@ -378,7 +429,7 @@ export default function Login() {
             {regMode !== 'closed' && (
               <button
                 type="button"
-                onClick={() => { setShowRegister(true); setError(''); setInfo(''); }}
+                onClick={openRegister}
                 className="w-full mt-2 text-sm font-medium text-accent-primary dark:text-accent-primary-light hover:underline transition"
               >
                 {tr('Nie masz konta? Zarejestruj się')}

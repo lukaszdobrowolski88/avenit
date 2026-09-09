@@ -1038,9 +1038,11 @@ export default function GlobalSettings() {
   // Rejestracja: kolejka oczekujących na zatwierdzenie administratora + akcje.
   const pendingUsers = users.filter(u => u.status === 'pending' && u.pending_kind === 'admin');
   const approveUser = async (id) => {
-    await supabase.from('app_users').update({ status: 'active', is_active: true, pending_kind: null }).eq('id', id);
+    // Funkcja serwerowa: aktywuje konto ORAZ wysyła e-mail powitalny (bramka admina po stronie API).
+    const { error } = await supabase.functions.invoke('approve-user', { body: { userId: id } });
+    if (error) { setMessage({ type: 'error', text: error.message || 'Nie udało się zatwierdzić konta' }); return; }
     fetchData();
-    setMessage({ type: 'success', text: 'Konto zatwierdzone' });
+    setMessage({ type: 'success', text: 'Konto zatwierdzone — wysłano powitanie' });
   };
   const rejectUser = async (id) => {
     if (!confirm(tr('Odrzucić i usunąć to zgłoszenie rejestracji?'))) return;
@@ -1230,18 +1232,33 @@ export default function GlobalSettings() {
                 })}
               </div>
               {(getSetting('registration_mode') || 'closed') !== 'closed' && (
-                <div className="grid sm:grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Domyślna rola nowych kont')}</label>
-                    <select value={getSetting('registration_default_role') || ''} onChange={e => saveSetting('registration_default_role', e.target.value)} className="w-full">
-                      <option value="">{tr('(najniższa — członek)')}</option>
-                      {definedRoles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
-                    </select>
+                <div className="mt-4 space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Domyślna rola nowych kont')}</label>
+                      <select value={getSetting('registration_default_role') || ''} onChange={e => saveSetting('registration_default_role', e.target.value)} className="w-full">
+                        <option value="">{tr('(najniższa — członek)')}</option>
+                        {definedRoles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
+                      </select>
+                    </div>
+                    {campuses.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Domyślny kampus nowych kont')}</label>
+                        <select value={getSetting('registration_default_campus') || ''} onChange={e => saveSetting('registration_default_campus', e.target.value)} className="w-full">
+                          <option value="">{tr('(brak — bez kampusu)')}</option>
+                          {campuses.map(c => <option key={c.id} value={String(c.id)}>{c.name}{c.city ? ` (${c.city})` : ''}</option>)}
+                        </select>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Dozwolone domeny e-mail (opcjonalnie)')}</label>
                     <input type="text" defaultValue={getSetting('registration_allowed_domains') || ''} onBlur={e => saveSetting('registration_allowed_domains', e.target.value)} placeholder="np. schwro.pl, parafia.pl" className="w-full" />
                   </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                    <input type="checkbox" className="w-4 h-4" checked={(getSetting('registration_captcha') || 'on') !== 'off'} onChange={e => saveSetting('registration_captcha', e.target.checked ? 'on' : 'off')} />
+                    {tr('Wymagaj weryfikacji (captcha) przy rejestracji')}
+                  </label>
                 </div>
               )}
             </div>

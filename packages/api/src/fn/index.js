@@ -40,6 +40,7 @@ const MODULES = [
   'board-form-get',
   'board-form-submit',
   'admin-set-user-password',
+  'approve-user',
 ];
 
 export async function registerFunctions(app) {

@@ -32,7 +32,8 @@ const registerSchema = z.object({
 async function getRegConfig(db) {
   const { rows } = await db.query(
     `SELECT key, value FROM app_settings WHERE key IN
-      ('registration_mode','registration_default_role','registration_default_campus','registration_allowed_domains')`
+      ('registration_mode','registration_default_role','registration_default_campus',
+       'registration_allowed_domains','registration_captcha')`
   );
   const m = {};
   rows.forEach((r) => { m[r.key] = r.value; });
@@ -42,7 +43,20 @@ async function getRegConfig(db) {
     campus: m.registration_default_campus || null,
     domains: String(m.registration_allowed_domains || '')
       .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
+    captcha: (m.registration_captcha || 'on') !== 'off', // domyślnie włączona
   };
+}
+
+// Weryfikacja captchy (bezstanowa: token = "exp.hmac", hmac wiąże poprawny wynik z wygaśnięciem).
+function captchaOk(body) {
+  if (String(body?.website || '')) return false; // honeypot — bot wypełnia ukryte pole
+  const token = String(body?.captcha_token || '');
+  const answer = String(body?.captcha_answer || '').trim();
+  const [expStr, sig] = token.split('.');
+  const exp = Number(expStr);
+  if (!sig || !exp || exp < Date.now()) return false;
+  const expected = crypto.createHmac('sha256', config.JWT_SECRET).update(`${answer}:${exp}`).digest('hex');
+  return sig.length === expected.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
 }
 
 const cookieOpts = (req) => ({
@@ -334,8 +348,21 @@ export default async function authRoutes(app) {
   // Publiczna, minimalna konfiguracja rejestracji — Login pyta, czy pokazać „Zarejestruj się".
   app.get('/api/auth/registration-config', { preHandler: app.requireTenant }, async (req, reply) => {
     const cfg = await getRegConfig(req.db);
-    return reply.send({ mode: cfg.mode });
+    return reply.send({ mode: cfg.mode, captcha: cfg.captcha });
   });
+
+  // Captcha (bezstanowa, samodzielna): proste działanie do przepisania + honeypot na froncie.
+  app.get(
+    '/api/auth/captcha',
+    { preHandler: app.requireTenant, config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    async (req, reply) => {
+      const a = 1 + Math.floor(Math.random() * 9);
+      const b = 1 + Math.floor(Math.random() * 9);
+      const exp = Date.now() + 10 * 60 * 1000;
+      const sig = crypto.createHmac('sha256', config.JWT_SECRET).update(`${a + b}:${exp}`).digest('hex');
+      return reply.send({ token: `${exp}.${sig}`, question: `${a} + ${b}` });
+    }
+  );
 
   // Samodzielna rejestracja konta — zależnie od trybu tenanta (closed/approval/open).
   app.post(
@@ -349,6 +376,9 @@ export default async function authRoutes(app) {
       const cfg = await getRegConfig(req.db);
       if (cfg.mode !== 'approval' && cfg.mode !== 'open') {
         return reply.code(403).send({ error: 'Rejestracja jest wyłączona' });
+      }
+      if (cfg.captcha && !captchaOk(req.body)) {
+        return reply.code(400).send({ error: 'Nieprawidłowy wynik weryfikacji — spróbuj ponownie' });
       }
       const domain = String(email.split('@')[1] || '').toLowerCase();
       if (cfg.domains.length && !cfg.domains.includes(domain)) {
@@ -408,9 +438,15 @@ export default async function authRoutes(app) {
       `UPDATE app_users
           SET status='active', is_active=true, email_verified=true, verify_token_hash=NULL, verify_expires=NULL
         WHERE verify_token_hash = $1 AND verify_expires > now() AND status='pending' AND pending_kind='email'
-        RETURNING id`,
+        RETURNING email, full_name`,
       [tokenHash]
     );
+    if (rows[0]) {
+      const { sendWelcomeEmail } = await import('../lib/email.js');
+      await sendWelcomeEmail(rows[0].email, { name: rows[0].full_name, loginUrl: base }).catch((err) =>
+        req.log.error({ err }, 'welcome email failed')
+      );
+    }
     return reply.redirect(`${base}/?verify=${rows[0] ? 'ok' : 'expired'}`);
   });
 
