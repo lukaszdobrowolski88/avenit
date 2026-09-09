@@ -28,8 +28,12 @@ export default async function handler(req, reply) {
     }
   }
 
+  // Aktywacja zeruje też blokadę anty-brute-force (locked_until / licznik nieudanych logowań).
   await req.db.query(
-    `UPDATE app_users SET is_active = $1, status = $2, pending_kind = NULL WHERE id = $3`,
+    `UPDATE app_users SET is_active = $1, status = $2, pending_kind = NULL,
+            failed_login_count = CASE WHEN $1 THEN 0 ELSE failed_login_count END,
+            locked_until = CASE WHEN $1 THEN NULL ELSE locked_until END
+       WHERE id = $3`,
     [active, active ? 'active' : 'blocked', userId]
   );
   if (!active) await revokeSessions(req.db, userId);

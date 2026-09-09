@@ -15,7 +15,7 @@ export default async function handler(req, reply) {
   if (!userId) return reply.code(400).send({ error: 'Brak użytkownika.' });
 
   const { rows } = await req.db.query(
-    `SELECT u.id, u.email, u.is_super_admin, u.is_active, u.role, u.full_name,
+    `SELECT u.id, u.email, u.is_super_admin, u.is_active, u.role, u.full_name, u.status,
             COALESCE(r.is_admin, false) AS role_admin
        FROM app_users u LEFT JOIN app_roles r ON u.role = r.key WHERE u.id = $1`,
     [userId]
@@ -54,10 +54,12 @@ export default async function handler(req, reply) {
     if (dup[0]) return reply.code(409).send({ error: 'Inny użytkownik ma już ten adres e-mail.' });
   }
 
+  // Edycja profilu NIE psuje kolejki: konto oczekujące zostaje 'pending' (chyba że aktywowane).
+  const newStatus = newActive ? 'active' : (target.status === 'pending' ? 'pending' : 'blocked');
   await req.db.query(
     `UPDATE app_users SET email = $1, full_name = $2, name = $2, role = $3,
             is_active = $4, status = $5, totp_required = $6, campus_id = $7 WHERE id = $8`,
-    [email, fullName, role, newActive, newActive ? 'active' : 'blocked', totpRequired, campusId, userId]
+    [email, fullName, role, newActive, newStatus, totpRequired, campusId, userId]
   );
   if (!newActive) await revokeSessions(req.db, userId);
 

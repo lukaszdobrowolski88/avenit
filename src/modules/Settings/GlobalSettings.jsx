@@ -706,6 +706,13 @@ export default function GlobalSettings() {
     setMessage(error ? { type: 'error', text: error.message || tr('Błąd') } : { type: 'success', text: tr('Wylogowano ze wszystkich urządzeń') });
     loadAccountEvents();
   };
+  const unlockLogin = async (user) => {
+    // Zdejmuje blokadę logowania po nieudanych próbach (set-user-status active=true zeruje licznik/locked_until).
+    const { error } = await supabase.functions.invoke('set-user-status', { body: { userId: user.id, active: true } });
+    if (error) { toast.error(error.message || tr('Błąd')); return; }
+    fetchData(); loadAccountEvents();
+    setMessage({ type: 'success', text: tr('Odblokowano logowanie') });
+  };
 
   // Funkcja do scalania zduplikowanych członków we wszystkich tabelach służb
   const mergeDuplicateMembers = async () => {
@@ -1376,6 +1383,8 @@ export default function GlobalSettings() {
                   {filteredUsers.map(user => {
                     const roleLabel = definedRoles.find(r => r.key === user.role)?.label || user.role;
                     const isSuperAdmin = user.is_super_admin === true;
+                    const st = user.status || (user.is_active ? 'active' : 'blocked');
+                    const loginLocked = user.locked_until && new Date(user.locked_until).getTime() > Date.now();
                     return (
                       <tr key={user.id} className={`hover:bg-accent-primary-lightest/30 dark:hover:bg-gray-600 transition text-gray-800 dark:text-gray-200 ${isSuperAdmin ? 'bg-yellow-50/30 dark:bg-yellow-900/10' : ''}`}>
                         <td className="p-4 font-medium flex items-center gap-3">
@@ -1389,9 +1398,16 @@ export default function GlobalSettings() {
                         <td className="p-4"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : 'bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 text-accent-secondary dark:text-accent-secondary-light'}`}>{roleLabel}</span></td>
                         {campuses.length > 0 && <td className="p-4 text-gray-500 dark:text-gray-400 text-sm">{campuses.find(c => c.id === user.campus_id)?.name || <span className="text-gray-300 dark:text-gray-600">—</span>}</td>}
                         <td className="p-4">
-                          <button onClick={() => toggleUserStatus(user)} disabled={isSuperAdmin} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border ${user.is_active ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'} ${isSuperAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                            {user.is_active ? <UserCheck size={12}/> : <UserX size={12}/>} {user.is_active ? 'Aktywny' : 'Zablokowany'}
-                          </button>
+                          <div className="flex flex-col gap-1 items-start">
+                            <button onClick={() => toggleUserStatus(user)} disabled={isSuperAdmin || st === 'pending'} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border ${st === 'active' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : st === 'pending' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'} ${isSuperAdmin || st === 'pending' ? 'opacity-70 cursor-default' : ''}`}>
+                              {st === 'active' ? <UserCheck size={12}/> : st === 'pending' ? <Clock size={12}/> : <UserX size={12}/>} {st === 'active' ? tr('Aktywny') : st === 'pending' ? tr('Oczekujący') : tr('Zablokowany')}
+                            </button>
+                            {loginLocked && (
+                              <button onClick={() => unlockLogin(user)} title={tr('Zablokowane logowanie po nieudanych próbach — kliknij, aby odblokować')} className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:underline">
+                                <KeyRound size={11}/> {tr('Odblokuj logowanie')}
+                              </button>
+                            )}
+                          </div>
                         </td>
                         <td className="p-4 text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : <span className="text-gray-300 dark:text-gray-600">{tr('nigdy')}</span>}</td>
                         <td className="p-4 text-right flex justify-end gap-2">
