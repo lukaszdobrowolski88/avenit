@@ -105,6 +105,25 @@ export const THEME_KEYS = [
   'ui_scrollbar', 'ui_oled', 'module_colors', 'module_covers', 'login_bg', 'login_bg_url',
   'login_title', 'login_subtitle', 'custom_css', 'org_logo_url',
 ];
+
+// Podzbiór „wyglądu" (bez brandingu: logo/login/moduły/CSS) — nazwane motywy operują TYLKO na tym,
+// więc przełączenie motywu nie rusza logo, ekranu logowania, kolorów modułów ani własnego CSS.
+export const THEME_LOOK_KEYS = [
+  'color_preset', 'ui_font', 'custom_font_url', 'ui_font_heading', 'ui_bg', 'ui_bg_pattern',
+  'ui_bg_url', 'ui_scale', 'ui_radius', 'ui_sidebar', 'ui_sidebar_w', 'ui_motion',
+  'ui_scrollbar', 'ui_oled',
+];
+
+// Gotowe, wbudowane motywy (zawsze dostępne, jednym kliknięciem). Ustawiają komplet kluczy
+// wyglądu — brakujące (np. ui_oled) i tak są zerowane do domyślnych przy zastosowaniu.
+export const BUILTIN_THEMES = [
+  { id: 'ocean',    name: 'Ocean',    preview: ['#2563eb', '#4f46e5'], settings: { color_preset: 'blue-indigo',  ui_font: 'grotesk', ui_bg: 'cool',     ui_bg_pattern: 'aurora',   ui_sidebar: 'accent', ui_radius: 'round'  } },
+  { id: 'forest',   name: 'Natura',   preview: ['#059669', '#0d9488'], settings: { color_preset: 'emerald-teal', ui_font: 'rounded', ui_bg: 'mint',     ui_bg_pattern: 'glow',     ui_sidebar: 'accent', ui_radius: 'round'  } },
+  { id: 'sunset',   name: 'Ciepły',   preview: ['#d97706', '#ca8a04'], settings: { color_preset: 'amber-yellow', ui_font: 'serif',   ui_font_heading: 'serif', ui_bg: 'warm', ui_bg_pattern: 'diagonal', ui_sidebar: 'theme', ui_radius: 'round' } },
+  { id: 'midnight', name: 'Midnight', preview: ['#7c3aed', '#9333ea'], settings: { color_preset: 'violet-purple', ui_font: 'inter',   ui_bg: 'slate',    ui_bg_pattern: 'none',     ui_sidebar: 'dark',   ui_oled: 'on', ui_scrollbar: 'accent' } },
+  { id: 'minimal',  name: 'Minimal',  preview: ['#334155', '#64748b'], settings: { color_preset: 'blue-indigo',  ui_font: 'system',  ui_bg: 'white',    ui_bg_pattern: 'none',     ui_sidebar: 'theme',  ui_radius: 'sharp', ui_scale: 'compact' } },
+  { id: 'rose',     name: 'Róż',      preview: ['#e11d48', '#db2777'], settings: { color_preset: 'rose-red',     ui_font: 'rounded', ui_bg: 'lavender', ui_bg_pattern: 'dots',     ui_sidebar: 'accent', ui_radius: 'xround' } },
+];
 const root = () => document.documentElement;
 
 // --- CZCIONKA WŁASNA (@font-face wstrzykiwany do <head>) ---
@@ -221,6 +240,14 @@ export function clearThemeLocal() {
   Object.values(K).forEach((k) => localStorage.removeItem(k));
   ['color_preset', 'custom_preset'].forEach((k) => localStorage.removeItem(k));
   const el = document.getElementById('app-custom-css'); if (el) el.textContent = '';
+}
+
+// Wyczyść TYLKO lokalny stan „wyglądu" (bez custom_css) — przed reloadem przy zmianie motywu,
+// żeby usunięte klucze wróciły do domyślnych, a nie zostały z nieaktualnego localStorage.
+export function clearThemeLookLocal() {
+  ['ui_font', 'ui_font_url', 'ui_font_heading', 'ui_bg', 'ui_bg_pattern', 'ui_bg_url',
+    'ui_scale', 'ui_radius', 'ui_sidebar', 'ui_sidebar_w', 'ui_motion', 'ui_scrollbar',
+    'ui_oled', 'color_preset', 'custom_preset'].forEach((k) => localStorage.removeItem(k));
 }
 
 export const getFont       = () => localStorage.getItem(K.font)    || 'inter';

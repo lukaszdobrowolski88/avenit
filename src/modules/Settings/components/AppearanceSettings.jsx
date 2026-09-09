@@ -1,16 +1,18 @@
 import React from 'react';
-import { Palette, Moon, Image as ImageIcon, Upload, Type, Heading, PaintBucket, Wallpaper, Ruler, Frame, PanelLeft, Sparkles, LogIn, Code2, Download, RotateCcw, Check } from 'lucide-react';
+import { Palette, Moon, Image as ImageIcon, Upload, Type, Heading, PaintBucket, Wallpaper, Ruler, Frame, PanelLeft, Sparkles, LogIn, Code2, Download, RotateCcw, Layers, Save, X, Check } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { SettingsCard, SettingRow, Toggle, SelectSetting } from './SettingsUI';
 import ColorPresetPicker from './ColorPresetPicker';
 import {
   FONT_OPTIONS, HEADING_FONT_OPTIONS, BACKGROUND_OPTIONS, BG_PATTERN_OPTIONS,
-  SCALE_OPTIONS, RADIUS_OPTIONS, SIDEBAR_OPTIONS, SIDEBAR_WIDTH_OPTIONS, LOGIN_BG_OPTIONS, THEME_KEYS,
+  SCALE_OPTIONS, RADIUS_OPTIONS, SIDEBAR_OPTIONS, SIDEBAR_WIDTH_OPTIONS, LOGIN_BG_OPTIONS,
+  THEME_KEYS, THEME_LOOK_KEYS, BUILTIN_THEMES,
   applyFont, applyHeadingFont, applyBackground, applyBgPattern, applyScale, applyRadius,
-  applySidebar, applySidebarWidth, applyMotion, applyScrollbar, applyOled, injectCustomCss, clearThemeLocal,
+  applySidebar, applySidebarWidth, applyMotion, applyScrollbar, applyOled, injectCustomCss, clearThemeLocal, clearThemeLookLocal,
   getFont, getHeadingFont, getBackground, getBgPattern, getBgUrl, getScale, getRadius,
   getSidebar, getSidebarWidth, getMotion, getScrollbar, getFontUrl, getOled, getCustomCss,
 } from '../../../lib/appearance';
+import { COLOR_PRESETS } from '../../../lib/colorPresets';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 
@@ -119,6 +121,43 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
     } catch { alert(tr('Nieprawidłowy plik motywu')); }
   };
 
+  // --- NAZWANE MOTYWY (wbudowane + zapisane przez użytkownika) ---
+  let savedThemes = [];
+  try { savedThemes = JSON.parse(get('saved_themes') || '[]') || []; } catch { savedThemes = []; }
+
+  // Podgląd motywu — gradient z palety color_preset (lub akcent, gdy brak).
+  const themePreviewStyle = (settings) => {
+    const p = COLOR_PRESETS[settings?.color_preset];
+    return p ? { background: `linear-gradient(135deg, ${p.preview[0]} 0%, ${p.preview[1]} 100%)` } : undefined;
+  };
+
+  // Zastosuj motyw: ustaw klucze wyglądu (brakujące → domyślne), wyczyść lokalny stan, przeładuj.
+  // Nie rusza brandingu (logo/logowanie/kolory modułów/własny CSS).
+  const applyTheme = async (settings) => {
+    const s = settings || {};
+    const upserts = THEME_LOOK_KEYS.filter((k) => s[k] != null).map((k) => ({ key: k, value: String(s[k]) }));
+    const deletes = THEME_LOOK_KEYS.filter((k) => s[k] == null);
+    if (upserts.length) await supabase.from('app_settings').upsert(upserts, { onConflict: 'key' });
+    if (deletes.length) await supabase.from('app_settings').delete().in('key', deletes);
+    clearThemeLookLocal();
+    window.location.reload();
+  };
+
+  // Zapisz bieżący wygląd jako nowy nazwany motyw.
+  const saveCurrentTheme = () => {
+    const name = prompt(tr('Nazwa motywu:'));
+    if (!name || !name.trim()) return;
+    const settings = {};
+    THEME_LOOK_KEYS.forEach((k) => { const v = get(k); if (v != null) settings[k] = v; });
+    const list = [...savedThemes, { id: 'u' + Date.now(), name: name.trim(), settings }];
+    save('saved_themes', JSON.stringify(list));
+  };
+
+  const deleteTheme = (id) => {
+    const list = savedThemes.filter((t) => t.id !== id);
+    save('saved_themes', JSON.stringify(list));
+  };
+
   // Przywróć domyślny wygląd — usuń klucze motywu i lokalny stan, przeładuj.
   const resetTheme = async () => {
     if (!confirm(tr('Przywrócić domyślny wygląd? Bieżące ustawienia wyglądu zostaną usunięte.'))) return;
@@ -153,6 +192,50 @@ export default function AppearanceSettings({ get, save, logoUrl, onLogoUpload, o
             <p className="mt-1">Kwadratowe, min. 256×256 px.</p>
           </div>
         </div>
+      </SettingsCard>
+
+      {/* --- NAZWANE MOTYWY --- */}
+      <SettingsCard title="Motywy" description={tr('Gotowe zestawy — przełącz cały wygląd jednym kliknięciem.')} icon={Layers}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {BUILTIN_THEMES.map((th) => (
+            <button
+              key={th.id}
+              type="button"
+              onClick={() => applyTheme(th.settings)}
+              className="text-left rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-accent-primary-light/60 p-3 transition"
+            >
+              <div className="h-12 rounded-xl mb-2" style={{ background: `linear-gradient(135deg, ${th.preview[0]} 0%, ${th.preview[1]} 100%)` }} />
+              <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 truncate">{th.name}</div>
+            </button>
+          ))}
+          {savedThemes.map((th) => (
+            <div key={th.id} className="relative">
+              <button
+                type="button"
+                onClick={() => applyTheme(th.settings)}
+                className="w-full text-left rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-accent-primary-light/60 p-3 transition"
+              >
+                <div className="h-12 rounded-xl mb-2 bg-gradient-to-br from-accent-primary to-accent-secondary" style={themePreviewStyle(th.settings)} />
+                <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 truncate pr-5">{th.name}</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteTheme(th.id)}
+                title={tr('Usuń')}
+                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-white/90 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-gray-400 hover:text-red-500 flex items-center justify-center shadow-sm"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={saveCurrentTheme}
+          className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-700 hover:border-accent-primary-light/60 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 transition"
+        >
+          <Save size={15} /> {tr('Zapisz bieżący wygląd')}
+        </button>
       </SettingsCard>
 
       <SettingsCard title="Motyw kolorystyczny" description="Kolor przewodni aplikacji." icon={Palette}>
