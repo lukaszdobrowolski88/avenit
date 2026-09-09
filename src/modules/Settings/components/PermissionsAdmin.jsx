@@ -94,6 +94,15 @@ export default function PermissionsAdmin() {
     catch (e) { setErr(e.message); }
   };
 
+  // Zmiana roli bazowej osoby (app_users.role) — z jednego miejsca razem ze służbami.
+  const changeUserRole = async (userIdVal, roleKey) => {
+    setErr('');
+    try {
+      await supabase.from('app_users').update({ role: roleKey }).eq('id', userIdVal);
+      await load(); flash(tr('Zmieniono rolę bazową'));
+    } catch (e) { setErr(e.message); }
+  };
+
   // Kopiuje JAWNE granty źródła (roli albo innej osoby) jako nadpisania docelowej osoby.
   // Zastępuje dotychczasowe nadpisania targetu (potwierdzenie w UI).
   const copyGrantsToUser = async (targetUserId, source) => {
@@ -221,6 +230,19 @@ export default function PermissionsAdmin() {
         </div>
         {user && (
           <>
+            {/* Rola bazowa — zmiana z jednego miejsca (obok służb i nadpisań). */}
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span className="text-sm text-gray-500">{tr('Rola bazowa')}:</span>
+              <select value={user.role || ''} onChange={(e) => changeUserRole(user.id, e.target.value)}
+                className="px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm">
+                {roles.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+              </select>
+            </div>
+            {/* Służby (przynależności) tej osoby — osadzony edytor. */}
+            <div className="mb-4">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-2">{tr('Służby')}</div>
+              <MinistryMemberships userId={user.id} />
+            </div>
             {role?.is_admin ? (
               <div className="text-sm mb-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">{tr('Administrator — pełny, nieograniczony dostęp.')}</div>
             ) : (
