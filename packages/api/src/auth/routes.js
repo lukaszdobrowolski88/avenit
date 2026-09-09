@@ -29,11 +29,14 @@ const registerSchema = z.object({
 });
 
 // Konfiguracja rejestracji tenanta (app_settings). Domyślnie zamknięta (tylko admin tworzy konta).
+const csvLower = (v) => String(v || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+
 async function getRegConfig(db) {
   const { rows } = await db.query(
     `SELECT key, value FROM app_settings WHERE key IN
       ('registration_mode','registration_default_role','registration_default_campus',
-       'registration_allowed_domains','registration_captcha')`
+       'registration_allowed_domains','registration_captcha','registration_autoapprove_domains',
+       'registration_require_consent','registration_consent_url','registration_consent_text')`
   );
   const m = {};
   rows.forEach((r) => { m[r.key] = r.value; });
@@ -41,9 +44,14 @@ async function getRegConfig(db) {
     mode: m.registration_mode || 'closed',
     role: m.registration_default_role || null,
     campus: m.registration_default_campus || null,
-    domains: String(m.registration_allowed_domains || '')
-      .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
+    domains: csvLower(m.registration_allowed_domains),
     captcha: (m.registration_captcha || 'on') !== 'off', // domyślnie włączona
+    autoapproveDomains: csvLower(m.registration_autoapprove_domains),
+    consent: {
+      required: m.registration_require_consent === 'on',
+      url: m.registration_consent_url || '',
+      text: m.registration_consent_text || '',
+    },
   };
 }
 
@@ -348,7 +356,7 @@ export default async function authRoutes(app) {
   // Publiczna, minimalna konfiguracja rejestracji — Login pyta, czy pokazać „Zarejestruj się".
   app.get('/api/auth/registration-config', { preHandler: app.requireTenant }, async (req, reply) => {
     const cfg = await getRegConfig(req.db);
-    return reply.send({ mode: cfg.mode, captcha: cfg.captcha });
+    return reply.send({ mode: cfg.mode, captcha: cfg.captcha, consent: cfg.consent });
   });
 
   // Captcha (bezstanowa, samodzielna): proste działanie do przepisania + honeypot na froncie.
@@ -380,6 +388,9 @@ export default async function authRoutes(app) {
       if (cfg.captcha && !captchaOk(req.body)) {
         return reply.code(400).send({ error: 'Nieprawidłowy wynik weryfikacji — spróbuj ponownie' });
       }
+      if (cfg.consent.required && req.body?.consent !== true) {
+        return reply.code(400).send({ error: 'Wymagana akceptacja regulaminu / polityki prywatności' });
+      }
       const domain = String(email.split('@')[1] || '').toLowerCase();
       if (cfg.domains.length && !cfg.domains.includes(domain)) {
         return reply.code(400).send({ error: 'Rejestracja dozwolona tylko dla wybranych domen e-mail' });
@@ -390,6 +401,8 @@ export default async function authRoutes(app) {
       const role = cfg.role || 'czlonek';
       const passwordHash = await hashPassword(password);
       const base = `https://${req.tenant.subdomain}.${config.APP_DOMAIN}`;
+      const consentAt = req.body?.consent === true ? new Date() : null;
+      const { logAccountEvent } = await import('../lib/account-audit.js');
 
       if (cfg.mode === 'open') {
         // Otwarta: konto powstaje, ale aktywne dopiero po potwierdzeniu e-mail.
@@ -397,23 +410,37 @@ export default async function authRoutes(app) {
         const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
         await req.db.query(
           `INSERT INTO app_users
-             (email, full_name, name, role, is_active, status, pending_kind, email_verified, verify_token_hash, verify_expires, password_hash, campus_id)
-           VALUES ($1,$2,$2,$3,false,'pending','email',false,$4, now() + interval '24 hours',$5,$6)`,
-          [email, full_name || '', role, tokenHash, passwordHash, cfg.campus]
+             (email, full_name, name, role, is_active, status, pending_kind, email_verified, verify_token_hash, verify_expires, password_hash, campus_id, consent_at)
+           VALUES ($1,$2,$2,$3,false,'pending','email',false,$4, now() + interval '24 hours',$5,$6,$7)`,
+          [email, full_name || '', role, tokenHash, passwordHash, cfg.campus, consentAt]
         );
         const { sendVerifyEmail } = await import('../lib/email.js');
         await sendVerifyEmail(email, `${base}/api/auth/verify-email?token=${raw}`).catch((err) =>
           req.log.error({ err }, 'verify email failed')
         );
+        await logAccountEvent(req.db, { email, action: 'registered', actor: 'self', detail: 'open (e-mail)' });
         return reply.code(202).send({ status: 'pending', reason: 'email' });
       }
 
-      // Za zgodą administratora: konto nieaktywne, oczekuje na zatwierdzenie.
+      // Tryb „za zgodą": zaufane domeny aktywują się od razu; reszta czeka na administratora.
+      if (cfg.autoapproveDomains.includes(domain)) {
+        await req.db.query(
+          `INSERT INTO app_users
+             (email, full_name, name, role, is_active, status, email_verified, password_hash, campus_id, consent_at)
+           VALUES ($1,$2,$2,$3,true,'active',true,$4,$5,$6)`,
+          [email, full_name || '', role, passwordHash, cfg.campus, consentAt]
+        );
+        const { sendWelcomeEmail } = await import('../lib/email.js');
+        await sendWelcomeEmail(email, { name: full_name, loginUrl: base }).catch((err) => req.log.error({ err }, 'welcome email failed'));
+        await logAccountEvent(req.db, { email, action: 'approved', actor: 'auto', detail: `zaufana domena ${domain}` });
+        return reply.code(201).send({ status: 'active', reason: 'auto' });
+      }
+
       await req.db.query(
         `INSERT INTO app_users
-           (email, full_name, name, role, is_active, status, pending_kind, email_verified, password_hash, campus_id)
-         VALUES ($1,$2,$2,$3,false,'pending','admin',false,$4,$5)`,
-        [email, full_name || '', role, passwordHash, cfg.campus]
+           (email, full_name, name, role, is_active, status, pending_kind, email_verified, password_hash, campus_id, consent_at)
+         VALUES ($1,$2,$2,$3,false,'pending','admin',false,$4,$5,$6)`,
+        [email, full_name || '', role, passwordHash, cfg.campus, consentAt]
       );
       const { rows: admins } = await req.db.query(
         `SELECT u.email FROM app_users u JOIN app_roles r ON u.role = r.key
@@ -424,6 +451,7 @@ export default async function authRoutes(app) {
         await sendAdminNewUserEmail(admins.map((a) => a.email), { email, name: full_name, link: `${base}/settings` })
           .catch((err) => req.log.error({ err }, 'admin notify failed'));
       }
+      await logAccountEvent(req.db, { email, action: 'registered', actor: 'self', detail: 'approval' });
       return reply.code(202).send({ status: 'pending', reason: 'admin' });
     }
   );
@@ -446,6 +474,8 @@ export default async function authRoutes(app) {
       await sendWelcomeEmail(rows[0].email, { name: rows[0].full_name, loginUrl: base }).catch((err) =>
         req.log.error({ err }, 'welcome email failed')
       );
+      const { logAccountEvent } = await import('../lib/account-audit.js');
+      await logAccountEvent(req.db, { email: rows[0].email, action: 'verified', actor: 'self' });
     }
     return reply.redirect(`${base}/?verify=${rows[0] ? 'ok' : 'expired'}`);
   });

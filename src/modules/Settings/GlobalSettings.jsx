@@ -561,51 +561,19 @@ export default function GlobalSettings() {
           }).eq('id', existingAppUser.id);
           setMessage({ type: 'success', text: `Użytkownik ${userForm.email} już istniał — zaktualizowano dane.` });
         } else {
-          // 1. Zapisz aktualną sesję admina przed utworzeniem nowego użytkownika
-          const { data: { session: currentSession } } = await supabase.auth.getSession();
-
-          // 2. Utwórz konto w Supabase Auth z losowym hasłem
-          const tempPassword = crypto.randomUUID() + 'Aa1!';
-          const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: userForm.email,
-            password: tempPassword,
-            options: {
-              data: {
-                full_name: userForm.full_name
-              }
-            }
+          // Konto zakłada FUNKCJA SERWEROWA (aktywne, hash po stronie serwera) — niezależnie od
+          // trybu rejestracji. Krok 5 niżej wysyła e-mail „ustaw hasło" (reset-password).
+          const { error: createErr } = await supabase.functions.invoke('admin-create-user', {
+            body: {
+              email: userForm.email,
+              full_name: userForm.full_name || '',
+              role: userForm.role,
+              is_active: userForm.is_active,
+              campus_id: userForm.campus_id || null,
+              totp_required: require2FA,
+            },
           });
-
-          if (authError) {
-            throw new Error(`Błąd tworzenia konta: ${authError.message}`);
-          }
-
-          // 3. Przywróć sesję admina (signUp automatycznie loguje nowego użytkownika)
-          if (currentSession) {
-            await supabase.auth.setSession({
-              access_token: currentSession.access_token,
-              refresh_token: currentSession.refresh_token
-            });
-          }
-
-          // 4. Dodaj rekord do app_users
-          if (authData?.user?.id) {
-            const { error: insertError } = await supabase
-              .from('app_users')
-              .upsert({
-                email: userForm.email,
-                full_name: userForm.full_name || '',
-                role: userForm.role,
-                is_active: userForm.is_active,
-                auth_user_id: authData.user.id,
-                totp_required: require2FA,
-                campus_id: userForm.campus_id || null
-              }, { onConflict: 'email' });
-
-            if (insertError) {
-              console.error('Błąd dodawania do app_users:', insertError);
-            }
-          }
+          if (createErr) throw new Error(`Błąd tworzenia konta: ${createErr.message}`);
         }
 
         // 5. Wyślij email z linkiem do ustawienia hasła (przez Resend SMTP skonfigurowany w Supabase)
@@ -1035,20 +1003,34 @@ export default function GlobalSettings() {
     setMessage({ type: 'success', text: 'Zapisano' });
   };
 
-  // Rejestracja: kolejka oczekujących na zatwierdzenie administratora + akcje.
+  // Rejestracja: kolejki oczekujących + audyt. Akcje = funkcje serwerowe (bramka admina + maile + log).
   const pendingUsers = users.filter(u => u.status === 'pending' && u.pending_kind === 'admin');
+  const emailPendingUsers = users.filter(u => u.status === 'pending' && u.pending_kind === 'email');
+  const [accountEvents, setAccountEvents] = useState([]);
+  const loadAccountEvents = async () => {
+    const { data } = await supabase.functions.invoke('account-events');
+    setAccountEvents(data?.events || []);
+  };
+  useEffect(() => { loadAccountEvents(); }, []);
   const approveUser = async (id) => {
-    // Funkcja serwerowa: aktywuje konto ORAZ wysyła e-mail powitalny (bramka admina po stronie API).
     const { error } = await supabase.functions.invoke('approve-user', { body: { userId: id } });
     if (error) { setMessage({ type: 'error', text: error.message || 'Nie udało się zatwierdzić konta' }); return; }
-    fetchData();
+    fetchData(); loadAccountEvents();
     setMessage({ type: 'success', text: 'Konto zatwierdzone — wysłano powitanie' });
   };
   const rejectUser = async (id) => {
     if (!confirm(tr('Odrzucić i usunąć to zgłoszenie rejestracji?'))) return;
-    await supabase.from('app_users').delete().eq('id', id);
-    fetchData();
+    const { error } = await supabase.functions.invoke('reject-user', { body: { userId: id } });
+    if (error) { setMessage({ type: 'error', text: error.message || 'Nie udało się odrzucić' }); return; }
+    fetchData(); loadAccountEvents();
   };
+  const resendVerification = async (id) => {
+    const { error } = await supabase.functions.invoke('resend-verification', { body: { userId: id } });
+    setMessage(error
+      ? { type: 'error', text: error.message || 'Nie udało się wysłać' }
+      : { type: 'success', text: 'Wysłano ponownie link weryfikacyjny' });
+  };
+  const ACTION_LABEL = { registered: 'Rejestracja', verified: 'Potwierdzenie e-mail', approved: 'Zatwierdzenie', rejected: 'Odrzucenie', created: 'Utworzenie (admin)' };
 
   const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
 
@@ -1259,6 +1241,31 @@ export default function GlobalSettings() {
                     <input type="checkbox" className="w-4 h-4" checked={(getSetting('registration_captcha') || 'on') !== 'off'} onChange={e => saveSetting('registration_captcha', e.target.checked ? 'on' : 'off')} />
                     {tr('Wymagaj weryfikacji (captcha) przy rejestracji')}
                   </label>
+                  {getSetting('registration_mode') === 'approval' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Auto-zatwierdzane domeny')}</label>
+                      <input type="text" defaultValue={getSetting('registration_autoapprove_domains') || ''} onBlur={e => saveSetting('registration_autoapprove_domains', e.target.value)} placeholder="np. schwro.pl" className="w-full" />
+                      <p className="text-xs text-gray-400 mt-1">{tr('Konta z tych domen aktywują się od razu, bez czekania na administratora.')}</p>
+                    </div>
+                  )}
+                  <div className="pt-4 border-t border-gray-100 dark:border-gray-700 space-y-3">
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                      <input type="checkbox" className="w-4 h-4" checked={getSetting('registration_require_consent') === 'on'} onChange={e => saveSetting('registration_require_consent', e.target.checked ? 'on' : 'off')} />
+                      {tr('Wymagaj akceptacji regulaminu / polityki prywatności (RODO)')}
+                    </label>
+                    {getSetting('registration_require_consent') === 'on' && (
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Treść zgody')}</label>
+                          <input type="text" defaultValue={getSetting('registration_consent_text') || ''} onBlur={e => saveSetting('registration_consent_text', e.target.value)} placeholder={tr('Akceptuję regulamin i politykę prywatności')} className="w-full" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Link do dokumentu')}</label>
+                          <input type="text" defaultValue={getSetting('registration_consent_url') || ''} onBlur={e => saveSetting('registration_consent_url', e.target.value)} placeholder="https://…/polityka-prywatnosci" className="w-full" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1282,6 +1289,44 @@ export default function GlobalSettings() {
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* Kolejka: oczekują na potwierdzenie e-mail (tryb otwarty) */}
+            {emailPendingUsers.length > 0 && (
+              <div className="mb-6 rounded-xl border border-blue-200 dark:border-blue-900/40 p-5 bg-blue-50/50 dark:bg-blue-900/10">
+                <h3 className="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2"><Mail size={18}/> {tr('Oczekują na potwierdzenie e-mail')} ({emailPendingUsers.length})</h3>
+                <div className="space-y-2">
+                  {emailPendingUsers.map(u => (
+                    <div key={u.id} className="flex items-center justify-between gap-3 bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm text-gray-800 dark:text-gray-100 truncate">{u.full_name || u.email}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{u.email}</div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button onClick={() => resendVerification(u.id)} className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Wyślij ponownie')}</button>
+                        <button onClick={() => approveUser(u.id)} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600 transition">{tr('Aktywuj')}</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Historia kont (audyt rejestracji/zatwierdzeń) */}
+            {accountEvents.length > 0 && (
+              <details className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <summary className="cursor-pointer select-none p-4 font-bold text-gray-800 dark:text-white flex items-center gap-2"><Clock size={18}/> {tr('Historia kont')} ({accountEvents.length})</summary>
+                <div className="px-4 pb-4 max-h-64 overflow-y-auto">
+                  {accountEvents.map((ev, i) => (
+                    <div key={i} className="flex items-center gap-3 text-xs py-1.5 border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+                      <span className="text-gray-400 whitespace-nowrap w-36 shrink-0">{new Date(ev.created_at).toLocaleString()}</span>
+                      <span className="font-semibold text-gray-700 dark:text-gray-200 w-32 shrink-0">{ACTION_LABEL[ev.action] || ev.action}</span>
+                      <span className="text-gray-600 dark:text-gray-300 truncate flex-1">{ev.email}</span>
+                      <span className="text-gray-400 truncate hidden sm:block">{ev.actor}{ev.detail ? ` · ${ev.detail}` : ''}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
             )}
 
             <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">

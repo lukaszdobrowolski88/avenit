@@ -25,6 +25,8 @@ export default function Login() {
   const [captcha, setCaptcha] = useState(null); // { token, question }
   const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [honeypot, setHoneypot] = useState('');
+  const [consentCfg, setConsentCfg] = useState({ required: false, url: '', text: '' });
+  const [consentChecked, setConsentChecked] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
 
   // Stan dla 2FA
@@ -58,6 +60,7 @@ export default function Login() {
     supabase.auth.getRegistrationConfig?.().then((c) => {
       setRegMode(c?.mode || 'closed');
       setRegCaptcha(c?.captcha !== false);
+      setConsentCfg(c?.consent || { required: false, url: '', text: '' });
     }).catch(() => {});
     const v = new URLSearchParams(window.location.search).get('verify');
     if (v === 'ok') setInfo(tr('E-mail potwierdzony — możesz się zalogować.'));
@@ -76,9 +79,15 @@ export default function Login() {
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true); setError(''); setInfo('');
+    if (consentCfg.required && !consentChecked) {
+      setLoading(false);
+      setError(tr('Zaakceptuj regulamin / politykę prywatności'));
+      return;
+    }
     const { data, error: regErr } = await supabase.auth.signUp({
       email, password, full_name: regName,
       captcha_token: captcha?.token, captcha_answer: captchaAnswer, website: honeypot,
+      consent: consentChecked,
     });
     setLoading(false);
     if (regErr) {
@@ -86,11 +95,13 @@ export default function Login() {
       if (regCaptcha) { loadCaptcha(); setCaptchaAnswer(''); }
       return;
     }
-    setInfo(data?.reason === 'email'
-      ? tr('Konto utworzone. Sprawdź e-mail, aby je potwierdzić.')
-      : tr('Konto utworzone. Oczekuje na zatwierdzenie przez administratora.'));
+    setInfo(data?.status === 'active'
+      ? tr('Konto utworzone i aktywne — możesz się zalogować.')
+      : data?.reason === 'email'
+        ? tr('Konto utworzone. Sprawdź e-mail, aby je potwierdzić.')
+        : tr('Konto utworzone. Oczekuje na zatwierdzenie przez administratora.'));
     setShowRegister(false);
-    setPassword(''); setCaptchaAnswer('');
+    setPassword(''); setCaptchaAnswer(''); setConsentChecked(false);
   };
 
   // Styl tła ekranu logowania (własny obraz / gradient presetu / domyślne).
@@ -373,6 +384,18 @@ export default function Login() {
             onChange={e => setHoneypot(e.target.value)}
             style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
           />
+        )}
+
+        {showRegister && consentCfg.required && (
+          <div className="mb-6">
+            <label className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+              <input type="checkbox" className="mt-0.5 w-4 h-4" checked={consentChecked} onChange={e => setConsentChecked(e.target.checked)} />
+              <span>
+                {consentCfg.text || tr('Akceptuję regulamin i politykę prywatności')}
+                {consentCfg.url && <> — <a href={consentCfg.url} target="_blank" rel="noreferrer" className="text-accent-primary dark:text-accent-primary-light hover:underline">{tr('czytaj')}</a></>}
+              </span>
+            </label>
+          </div>
         )}
 
         {error && (

@@ -41,6 +41,10 @@ const MODULES = [
   'board-form-submit',
   'admin-set-user-password',
   'approve-user',
+  'admin-create-user',
+  'reject-user',
+  'resend-verification',
+  'account-events',
 ];
 
 export async function registerFunctions(app) {

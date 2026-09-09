@@ -277,11 +277,11 @@ export function createApiClient({
       return { data: { user: payload.user, session: next }, error: null };
     },
 
-    async signUp({ email, password, full_name, captcha_token, captcha_answer, website } = {}) {
+    async signUp({ email, password, full_name, captcha_token, captcha_answer, website, consent } = {}) {
       // Samodzielna rejestracja — serwer decyduje wg trybu tenanta (closed/approval/open).
-      // Nie loguje od razu: wynik to status ('pending') + powód ('email' | 'admin').
+      // Nie loguje od razu: wynik to status ('pending'|'active') + powód ('email'|'admin'|'auto').
       const { res, payload } = await requestJson('/api/auth/register', {
-        email, password, full_name, captcha_token, captcha_answer, website,
+        email, password, full_name, captcha_token, captcha_answer, website, consent,
       });
       if (!res.ok) {
         return { data: { user: null, session: null }, error: { message: payload?.error || 'Nie udało się utworzyć konta', status: res.status } };
@@ -294,9 +294,13 @@ export function createApiClient({
       try {
         const res = await request('/api/auth/registration-config');
         const payload = await res.json().catch(() => ({}));
-        return { mode: payload?.mode || 'closed', captcha: payload?.captcha !== false };
+        return {
+          mode: payload?.mode || 'closed',
+          captcha: payload?.captcha !== false,
+          consent: payload?.consent || { required: false, url: '', text: '' },
+        };
       } catch {
-        return { mode: 'closed', captcha: true };
+        return { mode: 'closed', captcha: true, consent: { required: false, url: '', text: '' } };
       }
     },
 
