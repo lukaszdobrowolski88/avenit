@@ -25,6 +25,12 @@ export default async function handler(req, reply) {
     [userId]
   );
   await logAccountEvent(req.db, { email: target.email, action: 'reset_2fa', actor: caller.email });
+  const { notifyAccountChange } = await import('../lib/account-notify.js');
+  await notifyAccountChange(req.db, {
+    email: target.email, name: target.full_name,
+    subject: 'Zresetowano 2FA — Avenit',
+    intro: 'Dwuetapowa weryfikacja (2FA) na Twoim koncie została zresetowana. Skonfigurujesz ją ponownie przy kolejnym logowaniu.',
+  });
   req.log.info({ actor: caller.email, target: target.email }, 'admin reset 2fa');
   return reply.send({ success: true });
 }

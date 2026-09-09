@@ -16,7 +16,7 @@ export default async function handler(req, reply) {
 
   const { rows } = await req.db.query(
     `SELECT u.id, u.email, u.is_super_admin, u.is_active, u.role, u.full_name, u.status,
-            COALESCE(r.is_admin, false) AS role_admin
+            u.campus_id, u.totp_required, COALESCE(r.is_admin, false) AS role_admin
        FROM app_users u LEFT JOIN app_roles r ON u.role = r.key WHERE u.id = $1`,
     [userId]
   );
@@ -26,13 +26,14 @@ export default async function handler(req, reply) {
     return reply.code(403).send({ error: 'Tylko super-administrator może edytować super-administratora.' });
   }
 
+  // Pola nieprzysłane zostają bez zmian (obsługa częściowych aktualizacji, np. masowa zmiana roli).
   const b = req.body || {};
   const email = String(b.email ?? target.email).trim();
   const fullName = String(b.full_name ?? target.full_name ?? '');
   const role = String(b.role ?? target.role);
-  const newActive = b.is_active !== false;
-  const campusId = b.campus_id || null;
-  const totpRequired = b.totp_required === true;
+  const newActive = b.is_active === undefined ? target.is_active : b.is_active !== false;
+  const campusId = b.campus_id === undefined ? target.campus_id : (b.campus_id || null);
+  const totpRequired = b.totp_required === undefined ? target.totp_required : b.totp_required === true;
 
   // Czy po zmianie konto nadal ma uprawnienia administratora?
   const { rows: rr } = await req.db.query('SELECT COALESCE(is_admin, false) AS a FROM app_roles WHERE key = $1', [role]);
@@ -64,5 +65,13 @@ export default async function handler(req, reply) {
   if (!newActive) await revokeSessions(req.db, userId);
 
   await logAccountEvent(req.db, { email: target.email, action: 'edited', actor: caller.email, detail: role });
+  if (role !== target.role) {
+    const { notifyAccountChange } = await import('../lib/account-notify.js');
+    await notifyAccountChange(req.db, {
+      email, name: fullName,
+      subject: 'Zmieniono rolę w koncie — Avenit',
+      intro: `Administrator zmienił Twoją rolę w systemie na: ${role}.`,
+    });
+  }
   return reply.send({ success: true });
 }

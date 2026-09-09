@@ -50,6 +50,7 @@ const MODULES = [
   'delete-user',
   'admin-reset-2fa',
   'force-logout-user',
+  'resend-invite',
 ];
 
 export async function registerFunctions(app) {

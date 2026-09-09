@@ -5,7 +5,7 @@ import {
   List, Plus, Trash2, X, Settings, Grid, Users, Shield, BookOpen, Building2,
   CheckCircle, AlertCircle, Upload, Eye,
   Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, UserCheck, Check, ChevronDown, ChevronUp, Layers, Plug,
-  Palette, Bell, Globe, CreditCard, KeyRound, Mail, Loader2, UserPlus, Clock
+  Palette, Bell, Globe, CreditCard, KeyRound, Mail, Loader2, UserPlus, Clock, Download
 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import { useT } from '../../i18n';
@@ -578,18 +578,7 @@ export default function GlobalSettings() {
             },
           });
           if (createErr) throw new Error(`Błąd tworzenia konta: ${createErr.message}`);
-        }
-
-        // 5. Wyślij email z linkiem do ustawienia hasła (przez Resend SMTP skonfigurowany w Supabase)
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(userForm.email, {
-          redirectTo: `${window.location.origin}/reset-password`
-        });
-
-        if (resetError) {
-          console.error('Błąd wysyłania emaila:', resetError);
-          setMessage({ type: 'warning', text: `Utworzono użytkownika, ale nie udało się wysłać emaila: ${resetError.message}` });
-        } else {
-          setMessage({ type: 'success', text: `Utworzono użytkownika ${userForm.email}. Email z linkiem do ustawienia hasła został wysłany.` });
+          setMessage({ type: 'success', text: `Utworzono ${userForm.email} — wysłano zaproszenie do ustawienia hasła (ważne 7 dni).` });
         }
 
         // 6. Dodaj użytkownika do wybranych zespołów/służb (lub zaktualizuj istniejącego)
@@ -712,6 +701,59 @@ export default function GlobalSettings() {
     if (error) { toast.error(error.message || tr('Błąd')); return; }
     fetchData(); loadAccountEvents();
     setMessage({ type: 'success', text: tr('Odblokowano logowanie') });
+  };
+  const resendInvite = async (id) => {
+    const { error } = await supabase.functions.invoke('resend-invite', { body: { userId: id } });
+    setMessage(error ? { type: 'error', text: error.message || tr('Błąd') } : { type: 'success', text: tr('Ponowiono zaproszenie') });
+  };
+
+  // Zaznaczanie i akcje masowe (pętla po zaznaczonych — każdą operację robi funkcja serwerowa).
+  const [selectedUserIds, setSelectedUserIds] = useState(() => new Set());
+  const [bulkRole, setBulkRole] = useState('');
+  const toggleSelectUser = (id) => setSelectedUserIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const clearSelection = () => setSelectedUserIds(new Set());
+  const bulkRun = async (op, label) => {
+    let ok = 0, fail = 0;
+    for (const id of [...selectedUserIds]) { const err = await op(id); if (err) fail++; else ok++; }
+    fetchData(); loadAccountEvents(); clearSelection();
+    setMessage({ type: fail ? 'error' : 'success', text: `${label}: ${ok} ok${fail ? `, ${fail} ${tr('błędów')}` : ''}` });
+  };
+  const bulkActivate = () => bulkRun(async id => (await supabase.functions.invoke('set-user-status', { body: { userId: id, active: true } })).error, tr('Aktywowano'));
+  const bulkBlock = () => { if (confirm(tr('Zablokować zaznaczonych?'))) bulkRun(async id => (await supabase.functions.invoke('set-user-status', { body: { userId: id, active: false } })).error, tr('Zablokowano')); };
+  const bulkDelete = () => { if (confirm(tr('Usunąć zaznaczonych? Operacja nieodwracalna.'))) bulkRun(async id => (await supabase.functions.invoke('delete-user', { body: { userId: id } })).error, tr('Usunięto')); };
+  const bulkChangeRole = () => { if (bulkRole) bulkRun(async id => (await supabase.functions.invoke('admin-update-user', { body: { userId: id, role: bulkRole } })).error, tr('Zmieniono rolę')); };
+
+  const exportUsersCsv = () => {
+    const rows = [['Imię i nazwisko', 'E-mail', 'Rola', 'Status', 'Lokalizacja', 'Ostatnie logowanie']];
+    filteredUsers.forEach(u => {
+      const st = u.status || (u.is_active ? 'active' : 'blocked');
+      rows.push([u.full_name || '', u.email || '', definedRoles.find(r => r.key === u.role)?.label || u.role || '', st, campuses.find(c => c.id === u.campus_id)?.name || '', u.last_login_at ? new Date(u.last_login_at).toLocaleString() : '']);
+    });
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'uzytkownicy.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  };
+  const importUsersCsv = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const lines = (await file.text()).split(/\r?\n/).filter(l => l.trim());
+    if (!lines.length) { e.target.value = ''; return; }
+    const header = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+    const ie = header.findIndex(h => h.includes('mail'));
+    const inm = header.findIndex(h => h.includes('imi') || h.includes('name') || h.includes('nazw'));
+    const ir = header.findIndex(h => h.includes('rol'));
+    if (ie < 0) { toast.error(tr('Brak kolumny e-mail w pliku CSV')); e.target.value = ''; return; }
+    let ok = 0, fail = 0;
+    for (const line of lines.slice(1)) {
+      const cells = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
+      const email = cells[ie]; if (!email || !email.includes('@')) continue;
+      const roleCell = ir >= 0 ? cells[ir] : '';
+      const role = definedRoles.find(r => r.key === roleCell || r.label === roleCell)?.key || 'czlonek';
+      const { error } = await supabase.functions.invoke('admin-create-user', { body: { email, full_name: inm >= 0 ? cells[inm] : '', role } });
+      if (error) fail++; else ok++;
+    }
+    e.target.value = '';
+    fetchData(); loadAccountEvents();
+    setMessage({ type: fail ? 'error' : 'success', text: `${tr('Import CSV')}: ${ok} ${tr('utworzono')}${fail ? `, ${fail} ${tr('pominięto')}` : ''}` });
   };
 
   // Funkcja do scalania zduplikowanych członków we wszystkich tabelach służb
@@ -1211,6 +1253,9 @@ export default function GlobalSettings() {
             <div className="flex justify-between items-center mb-6">
               <SectionHeader title={t('Użytkownicy Systemu')} description={tr('Zarządzanie dostępem, rolami i statusem kont.')} />
               <div className="flex items-center gap-2">
+                <button onClick={exportUsersCsv} className="border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm" title={tr('Eksportuj listę do CSV')}><Download size={16}/> CSV</button>
+                <button onClick={() => document.getElementById('users-csv-import').click()} className="border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm" title={tr('Importuj konta z CSV (kolumny: e-mail, imię, rola)')}><Upload size={16}/> Import</button>
+                <input id="users-csv-import" type="file" accept=".csv,text/csv" className="hidden" onChange={importUsersCsv} />
                 <button onClick={mergeDuplicateMembers} className="bg-accent-secondary-light text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition text-sm" title={t('Scal zduplikowanych członków w służbach')}><Layers size={16}/> Scal duplikaty</button>
                 <button onClick={() => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setRequire2FA(false); setShowUserModal(true); }} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition"><Plus size={18}/> Dodaj Użytkownika</button>
               </div>
@@ -1305,6 +1350,10 @@ export default function GlobalSettings() {
                 <input type="checkbox" className="w-4 h-4" checked={getSetting('require_2fa_all') === 'on'} onChange={e => saveSetting('require_2fa_all', e.target.checked ? 'on' : 'off')} />
                 {tr('Wymagaj dwuetapowej weryfikacji (2FA) od wszystkich użytkowników')}
               </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none mt-3">
+                <input type="checkbox" className="w-4 h-4" checked={(getSetting('account_change_emails') || 'on') !== 'off'} onChange={e => saveSetting('account_change_emails', e.target.checked ? 'on' : 'off')} />
+                {tr('Powiadamiaj użytkowników e-mailem o zmianach konta (blokada, rola, reset 2FA)')}
+              </label>
               <p className="text-xs text-gray-400 mt-2">{tr('Konta bez 2FA zostaną poproszone o konfigurację przy następnym logowaniu. Zbyt wiele nieudanych prób czasowo blokuje logowanie.')}</p>
             </div>
 
@@ -1376,17 +1425,35 @@ export default function GlobalSettings() {
                 <option value="pending">{tr('Oczekujący')}</option>
               </select>
             </div>
+            {selectedUserIds.size > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mb-3 p-3 rounded-xl bg-accent-primary-lightest/50 dark:bg-gray-800 border border-accent-primary-light/40">
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{tr('Zaznaczono')}: {selectedUserIds.size}</span>
+                <button onClick={bulkActivate} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600">{tr('Aktywuj')}</button>
+                <button onClick={bulkBlock} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600">{tr('Zablokuj')}</button>
+                <div className="flex items-center gap-1.5">
+                  <select value={bulkRole} onChange={e => setBulkRole(e.target.value)} className="text-sm">
+                    <option value="">{tr('Zmień rolę…')}</option>
+                    {definedRoles.filter(r => r.key !== 'superadmin').map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
+                  </select>
+                  <button onClick={bulkChangeRole} disabled={!bulkRole} className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-600 disabled:opacity-50">{tr('Zastosuj')}</button>
+                </div>
+                <button onClick={bulkDelete} className="px-3 py-1.5 rounded-lg text-sm font-medium border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">{tr('Usuń')}</button>
+                <button onClick={clearSelection} className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:underline ml-auto">{tr('Wyczyść')}</button>
+              </div>
+            )}
             <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
               <table className="w-full text-sm text-left bg-white dark:bg-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4">{t('Użytkownik')}</th><th className="p-4">{t('Email')}</th><th className="p-4">{t('Rola')}</th>{campuses.length > 0 && <th className="p-4">{t('Lokalizacja')}</th>}<th className="p-4">{t('Status')}</th><th className="p-4">{t('Ostatnie logowanie')}</th><th className="p-4 text-right">{t('Akcje')}</th></tr></thead>
+                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4 w-10"><input type="checkbox" checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length} onChange={() => setSelectedUserIds(prev => prev.size === filteredUsers.length ? new Set() : new Set(filteredUsers.map(u => u.id)))} /></th><th className="p-4">{t('Użytkownik')}</th><th className="p-4">{t('Email')}</th><th className="p-4">{t('Rola')}</th>{campuses.length > 0 && <th className="p-4">{t('Lokalizacja')}</th>}<th className="p-4">{t('Status')}</th><th className="p-4">{t('Ostatnie logowanie')}</th><th className="p-4 text-right">{t('Akcje')}</th></tr></thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
                   {filteredUsers.map(user => {
                     const roleLabel = definedRoles.find(r => r.key === user.role)?.label || user.role;
                     const isSuperAdmin = user.is_super_admin === true;
                     const st = user.status || (user.is_active ? 'active' : 'blocked');
                     const loginLocked = user.locked_until && new Date(user.locked_until).getTime() > Date.now();
+                    const invitedPending = user.invited_at && !user.last_login_at;
                     return (
                       <tr key={user.id} className={`hover:bg-accent-primary-lightest/30 dark:hover:bg-gray-600 transition text-gray-800 dark:text-gray-200 ${isSuperAdmin ? 'bg-yellow-50/30 dark:bg-yellow-900/10' : ''}`}>
+                        <td className="p-4 w-10"><input type="checkbox" checked={selectedUserIds.has(user.id)} onChange={() => toggleSelectUser(user.id)} /></td>
                         <td className="p-4 font-medium flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold uppercase ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary dark:text-accent-primary-light'}`}>
                             {(user.full_name || user.email || '?').charAt(0)}
@@ -1409,9 +1476,12 @@ export default function GlobalSettings() {
                             )}
                           </div>
                         </td>
-                        <td className="p-4 text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : <span className="text-gray-300 dark:text-gray-600">{tr('nigdy')}</span>}</td>
+                        <td className="p-4 text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : invitedPending ? <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">{tr('zaproszono')}</span> : <span className="text-gray-300 dark:text-gray-600">{tr('nigdy')}</span>}</td>
                         <td className="p-4 text-right flex justify-end gap-2">
                           <button onClick={() => { setUserForm({...user, password: ''}); setAdminNewPassword(''); setRequire2FA(!!user.totp_required); setShowUserModal(true); }} title={t('Edytuj')} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
+                          {invitedPending && (
+                            <button onClick={() => resendInvite(user.id)} title={tr('Ponów zaproszenie')} className="text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Mail size={16}/></button>
+                          )}
                           {user.totp_enabled && (
                             <button onClick={() => resetUser2FA(user)} title={tr('Zresetuj 2FA')} className="text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-gray-600 p-2 rounded-lg"><KeyRound size={16}/></button>
                           )}

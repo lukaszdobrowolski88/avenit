@@ -3,6 +3,7 @@
 // Klient po utworzeniu wysyła e-mail „ustaw hasło" (reset-password). Bramka admina serwerowa.
 import crypto from 'node:crypto';
 import { hashPassword } from '../auth/passwords.js';
+import { config } from '../config.js';
 
 export const name = 'admin-create-user';
 export const isPublic = false;
@@ -36,10 +37,26 @@ export default async function handler(req, reply) {
   // 3. Utworzenie konta (aktywne od razu — to admin zakłada, e-mail zweryfikowany domyślnie).
   const { rows } = await req.db.query(
     `INSERT INTO app_users
-       (email, full_name, name, role, is_active, status, email_verified, password_hash, campus_id, totp_required)
-     VALUES ($1,$2,$2,$3,$4,$5,true,$6,$7,$8) RETURNING id`,
+       (email, full_name, name, role, is_active, status, email_verified, password_hash, campus_id, totp_required, invited_at)
+     VALUES ($1,$2,$2,$3,$4,$5,true,$6,$7,$8, now()) RETURNING id`,
     [email, full_name, role, isActive, isActive ? 'active' : 'blocked', await hashPassword(randomPw), campusId, totpRequired]
   );
+
+  // Zaproszenie: token 7-dniowy + e-mail „ustaw hasło" (dla aktywnych — mają się logować).
+  if (isActive) {
+    const raw = crypto.randomBytes(32).toString('base64url');
+    const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
+    await req.db.query(
+      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, now() + interval '7 days')`,
+      [rows[0].id, tokenHash]
+    );
+    const base = `https://${req.tenant.subdomain}.${config.APP_DOMAIN}`;
+    const { sendInviteEmail } = await import('../lib/email.js');
+    await sendInviteEmail(email, { name: full_name, link: `${base}/reset-password?token=${raw}` }).catch((err) =>
+      req.log.error({ err }, 'invite email failed')
+    );
+  }
+
   const { logAccountEvent } = await import('../lib/account-audit.js');
   await logAccountEvent(req.db, { email, action: 'created', actor: req.user.email });
   req.log.info({ actor: req.user.email, target: email }, 'admin created user');

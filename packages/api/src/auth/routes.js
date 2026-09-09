@@ -359,7 +359,7 @@ export default async function authRoutes(app) {
       [tokenHash]
     );
     if (!rows[0]) return reply.code(400).send({ error: 'Link wygasł lub został użyty' });
-    await req.db.query(`UPDATE app_users SET password_hash = $1 WHERE id = $2`, [
+    await req.db.query(`UPDATE app_users SET password_hash = $1, invited_at = NULL WHERE id = $2`, [
       await hashPassword(String(password)),
       rows[0].user_id,
     ]);

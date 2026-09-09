@@ -39,5 +39,11 @@ export default async function handler(req, reply) {
   if (!active) await revokeSessions(req.db, userId);
 
   await logAccountEvent(req.db, { email: target.email, action: active ? 'unblocked' : 'blocked', actor: caller.email });
+  const { notifyAccountChange } = await import('../lib/account-notify.js');
+  await notifyAccountChange(req.db, {
+    email: target.email, name: target.full_name,
+    subject: active ? 'Konto odblokowane — Avenit' : 'Konto zablokowane — Avenit',
+    intro: active ? 'Twoje konto zostało odblokowane. Możesz się ponownie zalogować.' : 'Twoje konto zostało zablokowane przez administratora.',
+  });
   return reply.send({ success: true, active });
 }

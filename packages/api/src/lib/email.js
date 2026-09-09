@@ -132,6 +132,40 @@ export async function sendVerifyEmail(to, link) {
   });
 }
 
+// Zaproszenie do systemu — link do ustawienia hasła (ważny 7 dni). Wysyłane przy zakładaniu
+// konta przez administratora.
+export async function sendInviteEmail(to, { name, link } = {}) {
+  return sendEmail({
+    to,
+    subject: 'Zaproszenie do Avenit — ustaw hasło',
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <h2>Witaj${name ? `, ${name}` : ''}!</h2>
+        <p>Utworzono dla Ciebie konto w systemie <strong>Avenit</strong>. Ustaw hasło, aby się zalogować.</p>
+        <p style="margin: 24px 0;">
+          <a href="${link}" style="background: #d97706; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none;">Ustaw hasło</a>
+        </p>
+        <p style="color: #6b7280; font-size: 13px;">Link jest ważny przez 7 dni.</p>
+      </div>`,
+    text: `Ustaw hasło do konta Avenit: ${link} (link ważny 7 dni)`,
+  });
+}
+
+// Ogólne powiadomienie o zmianie konta (blokada / odblokowanie / rola / reset 2FA).
+export async function sendAccountNoticeEmail(to, { name, subject, intro } = {}) {
+  return sendEmail({
+    to,
+    subject: subject || 'Zmiana w Twoim koncie — Avenit',
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <h2>Cześć${name ? `, ${name}` : ''}</h2>
+        <p>${intro}</p>
+        <p style="color: #6b7280; font-size: 13px;">Jeśli to nie było zamierzone, skontaktuj się z administratorem swojej organizacji.</p>
+      </div>`,
+    text: intro,
+  });
+}
+
 // Powitanie po aktywacji konta (zatwierdzenie admina lub potwierdzenie e-mail).
 export async function sendWelcomeEmail(to, { name, loginUrl } = {}) {
   return sendEmail({
