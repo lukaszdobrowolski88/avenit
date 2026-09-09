@@ -37,6 +37,9 @@ export const REGISTRY = {
   app_permissions: T(null), // legacy (zastąpione przez permission_grants)
   app_roles: T(null),
   permission_grants: T(null),
+  // Przynależność do służb (osoba×służba×kampus×rola). Odczyt otwarty (kto jest w jakiej
+  // służbie); zapis bramkowany manage_users (SETTINGS_WRITE_CAPABILITY) w canAccess.
+  ministry_memberships: T(null),
   app_modules: T(null),
   app_module_tabs: T(null),
   // Rekordy własnych kolekcji kreatora. Dostęp egzekwowany PER MODUŁ (module_key)

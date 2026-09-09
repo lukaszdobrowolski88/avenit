@@ -343,6 +343,7 @@ export const SETTINGS_WRITE_CAPABILITY = {
   app_module_tabs: 'action:settings:manage_modules',
   app_settings: 'action:settings:manage_integrations',
   campuses: 'action:settings:manage_modules',
+  ministry_memberships: 'action:settings:manage_users', // przypisywanie służb = zarządzanie osobami
 };
 
 const MODULE_BY_KEY = Object.fromEntries(MODULES.map((m) => [m.key, m]));

@@ -4,7 +4,8 @@ import { tr } from '../../../i18n';
 import { dynamicCapabilityGroups } from '@avenit/shared/src/permissions/catalog.js';
 import { ROLE_PRESETS, BUILTIN_ROLES } from '@avenit/shared/src/permissions/presets.js';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
-import { ChevronDown, ChevronRight, Shield, Plus, Trash2, Users, Sliders } from 'lucide-react';
+import { ChevronDown, ChevronRight, Shield, Plus, Trash2, Users, Sliders, HeartHandshake } from 'lucide-react';
+import MinistryMemberships from './MinistryMemberships';
 
 const KIND_STYLE = {
   module: 'font-semibold text-gray-800 dark:text-gray-100',
@@ -213,7 +214,7 @@ export default function PermissionsAdmin() {
   return (
     <div>
       <div className="row" style={{ gap: 8, marginBottom: 16 }}>
-        {[['matrix', tr('Macierz ról'), Sliders], ['roles', tr('Role'), Shield], ['users', tr('Użytkownicy'), Users]].map(([k, label, Icon]) => (
+        {[['matrix', tr('Macierz ról'), Sliders], ['roles', tr('Role'), Shield], ['ministries', tr('Służby'), HeartHandshake], ['users', tr('Użytkownicy'), Users]].map(([k, label, Icon]) => (
           <button key={k} onClick={() => setView(k)} className={`px-3 py-1.5 rounded-lg text-sm font-medium inline-flex items-center gap-1.5 transition ${view === k ? 'bg-accent-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}>
             <Icon size={15} /> {label}
           </button>
@@ -223,6 +224,7 @@ export default function PermissionsAdmin() {
       {err && <div className="err mb-2">{err}</div>}
       {view === 'matrix' && <RoleMatrix />}
       {view === 'roles' && <RolesManager />}
+      {view === 'ministries' && <MinistryMemberships />}
       {view === 'users' && <UserOverrides />}
     </div>
   );

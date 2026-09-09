@@ -82,7 +82,7 @@ export default async function dataApiRoutes(app) {
       }
 
       // Wyczyść cache uprawnień przy zmianach ról/grantów.
-      if (['app_permissions', 'permission_grants', 'app_roles'].includes(q.table) && q.op !== 'select') {
+      if (['app_permissions', 'permission_grants', 'app_roles', 'ministry_memberships'].includes(q.table) && q.op !== 'select') {
         invalidatePermissions(req.tenant.db_name);
       }
 
