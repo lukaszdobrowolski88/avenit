@@ -52,9 +52,13 @@ export const REGISTRY = {
   push_subscriptions: T(null),
   push_tokens: T(null),
   ical_subscriptions: T(null),
+  // Integracje (klucze API itp.) = tylko realny admin (is_admin/superadmin). Wcześniej też
+  // rada_starszych (przez ADMIN_ROLES); zgodnie z „Starszy Zboru bez ustawień technicznych"
+  // zawężamy do superadmina. Celowo NIE ruszamy współdzielonej stałej ADMIN_ROLES (używa jej
+  // też zapis kazań/fallback) — zmiana punktowa tylko tutaj.
   integration_settings: T('module:settings', {
-    readRoles: ADMIN_ROLES,
-    writeRoles: ADMIN_ROLES,
+    readRoles: ['superadmin'],
+    writeRoles: ['superadmin'],
     hiddenColumns: [],
   }),
 

@@ -208,6 +208,19 @@ function hashCode(s) {
 }
 
 // ── Główne operacje ───────────────────────────────────────────────────────
+// Tabele „danych kampusowych" — twarda izolacja (Faza 4). Wiersze widoczne/edytowalne tylko
+// dla osób z pasującym kampusem (albo bez kampusu = wszystkie). NIE zawiera app_users ani
+// ministry_memberships (tam campus_id ma inne znaczenie). Rozszerzalne.
+export const CAMPUS_SCOPED_TABLES = new Set([
+  'members', 'programs', 'events', 'module_events',
+  'worship_events', 'media_events', 'atmosfera_events', 'kids_events', 'homegroups_events', 'mlodziezowka_events',
+  'home_groups', 'kids_groups', 'kids_students', 'kids_parent_notifications',
+  'budget_items', 'checkin_sessions', 'resources', 'resource_bookings',
+  'rsvp_campaigns', 'rsvp_invitations', 'sms_campaigns', 'push_campaigns',
+  'sermons', 'song_usage', 'volunteer_blockouts',
+  'member_notes', 'member_care_log', 'member_milestones', 'member_tags',
+]);
+
 export function buildQuery(q) {
   const table = String(q.table || '');
   const rule = getTableRule(table);
@@ -217,13 +230,24 @@ export function buildQuery(q) {
   const params = [];
   const tbl = quoteIdent(table);
 
+  // Twarda izolacja kampusów (Faza 4). campusId != null WYŁĄCZNIE gdy osoba ma przypisany
+  // kampus i nie jest adminem (ustawiane w routes). Gdy null → klauzula NIE jest dodawana,
+  // więc SQL jest identyczny jak dotąd (obecnie 0 kampusów → w pełni uśpione).
+  const campusId = (q.__campusScope && q.__campusScope.campusId != null && CAMPUS_SCOPED_TABLES.has(table))
+    ? q.__campusScope.campusId : null;
+  const campusClause = () => {
+    params.push(campusId);
+    return `(${alias}."campus_id" = $${params.length} OR ${alias}."campus_id" IS NULL)`;
+  };
+
   switch (q.op) {
     case 'select': {
       const parsed = parseSelect(q.select);
       const cols = buildSelectColumns(table, parsed, alias, params);
       const usesJsonbRow = cols.some((c) => c.endsWith('AS __row'));
       const where = buildWhere(q.filters, params, alias, hidden);
-      let sql = `SELECT ${cols.join(', ')} FROM ${tbl} ${alias}${where}`;
+      const selWhere = campusId != null ? (where ? `${where} AND ${campusClause()}` : ` WHERE ${campusClause()}`) : where;
+      let sql = `SELECT ${cols.join(', ')} FROM ${tbl} ${alias}${selWhere}`;
       if (q.order?.length) {
         const orderParts = q.order.map((o) => {
           const dir = o.ascending === false ? 'DESC' : 'ASC';
@@ -238,7 +262,8 @@ export function buildQuery(q) {
     }
 
     case 'insert': {
-      const rows = Array.isArray(q.values) ? q.values : [q.values];
+      let rows = Array.isArray(q.values) ? q.values : [q.values];
+      if (campusId != null) rows = rows.map((r) => (r ? { ...r, campus_id: campusId } : r)); // scoped: stempluj kampus
       if (!rows.length) throw new ApiError(400, 'Brak danych do zapisu');
       const columns = collectColumns(rows, hidden);
       const valuesSql = rows
@@ -258,7 +283,8 @@ export function buildQuery(q) {
     }
 
     case 'upsert': {
-      const rows = Array.isArray(q.values) ? q.values : [q.values];
+      let rows = Array.isArray(q.values) ? q.values : [q.values];
+      if (campusId != null) rows = rows.map((r) => (r ? { ...r, campus_id: campusId } : r)); // scoped: stempluj kampus
       if (!rows.length) throw new ApiError(400, 'Brak danych do zapisu');
       const columns = collectColumns(rows, hidden);
       const valuesSql = rows
@@ -292,7 +318,9 @@ export function buildQuery(q) {
     }
 
     case 'update': {
-      const values = q.values || {};
+      let values = q.values || {};
+      // scoped: nie pozwól przenieść wiersza do innego kampusu (kolumna campus_id poza edycją).
+      if (campusId != null && 'campus_id' in values) { values = { ...values }; delete values.campus_id; }
       const columns = Object.keys(values).filter((c) => !hidden.includes(c));
       if (!columns.length) throw new ApiError(400, 'Brak danych do aktualizacji');
       if (!q.filters?.length) throw new ApiError(400, 'UPDATE bez filtrów jest zabroniony');
@@ -301,7 +329,8 @@ export function buildQuery(q) {
         return `${quoteIdent(c)} = $${params.length}`;
       });
       const where = buildWhere(q.filters, params, alias, hidden);
-      let sql = `UPDATE ${tbl} AS ${alias} SET ${sets.join(', ')}${where}`;
+      const updWhere = campusId != null ? `${where} AND ${campusClause()}` : where; // scoped: tylko własny kampus
+      let sql = `UPDATE ${tbl} AS ${alias} SET ${sets.join(', ')}${updWhere}`;
       sql += returningClause(table, q);
       return { sql, params, kind: 'update' };
     }
@@ -309,7 +338,8 @@ export function buildQuery(q) {
     case 'delete': {
       if (!q.filters?.length) throw new ApiError(400, 'DELETE bez filtrów jest zabroniony');
       const where = buildWhere(q.filters, params, alias, hidden);
-      let sql = `DELETE FROM ${tbl} AS ${alias}${where}`;
+      const delWhere = campusId != null ? `${where} AND ${campusClause()}` : where; // scoped: tylko własny kampus
+      let sql = `DELETE FROM ${tbl} AS ${alias}${delWhere}`;
       sql += returningClause(table, q);
       return { sql, params, kind: 'delete' };
     }
