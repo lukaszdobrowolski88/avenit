@@ -95,8 +95,16 @@ const K = {
   radius: 'ui_radius', sidebar: 'ui_sidebar', fontUrl: 'ui_font_url',
   heading: 'ui_font_heading', pattern: 'ui_bg_pattern', bgUrl: 'ui_bg_url',
   sidebarW: 'ui_sidebar_w', motion: 'ui_motion', scrollbar: 'ui_scrollbar',
-  oled: 'ui_oled',
+  oled: 'ui_oled', css: 'custom_css',
 };
+
+// Klucze app_settings składające się na „motyw" — do eksportu/importu i resetu wyglądu.
+export const THEME_KEYS = [
+  'color_preset', 'ui_font', 'custom_font_url', 'ui_font_heading', 'ui_bg', 'ui_bg_pattern',
+  'ui_bg_url', 'ui_scale', 'ui_radius', 'ui_sidebar', 'ui_sidebar_w', 'ui_motion',
+  'ui_scrollbar', 'ui_oled', 'module_colors', 'module_covers', 'login_bg', 'login_bg_url',
+  'login_title', 'login_subtitle', 'custom_css', 'org_logo_url',
+];
 const root = () => document.documentElement;
 
 // --- CZCIONKA WŁASNA (@font-face wstrzykiwany do <head>) ---
@@ -199,6 +207,22 @@ export function applyOled(key) {
   localStorage.setItem(K.oled, on ? 'on' : 'off');
 }
 
+// Własny CSS (tryb zaawansowany) — wstrzykiwany do <head> jako ostatni <style> (wygrywa kaskadę).
+export function injectCustomCss(css) {
+  let el = document.getElementById('app-custom-css');
+  if (!el) { el = document.createElement('style'); el.id = 'app-custom-css'; document.head.appendChild(el); }
+  el.textContent = css || '';
+  if (css) localStorage.setItem(K.css, css); else localStorage.removeItem(K.css);
+}
+export const getCustomCss = () => localStorage.getItem(K.css) || '';
+
+// Wyczyść lokalny stan motywu (localStorage) — używane przez „Przywróć domyślne" przed reloadem.
+export function clearThemeLocal() {
+  Object.values(K).forEach((k) => localStorage.removeItem(k));
+  ['color_preset', 'custom_preset'].forEach((k) => localStorage.removeItem(k));
+  const el = document.getElementById('app-custom-css'); if (el) el.textContent = '';
+}
+
 export const getFont       = () => localStorage.getItem(K.font)    || 'inter';
 export const getBackground = () => localStorage.getItem(K.bg)      || 'slate';
 export const getScale      = () => localStorage.getItem(K.scale)   || 'default';
@@ -216,6 +240,8 @@ export const getOled        = () => localStorage.getItem(K.oled)      || 'off';
 // Zastosuj z localStorage od razu przy imporcie (zanim wyrenderuje się React).
 const storedFontUrl = getFontUrl();
 if (storedFontUrl) injectCustomFont(storedFontUrl);
+const storedCss = getCustomCss();
+if (storedCss) injectCustomCss(storedCss);
 applyFont(getFont());
 applyBackground(getBackground());
 applyScale(getScale());

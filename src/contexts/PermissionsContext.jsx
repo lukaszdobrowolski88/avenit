@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase, getCachedUser } from '../lib/supabase';
 import { applyColorPreset, applyCustomColors } from '../lib/colorPresets';
-import { applyFont, applyBackground, applyScale, applyRadius, applySidebar, injectCustomFont, applyHeadingFont, applyBgPattern, setBgUrl, applySidebarWidth, applyMotion, applyScrollbar, applyOled } from '../lib/appearance';
+import { applyFont, applyBackground, applyScale, applyRadius, applySidebar, injectCustomFont, applyHeadingFont, applyBgPattern, setBgUrl, applySidebarWidth, applyMotion, applyScrollbar, applyOled, injectCustomCss } from '../lib/appearance';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { ministryGrants } from '@avenit/shared/src/permissions/ministry.js';
 
@@ -117,6 +117,7 @@ export function PermissionsProvider({ children }) {
           const umo = settings.find((s) => s.key === 'ui_motion')?.value; if (umo) applyMotion(umo);
           const usc = settings.find((s) => s.key === 'ui_scrollbar')?.value; if (usc) applyScrollbar(usc);
           const uol = settings.find((s) => s.key === 'ui_oled')?.value; if (uol) applyOled(uol);
+          const ucss = settings.find((s) => s.key === 'custom_css')?.value; if (ucss) injectCustomCss(ucss);
         }
       } catch (err) {
         console.error('Error loading permissions:', err);
