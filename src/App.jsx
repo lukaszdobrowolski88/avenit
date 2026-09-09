@@ -211,26 +211,11 @@ function AppInner() {
     );
 
     try {
-      const result = await Promise.race([
-        Promise.all([
-          supabase.from('app_users').select('totp_required, totp_enabled').eq('email', userEmail).maybeSingle(),
-          supabase.from('app_settings').select('value').eq('key', 'require_2fa_all').maybeSingle(),
-        ]),
-        timeoutPromise
-      ]);
-
-      // Jeśli timeout - nie wymagaj 2FA
-      if (result.timeout) {
-        setRequires2FASetup(false);
-        return;
-      }
-      const [userRes, settingRes] = result;
-      if (userRes.error) { setRequires2FASetup(false); return; }
-
-      // Wymóg 2FA = ustawiony na koncie LUB wymuszony dla całej organizacji, a 2FA nieskonfigurowane.
-      const orgRequire2FA = settingRes?.data?.value === 'on';
-      const u = userRes.data;
-      setRequires2FASetup(Boolean((u?.totp_required || orgRequire2FA) && !u?.totp_enabled));
+      // Wymóg 2FA liczy serwer (claim n2fa) i zwraca w /me jako needs2fa — czytamy z sesji,
+      // a nie z /api/db (który jest blokowany, gdy 2FA jest wymagane).
+      const result = await Promise.race([supabase.auth.getUser(), timeoutPromise]);
+      if (result.timeout) { setRequires2FASetup(false); return; }
+      setRequires2FASetup(Boolean(result?.data?.user?.needs2fa));
     } catch (err) {
       console.error('Error checking 2FA requirement:', err);
       setRequires2FASetup(false);

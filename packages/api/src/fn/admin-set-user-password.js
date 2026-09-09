@@ -4,6 +4,7 @@
 // + aktywne konto), spójny z resztą funkcji kont. Po zmianie hasła rewokuje sesje ofiary.
 import { hashPassword } from '../auth/passwords.js';
 import { getCaller, isAdmin, loadTarget, revokeSessions } from '../lib/user-admin.js';
+import { validatePassword } from '../lib/password-policy.js';
 
 export const name = 'admin-set-user-password';
 export const isPublic = false;
@@ -17,7 +18,8 @@ export default async function handler(req, reply) {
   const userId = String(req.body?.userId || '');
   const password = String(req.body?.password || '');
   if (!userId) return reply.code(400).send({ error: 'Brak użytkownika.' });
-  if (password.length < 8) return reply.code(400).send({ error: 'Hasło musi mieć min. 8 znaków.' });
+  const pwErr = await validatePassword(req.db, password);
+  if (pwErr) return reply.code(400).send({ error: pwErr });
 
   // 3. Ochrona konta super-administratora — hasło super-admina zmieni tylko super-admin.
   const target = await loadTarget(req.db, userId);

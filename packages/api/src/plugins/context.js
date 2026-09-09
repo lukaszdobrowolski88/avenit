@@ -74,9 +74,18 @@ export default fp(async function contextPlugin(app) {
         return reply.code(401).send({ error: 'Token nie pasuje do tenanta' });
       }
       // legacyId (auid) — identyfikator zgodny z danymi z czasów GoTrue.
-      req.user = { id: payload.sub, legacyId: payload.auid || payload.sub, role: payload.role, email: payload.email };
+      req.user = { id: payload.sub, legacyId: payload.auid || payload.sub, role: payload.role, email: payload.email, needs2fa: payload.n2fa === true };
     } catch {
       return reply.code(401).send({ error: 'Nieprawidłowy lub wygasły token' });
+    }
+  });
+
+  // Serwerowe egzekwowanie 2FA: gdy token oznaczony n2fa (wymóg 2FA bez skonfigurowanego 2FA),
+  // blokuje dostęp do DANYCH/AKCJI (dołączane do /api/db, /api/rpc, /api/fn). Trasy 2FA-setup
+  // (/api/auth/2fa/*) i /me tego nie mają — użytkownik może skonfigurować 2FA i odblokować konto.
+  app.decorate('block2FAPending', async (req, reply) => {
+    if (req.user?.needs2fa) {
+      return reply.code(403).send({ error: 'Wymagana konfiguracja dwuetapowej weryfikacji (2FA).', code: 'require_2fa_setup' });
     }
   });
 

@@ -711,6 +711,13 @@ export default function GlobalSettings() {
   // Zaznaczanie i akcje masowe (pętla po zaznaczonych — każdą operację robi funkcja serwerowa).
   const [selectedUserIds, setSelectedUserIds] = useState(() => new Set());
   const [bulkRole, setBulkRole] = useState('');
+  const [ssoSecret, setSsoSecret] = useState({ google: '', microsoft: '' });
+  const saveSsoSecret = async (provider) => {
+    if (!ssoSecret[provider]) return;
+    const { error } = await supabase.functions.invoke('sso-save-config', { body: { provider, client_secret: ssoSecret[provider] } });
+    setMessage(error ? { type: 'error', text: error.message || tr('Błąd') } : { type: 'success', text: tr('Zapisano sekret SSO') });
+    setSsoSecret(s => ({ ...s, [provider]: '' }));
+  };
   const toggleSelectUser = (id) => setSelectedUserIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const clearSelection = () => setSelectedUserIds(new Set());
   const bulkRun = async (op, label) => {
@@ -1371,7 +1378,57 @@ export default function GlobalSettings() {
                 <input type="checkbox" className="w-4 h-4" checked={(getSetting('account_change_emails') || 'on') !== 'off'} onChange={e => saveSetting('account_change_emails', e.target.checked ? 'on' : 'off')} />
                 {tr('Powiadamiaj użytkowników e-mailem o zmianach konta (blokada, rola, reset 2FA)')}
               </label>
+              <div className="grid sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Minimalna długość hasła')}</label>
+                  <input type="number" min="6" max="64" defaultValue={getSetting('password_min_length') || '8'} onBlur={e => saveSetting('password_min_length', String(Math.max(6, Math.min(64, parseInt(e.target.value, 10) || 8))))} className="w-full" />
+                </div>
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none sm:mt-8">
+                  <input type="checkbox" className="w-4 h-4" checked={getSetting('password_require_complexity') === 'on'} onChange={e => saveSetting('password_require_complexity', e.target.checked ? 'on' : 'off')} />
+                  {tr('Wymagaj złożoności (mała + wielka litera + cyfra)')}
+                </label>
+              </div>
               <p className="text-xs text-gray-400 mt-2">{tr('Konta bez 2FA zostaną poproszone o konfigurację przy następnym logowaniu. Zbyt wiele nieudanych prób czasowo blokuje logowanie.')}</p>
+            </div>
+
+            {/* SSO — logowanie przez Google / Microsoft */}
+            <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800">
+              <h3 className="font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2"><KeyRound size={18}/> {tr('Logowanie zewnętrzne (SSO)')}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Pozwól logować się kontem Google lub Microsoft. Skonfiguruj aplikację OAuth u dostawcy i wklej dane poniżej.')}</p>
+              {[{ p: 'google', label: 'Google' }, { p: 'microsoft', label: 'Microsoft' }].map(({ p, label }) => (
+                <div key={p} className="mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2 cursor-pointer select-none">
+                    <input type="checkbox" className="w-4 h-4" checked={getSetting(`sso_${p}_enabled`) === 'on'} onChange={e => saveSetting(`sso_${p}_enabled`, e.target.checked ? 'on' : 'off')} />
+                    {tr('Włącz')} {label}
+                  </label>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <input type="text" defaultValue={getSetting(`sso_${p}_client_id`) || ''} onBlur={e => saveSetting(`sso_${p}_client_id`, e.target.value)} placeholder="Client ID" className="w-full" />
+                    <div className="flex gap-2">
+                      <input type="password" value={ssoSecret[p]} onChange={e => setSsoSecret(s => ({ ...s, [p]: e.target.value }))} placeholder={tr('Client secret (wpisz, aby zmienić)')} className="flex-1" />
+                      <button type="button" onClick={() => saveSsoSecret(p)} disabled={!ssoSecret[p]} className="px-3 py-2 bg-accent-primary text-white rounded-lg text-sm font-medium disabled:opacity-50 shrink-0">{tr('Zapisz')}</button>
+                    </div>
+                    {p === 'microsoft' && (
+                      <input type="text" defaultValue={getSetting('sso_microsoft_tenant') || 'common'} onBlur={e => saveSetting('sso_microsoft_tenant', e.target.value || 'common')} placeholder="Tenant (np. common / organizations / <id>)" className="w-full" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1.5">{tr('URI przekierowania (wklej u dostawcy)')}: <span className="font-mono text-gray-500 dark:text-gray-400 break-all">{window.location.origin}/api/auth/oauth/{p}/callback</span></p>
+                </div>
+              ))}
+              <div className="grid sm:grid-cols-2 gap-3">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                  <input type="checkbox" className="w-4 h-4" checked={getSetting('sso_auto_provision') === 'on'} onChange={e => saveSetting('sso_auto_provision', e.target.checked ? 'on' : 'off')} />
+                  {tr('Twórz konto automatycznie przy pierwszym logowaniu')}
+                </label>
+                {getSetting('sso_auto_provision') === 'on' && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{tr('Domyślna rola nowych kont SSO')}</label>
+                    <select value={getSetting('sso_default_role') || ''} onChange={e => saveSetting('sso_default_role', e.target.value)} className="w-full">
+                      <option value="">{tr('(najniższa — członek)')}</option>
+                      {definedRoles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Kolejka: oczekujący na zatwierdzenie (tryb „za zgodą administratora") */}

@@ -14,7 +14,36 @@ import {
   AUD_TENANT,
 } from './tokens.js';
 import { config, isProd } from '../config.js';
+import { validatePassword, getPasswordPolicy } from '../lib/password-policy.js';
+import { decryptPassword } from '../lib/mailcrypto.js';
 import crypto from 'node:crypto';
+
+// Provider OIDC (Google, Microsoft) — endpointy authorize/token.
+const SSO_PROVIDERS = {
+  google: {
+    authUrl: () => 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: () => 'https://oauth2.googleapis.com/token',
+    scope: 'openid email profile',
+  },
+  microsoft: {
+    authUrl: (t) => `https://login.microsoftonline.com/${t || 'common'}/oauth2/v2.0/authorize`,
+    tokenUrl: (t) => `https://login.microsoftonline.com/${t || 'common'}/oauth2/v2.0/token`,
+    scope: 'openid email profile',
+  },
+};
+const SSO_SECRET = () => config.MAIL_ENCRYPTION_SECRET || config.JWT_SECRET;
+
+async function getSSOConfig(db) {
+  const { rows } = await db.query(`SELECT key, value FROM app_settings WHERE key LIKE 'sso\\_%'`);
+  const m = {};
+  rows.forEach((r) => { m[r.key] = r.value; });
+  return {
+    google: { enabled: m.sso_google_enabled === 'on', clientId: m.sso_google_client_id || '', secretEnc: m.sso_google_client_secret_enc || '' },
+    microsoft: { enabled: m.sso_microsoft_enabled === 'on', clientId: m.sso_microsoft_client_id || '', secretEnc: m.sso_microsoft_client_secret_enc || '', tenant: m.sso_microsoft_tenant || 'common' },
+    autoProvision: m.sso_auto_provision === 'on',
+    defaultRole: m.sso_default_role || null,
+  };
+}
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -25,7 +54,7 @@ const loginSchema = z.object({
 
 const registerSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(6), // twarda podłoga; właściwą politykę egzekwuje validatePassword
   full_name: z.string().max(120).optional(),
 });
 
@@ -141,7 +170,16 @@ export default async function authRoutes(app) {
             );
           }
         }
-        if (!ok) return reply.code(401).send({ error: 'Nieprawidłowy kod weryfikacyjny' });
+        if (!ok) {
+          // Błędny kod 2FA też liczy się do progu blokady (throttle zgadywania TOTP per konto).
+          const count = (user.failed_login_count || 0) + 1;
+          if (count >= 5) {
+            await req.db.query(`UPDATE app_users SET failed_login_count = 0, locked_until = now() + interval '15 minutes' WHERE id = $1`, [user.id]);
+          } else {
+            await req.db.query(`UPDATE app_users SET failed_login_count = $1 WHERE id = $2`, [count, user.id]);
+          }
+          return reply.code(401).send({ error: 'Nieprawidłowy kod weryfikacyjny' });
+        }
       }
 
       // Sukces — reset licznika nieudanych prób + znacznik logowania.
@@ -150,6 +188,10 @@ export default async function authRoutes(app) {
         [user.id]
       );
 
+      // Wymóg 2FA (org lub konto) bez skonfigurowanego 2FA → token oznaczony n2fa (dane blokowane).
+      const { rows: r2fa } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'require_2fa_all'`);
+      const needs2fa = ((r2fa[0]?.value === 'on') || user.totp_required) && !user.totp_enabled;
+
       const accessToken = await signAccessToken({
         userId: user.id,
         authUserId: user.auth_user_id,
@@ -157,6 +199,7 @@ export default async function authRoutes(app) {
         role: user.role,
         email: user.email,
         aud: AUD_TENANT,
+        needs2fa,
       });
       const { token: refreshToken, hash } = newRefreshToken();
       await storeRefreshToken(
@@ -180,27 +223,19 @@ export default async function authRoutes(app) {
     }
   );
 
-  // Status 2FA dla ekranu logowania (jak dawne checkTwoFactorStatus) — bez sekretów.
-  app.post(
-    '/api/auth/2fa-status',
-    {
-      preHandler: app.requireTenant,
-      config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
-    },
-    async (req, reply) => {
-      const email = String(req.body?.email || '');
-      if (!email) return reply.code(400).send({ error: 'Brak e-maila' });
-      const { rows } = await req.db.query(
-        `SELECT totp_enabled, totp_required, totp_verified_at FROM app_users WHERE lower(email) = lower($1)`,
-        [email]
-      );
-      return reply.send({
-        enabled: Boolean(rows[0]?.totp_enabled),
-        required: Boolean(rows[0]?.totp_required),
-        verifiedAt: rows[0]?.totp_verified_at || null,
-      });
-    }
-  );
+  // Status 2FA WŁASNEGO konta (wymaga zalogowania). Wcześniej publiczne po e-mailu → enumeracja,
+  // kto ma 2FA. Teraz zwraca tylko status wywołującego (ignoruje e-mail z body).
+  app.post('/api/auth/2fa-status', { preHandler: app.requireUser }, async (req, reply) => {
+    const { rows } = await req.db.query(
+      `SELECT totp_enabled, totp_required, totp_verified_at FROM app_users WHERE id = $1`,
+      [req.user.id]
+    );
+    return reply.send({
+      enabled: Boolean(rows[0]?.totp_enabled),
+      required: Boolean(rows[0]?.totp_required),
+      verifiedAt: rows[0]?.totp_verified_at || null,
+    });
+  });
 
   app.post('/api/auth/refresh', { preHandler: app.requireTenant }, async (req, reply) => {
     const token = req.body?.refresh_token || req.cookies?.avenit_rt;
@@ -212,12 +247,15 @@ export default async function authRoutes(app) {
 
     const { rows } = await req.db.query(
       `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id,
-              onboarding, last_login_at
+              onboarding, last_login_at, totp_enabled, totp_required
          FROM app_users WHERE id = $1`,
       [rotated.userId]
     );
     const user = rows[0];
     if (!user || !user.is_active) return reply.code(401).send({ error: 'Konto nieaktywne' });
+
+    const { rows: r2fa } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'require_2fa_all'`);
+    const needs2fa = ((r2fa[0]?.value === 'on') || user.totp_required) && !user.totp_enabled;
 
     const accessToken = await signAccessToken({
       userId: user.id,
@@ -226,6 +264,7 @@ export default async function authRoutes(app) {
       role: user.role,
       email: user.email,
       aud: AUD_TENANT,
+      needs2fa,
     });
     reply.setCookie('avenit_at', accessToken, cookieOpts(req));
     reply.setCookie('avenit_rt', rotated.token, {
@@ -254,7 +293,7 @@ export default async function authRoutes(app) {
 
     const { rows: userRows } = await req.db.query(
       `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id,
-              onboarding, last_login_at
+              onboarding, last_login_at, totp_enabled, totp_required
          FROM app_users WHERE id = $1`,
       [rows[0].user_id]
     );
@@ -263,6 +302,8 @@ export default async function authRoutes(app) {
 
     await req.db.query(`UPDATE app_users SET last_login_at = now() WHERE id = $1`, [user.id]);
 
+    const { rows: r2fa } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'require_2fa_all'`);
+    const needs2fa = ((r2fa[0]?.value === 'on') || user.totp_required) && !user.totp_enabled;
     const accessToken = await signAccessToken({
       userId: user.id,
       authUserId: user.auth_user_id,
@@ -270,6 +311,7 @@ export default async function authRoutes(app) {
       role: user.role,
       email: user.email,
       aud: AUD_TENANT,
+      needs2fa,
     });
     const { token: refreshToken, hash } = newRefreshToken();
     await storeRefreshToken(req.db, 'refresh_tokens', 'user_id', user.id, hash, req.headers['user-agent']);
@@ -289,6 +331,109 @@ export default async function authRoutes(app) {
     return reply.send({ ok: true });
   });
 
+  // ── SSO (OIDC: Google / Microsoft) ─────────────────────────────────────────
+  // Publiczna informacja: którzy dostawcy są włączeni (przyciski na ekranie logowania).
+  app.get('/api/auth/sso-config', { preHandler: app.requireTenant }, async (req, reply) => {
+    const cfg = await getSSOConfig(req.db);
+    return reply.send({
+      google: cfg.google.enabled && !!cfg.google.clientId,
+      microsoft: cfg.microsoft.enabled && !!cfg.microsoft.clientId,
+    });
+  });
+
+  // Start OAuth: redirect do dostawcy z podpisanym state + nonce w cookie (CSRF).
+  app.get('/api/auth/oauth/:provider/start', { preHandler: app.requireTenant }, async (req, reply) => {
+    const provider = String(req.params.provider || '');
+    const P = SSO_PROVIDERS[provider];
+    const base = `https://${req.tenant.subdomain}.${config.APP_DOMAIN}`;
+    if (!P) return reply.redirect(`${base}/login?sso=error`);
+    const cfg = await getSSOConfig(req.db);
+    const pc = cfg[provider];
+    if (!pc?.enabled || !pc.clientId) return reply.redirect(`${base}/login?sso=disabled`);
+
+    const nonce = crypto.randomBytes(16).toString('base64url');
+    const exp = Date.now() + 10 * 60 * 1000;
+    const payload = Buffer.from(`${provider}.${nonce}.${exp}`).toString('base64url');
+    const sig = crypto.createHmac('sha256', config.JWT_SECRET).update(payload).digest('hex');
+    reply.setCookie('avenit_oauth', nonce, { httpOnly: true, secure: isProd, sameSite: 'lax', path: '/', maxAge: 600 });
+
+    const redirectUri = `${base}/api/auth/oauth/${provider}/callback`;
+    const params = new URLSearchParams({
+      client_id: pc.clientId, redirect_uri: redirectUri, response_type: 'code',
+      scope: P.scope, state: `${payload}.${sig}`, prompt: 'select_account',
+    });
+    return reply.redirect(`${P.authUrl(pc.tenant)}?${params.toString()}`);
+  });
+
+  // Callback OAuth: weryfikacja state, wymiana code→token, e-mail z id_token, sesja przez bilet.
+  app.get('/api/auth/oauth/:provider/callback', { preHandler: app.requireTenant }, async (req, reply) => {
+    const provider = String(req.params.provider || '');
+    const P = SSO_PROVIDERS[provider];
+    const base = `https://${req.tenant.subdomain}.${config.APP_DOMAIN}`;
+    const fail = (r) => reply.redirect(`${base}/login?sso=${r}`);
+    if (!P) return fail('error');
+
+    // Weryfikacja state (HMAC + exp + nonce z cookie).
+    const state = String(req.query?.state || '');
+    const [payload, sig] = state.split('.');
+    const nonceCookie = req.cookies?.avenit_oauth || '';
+    reply.clearCookie('avenit_oauth', { path: '/' });
+    if (!payload || !sig) return fail('error');
+    const expectSig = crypto.createHmac('sha256', config.JWT_SECRET).update(payload).digest('hex');
+    if (sig.length !== expectSig.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectSig))) return fail('error');
+    let sp, snonce, sexp;
+    try { [sp, snonce, sexp] = Buffer.from(payload, 'base64url').toString().split('.'); } catch { return fail('error'); }
+    if (sp !== provider || snonce !== nonceCookie || Number(sexp) < Date.now()) return fail('error');
+
+    const code = String(req.query?.code || '');
+    if (!code) return fail('error');
+
+    const cfg = await getSSOConfig(req.db);
+    const pc = cfg[provider];
+    if (!pc?.enabled || !pc.clientId || !pc.secretEnc) return fail('disabled');
+    let clientSecret = '';
+    try { clientSecret = await decryptPassword(pc.secretEnc, SSO_SECRET()); } catch { return fail('error'); }
+
+    const redirectUri = `${base}/api/auth/oauth/${provider}/callback`;
+    let idToken;
+    try {
+      const tokRes = await fetch(P.tokenUrl(pc.tenant), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ client_id: pc.clientId, client_secret: clientSecret, code, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
+      });
+      const tok = await tokRes.json();
+      if (!tokRes.ok || !tok.id_token) { req.log.error({ status: tokRes.status }, 'oauth token exchange failed'); return fail('error'); }
+      idToken = JSON.parse(Buffer.from(tok.id_token.split('.')[1], 'base64url').toString());
+    } catch (err) { req.log.error({ err }, 'oauth exchange error'); return fail('error'); }
+
+    const email = String(idToken.email || '').toLowerCase();
+    const name = idToken.name || idToken.given_name || '';
+    if (!email) return fail('error');
+
+    // Znajdź lub (opcjonalnie) utwórz konto.
+    const { rows: found } = await req.db.query(`SELECT id, is_active, status FROM app_users WHERE lower(email) = lower($1)`, [email]);
+    let user = found[0];
+    if (!user) {
+      if (!cfg.autoProvision) return fail('nouser');
+      const ins = await req.db.query(
+        `INSERT INTO app_users (email, full_name, name, role, is_active, status, email_verified, password_hash)
+         VALUES ($1,$2,$2,$3,true,'active',true,'') RETURNING id, is_active, status`,
+        [email, name, cfg.defaultRole || 'czlonek']
+      );
+      user = ins.rows[0];
+      const { logAccountEvent } = await import('../lib/account-audit.js');
+      await logAccountEvent(req.db, { email, action: 'created', actor: `sso:${provider}` });
+    }
+    if (!user.is_active || user.status === 'pending' || user.status === 'blocked') return fail('inactive');
+
+    // Bilet jednorazowy → SPA wymieni na sesję (jak SSO z app.<domena>).
+    const raw = crypto.randomBytes(32).toString('base64url');
+    const codeHash = crypto.createHash('sha256').update(raw).digest('hex');
+    await req.db.query(`INSERT INTO login_tickets (user_id, code_hash, expires_at) VALUES ($1, $2, now() + interval '5 minutes')`, [user.id, codeHash]);
+    return reply.redirect(`${base}/login?ticket=${raw}`);
+  });
+
   app.get('/api/auth/me', { preHandler: app.requireUser }, async (req, reply) => {
     const { rows } = await req.db.query(
       `SELECT id, email, full_name, name, role, is_active, is_super_admin, campus_id,
@@ -298,15 +443,16 @@ export default async function authRoutes(app) {
       [req.user.id]
     );
     if (!rows[0]) return reply.code(404).send({ error: 'Użytkownik nie istnieje' });
-    return reply.send({ user: publicUser(rows[0]) });
+    const { rows: r2fa } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'require_2fa_all'`);
+    const needs2fa = ((r2fa[0]?.value === 'on') || rows[0].totp_required) && !rows[0].totp_enabled;
+    return reply.send({ user: { ...publicUser(rows[0]), needs2fa } });
   });
 
   // Zmiana własnego hasła (odpowiednik supabase.auth.updateUser({password})).
   app.post('/api/auth/update-password', { preHandler: app.requireUser }, async (req, reply) => {
     const password = String(req.body?.password || '');
-    if (password.length < 8) {
-      return reply.code(400).send({ error: 'Hasło musi mieć min. 8 znaków' });
-    }
+    const pwErr = await validatePassword(req.db, password);
+    if (pwErr) return reply.code(400).send({ error: pwErr });
     await req.db.query(`UPDATE app_users SET password_hash = $1 WHERE id = $2`, [
       await hashPassword(password),
       req.user.id,
@@ -349,9 +495,9 @@ export default async function authRoutes(app) {
   // Ustawienie nowego hasła z tokenu resetu.
   app.post('/api/auth/reset-password/confirm', { preHandler: app.requireTenant }, async (req, reply) => {
     const { token, password } = req.body || {};
-    if (!token || String(password || '').length < 8) {
-      return reply.code(400).send({ error: 'Nieprawidłowe dane' });
-    }
+    if (!token) return reply.code(400).send({ error: 'Nieprawidłowe dane' });
+    const pwErr = await validatePassword(req.db, password);
+    if (pwErr) return reply.code(400).send({ error: pwErr });
     const tokenHash = crypto.createHash('sha256').update(String(token)).digest('hex');
     const { rows } = await req.db.query(
       `UPDATE password_reset_tokens SET used_at = now()
@@ -376,7 +522,8 @@ export default async function authRoutes(app) {
   // Publiczna, minimalna konfiguracja rejestracji — Login pyta, czy pokazać „Zarejestruj się".
   app.get('/api/auth/registration-config', { preHandler: app.requireTenant }, async (req, reply) => {
     const cfg = await getRegConfig(req.db);
-    return reply.send({ mode: cfg.mode, captcha: cfg.captcha, consent: cfg.consent });
+    const passwordPolicy = await getPasswordPolicy(req.db);
+    return reply.send({ mode: cfg.mode, captcha: cfg.captcha, consent: cfg.consent, passwordPolicy });
   });
 
   // Captcha (bezstanowa, samodzielna): proste działanie do przepisania + honeypot na froncie.
@@ -405,12 +552,26 @@ export default async function authRoutes(app) {
       if (cfg.mode !== 'approval' && cfg.mode !== 'open') {
         return reply.code(403).send({ error: 'Rejestracja jest wyłączona' });
       }
-      if (cfg.captcha && !captchaOk(req.body)) {
-        return reply.code(400).send({ error: 'Nieprawidłowy wynik weryfikacji — spróbuj ponownie' });
+      if (cfg.captcha) {
+        if (!captchaOk(req.body)) {
+          return reply.code(400).send({ error: 'Nieprawidłowy wynik weryfikacji — spróbuj ponownie' });
+        }
+        // Jednorazowość: ten sam rozwiązany captcha nie przejdzie drugi raz.
+        const cHash = crypto.createHash('sha256').update(String(req.body?.captcha_token || '')).digest('hex');
+        await req.db.query('DELETE FROM used_captchas WHERE expires_at < now()').catch(() => {});
+        const consumed = await req.db.query(
+          `INSERT INTO used_captchas (token_hash, expires_at) VALUES ($1, now() + interval '15 minutes') ON CONFLICT DO NOTHING`,
+          [cHash]
+        );
+        if (consumed.rowCount === 0) {
+          return reply.code(400).send({ error: 'Weryfikacja już użyta — odśwież i spróbuj ponownie' });
+        }
       }
       if (cfg.consent.required && req.body?.consent !== true) {
         return reply.code(400).send({ error: 'Wymagana akceptacja regulaminu / polityki prywatności' });
       }
+      const pwErr = await validatePassword(req.db, password);
+      if (pwErr) return reply.code(400).send({ error: pwErr });
       const domain = String(email.split('@')[1] || '').toLowerCase();
       if (cfg.domains.length && !cfg.domains.includes(domain)) {
         return reply.code(400).send({ error: 'Rejestracja dozwolona tylko dla wybranych domen e-mail' });

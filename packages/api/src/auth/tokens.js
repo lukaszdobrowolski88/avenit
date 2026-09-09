@@ -11,8 +11,10 @@ export const AUD_ADMIN = 'avenit:admin';
 
 // auid = "legacy" id użytkownika (auth_user_id z GoTrue, dla zmigrowanych kont)
 // — dane produkcyjne (konwersacje, presence, created_by) są nim kluczowane.
-export async function signAccessToken({ userId, authUserId, tenantSlug, role, email, aud }) {
-  return new SignJWT({ ten: tenantSlug ?? null, role, email, auid: authUserId || String(userId) })
+export async function signAccessToken({ userId, authUserId, tenantSlug, role, email, aud, needs2fa }) {
+  const claims = { ten: tenantSlug ?? null, role, email, auid: authUserId || String(userId) };
+  if (needs2fa) claims.n2fa = true; // wymagana konfiguracja 2FA — dane blokowane do czasu ustawienia
+  return new SignJWT(claims)
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(String(userId))
     .setAudience(aud)

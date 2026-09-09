@@ -135,6 +135,15 @@ export function createApiClient({
       const ok = await tryRefresh();
       if (ok) return request(path, options, true);
     }
+    // 2FA właśnie skonfigurowane → bieżący token nadal ma n2fa; odśwież raz i ponów.
+    if (res.status === 403 && !retried && session?.refresh_token) {
+      let code = null;
+      try { code = (await res.clone().json())?.code; } catch { /* brak JSON */ }
+      if (code === 'require_2fa_setup') {
+        const ok = await tryRefresh();
+        if (ok) return request(path, options, true);
+      }
+    }
     return res;
   }
 
@@ -311,6 +320,16 @@ export function createApiClient({
         return await res.json().catch(() => null);
       } catch {
         return null;
+      }
+    },
+
+    // Którzy dostawcy SSO są włączeni (do przycisków logowania).
+    async getSSOConfig() {
+      try {
+        const res = await request('/api/auth/sso-config');
+        return await res.json().catch(() => ({ google: false, microsoft: false }));
+      } catch {
+        return { google: false, microsoft: false };
       }
     },
 

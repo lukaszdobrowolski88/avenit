@@ -29,7 +29,7 @@ async function platformDisabledModules(tenantId) {
 }
 
 export default async function dataApiRoutes(app) {
-  app.post('/api/db', { preHandler: app.requireUser }, async (req, reply) => {
+  app.post('/api/db', { preHandler: [app.requireUser, app.block2FAPending] }, async (req, reply) => {
     const q = req.body || {};
     try {
       const { rows: userRows } = await req.db.query(
@@ -167,7 +167,7 @@ export default async function dataApiRoutes(app) {
   // ── RPC: dynamiczne DDL CustomModule (port funkcji z Supabase) ─────────
   // Bezpieczne w architekturze baza-per-tenant: DDL dotyka wyłącznie bazy tenanta.
   // Wymaga uprawnienia do zarządzania modułami (tworzenie tabel modułów własnych).
-  app.post('/api/rpc/:name', { preHandler: [app.requireUser, requireCapability('action:settings:manage_modules')] }, async (req, reply) => {
+  app.post('/api/rpc/:name', { preHandler: [app.requireUser, app.block2FAPending, requireCapability('action:settings:manage_modules')] }, async (req, reply) => {
     const { name } = req.params;
     const args = req.body || {};
     try {

@@ -52,6 +52,7 @@ const MODULES = [
   'force-logout-user',
   'resend-invite',
   'unlock-login',
+  'sso-save-config',
 ];
 
 export async function registerFunctions(app) {
@@ -72,7 +73,7 @@ export async function registerFunctions(app) {
     const cap = !mod.isPublic ? FN_CAPABILITY[name] : null;
     const preHandler = mod.isPublic
       ? app.requireTenant
-      : (cap ? [app.requireUser, requireCapability(cap)] : app.requireUser);
+      : (cap ? [app.requireUser, app.block2FAPending, requireCapability(cap)] : [app.requireUser, app.block2FAPending]);
     // routePath pozwala funkcji nadpisać ścieżkę (np. ical z tokenem w URL).
     const route = mod.routePath || `/api/fn/${name}`;
     app[method](route, { preHandler }, mod.default);
