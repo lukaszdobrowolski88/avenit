@@ -36,6 +36,8 @@ export default async function handler(req, reply) {
   await sendWelcomeEmail(rows[0].email, { name: rows[0].full_name, loginUrl: base }).catch((err) =>
     req.log.error({ err }, 'welcome email failed')
   );
+  const { logAccountEvent } = await import('../lib/account-audit.js');
+  await logAccountEvent(req.db, { email: rows[0].email, action: 'approved', actor: req.user.email });
   req.log.info({ actor: req.user.email, target: rows[0].email }, 'admin approved user');
   return reply.send({ success: true, email: rows[0].email });
 }
