@@ -7,7 +7,7 @@ export const name = 'set-user-status';
 export const isPublic = false;
 
 export default async function handler(req, reply) {
-  const caller = await getCaller(req.db, req.user.id);
+  const caller = await getCaller(req.db, req.user.id, req.tenant.db_name);
   if (!isAdmin(caller)) return reply.code(403).send({ error: 'Brak uprawnień.' });
 
   const userId = String(req.body?.userId || '');

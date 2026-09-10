@@ -1,18 +1,29 @@
 // Wspólne bramki i strażnicy dla adminowych operacji na kontach (fn/*).
-// Rola z ŻYWEJ bazy (is_super_admin lub app_roles.is_admin) — nie ufamy JWT.
+// Autoryzacja z ŻYWEJ bazy (nie z JWT): superadmin/is_admin LUB UPRAWNIENIE action:settings:manage_users
+// (spójnie z zapisem app_users przez /api/db). Dzięki temu role o pełnych grantach (np. rada_starszych
+// z `*`) też zarządzają kontami, mimo że mają is_admin=false.
+import { loadGrants } from '../dataapi/registry.js';
+import { can } from '@avenit/shared/src/permissions/resolve.js';
 
-export async function getCaller(db, userId) {
+export async function getCaller(db, userId, dbName) {
   const { rows } = await db.query(
-    `SELECT u.id, u.email, u.is_active, u.is_super_admin, COALESCE(r.is_admin, false) AS role_admin
+    `SELECT u.id, u.email, u.is_active, u.is_super_admin, u.role, COALESCE(r.is_admin, false) AS role_admin
        FROM app_users u LEFT JOIN app_roles r ON u.role = r.key WHERE u.id = $1`,
     [userId]
   );
-  return rows[0] || null;
+  const caller = rows[0] || null;
+  if (caller && dbName) {
+    try {
+      const { grants, adminRoles } = await loadGrants(db, dbName);
+      caller.canManage = adminRoles.has(caller.role) || (grants !== null && can(grants, { role: caller.role, userId }, 'action:settings:manage_users'));
+    } catch { caller.canManage = false; }
+  }
+  return caller;
 }
 
-// Uprawnienia admina wymagają AKTYWNEGO konta — zablokowany admin traci moc natychmiast
-// (mimo ważnego access tokena do ~15 min), bo bramka sprawdza żywy is_active z bazy.
-export const isAdmin = (caller) => !!(caller && caller.is_active && (caller.is_super_admin || caller.role_admin));
+// Uprawnienia admina wymagają AKTYWNEGO konta (zablokowany admin traci moc natychmiast, mimo
+// ważnego access tokena do ~15 min). Admin = superadmin / rola is_admin / uprawnienie manage_users.
+export const isAdmin = (caller) => !!(caller && caller.is_active && (caller.is_super_admin || caller.role_admin || caller.canManage));
 
 export async function loadTarget(db, id) {
   const { rows } = await db.query(
