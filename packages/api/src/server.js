@@ -79,6 +79,10 @@ export async function buildServer() {
   const { default: landingRoutes } = await import('./landing/routes.js');
   await app.register(landingRoutes);
   await app.register(publicPageRoutes);
+  // Serwerowy HTML stron prawnych (/polityka-prywatnosci, /regulamin) — crawler
+  // weryfikacji OAuth Google nie wykonuje JS, więc SPA jest dla niego pusta.
+  const { default: legalHtmlRoutes } = await import('./public/legal-html.js');
+  await app.register(legalHtmlRoutes);
   // Analityka first-party: ingestia zdarzeń z landingu i aplikacji (POST /api/track).
   const { default: analyticsRoutes } = await import('./analytics/routes.js');
   await app.register(analyticsRoutes);

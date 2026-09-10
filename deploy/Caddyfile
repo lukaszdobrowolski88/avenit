@@ -86,6 +86,11 @@
 		handle /api/* {
 			reverse_proxy api:3001
 		}
+		# Strony prawne jako gotowy HTML z API (crawler OAuth Google nie wykonuje
+		# JS, więc SPA jest dla niego pusta). URL-e podane w Google → tu trafiają.
+		handle /polityka-prywatnosci /regulamin {
+			reverse_proxy api:3001
+		}
 		handle {
 			header X-Robots-Tag "noindex, nofollow"
 			root * /srv/static/entry
