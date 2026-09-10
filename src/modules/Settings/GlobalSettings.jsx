@@ -1430,6 +1430,19 @@ export default function GlobalSettings() {
                   </div>
                 )}
               </div>
+              {getSetting('sso_auto_provision') === 'on' && (
+                <div className="mt-3 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-900/10 p-3 space-y-3">
+                  <p className="text-xs text-amber-700 dark:text-amber-300">{tr('Bez ograniczeń każda osoba z kontem Google/Microsoft utworzy konto. Zalecane: ogranicz domeny lub wymagaj zatwierdzenia.')}</p>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{tr('Dozwolone domeny e-mail (oddzielone przecinkiem; puste = dowolna)')}</label>
+                    <input type="text" defaultValue={getSetting('sso_allowed_domains') || ''} onBlur={e => saveSetting('sso_allowed_domains', e.target.value.trim())} placeholder="np. parafia.pl, diecezja.pl" className="w-full" />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                    <input type="checkbox" className="w-4 h-4" checked={getSetting('sso_provision_approval') === 'on'} onChange={e => saveSetting('sso_provision_approval', e.target.checked ? 'on' : 'off')} />
+                    {tr('Wymagaj zatwierdzenia nowych kont SSO (trafiają do kolejki oczekujących)')}
+                  </label>
+                </div>
+              )}
             </div>
 
             {/* Kolejka: oczekujący na zatwierdzenie (tryb „za zgodą administratora") */}

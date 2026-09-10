@@ -72,6 +72,7 @@ export default function Login() {
     else if (v === 'expired') setInfo(tr('Link weryfikacyjny wygasł lub został już użyty.'));
     const sso = params.get('sso');
     if (sso === 'nouser') setError(tr('Brak konta dla tego adresu. Skontaktuj się z administratorem.'));
+    else if (sso === 'pending') setError(tr('Konto utworzone — czeka na zatwierdzenie przez administratora.'));
     else if (sso === 'inactive') setError(tr('Konto nieaktywne lub oczekuje na zatwierdzenie.'));
     else if (sso === 'disabled') setError(tr('Logowanie przez tego dostawcę jest wyłączone.'));
     else if (sso === 'error') setError(tr('Logowanie zewnętrzne nie powiodło się. Spróbuj ponownie.'));
