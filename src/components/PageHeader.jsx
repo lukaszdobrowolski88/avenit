@@ -15,11 +15,15 @@ export default function PageHeader({ icon: Icon, title, subtitle, actions, iconC
   const chipColor = iconColor || moduleColor;
   const chipStyle = chipColor ? { background: chipColor } : undefined;
 
-  // Baner tylko gdy okładka JAWNIE ustawiona (domyślnie czysto, jak Monday).
-  const hasCover = cover && !!(coverCfg && coverCfg.value);
+  // Baner ZAWSZE obecny (tytuł na banerze — nigdy nie „wisi" sam na jasnym tle).
+  // Tło banera wg priorytetu: 1) zdjęcie, 2) gradient/kolor okładki, 3) fallback =
+  // gradient w kolorze modułu (a gdy brak koloru — gradient marki z klas Tailwind).
   const coverStyle = coverCfg?.type === 'image'
     ? { backgroundImage: `url("${coverCfg.value}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : (coverCfg?.value ? { background: coverCfg.value } : undefined);
+    : (coverCfg?.value ? { background: coverCfg.value }
+      : (chipColor ? { background: `linear-gradient(120deg, ${chipColor}, rgba(15,23,42,0.65))` } : undefined));
+  // Styl tytułu na banerze: 'gradient' (przyciemnienie u dołu) lub 'glass' (matowy pasek).
+  const bannerStyle = coverCfg?.style === 'glass' ? 'glass' : 'gradient';
 
   if (!cover) {
     return (
@@ -38,30 +42,50 @@ export default function PageHeader({ icon: Icon, title, subtitle, actions, iconC
 
   return (
     <div className={`w-full relative group ${className}`}>
-      {/* Opcjonalna okładka — subtelny, niski pas (overflow-hidden clipuje obraz do rogów) */}
-      {hasCover && (
-        <div className="h-20 sm:h-24 rounded-2xl overflow-hidden relative" style={coverStyle}>
-          {coverCfg?.type !== 'image' && <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />}
-        </div>
-      )}
-      {/* Wiersz nagłówka: kafel ikony + tytuł/podtytuł + akcje. Gdy jest okładka — kafel nachodzi na pas. */}
-      <div className={`flex gap-3.5 ${hasCover ? 'items-end -mt-9 px-0.5 relative' : 'items-center'}`}>
-        <div
-          className={`rounded-2xl flex items-center justify-center shadow-md shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary ${hasCover ? 'w-16 h-16 ring-4 ring-white dark:ring-gray-900' : 'w-14 h-14'}`}
-          style={chipStyle}
-        >
-          {Icon && <Icon className="text-white w-7 h-7" />}
-        </div>
-        <div className={`min-w-0 flex-1 ${hasCover ? 'pb-1' : ''}`}>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white truncate leading-tight tracking-tight">{dynamicTitle}</h1>
-          {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">{subtitle}</p>}
-        </div>
-        <div className={`flex items-center gap-2 flex-wrap justify-end shrink-0 ${hasCover ? 'pb-1' : ''}`}>
-          {actions}
-          {/* „Zmień/Dodaj okładkę" — dyskretnie, dopiero po najechaniu (na mobile: zawsze) */}
-          <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity duration-200 shrink-0">
-            <CoverPicker moduleKey={moduleKey} />
+      {/* Baner (overflow-hidden clipuje obraz/scrim do zaokrąglonych rogów) */}
+      <div
+        className="relative h-32 sm:h-40 rounded-2xl overflow-hidden shadow-sm bg-gradient-to-br from-accent-primary to-accent-secondary"
+        style={coverStyle}
+      >
+        {/* Delikatny scrim u góry — czytelność akcji nad jasnym zdjęciem */}
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/30 to-transparent pointer-events-none" />
+        {/* Wariant GRADIENT: mocne przyciemnienie u dołu pod tytułem */}
+        {bannerStyle === 'gradient' && (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent pointer-events-none" />
+        )}
+
+        {bannerStyle === 'glass' ? (
+          /* MATOWY PASEK: półprzezroczysty, rozmyty pasek u dołu z ikoną + tytułem */
+          <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+            <div className="flex items-center gap-3 rounded-2xl bg-black/35 backdrop-blur-md ring-1 ring-white/15 px-3.5 py-2.5">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center shadow-md shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary ring-1 ring-white/30" style={chipStyle}>
+                {Icon && <Icon className="text-white w-6 h-6" />}
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-white truncate leading-tight tracking-tight">{dynamicTitle}</h1>
+                {subtitle && <p className="text-xs sm:text-sm text-white/75 truncate">{subtitle}</p>}
+              </div>
+            </div>
           </div>
+        ) : (
+          /* GRADIENT: ikona + tytuł u dołu-lewej, biały tekst z lekkim cieniem */
+          <div className="absolute left-4 right-4 bottom-3.5 flex items-end gap-3">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary ring-2 ring-white/50" style={chipStyle}>
+              {Icon && <Icon className="text-white w-6 h-6 sm:w-7 sm:h-7" />}
+            </div>
+            <div className="min-w-0 flex-1 pb-0.5">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white truncate leading-tight tracking-tight drop-shadow-md">{dynamicTitle}</h1>
+              {subtitle && <p className="text-sm text-white/85 truncate drop-shadow">{subtitle}</p>}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Akcje + „Zmień okładkę" — SIBLING poza banerem (dropdown okładki nie ucina się o overflow) */}
+      <div className="absolute top-3 right-3 z-10 flex items-center gap-2 flex-wrap justify-end max-w-[72%]">
+        {actions}
+        <div className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity duration-200 shrink-0">
+          <CoverPicker moduleKey={moduleKey} />
         </div>
       </div>
     </div>

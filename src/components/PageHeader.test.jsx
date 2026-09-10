@@ -23,20 +23,24 @@ describe('PageHeader', () => {
     expect(screen.getByRole('button', { name: 'Akcja' })).toBeTruthy();
   });
 
-  it('DOMYŚLNIE: czysto — bez banera/obwódki, tytuł 3xl', () => {
+  it('DOMYŚLNIE: baner zawsze — tytuł biały na banerze (wariant gradient)', () => {
     const { container } = render(<PageHeader icon={Gift} title="X" />);
-    expect(container.querySelector('h1').className).toContain('sm:text-3xl');
-    expect(container.querySelector('.ring-4')).toBeNull(); // brak okładki → brak obwódki nad banerem
+    const h1 = container.querySelector('h1');
+    expect(h1.className).toContain('text-white');       // tytuł na banerze = biały
+    expect(h1.className).not.toContain('text-gray-900'); // nie wariant jasny/kompaktowy
+    expect(container.querySelector('.backdrop-blur-md')).toBeNull(); // gradient, nie glass
   });
 
-  it('z ustawioną okładką: pojawia się baner + obwódka ikony (ring-4)', () => {
-    _cover = { type: 'color', value: '#334155' };
+  it('styl glass: matowy pasek (backdrop-blur) pod tytułem', () => {
+    _cover = { type: 'color', value: '#334155', style: 'glass' };
     const { container } = render(<PageHeader icon={Gift} title="X" />);
-    expect(container.querySelector('.ring-4')).toBeTruthy();
+    expect(container.querySelector('.backdrop-blur-md')).toBeTruthy();
+    expect(container.querySelector('h1').className).toContain('text-white');
   });
 
-  it('cover=false → wariant kompaktowy (bez obwódki ring-4)', () => {
+  it('cover=false → wariant kompaktowy (tytuł ciemny, bez banera)', () => {
     const { container } = render(<PageHeader icon={Gift} title="X" cover={false} />);
-    expect(container.querySelector('.ring-4')).toBeNull();
+    expect(container.querySelector('h1').className).toContain('text-gray-900');
+    expect(container.querySelector('.backdrop-blur-md')).toBeNull();
   });
 });
