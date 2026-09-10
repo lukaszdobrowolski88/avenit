@@ -88,7 +88,11 @@
 		}
 		# Strony prawne jako gotowy HTML z API (crawler OAuth Google nie wykonuje
 		# JS, więc SPA jest dla niego pusta). URL-e podane w Google → tu trafiają.
-		handle /polityka-prywatnosci /regulamin {
+		# handle przyjmuje jeden argument ścieżki — stąd dwa osobne bloki.
+		handle /polityka-prywatnosci {
+			reverse_proxy api:3001
+		}
+		handle /regulamin {
 			reverse_proxy api:3001
 		}
 		handle {
