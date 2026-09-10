@@ -2,22 +2,15 @@
 // Aktywuje konto (status=active, is_active=true) i wysyła e-mail powitalny.
 // Bramka SERWEROWA i autorytatywna — rola z żywej bazy (is_super_admin lub app_roles.is_admin).
 import { config } from '../config.js';
+import { getCaller, isAdmin } from '../lib/user-admin.js';
 
 export const name = 'approve-user';
 export const isPublic = false;
 
 export default async function handler(req, reply) {
-  // 1. Uprawnienia wywołującego (z bazy tenanta, nie z JWT).
-  const { rows: me } = await req.db.query(
-    `SELECT u.is_super_admin, COALESCE(r.is_admin, false) AS role_admin
-       FROM app_users u LEFT JOIN app_roles r ON u.role = r.key
-      WHERE u.id = $1`,
-    [req.user.id]
-  );
-  const caller = me[0];
-  if (!caller || !(caller.is_super_admin || caller.role_admin)) {
-    return reply.code(403).send({ error: 'Brak uprawnień do zatwierdzania kont.' });
-  }
+  // Uprawnienia wywołującego: superadmin/is_admin lub uprawnienie manage_users (z żywej bazy).
+  const caller = await getCaller(req.db, req.user.id, req.tenant.db_name);
+  if (!isAdmin(caller)) return reply.code(403).send({ error: 'Brak uprawnień do zatwierdzania kont.' });
 
   // 2. Aktywacja oczekującego konta.
   const userId = String(req.body?.userId || '');

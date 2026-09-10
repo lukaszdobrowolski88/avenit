@@ -11,7 +11,7 @@ export const isPublic = false;
 
 export default async function handler(req, reply) {
   // 1. Tożsamość + uprawnienia wywołującego (z żywej bazy tenanta).
-  const caller = await getCaller(req.db, req.user.id);
+  const caller = await getCaller(req.db, req.user.id, req.tenant.db_name);
   if (!isAdmin(caller)) return reply.code(403).send({ error: 'Brak uprawnień do zmiany haseł.' });
 
   // 2. Walidacja wejścia.
