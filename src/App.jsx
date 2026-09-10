@@ -28,6 +28,7 @@ import TwoFactorSetup from './components/TwoFactorSetup';
 import GiveOnlinePage from './modules/Giving/GiveOnlinePage';
 import CampaignWidgetPage from './modules/Giving/CampaignWidgetPage';
 import SermonPublicPage from './modules/Sermons/SermonPublicPage';
+import LegalPage from './pages/public/LegalPage';
 import RsvpPublicPage from './modules/Rsvp/RsvpPublicPage';
 import PublicFormPage from './modules/Forms/pages/PublicFormPage';
 import PublicModulePage from './modules/CustomModule/pages/PublicModulePage';
@@ -302,6 +303,21 @@ function AppInner() {
 
   // Sprawdź czy to jest publiczna strona kazania (dostępna bez logowania)
   const isPublicSermonPage = window.location.pathname.startsWith('/sermon/');
+
+  // Publiczne strony prawne (polityka prywatności / regulamin) — bez logowania.
+  // Wymagane m.in. przez publikację logowania Google (link do polityki prywatności).
+  const isLegalPage = window.location.pathname === '/polityka-prywatnosci' || window.location.pathname === '/regulamin';
+  if (isLegalPage) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/polityka-prywatnosci" element={<LegalPage kind="privacy" />} />
+          <Route path="/regulamin" element={<LegalPage kind="terms" />} />
+          <Route path="*" element={<Navigate to="/polityka-prywatnosci" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
 
   // Publiczne kazanie - renderuj bez wymogu logowania
   if (isPublicSermonPage) {
