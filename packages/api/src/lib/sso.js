@@ -35,6 +35,11 @@ export async function getSSOTenantConfig(db) {
     microsoft: { enabled: m.sso_microsoft_enabled === 'on', clientId: m.sso_microsoft_client_id || '', secretEnc: m.sso_microsoft_client_secret_enc || '', tenant: m.sso_microsoft_tenant || '' },
     autoProvision: m.sso_auto_provision === 'on',
     defaultRole: m.sso_default_role || null,
+    // Zabezpieczenia auto-provisioningu: allowlist domen e-mail (pusta = dowolna)
+    // oraz wymóg zatwierdzenia (nowe konta SSO lądują jako pending do akceptacji).
+    allowedDomains: String(m.sso_allowed_domains || '')
+      .split(/[,\s]+/).map((s) => s.trim().toLowerCase().replace(/^@/, '')).filter(Boolean),
+    requireApproval: m.sso_provision_approval === 'on',
   };
 }
 
@@ -52,7 +57,11 @@ export async function resolveProviderCreds(db, provider) {
     if (provider === 'microsoft') msTenant = msTenant || config.SSO_MICROSOFT_TENANT || 'common';
   }
   if (provider === 'microsoft' && !msTenant) msTenant = 'common';
-  return { enabled: !!pc.enabled, clientId, clientSecret, msTenant, autoProvision: cfg.autoProvision, defaultRole: cfg.defaultRole };
+  return {
+    enabled: !!pc.enabled, clientId, clientSecret, msTenant,
+    autoProvision: cfg.autoProvision, defaultRole: cfg.defaultRole,
+    allowedDomains: cfg.allowedDomains, requireApproval: cfg.requireApproval,
+  };
 }
 
 // Dostępność dostawcy dla przycisków logowania: włączony przez tenanta + są jakiekolwiek poświadczenia.

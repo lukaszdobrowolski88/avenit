@@ -44,16 +44,24 @@ export default async function ssoCallbackRoutes(app) {
     let user = found[0];
     if (!user) {
       if (!creds.autoProvision) return fail('nouser');
+      // Allowlist domen: jeśli ustawiona, konto tworzymy tylko dla dozwolonych domen.
+      const domain = (email.split('@')[1] || '').toLowerCase();
+      if (creds.allowedDomains.length && !creds.allowedDomains.includes(domain)) return fail('nouser');
+      // Wymóg zatwierdzenia: nowe konto ląduje jako pending (kolejka admina), inaczej aktywne.
+      const approval = !!creds.requireApproval;
+      const status = approval ? 'pending' : 'active';
       const ins = await db.query(
-        `INSERT INTO app_users (email, full_name, name, role, is_active, status, email_verified, password_hash)
-         VALUES ($1,$2,$2,$3,true,'active',true,'') RETURNING id, is_active, status`,
-        [email, name, creds.defaultRole || 'czlonek']
+        `INSERT INTO app_users (email, full_name, name, role, is_active, status, pending_kind, email_verified, password_hash)
+         VALUES ($1,$2,$2,$3,$4,$5,$6,true,'') RETURNING id, is_active, status`,
+        [email, name, creds.defaultRole || 'czlonek', !approval, status, approval ? 'admin' : null]
       );
       user = ins.rows[0];
       const { logAccountEvent } = await import('../lib/account-audit.js');
-      await logAccountEvent(db, { email, action: 'created', actor: `sso:${provider}` });
+      await logAccountEvent(db, { email, action: approval ? 'registered' : 'created', actor: `sso:${provider}` });
     }
-    if (!user.is_active || user.status === 'pending' || user.status === 'blocked') return fail('inactive');
+    // Oczekujące konto (np. utworzone w trybie zatwierdzania) → osobny komunikat.
+    if (user.status === 'pending') return fail('pending');
+    if (!user.is_active || user.status === 'blocked') return fail('inactive');
 
     // Bilet jednorazowy → przekierowanie na subdomenę tenanta (SPA wymieni na sesję).
     const raw = crypto.randomBytes(32).toString('base64url');
