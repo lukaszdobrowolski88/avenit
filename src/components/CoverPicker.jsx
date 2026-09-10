@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Image as ImageIcon, RotateCcw, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCan } from './Can';
-import { invalidateModuleLabels } from '../hooks/useModuleLabel';
+import { invalidateModuleLabels, useModuleCover } from '../hooks/useModuleLabel';
 import { toast } from '../lib/toast';
 
 // Zmiana okładki modułu (jak „Zmień okładkę" w Monday). Zapis do app_settings 'module_covers'
@@ -40,6 +40,8 @@ export default function CoverPicker({ moduleKey }) {
   // nazwa/kolor). Dzięki temu widzą ją wszyscy zarządzający (np. rada_starszych),
   // nie tylko techniczny superadmin (subject.isAdmin obejmował tylko jego).
   const canEdit = useCan('module:settings');
+  const coverCfg = useModuleCover(moduleKey);
+  const curStyle = coverCfg?.style === 'glass' ? 'glass' : 'gradient';
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState('');
   const [custom, setCustom] = useState('#6366f1'); // własny kolor (hex)
@@ -68,13 +70,17 @@ export default function CoverPicker({ moduleKey }) {
     }
   };
 
+  // Zapis tła okładki. Zachowuje wybrany styl tytułu (gradient/glass), żeby zmiana
+  // zdjęcia/koloru nie kasowała ustawienia stylu.
   const save = async (cover) => {
     setBusy(true);
     try {
       const { data } = await supabase.from('app_settings').select('value').eq('key', 'module_covers').maybeSingle();
       let map = {};
       try { map = JSON.parse(data?.value || '{}') || {}; } catch { map = {}; }
-      if (cover) map[moduleKey] = cover; else delete map[moduleKey];
+      const prevStyle = map[moduleKey]?.style;
+      if (cover) map[moduleKey] = { ...cover, ...(prevStyle ? { style: prevStyle } : {}) };
+      else delete map[moduleKey];
       const { error } = await supabase.from('app_settings').upsert({ key: 'module_covers', value: JSON.stringify(map) }, { onConflict: 'key' });
       if (error) throw error;
       invalidateModuleLabels();
@@ -82,6 +88,24 @@ export default function CoverPicker({ moduleKey }) {
       toast.success('Okładka zapisana');
     } catch {
       toast.error('Nie udało się zapisać okładki');
+    } finally { setBusy(false); }
+  };
+
+  // Zapis samego stylu tytułu na banerze (bez zmiany tła). Scala z istniejącym wpisem,
+  // więc styl działa też dla banera fallback (gdy nie ustawiono zdjęcia/koloru).
+  const saveStyle = async (style) => {
+    setBusy(true);
+    try {
+      const { data } = await supabase.from('app_settings').select('value').eq('key', 'module_covers').maybeSingle();
+      let map = {};
+      try { map = JSON.parse(data?.value || '{}') || {}; } catch { map = {}; }
+      map[moduleKey] = { ...(map[moduleKey] || {}), style };
+      const { error } = await supabase.from('app_settings').upsert({ key: 'module_covers', value: JSON.stringify(map) }, { onConflict: 'key' });
+      if (error) throw error;
+      invalidateModuleLabels();
+      toast.success('Zapisano styl nagłówka');
+    } catch {
+      toast.error('Nie udało się zapisać stylu');
     } finally { setBusy(false); }
   };
 
@@ -96,6 +120,19 @@ export default function CoverPicker({ moduleKey }) {
         <>
           <div className="fixed inset-0 z-[90]" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full mt-2 z-[100] w-72 max-h-[70vh] overflow-y-auto custom-scrollbar bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-3">
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Styl nagłówka</div>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              {[
+                { key: 'gradient', label: 'Gradient', hint: 'przyciemnienie u dołu' },
+                { key: 'glass', label: 'Matowy pasek', hint: 'rozmyty pasek' },
+              ].map((s) => (
+                <button key={s.key} onClick={() => saveStyle(s.key)}
+                  className={`text-left rounded-lg px-2.5 py-2 border transition ${curStyle === s.key ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5' : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'}`}>
+                  <div className="text-xs font-semibold text-gray-800 dark:text-gray-100">{s.label}</div>
+                  <div className="text-[10px] text-gray-400">{s.hint}</div>
+                </button>
+              ))}
+            </div>
             <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Gradient</div>
             <div className="grid grid-cols-5 gap-2 mb-3">
               {GRADIENTS.map((g) => (

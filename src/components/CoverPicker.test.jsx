@@ -6,7 +6,7 @@ import CoverPicker from './CoverPicker';
 let _can = true;
 vi.mock('./Can', () => ({ useCan: () => _can }));
 vi.mock('../lib/supabase', () => ({ supabase: {} }));
-vi.mock('../hooks/useModuleLabel', () => ({ invalidateModuleLabels: () => {} }));
+vi.mock('../hooks/useModuleLabel', () => ({ invalidateModuleLabels: () => {}, useModuleCover: () => null }));
 vi.mock('../lib/toast', () => ({ toast: { error() {}, success() {} } }));
 
 describe('CoverPicker (bramka „Zmień okładkę")', () => {
