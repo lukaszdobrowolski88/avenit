@@ -10,9 +10,12 @@ import {
   storeRefreshToken,
   rotateRefreshToken,
   revokeRefreshToken,
+  hashRefreshToken,
   AUD_TENANT,
 } from './tokens.js';
 import { config, isProd } from '../config.js';
+import { validatePassword, getPasswordPolicy } from '../lib/password-policy.js';
+import { resolveProviderCreds, ssoAvailability, signState, ssoRedirectUri, SSO_PROVIDERS } from '../lib/sso.js';
 import crypto from 'node:crypto';
 
 const loginSchema = z.object({
@@ -24,15 +27,19 @@ const loginSchema = z.object({
 
 const registerSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(6), // twarda podłoga; właściwą politykę egzekwuje validatePassword
   full_name: z.string().max(120).optional(),
 });
 
 // Konfiguracja rejestracji tenanta (app_settings). Domyślnie zamknięta (tylko admin tworzy konta).
+const csvLower = (v) => String(v || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+
 async function getRegConfig(db) {
   const { rows } = await db.query(
     `SELECT key, value FROM app_settings WHERE key IN
-      ('registration_mode','registration_default_role','registration_default_campus','registration_allowed_domains')`
+      ('registration_mode','registration_default_role','registration_default_campus',
+       'registration_allowed_domains','registration_captcha','registration_autoapprove_domains',
+       'registration_require_consent','registration_consent_url','registration_consent_text')`
   );
   const m = {};
   rows.forEach((r) => { m[r.key] = r.value; });
@@ -40,9 +47,27 @@ async function getRegConfig(db) {
     mode: m.registration_mode || 'closed',
     role: m.registration_default_role || null,
     campus: m.registration_default_campus || null,
-    domains: String(m.registration_allowed_domains || '')
-      .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean),
+    domains: csvLower(m.registration_allowed_domains),
+    captcha: (m.registration_captcha || 'on') !== 'off', // domyślnie włączona
+    autoapproveDomains: csvLower(m.registration_autoapprove_domains),
+    consent: {
+      required: m.registration_require_consent === 'on',
+      url: m.registration_consent_url || '',
+      text: m.registration_consent_text || '',
+    },
   };
+}
+
+// Weryfikacja captchy (bezstanowa: token = "exp.hmac", hmac wiąże poprawny wynik z wygaśnięciem).
+function captchaOk(body) {
+  if (String(body?.website || '')) return false; // honeypot — bot wypełnia ukryte pole
+  const token = String(body?.captcha_token || '');
+  const answer = String(body?.captcha_answer || '').trim();
+  const [expStr, sig] = token.split('.');
+  const exp = Number(expStr);
+  if (!sig || !exp || exp < Date.now()) return false;
+  const expected = crypto.createHmac('sha256', config.JWT_SECRET).update(`${answer}:${exp}`).digest('hex');
+  return sig.length === expected.length && crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
 }
 
 const cookieOpts = (req) => ({
@@ -70,13 +95,27 @@ export default async function authRoutes(app) {
       const { rows } = await req.db.query(
         `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id,
                 password_hash, totp_enabled, totp_secret, totp_backup_codes,
-                onboarding, last_login_at, status, pending_kind
+                onboarding, last_login_at, status, pending_kind, failed_login_count, locked_until
            FROM app_users WHERE lower(email) = lower($1)`,
         [email]
       );
       const user = rows[0];
       // Jednolity komunikat — nie zdradzamy, czy konto istnieje.
-      if (!user || !(await verifyPassword(password, user.password_hash))) {
+      if (!user) {
+        return reply.code(401).send({ error: 'Błędny e-mail lub hasło' });
+      }
+      // Czasowa blokada po zbyt wielu nieudanych próbach (anty-brute-force, próg 5 / 15 min).
+      // Ten sam komunikat co przy błędnym haśle — bez ujawniania istnienia/stanu konta (bez enumeracji).
+      if (user.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
+        return reply.code(401).send({ error: 'Błędny e-mail lub hasło' });
+      }
+      if (!(await verifyPassword(password, user.password_hash))) {
+        const count = (user.failed_login_count || 0) + 1;
+        if (count >= 5) {
+          await req.db.query(`UPDATE app_users SET failed_login_count = 0, locked_until = now() + interval '15 minutes' WHERE id = $1`, [user.id]);
+        } else {
+          await req.db.query(`UPDATE app_users SET failed_login_count = $1 WHERE id = $2`, [count, user.id]);
+        }
         return reply.code(401).send({ error: 'Błędny e-mail lub hasło' });
       }
       if (!user.is_active || user.status === 'pending' || user.status === 'blocked') {
@@ -104,10 +143,27 @@ export default async function authRoutes(app) {
             );
           }
         }
-        if (!ok) return reply.code(401).send({ error: 'Nieprawidłowy kod weryfikacyjny' });
+        if (!ok) {
+          // Błędny kod 2FA też liczy się do progu blokady (throttle zgadywania TOTP per konto).
+          const count = (user.failed_login_count || 0) + 1;
+          if (count >= 5) {
+            await req.db.query(`UPDATE app_users SET failed_login_count = 0, locked_until = now() + interval '15 minutes' WHERE id = $1`, [user.id]);
+          } else {
+            await req.db.query(`UPDATE app_users SET failed_login_count = $1 WHERE id = $2`, [count, user.id]);
+          }
+          return reply.code(401).send({ error: 'Nieprawidłowy kod weryfikacyjny' });
+        }
       }
 
-      await req.db.query(`UPDATE app_users SET last_login_at = now() WHERE id = $1`, [user.id]);
+      // Sukces — reset licznika nieudanych prób + znacznik logowania.
+      await req.db.query(
+        `UPDATE app_users SET last_login_at = now(), failed_login_count = 0, locked_until = NULL WHERE id = $1`,
+        [user.id]
+      );
+
+      // Wymóg 2FA (org lub konto) bez skonfigurowanego 2FA → token oznaczony n2fa (dane blokowane).
+      const { rows: r2fa } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'require_2fa_all'`);
+      const needs2fa = ((r2fa[0]?.value === 'on') || user.totp_required) && !user.totp_enabled;
 
       const accessToken = await signAccessToken({
         userId: user.id,
@@ -116,6 +172,7 @@ export default async function authRoutes(app) {
         role: user.role,
         email: user.email,
         aud: AUD_TENANT,
+        needs2fa,
       });
       const { token: refreshToken, hash } = newRefreshToken();
       await storeRefreshToken(
@@ -139,27 +196,19 @@ export default async function authRoutes(app) {
     }
   );
 
-  // Status 2FA dla ekranu logowania (jak dawne checkTwoFactorStatus) — bez sekretów.
-  app.post(
-    '/api/auth/2fa-status',
-    {
-      preHandler: app.requireTenant,
-      config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
-    },
-    async (req, reply) => {
-      const email = String(req.body?.email || '');
-      if (!email) return reply.code(400).send({ error: 'Brak e-maila' });
-      const { rows } = await req.db.query(
-        `SELECT totp_enabled, totp_required, totp_verified_at FROM app_users WHERE lower(email) = lower($1)`,
-        [email]
-      );
-      return reply.send({
-        enabled: Boolean(rows[0]?.totp_enabled),
-        required: Boolean(rows[0]?.totp_required),
-        verifiedAt: rows[0]?.totp_verified_at || null,
-      });
-    }
-  );
+  // Status 2FA WŁASNEGO konta (wymaga zalogowania). Wcześniej publiczne po e-mailu → enumeracja,
+  // kto ma 2FA. Teraz zwraca tylko status wywołującego (ignoruje e-mail z body).
+  app.post('/api/auth/2fa-status', { preHandler: app.requireUser }, async (req, reply) => {
+    const { rows } = await req.db.query(
+      `SELECT totp_enabled, totp_required, totp_verified_at FROM app_users WHERE id = $1`,
+      [req.user.id]
+    );
+    return reply.send({
+      enabled: Boolean(rows[0]?.totp_enabled),
+      required: Boolean(rows[0]?.totp_required),
+      verifiedAt: rows[0]?.totp_verified_at || null,
+    });
+  });
 
   app.post('/api/auth/refresh', { preHandler: app.requireTenant }, async (req, reply) => {
     const token = req.body?.refresh_token || req.cookies?.avenit_rt;
@@ -171,12 +220,15 @@ export default async function authRoutes(app) {
 
     const { rows } = await req.db.query(
       `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id,
-              onboarding, last_login_at
+              onboarding, last_login_at, totp_enabled, totp_required
          FROM app_users WHERE id = $1`,
       [rotated.userId]
     );
     const user = rows[0];
     if (!user || !user.is_active) return reply.code(401).send({ error: 'Konto nieaktywne' });
+
+    const { rows: r2fa } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'require_2fa_all'`);
+    const needs2fa = ((r2fa[0]?.value === 'on') || user.totp_required) && !user.totp_enabled;
 
     const accessToken = await signAccessToken({
       userId: user.id,
@@ -185,6 +237,7 @@ export default async function authRoutes(app) {
       role: user.role,
       email: user.email,
       aud: AUD_TENANT,
+      needs2fa,
     });
     reply.setCookie('avenit_at', accessToken, cookieOpts(req));
     reply.setCookie('avenit_rt', rotated.token, {
@@ -213,7 +266,7 @@ export default async function authRoutes(app) {
 
     const { rows: userRows } = await req.db.query(
       `SELECT id, email, full_name, name, role, is_active, is_super_admin, auth_user_id,
-              onboarding, last_login_at
+              onboarding, last_login_at, totp_enabled, totp_required
          FROM app_users WHERE id = $1`,
       [rows[0].user_id]
     );
@@ -222,6 +275,8 @@ export default async function authRoutes(app) {
 
     await req.db.query(`UPDATE app_users SET last_login_at = now() WHERE id = $1`, [user.id]);
 
+    const { rows: r2fa } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'require_2fa_all'`);
+    const needs2fa = ((r2fa[0]?.value === 'on') || user.totp_required) && !user.totp_enabled;
     const accessToken = await signAccessToken({
       userId: user.id,
       authUserId: user.auth_user_id,
@@ -229,6 +284,7 @@ export default async function authRoutes(app) {
       role: user.role,
       email: user.email,
       aud: AUD_TENANT,
+      needs2fa,
     });
     const { token: refreshToken, hash } = newRefreshToken();
     await storeRefreshToken(req.db, 'refresh_tokens', 'user_id', user.id, hash, req.headers['user-agent']);
@@ -248,6 +304,36 @@ export default async function authRoutes(app) {
     return reply.send({ ok: true });
   });
 
+  // ── SSO (OIDC: Google / Microsoft) — model wielotenantowy ──────────────────
+  // JEDEN URI przekierowania (app.<domena>) dla wszystkich subdomen; tenant w `state`.
+  // Callback jest globalny (packages/api/src/auth/sso-callback.js), bo trafia na host app.<domena>.
+
+  // Dostępni dostawcy + wspólna baza URI przekierowania (do przycisków logowania i konfiguracji).
+  app.get('/api/auth/sso-config', { preHandler: app.requireTenant }, async (req, reply) => {
+    return reply.send(await ssoAvailability(req.db));
+  });
+
+  // Start OAuth (z subdomeny tenanta): redirect do dostawcy ze WSPÓLNYM redirect_uri + state (tenant).
+  app.get('/api/auth/oauth/:provider/start', { preHandler: app.requireTenant }, async (req, reply) => {
+    const provider = String(req.params.provider || '');
+    const P = SSO_PROVIDERS[provider];
+    const base = `https://${req.tenant.subdomain}.${config.APP_DOMAIN}`;
+    if (!P) return reply.redirect(`${base}/login?sso=error`);
+    const creds = await resolveProviderCreds(req.db, provider);
+    if (!creds.enabled || !creds.clientId) return reply.redirect(`${base}/login?sso=disabled`);
+
+    const nonce = crypto.randomBytes(16).toString('base64url');
+    const state = signState({ provider, tenant: req.tenant.subdomain, nonce, exp: Date.now() + 10 * 60 * 1000 });
+    // Cookie na domenie NADRZĘDNEJ — czytelne także na centralnym callbacku app.<domena>.
+    reply.setCookie('avenit_oauth', nonce, { httpOnly: true, secure: isProd, sameSite: 'lax', path: '/', domain: `.${config.APP_DOMAIN}`, maxAge: 600 });
+
+    const params = new URLSearchParams({
+      client_id: creds.clientId, redirect_uri: ssoRedirectUri(provider), response_type: 'code',
+      scope: P.scope, state, prompt: 'select_account',
+    });
+    return reply.redirect(`${P.authUrl(creds.msTenant)}?${params.toString()}`);
+  });
+
   app.get('/api/auth/me', { preHandler: app.requireUser }, async (req, reply) => {
     const { rows } = await req.db.query(
       `SELECT id, email, full_name, name, role, is_active, is_super_admin, campus_id,
@@ -257,15 +343,16 @@ export default async function authRoutes(app) {
       [req.user.id]
     );
     if (!rows[0]) return reply.code(404).send({ error: 'Użytkownik nie istnieje' });
-    return reply.send({ user: publicUser(rows[0]) });
+    const { rows: r2fa } = await req.db.query(`SELECT value FROM app_settings WHERE key = 'require_2fa_all'`);
+    const needs2fa = ((r2fa[0]?.value === 'on') || rows[0].totp_required) && !rows[0].totp_enabled;
+    return reply.send({ user: { ...publicUser(rows[0]), needs2fa } });
   });
 
   // Zmiana własnego hasła (odpowiednik supabase.auth.updateUser({password})).
   app.post('/api/auth/update-password', { preHandler: app.requireUser }, async (req, reply) => {
     const password = String(req.body?.password || '');
-    if (password.length < 8) {
-      return reply.code(400).send({ error: 'Hasło musi mieć min. 8 znaków' });
-    }
+    const pwErr = await validatePassword(req.db, password);
+    if (pwErr) return reply.code(400).send({ error: pwErr });
     await req.db.query(`UPDATE app_users SET password_hash = $1 WHERE id = $2`, [
       await hashPassword(password),
       req.user.id,
@@ -308,9 +395,9 @@ export default async function authRoutes(app) {
   // Ustawienie nowego hasła z tokenu resetu.
   app.post('/api/auth/reset-password/confirm', { preHandler: app.requireTenant }, async (req, reply) => {
     const { token, password } = req.body || {};
-    if (!token || String(password || '').length < 8) {
-      return reply.code(400).send({ error: 'Nieprawidłowe dane' });
-    }
+    if (!token) return reply.code(400).send({ error: 'Nieprawidłowe dane' });
+    const pwErr = await validatePassword(req.db, password);
+    if (pwErr) return reply.code(400).send({ error: pwErr });
     const tokenHash = crypto.createHash('sha256').update(String(token)).digest('hex');
     const { rows } = await req.db.query(
       `UPDATE password_reset_tokens SET used_at = now()
@@ -319,7 +406,8 @@ export default async function authRoutes(app) {
       [tokenHash]
     );
     if (!rows[0]) return reply.code(400).send({ error: 'Link wygasł lub został użyty' });
-    await req.db.query(`UPDATE app_users SET password_hash = $1 WHERE id = $2`, [
+    // Ustaw hasło + zdejmij ewentualną blokadę logowania (anty-brute-force) + znacznik zaproszenia.
+    await req.db.query(`UPDATE app_users SET password_hash = $1, invited_at = NULL, failed_login_count = 0, locked_until = NULL WHERE id = $2`, [
       await hashPassword(String(password)),
       rows[0].user_id,
     ]);
@@ -334,8 +422,22 @@ export default async function authRoutes(app) {
   // Publiczna, minimalna konfiguracja rejestracji — Login pyta, czy pokazać „Zarejestruj się".
   app.get('/api/auth/registration-config', { preHandler: app.requireTenant }, async (req, reply) => {
     const cfg = await getRegConfig(req.db);
-    return reply.send({ mode: cfg.mode });
+    const passwordPolicy = await getPasswordPolicy(req.db);
+    return reply.send({ mode: cfg.mode, captcha: cfg.captcha, consent: cfg.consent, passwordPolicy });
   });
+
+  // Captcha (bezstanowa, samodzielna): proste działanie do przepisania + honeypot na froncie.
+  app.get(
+    '/api/auth/captcha',
+    { preHandler: app.requireTenant, config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    async (req, reply) => {
+      const a = 1 + Math.floor(Math.random() * 9);
+      const b = 1 + Math.floor(Math.random() * 9);
+      const exp = Date.now() + 10 * 60 * 1000;
+      const sig = crypto.createHmac('sha256', config.JWT_SECRET).update(`${a + b}:${exp}`).digest('hex');
+      return reply.send({ token: `${exp}.${sig}`, question: `${a} + ${b}` });
+    }
+  );
 
   // Samodzielna rejestracja konta — zależnie od trybu tenanta (closed/approval/open).
   app.post(
@@ -350,6 +452,26 @@ export default async function authRoutes(app) {
       if (cfg.mode !== 'approval' && cfg.mode !== 'open') {
         return reply.code(403).send({ error: 'Rejestracja jest wyłączona' });
       }
+      if (cfg.captcha) {
+        if (!captchaOk(req.body)) {
+          return reply.code(400).send({ error: 'Nieprawidłowy wynik weryfikacji — spróbuj ponownie' });
+        }
+        // Jednorazowość: ten sam rozwiązany captcha nie przejdzie drugi raz.
+        const cHash = crypto.createHash('sha256').update(String(req.body?.captcha_token || '')).digest('hex');
+        await req.db.query('DELETE FROM used_captchas WHERE expires_at < now()').catch(() => {});
+        const consumed = await req.db.query(
+          `INSERT INTO used_captchas (token_hash, expires_at) VALUES ($1, now() + interval '15 minutes') ON CONFLICT DO NOTHING`,
+          [cHash]
+        );
+        if (consumed.rowCount === 0) {
+          return reply.code(400).send({ error: 'Weryfikacja już użyta — odśwież i spróbuj ponownie' });
+        }
+      }
+      if (cfg.consent.required && req.body?.consent !== true) {
+        return reply.code(400).send({ error: 'Wymagana akceptacja regulaminu / polityki prywatności' });
+      }
+      const pwErr = await validatePassword(req.db, password);
+      if (pwErr) return reply.code(400).send({ error: pwErr });
       const domain = String(email.split('@')[1] || '').toLowerCase();
       if (cfg.domains.length && !cfg.domains.includes(domain)) {
         return reply.code(400).send({ error: 'Rejestracja dozwolona tylko dla wybranych domen e-mail' });
@@ -360,6 +482,8 @@ export default async function authRoutes(app) {
       const role = cfg.role || 'czlonek';
       const passwordHash = await hashPassword(password);
       const base = `https://${req.tenant.subdomain}.${config.APP_DOMAIN}`;
+      const consentAt = req.body?.consent === true ? new Date() : null;
+      const { logAccountEvent } = await import('../lib/account-audit.js');
 
       if (cfg.mode === 'open') {
         // Otwarta: konto powstaje, ale aktywne dopiero po potwierdzeniu e-mail.
@@ -367,23 +491,37 @@ export default async function authRoutes(app) {
         const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
         await req.db.query(
           `INSERT INTO app_users
-             (email, full_name, name, role, is_active, status, pending_kind, email_verified, verify_token_hash, verify_expires, password_hash, campus_id)
-           VALUES ($1,$2,$2,$3,false,'pending','email',false,$4, now() + interval '24 hours',$5,$6)`,
-          [email, full_name || '', role, tokenHash, passwordHash, cfg.campus]
+             (email, full_name, name, role, is_active, status, pending_kind, email_verified, verify_token_hash, verify_expires, password_hash, campus_id, consent_at)
+           VALUES ($1,$2,$2,$3,false,'pending','email',false,$4, now() + interval '24 hours',$5,$6,$7)`,
+          [email, full_name || '', role, tokenHash, passwordHash, cfg.campus, consentAt]
         );
         const { sendVerifyEmail } = await import('../lib/email.js');
         await sendVerifyEmail(email, `${base}/api/auth/verify-email?token=${raw}`).catch((err) =>
           req.log.error({ err }, 'verify email failed')
         );
+        await logAccountEvent(req.db, { email, action: 'registered', actor: 'self', detail: 'open (e-mail)' });
         return reply.code(202).send({ status: 'pending', reason: 'email' });
       }
 
-      // Za zgodą administratora: konto nieaktywne, oczekuje na zatwierdzenie.
+      // Tryb „za zgodą": zaufane domeny aktywują się od razu; reszta czeka na administratora.
+      if (cfg.autoapproveDomains.includes(domain)) {
+        await req.db.query(
+          `INSERT INTO app_users
+             (email, full_name, name, role, is_active, status, email_verified, password_hash, campus_id, consent_at)
+           VALUES ($1,$2,$2,$3,true,'active',true,$4,$5,$6)`,
+          [email, full_name || '', role, passwordHash, cfg.campus, consentAt]
+        );
+        const { sendWelcomeEmail } = await import('../lib/email.js');
+        await sendWelcomeEmail(email, { name: full_name, loginUrl: base }).catch((err) => req.log.error({ err }, 'welcome email failed'));
+        await logAccountEvent(req.db, { email, action: 'approved', actor: 'auto', detail: `zaufana domena ${domain}` });
+        return reply.code(201).send({ status: 'active', reason: 'auto' });
+      }
+
       await req.db.query(
         `INSERT INTO app_users
-           (email, full_name, name, role, is_active, status, pending_kind, email_verified, password_hash, campus_id)
-         VALUES ($1,$2,$2,$3,false,'pending','admin',false,$4,$5)`,
-        [email, full_name || '', role, passwordHash, cfg.campus]
+           (email, full_name, name, role, is_active, status, pending_kind, email_verified, password_hash, campus_id, consent_at)
+         VALUES ($1,$2,$2,$3,false,'pending','admin',false,$4,$5,$6)`,
+        [email, full_name || '', role, passwordHash, cfg.campus, consentAt]
       );
       const { rows: admins } = await req.db.query(
         `SELECT u.email FROM app_users u JOIN app_roles r ON u.role = r.key
@@ -394,6 +532,7 @@ export default async function authRoutes(app) {
         await sendAdminNewUserEmail(admins.map((a) => a.email), { email, name: full_name, link: `${base}/settings` })
           .catch((err) => req.log.error({ err }, 'admin notify failed'));
       }
+      await logAccountEvent(req.db, { email, action: 'registered', actor: 'self', detail: 'approval' });
       return reply.code(202).send({ status: 'pending', reason: 'admin' });
     }
   );
@@ -408,10 +547,50 @@ export default async function authRoutes(app) {
       `UPDATE app_users
           SET status='active', is_active=true, email_verified=true, verify_token_hash=NULL, verify_expires=NULL
         WHERE verify_token_hash = $1 AND verify_expires > now() AND status='pending' AND pending_kind='email'
-        RETURNING id`,
+        RETURNING email, full_name`,
       [tokenHash]
     );
+    if (rows[0]) {
+      const { sendWelcomeEmail } = await import('../lib/email.js');
+      await sendWelcomeEmail(rows[0].email, { name: rows[0].full_name, loginUrl: base }).catch((err) =>
+        req.log.error({ err }, 'welcome email failed')
+      );
+      const { logAccountEvent } = await import('../lib/account-audit.js');
+      await logAccountEvent(req.db, { email: rows[0].email, action: 'verified', actor: 'self' });
+    }
     return reply.redirect(`${base}/?verify=${rows[0] ? 'ok' : 'expired'}`);
+  });
+
+  // Aktywne sesje bieżącego użytkownika (urządzenia). Oznacza bieżącą sesję.
+  app.get('/api/auth/sessions', { preHandler: app.requireUser }, async (req, reply) => {
+    const cur = req.cookies?.avenit_rt || req.headers['x-refresh-token'] || '';
+    const curHash = cur ? hashRefreshToken(cur) : null;
+    const { rows } = await req.db.query(
+      `SELECT id, user_agent, created_at, token_hash FROM refresh_tokens
+        WHERE user_id = $1 AND revoked_at IS NULL AND expires_at > now() ORDER BY created_at DESC`,
+      [req.user.id]
+    );
+    return reply.send({
+      sessions: rows.map((r) => ({
+        id: r.id, user_agent: r.user_agent, created_at: r.created_at,
+        current: curHash != null && r.token_hash === curHash,
+      })),
+    });
+  });
+
+  // Wyloguj ze wszystkich innych urządzeń (rewokacja wszystkich sesji poza bieżącą).
+  app.post('/api/auth/logout-others', { preHandler: app.requireUser }, async (req, reply) => {
+    const cur = req.body?.refresh_token || req.cookies?.avenit_rt || '';
+    const curHash = cur ? hashRefreshToken(cur) : null;
+    if (curHash) {
+      await req.db.query(
+        `UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL AND token_hash <> $2`,
+        [req.user.id, curHash]
+      );
+    } else {
+      await req.db.query('UPDATE refresh_tokens SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL', [req.user.id]);
+    }
+    return reply.send({ ok: true });
   });
 
   // Konfiguracja 2FA dla zalogowanego użytkownika (generacja sekretu + włączenie).

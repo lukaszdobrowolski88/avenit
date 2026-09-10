@@ -5,7 +5,7 @@ import {
   List, Plus, Trash2, X, Settings, Grid, Users, Shield, BookOpen, Building2,
   CheckCircle, AlertCircle, Upload, Eye,
   Image as ImageIcon, Edit3, ToggleLeft, ToggleRight, UserX, UserCheck, Check, ChevronDown, ChevronUp, Layers, Plug,
-  Palette, Bell, Globe, CreditCard, KeyRound, Mail, Loader2, UserPlus, Clock
+  Palette, Bell, Globe, CreditCard, KeyRound, Mail, Loader2, UserPlus, Clock, Download
 } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import { useT } from '../../i18n';
@@ -526,19 +526,23 @@ export default function GlobalSettings() {
 
     try {
       if (userForm.id) {
-        // Edycja istniejącego użytkownika
-        const payload = {
-          full_name: userForm.full_name || '',
-          email: userForm.email,
-          role: userForm.role,
-          is_active: userForm.is_active,
-          campus_id: userForm.campus_id || null
-        };
-        const { error: updateError } = await supabase.from('app_users').update(payload).eq('id', userForm.id);
+        // Edycja przez FUNKCJĘ SERWEROWĄ: synchronizuje status z is_active, zapisuje totp_required,
+        // pilnuje unikalności e-maila i guardów (self / ostatni admin) + audyt.
+        const { error: updateError } = await supabase.functions.invoke('admin-update-user', {
+          body: {
+            userId: userForm.id,
+            full_name: userForm.full_name || '',
+            email: userForm.email,
+            role: userForm.role,
+            is_active: userForm.is_active,
+            campus_id: userForm.campus_id || null,
+            totp_required: require2FA,
+          },
+        });
         if (updateError) {
           throw new Error(`Błąd aktualizacji: ${updateError.message}`);
         }
-        fetchData();
+        fetchData(); loadAccountEvents();
         setMessage({ type: 'success', text: tr('Zaktualizowano użytkownika') });
       } else {
         // Tworzenie nowego użytkownika
@@ -561,63 +565,20 @@ export default function GlobalSettings() {
           }).eq('id', existingAppUser.id);
           setMessage({ type: 'success', text: `Użytkownik ${userForm.email} już istniał — zaktualizowano dane.` });
         } else {
-          // 1. Zapisz aktualną sesję admina przed utworzeniem nowego użytkownika
-          const { data: { session: currentSession } } = await supabase.auth.getSession();
-
-          // 2. Utwórz konto w Supabase Auth z losowym hasłem
-          const tempPassword = crypto.randomUUID() + 'Aa1!';
-          const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: userForm.email,
-            password: tempPassword,
-            options: {
-              data: {
-                full_name: userForm.full_name
-              }
-            }
+          // Konto zakłada FUNKCJA SERWEROWA (aktywne, hash po stronie serwera) — niezależnie od
+          // trybu rejestracji. Krok 5 niżej wysyła e-mail „ustaw hasło" (reset-password).
+          const { error: createErr } = await supabase.functions.invoke('admin-create-user', {
+            body: {
+              email: userForm.email,
+              full_name: userForm.full_name || '',
+              role: userForm.role,
+              is_active: userForm.is_active,
+              campus_id: userForm.campus_id || null,
+              totp_required: require2FA,
+            },
           });
-
-          if (authError) {
-            throw new Error(`Błąd tworzenia konta: ${authError.message}`);
-          }
-
-          // 3. Przywróć sesję admina (signUp automatycznie loguje nowego użytkownika)
-          if (currentSession) {
-            await supabase.auth.setSession({
-              access_token: currentSession.access_token,
-              refresh_token: currentSession.refresh_token
-            });
-          }
-
-          // 4. Dodaj rekord do app_users
-          if (authData?.user?.id) {
-            const { error: insertError } = await supabase
-              .from('app_users')
-              .upsert({
-                email: userForm.email,
-                full_name: userForm.full_name || '',
-                role: userForm.role,
-                is_active: userForm.is_active,
-                auth_user_id: authData.user.id,
-                totp_required: require2FA,
-                campus_id: userForm.campus_id || null
-              }, { onConflict: 'email' });
-
-            if (insertError) {
-              console.error('Błąd dodawania do app_users:', insertError);
-            }
-          }
-        }
-
-        // 5. Wyślij email z linkiem do ustawienia hasła (przez Resend SMTP skonfigurowany w Supabase)
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(userForm.email, {
-          redirectTo: `${window.location.origin}/reset-password`
-        });
-
-        if (resetError) {
-          console.error('Błąd wysyłania emaila:', resetError);
-          setMessage({ type: 'warning', text: `Utworzono użytkownika, ale nie udało się wysłać emaila: ${resetError.message}` });
-        } else {
-          setMessage({ type: 'success', text: `Utworzono użytkownika ${userForm.email}. Email z linkiem do ustawienia hasła został wysłany.` });
+          if (createErr) throw new Error(`Błąd tworzenia konta: ${createErr.message}`);
+          setMessage({ type: 'success', text: `Utworzono ${userForm.email} — wysłano zaproszenie do ustawienia hasła (ważne 7 dni).` });
         }
 
         // 6. Dodaj użytkownika do wybranych zespołów/służb (lub zaktualizuj istniejącego)
@@ -699,6 +660,7 @@ export default function GlobalSettings() {
       setSelectedTeams([]);
       setRequire2FA(false);
       fetchData();
+      loadAccountEvents();
     } catch (err) {
       toast.error(tr('Błąd zapisu: ') + err.message);
     } finally {
@@ -706,28 +668,115 @@ export default function GlobalSettings() {
     }
   };
 
+  // Usuwanie/blokada/reset 2FA przez FUNKCJE SERWEROWE: rewokacja sesji, sprzątanie, guardy
+  // (nie usuń/zablokuj siebie ani ostatniego admina) i audyt — patrz fn/delete-user, set-user-status.
   const deleteUser = async (id) => {
-    const user = users.find(u => u.id === id);
-    if (user?.is_super_admin) {
-      return toast.error(tr('Nie można usunąć superadmina!'));
-    }
-
-    if(confirm(tr('Usunąć użytkownika? To również usunie jego konto z systemu autentykacji.'))) {
-      try {
-        // Usuń z tabeli app_users
-        await supabase.from('app_users').delete().eq('id', id);
-
-        // TODO: Można też usunąć z Supabase Auth, ale wymaga admin API
-        // const { error } = await supabase.auth.admin.deleteUser(user.auth_user_id);
-
-        fetchData();
-        setMessage({ type: 'success', text: tr('Użytkownik został usunięty') });
-      } catch (err) {
-        toast.error(tr('Błąd usuwania: ') + err.message);
-      }
-    }
+    if (!confirm(tr('Usunąć użytkownika? Operacja jest nieodwracalna (usuwa konto i wylogowuje sesje).'))) return;
+    const { error } = await supabase.functions.invoke('delete-user', { body: { userId: id } });
+    if (error) { toast.error(error.message || tr('Błąd usuwania')); return; }
+    fetchData(); loadAccountEvents();
+    setMessage({ type: 'success', text: tr('Użytkownik został usunięty') });
   };
-  const toggleUserStatus = async (user) => { await supabase.from('app_users').update({ is_active: !user.is_active }).eq('id', user.id); fetchData(); };
+  const toggleUserStatus = async (user) => {
+    const active = !user.is_active;
+    if (!active && !confirm(tr('Zablokować użytkownika? Zostanie natychmiast wylogowany.'))) return;
+    const { error } = await supabase.functions.invoke('set-user-status', { body: { userId: user.id, active } });
+    if (error) { toast.error(error.message || tr('Nie udało się zmienić statusu')); return; }
+    fetchData(); loadAccountEvents();
+  };
+  const resetUser2FA = async (user) => {
+    if (!confirm(tr('Zresetować 2FA temu użytkownikowi? Skonfiguruje je od nowa przy kolejnym logowaniu.'))) return;
+    const { error } = await supabase.functions.invoke('admin-reset-2fa', { body: { userId: user.id } });
+    setMessage(error ? { type: 'error', text: error.message || tr('Błąd resetu 2FA') } : { type: 'success', text: tr('Zresetowano 2FA') });
+    fetchData(); loadAccountEvents();
+  };
+  const forceLogoutUser = async (id) => {
+    if (!confirm(tr('Wylogować użytkownika ze wszystkich urządzeń?'))) return;
+    const { error } = await supabase.functions.invoke('force-logout-user', { body: { userId: id } });
+    setMessage(error ? { type: 'error', text: error.message || tr('Błąd') } : { type: 'success', text: tr('Wylogowano ze wszystkich urządzeń') });
+    loadAccountEvents();
+  };
+  const unlockLogin = async (user) => {
+    // Zdejmuje TYLKO blokadę anty-brute-force (nie rusza is_active — nie odblokowuje zablokowanego konta).
+    const { error } = await supabase.functions.invoke('unlock-login', { body: { userId: user.id } });
+    if (error) { toast.error(error.message || tr('Błąd')); return; }
+    fetchData(); loadAccountEvents();
+    setMessage({ type: 'success', text: tr('Odblokowano logowanie') });
+  };
+  const resendInvite = async (id) => {
+    const { error } = await supabase.functions.invoke('resend-invite', { body: { userId: id } });
+    setMessage(error ? { type: 'error', text: error.message || tr('Błąd') } : { type: 'success', text: tr('Ponowiono zaproszenie') });
+  };
+
+  // Zaznaczanie i akcje masowe (pętla po zaznaczonych — każdą operację robi funkcja serwerowa).
+  const [selectedUserIds, setSelectedUserIds] = useState(() => new Set());
+  const [bulkRole, setBulkRole] = useState('');
+  const [ssoSecret, setSsoSecret] = useState({ google: '', microsoft: '' });
+  const saveSsoSecret = async (provider) => {
+    if (!ssoSecret[provider]) return;
+    const { error } = await supabase.functions.invoke('sso-save-config', { body: { provider, client_secret: ssoSecret[provider] } });
+    setMessage(error ? { type: 'error', text: error.message || tr('Błąd') } : { type: 'success', text: tr('Zapisano sekret SSO') });
+    setSsoSecret(s => ({ ...s, [provider]: '' }));
+  };
+  const toggleSelectUser = (id) => setSelectedUserIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const clearSelection = () => setSelectedUserIds(new Set());
+  const bulkRun = async (op, label) => {
+    let ok = 0, fail = 0;
+    for (const id of [...selectedUserIds]) { const err = await op(id); if (err) fail++; else ok++; }
+    fetchData(); loadAccountEvents(); clearSelection();
+    setMessage({ type: fail ? 'error' : 'success', text: `${label}: ${ok} ok${fail ? `, ${fail} ${tr('błędów')}` : ''}` });
+  };
+  const bulkActivate = () => bulkRun(async id => (await supabase.functions.invoke('set-user-status', { body: { userId: id, active: true } })).error, tr('Aktywowano'));
+  const bulkBlock = () => { if (confirm(tr('Zablokować zaznaczonych?'))) bulkRun(async id => (await supabase.functions.invoke('set-user-status', { body: { userId: id, active: false } })).error, tr('Zablokowano')); };
+  const bulkDelete = () => { if (confirm(tr('Usunąć zaznaczonych? Operacja nieodwracalna.'))) bulkRun(async id => (await supabase.functions.invoke('delete-user', { body: { userId: id } })).error, tr('Usunięto')); };
+  const bulkChangeRole = () => { if (bulkRole) bulkRun(async id => (await supabase.functions.invoke('admin-update-user', { body: { userId: id, role: bulkRole } })).error, tr('Zmieniono rolę')); };
+
+  const exportUsersCsv = () => {
+    const rows = [['Imię i nazwisko', 'E-mail', 'Rola', 'Status', 'Lokalizacja', 'Ostatnie logowanie']];
+    filteredUsers.forEach(u => {
+      const st = u.status || (u.is_active ? 'active' : 'blocked');
+      rows.push([u.full_name || '', u.email || '', definedRoles.find(r => r.key === u.role)?.label || u.role || '', st, campuses.find(c => c.id === u.campus_id)?.name || '', u.last_login_at ? new Date(u.last_login_at).toLocaleString() : '']);
+    });
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'uzytkownicy.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  };
+  const parseCsvLine = (line) => {
+    const out = []; let cur = ''; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQ) {
+        if (ch === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+        else cur += ch;
+      } else if (ch === '"') inQ = true;
+      else if (ch === ',') { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out.map(s => s.trim());
+  };
+  const importUsersCsv = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const lines = (await file.text()).split(/\r?\n/).filter(l => l.trim());
+    if (!lines.length) { e.target.value = ''; return; }
+    const header = parseCsvLine(lines[0]).map(h => h.toLowerCase());
+    const ie = header.findIndex(h => h.includes('mail'));
+    const inm = header.findIndex(h => h.includes('imi') || h.includes('name') || h.includes('nazw'));
+    const ir = header.findIndex(h => h.includes('rol'));
+    if (ie < 0) { toast.error(tr('Brak kolumny e-mail w pliku CSV')); e.target.value = ''; return; }
+    let ok = 0, fail = 0;
+    for (const line of lines.slice(1)) {
+      const cells = parseCsvLine(line);
+      const email = cells[ie]; if (!email || !email.includes('@')) continue;
+      const roleCell = ir >= 0 ? cells[ir] : '';
+      const role = definedRoles.find(r => r.key === roleCell || r.label === roleCell)?.key || 'czlonek';
+      const { error } = await supabase.functions.invoke('admin-create-user', { body: { email, full_name: inm >= 0 ? cells[inm] : '', role } });
+      if (error) fail++; else ok++;
+    }
+    e.target.value = '';
+    fetchData(); loadAccountEvents();
+    setMessage({ type: fail ? 'error' : 'success', text: `${tr('Import CSV')}: ${ok} ${tr('utworzono')}${fail ? `, ${fail} ${tr('pominięto')}` : ''}` });
+  };
 
   // Funkcja do scalania zduplikowanych członków we wszystkich tabelach służb
   const mergeDuplicateMembers = async () => {
@@ -1035,18 +1084,46 @@ export default function GlobalSettings() {
     setMessage({ type: 'success', text: 'Zapisano' });
   };
 
-  // Rejestracja: kolejka oczekujących na zatwierdzenie administratora + akcje.
+  // Rejestracja: kolejki oczekujących + audyt. Akcje = funkcje serwerowe (bramka admina + maile + log).
   const pendingUsers = users.filter(u => u.status === 'pending' && u.pending_kind === 'admin');
+  const emailPendingUsers = users.filter(u => u.status === 'pending' && u.pending_kind === 'email');
+  const [userSearch, setUserSearch] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState('all');
+  // Zmiana filtra/wyszukiwarki czyści zaznaczenie — akcje masowe nigdy nie dotkną kont spoza widoku.
+  useEffect(() => { setSelectedUserIds(new Set()); }, [userSearch, userStatusFilter]);
+  const filteredUsers = users.filter(u => {
+    const q = userSearch.trim().toLowerCase();
+    const roleLabel = (definedRoles.find(r => r.key === u.role)?.label || u.role || '').toLowerCase();
+    const matchesQ = !q || (u.full_name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || roleLabel.includes(q);
+    const st = u.status || (u.is_active ? 'active' : 'blocked');
+    const matchesS = userStatusFilter === 'all' || st === userStatusFilter;
+    return matchesQ && matchesS;
+  });
+  const [accountEvents, setAccountEvents] = useState([]);
+  const loadAccountEvents = async () => {
+    const { data } = await supabase.functions.invoke('account-events');
+    setAccountEvents(data?.events || []);
+  };
+  useEffect(() => { loadAccountEvents(); }, []);
   const approveUser = async (id) => {
-    await supabase.from('app_users').update({ status: 'active', is_active: true, pending_kind: null }).eq('id', id);
-    fetchData();
-    setMessage({ type: 'success', text: 'Konto zatwierdzone' });
+    const { error } = await supabase.functions.invoke('approve-user', { body: { userId: id } });
+    if (error) { setMessage({ type: 'error', text: error.message || 'Nie udało się zatwierdzić konta' }); return; }
+    fetchData(); loadAccountEvents();
+    setMessage({ type: 'success', text: 'Konto zatwierdzone — wysłano powitanie' });
   };
   const rejectUser = async (id) => {
     if (!confirm(tr('Odrzucić i usunąć to zgłoszenie rejestracji?'))) return;
-    await supabase.from('app_users').delete().eq('id', id);
-    fetchData();
+    const { error } = await supabase.functions.invoke('reject-user', { body: { userId: id } });
+    if (error) { setMessage({ type: 'error', text: error.message || 'Nie udało się odrzucić' }); return; }
+    fetchData(); loadAccountEvents();
   };
+  const resendVerification = async (id) => {
+    const { error } = await supabase.functions.invoke('resend-verification', { body: { userId: id } });
+    setMessage(error
+      ? { type: 'error', text: error.message || 'Nie udało się wysłać' }
+      : { type: 'success', text: 'Wysłano ponownie link weryfikacyjny' });
+  };
+  const ACTION_LABEL = { registered: 'Rejestracja', verified: 'Potwierdzenie e-mail', approved: 'Zatwierdzenie', rejected: 'Odrzucenie', created: 'Utworzenie (admin)', edited: 'Edycja', deleted: 'Usunięcie', blocked: 'Zablokowanie', unblocked: 'Odblokowanie', reset_2fa: 'Reset 2FA', logged_out: 'Wylogowanie (wszędzie)', unlocked_login: 'Odblokowanie logowania' };
 
   const activeNav = SETTINGS_NAV_FLAT.find(i => i.id === activeTab);
 
@@ -1200,8 +1277,11 @@ export default function GlobalSettings() {
             <div className="flex justify-between items-center mb-6">
               <SectionHeader title={t('Użytkownicy Systemu')} description={tr('Zarządzanie dostępem, rolami i statusem kont.')} />
               <div className="flex items-center gap-2">
+                <button onClick={exportUsersCsv} className="border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm" title={tr('Eksportuj listę do CSV')}><Download size={16}/> CSV</button>
+                <button onClick={() => document.getElementById('users-csv-import').click()} className="border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm" title={tr('Importuj konta z CSV (kolumny: e-mail, imię, rola)')}><Upload size={16}/> Import</button>
+                <input id="users-csv-import" type="file" accept=".csv,text/csv" className="hidden" onChange={importUsersCsv} />
                 <button onClick={mergeDuplicateMembers} className="bg-accent-secondary-light text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition text-sm" title={t('Scal zduplikowanych członków w służbach')}><Layers size={16}/> Scal duplikaty</button>
-                <button onClick={() => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setShowUserModal(true); }} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition"><Plus size={18}/> Dodaj Użytkownika</button>
+                <button onClick={() => { setUserForm({ id: null, full_name: '', email: '', role: '', is_active: true }); setSelectedTeams([]); setRequire2FA(false); setShowUserModal(true); }} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition"><Plus size={18}/> Dodaj Użytkownika</button>
               </div>
             </div>
 
@@ -1230,20 +1310,126 @@ export default function GlobalSettings() {
                 })}
               </div>
               {(getSetting('registration_mode') || 'closed') !== 'closed' && (
-                <div className="grid sm:grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Domyślna rola nowych kont')}</label>
-                    <select value={getSetting('registration_default_role') || ''} onChange={e => saveSetting('registration_default_role', e.target.value)} className="w-full">
-                      <option value="">{tr('(najniższa — członek)')}</option>
-                      {definedRoles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
-                    </select>
+                <div className="mt-4 space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Domyślna rola nowych kont')}</label>
+                      <select value={getSetting('registration_default_role') || ''} onChange={e => saveSetting('registration_default_role', e.target.value)} className="w-full">
+                        <option value="">{tr('(najniższa — członek)')}</option>
+                        {definedRoles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
+                      </select>
+                    </div>
+                    {campuses.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Domyślny kampus nowych kont')}</label>
+                        <select value={getSetting('registration_default_campus') || ''} onChange={e => saveSetting('registration_default_campus', e.target.value)} className="w-full">
+                          <option value="">{tr('(brak — bez kampusu)')}</option>
+                          {campuses.map(c => <option key={c.id} value={String(c.id)}>{c.name}{c.city ? ` (${c.city})` : ''}</option>)}
+                        </select>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Dozwolone domeny e-mail (opcjonalnie)')}</label>
                     <input type="text" defaultValue={getSetting('registration_allowed_domains') || ''} onBlur={e => saveSetting('registration_allowed_domains', e.target.value)} placeholder="np. schwro.pl, parafia.pl" className="w-full" />
                   </div>
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                    <input type="checkbox" className="w-4 h-4" checked={(getSetting('registration_captcha') || 'on') !== 'off'} onChange={e => saveSetting('registration_captcha', e.target.checked ? 'on' : 'off')} />
+                    {tr('Wymagaj weryfikacji (captcha) przy rejestracji')}
+                  </label>
+                  {getSetting('registration_mode') === 'approval' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Auto-zatwierdzane domeny')}</label>
+                      <input type="text" defaultValue={getSetting('registration_autoapprove_domains') || ''} onBlur={e => saveSetting('registration_autoapprove_domains', e.target.value)} placeholder="np. schwro.pl" className="w-full" />
+                      <p className="text-xs text-gray-400 mt-1">{tr('Konta z tych domen aktywują się od razu, bez czekania na administratora.')}</p>
+                    </div>
+                  )}
+                  <div className="pt-4 border-t border-gray-100 dark:border-gray-700 space-y-3">
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                      <input type="checkbox" className="w-4 h-4" checked={getSetting('registration_require_consent') === 'on'} onChange={e => saveSetting('registration_require_consent', e.target.checked ? 'on' : 'off')} />
+                      {tr('Wymagaj akceptacji regulaminu / polityki prywatności (RODO)')}
+                    </label>
+                    {getSetting('registration_require_consent') === 'on' && (
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Treść zgody')}</label>
+                          <input type="text" defaultValue={getSetting('registration_consent_text') || ''} onBlur={e => saveSetting('registration_consent_text', e.target.value)} placeholder={tr('Akceptuję regulamin i politykę prywatności')} className="w-full" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Link do dokumentu')}</label>
+                          <input type="text" defaultValue={getSetting('registration_consent_url') || ''} onBlur={e => saveSetting('registration_consent_url', e.target.value)} placeholder="https://…/polityka-prywatnosci" className="w-full" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
+            </div>
+
+            {/* Bezpieczeństwo logowania */}
+            <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800">
+              <h3 className="font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2"><Shield size={18}/> {tr('Bezpieczeństwo logowania')}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Wymogi bezpieczeństwa dla wszystkich kont.')}</p>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                <input type="checkbox" className="w-4 h-4" checked={getSetting('require_2fa_all') === 'on'} onChange={e => saveSetting('require_2fa_all', e.target.checked ? 'on' : 'off')} />
+                {tr('Wymagaj dwuetapowej weryfikacji (2FA) od wszystkich użytkowników')}
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none mt-3">
+                <input type="checkbox" className="w-4 h-4" checked={(getSetting('account_change_emails') || 'on') !== 'off'} onChange={e => saveSetting('account_change_emails', e.target.checked ? 'on' : 'off')} />
+                {tr('Powiadamiaj użytkowników e-mailem o zmianach konta (blokada, rola, reset 2FA)')}
+              </label>
+              <div className="grid sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1.5">{tr('Minimalna długość hasła')}</label>
+                  <input type="number" min="6" max="64" defaultValue={getSetting('password_min_length') || '8'} onBlur={e => saveSetting('password_min_length', String(Math.max(6, Math.min(64, parseInt(e.target.value, 10) || 8))))} className="w-full" />
+                </div>
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none sm:mt-8">
+                  <input type="checkbox" className="w-4 h-4" checked={getSetting('password_require_complexity') === 'on'} onChange={e => saveSetting('password_require_complexity', e.target.checked ? 'on' : 'off')} />
+                  {tr('Wymagaj złożoności (mała + wielka litera + cyfra)')}
+                </label>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">{tr('Konta bez 2FA zostaną poproszone o konfigurację przy następnym logowaniu. Zbyt wiele nieudanych prób czasowo blokuje logowanie.')}</p>
+            </div>
+
+            {/* SSO — logowanie przez Google / Microsoft */}
+            <div className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 p-5 bg-white dark:bg-gray-800">
+              <h3 className="font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2"><KeyRound size={18}/> {tr('Logowanie zewnętrzne (SSO)')}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{tr('Pozwól logować się kontem Google lub Microsoft. Wystarczy JEDNA aplikacja OAuth na dostawcę — obsłuży wszystkie subdomeny (tenant przenoszony w state).')}</p>
+              <p className="text-xs text-gray-400 mb-4">{tr('Client ID/Secret możesz zostawić puste — wtedy użyte zostaną wspólne poświadczenia platformy (o ile skonfigurowane).')}</p>
+              {[{ p: 'google', label: 'Google' }, { p: 'microsoft', label: 'Microsoft' }].map(({ p, label }) => (
+                <div key={p} className="mb-4 pb-4 border-b border-gray-100 dark:border-gray-700">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2 cursor-pointer select-none">
+                    <input type="checkbox" className="w-4 h-4" checked={getSetting(`sso_${p}_enabled`) === 'on'} onChange={e => saveSetting(`sso_${p}_enabled`, e.target.checked ? 'on' : 'off')} />
+                    {tr('Włącz')} {label}
+                  </label>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <input type="text" defaultValue={getSetting(`sso_${p}_client_id`) || ''} onBlur={e => saveSetting(`sso_${p}_client_id`, e.target.value)} placeholder="Client ID" className="w-full" />
+                    <div className="flex gap-2">
+                      <input type="password" value={ssoSecret[p]} onChange={e => setSsoSecret(s => ({ ...s, [p]: e.target.value }))} placeholder={tr('Client secret (wpisz, aby zmienić)')} className="flex-1" />
+                      <button type="button" onClick={() => saveSsoSecret(p)} disabled={!ssoSecret[p]} className="px-3 py-2 bg-accent-primary text-white rounded-lg text-sm font-medium disabled:opacity-50 shrink-0">{tr('Zapisz')}</button>
+                    </div>
+                    {p === 'microsoft' && (
+                      <input type="text" defaultValue={getSetting('sso_microsoft_tenant') || 'common'} onBlur={e => saveSetting('sso_microsoft_tenant', e.target.value || 'common')} placeholder="Tenant (np. common / organizations / <id>)" className="w-full" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1.5">{tr('URI przekierowania (jeden dla wszystkich subdomen — wklej u dostawcy)')}: <span className="font-mono text-gray-500 dark:text-gray-400 break-all">https://app.{window.location.hostname.split('.').slice(1).join('.')}/api/auth/oauth/{p}/callback</span></p>
+                </div>
+              ))}
+              <div className="grid sm:grid-cols-2 gap-3">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                  <input type="checkbox" className="w-4 h-4" checked={getSetting('sso_auto_provision') === 'on'} onChange={e => saveSetting('sso_auto_provision', e.target.checked ? 'on' : 'off')} />
+                  {tr('Twórz konto automatycznie przy pierwszym logowaniu')}
+                </label>
+                {getSetting('sso_auto_provision') === 'on' && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{tr('Domyślna rola nowych kont SSO')}</label>
+                    <select value={getSetting('sso_default_role') || ''} onChange={e => saveSetting('sso_default_role', e.target.value)} className="w-full">
+                      <option value="">{tr('(najniższa — członek)')}</option>
+                      {definedRoles.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Kolejka: oczekujący na zatwierdzenie (tryb „za zgodą administratora") */}
@@ -1267,15 +1453,82 @@ export default function GlobalSettings() {
               </div>
             )}
 
+            {/* Kolejka: oczekują na potwierdzenie e-mail (tryb otwarty) */}
+            {emailPendingUsers.length > 0 && (
+              <div className="mb-6 rounded-xl border border-blue-200 dark:border-blue-900/40 p-5 bg-blue-50/50 dark:bg-blue-900/10">
+                <h3 className="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2"><Mail size={18}/> {tr('Oczekują na potwierdzenie e-mail')} ({emailPendingUsers.length})</h3>
+                <div className="space-y-2">
+                  {emailPendingUsers.map(u => (
+                    <div key={u.id} className="flex items-center justify-between gap-3 bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm text-gray-800 dark:text-gray-100 truncate">{u.full_name || u.email}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{u.email}</div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button onClick={() => resendVerification(u.id)} className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">{tr('Wyślij ponownie')}</button>
+                        <button onClick={() => approveUser(u.id)} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600 transition">{tr('Aktywuj')}</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Historia kont (audyt rejestracji/zatwierdzeń) */}
+            {accountEvents.length > 0 && (
+              <details className="mb-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <summary className="cursor-pointer select-none p-4 font-bold text-gray-800 dark:text-white flex items-center gap-2"><Clock size={18}/> {tr('Historia kont')} ({accountEvents.length})</summary>
+                <div className="px-4 pb-4 max-h-64 overflow-y-auto">
+                  {accountEvents.map((ev, i) => (
+                    <div key={i} className="flex items-center gap-3 text-xs py-1.5 border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+                      <span className="text-gray-400 whitespace-nowrap w-36 shrink-0">{new Date(ev.created_at).toLocaleString()}</span>
+                      <span className="font-semibold text-gray-700 dark:text-gray-200 w-32 shrink-0">{ACTION_LABEL[ev.action] || ev.action}</span>
+                      <span className="text-gray-600 dark:text-gray-300 truncate flex-1">{ev.email}</span>
+                      <span className="text-gray-400 truncate hidden sm:block">{ev.actor}{ev.detail ? ` · ${ev.detail}` : ''}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-3 mb-3">
+              <input type="text" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder={tr('Szukaj po imieniu, e-mailu, roli…')} className="flex-1" />
+              <select value={userStatusFilter} onChange={e => setUserStatusFilter(e.target.value)} className="sm:w-56">
+                <option value="all">{tr('Wszystkie statusy')}</option>
+                <option value="active">{tr('Aktywni')}</option>
+                <option value="blocked">{tr('Zablokowani')}</option>
+                <option value="pending">{tr('Oczekujący')}</option>
+              </select>
+            </div>
+            {selectedUserIds.size > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mb-3 p-3 rounded-xl bg-accent-primary-lightest/50 dark:bg-gray-800 border border-accent-primary-light/40">
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{tr('Zaznaczono')}: {selectedUserIds.size}</span>
+                <button onClick={bulkActivate} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-500 text-white hover:bg-green-600">{tr('Aktywuj')}</button>
+                <button onClick={bulkBlock} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600">{tr('Zablokuj')}</button>
+                <div className="flex items-center gap-1.5">
+                  <select value={bulkRole} onChange={e => setBulkRole(e.target.value)} className="text-sm">
+                    <option value="">{tr('Zmień rolę…')}</option>
+                    {definedRoles.filter(r => r.key !== 'superadmin').map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
+                  </select>
+                  <button onClick={bulkChangeRole} disabled={!bulkRole} className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-600 disabled:opacity-50">{tr('Zastosuj')}</button>
+                </div>
+                <button onClick={bulkDelete} className="px-3 py-1.5 rounded-lg text-sm font-medium border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">{tr('Usuń')}</button>
+                <button onClick={clearSelection} className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:underline ml-auto">{tr('Wyczyść')}</button>
+              </div>
+            )}
             <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
               <table className="w-full text-sm text-left bg-white dark:bg-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4">{t('Użytkownik')}</th><th className="p-4">{t('Email')}</th><th className="p-4">{t('Rola')}</th>{campuses.length > 0 && <th className="p-4">{t('Lokalizacja')}</th>}<th className="p-4">{t('Status')}</th><th className="p-4 text-right">{t('Akcje')}</th></tr></thead>
+                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4 w-10"><input type="checkbox" checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length} onChange={() => setSelectedUserIds(prev => prev.size === filteredUsers.length ? new Set() : new Set(filteredUsers.map(u => u.id)))} /></th><th className="p-4">{t('Użytkownik')}</th><th className="p-4">{t('Email')}</th><th className="p-4">{t('Rola')}</th>{campuses.length > 0 && <th className="p-4">{t('Lokalizacja')}</th>}<th className="p-4">{t('Status')}</th><th className="p-4">{t('Ostatnie logowanie')}</th><th className="p-4 text-right">{t('Akcje')}</th></tr></thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
-                  {users.map(user => {
+                  {filteredUsers.map(user => {
                     const roleLabel = definedRoles.find(r => r.key === user.role)?.label || user.role;
                     const isSuperAdmin = user.is_super_admin === true;
+                    const st = user.status || (user.is_active ? 'active' : 'blocked');
+                    const loginLocked = user.locked_until && new Date(user.locked_until).getTime() > Date.now();
+                    const invitedPending = user.invited_at && !user.last_login_at;
                     return (
                       <tr key={user.id} className={`hover:bg-accent-primary-lightest/30 dark:hover:bg-gray-600 transition text-gray-800 dark:text-gray-200 ${isSuperAdmin ? 'bg-yellow-50/30 dark:bg-yellow-900/10' : ''}`}>
+                        <td className="p-4 w-10"><input type="checkbox" checked={selectedUserIds.has(user.id)} onChange={() => toggleSelectUser(user.id)} /></td>
                         <td className="p-4 font-medium flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold uppercase ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300' : 'bg-accent-primary-lighter dark:bg-accent-primary-darkest/50 text-accent-primary dark:text-accent-primary-light'}`}>
                             {(user.full_name || user.email || '?').charAt(0)}
@@ -1287,13 +1540,27 @@ export default function GlobalSettings() {
                         <td className="p-4"><span className={`px-2 py-1 rounded-lg text-xs font-bold ${isSuperAdmin ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : 'bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/30 text-accent-secondary dark:text-accent-secondary-light'}`}>{roleLabel}</span></td>
                         {campuses.length > 0 && <td className="p-4 text-gray-500 dark:text-gray-400 text-sm">{campuses.find(c => c.id === user.campus_id)?.name || <span className="text-gray-300 dark:text-gray-600">—</span>}</td>}
                         <td className="p-4">
-                          <button onClick={() => toggleUserStatus(user)} disabled={isSuperAdmin} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border ${user.is_active ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'} ${isSuperAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                            {user.is_active ? <UserCheck size={12}/> : <UserX size={12}/>} {user.is_active ? 'Aktywny' : 'Zablokowany'}
-                          </button>
+                          <div className="flex flex-col gap-1 items-start">
+                            <button onClick={() => toggleUserStatus(user)} disabled={isSuperAdmin || st === 'pending'} className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border ${st === 'active' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : st === 'pending' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'} ${isSuperAdmin || st === 'pending' ? 'opacity-70 cursor-default' : ''}`}>
+                              {st === 'active' ? <UserCheck size={12}/> : st === 'pending' ? <Clock size={12}/> : <UserX size={12}/>} {st === 'active' ? tr('Aktywny') : st === 'pending' ? tr('Oczekujący') : tr('Zablokowany')}
+                            </button>
+                            {loginLocked && (
+                              <button onClick={() => unlockLogin(user)} title={tr('Zablokowane logowanie po nieudanych próbach — kliknij, aby odblokować')} className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 hover:underline">
+                                <KeyRound size={11}/> {tr('Odblokuj logowanie')}
+                              </button>
+                            )}
+                          </div>
                         </td>
+                        <td className="p-4 text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : invitedPending ? <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">{tr('zaproszono')}</span> : <span className="text-gray-300 dark:text-gray-600">{tr('nigdy')}</span>}</td>
                         <td className="p-4 text-right flex justify-end gap-2">
-                          <button onClick={() => { setUserForm({...user, password: ''}); setAdminNewPassword(''); setShowUserModal(true); }} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
-                          <button onClick={() => deleteUser(user.id)} disabled={isSuperAdmin} className={`text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 p-2 rounded-lg ${isSuperAdmin ? 'opacity-30 cursor-not-allowed' : ''}`}><Trash2 size={16}/></button>
+                          <button onClick={() => { setUserForm({...user, password: ''}); setAdminNewPassword(''); setRequire2FA(!!user.totp_required); setShowUserModal(true); }} title={t('Edytuj')} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
+                          {invitedPending && (
+                            <button onClick={() => resendInvite(user.id)} title={tr('Ponów zaproszenie')} className="text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Mail size={16}/></button>
+                          )}
+                          {user.totp_enabled && (
+                            <button onClick={() => resetUser2FA(user)} title={tr('Zresetuj 2FA')} className="text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-gray-600 p-2 rounded-lg"><KeyRound size={16}/></button>
+                          )}
+                          <button onClick={() => deleteUser(user.id)} title={t('Usuń')} className="text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Trash2 size={16}/></button>
                         </td>
                       </tr>
                     );
@@ -1408,6 +1675,10 @@ export default function GlobalSettings() {
                     <Mail size={15} /> {tr('Wyślij link do resetu hasła')}
                   </button>
                   <p className="text-[11px] text-gray-400">{tr('„Ustaw" zmienia hasło od razu. „Wyślij link" pozwala użytkownikowi ustawić hasło samodzielnie.')}</p>
+                  <button type="button" onClick={() => forceLogoutUser(userForm.id)}
+                    className="w-full py-2 border border-amber-200 dark:border-amber-900/50 rounded-lg text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center justify-center gap-2">
+                    <UserX size={15} /> {tr('Wyloguj ze wszystkich urządzeń')}
+                  </button>
                 </div>
               )}
               {!userForm.id && (

@@ -72,6 +72,9 @@ export async function buildServer() {
   // Globalne logowanie z app.<domena> (bez kontekstu tenanta).
   const { default: appLoginRoutes } = await import('./auth/app-login.js');
   await app.register(appLoginRoutes);
+  // Globalny callback SSO (jeden URI przekierowania dla wszystkich subdomen; tenant ze state).
+  const { default: ssoCallbackRoutes } = await import('./auth/sso-callback.js');
+  await app.register(ssoCallbackRoutes);
   // Publiczny formularz zgłoszeniowy ze strony głównej (avenit.pl).
   const { default: landingRoutes } = await import('./landing/routes.js');
   await app.register(landingRoutes);

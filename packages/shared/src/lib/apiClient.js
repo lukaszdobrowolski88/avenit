@@ -135,6 +135,15 @@ export function createApiClient({
       const ok = await tryRefresh();
       if (ok) return request(path, options, true);
     }
+    // 2FA właśnie skonfigurowane → bieżący token nadal ma n2fa; odśwież raz i ponów.
+    if (res.status === 403 && !retried && session?.refresh_token) {
+      let code = null;
+      try { code = (await res.clone().json())?.code; } catch { /* brak JSON */ }
+      if (code === 'require_2fa_setup') {
+        const ok = await tryRefresh();
+        if (ok) return request(path, options, true);
+      }
+    }
     return res;
   }
 
@@ -277,25 +286,68 @@ export function createApiClient({
       return { data: { user: payload.user, session: next }, error: null };
     },
 
-    async signUp({ email, password, full_name } = {}) {
+    async signUp({ email, password, full_name, captcha_token, captcha_answer, website, consent } = {}) {
       // Samodzielna rejestracja — serwer decyduje wg trybu tenanta (closed/approval/open).
-      // Nie loguje od razu: wynik to status ('pending') + powód ('email' | 'admin').
-      const { res, payload } = await requestJson('/api/auth/register', { email, password, full_name });
+      // Nie loguje od razu: wynik to status ('pending'|'active') + powód ('email'|'admin'|'auto').
+      const { res, payload } = await requestJson('/api/auth/register', {
+        email, password, full_name, captcha_token, captcha_answer, website, consent,
+      });
       if (!res.ok) {
         return { data: { user: null, session: null }, error: { message: payload?.error || 'Nie udało się utworzyć konta', status: res.status } };
       }
       return { data: { user: null, session: null, status: payload?.status || null, reason: payload?.reason || null }, error: null };
     },
 
-    // Publiczny tryb rejestracji tenanta (do pokazania „Zarejestruj się" na ekranie logowania).
+    // Publiczny tryb rejestracji tenanta (do pokazania „Zarejestruj się" + czy captcha wymagana).
     async getRegistrationConfig() {
       try {
         const res = await request('/api/auth/registration-config');
         const payload = await res.json().catch(() => ({}));
-        return { mode: payload?.mode || 'closed' };
+        return {
+          mode: payload?.mode || 'closed',
+          captcha: payload?.captcha !== false,
+          consent: payload?.consent || { required: false, url: '', text: '' },
+        };
       } catch {
-        return { mode: 'closed' };
+        return { mode: 'closed', captcha: true, consent: { required: false, url: '', text: '' } };
       }
+    },
+
+    // Pobierz świeże wyzwanie captcha (token + pytanie do przepisania).
+    async getCaptcha() {
+      try {
+        const res = await request('/api/auth/captcha');
+        return await res.json().catch(() => null);
+      } catch {
+        return null;
+      }
+    },
+
+    // Którzy dostawcy SSO są włączeni (do przycisków logowania).
+    async getSSOConfig() {
+      try {
+        const res = await request('/api/auth/sso-config');
+        return await res.json().catch(() => ({ google: false, microsoft: false }));
+      } catch {
+        return { google: false, microsoft: false };
+      }
+    },
+
+    // Aktywne sesje (urządzenia) bieżącego użytkownika.
+    async getSessions() {
+      try {
+        const res = await request('/api/auth/sessions');
+        return await res.json().catch(() => ({ sessions: [] }));
+      } catch {
+        return { sessions: [] };
+      }
+    },
+
+    // Wyloguj ze wszystkich innych urządzeń.
+    async logoutOthers() {
+      await loadSession();
+      const { res } = await requestJson('/api/auth/logout-others', { refresh_token: session?.refresh_token });
+      return { ok: res.ok };
     },
 
     async signOut() {
