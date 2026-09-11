@@ -42,7 +42,7 @@ export const RESOURCE_LABELS = {
   atmosfera_events: 'Wydarzenia Atmosfera', atmosfera_members: 'Członkowie Atmosfera',
   // Finanse
   finance_transactions: 'Transakcje finansowe', finance_balances: 'Salda finansowe',
-  expenses: 'Wydatki', expense_categories: 'Kategorie wydatków',
+  expenses: 'Wydatki', expense_categories: 'Kategorie finansów', finance_tags: 'Tagi finansów',
   // Nauczanie
   teachings: 'Nauczania', teaching_speakers: 'Mówcy',
   // Modlitwa
@@ -195,7 +195,7 @@ export const MODULES = [
   },
   {
     key: 'finance', label: 'Finanse',
-    resources: ['finance_transactions', 'finance_balances', 'expenses', 'expense_categories', 'budget_items', 'income_transactions', 'expense_transactions'],
+    resources: ['finance_transactions', 'finance_balances', 'expenses', 'expense_categories', 'finance_tags', 'budget_items', 'income_transactions', 'expense_transactions'],
     tabs: [],
     actions: [
       { key: 'approve', label: 'Zatwierdź wydatek' },

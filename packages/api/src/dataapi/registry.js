@@ -131,6 +131,7 @@ export const REGISTRY = {
   finance_balances: T('module:finance'),
   expenses: T('module:finance'),
   expense_categories: T('module:finance'),
+  finance_tags: T('module:finance'),
 
   // ── Nauczanie / modlitwa / młodzieżówka ────────────────────────────────
   teachings: T('module:teaching'),

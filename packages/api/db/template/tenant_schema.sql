@@ -1108,10 +1108,20 @@ CREATE TABLE IF NOT EXISTS expense_categories (
     name TEXT NOT NULL,
     color TEXT,
     icon TEXT,
+    kind TEXT NOT NULL DEFAULT 'expense',   -- 'income' | 'expense' (wspólna tabela kategorii)
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_expense_categories_tenant ON expense_categories(tenant_id);
+-- Paleta tagów finansów (nazwa → kolor), wspólna dla wpływów i wydatków.
+CREATE TABLE IF NOT EXISTS finance_tags (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    tenant_id UUID,
+    name TEXT NOT NULL,
+    color TEXT DEFAULT '#6366f1',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_finance_tags_name ON finance_tags (lower(name));
 -- =====================================================
 -- 25. MAIL_ACCOUNTS - konta pocztowe
 -- =====================================================
@@ -1348,6 +1358,7 @@ CREATE TABLE IF NOT EXISTS expense_transactions (
     tenant_id UUID,
     amount DECIMAL(10,2) NOT NULL,
     category TEXT,
+    cost_category TEXT,   -- własna kategoria kosztu (niezależna od powiązania z budżetem)
     description TEXT,
     date DATE NOT NULL,
     team_type TEXT,

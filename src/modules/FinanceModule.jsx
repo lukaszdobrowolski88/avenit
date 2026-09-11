@@ -254,6 +254,7 @@ const FinanceModule = () => {
     amount: '',
     contractor: '',
     category: '',
+    cost_category: '',   // własna kategoria kosztu (niezależna od powiązania z budżetem)
     description: '',
     detailed_description: '',
     responsible_person: '',
@@ -278,12 +279,67 @@ const FinanceModule = () => {
   // Filtry dla wydatków
   const [expenseFilters, setExpenseFilters] = useState({
     category: '',
+    cost_category: '',
     contractor: '',
     responsible: '',
     tag: '',
     dateFrom: '',
     dateTo: ''
   });
+
+  // ── Kategorie (własne) + paleta tagów ─────────────────────────────────────
+  const [categories, setCategories] = useState([]); // expense_categories: {id,name,kind,color,icon,is_active}
+  const [tagPalette, setTagPalette] = useState([]); // finance_tags: {id,name,color}
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const incomeCategories = categories.filter((c) => c.kind === 'income' && c.is_active !== false);
+  const expenseCategories = categories.filter((c) => c.kind === 'expense' && c.is_active !== false);
+  const tagColor = (name) => tagPalette.find((t) => t.name.toLowerCase() === String(name).toLowerCase())?.color || '#6366f1';
+
+  const fetchCategories = async () => {
+    try {
+      const { data } = await supabase.from('expense_categories').select('*').order('name');
+      setCategories(data || []);
+    } catch { /* pusto → fallback w dropdownach */ }
+  };
+  const fetchTagPalette = async () => {
+    try {
+      const { data } = await supabase.from('finance_tags').select('*').order('name');
+      setTagPalette(data || []);
+    } catch { /* brak palety → domyślny kolor */ }
+  };
+  useEffect(() => { fetchCategories(); fetchTagPalette(); }, []);
+
+  // Dodaje nowe tagi do palety (żeby dostały kolor i podpowiadały się później).
+  const ensureTagsInPalette = async (tags) => {
+    const known = new Set(tagPalette.map((t) => t.name.toLowerCase()));
+    const fresh = (tags || []).filter((t) => t && !known.has(String(t).toLowerCase()));
+    if (!fresh.length) return;
+    const PALETTE = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#a855f7', '#14b8a6', '#ec4899'];
+    try {
+      for (let i = 0; i < fresh.length; i++) {
+        await supabase.from('finance_tags').insert([{ name: fresh[i], color: PALETTE[(tagPalette.length + i) % PALETTE.length] }]);
+      }
+      fetchTagPalette();
+    } catch { /* kolizja nazwy = już jest, ignoruj */ }
+  };
+
+  // Menedżer kategorii (CRUD na expense_categories, rodzaj income/expense).
+  const [catForm, setCatForm] = useState({ name: '', kind: 'expense', color: '#6366f1' });
+  const saveCategory = async () => {
+    if (!catForm.name.trim()) { toast.error(tr('Podaj nazwę kategorii')); return; }
+    try {
+      await supabase.from('expense_categories').insert([{ name: catForm.name.trim(), kind: catForm.kind, color: catForm.color, is_active: true }]);
+      setCatForm({ name: '', kind: catForm.kind, color: '#6366f1' });
+      fetchCategories();
+    } catch (e) { toast.error(tr('Błąd zapisywania: ') + e.message); }
+  };
+  const toggleCategoryActive = async (c) => {
+    try { await supabase.from('expense_categories').update({ is_active: !(c.is_active !== false) }).eq('id', c.id); fetchCategories(); } catch (e) { toast.error(e.message); }
+  };
+  const deleteCategory = async (id) => {
+    if (!confirm(tr('Usunąć tę kategorię? Istniejące transakcje zachowają swoją nazwę kategorii.'))) return;
+    try { await supabase.from('expense_categories').delete().eq('id', id); fetchCategories(); } catch (e) { toast.error(tr('Błąd usuwania: ') + e.message); }
+  };
 
   // Stan początkowy - salda kont
   const [accountBalances, setAccountBalances] = useState({
@@ -571,6 +627,7 @@ const FinanceModule = () => {
         if (error) throw error;
       }
 
+      await ensureTagsInPalette(incomeForm.tags);
       setShowIncomeModal(false);
       setIncomeForm({ date: '', amount: '', type: 'Kolekta', source: '', notes: '', tags: [] });
       fetchIncomeTransactions();
@@ -661,6 +718,7 @@ const FinanceModule = () => {
             amount: parseFloat(expenseForm.amount),
             contractor: expenseForm.contractor,
             category: expenseForm.category,
+            cost_category: expenseForm.cost_category || null,
             description: expenseForm.description,
             detailed_description: expenseForm.detailed_description,
             responsible_person: expenseForm.responsible_person,
@@ -677,6 +735,7 @@ const FinanceModule = () => {
           amount: parseFloat(expenseForm.amount),
           contractor: expenseForm.contractor,
           category: expenseForm.category,
+          cost_category: expenseForm.cost_category || null,
           description: expenseForm.description,
           detailed_description: expenseForm.detailed_description,
           responsible_person: expenseForm.responsible_person,
@@ -687,8 +746,9 @@ const FinanceModule = () => {
         if (error) throw error;
       }
 
+      await ensureTagsInPalette(expenseForm.tags);
       setShowExpenseModal(false);
-      setExpenseForm({ payment_date: '', amount: '', contractor: '', category: '', description: '', detailed_description: '', responsible_person: '', documents: [], tags: [] });
+      setExpenseForm({ payment_date: '', amount: '', contractor: '', category: '', cost_category: '', description: '', detailed_description: '', responsible_person: '', documents: [], tags: [] });
       fetchExpenseTransactions();
     } catch (error) {
       console.error('Error saving expense:', error);
@@ -750,6 +810,7 @@ const FinanceModule = () => {
   // Filtrowanie wydatków
   const filteredExpenseTransactions = expenseTransactions.filter(transaction => {
     if (expenseFilters.category && transaction.category !== expenseFilters.category) return false;
+    if (expenseFilters.cost_category && transaction.cost_category !== expenseFilters.cost_category) return false;
     if (expenseFilters.contractor && !transaction.contractor.toLowerCase().includes(expenseFilters.contractor.toLowerCase())) return false;
     if (expenseFilters.responsible && !transaction.responsible_person.toLowerCase().includes(expenseFilters.responsible.toLowerCase())) return false;
     if (expenseFilters.tag && (!transaction.tags || !transaction.tags.includes(expenseFilters.tag))) return false;
@@ -774,11 +835,20 @@ const FinanceModule = () => {
     <div className="space-y-8">
       <PageHeader moduleKey="finance" icon={DollarSign} title="Finanse" subtitle={t('Zarządzanie budżetem i finansami kościoła')}
         actions={
-          <CustomSelect
-            value={selectedYear}
-            onChange={(val) => setSelectedYear(parseInt(val))}
-            options={years.map(y => ({ value: y, label: y.toString() }))}
-          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCategoryModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/90 dark:bg-gray-900/80 text-gray-700 dark:text-gray-200 text-sm font-medium shadow-sm hover:bg-white dark:hover:bg-gray-900 backdrop-blur-sm shrink-0"
+              title={tr('Zarządzaj kategoriami')}
+            >
+              <Tag size={15} /> {tr('Kategorie')}
+            </button>
+            <CustomSelect
+              value={selectedYear}
+              onChange={(val) => setSelectedYear(parseInt(val))}
+              options={years.map(y => ({ value: y, label: y.toString() }))}
+            />
+          </div>
         } />
 
       <ResponsiveTabs
@@ -1182,7 +1252,8 @@ const FinanceModule = () => {
                             {transaction.tags.map((tag, idx) => (
                               <span
                                 key={idx}
-                                className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-xs flex items-center gap-1"
+                                className="px-2 py-1 rounded-lg text-xs flex items-center gap-1 font-medium"
+                                style={{ background: `${tagColor(tag)}22`, color: tagColor(tag) }}
                               >
                                 <Tag size={10} />
                                 {tag}
@@ -1253,6 +1324,16 @@ const FinanceModule = () => {
                 placeholder={t('Wszystkie')}
               />
               <CustomSelect
+                label={tr('Kategoria kosztu')}
+                value={expenseFilters.cost_category}
+                onChange={(val) => setExpenseFilters({...expenseFilters, cost_category: val})}
+                options={[
+                  { value: '', label: tr('Wszystkie') },
+                  ...expenseCategories.map((c) => ({ value: c.name, label: c.name })),
+                ]}
+                placeholder={t('Wszystkie')}
+              />
+              <CustomSelect
                 label="Kontrahent"
                 value={expenseFilters.contractor}
                 onChange={(val) => setExpenseFilters({...expenseFilters, contractor: val})}
@@ -1295,9 +1376,9 @@ const FinanceModule = () => {
                 onChange={(val) => setExpenseFilters({...expenseFilters, dateTo: val})}
               />
             </div>
-            {(expenseFilters.category || expenseFilters.contractor || expenseFilters.responsible || expenseFilters.tag || expenseFilters.dateFrom || expenseFilters.dateTo) && (
+            {(expenseFilters.category || expenseFilters.cost_category || expenseFilters.contractor || expenseFilters.responsible || expenseFilters.tag || expenseFilters.dateFrom || expenseFilters.dateTo) && (
               <button
-                onClick={() => setExpenseFilters({ category: '', contractor: '', responsible: '', tag: '', dateFrom: '', dateTo: '' })}
+                onClick={() => setExpenseFilters({ category: '', cost_category: '', contractor: '', responsible: '', tag: '', dateFrom: '', dateTo: '' })}
                 className="mt-3 text-sm text-accent-primary dark:text-accent-primary-light hover:underline"
               >
                 {tr('Wyczyść filtry')}
@@ -1334,9 +1415,20 @@ const FinanceModule = () => {
                         {new Date(transaction.payment_date).toLocaleDateString('pl-PL')}
                       </td>
                       <td className="py-4 px-4">
-                        <span className="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-full text-xs font-medium">
-                          {transaction.category}
-                        </span>
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-full text-xs font-medium">
+                            {transaction.category}
+                          </span>
+                          {transaction.cost_category && (() => {
+                            const cc = expenseCategories.find((c) => c.name === transaction.cost_category);
+                            const col = cc?.color || '#6366f1';
+                            return (
+                              <span className="px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: `${col}22`, color: col }}>
+                                {transaction.cost_category}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </td>
                       <td className="py-4 px-4 text-gray-900 dark:text-white text-sm">
                         {transaction.description || '-'}
@@ -1798,6 +1890,64 @@ const FinanceModule = () => {
       )}
 
       {/* MODAL: Budget Item */}
+      {showCategoryModal && document.body && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowCategoryModal(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700 max-h-[85vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between mb-5">
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{tr('Kategorie finansów')}</h3>
+              <button onClick={() => setShowCategoryModal(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
+            </div>
+
+            {/* Dodawanie nowej kategorii */}
+            <div className="flex flex-wrap items-end gap-2 mb-5 p-3 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+              <div className="flex-1 min-w-[140px]">
+                <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nazwa')}</label>
+                <input value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })}
+                  onKeyDown={(e) => { if (e.key === 'Enter') saveCategory(); }}
+                  placeholder={tr('np. Sprzęt, Kolekta')} className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Rodzaj')}</label>
+                <select value={catForm.kind} onChange={(e) => setCatForm({ ...catForm, kind: e.target.value })}
+                  className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white">
+                  <option value="expense">{tr('Wydatek')}</option>
+                  <option value="income">{tr('Wpływ')}</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kolor')}</label>
+                <input type="color" value={catForm.color} onChange={(e) => setCatForm({ ...catForm, color: e.target.value })}
+                  className="w-10 h-9 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent cursor-pointer p-0.5" />
+              </div>
+              <button onClick={saveCategory} className="px-4 py-2 rounded-lg bg-accent-primary text-white text-sm font-medium shrink-0">{tr('Dodaj')}</button>
+            </div>
+
+            {/* Listy kategorii */}
+            {['income', 'expense'].map((kind) => (
+              <div key={kind} className="mb-4">
+                <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{kind === 'income' ? tr('Kategorie wpływów') : tr('Kategorie wydatków')}</div>
+                <div className="space-y-1.5">
+                  {categories.filter((c) => c.kind === kind).length === 0 && (
+                    <div className="text-sm text-gray-400 py-1">{tr('Brak kategorii')}</div>
+                  )}
+                  {categories.filter((c) => c.kind === kind).map((c) => (
+                    <div key={c.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700">
+                      <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ background: c.color || '#6366f1' }} />
+                      <span className={`text-sm flex-1 ${c.is_active === false ? 'text-gray-400 line-through' : 'text-gray-800 dark:text-gray-100'}`}>{c.name}</span>
+                      <button onClick={() => toggleCategoryActive(c)} className="text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+                        {c.is_active === false ? tr('Włącz') : tr('Wyłącz')}
+                      </button>
+                      <button onClick={() => deleteCategory(c.id)} className="text-red-500 hover:text-red-600 p-1" title={tr('Usuń')}><Trash2 size={15} /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+
       {showBudgetModal && document.body && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
@@ -1894,11 +2044,13 @@ const FinanceModule = () => {
                 label={tr('Typ wpływu')}
                 value={incomeForm.type}
                 onChange={(val) => setIncomeForm({...incomeForm, type: val})}
-                options={[
-                  { value: 'Kolekta', label: 'Kolekta' },
-                  { value: 'Darowizny', label: 'Darowizny' },
-                  { value: 'Inne', label: tr('Inne') }
-                ]}
+                options={incomeCategories.length > 0
+                  ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
+                  : [
+                    { value: 'Kolekta', label: 'Kolekta' },
+                    { value: 'Darowizny', label: 'Darowizny' },
+                    { value: 'Inne', label: tr('Inne') },
+                  ]}
               />
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Źródło')}</label>
@@ -1924,12 +2076,16 @@ const FinanceModule = () => {
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tagi')}</label>
                 <div className="flex gap-2 mb-2">
                   <input
+                    list="fin-tags"
                     className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder={t('Dodaj tag')}
                     onKeyPress={(e) => e.key === 'Enter' && addTag(incomeForm, setIncomeForm)}
                   />
+                  <datalist id="fin-tags">
+                    {tagPalette.map((tg) => <option key={tg.id} value={tg.name} />)}
+                  </datalist>
                   <button
                     onClick={() => addTag(incomeForm, setIncomeForm)}
                     className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition"
@@ -1941,7 +2097,8 @@ const FinanceModule = () => {
                   {incomeForm.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light rounded-lg text-xs flex items-center gap-1"
+                      className="px-2 py-1 rounded-lg text-xs flex items-center gap-1 font-medium"
+                      style={{ background: `${tagColor(tag)}22`, color: tagColor(tag) }}
                     >
                       <Tag size={12} />
                       {tag}
@@ -2047,6 +2204,17 @@ const FinanceModule = () => {
                 )}
               </div>
 
+              {/* Wiersz 3b: Kategoria kosztu (własna, niezależna od budżetu) */}
+              <div className="grid grid-cols-1">
+                <CustomSelect
+                  label={tr('Kategoria kosztu (własna)')}
+                  value={expenseForm.cost_category}
+                  onChange={(val) => setExpenseForm({...expenseForm, cost_category: val})}
+                  options={[{ value: '', label: tr('— brak —') }, ...expenseCategories.map((c) => ({ value: c.name, label: c.name }))]}
+                  placeholder={t('Wybierz kategorię kosztu')}
+                />
+              </div>
+
               {/* Wiersz 4: Szczegółowy opis (pełna szerokość) */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Szczegółowy opis')}</label>
@@ -2099,12 +2267,16 @@ const FinanceModule = () => {
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Tagi')}</label>
                 <div className="flex gap-2 mb-2">
                   <input
+                    list="fin-tags"
                     className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder={t('Dodaj tag')}
                     onKeyPress={(e) => e.key === 'Enter' && addTag(expenseForm, setExpenseForm)}
                   />
+                  <datalist id="fin-tags">
+                    {tagPalette.map((tg) => <option key={tg.id} value={tg.name} />)}
+                  </datalist>
                   <button
                     onClick={() => addTag(expenseForm, setExpenseForm)}
                     className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition"
@@ -2116,7 +2288,8 @@ const FinanceModule = () => {
                   {expenseForm.tags.map((tag, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-1 bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light rounded-lg text-xs flex items-center gap-1"
+                      className="px-2 py-1 rounded-lg text-xs flex items-center gap-1 font-medium"
+                      style={{ background: `${tagColor(tag)}22`, color: tagColor(tag) }}
                     >
                       <Tag size={12} />
                       {tag}
