@@ -132,7 +132,11 @@ export const REGISTRY = {
   teachings: T('module:teaching'),
   teaching_speakers: T('module:teaching'),
   prayer_requests: T('module:prayer'),
-  wall_posts: T('module:prayer'),
+  // Tablica zespołów (WallTab „Tablica" w modułach worship/media/atmosfera/homegroups/
+  // kids/mlodziezowka) — wspólna tabela filtrowana po team_type w UI. To NIE ściana
+  // modlitwy (to prayer_requests). Dostęp dla każdego zalogowanego członka (jak
+  // prayer_interactions/user_tasks); inaczej członek zespołu bez module:prayer dostawał 403.
+  wall_posts: T(null),
   mlodziezowka_events: T('module:mlodziezowka'),
   mlodziezowka_members: T('module:mlodziezowka'),
   mlodziezowka_tasks: T('module:mlodziezowka'),

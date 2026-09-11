@@ -450,6 +450,7 @@ const FinanceModule = () => {
           .from('budget_items')
           .update({
             category: budgetForm.category,
+            team_type: budgetForm.category,
             description: budgetForm.description,
             planned_amount: parseFloat(budgetForm.planned_amount)
           })
@@ -461,6 +462,10 @@ const FinanceModule = () => {
         const { error } = await supabase.from('budget_items').insert([{
           year: selectedYear,
           category: budgetForm.category,
+          // team_type = ten sam klucz służby, którym filtrują moduły zespołów
+          // (WorshipModule itd. czytają budget_items po team_type). Bez tego pozycja
+          // dodana w module Finanse nie pokazywała się w zakładce Finanse zespołu.
+          team_type: budgetForm.category,
           description: budgetForm.description,
           planned_amount: parseFloat(budgetForm.planned_amount),
           campus_id: campusIdForInsert
@@ -1773,11 +1778,14 @@ const FinanceModule = () => {
                 value={budgetForm.category}
                 onChange={(val) => setBudgetForm({...budgetForm, category: val})}
                 options={[
+                  // WARTOŚĆ musi = team_type, po którym filtruje moduł danego zespołu
+                  // (zob. ministryName w Worship/Media/Atmosfera/Kids/HomeGroups/Mlodziezowka).
                   { value: 'Grupa Uwielbienia', label: tr('Grupa Uwielbienia') },
                   { value: 'MediaTeam', label: tr('MediaTeam') },
+                  { value: 'AtmosferaTeam', label: 'AtmosferaTeam' },
                   { value: 'Grupy domowe', label: tr('Grupy domowe') },
                   { value: 'małe Avenit', label: tr('małe Avenit') },
-                  { value: 'AtmosferaTeam', label: 'AtmosferaTeam' }
+                  { value: 'Mlodziezowka', label: tr('Młodzieżówka') }
                 ]}
                 placeholder={t('Wybierz służbę')}
               />
