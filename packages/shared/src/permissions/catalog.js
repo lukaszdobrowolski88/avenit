@@ -44,6 +44,7 @@ export const RESOURCE_LABELS = {
   finance_transactions: 'Transakcje finansowe', finance_balances: 'Salda finansowe',
   expenses: 'Wydatki', expense_categories: 'Kategorie finansów', finance_tags: 'Tagi finansów',
   finance_recurring: 'Transakcje cykliczne', finance_vendors: 'Kontrahenci',
+  budget_audit: 'Historia zmian budżetu', budget_versions: 'Wersje budżetu',
   // Nauczanie
   teachings: 'Nauczania', teaching_speakers: 'Mówcy',
   // Modlitwa
@@ -196,7 +197,7 @@ export const MODULES = [
   },
   {
     key: 'finance', label: 'Finanse',
-    resources: ['finance_transactions', 'finance_balances', 'expenses', 'expense_categories', 'finance_tags', 'finance_recurring', 'finance_vendors', 'budget_items', 'income_transactions', 'expense_transactions'],
+    resources: ['finance_transactions', 'finance_balances', 'expenses', 'expense_categories', 'finance_tags', 'finance_recurring', 'finance_vendors', 'budget_audit', 'budget_versions', 'budget_items', 'income_transactions', 'expense_transactions'],
     tabs: [],
     actions: [
       { key: 'approve', label: 'Zatwierdź wydatek' },
@@ -458,6 +459,7 @@ export function crudCapability(resource, op) {
 
 // Mapowanie endpointów fn -> capability akcji (do egzekwowania /api/fn/*).
 export const FN_CAPABILITY = {
+  'finance-report-email': 'module:finance',
   'send-mail': 'action:mail:send',
   'sync-mail': 'action:mail:sync',
   'test-smtp': 'action:mail:test',

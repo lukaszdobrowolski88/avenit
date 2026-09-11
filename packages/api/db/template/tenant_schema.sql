@@ -1226,11 +1226,30 @@ CREATE TABLE IF NOT EXISTS budget_items (
     period_end DATE,
     period_type TEXT DEFAULT 'year',   -- year | quarter | month
     period_value TEXT,
+    kind TEXT NOT NULL DEFAULT 'expense',   -- income | expense (budżet obejmuje przychody i wydatki)
     team_type TEXT,
     notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_budget_items_tenant ON budget_items(tenant_id);
+-- Log zmian budżetu (kto/kiedy/co) + nazwane wersje (migawki) + propozycje służb.
+CREATE TABLE IF NOT EXISTS budget_audit (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY, tenant_id UUID, year INTEGER, item_id UUID,
+    action TEXT, category TEXT, description TEXT, before JSONB, after JSONB, actor TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_budget_audit_year ON budget_audit (year, created_at DESC);
+CREATE TABLE IF NOT EXISTS budget_versions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY, tenant_id UUID, year INTEGER, label TEXT,
+    snapshot JSONB, created_by TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_budget_versions_year ON budget_versions (year, created_at DESC);
+CREATE TABLE IF NOT EXISTS budget_proposals (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY, tenant_id UUID, year INTEGER, kind TEXT DEFAULT 'expense',
+    team_type TEXT, category TEXT, description TEXT, amount DECIMAL(10,2), note TEXT,
+    submitted_by TEXT, status TEXT DEFAULT 'pending', created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_budget_proposals_status ON budget_proposals (year, status);
 -- =====================================================
 -- 4. CUSTOM MODULE TABLES - tabele niestandardowych modułów
 -- =====================================================

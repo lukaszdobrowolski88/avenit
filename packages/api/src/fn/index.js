@@ -53,6 +53,7 @@ const MODULES = [
   'resend-invite',
   'unlock-login',
   'sso-save-config',
+  'finance-report-email',
 ];
 
 export async function registerFunctions(app) {

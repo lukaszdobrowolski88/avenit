@@ -261,6 +261,7 @@ const FinanceModule = () => {
 
   // Forms
   const [budgetForm, setBudgetForm] = useState({
+    kind: 'expense',
     category: '',
     description: '',
     planned_amount: '',
@@ -410,6 +411,60 @@ const FinanceModule = () => {
     const n = String(name || '').trim();
     if (!n || vendors.some((v) => v.name.toLowerCase() === n.toLowerCase())) return;
     try { await supabase.from('finance_vendors').insert([{ name: n }]); fetchVendors(); } catch { /* kolizja = już jest */ }
+  };
+
+  // ── Raport finansowy mailem (na żądanie) ──────────────────────────────────
+  const [showReportEmailModal, setShowReportEmailModal] = useState(false);
+  const [reportRecipients, setReportRecipients] = useState('');
+  const [sendingReport, setSendingReport] = useState(false);
+  const sendReportEmail = async () => {
+    const list = reportRecipients.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
+    if (list.length === 0) { toast.error(tr('Podaj adresy e-mail')); return; }
+    setSendingReport(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('finance-report-email', { body: { year: selectedYear, recipients: list } });
+      if (error) throw error;
+      toast.success(tr('Raport wysłany') + ` (${data?.sent || list.length})`);
+      setShowReportEmailModal(false); setReportRecipients('');
+    } catch (e) { toast.error(tr('Błąd wysyłki: ') + (e.message || e)); }
+    finally { setSendingReport(false); }
+  };
+
+  // ── Propozycje budżetu od służb ───────────────────────────────────────────
+  const [proposals, setProposals] = useState([]);
+  const [showProposalModal, setShowProposalModal] = useState(false);
+  const emptyProposal = { kind: 'expense', team_type: '', description: '', amount: '', note: '' };
+  const [proposalForm, setProposalForm] = useState(emptyProposal);
+  const fetchProposals = async () => {
+    try { const { data } = await supabase.from('budget_proposals').select('*').eq('year', selectedYear).order('created_at', { ascending: false }); setProposals(data || []); } catch { setProposals([]); }
+  };
+  useEffect(() => { fetchProposals(); /* eslint-disable-next-line */ }, [selectedYear]);
+  const saveProposal = async () => {
+    if (!proposalForm.team_type || !proposalForm.description.trim() || !proposalForm.amount) { toast.error(tr('Wypełnij pola')); return; }
+    try {
+      await supabase.from('budget_proposals').insert([{
+        year: selectedYear, kind: proposalForm.kind, team_type: proposalForm.team_type, category: proposalForm.team_type,
+        description: proposalForm.description.trim(), amount: parseFloat(proposalForm.amount), note: proposalForm.note || null,
+        submitted_by: currentUserEmail || null, status: 'pending',
+      }]);
+      setShowProposalModal(false); setProposalForm(emptyProposal); fetchProposals();
+      toast.success(tr('Propozycja zgłoszona'));
+    } catch (e) { toast.error(tr('Błąd: ') + e.message); }
+  };
+  const approveProposal = async (p) => {
+    try {
+      const { data } = await supabase.from('budget_items').insert([{
+        year: selectedYear, kind: p.kind || 'expense', category: p.category || p.team_type, team_type: p.team_type || p.category,
+        description: p.description, planned_amount: p.amount, period_type: 'year', campus_id: campusIdForInsert,
+      }]).select();
+      await supabase.from('budget_proposals').update({ status: 'approved' }).eq('id', p.id);
+      await logBudgetAudit('created', { id: data?.[0]?.id, kind: p.kind, category: p.category || p.team_type, description: p.description, planned_amount: p.amount });
+      fetchProposals(); fetchBudgetItems();
+      toast.success(tr('Zatwierdzono do budżetu'));
+    } catch (e) { toast.error(tr('Błąd: ') + e.message); }
+  };
+  const rejectProposal = async (id) => {
+    try { await supabase.from('budget_proposals').update({ status: 'rejected' }).eq('id', id); fetchProposals(); } catch (e) { toast.error(e.message); }
   };
 
   // ── Status wydatku (workflow akceptacji) ──────────────────────────────────
@@ -607,6 +662,33 @@ const FinanceModule = () => {
     }
   };
 
+  // Log zmian budżetu (kto/kiedy/co) — best-effort, nie blokuje zapisu przy braku tabeli.
+  const [budgetAudit, setBudgetAudit] = useState([]);
+  const [budgetVersions, setBudgetVersions] = useState([]);
+  const [showBudgetHistory, setShowBudgetHistory] = useState(false);
+  const logBudgetAudit = async (action, item, before) => {
+    try {
+      await supabase.from('budget_audit').insert([{
+        year: selectedYear, item_id: item.id || null, action,
+        category: item.category || null, description: item.description || null,
+        before: before || null, after: action === 'deleted' ? null : item, actor: currentUserEmail || null,
+      }]);
+    } catch { /* brak tabeli/uprawnień — pomiń */ }
+  };
+  const fetchBudgetHistory = async () => {
+    try { const { data } = await supabase.from('budget_audit').select('*').eq('year', selectedYear).order('created_at', { ascending: false }).limit(50); setBudgetAudit(data || []); } catch { setBudgetAudit([]); }
+    try { const { data } = await supabase.from('budget_versions').select('id, label, created_by, created_at, snapshot').eq('year', selectedYear).order('created_at', { ascending: false }); setBudgetVersions(data || []); } catch { setBudgetVersions([]); }
+  };
+  const saveBudgetVersion = async () => {
+    const label = prompt(tr('Nazwa wersji (np. „Projekt zarządu", „Zatwierdzony")'));
+    if (label === null) return;
+    try {
+      await supabase.from('budget_versions').insert([{ year: selectedYear, label: label.trim() || `Wersja ${new Date().toLocaleDateString('pl-PL')}`, snapshot: budgetItems, created_by: currentUserEmail || null }]);
+      toast.success(tr('Zapisano wersję budżetu'));
+      fetchBudgetHistory();
+    } catch (e) { toast.error(tr('Błąd zapisu wersji: ') + e.message); }
+  };
+
   const saveBudgetItem = async () => {
     if (!budgetForm.category || !budgetForm.planned_amount) {
       toast.error(tr('Wypełnij wymagane pola'));
@@ -615,10 +697,12 @@ const FinanceModule = () => {
 
     try {
       if (budgetForm.id) {
+        const before = budgetItems.find((b) => b.id === budgetForm.id) || null;
         // Update existing item
         const { error } = await supabase
           .from('budget_items')
           .update({
+            kind: budgetForm.kind || 'expense',
             category: budgetForm.category,
             team_type: budgetForm.category,
             description: budgetForm.description,
@@ -628,10 +712,12 @@ const FinanceModule = () => {
           .eq('id', budgetForm.id);
 
         if (error) throw error;
+        await logBudgetAudit('updated', { id: budgetForm.id, kind: budgetForm.kind, category: budgetForm.category, description: budgetForm.description, planned_amount: parseFloat(budgetForm.planned_amount) }, before);
       } else {
         // Insert new item
-        const { error } = await supabase.from('budget_items').insert([{
+        const { data, error } = await supabase.from('budget_items').insert([{
           year: selectedYear,
+          kind: budgetForm.kind || 'expense',
           category: budgetForm.category,
           // team_type = ten sam klucz służby, którym filtrują moduły zespołów
           // (WorshipModule itd. czytają budget_items po team_type). Bez tego pozycja
@@ -641,13 +727,14 @@ const FinanceModule = () => {
           planned_amount: parseFloat(budgetForm.planned_amount),
           period_type: budgetForm.period_type || 'year',
           campus_id: campusIdForInsert
-        }]);
+        }]).select();
 
         if (error) throw error;
+        await logBudgetAudit('created', { id: data?.[0]?.id, kind: budgetForm.kind, category: budgetForm.category, description: budgetForm.description, planned_amount: parseFloat(budgetForm.planned_amount) });
       }
 
       setShowBudgetModal(false);
-      setBudgetForm({ category: '', description: '', planned_amount: '', period_type: 'year' });
+      setBudgetForm({ kind: 'expense', category: '', description: '', planned_amount: '', period_type: 'year' });
       fetchBudgetItems();
     } catch (error) {
       console.error('Error saving budget item:', error);
@@ -659,12 +746,14 @@ const FinanceModule = () => {
     if (!confirm(tr('Czy na pewno chcesz usunąć tę pozycję budżetową?'))) return;
 
     try {
+      const before = budgetItems.find((b) => b.id === id) || null;
       const { error } = await supabase
         .from('budget_items')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
+      if (before) await logBudgetAudit('deleted', before, before);
       fetchBudgetItems();
     } catch (error) {
       console.error('Error deleting budget item:', error);
@@ -680,7 +769,7 @@ const FinanceModule = () => {
       const { data: prevItems } = await supabase.from('budget_items').select('*').eq('year', prev);
       if (!prevItems || prevItems.length === 0) { toast.error(tr(`Brak pozycji budżetu w roku ${prev}`)); return; }
       const rows = prevItems.map((it) => ({
-        year: selectedYear, category: it.category, team_type: it.team_type || it.category,
+        year: selectedYear, kind: it.kind || 'expense', category: it.category, team_type: it.team_type || it.category,
         description: it.description, planned_amount: it.planned_amount,
         period_type: it.period_type || 'year', period_value: it.period_value || null,
         campus_id: campusIdForInsert,
@@ -941,6 +1030,16 @@ const FinanceModule = () => {
   // Get unique categories from budget items for expense category dropdown
   const budgetCategories = [...new Set(budgetItems.map(item => item.category))].map(cat => ({ value: cat, label: cat }));
 
+  // Budżet dzieli się na planowane WYDATKI i PRZYCHODY (kolumna kind).
+  const expenseBudgetItems = budgetItems.filter((i) => i.kind !== 'income');
+  const incomeBudgetItems = budgetItems.filter((i) => i.kind === 'income');
+  const totalPlannedIncome = incomeBudgetItems.reduce((s, i) => s + Number(i.planned_amount || 0), 0);
+  const totalPlannedExpense = expenseBudgetItems.reduce((s, i) => s + Number(i.planned_amount || 0), 0);
+  // Realizacja przychodu z budżetu = suma wpływów pasujących służbą (team_type) lub typem.
+  const calculateIncomeRealization = (category) => incomeTransactions
+    .filter((t) => t.team_type === category || t.type === category)
+    .reduce((s, t) => s + Number(t.amount || 0), 0);
+
   return (
     <div className="space-y-8">
       <PageHeader moduleKey="finance" icon={DollarSign} title="Finanse" subtitle={t('Zarządzanie budżetem i finansami kościoła')}
@@ -982,6 +1081,20 @@ const FinanceModule = () => {
             </h2>
             <div className="flex items-center gap-2 flex-wrap">
               <button
+                onClick={() => { fetchBudgetHistory(); setShowBudgetHistory(true); }}
+                className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
+                title={tr('Historia zmian i wersje')}
+              >
+                <Clock size={16} /> {tr('Historia')}
+              </button>
+              <button
+                onClick={saveBudgetVersion}
+                className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
+                title={tr('Zapisz migawkę bieżącego budżetu')}
+              >
+                <Copy size={16} /> {tr('Zapisz wersję')}
+              </button>
+              <button
                 onClick={copyBudgetFromLastYear}
                 className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
                 title={tr('Kopiuj z zeszłego roku')}
@@ -1009,9 +1122,52 @@ const FinanceModule = () => {
             </div>
           </div>
 
+          {/* Podsumowanie planu: przychody vs wydatki */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+            <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-900/10 p-4">
+              <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase">{tr('Planowane przychody')}</div>
+              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{totalPlannedIncome.toLocaleString('pl-PL')} zł</div>
+            </div>
+            <div className="rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50/60 dark:bg-red-900/10 p-4">
+              <div className="text-xs font-semibold text-red-700 dark:text-red-300 uppercase">{tr('Planowane wydatki')}</div>
+              <div className="text-2xl font-bold text-red-700 dark:text-red-300">{totalPlannedExpense.toLocaleString('pl-PL')} zł</div>
+            </div>
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 p-4">
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">{tr('Planowany bilans')}</div>
+              <div className={`text-2xl font-bold ${totalPlannedIncome - totalPlannedExpense >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{(totalPlannedIncome - totalPlannedExpense).toLocaleString('pl-PL')} zł</div>
+            </div>
+          </div>
+
+          {/* Planowane przychody (kind='income') */}
+          {incomeBudgetItems.length > 0 && (
+            <div className="mb-5 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/10 text-sm font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2"><ArrowUpRight size={16} /> {tr('Planowane przychody')}</div>
+              <table className="w-full text-sm">
+                <tbody>
+                  {incomeBudgetItems.map((it) => {
+                    const real = calculateIncomeRealization(it.category);
+                    const pct = it.planned_amount ? Math.round((real / Number(it.planned_amount)) * 100) : 0;
+                    return (
+                      <tr key={it.id} className="border-t border-gray-100 dark:border-gray-800">
+                        <td className="py-2.5 px-4 font-medium text-gray-800 dark:text-gray-100">{it.category}</td>
+                        <td className="py-2.5 px-4 text-gray-500 dark:text-gray-400">{it.description}</td>
+                        <td className="py-2.5 px-4 text-right text-gray-700 dark:text-gray-200">{tr('plan')}: {Number(it.planned_amount).toLocaleString('pl-PL')} zł</td>
+                        <td className="py-2.5 px-4 text-right text-emerald-600 font-semibold">{real.toLocaleString('pl-PL')} zł ({pct}%)</td>
+                        <td className="py-2.5 px-4 text-center whitespace-nowrap">
+                          <button onClick={() => { setBudgetForm({ ...it, planned_amount: String(it.planned_amount) }); setShowBudgetModal(true); }} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg" title={tr('Edytuj')}><Edit2 size={15} /></button>
+                          <button onClick={() => deleteBudgetItem(it.id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg" title={tr('Usuń')}><Trash2 size={15} /></button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           {/* Alert przekroczenia budżetu */}
           {(() => {
-            const over = budgetItems.filter((it) => calculateRealization(it.category, it.description) > Number(it.planned_amount || 0));
+            const over = expenseBudgetItems.filter((it) => calculateRealization(it.category, it.description) > Number(it.planned_amount || 0));
             if (over.length === 0) return null;
             return (
               <div className="mb-5 rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50/70 dark:bg-red-900/10 p-4">
@@ -1046,7 +1202,7 @@ const FinanceModule = () => {
                 <tbody>
                   {(() => {
                     // Group items by category
-                    const groupedItems = budgetItems.reduce((acc, item) => {
+                    const groupedItems = expenseBudgetItems.reduce((acc, item) => {
                       if (!acc[item.category]) {
                         acc[item.category] = [];
                       }
@@ -1276,6 +1432,34 @@ const FinanceModule = () => {
               </table>
             </div>
           )}
+
+          {/* Propozycje budżetu od służb */}
+          <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"><FileText size={18} /> {tr('Propozycje do budżetu')}</h3>
+              <button onClick={() => { setProposalForm(emptyProposal); setShowProposalModal(true); }} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm">
+                <Plus size={16} /> {tr('Zgłoś propozycję')}
+              </button>
+            </div>
+            {proposals.filter((p) => p.status === 'pending').length === 0 ? (
+              <p className="text-sm text-gray-400">{tr('Brak oczekujących propozycji. Liderzy służb mogą zgłaszać propozycje do budżetu.')}</p>
+            ) : (
+              <div className="space-y-2">
+                {proposals.filter((p) => p.status === 'pending').map((p) => (
+                  <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${p.kind === 'income' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{p.kind === 'income' ? tr('Przychód') : tr('Wydatek')}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-sm text-gray-800 dark:text-gray-100 truncate">{p.team_type} — {p.description}</div>
+                      <div className="text-xs text-gray-400 truncate">{p.note ? `${p.note} · ` : ''}{tr('zgłosił')}: {p.submitted_by || '—'}</div>
+                    </div>
+                    <div className="font-bold text-gray-800 dark:text-gray-100 shrink-0">{Number(p.amount).toLocaleString('pl-PL')} zł</div>
+                    <button onClick={() => approveProposal(p)} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg shrink-0" title={tr('Zatwierdź do budżetu')}><CheckCircle size={16} /></button>
+                    <button onClick={() => rejectProposal(p.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg shrink-0" title={tr('Odrzuć')}><XCircle size={16} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </section>
       )}
 
@@ -1748,7 +1932,10 @@ const FinanceModule = () => {
       {/* REPORTS TAB */}
       {activeTab === 'reports' && (
         <section className="space-y-6">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button onClick={() => setShowReportEmailModal(true)} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Wyślij raport mailem')}>
+              <FileText size={16} /> {tr('Wyślij raport')}
+            </button>
             <button onClick={() => window.print()} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Drukuj / zapisz PDF')}>
               <Printer size={16} /> {tr('Drukuj / PDF')}
             </button>
@@ -2326,6 +2513,132 @@ const FinanceModule = () => {
         document.body
       )}
 
+      {showProposalModal && document.body && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowProposalModal(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 max-h-[88vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between mb-5">
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{tr('Propozycja do budżetu')} {selectedYear}</h3>
+              <button onClick={() => setShowProposalModal(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                {[{ k: 'expense', l: tr('Wydatek') }, { k: 'income', l: tr('Przychód') }].map(({ k, l }) => (
+                  <button key={k} type="button" onClick={() => setProposalForm({ ...proposalForm, kind: k })}
+                    className={`py-2 rounded-xl text-sm font-medium border transition ${proposalForm.kind === k ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5 text-gray-800 dark:text-gray-100' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300'}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <CustomSelect
+                label={tr('Służba')}
+                value={proposalForm.team_type}
+                onChange={(val) => setProposalForm({ ...proposalForm, team_type: val })}
+                options={serviceOptions.length ? serviceOptions : []}
+                placeholder={tr('Wybierz służbę')}
+              />
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
+                <input value={proposalForm.description} onChange={(e) => setProposalForm({ ...proposalForm, description: e.target.value })}
+                  placeholder={tr('np. Nowy mikrofon, wyjazd')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
+                <input type="number" value={proposalForm.amount} onChange={(e) => setProposalForm({ ...proposalForm, amount: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="0.00" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Uzasadnienie (opcjonalnie)')}</label>
+                <textarea rows={2} value={proposalForm.note} onChange={(e) => setProposalForm({ ...proposalForm, note: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none" />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setShowProposalModal(false)} className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition">{tr('Anuluj')}</button>
+                <button onClick={saveProposal} className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium">{tr('Zgłoś')}</button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showReportEmailModal && document.body && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowReportEmailModal(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between mb-4">
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{tr('Wyślij raport')} {selectedYear}</h3>
+              <button onClick={() => setShowReportEmailModal(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Podsumowanie roku (przychody, wydatki, bilans, budżet, kategorie) trafi na wskazane adresy — z załącznikiem CSV.')}</p>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Adresy e-mail')}</label>
+            <textarea
+              rows={3}
+              value={reportRecipients}
+              onChange={(e) => setReportRecipients(e.target.value)}
+              placeholder={tr('jan@parafia.pl, skarbnik@parafia.pl (oddziel przecinkiem lub enterem)')}
+              className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+            />
+            <div className="flex gap-3 pt-4">
+              <button onClick={() => setShowReportEmailModal(false)} className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition">{tr('Anuluj')}</button>
+              <button onClick={sendReportEmail} disabled={sendingReport} className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium disabled:opacity-60">{sendingReport ? tr('Wysyłanie…') : tr('Wyślij')}</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showBudgetHistory && document.body && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowBudgetHistory(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700 max-h-[85vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between mb-5">
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{tr('Historia budżetu')} {selectedYear}</h3>
+              <button onClick={() => setShowBudgetHistory(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
+            </div>
+
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Zapisane wersje')}</div>
+            {budgetVersions.length === 0 ? (
+              <div className="text-sm text-gray-400 mb-4">{tr('Brak zapisanych wersji. Użyj „Zapisz wersję”, aby zrobić migawkę.')}</div>
+            ) : (
+              <div className="space-y-1.5 mb-5">
+                {budgetVersions.map((v) => (
+                  <div key={v.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
+                    <Copy size={14} className="text-gray-400 shrink-0" />
+                    <span className="font-medium text-gray-800 dark:text-gray-100 flex-1 truncate">{v.label}</span>
+                    <span className="text-xs text-gray-400">{Array.isArray(v.snapshot) ? v.snapshot.length : 0} {tr('poz.')} · {new Date(v.created_at).toLocaleDateString('pl-PL')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Ostatnie zmiany')}</div>
+            {budgetAudit.length === 0 ? (
+              <div className="text-sm text-gray-400">{tr('Brak zapisanych zmian.')}</div>
+            ) : (
+              <div className="space-y-1.5">
+                {budgetAudit.map((a) => {
+                  const AL = { created: tr('Dodano'), updated: tr('Zmieniono'), deleted: tr('Usunięto') };
+                  const beforeAmt = a.before?.planned_amount, afterAmt = a.after?.planned_amount;
+                  return (
+                    <div key={a.id} className="flex items-start gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${a.action === 'deleted' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : a.action === 'created' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'}`}>{AL[a.action] || a.action}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-gray-800 dark:text-gray-100 truncate">{a.category}{a.description ? ` — ${a.description}` : ''}</div>
+                        <div className="text-xs text-gray-400">
+                          {a.action === 'updated' && beforeAmt != null && afterAmt != null && beforeAmt !== afterAmt
+                            ? `${Number(beforeAmt).toLocaleString('pl-PL')} → ${Number(afterAmt).toLocaleString('pl-PL')} zł · `
+                            : (afterAmt != null ? `${Number(afterAmt).toLocaleString('pl-PL')} zł · ` : '')}
+                          {a.actor || '—'} · {new Date(a.created_at).toLocaleString('pl-PL')}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
       {showBudgetModal && document.body && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
@@ -2336,6 +2649,14 @@ const FinanceModule = () => {
               </button>
             </div>
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                {[{ k: 'expense', l: tr('Wydatek') }, { k: 'income', l: tr('Przychód') }].map(({ k, l }) => (
+                  <button key={k} type="button" onClick={() => setBudgetForm({ ...budgetForm, kind: k })}
+                    className={`py-2 rounded-xl text-sm font-medium border transition ${(budgetForm.kind || 'expense') === k ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5 text-gray-800 dark:text-gray-100' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300'}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
               <CustomSelect
                 label={tr('Kategoria (Służba)')}
                 value={budgetForm.category}
