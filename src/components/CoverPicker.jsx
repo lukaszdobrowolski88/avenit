@@ -42,6 +42,7 @@ export default function CoverPicker({ moduleKey }) {
   const canEdit = useCan('module:settings');
   const coverCfg = useModuleCover(moduleKey);
   const curStyle = coverCfg?.style === 'glass' ? 'glass' : 'gradient';
+  const curHeight = ['sm', 'md', 'lg', 'off'].includes(coverCfg?.height) ? coverCfg.height : 'md';
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState('');
   const [custom, setCustom] = useState('#6366f1'); // własny kolor (hex)
@@ -91,23 +92,25 @@ export default function CoverPicker({ moduleKey }) {
     } finally { setBusy(false); }
   };
 
-  // Zapis samego stylu tytułu na banerze (bez zmiany tła). Scala z istniejącym wpisem,
-  // więc styl działa też dla banera fallback (gdy nie ustawiono zdjęcia/koloru).
-  const saveStyle = async (style) => {
+  // Zapis pojedynczego pola nagłówka (styl/wysokość) — scala z istniejącym wpisem,
+  // więc działa też dla banera fallback (gdy nie ustawiono zdjęcia/koloru).
+  const savePatch = async (patch, msg) => {
     setBusy(true);
     try {
       const { data } = await supabase.from('app_settings').select('value').eq('key', 'module_covers').maybeSingle();
       let map = {};
       try { map = JSON.parse(data?.value || '{}') || {}; } catch { map = {}; }
-      map[moduleKey] = { ...(map[moduleKey] || {}), style };
+      map[moduleKey] = { ...(map[moduleKey] || {}), ...patch };
       const { error } = await supabase.from('app_settings').upsert({ key: 'module_covers', value: JSON.stringify(map) }, { onConflict: 'key' });
       if (error) throw error;
       invalidateModuleLabels();
-      toast.success('Zapisano styl nagłówka');
+      toast.success(msg);
     } catch {
-      toast.error('Nie udało się zapisać stylu');
+      toast.error('Nie udało się zapisać');
     } finally { setBusy(false); }
   };
+  const saveStyle = (style) => savePatch({ style }, 'Zapisano styl nagłówka');
+  const saveHeight = (height) => savePatch({ height }, 'Zapisano wysokość banera');
 
   return (
     <div className="relative">
@@ -130,6 +133,20 @@ export default function CoverPicker({ moduleKey }) {
                   className={`text-left rounded-lg px-2.5 py-2 border transition ${curStyle === s.key ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5' : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary/50'}`}>
                   <div className="text-xs font-semibold text-gray-800 dark:text-gray-100">{s.label}</div>
                   <div className="text-[10px] text-gray-400">{s.hint}</div>
+                </button>
+              ))}
+            </div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Wysokość banera</div>
+            <div className="grid grid-cols-4 gap-1.5 mb-3">
+              {[
+                { key: 'off', label: 'Bez' },
+                { key: 'sm', label: 'Niski' },
+                { key: 'md', label: 'Średni' },
+                { key: 'lg', label: 'Wysoki' },
+              ].map((h) => (
+                <button key={h.key} onClick={() => saveHeight(h.key)}
+                  className={`text-xs py-1.5 rounded-lg border transition ${curHeight === h.key ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5 text-gray-800 dark:text-gray-100 font-semibold' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-accent-primary/50'}`}>
+                  {h.label}
                 </button>
               ))}
             </div>
