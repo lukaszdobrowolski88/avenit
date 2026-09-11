@@ -1451,7 +1451,10 @@ CREATE TABLE IF NOT EXISTS home_group_leaders (
     tenant_id UUID,
     group_id UUID REFERENCES home_groups(id) ON DELETE CASCADE,
     member_id UUID REFERENCES members(id) ON DELETE CASCADE,
-    role TEXT DEFAULT 'leader',
+    full_name TEXT,
+    email TEXT,
+    phone TEXT,
+    role TEXT DEFAULT 'leader',   -- coordinator | leader
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(group_id, member_id)
 );
