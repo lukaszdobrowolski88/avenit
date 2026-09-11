@@ -19,8 +19,10 @@ export default function useMaterials(folderId = null, ministryKey = null) {
         .select('*')
         .order('name');
 
-      // Filtruj po folderze
-      if (folderId) {
+      // Filtruj po folderze. '__ALL__' = wszystkie pliki (płasko, także z podfolderów).
+      if (folderId === '__ALL__') {
+        // bez filtra folderu
+      } else if (folderId) {
         query = query.eq('folder_id', folderId);
       } else {
         query = query.is('folder_id', null);
@@ -81,7 +83,7 @@ export default function useMaterials(folderId = null, ministryKey = null) {
           storage_path: storagePath,
           file_size: file.size,
           mime_type: file.type || 'application/octet-stream',
-          folder_id: folderId,
+          folder_id: (folderId && folderId !== '__ALL__') ? folderId : null,
           team_type: ministryKey,
           uploaded_by: user.email
         })
@@ -240,6 +242,25 @@ export default function useMaterials(folderId = null, ministryKey = null) {
     }
   }, [fetchFiles]);
 
+  // Zmień nazwę pliku (zachowuje rozszerzenie, jeśli użytkownik go nie podał).
+  const updateFileName = useCallback(async (fileId, newName, oldName) => {
+    let name = String(newName || '').trim();
+    if (!name) return;
+    const oldExt = (oldName || '').includes('.') ? oldName.split('.').pop() : '';
+    if (oldExt && !name.toLowerCase().endsWith('.' + oldExt.toLowerCase())) name = `${name}.${oldExt}`;
+    try {
+      const { error: updateError } = await supabase
+        .from('materials_files')
+        .update({ name, updated_at: new Date().toISOString() })
+        .eq('id', fileId);
+      if (updateError) throw updateError;
+      await fetchFiles();
+    } catch (err) {
+      console.error('Error renaming file:', err);
+      throw err;
+    }
+  }, [fetchFiles]);
+
   // Przenieś plik do innego folderu
   const moveFile = useCallback(async (fileId, newFolderId) => {
     try {
@@ -276,6 +297,7 @@ export default function useMaterials(folderId = null, ministryKey = null) {
     getFileUrl,
     searchFiles,
     updateFileDescription,
+    updateFileName,
     moveFile
   };
 }

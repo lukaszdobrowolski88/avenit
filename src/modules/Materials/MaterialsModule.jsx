@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { FolderOpen, Search, X } from 'lucide-react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { FolderOpen, Folder, Search, X, ChevronRight, Home, Layers, Pencil } from 'lucide-react';
 import useFolders from './hooks/useFolders';
 import useMaterials from './hooks/useMaterials';
 import FolderTree from './components/FolderTree';
@@ -13,6 +13,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   // State
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [viewAll, setViewAll] = useState(false); // „Wszystkie pliki" (płasko, także z podfolderów)
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [editingFolder, setEditingFolder] = useState(null);
   const [parentFolderForNew, setParentFolderForNew] = useState(null);
@@ -28,9 +29,12 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
     loading: foldersLoading,
     createFolder,
     renameFolder,
-    deleteFolder
+    deleteFolder,
+    findFolderById,
+    getFolderPath
   } = useFolders(ministryKey);
 
+  const materialsFolderArg = viewAll ? '__ALL__' : selectedFolderId;
   const {
     files,
     loading: filesLoading,
@@ -40,30 +44,40 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
     deleteFile,
     downloadFile,
     getFileUrl,
-    searchFiles
-  } = useMaterials(selectedFolderId, ministryKey);
+    searchFiles,
+    updateFileName
+  } = useMaterials(materialsFolderArg, ministryKey);
 
-  // Filtruj pliki graficzne do nawigacji w podglądzie
+  // Płaska lista folderów (do breadcrumbs) + podfoldery bieżącego poziomu (kafle).
+  const flatFolders = useMemo(() => {
+    const out = [];
+    const walk = (list) => (list || []).forEach((f) => { out.push(f); if (f.children) walk(f.children); });
+    walk(folders);
+    return out;
+  }, [folders]);
+  const breadcrumb = useMemo(() => (selectedFolderId ? getFolderPath(selectedFolderId, flatFolders) : []), [selectedFolderId, flatFolders, getFolderPath]);
+  const subfolders = useMemo(() => {
+    if (viewAll) return [];
+    return selectedFolderId ? (findFolderById(selectedFolderId)?.children || []) : folders;
+  }, [viewAll, selectedFolderId, findFolderById, folders]);
+
   const imageFiles = files.filter(f => f.mime_type?.startsWith('image/'));
 
   // Handlers
   const handleSearch = useCallback(async (query) => {
     setSearchQuery(query);
-    if (query.length >= 2) {
-      setIsSearching(true);
-      await searchFiles(query);
-    } else if (query.length === 0) {
-      setIsSearching(false);
-    }
+    if (query.length >= 2) { setIsSearching(true); await searchFiles(query); }
+    else if (query.length === 0) { setIsSearching(false); }
   }, [searchFiles]);
 
   const handleClearSearch = useCallback(() => {
     setSearchQuery('');
     setIsSearching(false);
-    setSelectedFolderId(selectedFolderId); // Refresh files
+    setSelectedFolderId(selectedFolderId);
   }, [selectedFolderId, setSelectedFolderId]);
 
-  const handleSelectFolder = useCallback((folderId) => {
+  const openFolder = useCallback((folderId) => {
+    setViewAll(false);
     setSelectedFolderId(folderId);
     setSearchQuery('');
     setIsSearching(false);
@@ -71,26 +85,20 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   }, [setSelectedFolderId]);
 
   const handleCreateFolder = useCallback((parentId = null) => {
-    setEditingFolder(null);
-    setParentFolderForNew(parentId);
-    setShowFolderModal(true);
+    setEditingFolder(null); setParentFolderForNew(parentId); setShowFolderModal(true);
   }, []);
 
-  const handleRenameFolder = useCallback((folder) => {
-    setEditingFolder(folder);
+  // FolderTree woła (folderId, folderName); trzymamy obiekt {id,name}.
+  const handleRenameFolder = useCallback((folderId, folderName) => {
+    setEditingFolder({ id: folderId, name: folderName });
     setParentFolderForNew(null);
     setShowFolderModal(true);
   }, []);
 
   const handleFolderModalSubmit = useCallback(async (name) => {
-    if (editingFolder) {
-      await renameFolder(editingFolder.id, name);
-    } else {
-      await createFolder(name, parentFolderForNew);
-    }
-    setShowFolderModal(false);
-    setEditingFolder(null);
-    setParentFolderForNew(null);
+    if (editingFolder) await renameFolder(editingFolder.id, name);
+    else await createFolder(name, parentFolderForNew);
+    setShowFolderModal(false); setEditingFolder(null); setParentFolderForNew(null);
   }, [editingFolder, parentFolderForNew, createFolder, renameFolder]);
 
   const handleDeleteFolder = useCallback(async (folderId) => {
@@ -99,33 +107,32 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
     }
   }, [deleteFolder]);
 
-  const handleUpload = useCallback(async (fileList) => {
-    await uploadFiles(fileList);
-  }, [uploadFiles]);
+  const handleUpload = useCallback(async (fileList) => { await uploadFiles(fileList); }, [uploadFiles]);
+  const handleDeleteFile = useCallback(async (fileId, storagePath) => { await deleteFile(fileId, storagePath); }, [deleteFile]);
 
-  const handleDeleteFile = useCallback(async (fileId, storagePath) => {
-    await deleteFile(fileId, storagePath);
-  }, [deleteFile]);
+  const handleRenameFile = useCallback(async (file) => {
+    const base = (file.name || '').includes('.') ? file.name.slice(0, file.name.lastIndexOf('.')) : file.name;
+    const next = window.prompt(tr('Nowa nazwa pliku:'), base);
+    if (next === null) return;
+    try { await updateFileName(file.id, next, file.name); }
+    catch (e) { window.alert(tr('Nie udało się zmienić nazwy: ') + e.message); }
+  }, [updateFileName]);
 
   const handlePreviewFile = useCallback((file) => {
-    if (file.mime_type?.startsWith('image/')) {
-      setPreviewFile(file);
-      setPreviewUrl(getFileUrl(file.storage_path));
-    }
+    if (file.mime_type?.startsWith('image/')) { setPreviewFile(file); setPreviewUrl(getFileUrl(file.storage_path)); }
   }, [getFileUrl]);
 
   const handlePreviewNavigation = useCallback((direction) => {
     if (!previewFile) return;
-    const currentIndex = imageFiles.findIndex(f => f.id === previewFile.id);
-    const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+    const idx = imageFiles.findIndex(f => f.id === previewFile.id);
+    const newIndex = direction === 'prev' ? idx - 1 : idx + 1;
     if (newIndex >= 0 && newIndex < imageFiles.length) {
-      const newFile = imageFiles[newIndex];
-      setPreviewFile(newFile);
-      setPreviewUrl(getFileUrl(newFile.storage_path));
+      const f = imageFiles[newIndex]; setPreviewFile(f); setPreviewUrl(getFileUrl(f.storage_path));
     }
   }, [previewFile, imageFiles, getFileUrl]);
 
   const currentPreviewIndex = previewFile ? imageFiles.findIndex(f => f.id === previewFile.id) : -1;
+  const showFolderChrome = !viewAll && !isSearching;
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -137,11 +144,10 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
           </div>
           <div>
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{tr('Materiały')}</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Pliki i dokumenty</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{tr('Pliki i dokumenty')}</p>
           </div>
         </div>
 
-        {/* Search */}
         <div className="flex-1 max-w-md">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
@@ -153,21 +159,14 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
               className="w-full pl-10 pr-10 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 focus:border-amber-500"
             />
             {searchQuery && (
-              <button
-                onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-              >
+              <button onClick={handleClearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                 <X size={16} />
               </button>
             )}
           </div>
         </div>
 
-        {/* Mobile folder toggle */}
-        <button
-          onClick={() => setShowMobileFolders(!showMobileFolders)}
-          className="lg:hidden p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-        >
+        <button onClick={() => setShowMobileFolders(!showMobileFolders)} className="lg:hidden p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
           <FolderOpen size={20} />
         </button>
       </div>
@@ -175,27 +174,23 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar - Folders */}
-        <div className={`
-          ${showMobileFolders ? 'fixed inset-0 z-40 bg-white dark:bg-gray-800' : 'hidden'}
-          lg:relative lg:block lg:w-64 xl:w-72 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0
-        `}>
-          {/* Mobile close button */}
+        <div className={`${showMobileFolders ? 'fixed inset-0 z-40 bg-white dark:bg-gray-800' : 'hidden'} lg:relative lg:block lg:w-64 xl:w-72 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0`}>
           <div className="lg:hidden flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <span className="font-medium text-gray-900 dark:text-white">Foldery</span>
-            <button
-              onClick={() => setShowMobileFolders(false)}
-              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            >
-              <X size={20} />
-            </button>
+            <span className="font-medium text-gray-900 dark:text-white">{tr('Foldery')}</span>
+            <button onClick={() => setShowMobileFolders(false)} className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"><X size={20} /></button>
           </div>
-
           <div className="p-4 h-full overflow-y-auto">
-            {/* Folder tree */}
+            {/* „Wszystkie pliki" (płasko) */}
+            <button
+              onClick={() => { setViewAll(true); setSearchQuery(''); setIsSearching(false); setShowMobileFolders(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium mb-2 ${viewAll ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            >
+              <Layers size={16} /> {tr('Wszystkie pliki')}
+            </button>
             <FolderTree
               folders={folders}
-              selectedId={selectedFolderId}
-              onSelect={handleSelectFolder}
+              selectedId={viewAll ? null : selectedFolderId}
+              onSelect={openFolder}
               onCreateFolder={handleCreateFolder}
               onRenameFolder={handleRenameFolder}
               onDeleteFolder={handleDeleteFolder}
@@ -205,42 +200,61 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
           </div>
         </div>
 
-        {/* Main area - Files */}
+        {/* Main area */}
         <div className="flex-1 flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
-          {/* Uploader */}
-          {canEdit && !isSearching && (
+          {/* Uploader (nie w trybie „wszystkie"/szukaniu — nie wiadomo do którego folderu) */}
+          {canEdit && showFolderChrome && (
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              <FileUploader
-                onUpload={handleUpload}
-                uploading={uploading}
-                progress={uploadProgress}
-              />
+              <FileUploader onUpload={handleUpload} uploading={uploading} progress={uploadProgress} />
             </div>
           )}
 
-          {/* Search results indicator */}
-          {isSearching && (
-            <div className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800">
-              <p className="text-sm text-amber-800 dark:text-amber-300">
-                Wyniki wyszukiwania dla: <strong>"{searchQuery}"</strong>
-                <button
-                  onClick={handleClearSearch}
-                  className="ml-2 text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 underline"
-                >
-                  {tr('Wyczyść')}
-                </button>
-              </p>
-            </div>
-          )}
+          {/* Breadcrumbs / kontekst */}
+          <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-800/60 flex items-center gap-1 text-sm overflow-x-auto">
+            {viewAll ? (
+              <span className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-200"><Layers size={15} /> {tr('Wszystkie pliki')}</span>
+            ) : isSearching ? (
+              <span className="text-amber-700 dark:text-amber-300">{tr('Wyniki wyszukiwania')}: <strong>"{searchQuery}"</strong> <button onClick={handleClearSearch} className="ml-1 underline">{tr('Wyczyść')}</button></span>
+            ) : (
+              <>
+                <button onClick={() => openFolder(null)} className="flex items-center gap-1 text-gray-500 hover:text-accent-primary"><Home size={14} /> {tr('Główny')}</button>
+                {breadcrumb.map((f) => (
+                  <span key={f.id} className="flex items-center gap-1">
+                    <ChevronRight size={14} className="text-gray-300" />
+                    <button onClick={() => openFolder(f.id)} className="text-gray-600 dark:text-gray-300 hover:text-accent-primary max-w-[160px] truncate">{f.name}</button>
+                  </span>
+                ))}
+              </>
+            )}
+          </div>
 
-          {/* Files list */}
-          <div className="flex-1 overflow-y-auto p-4">
+          {/* Zawartość */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Podfoldery jako kafle (jak w Drive) */}
+            {showFolderChrome && subfolders.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {subfolders.map((f) => (
+                  <button key={f.id} onClick={() => openFolder(f.id)} className="group flex items-center gap-2 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-accent-primary/50 hover:shadow-sm transition text-left">
+                    <div className="w-9 h-9 rounded-lg bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0"><Folder size={18} /></div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{f.name}</div>
+                      {f.children?.length > 0 && <div className="text-[11px] text-gray-400">{f.children.length} {tr('podfolderów')}</div>}
+                    </div>
+                    {canEdit && (
+                      <span onClick={(e) => { e.stopPropagation(); handleRenameFolder(f.id, f.name); }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-accent-primary p-1" title={tr('Zmień nazwę')}><Pencil size={13} /></span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <FileList
               files={files}
               loading={filesLoading}
               onPreview={handlePreviewFile}
               onDownload={downloadFile}
               onDelete={handleDeleteFile}
+              onRename={canEdit ? handleRenameFile : undefined}
               canDelete={canEdit}
               getFileUrl={getFileUrl}
             />
@@ -248,26 +262,18 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
         </div>
       </div>
 
-      {/* Folder Modal */}
       <FolderModal
         isOpen={showFolderModal}
-        onClose={() => {
-          setShowFolderModal(false);
-          setEditingFolder(null);
-          setParentFolderForNew(null);
-        }}
+        onClose={() => { setShowFolderModal(false); setEditingFolder(null); setParentFolderForNew(null); }}
         onSubmit={handleFolderModalSubmit}
+        mode={editingFolder ? 'rename' : 'create'}
         initialName={editingFolder?.name || ''}
-        isEditing={!!editingFolder}
+        parentFolderName={parentFolderForNew ? (flatFolders.find(f => f.id === parentFolderForNew)?.name || null) : null}
       />
 
-      {/* File Preview Modal */}
       <FilePreviewModal
         isOpen={!!previewFile}
-        onClose={() => {
-          setPreviewFile(null);
-          setPreviewUrl(null);
-        }}
+        onClose={() => { setPreviewFile(null); setPreviewUrl(null); }}
         file={previewFile}
         fileUrl={previewUrl}
         onDownload={downloadFile}
