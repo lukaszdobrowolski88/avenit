@@ -230,8 +230,12 @@ export const REGISTRY = {
   home_group_task_comments: T('module:homegroups'),
   // Nauczanie / materiały
   teaching_series: T('module:teaching'),
-  materials_files: T('module:teaching'),
-  materials_folders: T('module:teaching'),
+  // Materiały/Pliki są WSPÓLNE dla wielu modułów (Pliki w finance/homegroups/media/…),
+  // filtrowane w UI po team_type. Dostęp dla każdego zalogowanego (jak wall_posts) —
+  // inaczej user bez module:teaching nie otworzy Plików w swoim module ani „Udostępnione mi".
+  materials_files: T(null),
+  materials_folders: T(null),
+  materials_shares: T(null),
   // Media (zadania)
   media_tasks: T('module:media'),
   media_task_comments: T('module:media'),

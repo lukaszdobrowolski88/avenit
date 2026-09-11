@@ -213,7 +213,7 @@ export const MODULES = [
   },
   {
     key: 'teaching', label: 'Nauczanie',
-    resources: ['teachings', 'teaching_speakers', 'teaching_series', 'materials_files', 'materials_folders'],
+    resources: ['teachings', 'teaching_speakers', 'teaching_series'],
     tabs: [
       { key: 'wall', label: 'Tablica' },
       { key: 'schedule', label: 'Grafik' },

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Loader2, MapPin, Search, Navigation } from 'lucide-react';
+import { Loader2, MapPin, Search, Navigation, LocateFixed } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { tr } from '../../i18n';
 
 // Geokodowanie adresów przez Nominatim (OSM) — cache w pamięci + localStorage, rate-limit.
@@ -78,11 +79,22 @@ export default function HomeGroupsMap({ groups = [], leaders = [] }) {
       groupLayerRef.current.clearLayers();
       const found = {}; const pts = []; let miss = 0;
       for (const g of withAddress) {
+        // Współrzędne z bazy → bez geokodowania (szybko). Inaczej geokoduj i ZAPISZ.
+        if (g.lat != null && g.lng != null) {
+          const geo = { lat: Number(g.lat), lon: Number(g.lng) };
+          found[g.id] = geo; pts.push([geo.lat, geo.lon]);
+          const ln = leaderName(g.leader_id);
+          L.marker([geo.lat, geo.lon], { icon: groupIcon(false) })
+            .bindTooltip(`<b>${g.name}</b>${g.meeting_day ? `<br>${g.meeting_day} ${g.meeting_time || ''}` : ''}${ln ? `<br>${tr('Lider')}: ${ln}` : ''}`, { direction: 'top' })
+            .addTo(groupLayerRef.current);
+          continue;
+        }
         const addr = g.address || g.location;
         const cachedBefore = wasCached(addr);
         const geo = await geocode(addr);
         if (!alive) return;
         if (geo) {
+          supabase.from('home_groups').update({ lat: geo.lat, lng: geo.lon }).eq('id', g.id).then(() => {}, () => {}); // best-effort zapis
           found[g.id] = geo; pts.push([geo.lat, geo.lon]);
           const ln = leaderName(g.leader_id);
           L.marker([geo.lat, geo.lon], { icon: groupIcon(false) })
@@ -108,17 +120,28 @@ export default function HomeGroupsMap({ groups = [], leaders = [] }) {
       .sort((a, b) => a.km - b.km);
   }, [userPoint, coords, withAddress]);
 
+  const setUserAt = (geo, label) => {
+    setUserPoint(geo);
+    userLayerRef.current.clearLayers();
+    L.marker([geo.lat, geo.lon], { icon: userIcon() }).bindTooltip(label, { direction: 'top' }).addTo(userLayerRef.current);
+  };
   const searchNearest = async () => {
     if (!address.trim()) return;
     setSearching(true);
     try {
       const geo = await geocode(address);
       if (!geo) { setUserPoint(null); return; }
-      setUserPoint(geo);
-      // Marker użytkownika + dopasowanie widoku do użytkownika i najbliższej grupy.
-      userLayerRef.current.clearLayers();
-      L.marker([geo.lat, geo.lon], { icon: userIcon() }).bindTooltip(tr('Twój adres'), { direction: 'top' }).addTo(userLayerRef.current);
+      setUserAt(geo, tr('Twój adres'));
     } finally { setSearching(false); }
+  };
+  const useMyLocation = () => {
+    if (!navigator.geolocation) { window.alert(tr('Twoja przeglądarka nie wspiera lokalizacji.')); return; }
+    setSearching(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setUserAt({ lat: pos.coords.latitude, lon: pos.coords.longitude }, tr('Twoja lokalizacja')); setSearching(false); },
+      () => { setSearching(false); window.alert(tr('Nie udało się pobrać lokalizacji.')); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   // Podświetl najbliższą + wyśrodkuj po wyliczeniu.
@@ -154,6 +177,9 @@ export default function HomeGroupsMap({ groups = [], leaders = [] }) {
         </div>
         <button onClick={searchNearest} disabled={searching} className="px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-60">
           {searching ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />} {tr('Znajdź najbliższą')}
+        </button>
+        <button onClick={useMyLocation} disabled={searching} title={tr('Użyj mojej lokalizacji')} className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-center gap-2 disabled:opacity-60">
+          <LocateFixed size={16} /> <span className="sm:hidden lg:inline">{tr('Moja lokalizacja')}</span>
         </button>
       </div>
 

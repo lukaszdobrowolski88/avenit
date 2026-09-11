@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { Settings2, ArrowUp, ArrowDown, Star, X } from 'lucide-react';
+import { Settings2, ArrowUp, ArrowDown, Star, X, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useCan } from './Can';
 import { useModuleTabs, invalidateModuleLabels } from '../hooks/useModuleLabel';
@@ -22,17 +22,25 @@ export default function ResponsiveTabs({ tabs, activeTab, onChange, className = 
     const pos = (id) => { const i = prefs.order.indexOf(id); return i === -1 ? 1000 + tabs.findIndex((t) => t.id === id) : i; };
     return [...tabs].sort((a, b) => pos(a.id) - pos(b.id));
   }, [tabs, prefs]);
+  // Ukryte zakładki (widoczność) — konfigurowalne przez admina.
+  const hiddenIds = prefs?.hidden || [];
+  const visibleTabs = useMemo(() => orderedTabs.filter((t) => !hiddenIds.includes(t.id)), [orderedTabs, hiddenIds]);
 
   // Domyślna zakładka — zastosuj RAZ, gdy preferencje się wczytają (na wejściu do modułu).
   const appliedRef = useRef(false);
   useEffect(() => {
-    if (appliedRef.current || !prefs?.default) return;
-    if (tabs.some((t) => t.id === prefs.default)) {
+    if (!prefs) return;
+    // Domyślna zakładka — zastosuj raz.
+    if (!appliedRef.current && prefs.default && tabs.some((t) => t.id === prefs.default)) {
       appliedRef.current = true;
-      if (prefs.default !== activeTab) onChange(prefs.default);
+      if (prefs.default !== activeTab) { onChange(prefs.default); return; }
+    }
+    // Jeśli aktywna zakładka jest ukryta — przełącz na pierwszą widoczną.
+    if (hiddenIds.includes(activeTab) && visibleTabs[0] && visibleTabs[0].id !== activeTab) {
+      onChange(visibleTabs[0].id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefs]);
+  }, [prefs, activeTab]);
 
   useEffect(() => {
     if (activeTabRef.current && scrollContainerRef.current) {
@@ -75,7 +83,7 @@ export default function ResponsiveTabs({ tabs, activeTab, onChange, className = 
       {/* Mobile */}
       <div className="lg:hidden -mx-4 px-4 border-b border-gray-200 dark:border-gray-700">
         <div ref={scrollContainerRef} className="flex gap-1 overflow-x-auto scrollbar-hide scroll-smooth" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {orderedTabs.map((tab) => renderTab(tab, true))}
+          {visibleTabs.map((tab) => renderTab(tab, true))}
         </div>
       </div>
 
@@ -83,7 +91,7 @@ export default function ResponsiveTabs({ tabs, activeTab, onChange, className = 
       <div className="hidden lg:block border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-1">
           <div className="flex gap-1 flex-wrap flex-1">
-            {orderedTabs.map((tab) => renderTab(tab, false))}
+            {visibleTabs.map((tab) => renderTab(tab, false))}
           </div>
           {moduleKey && canEdit && (
             <TabConfig moduleKey={moduleKey} tabs={orderedTabs} current={prefs} />
@@ -99,13 +107,16 @@ function TabConfig({ moduleKey, tabs, current }) {
   const [open, setOpen] = useState(false);
   const [order, setOrder] = useState(tabs.map((t) => t.id));
   const [def, setDef] = useState(current?.default || '');
+  const [hidden, setHidden] = useState(current?.hidden || []);
   const [busy, setBusy] = useState(false);
 
   const openPanel = () => {
     setOrder(tabs.map((t) => t.id));
     setDef(current?.default || '');
+    setHidden(current?.hidden || []);
     setOpen(true);
   };
+  const toggleHidden = (id) => setHidden((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   const label = (id) => tabs.find((t) => t.id === id)?.label || id;
   const move = (i, dir) => {
     setOrder((prev) => {
@@ -122,7 +133,7 @@ function TabConfig({ moduleKey, tabs, current }) {
       const { data } = await supabase.from('app_settings').select('value').eq('key', 'module_tabs').maybeSingle();
       let map = {};
       try { map = JSON.parse(data?.value || '{}') || {}; } catch { map = {}; }
-      map[moduleKey] = { order, default: def || null };
+      map[moduleKey] = { order, default: def || null, hidden };
       const { error } = await supabase.from('app_settings').upsert({ key: 'module_tabs', value: JSON.stringify(map) }, { onConflict: 'key' });
       if (error) throw error;
       invalidateModuleLabels();
@@ -161,16 +172,20 @@ function TabConfig({ moduleKey, tabs, current }) {
             </div>
             <p className="text-[11px] text-gray-400 mb-2">Gwiazdka = zakładka otwierana domyślnie.</p>
             <div className="space-y-1 max-h-64 overflow-y-auto custom-scrollbar">
-              {order.map((id, i) => (
-                <div key={id} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700">
-                  <button onClick={() => setDef(def === id ? '' : id)} title="Ustaw jako domyślną" className={def === id ? 'text-amber-500' : 'text-gray-300 hover:text-amber-400'}>
-                    <Star size={15} fill={def === id ? 'currentColor' : 'none'} />
-                  </button>
-                  <span className="text-sm flex-1 truncate text-gray-800 dark:text-gray-100">{label(id)}</span>
-                  <button onClick={() => move(i, -1)} disabled={i === 0} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-30"><ArrowUp size={14} /></button>
-                  <button onClick={() => move(i, 1)} disabled={i === order.length - 1} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-30"><ArrowDown size={14} /></button>
-                </div>
-              ))}
+              {order.map((id, i) => {
+                const isHidden = hidden.includes(id);
+                return (
+                  <div key={id} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700 ${isHidden ? 'opacity-50' : ''}`}>
+                    <button onClick={() => setDef(def === id ? '' : id)} title="Ustaw jako domyślną" disabled={isHidden} className={`${def === id ? 'text-amber-500' : 'text-gray-300 hover:text-amber-400'} disabled:opacity-30`}>
+                      <Star size={15} fill={def === id ? 'currentColor' : 'none'} />
+                    </button>
+                    <span className={`text-sm flex-1 truncate text-gray-800 dark:text-gray-100 ${isHidden ? 'line-through' : ''}`}>{label(id)}</span>
+                    <button onClick={() => toggleHidden(id)} title={isHidden ? 'Pokaż' : 'Ukryj'} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">{isHidden ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+                    <button onClick={() => move(i, -1)} disabled={i === 0} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-30"><ArrowUp size={14} /></button>
+                    <button onClick={() => move(i, 1)} disabled={i === order.length - 1} className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-30"><ArrowDown size={14} /></button>
+                  </div>
+                );
+              })}
             </div>
             <div className="flex gap-2 mt-3">
               <button onClick={reset} disabled={busy} className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Domyślny układ</button>

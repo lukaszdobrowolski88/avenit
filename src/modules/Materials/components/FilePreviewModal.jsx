@@ -109,14 +109,23 @@ export default function FilePreviewModal({
         </button>
       )}
 
-      {/* Image */}
-      <div className="max-w-[90vw] max-h-[80vh] relative">
-        <img
-          src={fileUrl}
-          alt={file.name}
-          className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
-        />
-      </div>
+      {/* Podgląd: obraz / PDF (iframe) / brak podglądu */}
+      {file.mime_type?.startsWith('image/') ? (
+        <div className="max-w-[90vw] max-h-[80vh] relative">
+          <img src={fileUrl} alt={file.name} className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl" />
+        </div>
+      ) : file.mime_type === 'application/pdf' ? (
+        <div className="w-[92vw] h-[82vh] bg-white rounded-lg overflow-hidden shadow-2xl">
+          <iframe src={fileUrl} title={file.name} className="w-full h-full border-0" />
+        </div>
+      ) : (
+        <div className="text-center text-white/80 px-6">
+          <p className="mb-4 text-lg">{tr('Podgląd niedostępny dla tego typu pliku.')}</p>
+          <button onClick={handleDownload} className="px-5 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-white flex items-center gap-2 mx-auto">
+            <Download size={18} /> {tr('Otwórz / pobierz')}
+          </button>
+        </div>
+      )}
 
       {/* Bottom bar with file info and actions */}
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">

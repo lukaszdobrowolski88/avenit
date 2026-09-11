@@ -357,6 +357,7 @@ const FinanceModule = () => {
 
   // Menedżer kategorii (CRUD na expense_categories, rodzaj income/expense).
   const [catForm, setCatForm] = useState({ name: '', kind: 'expense', color: '#6366f1' });
+  const [vendorName, setVendorName] = useState('');
   const saveCategory = async () => {
     if (!catForm.name.trim()) { toast.error(tr('Podaj nazwę kategorii')); return; }
     try {
@@ -407,6 +408,26 @@ const FinanceModule = () => {
   const [vendors, setVendors] = useState([]);
   const fetchVendors = async () => { try { const { data } = await supabase.from('finance_vendors').select('*').order('name'); setVendors(data || []); } catch { /* brak tabeli */ } };
   useEffect(() => { fetchVendors(); }, []);
+  const addVendor = async (name) => { const n = String(name || '').trim(); if (!n) return; try { await supabase.from('finance_vendors').insert([{ name: n }]); fetchVendors(); } catch (e) { toast.error(e.message); } };
+  const deleteVendor = async (id) => { try { await supabase.from('finance_vendors').delete().eq('id', id); fetchVendors(); } catch (e) { toast.error(e.message); } };
+
+  // Sumy poprzedniego roku (do porównania rok-do-roku w Raportach).
+  const [prevYearTotals, setPrevYearTotals] = useState({ income: 0, expense: 0 });
+  useEffect(() => {
+    const py = selectedYear - 1, from = `${py}-01-01`, to = `${py}-12-31`;
+    (async () => {
+      try {
+        const [inc, exp] = await Promise.all([
+          supabase.from('income_transactions').select('amount').gte('date', from).lte('date', to),
+          supabase.from('expense_transactions').select('amount').gte('payment_date', from).lte('payment_date', to),
+        ]);
+        setPrevYearTotals({
+          income: (inc.data || []).reduce((s, r) => s + Number(r.amount || 0), 0),
+          expense: (exp.data || []).reduce((s, r) => s + Number(r.amount || 0), 0),
+        });
+      } catch { setPrevYearTotals({ income: 0, expense: 0 }); }
+    })();
+  }, [selectedYear]);
   const ensureVendor = async (name) => {
     const n = String(name || '').trim();
     if (!n || vendors.some((v) => v.name.toLowerCase() === n.toLowerCase())) return;
@@ -1044,8 +1065,10 @@ const FinanceModule = () => {
   const budgetCategories = [...new Set(budgetItems.map(item => item.category))].map(cat => ({ value: cat, label: cat }));
 
   // Budżet dzieli się na planowane WYDATKI i PRZYCHODY (kolumna kind).
-  const expenseBudgetItems = budgetItems.filter((i) => i.kind !== 'income');
-  const incomeBudgetItems = budgetItems.filter((i) => i.kind === 'income');
+  const [budgetPeriod, setBudgetPeriod] = useState('all'); // filtr okresu: all|year|quarter|month
+  const inPeriod = (i) => budgetPeriod === 'all' || (i.period_type || 'year') === budgetPeriod;
+  const expenseBudgetItems = budgetItems.filter((i) => i.kind !== 'income' && inPeriod(i));
+  const incomeBudgetItems = budgetItems.filter((i) => i.kind === 'income' && inPeriod(i));
   const totalPlannedIncome = incomeBudgetItems.reduce((s, i) => s + Number(i.planned_amount || 0), 0);
   const totalPlannedExpense = expenseBudgetItems.reduce((s, i) => s + Number(i.planned_amount || 0), 0);
   // Realizacja przychodu z budżetu = suma wpływów pasujących służbą (team_type) lub typem.
@@ -1093,6 +1116,12 @@ const FinanceModule = () => {
               Budżet {selectedYear}
             </h2>
             <div className="flex items-center gap-2 flex-wrap">
+              <select value={budgetPeriod} onChange={(e) => setBudgetPeriod(e.target.value)} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200">
+                <option value="all">{tr('Wszystkie okresy')}</option>
+                <option value="year">{tr('Roczny')}</option>
+                <option value="quarter">{tr('Kwartalny')}</option>
+                <option value="month">{tr('Miesięczny')}</option>
+              </select>
               <button
                 onClick={() => { fetchBudgetHistory(); setShowBudgetHistory(true); }}
                 className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
@@ -2416,6 +2445,58 @@ const FinanceModule = () => {
               );
             })()}
           </div>
+          {/* Wydatki wg kategorii kosztu (własnej) */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><PieChart size={20} className="text-accent-primary" /> {tr('Wydatki wg kategorii kosztu')}</h3>
+            {(() => {
+              const totals = expenseTransactions.reduce((acc, t) => { const k = t.cost_category || tr('Bez kategorii'); acc[k] = (acc[k] || 0) + Number(t.amount || 0); return acc; }, {});
+              const sorted = Object.entries(totals).sort(([, a], [, b]) => b - a);
+              const total = sorted.reduce((s, [, v]) => s + v, 0);
+              if (sorted.length === 0) return <p className="text-center text-gray-400 py-6">{tr('Brak wydatków')}</p>;
+              return (
+                <div className="space-y-2">
+                  {sorted.map(([k, v]) => {
+                    const pct = total > 0 ? (v / total) * 100 : 0;
+                    const col = expenseCategories.find((c) => c.name === k)?.color || '#6366f1';
+                    return (
+                      <div key={k}>
+                        <div className="flex justify-between text-sm mb-1"><span className="text-gray-700 dark:text-gray-300">{k}</span><span className="font-semibold text-gray-900 dark:text-white">{v.toLocaleString('pl-PL')} zł · {pct.toFixed(0)}%</span></div>
+                        <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2"><div className="h-2 rounded-full" style={{ width: `${pct}%`, background: col }} /></div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Porównanie rok do roku */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><BarChart3 size={20} className="text-accent-primary" /> {tr('Porównanie rok do roku')} ({selectedYear - 1} → {selectedYear})</h3>
+            {(() => {
+              const inNow = incomeTransactions.reduce((s, t) => s + Number(t.amount || 0), 0);
+              const exNow = expenseTransactions.reduce((s, t) => s + Number(t.amount || 0), 0);
+              const chg = (now, prev) => prev > 0 ? ((now - prev) / prev) * 100 : (now > 0 ? 100 : 0);
+              const Row = ({ label, now, prev, good }) => {
+                const c = chg(now, prev); const up = c >= 0;
+                return (
+                  <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-400">{prev.toLocaleString('pl-PL')} → </span>
+                      <span className="font-bold text-gray-900 dark:text-white">{now.toLocaleString('pl-PL')} zł</span>
+                      <span className={`text-xs font-semibold ${((up && good) || (!up && !good)) ? 'text-green-600' : 'text-red-600'}`}>{up ? '▲' : '▼'} {Math.abs(c).toFixed(0)}%</span>
+                    </div>
+                  </div>
+                );
+              };
+              return (<div>
+                <Row label={tr('Przychody')} now={inNow} prev={prevYearTotals.income} good />
+                <Row label={tr('Wydatki')} now={exNow} prev={prevYearTotals.expense} good={false} />
+                <Row label={tr('Bilans')} now={inNow - exNow} prev={prevYearTotals.income - prevYearTotals.expense} good />
+              </div>);
+            })()}
+          </div>
         </section>
       )}
 
@@ -2480,6 +2561,25 @@ const FinanceModule = () => {
                 </div>
               </div>
             ))}
+
+            {/* Kontrahenci */}
+            <div className="mt-2 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <div className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">{tr('Kontrahenci')}</div>
+              <div className="flex gap-2 mb-2">
+                <input value={vendorName} onChange={(e) => setVendorName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && vendorName.trim()) { addVendor(vendorName); setVendorName(''); } }}
+                  placeholder={tr('np. Sklep muzyczny')} className="flex-1 min-w-0 text-sm bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2 py-1.5 outline-none text-gray-800 dark:text-gray-100" />
+                <button onClick={() => { if (vendorName.trim()) { addVendor(vendorName); setVendorName(''); } }} className="px-3 rounded-lg bg-accent-primary text-white text-sm shrink-0">{tr('Dodaj')}</button>
+              </div>
+              <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
+                {vendors.length === 0 && <div className="text-sm text-gray-400">{tr('Brak kontrahentów (dodają się też automatycznie z wydatków).')}</div>}
+                {vendors.map((v) => (
+                  <div key={v.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700">
+                    <span className="text-sm flex-1 truncate text-gray-800 dark:text-gray-100">{v.name}</span>
+                    <button onClick={() => deleteVendor(v.id)} className="text-red-500 hover:text-red-600 p-1" title={tr('Usuń')}><Trash2 size={14} /></button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>,
         document.body
