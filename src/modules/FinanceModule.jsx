@@ -1138,30 +1138,51 @@ const FinanceModule = () => {
             </div>
           </div>
 
-          {/* Planowane przychody (kind='income') */}
+          {/* Planowane PRZYCHODY (kind='income') — ten sam układ kolumn co wydatki */}
           {incomeBudgetItems.length > 0 && (
-            <div className="mb-5 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/10 text-sm font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2"><ArrowUpRight size={16} /> {tr('Planowane przychody')}</div>
-              <table className="w-full text-sm">
-                <tbody>
-                  {incomeBudgetItems.map((it) => {
-                    const real = calculateIncomeRealization(it.category);
-                    const pct = it.planned_amount ? Math.round((real / Number(it.planned_amount)) * 100) : 0;
-                    return (
-                      <tr key={it.id} className="border-t border-gray-100 dark:border-gray-800">
-                        <td className="py-2.5 px-4 font-medium text-gray-800 dark:text-gray-100">{it.category}</td>
-                        <td className="py-2.5 px-4 text-gray-500 dark:text-gray-400">{it.description}</td>
-                        <td className="py-2.5 px-4 text-right text-gray-700 dark:text-gray-200">{tr('plan')}: {Number(it.planned_amount).toLocaleString('pl-PL')} zł</td>
-                        <td className="py-2.5 px-4 text-right text-emerald-600 font-semibold">{real.toLocaleString('pl-PL')} zł ({pct}%)</td>
-                        <td className="py-2.5 px-4 text-center whitespace-nowrap">
-                          <button onClick={() => { setBudgetForm({ ...it, planned_amount: String(it.planned_amount) }); setShowBudgetModal(true); }} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg" title={tr('Edytuj')}><Edit2 size={15} /></button>
-                          <button onClick={() => deleteBudgetItem(it.id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg" title={tr('Usuń')}><Trash2 size={15} /></button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="mb-6 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="px-4 py-2.5 bg-emerald-50 dark:bg-emerald-900/10 text-sm font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2"><ArrowUpRight size={16} /> {tr('Planowane przychody')}</div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 text-xs uppercase text-gray-500 dark:text-gray-400">
+                      <th className="text-left py-3 px-4 font-medium">{tr('Kategoria')}</th>
+                      <th className="text-left py-3 px-4 font-medium">{tr('Opis')}</th>
+                      <th className="text-right py-3 px-4 font-medium">{tr('Plan (PLN)')}</th>
+                      <th className="text-right py-3 px-4 font-medium">{tr('Realizacja (PLN)')}</th>
+                      <th className="text-center py-3 px-4 font-medium">{tr('% Realizacji')}</th>
+                      <th className="text-right py-3 px-4 font-medium">{tr('Akcje')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {incomeBudgetItems.map((it) => {
+                      const planned = Number(it.planned_amount || 0);
+                      const real = calculateIncomeRealization(it.category);
+                      const pct = planned > 0 ? Math.round((real / planned) * 100) : 0;
+                      return (
+                        <tr key={it.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                          <td className="py-4 px-4 font-bold text-gray-900 dark:text-white">{it.category}</td>
+                          <td className="py-4 px-4 text-gray-600 dark:text-gray-400">{it.description}</td>
+                          <td className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium">{planned.toLocaleString('pl-PL')} zł</td>
+                          <td className="py-4 px-4 text-right text-emerald-600 font-medium">{real.toLocaleString('pl-PL')} zł</td>
+                          <td className="py-4 px-4 text-center text-gray-900 dark:text-white">{pct}%</td>
+                          <td className="py-4 px-4 text-right whitespace-nowrap">
+                            <button onClick={() => { setBudgetForm({ ...it, planned_amount: String(it.planned_amount) }); setShowBudgetModal(true); }} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg" title={tr('Edytuj')}><Edit2 size={16} /></button>
+                            <button onClick={() => deleteBudgetItem(it.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg" title={tr('Usuń')}><Trash2 size={16} /></button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="bg-emerald-50/60 dark:bg-emerald-900/10 border-t-2 border-emerald-200 dark:border-emerald-900/40 font-bold">
+                      <td className="py-3 px-4 text-gray-900 dark:text-white" colSpan={2}>{tr('Suma przychodów')}</td>
+                      <td className="py-3 px-4 text-right text-gray-900 dark:text-white">{totalPlannedIncome.toLocaleString('pl-PL')} zł</td>
+                      <td className="py-3 px-4 text-right text-emerald-600">{incomeBudgetItems.reduce((s, it) => s + calculateIncomeRealization(it.category), 0).toLocaleString('pl-PL')} zł</td>
+                      <td className="py-3 px-4"></td>
+                      <td className="py-3 px-4"></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -1185,8 +1206,10 @@ const FinanceModule = () => {
             <Spinner center />
           ) : budgetItems.length === 0 ? (
             <EmptyState title={`Brak pozycji budżetowych na rok ${selectedYear}`} />
-          ) : (
-            <div className="overflow-x-auto">
+          ) : expenseBudgetItems.length === 0 ? null : (
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="px-4 py-2.5 bg-red-50 dark:bg-red-900/10 text-sm font-bold text-red-700 dark:text-red-300 flex items-center gap-2"><ArrowDownRight size={16} /> {tr('Planowane wydatki')}</div>
+              <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
@@ -1228,11 +1251,12 @@ const FinanceModule = () => {
                       }, 0);
 
                       items.forEach((item, itemIndex) => {
+                        const planned = Number(item.planned_amount || 0);
                         const realization = calculateRealization(item.category, item.description);
-                        const percentage = item.planned_amount > 0 ? (realization / item.planned_amount) * 100 : 0;
-                        const remaining = item.planned_amount - realization;
+                        const percentage = planned > 0 ? (realization / planned) * 100 : 0;
+                        const remaining = planned - realization;
 
-                        categoryTotalPlanned += item.planned_amount;
+                        categoryTotalPlanned += planned;
                         categoryTotalRealization += realization;
                         categoryTotalRemaining += remaining;
 
@@ -1251,7 +1275,7 @@ const FinanceModule = () => {
                             )}
                             <td className="py-4 px-4 text-gray-600 dark:text-gray-400">{item.description}</td>
                             <td className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium">
-                              {item.planned_amount.toLocaleString('pl-PL')} zł
+                              {Number(item.planned_amount || 0).toLocaleString('pl-PL')} zł
                             </td>
                             <td
                               className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium cursor-pointer hover:text-accent-primary dark:hover:text-accent-primary-light transition"
@@ -1430,6 +1454,7 @@ const FinanceModule = () => {
                   })()}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 
@@ -1437,12 +1462,9 @@ const FinanceModule = () => {
           <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"><FileText size={18} /> {tr('Propozycje do budżetu')}</h3>
-              <button onClick={() => { setProposalForm(emptyProposal); setShowProposalModal(true); }} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm">
-                <Plus size={16} /> {tr('Zgłoś propozycję')}
-              </button>
             </div>
             {proposals.filter((p) => p.status === 'pending').length === 0 ? (
-              <p className="text-sm text-gray-400">{tr('Brak oczekujących propozycji. Liderzy służb mogą zgłaszać propozycje do budżetu.')}</p>
+              <p className="text-sm text-gray-400">{tr('Brak oczekujących propozycji. Liderzy służb zgłaszają je z zakładki Finanse w swoim module.')}</p>
             ) : (
               <div className="space-y-2">
                 {proposals.filter((p) => p.status === 'pending').map((p) => (
@@ -2657,21 +2679,33 @@ const FinanceModule = () => {
                   </button>
                 ))}
               </div>
-              <CustomSelect
-                label={tr('Kategoria (Służba)')}
-                value={budgetForm.category}
-                onChange={(val) => setBudgetForm({...budgetForm, category: val})}
-                options={serviceOptions.length > 0 ? serviceOptions : [
-                  // Fallback (gdyby app_modules się nie wczytało). WARTOŚĆ = team_type modułu.
-                  { value: 'Grupa Uwielbienia', label: tr('Grupa Uwielbienia') },
-                  { value: 'MediaTeam', label: tr('MediaTeam') },
-                  { value: 'AtmosferaTeam', label: 'AtmosferaTeam' },
-                  { value: 'Grupy domowe', label: tr('Grupy domowe') },
-                  { value: 'małe Avenit', label: tr('małe Avenit') },
-                  { value: 'Mlodziezowka', label: tr('Młodzieżówka') }
-                ]}
-                placeholder={t('Wybierz służbę')}
-              />
+              {(budgetForm.kind || 'expense') === 'income' ? (
+                <CustomSelect
+                  label={tr('Kategoria wpływu')}
+                  value={budgetForm.category}
+                  onChange={(val) => setBudgetForm({ ...budgetForm, category: val })}
+                  options={incomeCategories.length > 0
+                    ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
+                    : [{ value: 'Kolekta', label: 'Kolekta' }, { value: 'Darowizny', label: 'Darowizny' }, { value: 'Inne', label: tr('Inne') }]}
+                  placeholder={tr('Wybierz kategorię')}
+                />
+              ) : (
+                <CustomSelect
+                  label={tr('Kategoria (Służba)')}
+                  value={budgetForm.category}
+                  onChange={(val) => setBudgetForm({...budgetForm, category: val})}
+                  options={serviceOptions.length > 0 ? serviceOptions : [
+                    // Fallback (gdyby app_modules się nie wczytało). WARTOŚĆ = team_type modułu.
+                    { value: 'Grupa Uwielbienia', label: tr('Grupa Uwielbienia') },
+                    { value: 'MediaTeam', label: tr('MediaTeam') },
+                    { value: 'AtmosferaTeam', label: 'AtmosferaTeam' },
+                    { value: 'Grupy domowe', label: tr('Grupy domowe') },
+                    { value: 'małe Avenit', label: tr('małe Avenit') },
+                    { value: 'Mlodziezowka', label: tr('Młodzieżówka') }
+                  ]}
+                  placeholder={t('Wybierz służbę')}
+                />
+              )}
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
                 <textarea
