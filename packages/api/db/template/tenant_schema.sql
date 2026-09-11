@@ -1564,7 +1564,8 @@ CREATE TABLE IF NOT EXISTS materials_folders (
     parent_id UUID REFERENCES materials_folders(id) ON DELETE CASCADE,
     team_type TEXT,
     created_by TEXT,                 -- e-mail autora (frontend zapisuje user.email)
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_materials_folders_tenant ON materials_folders(tenant_id);
 CREATE TABLE IF NOT EXISTS materials_files (
@@ -1578,7 +1579,10 @@ CREATE TABLE IF NOT EXISTS materials_files (
     file_size INTEGER,
     mime_type TEXT,
     uploaded_by TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    description TEXT,
+    download_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_materials_files_tenant ON materials_files(tenant_id);
 -- =====================================================
