@@ -31,6 +31,13 @@ describe('PageHeader', () => {
     expect(container.querySelector('.backdrop-blur-md')).toBeNull(); // gradient, nie glass
   });
 
+  it('jasna okładka (pastel) → ciemny tytuł, bez ciemnego scrimu', () => {
+    _cover = { type: 'gradient', value: 'linear-gradient(120deg,#f6f9fc,#e9eef5)' };
+    const { container } = render(<PageHeader icon={Gift} title="X" />);
+    expect(container.querySelector('h1').className).toContain('text-gray-900');
+    expect(container.querySelector('h1').className).not.toContain('text-white');
+  });
+
   it('styl glass: matowy pasek (backdrop-blur) pod tytułem', () => {
     _cover = { type: 'color', value: '#334155', style: 'glass' };
     const { container } = render(<PageHeader icon={Gift} title="X" />);
