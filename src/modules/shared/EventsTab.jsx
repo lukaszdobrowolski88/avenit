@@ -364,6 +364,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(null);
   const [searchFilter, setSearchFilter] = useState('');
+  const [rsvpMap, setRsvpMap] = useState({}); // event_id -> { count, mine } (RSVP wydarzeń modułu)
   const [typeFilter, setTypeFilter] = useState('');
   const [tableExists, setTableExists] = useState(true);
   const [userEmail, setUserEmail] = useState(propUserEmail || null);
@@ -386,6 +387,33 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   useEffect(() => {
     fetchEvents();
   }, [selectedCampusId]);
+
+  // ── RSVP / obecność na wydarzeniach modułu ──
+  const fetchRsvp = async (evs) => {
+    const ids = (evs || []).map((e) => e.id);
+    if (!ids.length) { setRsvpMap({}); return; }
+    try {
+      const { data } = await supabase.from('event_registrations').select('event_id, user_email, status').in('event_id', ids);
+      const m = {};
+      (data || []).forEach((r) => {
+        if (r.status === 'not_going') return;
+        if (!m[r.event_id]) m[r.event_id] = { count: 0, mine: false };
+        m[r.event_id].count += 1;
+        if ((r.user_email || '').toLowerCase() === (userEmail || '').toLowerCase()) m[r.event_id].mine = true;
+      });
+      setRsvpMap(m);
+    } catch { setRsvpMap({}); }
+  };
+  useEffect(() => { fetchRsvp(events); /* eslint-disable-next-line */ }, [events, userEmail]);
+  const toggleRsvp = async (ev) => {
+    if (!userEmail) { toast.error(tr('Zaloguj się, aby potwierdzić obecność')); return; }
+    const mine = rsvpMap[ev.id]?.mine;
+    try {
+      if (mine) await supabase.from('event_registrations').delete().eq('event_id', ev.id).eq('user_email', userEmail);
+      else await supabase.from('event_registrations').insert([{ event_id: ev.id, user_email: userEmail, full_name: userEmail.split('@')[0], status: 'going' }]);
+      fetchRsvp(events);
+    } catch (e) { toast.error(e.message); }
+  };
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -676,9 +704,18 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                           </div>
 
                           {/* Akcje */}
-                          <button className="opacity-0 group-hover:opacity-100 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-                            <Edit2 size={16} className="text-gray-400" />
-                          </button>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleRsvp(ev); }}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition ${rsvpMap[ev.id]?.mine ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                              title={tr('Potwierdź obecność')}
+                            >
+                              <Users size={14} /> {rsvpMap[ev.id]?.mine ? tr('Będę') : tr('Potwierdź')}{rsvpMap[ev.id]?.count ? ` · ${rsvpMap[ev.id].count}` : ''}
+                            </button>
+                            <button className="opacity-0 group-hover:opacity-100 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                              <Edit2 size={16} className="text-gray-400" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
