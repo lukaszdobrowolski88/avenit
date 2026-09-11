@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Image, File, Music, Video, Archive, Download, Trash2, Eye, Pencil } from 'lucide-react';
+import { FileText, Image, File, Music, Video, Archive, Download, Trash2, Eye, Pencil, Share2 } from 'lucide-react';
 import { tr } from '../../../i18n';
 
 // Formatowanie rozmiaru pliku
@@ -61,6 +61,7 @@ export default function FileCard({
   onDelete,
   onPreview,
   onRename,
+  onShare,
   canDelete = false,
   getFileUrl
 }) {
@@ -154,6 +155,15 @@ export default function FileCard({
           >
             <Download size={16} />
           </button>
+          {onShare && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onShare(file); }}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-accent-primary transition-all duration-200"
+              title={tr('Udostępnij')}
+            >
+              <Share2 size={16} />
+            </button>
+          )}
           {onRename && (
             <button
               onClick={(e) => { e.stopPropagation(); onRename(file); }}

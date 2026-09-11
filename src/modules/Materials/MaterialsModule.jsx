@@ -1,12 +1,14 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { FolderOpen, Folder, Search, X, ChevronRight, Home, Layers, Pencil } from 'lucide-react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { FolderOpen, Folder, Search, X, ChevronRight, Home, Layers, Pencil, Share2, Users2 } from 'lucide-react';
 import useFolders from './hooks/useFolders';
 import useMaterials from './hooks/useMaterials';
+import useShares from './hooks/useShares';
 import FolderTree from './components/FolderTree';
 import FileList from './components/FileList';
 import FileUploader from './components/FileUploader';
 import FolderModal from './components/FolderModal';
 import FilePreviewModal from './components/FilePreviewModal';
+import ShareModal from './components/ShareModal';
 import { tr } from '../../i18n';
 
 export default function MaterialsModule({ ministryKey = null, canEdit = false }) {
@@ -14,6 +16,8 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [viewAll, setViewAll] = useState(false); // „Wszystkie pliki" (płasko, także z podfolderów)
+  const [viewShared, setViewShared] = useState(false); // „Udostępnione mi"
+  const [sharingItem, setSharingItem] = useState(null); // {file_id|folder_id, name}
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [editingFolder, setEditingFolder] = useState(null);
   const [parentFolderForNew, setParentFolderForNew] = useState(null);
@@ -33,6 +37,9 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
     findFolderById,
     getFolderPath
   } = useFolders(ministryKey);
+
+  const shares = useShares();
+  useEffect(() => { if (viewShared) shares.fetchSharedWithMe(); /* eslint-disable-next-line */ }, [viewShared]);
 
   const materialsFolderArg = viewAll ? '__ALL__' : selectedFolderId;
   const {
@@ -78,6 +85,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
 
   const openFolder = useCallback((folderId) => {
     setViewAll(false);
+    setViewShared(false);
     setSelectedFolderId(folderId);
     setSearchQuery('');
     setIsSearching(false);
@@ -131,8 +139,11 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
     }
   }, [previewFile, imageFiles, getFileUrl]);
 
+  const handleShareFile = useCallback((file) => setSharingItem({ file_id: file.id, name: file.name }), []);
   const currentPreviewIndex = previewFile ? imageFiles.findIndex(f => f.id === previewFile.id) : -1;
-  const showFolderChrome = !viewAll && !isSearching;
+  const showFolderChrome = !viewAll && !viewShared && !isSearching;
+  const displayFiles = viewShared ? shares.sharedFiles : files;
+  const displayLoading = viewShared ? shares.loadingShared : filesLoading;
 
   return (
     <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -182,14 +193,21 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
           <div className="p-4 h-full overflow-y-auto">
             {/* „Wszystkie pliki" (płasko) */}
             <button
-              onClick={() => { setViewAll(true); setSearchQuery(''); setIsSearching(false); setShowMobileFolders(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium mb-2 ${viewAll ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              onClick={() => { setViewAll(true); setViewShared(false); setSearchQuery(''); setIsSearching(false); setShowMobileFolders(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium mb-1 ${viewAll ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
             >
               <Layers size={16} /> {tr('Wszystkie pliki')}
             </button>
+            {/* „Udostępnione mi" */}
+            <button
+              onClick={() => { setViewShared(true); setViewAll(false); setSearchQuery(''); setIsSearching(false); setShowMobileFolders(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium mb-2 ${viewShared ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+            >
+              <Users2 size={16} /> {tr('Udostępnione mi')}
+            </button>
             <FolderTree
               folders={folders}
-              selectedId={viewAll ? null : selectedFolderId}
+              selectedId={(viewAll || viewShared) ? null : selectedFolderId}
               onSelect={openFolder}
               onCreateFolder={handleCreateFolder}
               onRenameFolder={handleRenameFolder}
@@ -211,7 +229,9 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
 
           {/* Breadcrumbs / kontekst */}
           <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-800/60 flex items-center gap-1 text-sm overflow-x-auto">
-            {viewAll ? (
+            {viewShared ? (
+              <span className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-200"><Users2 size={15} /> {tr('Udostępnione mi')}</span>
+            ) : viewAll ? (
               <span className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-200"><Layers size={15} /> {tr('Wszystkie pliki')}</span>
             ) : isSearching ? (
               <span className="text-amber-700 dark:text-amber-300">{tr('Wyniki wyszukiwania')}: <strong>"{searchQuery}"</strong> <button onClick={handleClearSearch} className="ml-1 underline">{tr('Wyczyść')}</button></span>
@@ -241,7 +261,10 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
                       {f.children?.length > 0 && <div className="text-[11px] text-gray-400">{f.children.length} {tr('podfolderów')}</div>}
                     </div>
                     {canEdit && (
-                      <span onClick={(e) => { e.stopPropagation(); handleRenameFolder(f.id, f.name); }} className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-accent-primary p-1" title={tr('Zmień nazwę')}><Pencil size={13} /></span>
+                      <span className="flex items-center opacity-0 group-hover:opacity-100">
+                        <span onClick={(e) => { e.stopPropagation(); setSharingItem({ folder_id: f.id, name: f.name }); }} className="text-gray-400 hover:text-accent-primary p-1" title={tr('Udostępnij')}><Share2 size={13} /></span>
+                        <span onClick={(e) => { e.stopPropagation(); handleRenameFolder(f.id, f.name); }} className="text-gray-400 hover:text-accent-primary p-1" title={tr('Zmień nazwę')}><Pencil size={13} /></span>
+                      </span>
                     )}
                   </button>
                 ))}
@@ -249,14 +272,16 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
             )}
 
             <FileList
-              files={files}
-              loading={filesLoading}
+              files={displayFiles}
+              loading={displayLoading}
               onPreview={handlePreviewFile}
               onDownload={downloadFile}
-              onDelete={handleDeleteFile}
-              onRename={canEdit ? handleRenameFile : undefined}
-              canDelete={canEdit}
+              onDelete={(!viewShared && canEdit) ? handleDeleteFile : undefined}
+              onRename={(!viewShared && canEdit) ? handleRenameFile : undefined}
+              onShare={(!viewShared && canEdit) ? handleShareFile : undefined}
+              canDelete={!viewShared && canEdit}
               getFileUrl={getFileUrl}
+              emptyMessage={viewShared ? tr('Nikt nie udostępnił Ci jeszcze plików.') : tr('Brak plików w tym folderze')}
             />
           </div>
         </div>
@@ -269,6 +294,13 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
         mode={editingFolder ? 'rename' : 'create'}
         initialName={editingFolder?.name || ''}
         parentFolderName={parentFolderForNew ? (flatFolders.find(f => f.id === parentFolderForNew)?.name || null) : null}
+      />
+
+      <ShareModal
+        isOpen={!!sharingItem}
+        onClose={() => setSharingItem(null)}
+        item={sharingItem}
+        shares={shares}
       />
 
       <FilePreviewModal

@@ -1585,6 +1585,20 @@ CREATE TABLE IF NOT EXISTS materials_files (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_materials_files_tenant ON materials_files(tenant_id);
+-- Udostępnianie plików/folderów osobom/grupom/grupom domowym.
+CREATE TABLE IF NOT EXISTS materials_shares (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    tenant_id UUID,
+    file_id UUID REFERENCES materials_files(id) ON DELETE CASCADE,
+    folder_id UUID REFERENCES materials_folders(id) ON DELETE CASCADE,
+    target_type TEXT NOT NULL,        -- user | group | home_group
+    target_id TEXT NOT NULL,          -- e-mail lub uuid
+    target_label TEXT,
+    permission TEXT DEFAULT 'view',
+    created_by TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_materials_shares_target ON materials_shares (target_type, target_id);
 -- =====================================================
 -- 11. MEDIA TASKS
 -- =====================================================

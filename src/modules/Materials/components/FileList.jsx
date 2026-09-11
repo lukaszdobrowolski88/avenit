@@ -10,6 +10,7 @@ export default function FileList({
   onDelete,
   onPreview,
   onRename,
+  onShare,
   canDelete = false,
   getFileUrl,
   emptyMessage = tr('Brak plików w tym folderze')
@@ -58,6 +59,7 @@ export default function FileList({
           onDelete={onDelete}
           onPreview={onPreview}
           onRename={onRename}
+          onShare={onShare}
           canDelete={canDelete}
           getFileUrl={getFileUrl}
         />
