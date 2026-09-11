@@ -196,6 +196,14 @@ const TEAM_TYPE_BY_KEY = {
   mlodziezowka: 'Mlodziezowka',
 };
 
+// Moduły SYSTEMOWE/techniczne — pomijane na liście „Kategoria (Służba)" budżetu.
+// Denylista (a nie allowlista) — dzięki temu WŁASNE moduły użytkownika zawsze się pokażą.
+const SYSTEM_MODULE_KEYS = new Set([
+  'dashboard', 'settings', 'analytics', 'automation', 'ai', 'members',
+  'calendar', 'komunikator', 'mail', 'mailing', 'push_campaigns', 'sms_campaigns',
+  'programs', 'boards', 'rooms', 'attendance', 'rsvp', 'finance', 'care',
+]);
+
 const FinanceModule = () => {
   const t = useT();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
@@ -210,7 +218,7 @@ const FinanceModule = () => {
       try {
         const { data } = await supabase.from('app_modules').select('key, label, display_order').order('display_order', { ascending: true });
         const opts = (data || [])
-          .filter((m) => m.label)
+          .filter((m) => m.label && !SYSTEM_MODULE_KEYS.has(m.key))
           .map((m) => ({ value: TEAM_TYPE_BY_KEY[m.key] || m.label, label: m.label }));
         setServiceOptions(opts);
       } catch { /* zostaje fallback w dropdownie */ }
