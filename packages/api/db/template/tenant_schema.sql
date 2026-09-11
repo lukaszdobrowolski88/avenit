@@ -619,7 +619,14 @@ CREATE TABLE IF NOT EXISTS equipment (
     location TEXT,
     photo_url TEXT,
     is_available BOOLEAN DEFAULT true,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    -- Pola używane przez frontend (shared/EquipmentTab): ilość/wartość/osoba/notatki/autor + updated_at (trigger).
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit_value DECIMAL(10,2) DEFAULT 0,
+    responsible_person TEXT,
+    notes TEXT,
+    created_by TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_equipment_tenant ON equipment(tenant_id);
 -- =====================================================
@@ -1480,7 +1487,7 @@ CREATE TABLE IF NOT EXISTS materials_folders (
     name TEXT NOT NULL,
     parent_id UUID REFERENCES materials_folders(id) ON DELETE CASCADE,
     team_type TEXT,
-    created_by UUID,
+    created_by TEXT,                 -- e-mail autora (frontend zapisuje user.email)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_materials_folders_tenant ON materials_folders(tenant_id);
@@ -1489,11 +1496,12 @@ CREATE TABLE IF NOT EXISTS materials_files (
     tenant_id UUID,
     folder_id UUID REFERENCES materials_folders(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    file_type TEXT,
-    size INTEGER,
     storage_path TEXT,
     team_type TEXT,
-    created_by UUID,
+    -- Pola używane przez frontend (modules/Materials): rozmiar/typ MIME/autor (e-mail).
+    file_size INTEGER,
+    mime_type TEXT,
+    uploaded_by TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_materials_files_tenant ON materials_files(tenant_id);
