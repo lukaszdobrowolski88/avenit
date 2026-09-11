@@ -130,6 +130,11 @@ export const REGISTRY = {
   finance_tags: T('module:finance'),
   finance_recurring: T('module:finance'),
   finance_vendors: T('module:finance'),
+  budget_audit: T('module:finance'),
+  budget_versions: T('module:finance'),
+  // Propozycje budżetu: każdy zalogowany może ZGŁOSIĆ (lider służby bez dostępu do
+  // Finansów); zatwierdzanie do budżetu i tak wymaga zapisu budget_items (module:finance).
+  budget_proposals: T(null),
 
   // ── Nauczanie / modlitwa / młodzieżówka ────────────────────────────────
   teachings: T('module:teaching'),
