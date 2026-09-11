@@ -53,7 +53,6 @@ const AttendanceModule = lazy(() => import('./modules/Attendance/AttendanceModul
 const AnalyticsModule = lazy(() => import('./modules/Analytics/AnalyticsModule'));
 const AutomationModule = lazy(() => import('./modules/Automation/AutomationModule'));
 const AiAssistantModule = lazy(() => import('./modules/AI/AiAssistantModule'));
-const CareModule = lazy(() => import('./modules/Care/CareModule'));
 const RoomsModule = lazy(() => import('./modules/Rooms/RoomsModule'));
 const ServeModule = lazy(() => import('./modules/Serve/ServeModule'));
 const RsvpModule = lazy(() => import('./modules/Rsvp/RsvpModule'));
@@ -536,9 +535,8 @@ function AppInner() {
                 } />
                 {/* Kazania wtopione w Nauczanie — /sermons przekierowuje (brak osobnego modułu) */}
                 <Route path="/sermons" element={<Navigate to="/teaching" replace />} />
-                <Route path="/care" element={
-                  <ProtectedRoute resource="module:care"><CareModule /></ProtectedRoute>
-                } />
+                {/* Opieka/CRM scalona z Członkami (opieka per-członek w profilu, pola własne w zakładce Opieka). */}
+                <Route path="/care" element={<Navigate to="/members" replace />} />
                 <Route path="/rooms" element={
                   <ProtectedRoute resource="module:rooms"><RoomsModule /></ProtectedRoute>
                 } />

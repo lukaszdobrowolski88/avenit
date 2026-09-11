@@ -25,6 +25,8 @@ export const RESOURCE_LABELS = {
   // Członkowie
   members: 'Członkowie', attendance: 'Obecność', households: 'Gospodarstwa domowe',
   parent_contacts: 'Kontakty rodziców', groups: 'Grupy', group_members: 'Członkowie grup',
+  member_notes: 'Notatki (opieka)', member_care_log: 'Dziennik opieki', member_milestones: 'Kamienie milowe',
+  member_tags: 'Tagi członków', member_custom_fields: 'Pola własne (definicje)', member_custom_values: 'Pola własne (wartości)',
   // Grupy domowe
   home_groups: 'Grupy domowe', home_group_leaders: 'Liderzy grup domowych',
   home_group_members: 'Członkowie grup domowych', homegroups_events: 'Wydarzenia grup domowych',
@@ -115,7 +117,7 @@ export const MODULES = [
   },
   {
     key: 'members', label: 'Członkowie',
-    resources: ['members', 'attendance', 'households', 'parent_contacts', 'groups', 'group_members'],
+    resources: ['members', 'attendance', 'households', 'parent_contacts', 'groups', 'group_members', 'member_notes', 'member_care_log', 'member_milestones', 'member_tags', 'member_custom_fields', 'member_custom_values'],
     tabs: [],
     actions: [
       { key: 'import', label: 'Import członków' },
