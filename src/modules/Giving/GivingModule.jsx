@@ -65,7 +65,7 @@ export default function GivingModule() {
       <PageHeader moduleKey="giving" icon={Gift} title="Dawanie" subtitle="Darowizny, dawanie cykliczne, kampanie i zestawienia roczne" />
 
       {/* Zakładki */}
-      <ResponsiveTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="giving" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

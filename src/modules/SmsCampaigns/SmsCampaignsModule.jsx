@@ -79,7 +79,7 @@ export default function SmsCampaignsModule() {
       <PageHeader moduleKey="sms_campaigns" icon={MessageSquare} title={tr('SMS Kampanie')}
         subtitle={tr('Twórz, planuj i analizuj kampanie SMS przez bramkę SMSAPI.pl.')} />
 
-      <ResponsiveTabs tabs={TABS.map((x) => ({ ...x, label: t(x.label) }))} activeTab={tab} onChange={setTab} />
+      <ResponsiveTabs moduleKey="sms_campaigns" tabs={TABS.map((x) => ({ ...x, label: t(x.label) }))} activeTab={tab} onChange={setTab} />
 
       {tab === 'campaigns' && (
         loading ? (

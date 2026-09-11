@@ -703,7 +703,7 @@ export default function HomeGroupsModule() {
       <PageHeader moduleKey="homegroups" icon={Home} title="Grupy Domowe" />
 
       {/* Tabs */}
-      <ResponsiveTabs
+      <ResponsiveTabs moduleKey="homegroups"
         tabs={[
           { id: 'groups', label: t('Grupy'), icon: Users },
           { id: 'tasks', label: t('Zadania'), icon: CheckSquare },

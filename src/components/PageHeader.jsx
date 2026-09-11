@@ -74,7 +74,11 @@ export default function PageHeader({ icon: Icon, title, subtitle, actions, iconC
           <h1 className="text-xl font-bold text-gray-900 dark:text-white truncate tracking-tight">{dynamicTitle}</h1>
           {subtitle && <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{subtitle}</p>}
         </div>
-        {actions && <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">{actions}</div>}
+        <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
+          {actions}
+          {/* Bez baneru wciąż da się wejść w ustawienia okładki (inaczej „off" = brak wejścia). */}
+          {cover && moduleKey && <CoverPicker moduleKey={moduleKey} />}
+        </div>
       </div>
     );
   }

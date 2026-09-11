@@ -100,6 +100,7 @@ export default function CustomModule() {
 
       {visibleTabs.length > 0 && (
         <ResponsiveTabs
+          moduleKey={module?.key}
           tabs={visibleTabs.map((tab) => ({ id: tab.key, label: tab.label, icon: getIconComponent(tab.icon) }))}
           activeTab={activeTab}
           onChange={setActiveTab}

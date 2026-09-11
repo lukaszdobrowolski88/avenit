@@ -74,7 +74,7 @@ export default function ServeModule() {
       <PageHeader moduleKey="serve" icon={CalendarCheck} title="Służba" subtitle="Dostępność wolontariuszy i ewidencja wykonań pieśni (CCLI)" />
 
       {/* Zakładki */}
-      <ResponsiveTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="serve" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

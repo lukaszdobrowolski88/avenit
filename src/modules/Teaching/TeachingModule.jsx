@@ -1089,7 +1089,7 @@ export default function TeachingModule() {
       <PageHeader moduleKey="teaching" icon={GraduationCap} title="Nauczanie" />
 
       {/* TAB NAVIGATION */}
-      <ResponsiveTabs
+      <ResponsiveTabs moduleKey="teaching"
         tabs={[
           { id: 'wall', label: tr('Tablica'), icon: MessageSquare },
           { id: 'schedule', label: tr('Grafik'), icon: Calendar, tour: 'teaching-schedule-tab' },

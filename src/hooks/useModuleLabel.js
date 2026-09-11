@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 let _labels = null;   // { key: label }
 let _colors = null;   // { key: '#hex' }
 let _covers = null;   // { key: {type:'color'|'gradient'|'image', value} }
+let _tabs = null;     // { key: { order: [id...], default: 'id' } }
 let _inflight = null;
 const _subs = new Set();
 
@@ -18,7 +19,7 @@ async function loadAll() {
     try {
       const [mods, settings] = await Promise.all([
         supabase.from('app_modules').select('key, label'),
-        supabase.from('app_settings').select('key, value').in('key', ['module_colors', 'module_covers']),
+        supabase.from('app_settings').select('key, value').in('key', ['module_colors', 'module_covers', 'module_tabs']),
       ]);
       const lab = {};
       (mods.data || []).forEach((m) => { if (m.key) lab[m.key] = m.label; });
@@ -27,8 +28,9 @@ async function loadAll() {
       (settings.data || []).forEach((s) => { sMap[s.key] = s.value; });
       try { _colors = JSON.parse(sMap['module_colors'] || '{}') || {}; } catch { _colors = {}; }
       try { _covers = JSON.parse(sMap['module_covers'] || '{}') || {}; } catch { _covers = {}; }
+      try { _tabs = JSON.parse(sMap['module_tabs'] || '{}') || {}; } catch { _tabs = {}; }
     } catch {
-      _labels = _labels || {}; _colors = _colors || {}; _covers = _covers || {};
+      _labels = _labels || {}; _colors = _colors || {}; _covers = _covers || {}; _tabs = _tabs || {};
     }
     _inflight = null;
     _subs.forEach((fn) => fn());
@@ -38,7 +40,7 @@ async function loadAll() {
 
 // Wywołać po zmianie nazwy/koloru/okładki modułu — odświeża cache i nagłówki na żywo.
 export function invalidateModuleLabels() {
-  _labels = null; _colors = null; _covers = null;
+  _labels = null; _colors = null; _covers = null; _tabs = null;
   loadAll();
 }
 
@@ -69,6 +71,11 @@ export function useModuleColor(key) {
 // Okładka modułu {type,value} lub null (wtedy PageHeader użyje koloru/gradientu marki).
 export function useModuleCover(key) {
   return useModuleData(key, () => (_covers?.[key] || null), null);
+}
+
+// Preferencje zakładek modułu { order:[id...], default:'id' } lub null.
+export function useModuleTabs(key) {
+  return useModuleData(key, () => (_tabs?.[key] || null), null);
 }
 
 // Cała mapa kolorów modułów { key: '#hex' } — jeden hook, żeby móc kolorować listę pozycji

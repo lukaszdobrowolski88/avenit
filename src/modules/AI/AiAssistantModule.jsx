@@ -20,7 +20,7 @@ export default function AiAssistantModule() {
       <PageHeader moduleKey="ai" icon={Sparkles} title="Asystent AI" subtitle="Materiały z kazań, pomoc w komunikacji i odpowiedzi na pytania — oparte na Claude" />
 
       {/* Zakładki */}
-      <ResponsiveTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="ai" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

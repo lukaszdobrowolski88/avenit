@@ -99,7 +99,7 @@ export default function CareModule() {
       <PageHeader moduleKey="care" icon={HeartPulse} title="Opieka i CRM" subtitle="Notatki, opieka duszpasterska, kamienie milowe, tagi i pola własne członków" />
 
       {/* Przełącznik widoku */}
-      <ResponsiveTabs tabs={VIEW_TABS} activeTab={view} onChange={setView} className="relative" />
+      <ResponsiveTabs moduleKey="care" tabs={VIEW_TABS} activeTab={view} onChange={setView} className="relative" />
 
       {view === 'fields' ? (
         <FieldDefsTab fields={fields} refreshFields={loadFields} />
