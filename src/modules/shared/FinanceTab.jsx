@@ -13,25 +13,35 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
   // Zgłaszanie propozycji do budżetu z poziomu zakładki Finanse zespołu.
   const [userEmail, setUserEmail] = useState('');
   useEffect(() => { supabase.auth.getUser().then(({ data }) => setUserEmail(data?.user?.email || '')).catch(() => {}); }, []);
+  const nowYear = new Date().getFullYear();
   const [showProposal, setShowProposal] = useState(false);
-  const emptyProp = { kind: 'expense', description: '', amount: '', note: '' };
+  const emptyProp = { kind: 'expense', year: nowYear, description: '', amount: '', note: '' };
   const [prop, setProp] = useState(emptyProp);
   const [savingProp, setSavingProp] = useState(false);
+  // Lista propozycji tej służby (żeby lider widział status swoich zgłoszeń).
+  const [myProposals, setMyProposals] = useState([]);
+  const fetchMyProposals = async () => {
+    try { const { data } = await supabase.from('budget_proposals').select('*').eq('team_type', ministry).order('created_at', { ascending: false }).limit(30); setMyProposals(data || []); } catch { setMyProposals([]); }
+  };
+  useEffect(() => { if (ministry) fetchMyProposals(); /* eslint-disable-next-line */ }, [ministry]);
   const submitProposal = async () => {
     if (!prop.description.trim() || !prop.amount) { toast.error(tr('Podaj opis i kwotę')); return; }
     setSavingProp(true);
     try {
-      const year = new Date().getFullYear();
-      await supabase.from('budget_proposals').insert([{
-        year, kind: prop.kind, team_type: ministry, category: ministry,
+      const { data, error } = await supabase.from('budget_proposals').insert([{
+        year: parseInt(prop.year) || nowYear, kind: prop.kind, team_type: ministry, category: ministry,
         description: prop.description.trim(), amount: parseFloat(prop.amount), note: prop.note || null,
         submitted_by: userEmail || null, status: 'pending',
-      }]);
+      }]).select();
+      if (error) throw error;
+      // Powiadomienie e-mail do zarządzających finansami (best-effort).
+      supabase.functions.invoke('budget-proposal-notify', { body: { proposalId: data?.[0]?.id, event: 'submitted' } }).catch(() => {});
       toast.success(tr('Propozycja wysłana do zatwierdzenia'));
-      setShowProposal(false); setProp(emptyProp);
+      setShowProposal(false); setProp(emptyProp); fetchMyProposals();
     } catch (e) { toast.error(tr('Błąd: ') + e.message); }
     finally { setSavingProp(false); }
   };
+  const PROP_STATUS = { pending: { l: tr('Oczekuje'), c: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' }, approved: { l: tr('Zaakceptowana'), c: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' }, rejected: { l: tr('Odrzucona'), c: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' } };
 
   const planItems = budgetItems.filter((i) => i.kind !== 'income');
 
@@ -98,6 +108,15 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
                   <button key={k} type="button" onClick={() => setProp({ ...prop, kind: k })}
                     className={`py-2 rounded-xl text-sm font-medium border transition ${prop.kind === k ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5 text-gray-800 dark:text-gray-100' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300'}`}>{l}</button>
                 ))}
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Budżet na rok')}</label>
+                <select value={prop.year} onChange={(e) => setProp({ ...prop, year: parseInt(e.target.value) })}
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                  {[nowYear, nowYear + 1, nowYear + 2].map((y) => (
+                    <option key={y} value={y}>{y === nowYear ? `${y} (${tr('bieżący')})` : y === nowYear + 1 ? `${y} (${tr('przyszły')})` : y}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Opis')}</label>
@@ -279,6 +298,28 @@ export default function FinanceTab({ ministry, budgetItems = [], expenses = [], 
             </div>
           </div>
         </>
+      )}
+
+      {/* Zgłoszone propozycje tej służby (widok lidera: status swoich zgłoszeń) */}
+      {myProposals.length > 0 && (
+        <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+          <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase mb-3">{tr('Zgłoszone propozycje')}</h3>
+          <div className="space-y-2">
+            {myProposals.map((p) => {
+              const st = PROP_STATUS[p.status] || PROP_STATUS.pending;
+              return (
+                <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${st.c}`}>{st.l}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{p.description}</div>
+                    <div className="text-xs text-gray-400">{p.kind === 'income' ? tr('Przychód') : tr('Wydatek')} · {tr('budżet')} {p.year}{p.note ? ` · ${p.note}` : ''}</div>
+                  </div>
+                  <div className="font-bold text-gray-800 dark:text-gray-100 shrink-0">{Number(p.amount || 0).toLocaleString('pl-PL')} zł</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </section>
   );

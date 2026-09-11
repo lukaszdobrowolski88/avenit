@@ -54,6 +54,7 @@ const MODULES = [
   'unlock-login',
   'sso-save-config',
   'finance-report-email',
+  'budget-proposal-notify',
 ];
 
 export async function registerFunctions(app) {

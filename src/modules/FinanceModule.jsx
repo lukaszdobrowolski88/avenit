@@ -436,9 +436,10 @@ const FinanceModule = () => {
   const emptyProposal = { kind: 'expense', team_type: '', description: '', amount: '', note: '' };
   const [proposalForm, setProposalForm] = useState(emptyProposal);
   const fetchProposals = async () => {
-    try { const { data } = await supabase.from('budget_proposals').select('*').eq('year', selectedYear).order('created_at', { ascending: false }); setProposals(data || []); } catch { setProposals([]); }
+    // Wszystkie oczekujące (dowolny rok docelowy) + ostatnie rozpatrzone — żeby nic nie zginęło.
+    try { const { data } = await supabase.from('budget_proposals').select('*').order('created_at', { ascending: false }).limit(100); setProposals(data || []); } catch { setProposals([]); }
   };
-  useEffect(() => { fetchProposals(); /* eslint-disable-next-line */ }, [selectedYear]);
+  useEffect(() => { fetchProposals(); /* eslint-disable-next-line */ }, []);
   const saveProposal = async () => {
     if (!proposalForm.team_type || !proposalForm.description.trim() || !proposalForm.amount) { toast.error(tr('Wypełnij pola')); return; }
     try {
@@ -453,18 +454,24 @@ const FinanceModule = () => {
   };
   const approveProposal = async (p) => {
     try {
+      const targetYear = p.year || selectedYear;   // pozycja trafia do budżetu ROKU DOCELOWEGO propozycji
       const { data } = await supabase.from('budget_items').insert([{
-        year: selectedYear, kind: p.kind || 'expense', category: p.category || p.team_type, team_type: p.team_type || p.category,
+        year: targetYear, kind: p.kind || 'expense', category: p.category || p.team_type, team_type: p.team_type || p.category,
         description: p.description, planned_amount: p.amount, period_type: 'year', campus_id: campusIdForInsert,
       }]).select();
       await supabase.from('budget_proposals').update({ status: 'approved' }).eq('id', p.id);
       await logBudgetAudit('created', { id: data?.[0]?.id, kind: p.kind, category: p.category || p.team_type, description: p.description, planned_amount: p.amount });
+      supabase.functions.invoke('budget-proposal-notify', { body: { proposalId: p.id, event: 'decided' } }).catch(() => {});
       fetchProposals(); fetchBudgetItems();
-      toast.success(tr('Zatwierdzono do budżetu'));
+      toast.success(tr('Zatwierdzono do budżetu') + ` (${targetYear})`);
     } catch (e) { toast.error(tr('Błąd: ') + e.message); }
   };
   const rejectProposal = async (id) => {
-    try { await supabase.from('budget_proposals').update({ status: 'rejected' }).eq('id', id); fetchProposals(); } catch (e) { toast.error(e.message); }
+    try {
+      await supabase.from('budget_proposals').update({ status: 'rejected' }).eq('id', id);
+      supabase.functions.invoke('budget-proposal-notify', { body: { proposalId: id, event: 'decided' } }).catch(() => {});
+      fetchProposals();
+    } catch (e) { toast.error(e.message); }
   };
 
   // ── Status wydatku (workflow akceptacji) ──────────────────────────────────
@@ -666,6 +673,10 @@ const FinanceModule = () => {
   const [budgetAudit, setBudgetAudit] = useState([]);
   const [budgetVersions, setBudgetVersions] = useState([]);
   const [showBudgetHistory, setShowBudgetHistory] = useState(false);
+  const [changeItem, setChangeItem] = useState(null); // [zmiany] pojedynczej pozycji do podglądu
+  // Zmiany kwoty danej pozycji (do oznaczenia „zmieniono" w tabeli).
+  const itemChanges = (id) => budgetAudit.filter((a) => a.item_id === id && a.action === 'updated'
+    && a.before && a.after && Number(a.before.planned_amount) !== Number(a.after.planned_amount));
   const logBudgetAudit = async (action, item, before) => {
     try {
       await supabase.from('budget_audit').insert([{
@@ -688,6 +699,8 @@ const FinanceModule = () => {
       fetchBudgetHistory();
     } catch (e) { toast.error(tr('Błąd zapisu wersji: ') + e.message); }
   };
+  // Audyt ładowany od razu — żeby oznaczenia „zmieniono" były widoczne bez otwierania Historii.
+  useEffect(() => { fetchBudgetHistory(); /* eslint-disable-next-line */ }, [selectedYear, budgetItems.length]);
 
   const saveBudgetItem = async () => {
     if (!budgetForm.category || !budgetForm.planned_amount) {
@@ -1163,7 +1176,14 @@ const FinanceModule = () => {
                         <tr key={it.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                           <td className="py-4 px-4 font-bold text-gray-900 dark:text-white">{it.category}</td>
                           <td className="py-4 px-4 text-gray-600 dark:text-gray-400">{it.description}</td>
-                          <td className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium">{planned.toLocaleString('pl-PL')} zł</td>
+                          <td className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium">
+                            <span className="inline-flex items-center gap-1.5 justify-end">
+                              {planned.toLocaleString('pl-PL')} zł
+                              {itemChanges(it.id).length > 0 && (
+                                <button onClick={() => setChangeItem(itemChanges(it.id))} title={tr('Kwota zmieniona — pokaż historię')} className="text-amber-500 hover:text-amber-600"><Clock size={13} /></button>
+                              )}
+                            </span>
+                          </td>
                           <td className="py-4 px-4 text-right text-emerald-600 font-medium">{real.toLocaleString('pl-PL')} zł</td>
                           <td className="py-4 px-4 text-center text-gray-900 dark:text-white">{pct}%</td>
                           <td className="py-4 px-4 text-right whitespace-nowrap">
@@ -1275,7 +1295,14 @@ const FinanceModule = () => {
                             )}
                             <td className="py-4 px-4 text-gray-600 dark:text-gray-400">{item.description}</td>
                             <td className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium">
-                              {Number(item.planned_amount || 0).toLocaleString('pl-PL')} zł
+                              <span className="inline-flex items-center gap-1.5 justify-end">
+                                {Number(item.planned_amount || 0).toLocaleString('pl-PL')} zł
+                                {itemChanges(item.id).length > 0 && (
+                                  <button onClick={() => setChangeItem(itemChanges(item.id))} title={tr('Kwota zmieniona — pokaż historię')} className="text-amber-500 hover:text-amber-600">
+                                    <Clock size={13} />
+                                  </button>
+                                )}
+                              </span>
                             </td>
                             <td
                               className="py-4 px-4 text-right text-gray-900 dark:text-white font-medium cursor-pointer hover:text-accent-primary dark:hover:text-accent-primary-light transition"
@@ -1471,7 +1498,7 @@ const FinanceModule = () => {
                   <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${p.kind === 'income' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>{p.kind === 'income' ? tr('Przychód') : tr('Wydatek')}</span>
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-sm text-gray-800 dark:text-gray-100 truncate">{p.team_type} — {p.description}</div>
+                      <div className="font-medium text-sm text-gray-800 dark:text-gray-100 truncate">{p.team_type} — {p.description} <span className="text-xs font-normal text-gray-400">({tr('budżet')} {p.year})</span></div>
                       <div className="text-xs text-gray-400 truncate">{p.note ? `${p.note} · ` : ''}{tr('zgłosił')}: {p.submitted_by || '—'}</div>
                     </div>
                     <div className="font-bold text-gray-800 dark:text-gray-100 shrink-0">{Number(p.amount).toLocaleString('pl-PL')} zł</div>
@@ -2602,6 +2629,28 @@ const FinanceModule = () => {
             <div className="flex gap-3 pt-4">
               <button onClick={() => setShowReportEmailModal(false)} className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition">{tr('Anuluj')}</button>
               <button onClick={sendReportEmail} disabled={sendingReport} className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium disabled:opacity-60">{sendingReport ? tr('Wysyłanie…') : tr('Wyślij')}</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {changeItem && document.body && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]" onClick={() => setChangeItem(null)}>
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 max-h-[80vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between mb-4">
+              <h3 className="font-bold text-lg text-gray-800 dark:text-white flex items-center gap-2"><Clock size={18} /> {tr('Historia zmian kwoty')}</h3>
+              <button onClick={() => setChangeItem(null)} className="text-gray-500 dark:text-gray-400"><X size={22} /></button>
+            </div>
+            <div className="space-y-2">
+              {changeItem.map((a) => (
+                <div key={a.id} className="px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700 text-sm">
+                  <div className="font-medium text-gray-800 dark:text-gray-100">
+                    {Number(a.before?.planned_amount || 0).toLocaleString('pl-PL')} zł <span className="text-gray-400">→</span> {Number(a.after?.planned_amount || 0).toLocaleString('pl-PL')} zł
+                  </div>
+                  <div className="text-xs text-gray-400">{a.actor || '—'} · {new Date(a.created_at).toLocaleString('pl-PL')}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>,
