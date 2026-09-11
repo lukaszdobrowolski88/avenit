@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { FolderOpen, Folder, Search, X, ChevronRight, Home, Layers, Pencil, Share2, Users2 } from 'lucide-react';
+import { FolderOpen, Folder, Search, X, ChevronRight, Home, Layers, Pencil, Share2, Users2, FolderInput } from 'lucide-react';
 import useFolders from './hooks/useFolders';
 import useMaterials from './hooks/useMaterials';
 import useShares from './hooks/useShares';
@@ -9,6 +9,7 @@ import FileUploader from './components/FileUploader';
 import FolderModal from './components/FolderModal';
 import FilePreviewModal from './components/FilePreviewModal';
 import ShareModal from './components/ShareModal';
+import MoveModal from './components/MoveModal';
 import { tr } from '../../i18n';
 
 export default function MaterialsModule({ ministryKey = null, canEdit = false }) {
@@ -18,6 +19,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   const [viewAll, setViewAll] = useState(false); // „Wszystkie pliki" (płasko, także z podfolderów)
   const [viewShared, setViewShared] = useState(false); // „Udostępnione mi"
   const [sharingItem, setSharingItem] = useState(null); // {file_id|folder_id, name}
+  const [movingItem, setMovingItem] = useState(null); // {id, name, isFolder}
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [editingFolder, setEditingFolder] = useState(null);
   const [parentFolderForNew, setParentFolderForNew] = useState(null);
@@ -34,6 +36,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
     createFolder,
     renameFolder,
     deleteFolder,
+    moveFolder,
     findFolderById,
     getFolderPath
   } = useFolders(ministryKey);
@@ -52,7 +55,8 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
     downloadFile,
     getFileUrl,
     searchFiles,
-    updateFileName
+    updateFileName,
+    moveFile
   } = useMaterials(materialsFolderArg, ministryKey);
 
   // Płaska lista folderów (do breadcrumbs) + podfoldery bieżącego poziomu (kafle).
@@ -127,8 +131,10 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   }, [updateFileName]);
 
   const handlePreviewFile = useCallback((file) => {
-    if (file.mime_type?.startsWith('image/')) { setPreviewFile(file); setPreviewUrl(getFileUrl(file.storage_path)); }
-  }, [getFileUrl]);
+    const m = file.mime_type || '';
+    if (m.startsWith('image/') || m === 'application/pdf') { setPreviewFile(file); setPreviewUrl(getFileUrl(file.storage_path)); }
+    else downloadFile(file); // brak podglądu → otwórz/pobierz
+  }, [getFileUrl, downloadFile]);
 
   const handlePreviewNavigation = useCallback((direction) => {
     if (!previewFile) return;
@@ -140,6 +146,12 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   }, [previewFile, imageFiles, getFileUrl]);
 
   const handleShareFile = useCallback((file) => setSharingItem({ file_id: file.id, name: file.name }), []);
+  const handleMoveFile = useCallback((file) => setMovingItem({ id: file.id, name: file.name, isFolder: false }), []);
+  const handleMove = useCallback(async (targetFolderId) => {
+    if (!movingItem) return;
+    if (movingItem.isFolder) await moveFolder(movingItem.id, targetFolderId);
+    else await moveFile(movingItem.id, targetFolderId);
+  }, [movingItem, moveFolder, moveFile]);
   const currentPreviewIndex = previewFile ? imageFiles.findIndex(f => f.id === previewFile.id) : -1;
   const showFolderChrome = !viewAll && !viewShared && !isSearching;
   const displayFiles = viewShared ? shares.sharedFiles : files;
@@ -262,6 +274,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
                     </div>
                     {canEdit && (
                       <span className="flex items-center opacity-0 group-hover:opacity-100">
+                        <span onClick={(e) => { e.stopPropagation(); setMovingItem({ id: f.id, name: f.name, isFolder: true }); }} className="text-gray-400 hover:text-accent-primary p-1" title={tr('Przenieś')}><FolderInput size={13} /></span>
                         <span onClick={(e) => { e.stopPropagation(); setSharingItem({ folder_id: f.id, name: f.name }); }} className="text-gray-400 hover:text-accent-primary p-1" title={tr('Udostępnij')}><Share2 size={13} /></span>
                         <span onClick={(e) => { e.stopPropagation(); handleRenameFolder(f.id, f.name); }} className="text-gray-400 hover:text-accent-primary p-1" title={tr('Zmień nazwę')}><Pencil size={13} /></span>
                       </span>
@@ -279,6 +292,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
               onDelete={(!viewShared && canEdit) ? handleDeleteFile : undefined}
               onRename={(!viewShared && canEdit) ? handleRenameFile : undefined}
               onShare={(!viewShared && canEdit) ? handleShareFile : undefined}
+              onMove={(!viewShared && canEdit) ? handleMoveFile : undefined}
               canDelete={!viewShared && canEdit}
               getFileUrl={getFileUrl}
               emptyMessage={viewShared ? tr('Nikt nie udostępnił Ci jeszcze plików.') : tr('Brak plików w tym folderze')}
@@ -303,6 +317,14 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
         shares={shares}
       />
 
+      <MoveModal
+        isOpen={!!movingItem}
+        onClose={() => setMovingItem(null)}
+        item={movingItem}
+        folders={folders}
+        onMove={handleMove}
+      />
+
       <FilePreviewModal
         isOpen={!!previewFile}
         onClose={() => { setPreviewFile(null); setPreviewUrl(null); }}
@@ -314,7 +336,7 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
         onPrev={() => handlePreviewNavigation('prev')}
         onNext={() => handlePreviewNavigation('next')}
         hasPrev={currentPreviewIndex > 0}
-        hasNext={currentPreviewIndex < imageFiles.length - 1}
+        hasNext={currentPreviewIndex >= 0 && currentPreviewIndex < imageFiles.length - 1}
       />
     </div>
   );

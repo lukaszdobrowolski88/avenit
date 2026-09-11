@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Image, File, Music, Video, Archive, Download, Trash2, Eye, Pencil, Share2 } from 'lucide-react';
+import { FileText, Image, File, Music, Video, Archive, Download, Trash2, Eye, Pencil, Share2, FolderInput } from 'lucide-react';
 import { tr } from '../../../i18n';
 
 // Formatowanie rozmiaru pliku
@@ -62,12 +62,14 @@ export default function FileCard({
   onPreview,
   onRename,
   onShare,
+  onMove,
   canDelete = false,
   getFileUrl
 }) {
   const IconComponent = getFileIcon(file.mime_type);
   const iconColor = getIconColor(file.mime_type);
   const isImage = isImageFile(file.mime_type);
+  const canPreview = isImage || file.mime_type === 'application/pdf';
   const fileUrl = getFileUrl ? getFileUrl(file.storage_path) : null;
 
   const handleDownload = (e) => {
@@ -83,7 +85,7 @@ export default function FileCard({
   };
 
   const handlePreview = () => {
-    if (isImage && onPreview) {
+    if (canPreview && onPreview) {
       onPreview(file);
     }
   };
@@ -91,7 +93,7 @@ export default function FileCard({
   return (
     <div
       onClick={handlePreview}
-      className={`group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 hover:shadow-md hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark transition-all duration-200 ${isImage ? 'cursor-pointer' : ''}`}
+      className={`group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 hover:shadow-md hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark transition-all duration-200 ${canPreview ? 'cursor-pointer' : ''}`}
     >
       <div className="flex items-start gap-3">
         {/* Ikona lub miniatura */}
@@ -139,9 +141,9 @@ export default function FileCard({
 
         {/* Akcje */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
-          {isImage && (
+          {canPreview && (
             <button
-              onClick={handlePreview}
+              onClick={(e) => { e.stopPropagation(); handlePreview(); }}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-accent-primary transition-all duration-200"
               title={tr('Podgląd')}
             >
@@ -155,6 +157,15 @@ export default function FileCard({
           >
             <Download size={16} />
           </button>
+          {onMove && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onMove(file); }}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-accent-primary transition-all duration-200"
+              title={tr('Przenieś')}
+            >
+              <FolderInput size={16} />
+            </button>
+          )}
           {onShare && (
             <button
               onClick={(e) => { e.stopPropagation(); onShare(file); }}
