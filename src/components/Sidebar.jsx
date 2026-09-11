@@ -279,7 +279,6 @@ export default function Sidebar() {
     { path: '/home-groups', icon: UserCircle, label: tr('Grupy domowe'), show: isModuleVisible('groups') },
     { path: '/finance', icon: DollarSign, label: tr('Finanse'), show: hasModuleAccess('module:finance') },
     { path: '/giving', icon: Gift, label: tr('Dawanie'), show: hasModuleAccess('module:giving') },
-    { path: '/care', icon: LucideIcons.HeartPulse, label: tr('Opieka i CRM'), show: hasModuleAccess('module:care') },
     { path: '/attendance', icon: LucideIcons.ClipboardCheck, label: tr('Frekwencja'), show: hasModuleAccess('module:attendance') },
     { path: '/serve', icon: LucideIcons.CalendarCheck, label: tr('Służba'), show: hasModuleAccess('module:serve') },
     { path: '/rsvp', icon: LucideIcons.CalendarCheck, label: tr('Obecność (RSVP)'), show: hasModuleAccess('module:rsvp') },

@@ -88,6 +88,14 @@ export const REGISTRY = {
   parent_contacts: T('module:members'),
   groups: T('module:members'),
   group_members: T('module:members'),
+  // Opieka/CRM scalona z Członkami — dane per-członek (notatki, opieka duszpasterska,
+  // kamienie milowe, tagi, pola własne). Wcześniej NIEzarejestrowane → 403 (fail-closed).
+  member_notes: T('module:members'),
+  member_care_log: T('module:members'),
+  member_milestones: T('module:members'),
+  member_tags: T('module:members'),
+  member_custom_fields: T('module:members'),
+  member_custom_values: T('module:members'),
 
   // ── Uwielbienie / zespoły ───────────────────────────────────────────────
   songs: T('module:worship'),

@@ -6,12 +6,13 @@ import {
   Plus, Search, Trash2, Edit2, X, User,
   Mail, Phone, CheckCircle, XCircle,
   MapPin, Users, Home, Calendar, FileText,
-  Upload, Eye, Check, FolderOpen
+  Upload, Eye, Check, FolderOpen, HeartHandshake
 } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
 import MemberProfile from '../components/MemberProfile';
-import Can from '../components/Can';
+import Can, { useCan } from '../components/Can';
+import CareFieldsTab from './Care/CareFieldsTab';
 import AttendanceTab from './AttendanceTab';
 import MaterialsTab from './shared/MaterialsTab';
 import { useT } from '../i18n';
@@ -47,6 +48,7 @@ const MINISTRY_OPTIONS = [
 export default function Members() {
   const t = useT();
   const [activeTab, setActiveTab] = useState('members');
+  const canCare = useCan('module:care'); // Opieka/CRM scalona z Członkami (per-członek w profilu; tu globalne pola)
   const [members, setMembers] = useState([]);
   const [homeGroups, setHomeGroups] = useState([]);
   const [households, setHouseholds] = useState([]);
@@ -463,6 +465,7 @@ export default function Members() {
           { id: 'members', label: t('Członkowie'), icon: Users },
           { id: 'attendance', label: t('Obecność'), icon: CheckCircle },
           { id: 'households', label: t('Rodziny'), icon: Home },
+          ...(canCare ? [{ id: 'care', label: t('Opieka'), icon: HeartHandshake }] : []),
           { id: 'files', label: t('Pliki'), icon: FolderOpen },
         ]}
         activeTab={activeTab}
@@ -646,6 +649,16 @@ export default function Members() {
       {activeTab === 'households' && (
         <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors duration-300">
           <HouseholdManager />
+        </section>
+      )}
+
+      {/* OPIEKA (CRM) — globalne pola własne; opieka per-członek jest w profilu członka */}
+      {activeTab === 'care' && canCare && (
+        <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300">
+          <div className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+            {t('Notatki, opieka duszpasterska, kamienie milowe i tagi znajdziesz w profilu każdego członka (ikona podglądu). Poniżej zarządzasz definicjami pól własnych.')}
+          </div>
+          <CareFieldsTab />
         </section>
       )}
 
