@@ -183,12 +183,39 @@ const CustomDatePicker = ({ label, value, onChange }) => {
   );
 };
 
+// Klucz team_type dla WBUDOWANYCH modułów zespołów — musi zgadzać się z tym, czym
+// filtrują ich zakładki Finanse (ministryName w Worship/Media/Atmosfera/Kids/
+// HomeGroups/Mlodziezowka; bywa inny niż etykieta w menu). Dla pozostałych i WŁASNYCH
+// modułów wartością jest po prostu etykieta.
+const TEAM_TYPE_BY_KEY = {
+  worship: 'Grupa Uwielbienia',
+  media: 'MediaTeam',
+  atmosfera: 'AtmosferaTeam',
+  kids: 'małe Avenit',
+  homegroups: 'Grupy domowe',
+  mlodziezowka: 'Mlodziezowka',
+};
+
 const FinanceModule = () => {
   const t = useT();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [activeTab, setActiveTab] = useState('budget');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [budgetItems, setBudgetItems] = useState([]);
+  // Lista służb do przypisania budżetu = WSZYSTKIE moduły (dynamicznie z app_modules,
+  // w tym własne). Wartość = team_type wbudowanych zespołów lub etykieta modułu.
+  const [serviceOptions, setServiceOptions] = useState([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from('app_modules').select('key, label, display_order').order('display_order', { ascending: true });
+        const opts = (data || [])
+          .filter((m) => m.label)
+          .map((m) => ({ value: TEAM_TYPE_BY_KEY[m.key] || m.label, label: m.label }));
+        setServiceOptions(opts);
+      } catch { /* zostaje fallback w dropdownie */ }
+    })();
+  }, []);
   const [incomeTransactions, setIncomeTransactions] = useState([]);
   const [expenseTransactions, setExpenseTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1777,9 +1804,8 @@ const FinanceModule = () => {
                 label={tr('Kategoria (Służba)')}
                 value={budgetForm.category}
                 onChange={(val) => setBudgetForm({...budgetForm, category: val})}
-                options={[
-                  // WARTOŚĆ musi = team_type, po którym filtruje moduł danego zespołu
-                  // (zob. ministryName w Worship/Media/Atmosfera/Kids/HomeGroups/Mlodziezowka).
+                options={serviceOptions.length > 0 ? serviceOptions : [
+                  // Fallback (gdyby app_modules się nie wczytało). WARTOŚĆ = team_type modułu.
                   { value: 'Grupa Uwielbienia', label: tr('Grupa Uwielbienia') },
                   { value: 'MediaTeam', label: tr('MediaTeam') },
                   { value: 'AtmosferaTeam', label: 'AtmosferaTeam' },
