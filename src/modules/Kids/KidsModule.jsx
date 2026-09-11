@@ -588,7 +588,7 @@ export default function KidsModule() {
       <PageHeader moduleKey="kids" icon={Baby} title={t('Małe Avenit')} />
 
       {/* TABS */}
-      <ResponsiveTabs
+      <ResponsiveTabs moduleKey="kids"
         tabs={[
           { id: 'checkin', label: t('Check-in'), icon: UserCheck },
           { id: 'events', label: t('Wydarzenia'), icon: Calendar },

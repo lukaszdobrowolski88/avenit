@@ -772,7 +772,7 @@ export default function MlodziezowkaModule() {
       <PageHeader moduleKey="mlodziezowka" icon={Sparkles} title={t('Młodzieżówka')} />
 
       {/* TAB NAVIGATION */}
-      <ResponsiveTabs
+      <ResponsiveTabs moduleKey="mlodziezowka"
         tabs={[
           { id: 'events', label: t('Wydarzenia'), icon: Calendar },
           { id: 'tasks', label: t('Zadania'), icon: CheckSquare },

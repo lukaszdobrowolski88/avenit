@@ -458,7 +458,7 @@ export default function Members() {
       <PageHeader moduleKey="members" icon={Users} title={tr('Baza Członków')} />
 
       {/* TAB NAVIGATION */}
-      <ResponsiveTabs
+      <ResponsiveTabs moduleKey="members"
         tabs={[
           { id: 'members', label: t('Członkowie'), icon: Users },
           { id: 'attendance', label: t('Obecność'), icon: CheckCircle },

@@ -56,7 +56,7 @@ export default function SermonsModule({ embedded = false }) {
       )}
 
       {/* Zakładki */}
-      <ResponsiveTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="sermons" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

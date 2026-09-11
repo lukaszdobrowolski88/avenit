@@ -237,7 +237,7 @@ export default function FormsModule({ userEmail }) {
             </button>
           } />
 
-        <ResponsiveTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mt-4" />
+        <ResponsiveTabs moduleKey="forms" tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mt-4" />
       </div>
 
       <div className="flex-1 overflow-auto p-4 md:p-6">

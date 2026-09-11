@@ -107,7 +107,7 @@ export default function MailingModule() {
         } />
 
       {/* TAB NAVIGATION */}
-      <ResponsiveTabs
+      <ResponsiveTabs moduleKey="mailing"
         tabs={TABS.map((x) => ({ ...x, label: t(x.label) }))}
         activeTab={activeTab}
         onChange={setActiveTab}

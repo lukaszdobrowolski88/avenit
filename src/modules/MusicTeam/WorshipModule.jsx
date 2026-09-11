@@ -2576,7 +2576,7 @@ export default function WorshipModule() {
       <PageHeader moduleKey="worship" icon={Music} title={tr('Grupa Uwielbienia')} />
 
       {/* TAB NAVIGATION */}
-      <ResponsiveTabs
+      <ResponsiveTabs moduleKey="worship"
         tabs={tabs}
         activeTab={activeTab}
         onChange={setActiveTab}

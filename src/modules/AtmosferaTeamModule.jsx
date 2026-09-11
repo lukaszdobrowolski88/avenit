@@ -738,7 +738,7 @@ export default function AtmosferaTeamModule() {
       <PageHeader moduleKey="atmosfera" icon={HeartHandshake} title="Atmosfera Team" />
 
       {/* TAB NAVIGATION */}
-      <ResponsiveTabs
+      <ResponsiveTabs moduleKey="atmosfera"
         tabs={[
           { id: 'events', label: t('Wydarzenia'), icon: Calendar },
           { id: 'schedule', label: t('Grafik'), icon: Calendar },

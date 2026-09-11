@@ -78,7 +78,7 @@ export default function PushCampaignsModule() {
       <PageHeader moduleKey="push_campaigns" icon={Bell} title={tr('Push Kampanie')}
         subtitle={tr('Twórz, planuj i analizuj powiadomienia push wysyłane do web i mobile.')} />
 
-      <ResponsiveTabs tabs={TABS.map((x) => ({ ...x, label: t(x.label) }))} activeTab={tab} onChange={setTab} />
+      <ResponsiveTabs moduleKey="push_campaigns" tabs={TABS.map((x) => ({ ...x, label: t(x.label) }))} activeTab={tab} onChange={setTab} />
 
       {tab === 'campaigns' && (
         loading ? (

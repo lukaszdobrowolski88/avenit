@@ -1116,7 +1116,7 @@ export default function MediaTeamModule() {
       <PageHeader moduleKey="media" icon={Video} title={t('Zespół Medialny')} />
 
       {/* TAB NAVIGATION */}
-      <ResponsiveTabs
+      <ResponsiveTabs moduleKey="media"
         tabs={[
           { id: 'events', label: t('Wydarzenia'), icon: Calendar },
           { id: 'schedule', label: t('Grafik'), icon: Calendar, tour: 'media-grafik-tab' },

@@ -46,7 +46,7 @@ export default function RoomsModule() {
       <PageHeader moduleKey="rooms" icon={DoorOpen} title="Rezerwacje sal" subtitle="Sale i zasoby, rezerwacje z wykrywaniem konfliktów i rezerwacje cykliczne" />
 
       {/* Zakładki */}
-      <ResponsiveTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="rooms" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

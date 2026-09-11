@@ -50,7 +50,7 @@ export default function AttendanceModule() {
       <PageHeader moduleKey="attendance" icon={ClipboardCheck} title="Frekwencja" subtitle="Obecność dorosłych na nabożeństwach, spotkaniach i modlitwach — z analityką trendów" />
 
       {/* Zakładki */}
-      <ResponsiveTabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
+      <ResponsiveTabs moduleKey="attendance" tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="relative" />
 
       {/* Zawartość */}
       <div>

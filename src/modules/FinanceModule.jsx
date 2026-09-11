@@ -1073,7 +1073,7 @@ const FinanceModule = () => {
           </div>
         } />
 
-      <ResponsiveTabs
+      <ResponsiveTabs moduleKey="finance"
         tabs={[
           { id: 'budget', label: t('Budżet'), icon: DollarSign },
           { id: 'income', label: t('Wpływy'), icon: TrendingUp, tour: 'fin-income-tab' },

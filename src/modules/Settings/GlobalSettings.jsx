@@ -1136,7 +1136,7 @@ export default function GlobalSettings() {
 
       {/* Mobile: poziome zakładki */}
       <div className="lg:hidden">
-        <ResponsiveTabs tabs={SETTINGS_NAV_FLAT.map((i) => ({ ...i, label: t(i.label) }))} activeTab={activeTab} onChange={setActiveTab} />
+        <ResponsiveTabs moduleKey="settings" tabs={SETTINGS_NAV_FLAT.map((i) => ({ ...i, label: t(i.label) }))} activeTab={activeTab} onChange={setActiveTab} />
       </div>
 
       <div className="flex gap-6 flex-1 min-h-0">
