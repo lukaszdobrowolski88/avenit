@@ -75,7 +75,8 @@ export default function HomeGroupsModule() {
     full_name: '',
     email: '',
     phone: '',
-    group_id: ''
+    group_id: '',
+    role: 'leader' // coordinator | leader (dotyczy liderów)
   });
 
   const [taskForm, setTaskForm] = useState({
@@ -290,6 +291,9 @@ export default function HomeGroupsModule() {
       if (type === 'member') {
         payload.group_id = personForm.group_id || null;
       }
+      if (type === 'leader') {
+        payload.role = personForm.role || 'leader';
+      }
 
       const table = type === 'leader' ? 'home_group_leaders' : 'home_group_members';
 
@@ -368,12 +372,14 @@ export default function HomeGroupsModule() {
         full_name: item.full_name || '',
         email: item.email || '',
         phone: item.phone || '',
-        group_id: item.group_id || ''
+        group_id: item.group_id || '',
+        role: item.role || 'leader'
       } : {
         full_name: '',
         email: '',
         phone: '',
-        group_id: ''
+        group_id: '',
+        role: 'leader'
       });
     }
 
@@ -671,9 +677,9 @@ export default function HomeGroupsModule() {
     g.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredLeaders = leaders.filter(l =>
-    l.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredLeaders = leaders
+    .filter(l => l.full_name?.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => (a.role === 'coordinator' ? -1 : 0) - (b.role === 'coordinator' ? -1 : 0));
 
   const filteredMembers = members.filter(m =>
     m.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -854,7 +860,14 @@ export default function HomeGroupsModule() {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                 {filteredLeaders.map((leader) => (
                   <tr key={leader.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                    <td className="p-4 font-medium text-gray-800 dark:text-gray-200">{leader.full_name}</td>
+                    <td className="p-4 font-medium text-gray-800 dark:text-gray-200">
+                      <span className="inline-flex items-center gap-2">
+                        {leader.full_name}
+                        {leader.role === 'coordinator' && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent-primary/10 text-accent-primary">{tr('Koordynator')}</span>
+                        )}
+                      </span>
+                    </td>
                     <td className="p-4 text-gray-600 dark:text-gray-400">{leader.email || '-'}</td>
                     <td className="p-4 text-gray-600 dark:text-gray-400">{leader.phone || '-'}</td>
                     <td className="p-4 text-right flex justify-end gap-2">
@@ -1129,6 +1142,19 @@ export default function HomeGroupsModule() {
                       onChange={(e) => setPersonForm({...personForm, phone: e.target.value})}
                     />
                   </div>
+                  {modalType === 'leader' && (
+                    <div>
+                      <CustomSelect
+                        label={tr('Funkcja')}
+                        value={personForm.role}
+                        onChange={(val) => setPersonForm({ ...personForm, role: val })}
+                        options={[
+                          { value: 'leader', label: tr('Lider grupy') },
+                          { value: 'coordinator', label: tr('Koordynator (Lider Grup domowych)') },
+                        ]}
+                      />
+                    </div>
+                  )}
                   {modalType === 'member' && (
                     <div>
                       <CustomSelect
