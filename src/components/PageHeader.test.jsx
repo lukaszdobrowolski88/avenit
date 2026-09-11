@@ -50,4 +50,16 @@ describe('PageHeader', () => {
     expect(container.querySelector('h1').className).toContain('text-gray-900');
     expect(container.querySelector('.backdrop-blur-md')).toBeNull();
   });
+
+  it('wysokość „off" → kompaktowy (bez banera), mimo cover=true', () => {
+    _cover = { type: 'color', value: '#334155', height: 'off' };
+    const { container } = render(<PageHeader icon={Gift} title="X" />);
+    expect(container.querySelector('h1').className).toContain('text-gray-900');
+  });
+
+  it('wysokość „sm" → niski pas (klasa h-20)', () => {
+    _cover = { type: 'color', value: '#334155', height: 'sm' };
+    const { container } = render(<PageHeader icon={Gift} title="X" />);
+    expect(container.querySelector('.h-20')).toBeTruthy();
+  });
 });
