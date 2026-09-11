@@ -929,6 +929,8 @@ CREATE TABLE IF NOT EXISTS home_groups (
     meeting_day TEXT,
     meeting_time TIME,
     location TEXT,
+    lat NUMERIC,
+    lng NUMERIC,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
