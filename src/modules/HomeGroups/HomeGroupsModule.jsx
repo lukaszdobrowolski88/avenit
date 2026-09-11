@@ -14,6 +14,7 @@ import {
   User, FileText, DollarSign, FolderOpen, Package
 } from 'lucide-react';
 import FinanceTab from '../shared/FinanceTab';
+import HomeGroupsMap from './HomeGroupsMap';
 import EventsTab from '../shared/EventsTab';
 import MaterialsTab from '../shared/MaterialsTab';
 import EquipmentTab from '../shared/EquipmentTab';
@@ -712,6 +713,7 @@ export default function HomeGroupsModule() {
       <ResponsiveTabs moduleKey="homegroups"
         tabs={[
           { id: 'groups', label: t('Grupy'), icon: Users },
+          { id: 'map', label: tr('Mapa'), icon: MapPin },
           { id: 'tasks', label: t('Zadania'), icon: CheckSquare },
           { id: 'leaders', label: t('Liderzy'), icon: UserPlus },
           ...(hasTabAccess('homegroups', 'members') ? [{ id: 'members', label: t('Członkowie'), icon: Users }] : []),
@@ -816,6 +818,13 @@ export default function HomeGroupsModule() {
               );
             })}
           </div>
+        </section>
+      )}
+
+      {/* MAP TAB — mapa grup + wyszukiwanie najbliższej po adresie */}
+      {activeTab === 'map' && (
+        <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
+          <HomeGroupsMap groups={groups} leaders={leaders} />
         </section>
       )}
 
