@@ -7,8 +7,16 @@ export default function useShares() {
   const [targets, setTargets] = useState({ people: [], groups: [], homeGroups: [] });
   const [sharedFiles, setSharedFiles] = useState([]);
   const [loadingShared, setLoadingShared] = useState(false);
+  const [sharedFileIds, setSharedFileIds] = useState(new Set());   // pliki które KTOŚ udostępnił (wskaźnik)
+  const [editableFileIds, setEditableFileIds] = useState(new Set()); // pliki udostępnione MI z prawem edycji
 
   useEffect(() => { supabase.auth.getUser().then(({ data }) => setEmail((data?.user?.email || '').toLowerCase())).catch(() => {}); }, []);
+
+  // Zbiór wszystkich plików z jakimkolwiek udostępnieniem (do ikonki „udostępniony").
+  const fetchSharedFileIds = useCallback(async () => {
+    try { const { data } = await supabase.from('materials_shares').select('file_id'); setSharedFileIds(new Set((data || []).map((r) => r.file_id).filter(Boolean))); } catch { /* brak */ }
+  }, []);
+  useEffect(() => { fetchSharedFileIds(); }, [fetchSharedFileIds]);
 
   // Odbiorcy do wyboru w oknie udostępniania.
   const fetchTargets = useCallback(async () => {
@@ -29,16 +37,17 @@ export default function useShares() {
     } catch { return []; }
   }, []);
 
-  const createShares = useCallback(async (item, selected) => {
+  const createShares = useCallback(async (item, selected, permission = 'view') => {
     const rows = selected.map((t) => ({
       file_id: item.file_id || null, folder_id: item.folder_id || null,
       target_type: t.type, target_id: String(t.id), target_label: t.label || null,
-      permission: 'view', created_by: email || null,
+      permission: permission === 'edit' ? 'edit' : 'view', created_by: email || null,
     }));
     if (rows.length === 0) return;
     const { error } = await supabase.from('materials_shares').insert(rows);
     if (error) throw error;
-  }, [email]);
+    fetchSharedFileIds();
+  }, [email, fetchSharedFileIds]);
 
   const removeShare = useCallback(async (shareId) => {
     const { error } = await supabase.from('materials_shares').delete().eq('id', shareId);
@@ -74,9 +83,16 @@ export default function useShares() {
       if (fileIds.length) { try { const { data } = await supabase.from('materials_files').select('*').in('id', fileIds); (data || []).forEach((f) => { files[f.id] = f; }); } catch { /* brak */ } }
       if (folderIds.length) { try { const { data } = await supabase.from('materials_files').select('*').in('folder_id', folderIds); (data || []).forEach((f) => { files[f.id] = f; }); } catch { /* brak */ } }
 
+      // Prawo edycji: pliki udostępnione mi bezpośrednio z permission='edit' + pliki w folderach edit.
+      const editable = new Set();
+      shareRows.filter((s) => s.permission === 'edit' && s.file_id).forEach((s) => { if (files[s.file_id]) editable.add(s.file_id); });
+      const editFolderIds = [...new Set(shareRows.filter((s) => s.permission === 'edit' && s.folder_id).map((s) => s.folder_id))];
+      if (editFolderIds.length) { try { const { data } = await supabase.from('materials_files').select('id').in('folder_id', editFolderIds); (data || []).forEach((f) => editable.add(f.id)); } catch { /* brak */ } }
+      setEditableFileIds(editable);
+
       setSharedFiles(Object.values(files).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pl')));
     } finally { setLoadingShared(false); }
   }, [email]);
 
-  return { email, targets, fetchTargets, fetchSharesFor, createShares, removeShare, sharedFiles, loadingShared, fetchSharedWithMe };
+  return { email, targets, fetchTargets, fetchSharesFor, createShares, removeShare, sharedFiles, loadingShared, fetchSharedWithMe, sharedFileIds, editableFileIds, fetchSharedFileIds };
 }

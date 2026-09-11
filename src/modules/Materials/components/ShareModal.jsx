@@ -11,6 +11,7 @@ const TYPE_META = {
 export default function ShareModal({ isOpen, onClose, item, shares: sharesApi }) {
   const [activeType, setActiveType] = useState('user');
   const [targetId, setTargetId] = useState('');
+  const [perm, setPerm] = useState('view'); // view | edit
   const [current, setCurrent] = useState([]);
   const [busy, setBusy] = useState(false);
   const [opts, setOpts] = useState({ people: [], groups: [], homeGroups: [] });
@@ -31,7 +32,7 @@ export default function ShareModal({ isOpen, onClose, item, shares: sharesApi })
     if (!t) return;
     setBusy(true);
     try {
-      await sharesApi.createShares(item, [{ type: activeType, id: t.id, label: t.label }]);
+      await sharesApi.createShares(item, [{ type: activeType, id: t.id, label: t.label }], perm);
       setTargetId('');
       setCurrent(await sharesApi.fetchSharesFor(item));
     } catch (e) { window.alert(tr('Nie udało się udostępnić: ') + e.message); }
@@ -68,11 +69,15 @@ export default function ShareModal({ isOpen, onClose, item, shares: sharesApi })
             })}
           </div>
           <div className="flex gap-2">
-            <select value={targetId} onChange={(e) => setTargetId(e.target.value)} className="flex-1 px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white">
+            <select value={targetId} onChange={(e) => setTargetId(e.target.value)} className="flex-1 min-w-0 px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white">
               <option value="">{tr('Wybierz…')}</option>
               {list.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
             </select>
-            <button onClick={add} disabled={busy || !targetId} className="px-4 py-2.5 bg-accent-primary text-white rounded-xl text-sm font-medium disabled:opacity-50">{tr('Udostępnij')}</button>
+            <select value={perm} onChange={(e) => setPerm(e.target.value)} className="px-2 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white shrink-0">
+              <option value="view">{tr('Podgląd')}</option>
+              <option value="edit">{tr('Edycja')}</option>
+            </select>
+            <button onClick={add} disabled={busy || !targetId} className="px-4 py-2.5 bg-accent-primary text-white rounded-xl text-sm font-medium disabled:opacity-50 shrink-0">{tr('Dodaj')}</button>
           </div>
 
           <div className="text-[11px] font-semibold text-gray-500 uppercase pt-1">{tr('Udostępniono')}</div>
@@ -86,6 +91,7 @@ export default function ShareModal({ isOpen, onClose, item, shares: sharesApi })
                   <div key={s.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-100 dark:border-gray-700">
                     <Icon size={14} className="text-gray-400 shrink-0" />
                     <span className="text-sm flex-1 truncate text-gray-800 dark:text-gray-100">{s.target_label || s.target_id}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${s.permission === 'edit' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'}`}>{s.permission === 'edit' ? tr('Edycja') : tr('Podgląd')}</span>
                     <button onClick={() => remove(s.id)} className="text-red-500 hover:text-red-600 p-1" title={tr('Usuń')}><Trash2 size={14} /></button>
                   </div>
                 );

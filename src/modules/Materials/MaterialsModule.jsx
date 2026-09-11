@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { FolderOpen, Folder, Search, X, ChevronRight, Home, Layers, Pencil, Share2, Users2, FolderInput } from 'lucide-react';
+import { FolderOpen, Folder, Search, X, ChevronRight, Home, Layers, Pencil, Share2, Users2, FolderInput, List as ListIcon, LayoutGrid } from 'lucide-react';
 import useFolders from './hooks/useFolders';
 import useMaterials from './hooks/useMaterials';
 import useShares from './hooks/useShares';
@@ -20,6 +20,8 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   const [viewShared, setViewShared] = useState(false); // „Udostępnione mi"
   const [sharingItem, setSharingItem] = useState(null); // {file_id|folder_id, name}
   const [movingItem, setMovingItem] = useState(null); // {id, name, isFolder}
+  const [layout, setLayout] = useState('list'); // list | grid
+  const [draggedFileId, setDraggedFileId] = useState(null); // drag&drop do folderu
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [editingFolder, setEditingFolder] = useState(null);
   const [parentFolderForNew, setParentFolderForNew] = useState(null);
@@ -146,6 +148,21 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
   }, [previewFile, imageFiles, getFileUrl]);
 
   const handleShareFile = useCallback((file) => setSharingItem({ file_id: file.id, name: file.name }), []);
+  const dropFileToFolder = useCallback(async (folderId) => {
+    if (!draggedFileId) return;
+    const fid = draggedFileId; setDraggedFileId(null);
+    try { await moveFile(fid, folderId); } catch (e) { window.alert(tr('Nie udało się przenieść: ') + e.message); }
+  }, [draggedFileId, moveFile]);
+  // Edycja w „Udostępnione mi" (tylko pliki z prawem edycji) — operacja + odświeżenie widoku.
+  const sharedRename = useCallback(async (file) => {
+    const base = (file.name || '').includes('.') ? file.name.slice(0, file.name.lastIndexOf('.')) : file.name;
+    const next = window.prompt(tr('Nowa nazwa pliku:'), base);
+    if (next === null) return;
+    try { await updateFileName(file.id, next, file.name); shares.fetchSharedWithMe(); } catch (e) { window.alert(e.message); }
+  }, [updateFileName, shares]);
+  const sharedDelete = useCallback(async (fileId, storagePath) => {
+    try { await deleteFile(fileId, storagePath); shares.fetchSharedWithMe(); } catch (e) { window.alert(e.message); }
+  }, [deleteFile, shares]);
   const handleMoveFile = useCallback((file) => setMovingItem({ id: file.id, name: file.name, isFolder: false }), []);
   const handleMove = useCallback(async (targetFolderId) => {
     if (!movingItem) return;
@@ -258,6 +275,10 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
                 ))}
               </>
             )}
+            <div className="ml-auto flex items-center gap-1 shrink-0 pl-2">
+              <button onClick={() => setLayout('list')} title={tr('Lista')} className={`p-1.5 rounded-lg ${layout === 'list' ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-400 hover:text-gray-600'}`}><ListIcon size={16} /></button>
+              <button onClick={() => setLayout('grid')} title={tr('Siatka')} className={`p-1.5 rounded-lg ${layout === 'grid' ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-400 hover:text-gray-600'}`}><LayoutGrid size={16} /></button>
+            </div>
           </div>
 
           {/* Zawartość */}
@@ -266,7 +287,10 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
             {showFolderChrome && subfolders.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {subfolders.map((f) => (
-                  <button key={f.id} onClick={() => openFolder(f.id)} className="group flex items-center gap-2 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-accent-primary/50 hover:shadow-sm transition text-left">
+                  <button key={f.id} onClick={() => openFolder(f.id)}
+                    onDragOver={(e) => { if (draggedFileId) { e.preventDefault(); } }}
+                    onDrop={(e) => { e.preventDefault(); dropFileToFolder(f.id); }}
+                    className={`group flex items-center gap-2 p-3 rounded-xl border bg-white dark:bg-gray-800 hover:border-accent-primary/50 hover:shadow-sm transition text-left ${draggedFileId ? 'border-dashed border-accent-primary/60' : 'border-gray-200 dark:border-gray-700'}`}>
                     <div className="w-9 h-9 rounded-lg bg-accent-primary/10 text-accent-primary flex items-center justify-center shrink-0"><Folder size={18} /></div>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{f.name}</div>
@@ -287,13 +311,18 @@ export default function MaterialsModule({ ministryKey = null, canEdit = false })
             <FileList
               files={displayFiles}
               loading={displayLoading}
+              layout={layout}
               onPreview={handlePreviewFile}
               onDownload={downloadFile}
-              onDelete={(!viewShared && canEdit) ? handleDeleteFile : undefined}
-              onRename={(!viewShared && canEdit) ? handleRenameFile : undefined}
+              onDelete={viewShared ? sharedDelete : ((canEdit) ? handleDeleteFile : undefined)}
+              onRename={viewShared ? sharedRename : ((canEdit) ? handleRenameFile : undefined)}
               onShare={(!viewShared && canEdit) ? handleShareFile : undefined}
               onMove={(!viewShared && canEdit) ? handleMoveFile : undefined}
-              canDelete={!viewShared && canEdit}
+              onDragStartFile={(!viewShared && canEdit) ? ((file) => setDraggedFileId(file.id)) : undefined}
+              onDragEndFile={() => setDraggedFileId(null)}
+              sharedFileIds={viewShared ? undefined : shares.sharedFileIds}
+              editableFileIds={viewShared ? shares.editableFileIds : undefined}
+              canDelete={viewShared ? true : canEdit}
               getFileUrl={getFileUrl}
               emptyMessage={viewShared ? tr('Nikt nie udostępnił Ci jeszcze plików.') : tr('Brak plików w tym folderze')}
             />

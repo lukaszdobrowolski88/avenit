@@ -63,6 +63,10 @@ export default function FileCard({
   onRename,
   onShare,
   onMove,
+  onDragStartFile,
+  onDragEndFile,
+  isShared = false,
+  layout,
   canDelete = false,
   getFileUrl
 }) {
@@ -93,7 +97,10 @@ export default function FileCard({
   return (
     <div
       onClick={handlePreview}
-      className={`group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 hover:shadow-md hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark transition-all duration-200 ${canPreview ? 'cursor-pointer' : ''}`}
+      draggable={!!onDragStartFile}
+      onDragStart={onDragStartFile ? (() => onDragStartFile(file)) : undefined}
+      onDragEnd={onDragEndFile || undefined}
+      className={`group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 hover:shadow-md hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark transition-all duration-200 ${canPreview ? 'cursor-pointer' : ''} ${onDragStartFile ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
       <div className="flex items-start gap-3">
         {/* Ikona lub miniatura */}
@@ -115,8 +122,9 @@ export default function FileCard({
 
         {/* Informacje o pliku */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate" title={file.name}>
-            {file.name}
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate flex items-center gap-1.5" title={file.name}>
+            <span className="truncate">{file.name}</span>
+            {isShared && <Share2 size={12} className="text-accent-primary shrink-0" title={tr('Udostępniony')} />}
           </h3>
           <div className="flex items-center gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
             <span>{formatFileSize(file.file_size)}</span>

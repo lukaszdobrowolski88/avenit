@@ -12,6 +12,11 @@ export default function FileList({
   onRename,
   onShare,
   onMove,
+  onDragStartFile,
+  onDragEndFile,
+  layout = 'list',
+  sharedFileIds,
+  editableFileIds,
   canDelete = false,
   getFileUrl,
   emptyMessage = tr('Brak plików w tym folderze')
@@ -51,7 +56,7 @@ export default function FileList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className={layout === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3' : 'space-y-3'}>
       {files.map((file) => (
         <FileCard
           key={file.id}
@@ -59,10 +64,14 @@ export default function FileList({
           onDownload={onDownload}
           onDelete={onDelete}
           onPreview={onPreview}
-          onRename={onRename}
+          onRename={(editableFileIds && !editableFileIds.has(file.id)) ? undefined : onRename}
           onShare={onShare}
           onMove={onMove}
-          canDelete={canDelete}
+          onDragStartFile={onDragStartFile}
+          onDragEndFile={onDragEndFile}
+          layout={layout}
+          isShared={sharedFileIds ? sharedFileIds.has(file.id) : false}
+          canDelete={canDelete && (!editableFileIds || editableFileIds.has(file.id))}
           getFileUrl={getFileUrl}
         />
       ))}

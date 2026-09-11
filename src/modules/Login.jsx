@@ -528,11 +528,6 @@ export default function Login() {
           </>
         )}
       </form>
-      <p className="relative z-10 mt-5 text-center text-xs text-gray-400">
-        <a href="/polityka-prywatnosci" className="hover:underline">{tr('Polityka prywatności')}</a>
-        <span className="mx-2">·</span>
-        <a href="/regulamin" className="hover:underline">{tr('Regulamin')}</a>
-      </p>
     </div>
   );
 }
