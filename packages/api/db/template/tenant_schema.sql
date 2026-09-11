@@ -1122,6 +1122,39 @@ CREATE TABLE IF NOT EXISTS finance_tags (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_finance_tags_name ON finance_tags (lower(name));
+-- Transakcje cykliczne (materializowane przez workera fn/finance-recurring).
+CREATE TABLE IF NOT EXISTS finance_recurring (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    tenant_id UUID,
+    kind TEXT NOT NULL DEFAULT 'expense',
+    title TEXT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    category TEXT,
+    cost_category TEXT,
+    team_type TEXT,
+    contractor TEXT,
+    frequency TEXT NOT NULL DEFAULT 'monthly',
+    day_of_month INTEGER,
+    next_run_date DATE,
+    end_date DATE,
+    is_active BOOLEAN DEFAULT true,
+    notes TEXT,
+    created_by TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_finance_recurring_next ON finance_recurring (next_run_date) WHERE is_active;
+-- Rejestr kontrahentów (autouzupełnianie w wydatkach).
+CREATE TABLE IF NOT EXISTS finance_vendors (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    tenant_id UUID,
+    name TEXT NOT NULL,
+    nip TEXT,
+    contact TEXT,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_finance_vendors_name ON finance_vendors (lower(name));
 -- =====================================================
 -- 25. MAIL_ACCOUNTS - konta pocztowe
 -- =====================================================
@@ -1191,6 +1224,8 @@ CREATE TABLE IF NOT EXISTS budget_items (
     actual_amount DECIMAL(10,2) DEFAULT 0,
     period_start DATE,
     period_end DATE,
+    period_type TEXT DEFAULT 'year',   -- year | quarter | month
+    period_value TEXT,
     team_type TEXT,
     notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -1364,6 +1399,14 @@ CREATE TABLE IF NOT EXISTS expense_transactions (
     team_type TEXT,
     vendor TEXT,
     receipt_url TEXT,
+    status TEXT NOT NULL DEFAULT 'approved',   -- draft|submitted|approved|rejected|paid
+    submitted_by TEXT,
+    approved_by TEXT,
+    approved_at TIMESTAMP WITH TIME ZONE,
+    invoice_number TEXT,
+    due_date DATE,
+    is_paid BOOLEAN DEFAULT true,
+    paid_date DATE,
     created_by UUID,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

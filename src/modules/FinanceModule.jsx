@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import EmptyState from '../components/EmptyState';
 import Spinner from '../components/Spinner';
-import { DollarSign, TrendingUp, Receipt, Calendar, Plus, Upload, Tag, X, FileText, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Users, Building2, Settings, Banknote, CreditCard, FolderOpen } from 'lucide-react';
+import { DollarSign, TrendingUp, Receipt, Calendar, Plus, Upload, Download, Printer, Repeat, CheckCircle, XCircle, Clock, Copy, AlertTriangle, Tag, X, FileText, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Users, Building2, Settings, Banknote, CreditCard, FolderOpen } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { createPortal } from 'react-dom';
 import { useCampusQuery } from '../hooks/useCampusQuery';
@@ -183,6 +183,32 @@ const CustomDatePicker = ({ label, value, onChange }) => {
   );
 };
 
+// Statusy wydatku (workflow akceptacji).
+const EXPENSE_STATUS = {
+  draft: { label: 'Szkic', cls: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300' },
+  submitted: { label: 'Do akceptacji', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+  approved: { label: 'Zaakceptowany', cls: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+  rejected: { label: 'Odrzucony', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+  paid: { label: 'Opłacony', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+};
+
+// Eksport tablicy obiektów do pliku CSV (średnik = separator PL/Excel; BOM dla polskich znaków).
+function exportToCsv(filename, rows, columns) {
+  const esc = (v) => {
+    const s = v == null ? '' : String(v);
+    return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const header = columns.map((c) => esc(c.label)).join(';');
+  const body = rows.map((r) => columns.map((c) => esc(typeof c.value === 'function' ? c.value(r) : r[c.value])).join(';')).join('\n');
+  const csv = '﻿' + header + '\n' + body;
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // Klucz team_type dla WBUDOWANYCH modułów zespołów — musi zgadzać się z tym, czym
 // filtrują ich zakładki Finanse (ministryName w Worship/Media/Atmosfera/Kids/
 // HomeGroups/Mlodziezowka; bywa inny niż etykieta w menu). Dla pozostałych i WŁASNYCH
@@ -237,7 +263,8 @@ const FinanceModule = () => {
   const [budgetForm, setBudgetForm] = useState({
     category: '',
     description: '',
-    planned_amount: ''
+    planned_amount: '',
+    period_type: 'year'
   });
 
   const [incomeForm, setIncomeForm] = useState({
@@ -258,6 +285,10 @@ const FinanceModule = () => {
     description: '',
     detailed_description: '',
     responsible_person: '',
+    invoice_number: '',
+    due_date: '',
+    is_paid: true,
+    submit_for_approval: false, // wniosek o zwrot / do akceptacji → status 'submitted'
     documents: [], // Array of {url: string, name: string}
     tags: []
   });
@@ -339,6 +370,54 @@ const FinanceModule = () => {
   const deleteCategory = async (id) => {
     if (!confirm(tr('Usunąć tę kategorię? Istniejące transakcje zachowają swoją nazwę kategorii.'))) return;
     try { await supabase.from('expense_categories').delete().eq('id', id); fetchCategories(); } catch (e) { toast.error(tr('Błąd usuwania: ') + e.message); }
+  };
+
+  // E-mail zalogowanego (do audytu akceptacji/zgłoszeń).
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setCurrentUserEmail(data?.user?.email || '')).catch(() => {}); }, []);
+
+  // ── Transakcje cykliczne (finance_recurring) ──────────────────────────────
+  const [recurringItems, setRecurringItems] = useState([]);
+  const [showRecurringModal, setShowRecurringModal] = useState(false);
+  const emptyRecurring = { kind: 'expense', title: '', amount: '', category: '', team_type: '', contractor: '', frequency: 'monthly', day_of_month: '', next_run_date: '', end_date: '', is_active: true };
+  const [recurringForm, setRecurringForm] = useState(emptyRecurring);
+  const fetchRecurring = async () => {
+    try { const { data } = await supabase.from('finance_recurring').select('*').order('next_run_date', { ascending: true }); setRecurringItems(data || []); } catch { /* brak tabeli przed migracją */ }
+  };
+  useEffect(() => { fetchRecurring(); }, []);
+  const saveRecurring = async () => {
+    if (!recurringForm.title.trim() || !recurringForm.amount) { toast.error(tr('Podaj nazwę i kwotę')); return; }
+    const payload = {
+      kind: recurringForm.kind, title: recurringForm.title.trim(), amount: parseFloat(recurringForm.amount),
+      category: recurringForm.category || null, team_type: recurringForm.team_type || null, contractor: recurringForm.contractor || null,
+      frequency: recurringForm.frequency, day_of_month: recurringForm.day_of_month ? parseInt(recurringForm.day_of_month) : null,
+      next_run_date: recurringForm.next_run_date || null, end_date: recurringForm.end_date || null, is_active: recurringForm.is_active,
+    };
+    try {
+      if (recurringForm.id) await supabase.from('finance_recurring').update(payload).eq('id', recurringForm.id);
+      else await supabase.from('finance_recurring').insert([payload]);
+      setShowRecurringModal(false); setRecurringForm(emptyRecurring); fetchRecurring();
+    } catch (e) { toast.error(tr('Błąd zapisywania: ') + e.message); }
+  };
+  const toggleRecurring = async (r) => { try { await supabase.from('finance_recurring').update({ is_active: !r.is_active }).eq('id', r.id); fetchRecurring(); } catch (e) { toast.error(e.message); } };
+  const deleteRecurring = async (id) => { if (!confirm(tr('Usunąć ten plan cykliczny?'))) return; try { await supabase.from('finance_recurring').delete().eq('id', id); fetchRecurring(); } catch (e) { toast.error(e.message); } };
+
+  // ── Kontrahenci (finance_vendors) — autouzupełnianie + auto-dopis ──────────
+  const [vendors, setVendors] = useState([]);
+  const fetchVendors = async () => { try { const { data } = await supabase.from('finance_vendors').select('*').order('name'); setVendors(data || []); } catch { /* brak tabeli */ } };
+  useEffect(() => { fetchVendors(); }, []);
+  const ensureVendor = async (name) => {
+    const n = String(name || '').trim();
+    if (!n || vendors.some((v) => v.name.toLowerCase() === n.toLowerCase())) return;
+    try { await supabase.from('finance_vendors').insert([{ name: n }]); fetchVendors(); } catch { /* kolizja = już jest */ }
+  };
+
+  // ── Status wydatku (workflow akceptacji) ──────────────────────────────────
+  const setExpenseStatus = async (id, status) => {
+    const patch = { status };
+    if (status === 'approved') { patch.approved_by = currentUserEmail; patch.approved_at = new Date().toISOString(); }
+    if (status === 'paid') { patch.is_paid = true; patch.paid_date = new Date().toISOString().slice(0, 10); }
+    try { await supabase.from('expense_transactions').update(patch).eq('id', id); fetchExpenseTransactions(); } catch (e) { toast.error(e.message); }
   };
 
   // Stan początkowy - salda kont
@@ -543,7 +622,8 @@ const FinanceModule = () => {
             category: budgetForm.category,
             team_type: budgetForm.category,
             description: budgetForm.description,
-            planned_amount: parseFloat(budgetForm.planned_amount)
+            planned_amount: parseFloat(budgetForm.planned_amount),
+            period_type: budgetForm.period_type || 'year'
           })
           .eq('id', budgetForm.id);
 
@@ -559,6 +639,7 @@ const FinanceModule = () => {
           team_type: budgetForm.category,
           description: budgetForm.description,
           planned_amount: parseFloat(budgetForm.planned_amount),
+          period_type: budgetForm.period_type || 'year',
           campus_id: campusIdForInsert
         }]);
 
@@ -566,7 +647,7 @@ const FinanceModule = () => {
       }
 
       setShowBudgetModal(false);
-      setBudgetForm({ category: '', description: '', planned_amount: '' });
+      setBudgetForm({ category: '', description: '', planned_amount: '', period_type: 'year' });
       fetchBudgetItems();
     } catch (error) {
       console.error('Error saving budget item:', error);
@@ -589,6 +670,26 @@ const FinanceModule = () => {
       console.error('Error deleting budget item:', error);
       toast.error(tr('Błąd usuwania: ') + error.message);
     }
+  };
+
+  // Kopiuje pozycje budżetowe z poprzedniego roku do bieżącego (plan, bez realizacji).
+  const copyBudgetFromLastYear = async () => {
+    const prev = selectedYear - 1;
+    if (!confirm(tr(`Skopiować pozycje budżetu z roku ${prev} do ${selectedYear}?`))) return;
+    try {
+      const { data: prevItems } = await supabase.from('budget_items').select('*').eq('year', prev);
+      if (!prevItems || prevItems.length === 0) { toast.error(tr(`Brak pozycji budżetu w roku ${prev}`)); return; }
+      const rows = prevItems.map((it) => ({
+        year: selectedYear, category: it.category, team_type: it.team_type || it.category,
+        description: it.description, planned_amount: it.planned_amount,
+        period_type: it.period_type || 'year', period_value: it.period_value || null,
+        campus_id: campusIdForInsert,
+      }));
+      const { error } = await supabase.from('budget_items').insert(rows);
+      if (error) throw error;
+      toast.success(tr(`Skopiowano ${rows.length} pozycji z ${prev}`));
+      fetchBudgetItems();
+    } catch (e) { toast.error(tr('Błąd kopiowania: ') + e.message); }
   };
 
   const saveIncome = async () => {
@@ -722,6 +823,9 @@ const FinanceModule = () => {
             description: expenseForm.description,
             detailed_description: expenseForm.detailed_description,
             responsible_person: expenseForm.responsible_person,
+            invoice_number: expenseForm.invoice_number || null,
+            due_date: expenseForm.due_date || null,
+            is_paid: expenseForm.is_paid !== false,
             documents: expenseForm.documents,
             tags: expenseForm.tags
           })
@@ -739,6 +843,11 @@ const FinanceModule = () => {
           description: expenseForm.description,
           detailed_description: expenseForm.detailed_description,
           responsible_person: expenseForm.responsible_person,
+          invoice_number: expenseForm.invoice_number || null,
+          due_date: expenseForm.due_date || null,
+          is_paid: expenseForm.is_paid !== false,
+          status: expenseForm.submit_for_approval ? 'submitted' : 'approved',
+          submitted_by: expenseForm.submit_for_approval ? currentUserEmail : null,
           documents: expenseForm.documents,
           tags: expenseForm.tags
         }]);
@@ -747,8 +856,9 @@ const FinanceModule = () => {
       }
 
       await ensureTagsInPalette(expenseForm.tags);
+      await ensureVendor(expenseForm.contractor);
       setShowExpenseModal(false);
-      setExpenseForm({ payment_date: '', amount: '', contractor: '', category: '', cost_category: '', description: '', detailed_description: '', responsible_person: '', documents: [], tags: [] });
+      setExpenseForm({ payment_date: '', amount: '', contractor: '', category: '', cost_category: '', description: '', detailed_description: '', responsible_person: '', invoice_number: '', due_date: '', is_paid: true, submit_for_approval: false, documents: [], tags: [] });
       fetchExpenseTransactions();
     } catch (error) {
       console.error('Error saving expense:', error);
@@ -856,6 +966,7 @@ const FinanceModule = () => {
           { id: 'budget', label: t('Budżet'), icon: DollarSign },
           { id: 'income', label: t('Wpływy'), icon: TrendingUp, tour: 'fin-income-tab' },
           { id: 'expenses', label: t('Wydatki'), icon: Receipt },
+          { id: 'recurring', label: tr('Cykliczne'), icon: Repeat },
           { id: 'reports', label: t('Raporty'), icon: BarChart3 },
           { id: 'files', label: t('Pliki'), icon: FolderOpen },
         ]}
@@ -865,18 +976,54 @@ const FinanceModule = () => {
 
       {activeTab === 'budget' && (
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               Budżet {selectedYear}
             </h2>
-            <button
-              onClick={() => setShowBudgetModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
-            >
-              <Plus size={18} />
-              {tr('Dodaj pozycję budżetową')}
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={copyBudgetFromLastYear}
+                className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
+                title={tr('Kopiuj z zeszłego roku')}
+              >
+                <Copy size={16} /> {tr('Kopiuj z')} {selectedYear - 1}
+              </button>
+              <button
+                onClick={() => exportToCsv(`budzet-${selectedYear}.csv`, budgetItems, [
+                  { label: 'Służba', value: 'category' }, { label: 'Opis', value: 'description' },
+                  { label: 'Plan', value: 'planned_amount' },
+                  { label: 'Realizacja', value: (r) => calculateRealization(r.category, r.description) },
+                ])}
+                className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
+                title={tr('Eksport CSV')}
+              >
+                <Download size={16} /> CSV
+              </button>
+              <button
+                onClick={() => setShowBudgetModal(true)}
+                className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+              >
+                <Plus size={18} />
+                {tr('Dodaj pozycję budżetową')}
+              </button>
+            </div>
           </div>
+
+          {/* Alert przekroczenia budżetu */}
+          {(() => {
+            const over = budgetItems.filter((it) => calculateRealization(it.category, it.description) > Number(it.planned_amount || 0));
+            if (over.length === 0) return null;
+            return (
+              <div className="mb-5 rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50/70 dark:bg-red-900/10 p-4">
+                <div className="flex items-center gap-2 font-semibold text-red-700 dark:text-red-300 mb-1"><AlertTriangle size={18} /> {tr('Przekroczony budżet')} ({over.length})</div>
+                <ul className="text-sm text-red-700/90 dark:text-red-300/90 list-disc pl-6">
+                  {over.slice(0, 6).map((it) => (
+                    <li key={it.id}>{it.category} — {it.description}: {tr('plan')} {Number(it.planned_amount).toLocaleString('pl-PL')} zł, {tr('wydano')} {calculateRealization(it.category, it.description).toLocaleString('pl-PL')} zł</li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()}
 
           {loading ? (
             <Spinner center />
@@ -1138,14 +1285,27 @@ const FinanceModule = () => {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               Wpływy {selectedYear}
             </h2>
-            <button
-              data-tour="fin-income-add"
-              onClick={() => setShowIncomeModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
-            >
-              <Plus size={18} />
-              {tr('Dodaj wpływ')}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => exportToCsv(`wplywy-${selectedYear}.csv`, filteredIncomeTransactions, [
+                  { label: 'Data', value: 'date' }, { label: 'Typ', value: 'type' }, { label: 'Źródło', value: 'source' },
+                  { label: 'Kwota', value: 'amount' }, { label: 'Notatka', value: 'notes' },
+                  { label: 'Tagi', value: (r) => (r.tags || []).join(', ') },
+                ])}
+                className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
+                title={tr('Eksport CSV')}
+              >
+                <Download size={16} /> CSV
+              </button>
+              <button
+                data-tour="fin-income-add"
+                onClick={() => setShowIncomeModal(true)}
+                className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+              >
+                <Plus size={18} />
+                {tr('Dodaj wpływ')}
+              </button>
+            </div>
           </div>
 
           {/* Filtry wpływów */}
@@ -1300,13 +1460,30 @@ const FinanceModule = () => {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
               Wydatki {selectedYear}
             </h2>
-            <button
-              onClick={() => setShowExpenseModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
-            >
-              <Plus size={18} />
-              Dodaj wydatek
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => exportToCsv(`wydatki-${selectedYear}.csv`, filteredExpenseTransactions, [
+                  { label: 'Data', value: 'payment_date' }, { label: 'Kategoria', value: 'category' },
+                  { label: 'Kategoria kosztu', value: 'cost_category' }, { label: 'Opis', value: 'description' },
+                  { label: 'Kontrahent', value: 'contractor' }, { label: 'Kwota', value: 'amount' },
+                  { label: 'Status', value: 'status' }, { label: 'Nr faktury', value: 'invoice_number' },
+                  { label: 'Termin', value: 'due_date' }, { label: 'Opłacone', value: (r) => (r.is_paid === false ? 'nie' : 'tak') },
+                  { label: 'Odpowiedzialny', value: 'responsible_person' },
+                  { label: 'Tagi', value: (r) => (r.tags || []).join(', ') },
+                ])}
+                className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm"
+                title={tr('Eksport CSV')}
+              >
+                <Download size={16} /> CSV
+              </button>
+              <button
+                onClick={() => setShowExpenseModal(true)}
+                className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+              >
+                <Plus size={18} />
+                Dodaj wydatek
+              </button>
+            </div>
           </div>
 
           {/* Filtry wydatków */}
@@ -1436,8 +1613,23 @@ const FinanceModule = () => {
                       <td className="py-4 px-4 text-gray-600 dark:text-gray-400 text-sm">
                         {transaction.contractor}
                       </td>
-                      <td className="py-4 px-4 text-right text-gray-900 dark:text-white font-bold">
-                        {transaction.amount.toLocaleString('pl-PL')} zł
+                      <td className="py-4 px-4 text-right">
+                        <div className="text-gray-900 dark:text-white font-bold">{transaction.amount.toLocaleString('pl-PL')} zł</div>
+                        <div className="flex flex-col items-end gap-1 mt-1">
+                          {transaction.status && transaction.status !== 'approved' && (
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${(EXPENSE_STATUS[transaction.status] || EXPENSE_STATUS.approved).cls}`}>
+                              {tr((EXPENSE_STATUS[transaction.status] || {}).label || transaction.status)}
+                            </span>
+                          )}
+                          {transaction.is_paid === false && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                              {tr('Do zapłaty')}{transaction.due_date ? ` · ${transaction.due_date}` : ''}
+                            </span>
+                          )}
+                          {transaction.invoice_number && (
+                            <span className="text-[10px] text-gray-400">FV {transaction.invoice_number}</span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-4 text-gray-600 dark:text-gray-400 text-sm">
                         {transaction.responsible_person}
@@ -1463,7 +1655,19 @@ const FinanceModule = () => {
                         )}
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <div className="flex justify-center gap-2">
+                        <div className="flex justify-center gap-1 flex-wrap">
+                          {transaction.status === 'submitted' && (
+                            <>
+                              <button onClick={() => setExpenseStatus(transaction.id, 'approved')} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition" title={tr('Zatwierdź')}><CheckCircle size={16} /></button>
+                              <button onClick={() => setExpenseStatus(transaction.id, 'rejected')} className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition" title={tr('Odrzuć')}><XCircle size={16} /></button>
+                            </>
+                          )}
+                          {transaction.status === 'draft' && (
+                            <button onClick={() => setExpenseStatus(transaction.id, 'submitted')} className="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition" title={tr('Wyślij do akceptacji')}><Clock size={16} /></button>
+                          )}
+                          {transaction.is_paid === false && (transaction.status === 'approved' || transaction.status === 'paid') && (
+                            <button onClick={() => setExpenseStatus(transaction.id, 'paid')} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition" title={tr('Oznacz jako opłacone')}><Banknote size={16} /></button>
+                          )}
                           <button
                             onClick={() => {
                               setExpenseForm(transaction);
@@ -1492,9 +1696,63 @@ const FinanceModule = () => {
         </section>
       )}
 
+      {/* RECURRING TAB */}
+      {activeTab === 'recurring' && (
+        <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Transakcje cykliczne')}</h2>
+            <button
+              onClick={() => { setRecurringForm(emptyRecurring); setShowRecurringModal(true); }}
+              className="px-4 py-2 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+            >
+              <Plus size={18} /> {tr('Nowy plan')}
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{tr('Automatycznie generowane wpływy i wydatki (np. czynsz, pensje, stałe kolekty). Codziennie rano system tworzy należne pozycje.')}</p>
+
+          {recurringItems.length === 0 ? (
+            <EmptyState icon={Repeat} title={tr('Brak planów cyklicznych')} description={tr('Dodaj pierwszy plan, aby automatyzować powtarzalne transakcje.')} />
+          ) : (
+            <div className="space-y-2">
+              {recurringItems.map((r) => {
+                const FREQ = { weekly: tr('co tydzień'), biweekly: tr('co 2 tygodnie'), monthly: tr('co miesiąc'), quarterly: tr('co kwartał'), yearly: tr('co rok') };
+                return (
+                  <div key={r.id} className={`flex items-center gap-3 p-4 rounded-2xl border ${r.is_active ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-800 opacity-60'}`}>
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${r.kind === 'income' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' : 'bg-red-100 dark:bg-red-900/30 text-red-600'}`}>
+                      {r.kind === 'income' ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-gray-800 dark:text-gray-100 truncate">{r.title}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {FREQ[r.frequency] || r.frequency}
+                        {r.category ? ` · ${r.category}` : ''}
+                        {r.next_run_date ? ` · ${tr('następna')}: ${r.next_run_date}` : ''}
+                      </div>
+                    </div>
+                    <div className={`font-bold shrink-0 ${r.kind === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {r.kind === 'income' ? '+' : '−'}{Number(r.amount).toLocaleString('pl-PL')} zł
+                    </div>
+                    <button onClick={() => toggleRecurring(r)} className="text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 shrink-0">
+                      {r.is_active ? tr('Wstrzymaj') : tr('Wznów')}
+                    </button>
+                    <button onClick={() => { setRecurringForm({ ...emptyRecurring, ...r, amount: String(r.amount), day_of_month: r.day_of_month || '', next_run_date: r.next_run_date || '', end_date: r.end_date || '' }); setShowRecurringModal(true); }} className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg shrink-0" title={tr('Edytuj')}><Edit2 size={16} /></button>
+                    <button onClick={() => deleteRecurring(r.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg shrink-0" title={tr('Usuń')}><Trash2 size={16} /></button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* REPORTS TAB */}
       {activeTab === 'reports' && (
         <section className="space-y-6">
+          <div className="flex justify-end">
+            <button onClick={() => window.print()} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Drukuj / zapisz PDF')}>
+              <Printer size={16} /> {tr('Drukuj / PDF')}
+            </button>
+          </div>
           {/* Podsumowanie finansowe - kompaktowy widok */}
           {(() => {
             const totalIncome = incomeTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
@@ -1673,6 +1931,49 @@ const FinanceModule = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Cash-flow: skumulowany bilans w czasie */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <TrendingUp size={20} className="text-accent-primary" />
+              {tr('Przepływ gotówki (skumulowany)')}
+            </h3>
+            {(() => {
+              const months = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'];
+              let run = 0;
+              const pts = months.map((m, idx) => {
+                const mn = String(idx + 1).padStart(2, '0');
+                const s = `${selectedYear}-${mn}-01`, e = `${selectedYear}-${mn}-31`;
+                const inc = incomeTransactions.filter(t => t.date >= s && t.date <= e).reduce((a, t) => a + (t.amount || 0), 0);
+                const exp = expenseTransactions.filter(t => t.payment_date >= s && t.payment_date <= e).reduce((a, t) => a + (t.amount || 0), 0);
+                run += inc - exp;
+                return { m, val: run };
+              });
+              const vals = pts.map(p => p.val);
+              const max = Math.max(...vals, 0), min = Math.min(...vals, 0);
+              const range = (max - min) || 1;
+              const W = 640, H = 160, pad = 10;
+              const x = (i) => pad + (i * (W - 2 * pad)) / (pts.length - 1);
+              const y = (v) => H - pad - ((v - min) / range) * (H - 2 * pad);
+              const line = pts.map((p, i) => `${x(i).toFixed(1)},${y(p.val).toFixed(1)}`).join(' ');
+              const last = vals[vals.length - 1];
+              return (
+                <div className="overflow-x-auto">
+                  <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full min-w-[520px]" style={{ height: H }}>
+                    <line x1={pad} y1={y(0)} x2={W - pad} y2={y(0)} stroke="currentColor" className="text-gray-200 dark:text-gray-700" strokeWidth="1" />
+                    <polyline points={line} fill="none" stroke="#6366f1" strokeWidth="2.5" />
+                    {pts.map((p, i) => <circle key={i} cx={x(i)} cy={y(p.val)} r="3" fill="#6366f1" />)}
+                  </svg>
+                  <div className="flex justify-between mt-2 text-[10px] text-gray-400">
+                    {pts.map((p, i) => <span key={i}>{tr(p.m)}</span>)}
+                  </div>
+                  <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    {tr('Bilans na koniec roku')}: <span className={`font-bold ${last >= 0 ? 'text-green-600' : 'text-red-600'}`}>{last.toLocaleString('pl-PL')} zł</span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Two columns: Categories & Top Contractors */}
@@ -1948,6 +2249,83 @@ const FinanceModule = () => {
         document.body
       )}
 
+      {showRecurringModal && document.body && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowRecurringModal(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700 max-h-[88vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between mb-5">
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{recurringForm.id ? tr('Edytuj plan cykliczny') : tr('Nowy plan cykliczny')}</h3>
+              <button onClick={() => setShowRecurringModal(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                {['expense', 'income'].map((k) => (
+                  <button key={k} onClick={() => setRecurringForm({ ...recurringForm, kind: k, category: '' })}
+                    className={`py-2 rounded-xl text-sm font-medium border transition ${recurringForm.kind === k ? 'border-accent-primary ring-1 ring-accent-primary bg-accent-primary/5 text-gray-800 dark:text-gray-100' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-300'}`}>
+                    {k === 'expense' ? tr('Wydatek') : tr('Wpływ')}
+                  </button>
+                ))}
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nazwa')}</label>
+                <input value={recurringForm.title} onChange={(e) => setRecurringForm({ ...recurringForm, title: e.target.value })}
+                  placeholder={tr('np. Czynsz, Pensja, Stała kolekta')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kwota (PLN)')}</label>
+                  <input type="number" value={recurringForm.amount} onChange={(e) => setRecurringForm({ ...recurringForm, amount: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                </div>
+                <CustomSelect
+                  label={tr('Częstotliwość')}
+                  value={recurringForm.frequency}
+                  onChange={(val) => setRecurringForm({ ...recurringForm, frequency: val })}
+                  options={[
+                    { value: 'weekly', label: tr('co tydzień') }, { value: 'biweekly', label: tr('co 2 tygodnie') },
+                    { value: 'monthly', label: tr('co miesiąc') }, { value: 'quarterly', label: tr('co kwartał') },
+                    { value: 'yearly', label: tr('co rok') },
+                  ]}
+                />
+              </div>
+              <CustomSelect
+                label={recurringForm.kind === 'income' ? tr('Typ wpływu') : tr('Służba (budżet)')}
+                value={recurringForm.category}
+                onChange={(val) => setRecurringForm({ ...recurringForm, category: val, team_type: recurringForm.kind === 'expense' ? val : recurringForm.team_type })}
+                options={[{ value: '', label: tr('— brak —') },
+                  ...(recurringForm.kind === 'income'
+                    ? incomeCategories.map((c) => ({ value: c.name, label: c.name }))
+                    : (serviceOptions.length ? serviceOptions : []))]}
+                placeholder={tr('Wybierz')}
+              />
+              {recurringForm.kind === 'expense' && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Kontrahent')}</label>
+                  <input value={recurringForm.contractor} onChange={(e) => setRecurringForm({ ...recurringForm, contractor: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Następne wykonanie')}</label>
+                  <input type="date" value={recurringForm.next_run_date} onChange={(e) => setRecurringForm({ ...recurringForm, next_run_date: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Koniec (opcjonalnie)')}</label>
+                  <input type="date" value={recurringForm.end_date} onChange={(e) => setRecurringForm({ ...recurringForm, end_date: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setShowRecurringModal(false)} className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition">{tr('Anuluj')}</button>
+                <button onClick={saveRecurring} className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium">{tr('Zapisz')}</button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {showBudgetModal && document.body && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
@@ -1983,14 +2361,26 @@ const FinanceModule = () => {
                   placeholder={t('Opis kosztów')}
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Planowana kwota (PLN)</label>
-                <input
-                  type="number"
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                  value={budgetForm.planned_amount}
-                  onChange={(e) => setBudgetForm({...budgetForm, planned_amount: e.target.value})}
-                  placeholder="0.00"
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Planowana kwota (PLN)</label>
+                  <input
+                    type="number"
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    value={budgetForm.planned_amount}
+                    onChange={(e) => setBudgetForm({...budgetForm, planned_amount: e.target.value})}
+                    placeholder="0.00"
+                  />
+                </div>
+                <CustomSelect
+                  label={tr('Okres')}
+                  value={budgetForm.period_type || 'year'}
+                  onChange={(val) => setBudgetForm({ ...budgetForm, period_type: val })}
+                  options={[
+                    { value: 'year', label: tr('Roczny') },
+                    { value: 'quarter', label: tr('Kwartalny') },
+                    { value: 'month', label: tr('Miesięczny') },
+                  ]}
                 />
               </div>
               <div className="flex gap-3 pt-4">
@@ -2165,11 +2555,15 @@ const FinanceModule = () => {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Kontrahent')}</label>
                   <input
+                    list="fin-vendors"
                     className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     value={expenseForm.contractor}
                     onChange={(e) => setExpenseForm({...expenseForm, contractor: e.target.value})}
                     placeholder={t('Nazwa firmy/osoby')}
                   />
+                  <datalist id="fin-vendors">
+                    {vendors.map((v) => <option key={v.id} value={v.name} />)}
+                  </datalist>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Osoba odpowiedzialna')}</label>
@@ -2213,6 +2607,32 @@ const FinanceModule = () => {
                   options={[{ value: '', label: tr('— brak —') }, ...expenseCategories.map((c) => ({ value: c.name, label: c.name }))]}
                   placeholder={t('Wybierz kategorię kosztu')}
                 />
+              </div>
+
+              {/* Wiersz 3c: Faktura (nr / termin / opłacone) */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Nr faktury (opcjonalnie)')}</label>
+                  <input value={expenseForm.invoice_number} onChange={(e) => setExpenseForm({ ...expenseForm, invoice_number: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="FV/2026/..." />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Termin płatności')}</label>
+                  <input type="date" value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                  <input type="checkbox" className="w-4 h-4" checked={expenseForm.is_paid !== false} onChange={(e) => setExpenseForm({ ...expenseForm, is_paid: e.target.checked })} />
+                  {tr('Opłacone')}
+                </label>
+                {!expenseForm.id && (
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer select-none">
+                    <input type="checkbox" className="w-4 h-4" checked={!!expenseForm.submit_for_approval} onChange={(e) => setExpenseForm({ ...expenseForm, submit_for_approval: e.target.checked })} />
+                    {tr('Wniosek o zwrot / wyślij do akceptacji')}
+                  </label>
+                )}
               </div>
 
               {/* Wiersz 4: Szczegółowy opis (pełna szerokość) */}
