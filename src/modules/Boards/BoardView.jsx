@@ -210,18 +210,18 @@ function ViewTab({ view, active, onSelect, data, canManage, canDelete, onDelete,
   const Icon = VIEW_ICONS[view.type] || Table2;
   const commit = () => { setRenaming(false); if (name.trim() && name !== view.name) data.updateView(view.id, { name: name.trim() }); };
   return (
-    <div className={`flex items-center rounded-lg transition-colors ${active ? 'bg-accent-primary/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700/40'}`}>
+    <div className={`flex items-center rounded-lg transition-colors ${active ? 'bg-gradient-to-r from-accent-primary to-accent-secondary shadow-sm' : 'hover:bg-gray-100 dark:hover:bg-gray-700/40'}`}>
       {renaming ? (
         <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onBlur={commit} onKeyDown={(e) => e.key === 'Enter' && commit()}
           className="mx-1 my-1 px-2 py-1 text-sm bg-white dark:bg-gray-700 rounded outline-none ring-2 ring-accent-primary/40 w-28" />
       ) : (
         <button onClick={() => onSelect(view.id)}
-          className={`flex items-center gap-2 pl-3 ${active && canManage ? 'pr-1' : 'pr-3'} py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${active ? 'text-accent-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>
-          <Icon size={15} /> {view.name} {view.is_default && <Star size={11} className="fill-amber-400 text-amber-400" />}
+          className={`flex items-center gap-2 pl-3 ${active && canManage ? 'pr-1' : 'pr-3'} py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${active ? 'text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+          <Icon size={15} /> {view.name} {view.is_default && <Star size={11} className={active ? 'fill-white text-white' : 'fill-amber-400 text-amber-400'} />}
         </button>
       )}
       {active && !renaming && canManage && (
-        <Popover align="left" width={185} triggerClassName="inline-flex" trigger={<button className="px-1 py-2 text-gray-400 hover:text-gray-600"><MoreHorizontal size={15} /></button>}>
+        <Popover align="left" width={185} triggerClassName="inline-flex" trigger={<button className="px-1 py-2 text-white/75 hover:text-white"><MoreHorizontal size={15} /></button>}>
           {({ close }) => (
             <div className="p-1.5 text-sm">
               <button onClick={() => { setRenaming(true); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200"><Pencil size={14} /> Zmień nazwę</button>

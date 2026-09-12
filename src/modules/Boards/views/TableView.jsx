@@ -97,11 +97,10 @@ const ItemRow = React.memo(function ItemRow({ item, columns, groupColor, people,
           </>
         )}
       </div>
-      <div className="shrink-0 flex items-stretch py-1.5" style={{ width: 4 }}>
-        {!isSub && <div className="flex-1 rounded-full" style={{ backgroundColor: groupColor }} />}
-      </div>
+      {/* Bez belki koloru per-wiersz (kanon v2) — kolor grupy jest w nagłówku grupy. */}
+      <div className="shrink-0" style={{ width: 4 }} />
       {/* Nazwa elementu */}
-      <div className="flex items-center gap-1 px-2 border-r border-gray-100 dark:border-gray-700/60" style={{ flex: 1, minWidth: NAME_MIN, paddingLeft: isSub ? 26 : 8 }}>
+      <div className="flex items-center gap-1 px-2 " style={{ flex: 1, minWidth: NAME_MIN, paddingLeft: isSub ? 26 : 8 }}>
         {!isSub && (
           <button onClick={onToggleExpand} className={`shrink-0 p-0.5 ${hasSub ? 'text-gray-400 hover:text-accent-primary' : 'text-transparent'}`} title="Podelementy">
             {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
@@ -111,7 +110,7 @@ const ItemRow = React.memo(function ItemRow({ item, columns, groupColor, people,
           onChange={(e) => setNameLocal(e.target.value)}
           onBlur={() => { if (nameLocal !== item.name) onCell(item.id, '__name__', nameLocal); }}
           onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-          className="flex-1 min-w-0 bg-transparent text-sm text-gray-800 dark:text-gray-100 outline-none" />
+          className="flex-1 min-w-0 bg-transparent text-sm text-gray-800 dark:text-gray-100 outline-none placeholder:text-gray-300 dark:placeholder:text-gray-600" />
         {!isSub && subCount > 0 && <span className="text-[10px] text-gray-400 shrink-0">{subCount}</span>}
         <button onClick={() => onOpen(item)} title="Otwórz" className="relative opacity-0 group-hover/row:opacity-100 text-gray-400 hover:text-accent-primary p-0.5">
           <Maximize2 size={13} />
@@ -128,7 +127,7 @@ const ItemRow = React.memo(function ItemRow({ item, columns, groupColor, people,
       </div>
       {/* Komórki kolumn */}
       {columns.map(col => (
-        <div key={col.id} className="border-r border-gray-100 dark:border-gray-700/60 shrink-0 flex items-stretch" style={{ width: col.width || 160 }}>
+        <div key={col.id} className="shrink-0 flex items-stretch" style={{ width: col.width || 160 }}>
           <BoardCell column={col} value={item.cells?.[col.id]} people={people} me={me} item={item} columns={columns}
             onChange={(v) => onCell(item.id, col.id, v)} onUpdateColumn={onUpdateColumn} />
         </div>
@@ -167,7 +166,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
         </button>
         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
         <GroupTitle group={group} canEdit={canEditStructure} onRename={(name) => api.updateGroup(group.id, { name })} />
-        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-full px-2 py-0.5">{groupItems.length}</span>
+        <span className="text-xs font-medium text-gray-400 dark:text-gray-500 tabular-nums">{groupItems.length}</span>
         {canEditStructure && (
         <Popover align="left" width={180} trigger={
           <button className="text-gray-300 hover:text-gray-500 p-0.5"><MoreHorizontal size={16} /></button>
@@ -194,12 +193,12 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
         <div className="overflow-x-auto custom-scrollbar rounded-2xl border border-gray-200 dark:border-gray-700">
           <div style={{ minWidth: totalWidth }}>
             {/* Nagłówek kolumn */}
-            <div className="flex items-stretch bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700 h-10 sticky top-0 z-10">
+            <div className="flex items-stretch bg-gray-50/70 dark:bg-gray-800/40 border-b border-gray-200 dark:border-gray-700 h-10 sticky top-0 z-10">
               <div className="shrink-0" style={{ width: HANDLE_W }} />
               <div className="shrink-0" style={{ width: 4 }} />
-              <div className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ flex: 1, minWidth: NAME_MIN }}>Element</div>
+              <div className="flex items-center px-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ flex: 1, minWidth: NAME_MIN }}>Element</div>
               {columns.map(col => (
-                <div key={col.id} className="border-r border-gray-200 dark:border-gray-700 shrink-0 relative" style={{ width: col.width || 160 }}>
+                <div key={col.id} className="shrink-0 relative" style={{ width: col.width || 160 }}>
                   <ColumnHeader column={col} allColumns={columns} onUpdate={api.updateColumn} onDelete={api.deleteColumn} onReorder={canEditStructure ? api.reorderColumns : undefined} />
                   {canEditStructure && <ColResizeHandle width={col.width || 160}
                     onResize={(w) => api.setColumnWidthLocal(col.id, w)}
@@ -247,9 +246,9 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
             <div className="flex items-stretch bg-gray-50/70 dark:bg-gray-800/60 min-h-[34px]">
               <div className="shrink-0" style={{ width: HANDLE_W }} />
               <div className="shrink-0" style={{ width: 4 }} />
-              <div className="shrink-0 border-r border-gray-100 dark:border-gray-700/60" style={{ flex: 1, minWidth: NAME_MIN }} />
+              <div className="shrink-0 " style={{ flex: 1, minWidth: NAME_MIN }} />
               {columns.map(col => (
-                <div key={col.id} className="border-r border-gray-100 dark:border-gray-700/60 shrink-0 flex items-center" style={{ width: col.width || 160 }}>
+                <div key={col.id} className="shrink-0 flex items-center" style={{ width: col.width || 160 }}>
                   <SummaryCell column={col} items={groupItems} />
                 </div>
               ))}

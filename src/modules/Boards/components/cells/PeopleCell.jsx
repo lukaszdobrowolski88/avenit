@@ -43,7 +43,7 @@ export default function PeopleCell({ value = [], people = [], onChange, readOnly
   const AvatarStack = (
     <div className="w-full h-full flex items-center px-2 gap-0">
       {selected.length === 0 ? (
-        <span className="text-gray-300 dark:text-gray-600 text-xs">+</span>
+        <span className="text-gray-300 dark:text-gray-600 text-base leading-none opacity-0 group-hover/row:opacity-100 transition-opacity">+</span>
       ) : (
         <div className="flex -space-x-2">
           {selected.slice(0, 4).map(p => <Avatar key={p.email} person={p} />)}

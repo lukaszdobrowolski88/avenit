@@ -230,7 +230,7 @@ export default function ItemPanel({ item, data, onClose, userEmail, userName }) 
               const t = getColumnType(col.type);
               const tall = col.type === 'long_text';
               return (
-                <div key={col.id} className="flex items-center gap-3">
+                <div key={col.id} className="flex items-center gap-3 group/row">
                   <div className="w-28 shrink-0 flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
                     <ColumnIcon name={t.icon} size={13} className="text-gray-400 shrink-0" /> <span className="truncate">{col.name}</span>
                   </div>

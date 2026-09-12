@@ -65,11 +65,12 @@ export function TimeTrackingCell({ value, onChange, readOnly }) {
     if (v.running) onChange({ seconds: elapsed, running: false, startedAt: null });
     else onChange({ seconds: v.seconds || 0, running: true, startedAt: new Date().toISOString() });
   };
+  const zero = elapsed === 0 && !v.running;
   return (
     <div className="w-full h-full flex items-center justify-between px-2 gap-1">
-      <span className={`text-xs tabular-nums ${v.running ? 'text-accent-primary font-medium' : 'text-gray-600 dark:text-gray-300'}`}>{formatDuration(elapsed)}</span>
+      <span className={`text-xs tabular-nums ${v.running ? 'text-accent-primary font-medium' : 'text-gray-600 dark:text-gray-300'}`}>{zero ? '' : formatDuration(elapsed)}</span>
       {!readOnly && (
-        <button onClick={toggle} className={`p-1 rounded ${v.running ? 'text-red-500' : 'text-green-500'} hover:bg-gray-100 dark:hover:bg-gray-700`}>
+        <button onClick={toggle} className={`p-1 rounded ${v.running ? 'text-red-500' : 'text-green-500'} hover:bg-gray-100 dark:hover:bg-gray-700 ${zero ? 'opacity-0 group-hover/row:opacity-100 transition-opacity' : ''}`}>
           {v.running ? <Pause size={13} /> : <Play size={13} />}
         </button>
       )}
