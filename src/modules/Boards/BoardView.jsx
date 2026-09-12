@@ -156,27 +156,25 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
         </div>
       )}
 
-      {/* Rząd sterowania: zakładki widoków (kanon ResponsiveTabs — podkreślenie akcentem) + akcje tablicy */}
-      <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
-        <div className="flex items-end justify-between gap-3">
-          <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar min-w-0">
-            {data.views.map(v => (
-              <ViewTab key={v.id} view={v} active={activeViewId === v.id} onSelect={setActiveViewId} data={data}
-                canManage={canManageViews} canDelete={data.views.length > 1}
-                onDelete={() => { if (!confirm(`Usunąć widok „${v.name}"?`)) return; data.deleteView(v.id); if (activeViewId === v.id) setActiveViewId(data.views.find(x => x.id !== v.id)?.id); }}
-                onDuplicated={(nv) => nv && setActiveViewId(nv.id)} />
-            ))}
-            {canManageViews && <AddViewButton onAdd={(type, label) => data.addView(type, label).then(v => v && setActiveViewId(v.id))} />}
-          </div>
-          <div className="flex items-center gap-2 flex-wrap justify-end shrink-0 pb-2">
-            <Button size="sm" variant="primary" icon={Sparkles} onClick={() => setShowSidekick(true)}>AI Sidekick</Button>
-            {canManageAutomations && (
-              <Button size="sm" variant="outline" icon={Zap} onClick={() => setShowAutomations(true)}>
-                Automatyzacje{automations.automations.length > 0 && <span className="text-xs text-gray-400 ml-1">{automations.automations.length}</span>}
-              </Button>
-            )}
-            <Button size="sm" variant="outline" icon={Activity} onClick={() => setShowActivity(true)} title="Aktywność tablicy" className="!px-2" />
-          </div>
+      {/* Rząd sterowania: zakładki widoków (pigułki) + akcje tablicy — jak w podglądzie */}
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar min-w-0">
+          {data.views.map(v => (
+            <ViewTab key={v.id} view={v} active={activeViewId === v.id} onSelect={setActiveViewId} data={data}
+              canManage={canManageViews} canDelete={data.views.length > 1}
+              onDelete={() => { if (!confirm(`Usunąć widok „${v.name}"?`)) return; data.deleteView(v.id); if (activeViewId === v.id) setActiveViewId(data.views.find(x => x.id !== v.id)?.id); }}
+              onDuplicated={(nv) => nv && setActiveViewId(nv.id)} />
+          ))}
+          {canManageViews && <AddViewButton onAdd={(type, label) => data.addView(type, label).then(v => v && setActiveViewId(v.id))} />}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap justify-end shrink-0">
+          <Button size="sm" variant="primary" icon={Sparkles} onClick={() => setShowSidekick(true)}>AI Sidekick</Button>
+          {canManageAutomations && (
+            <Button size="sm" variant="outline" icon={Zap} onClick={() => setShowAutomations(true)}>
+              Automatyzacje{automations.automations.length > 0 && <span className="text-xs text-gray-400 ml-1">{automations.automations.length}</span>}
+            </Button>
+          )}
+          <Button size="sm" variant="outline" icon={Activity} onClick={() => setShowActivity(true)} title="Aktywność tablicy" className="!px-2" />
         </div>
       </div>
 
@@ -212,13 +210,13 @@ function ViewTab({ view, active, onSelect, data, canManage, canDelete, onDelete,
   const Icon = VIEW_ICONS[view.type] || Table2;
   const commit = () => { setRenaming(false); if (name.trim() && name !== view.name) data.updateView(view.id, { name: name.trim() }); };
   return (
-    <div className={`flex items-center border-b-2 -mb-px ${active ? 'border-accent-primary' : 'border-transparent'}`}>
+    <div className={`flex items-center rounded-lg transition-colors ${active ? 'bg-accent-primary/10' : 'hover:bg-gray-100 dark:hover:bg-gray-700/40'}`}>
       {renaming ? (
         <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onBlur={commit} onKeyDown={(e) => e.key === 'Enter' && commit()}
           className="mx-1 my-1 px-2 py-1 text-sm bg-white dark:bg-gray-700 rounded outline-none ring-2 ring-accent-primary/40 w-28" />
       ) : (
         <button onClick={() => onSelect(view.id)}
-          className={`flex items-center gap-2 pl-3.5 pr-1.5 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${active ? 'text-accent-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>
+          className={`flex items-center gap-2 pl-3 ${active && canManage ? 'pr-1' : 'pr-3'} py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${active ? 'text-accent-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>
           <Icon size={15} /> {view.name} {view.is_default && <Star size={11} className="fill-amber-400 text-amber-400" />}
         </button>
       )}

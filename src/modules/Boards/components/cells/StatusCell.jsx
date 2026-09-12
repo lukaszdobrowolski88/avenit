@@ -4,7 +4,8 @@ import Popover from '../Popover';
 import { findLabel } from '../../lib/columnTypes';
 import { STATUS_COLORS, uid } from '../../lib/constants';
 
-// Komórka Status/Priorytet — pełne kolorowe tło, picker etykiet z edycją.
+// Komórka Status/Priorytet — kolorowa PIGUŁKA wyśrodkowana w komórce (kanon: chip,
+// nie pełny nasycony blok), picker etykiet z edycją.
 export default function StatusCell({ column, value, onChange, onUpdateColumn, readOnly }) {
   const label = findLabel(column, value);
   const labels = column?.settings?.labels || [];
@@ -18,22 +19,20 @@ export default function StatusCell({ column, value, onChange, onUpdateColumn, re
     setLabels([...labels, { id: uid('lbl'), title: 'Nowa etykieta', color }]);
   };
 
+  const pill = label
+    ? <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold text-white truncate max-w-full" style={{ backgroundColor: label.color }}>{label.title}</span>
+    : <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>;
+
   if (readOnly) {
-    return (
-      <div className="w-full h-full flex items-center justify-center text-xs font-medium text-white"
-        style={{ backgroundColor: label ? label.color : 'transparent' }}>
-        <span className={label ? '' : 'text-gray-400'}>{label ? label.title : ''}</span>
-      </div>
-    );
+    return <div className="w-full h-full flex items-center justify-center px-2">{pill}</div>;
   }
 
   return (
     <Popover
       width={220}
       trigger={
-        <div className="w-full h-full flex items-center justify-center text-xs font-medium text-white transition-colors"
-          style={{ backgroundColor: label ? label.color : undefined }}>
-          <span className={label ? '' : 'text-gray-300 dark:text-gray-600'}>{label ? label.title : '—'}</span>
+        <div className="w-full h-full flex items-center justify-center px-2 cursor-pointer hover:bg-gray-50/70 dark:hover:bg-gray-700/30 transition-colors">
+          {pill}
         </div>
       }
     >

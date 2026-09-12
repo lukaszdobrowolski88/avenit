@@ -158,8 +158,8 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
 
       {/* Więcej: Eksport / Import CSV */}
       <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} className="hidden" />
-      <Popover align="right" width={190} triggerClassName="inline-flex" trigger={
-        <button className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"><MoreHorizontal size={16} /></button>
+      <Popover align="right" width={190} triggerClassName="inline-flex ml-auto" trigger={
+        <button className="flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"><MoreHorizontal size={16} /></button>
       }>
         {({ close }) => (
           <div className="p-1.5">
