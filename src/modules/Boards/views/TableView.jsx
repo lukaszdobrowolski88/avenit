@@ -8,7 +8,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   ChevronRight, ChevronDown, Plus, GripVertical, MoreHorizontal,
-  Trash2, Maximize2, MessageSquare, X,
+  Trash2, Maximize2, MessageSquare, X, CornerDownRight, Pencil,
 } from 'lucide-react';
 import BoardCell from '../components/BoardCell';
 import ColumnHeader from '../components/ColumnHeader';
@@ -100,7 +100,8 @@ const ItemRow = React.memo(function ItemRow({ item, columns, groupColor, people,
       {/* Bez belki koloru per-wiersz (kanon v2) — kolor grupy jest w nagłówku grupy. */}
       <div className="shrink-0" style={{ width: 4 }} />
       {/* Nazwa elementu */}
-      <div className="flex items-center gap-1 px-2 " style={{ flex: 1, minWidth: NAME_MIN, paddingLeft: isSub ? 26 : 8 }}>
+      <div className="flex items-center gap-1.5 px-2" style={{ flex: 1, minWidth: NAME_MIN, paddingLeft: isSub ? 34 : 8 }}>
+        {isSub && <CornerDownRight size={14} className="shrink-0 text-gray-300 dark:text-gray-500" />}
         {!isSub && (
           <button onClick={onToggleExpand} className={`shrink-0 p-0.5 ${hasSub ? 'text-gray-400 hover:text-accent-primary' : 'text-transparent'}`} title="Podelementy">
             {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
@@ -156,6 +157,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: group.id });
 
   const totalWidth = HANDLE_W + 4 + NAME_MIN + columns.reduce((s, c) => s + (c.width || 160), 0) + ADDCOL_W;
+  const [renaming, setRenaming] = useState(false);
 
   return (
     <div className="mb-6">
@@ -165,7 +167,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
           {collapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
         </button>
         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
-        <GroupTitle group={group} canEdit={canEditStructure} onRename={(name) => api.updateGroup(group.id, { name })} />
+        <GroupTitle group={group} canEdit={canEditStructure} editing={renaming} onStartEdit={() => setRenaming(true)} onStopEdit={() => setRenaming(false)} onRename={(name) => api.updateGroup(group.id, { name })} />
         <span className="text-xs font-medium text-gray-400 dark:text-gray-500 tabular-nums">{groupItems.length}</span>
         {canEditStructure && (
         <Popover align="left" width={180} trigger={
@@ -173,6 +175,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
         }>
           {({ close }) => (
             <div className="p-2">
+              <button onClick={() => { setRenaming(true); close(); }} className="w-full flex items-center gap-2 px-2 py-1.5 mb-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm text-gray-700 dark:text-gray-200"><Pencil size={14} /> Zmień nazwę</button>
               <div className="text-[11px] text-gray-400 px-1 pb-1">Kolor grupy</div>
               <div className="flex flex-wrap gap-1 mb-2">
                 {GROUP_COLORS.map(c => (
@@ -261,18 +264,24 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
   );
 }
 
-function GroupTitle({ group, canEdit, onRename }) {
-  const [editing, setEditing] = useState(false);
+function GroupTitle({ group, canEdit, editing, onStartEdit, onStopEdit, onRename }) {
   const [name, setName] = useState(group.name);
+  useEffect(() => { setName(group.name); }, [group.name]);
   if (editing) {
     return (
       <input autoFocus value={name} onChange={(e) => setName(e.target.value)}
-        onBlur={() => { setEditing(false); if (name.trim() && name !== group.name) onRename(name.trim()); }}
-        onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-        className="font-semibold text-sm bg-white dark:bg-gray-700 rounded px-1 outline-none ring-2 ring-current/30" style={{ color: 'inherit' }} />
+        onFocus={(e) => e.currentTarget.select()}
+        onBlur={() => { onStopEdit(); if (name.trim() && name !== group.name) onRename(name.trim()); }}
+        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') { setName(group.name); onStopEdit(); } }}
+        className="font-semibold text-sm bg-white dark:bg-gray-700 rounded px-1.5 py-0.5 outline-none ring-2 ring-accent-primary/40 text-gray-900 dark:text-white" />
     );
   }
-  return <span className={`font-semibold text-sm ${canEdit ? 'cursor-pointer' : ''}`} onDoubleClick={() => canEdit && setEditing(true)}>{group.name}</span>;
+  return (
+    <button onClick={() => canEdit && onStartEdit()} title={canEdit ? 'Kliknij, aby zmienić nazwę' : undefined}
+      className={`font-semibold text-sm rounded px-1 -mx-1 ${canEdit ? 'hover:bg-gray-100 dark:hover:bg-gray-700/60 cursor-text' : 'cursor-default'}`}>
+      {group.name}
+    </button>
+  );
 }
 
 // ── Widok Tabela ─────────────────────────────────────────────────────
@@ -355,20 +364,26 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
 
       {/* Pasek operacji masowych */}
       {selected.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-gray-900 dark:bg-gray-800 text-white rounded-2xl shadow-2xl px-3 py-2.5 border border-gray-700">
-          <span className="text-sm font-medium px-2">{selected.size} zaznaczono</span>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-gray-900/95 dark:bg-gray-950/95 backdrop-blur-md text-white rounded-2xl shadow-2xl ring-1 ring-white/10 pl-2 pr-1.5 py-1.5">
+          <span className="flex items-center gap-2 text-sm font-medium pl-1 py-1">
+            <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-xs font-bold tabular-nums">{selected.size}</span>
+            <span className="text-white/80">zaznaczono</span>
+          </span>
+          <span className="w-px h-6 bg-white/15 mx-1" />
           {statusCol && (
-            <Popover align="left" width={190} trigger={<button className="text-sm px-3 py-1.5 rounded-lg hover:bg-white/10">Status</button>}>
+            <Popover align="left" width={190} trigger={<button className="text-sm px-3 py-1.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors">Status</button>}>
               {({ close }) => (
                 <div className="p-1.5">
                   {(statusCol.settings?.labels || []).map(l => (
-                    <button key={l.id} onClick={() => { bulkStatus(l.id); close(); }} className="w-full text-left px-2 py-1.5 rounded-lg text-sm text-white mb-1" style={{ backgroundColor: l.color }}>{l.title}</button>
+                    <button key={l.id} onClick={() => { bulkStatus(l.id); close(); }} className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg text-sm font-medium mb-1" style={{ backgroundColor: `${l.color}22`, color: l.color }}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: l.color }} />{l.title}
+                    </button>
                   ))}
                 </div>
               )}
             </Popover>
           )}
-          <Popover align="left" width={190} trigger={<button className="text-sm px-3 py-1.5 rounded-lg hover:bg-white/10">Przenieś</button>}>
+          <Popover align="left" width={190} trigger={<button className="text-sm px-3 py-1.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors">Przenieś</button>}>
             {({ close }) => (
               <div className="p-1.5">
                 {sortedGroups.map(g => (
@@ -379,8 +394,9 @@ export default function TableView({ data, config = {}, onOpenItem, updatesCountB
               </div>
             )}
           </Popover>
-          {canDeleteItems && <button onClick={bulkDelete} className="text-sm px-3 py-1.5 rounded-lg text-red-300 hover:bg-red-500/20">Usuń</button>}
-          <button onClick={clearSelection} className="p-1.5 rounded-lg hover:bg-white/10"><X size={16} /></button>
+          {canDeleteItems && <button onClick={bulkDelete} className="text-sm px-3 py-1.5 rounded-lg text-red-300 hover:bg-red-500/20 transition-colors">Usuń</button>}
+          <span className="w-px h-6 bg-white/15 mx-1" />
+          <button onClick={clearSelection} title="Wyczyść zaznaczenie" className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"><X size={16} /></button>
         </div>
       )}
     </div>
