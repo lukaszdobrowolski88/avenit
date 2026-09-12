@@ -283,19 +283,9 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [] }) =
     onSave(form.id, eventData);
   };
 
-  if (!document.body) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700">
-        <div className="flex justify-between mb-6">
-          <h3 className="font-bold text-xl text-gray-800 dark:text-white flex items-center gap-2">
-            <span className="text-2xl">{config.icon}</span>
-            {form.id ? 'Edytuj wydarzenie' : 'Nowe wydarzenie'}
-          </h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition text-gray-500 dark:text-gray-400"><X size={20}/></button>
-        </div>
-        <div className="space-y-4">
+  return (
+    <Modal isOpen onClose={onClose} size="md" title={`${config.icon} ${form.id ? tr('Edytuj wydarzenie') : tr('Nowe wydarzenie')}`}>
+      <div className="p-5 space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Tytuł wydarzenia')}</label>
             <input className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500" placeholder={t('Nazwa wydarzenia')} value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
@@ -379,9 +369,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [] }) =
             </div>
           </div>
         </div>
-      </div>
-    </div>,
-    document.body
+    </Modal>
   );
 };
 
