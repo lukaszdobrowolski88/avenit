@@ -35,7 +35,9 @@ const STATUS_STYLES = {
   'Gość': 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
 };
 
-export default function CareModule() {
+// embedded=true → renderowany jako zakładka „Opieka" w module Członkowie:
+// bez własnego PageHeader (Członkowie mają swój) i bez wrappera max-w.
+export default function CareModule({ embedded = false }) {
   const { withCampusFilter, campusIdForInsert, selectedCampusId } = useCampusQuery();
 
   const [view, setView] = useState('people');
@@ -95,8 +97,10 @@ export default function CareModule() {
   const goToDefinitions = useCallback(() => setView('fields'), []);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <PageHeader moduleKey="care" icon={HeartPulse} title="Opieka i CRM" subtitle="Notatki, opieka duszpasterska, kamienie milowe, tagi i pola własne członków" />
+    <div className={embedded ? 'space-y-6' : 'max-w-7xl mx-auto space-y-6'}>
+      {!embedded && (
+        <PageHeader moduleKey="care" icon={HeartPulse} title="Opieka i CRM" subtitle="Notatki, opieka duszpasterska, kamienie milowe, tagi i pola własne członków" />
+      )}
 
       {/* Przełącznik widoku */}
       <ResponsiveTabs moduleKey="care" tabs={VIEW_TABS} activeTab={view} onChange={setView} className="relative" />
