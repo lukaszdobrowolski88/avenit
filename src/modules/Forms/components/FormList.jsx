@@ -155,21 +155,6 @@ export default function FormList({
     setOpenMenuId(formId);
   };
 
-  const handleDeleteOrArchive = (form) => {
-    if (form.response_count > 0) {
-      // Ma odpowiedzi - archiwizuj
-      if (window.confirm(t('Ten formularz ma zapisane odpowiedzi. Czy chcesz przenieść go do archiwum?'))) {
-        onArchive?.(form.id);
-      }
-    } else {
-      // Brak odpowiedzi - można usunąć
-      if (window.confirm(t('Czy na pewno chcesz usunąć ten formularz?'))) {
-        onDelete(form.id);
-      }
-    }
-    setOpenMenuId(null);
-  };
-
   // Filtrowanie formularzy
   const filteredForms = forms.filter(form => {
     if (viewFilter === 'active') return !form.is_archived;
@@ -420,23 +405,32 @@ export default function FormList({
 
                               <hr className="my-1 border-gray-200 dark:border-gray-700" />
 
-                              {form.response_count > 0 ? (
-                                <button
-                                  onClick={() => handleDeleteOrArchive(form)}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                >
-                                  <Archive size={16} />
-                                  Archiwizuj
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleDeleteOrArchive(form)}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                >
-                                  <Trash2 size={16} />
-                                  {tr('Usuń')}
-                                </button>
-                              )}
+                              <button
+                                onClick={() => {
+                                  onArchive?.(form.id);
+                                  setOpenMenuId(null);
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-purple-600 dark:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
+                                <Archive size={16} />
+                                {tr('Archiwizuj')}
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  const msg = form.response_count > 0
+                                    ? t('Ten formularz ma zapisane odpowiedzi. Usunięcie skasuje też wszystkie odpowiedzi. Czy na pewno usunąć?')
+                                    : t('Czy na pewno chcesz usunąć ten formularz?');
+                                  if (window.confirm(msg)) {
+                                    onDelete(form.id);
+                                    setOpenMenuId(null);
+                                  }
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              >
+                                <Trash2 size={16} />
+                                {tr('Usuń')}
+                              </button>
                             </>
                           ) : (
                             <>
