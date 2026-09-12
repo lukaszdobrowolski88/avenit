@@ -52,7 +52,7 @@ function SummaryCell({ column, items }) {
     if (!s.total) return null;
     return (
       <div className="w-full px-2">
-        <div className="flex h-4 rounded-full overflow-hidden">
+        <div className="flex h-2 rounded-full overflow-hidden">
           {s.segments.map((seg, i) => (
             <div key={i} style={{ width: `${seg.pct}%`, backgroundColor: seg.color }} title={`${seg.count}`} />
           ))}
@@ -81,11 +81,11 @@ const ItemRow = React.memo(function ItemRow({ item, columns, groupColor, people,
   // ekranem). contain-intrinsic-size 'auto 38px' pamięta realną wysokość → bez skoków scrolla.
   const style = {
     transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1,
-    contentVisibility: isDragging ? 'visible' : 'auto', containIntrinsicSize: 'auto 42px',
+    contentVisibility: isDragging ? 'visible' : 'auto', containIntrinsicSize: 'auto 44px',
   };
   return (
     <div ref={setNodeRef} style={style}
-      className={`flex items-stretch border-b border-gray-100 dark:border-gray-700/60 hover:bg-gray-50/70 dark:hover:bg-gray-700/30 group/row min-h-[42px] ${isSub ? 'bg-gray-50/50 dark:bg-gray-800/40' : 'bg-white dark:bg-gray-800'}`}>
+      className={`flex items-stretch border-b border-gray-100 dark:border-gray-700/60 hover:bg-gray-50/70 dark:hover:bg-gray-700/30 group/row min-h-[44px] ${isSub ? 'bg-gray-50/50 dark:bg-gray-800/40' : 'bg-white dark:bg-gray-800'}`}>
       <div className="flex items-center justify-center shrink-0" style={{ width: HANDLE_W }}>
         {isSub ? null : (
           <>
@@ -97,7 +97,9 @@ const ItemRow = React.memo(function ItemRow({ item, columns, groupColor, people,
           </>
         )}
       </div>
-      <div className="shrink-0" style={{ width: 4, backgroundColor: isSub ? 'transparent' : groupColor }} />
+      <div className="shrink-0 flex items-stretch py-1.5" style={{ width: 4 }}>
+        {!isSub && <div className="flex-1 rounded-full" style={{ backgroundColor: groupColor }} />}
+      </div>
       {/* Nazwa elementu */}
       <div className="flex items-center gap-1 px-2 border-r border-gray-100 dark:border-gray-700/60" style={{ flex: 1, minWidth: NAME_MIN, paddingLeft: isSub ? 26 : 8 }}>
         {!isSub && (
@@ -165,7 +167,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
         </button>
         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
         <GroupTitle group={group} canEdit={canEditStructure} onRename={(name) => api.updateGroup(group.id, { name })} />
-        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/60 rounded-full px-2 py-0.5">{groupItems.length}</span>
+        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-full px-2 py-0.5">{groupItems.length}</span>
         {canEditStructure && (
         <Popover align="left" width={180} trigger={
           <button className="text-gray-300 hover:text-gray-500 p-0.5"><MoreHorizontal size={16} /></button>
