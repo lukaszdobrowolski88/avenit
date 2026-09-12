@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Link as LinkIcon, ExternalLink, Trash2, Calendar, Clock, MapPin,
   Ticket, FileText, Users, Send, Copy, Check, X,
+  Paperclip, Upload, Download, Image as ImageIcon, File as FileIcon,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from '../lib/toast';
@@ -52,6 +53,8 @@ export default function EventDetailPage() {
   const [copied, setCopied] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [remindBusy, setRemindBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = React.useRef(null);
 
   const canManage = useCan('module:calendar');
   const moduleTitle = useModuleLabel(ev?.module_key, ev?.module_key || 'Wydarzenie');
@@ -134,6 +137,34 @@ export default function EventDetailPage() {
       load();
     } catch (e) { toast.error('Nie udało się wysłać przypomnień: ' + (e.message || e)); }
     finally { setRemindBusy(false); }
+  };
+
+  // Załączniki: upload do bucketa public-assets, zapis listy w events.attachments (jsonb).
+  const uploadAttachments = async (fileList) => {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const added = [];
+      for (const file of files) {
+        const safe = (file.name || 'plik').replace(/[^\w.\-]+/g, '_');
+        const path = `events/${id}/${Date.now()}-${safe}`;
+        const { error } = await supabase.storage.from('public-assets').upload(path, file);
+        if (error) throw error;
+        const { data } = supabase.storage.from('public-assets').getPublicUrl(path);
+        added.push({ name: file.name, url: data?.publicUrl, path, type: file.type || '', size: file.size || 0 });
+      }
+      save({ attachments: [...(ev.attachments || []), ...added] });
+      toast.success(added.length > 1 ? `Wgrano ${added.length} plików.` : 'Wgrano plik.');
+    } catch (e) { toast.error('Nie udało się wgrać: ' + (e.message || e)); }
+    finally { setUploading(false); if (fileRef.current) fileRef.current.value = ''; }
+  };
+  const removeAttachment = async (idx) => {
+    const list = ev.attachments || [];
+    const att = list[idx];
+    if (!att) return;
+    if (att.path) { try { await supabase.storage.from('public-assets').remove([att.path]); } catch { /* plik mógł już nie istnieć */ } }
+    save({ attachments: list.filter((_, i) => i !== idx) });
   };
 
   if (loading) return <Spinner center size={28} />;
@@ -222,6 +253,52 @@ export default function EventDetailPage() {
         </div>
       </Card>
 
+      {/* Załączniki / grafiki */}
+      <Card icon={Paperclip} title="Załączniki i grafiki" actions={
+        canManage && (
+          <>
+            <input ref={fileRef} type="file" multiple onChange={(e) => uploadAttachments(e.target.files)} className="hidden" />
+            <button onClick={() => fileRef.current?.click()} disabled={uploading}
+              className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5 disabled:opacity-60">
+              <Upload size={14} /> {uploading ? 'Wgrywanie…' : 'Dodaj pliki'}
+            </button>
+          </>
+        )
+      }>
+        {(ev.attachments || []).length === 0 ? (
+          <p className="text-sm text-gray-400">Brak załączników. Dodaj grafiki (plakat, harmonogram) lub pliki (PDF, dokumenty).</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {(ev.attachments || []).map((a, i) => {
+              const isImg = (a.type || '').startsWith('image/');
+              return (
+                <div key={a.path || i} className="group relative rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-800/50">
+                  <a href={a.url} target="_blank" rel="noreferrer" className="block">
+                    {isImg ? (
+                      <img src={a.url} alt={a.name} className="w-full h-28 object-cover" />
+                    ) : (
+                      <div className="w-full h-28 flex items-center justify-center text-gray-400">
+                        <FileIcon size={30} />
+                      </div>
+                    )}
+                    <div className="px-2 py-1.5 flex items-center gap-1.5">
+                      {isImg ? <ImageIcon size={13} className="text-accent-primary shrink-0" /> : <Download size={13} className="text-accent-primary shrink-0" />}
+                      <span className="text-xs text-gray-700 dark:text-gray-200 truncate">{a.name}</span>
+                    </div>
+                  </a>
+                  {canManage && (
+                    <button onClick={() => removeAttachment(i)} title="Usuń"
+                      className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-white/90 dark:bg-gray-900/90 text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
       {/* Rejestracja + płatność */}
       <Card icon={Ticket} title="Rejestracja i płatność">
         <div className="space-y-3">
@@ -229,6 +306,14 @@ export default function EventDetailPage() {
             <input type="checkbox" checked={!!ev.registration_required} onChange={(e) => save({ registration_required: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" />
             Wymaga rejestracji
           </label>
+          {ev.registration_required && (
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Rejestracja do (termin)</label>
+              <input type="date" value={String(ev.registration_deadline || '').slice(0, 10)}
+                onChange={(e) => save({ registration_deadline: e.target.value || null })}
+                className="w-full sm:w-56 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+            </div>
+          )}
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Formularz rejestracji (wewnętrzny)</label>
             <div className="flex items-center gap-2">
@@ -269,6 +354,12 @@ export default function EventDetailPage() {
                   </div>
                 ))}
                 <button onClick={() => save({ prices: [...(ev.prices || []), { label: '', amount: null }] })} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><span className="text-base leading-none">＋</span> Dodaj cenę</button>
+                <div className="pt-1">
+                  <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Płatność do (termin)</label>
+                  <input type="date" value={String(ev.payment_deadline || '').slice(0, 10)}
+                    onChange={(e) => save({ payment_deadline: e.target.value || null })}
+                    className="w-full sm:w-56 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+                </div>
               </div>
             )}
           </div>
