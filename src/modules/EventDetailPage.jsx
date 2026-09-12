@@ -47,8 +47,11 @@ export default function EventDetailPage() {
   const [forms, setForms] = useState([]);
   const [fields, setFields] = useState([]);
   const [invites, setInvites] = useState([]);
+  const [campaign, setCampaign] = useState(null);
+  const [campaignIds, setCampaignIds] = useState([]);
   const [copied, setCopied] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [remindBusy, setRemindBusy] = useState(false);
 
   const canManage = useCan('module:calendar');
   const moduleTitle = useModuleLabel(ev?.module_key, ev?.module_key || 'Wydarzenie');
@@ -66,14 +69,16 @@ export default function EventDetailPage() {
         .order('sort_order', { ascending: true }).then(({ data: f }) => setFields(f || [])).catch(() => {});
     }
     try {
-      const { data: camps } = await supabase.from('rsvp_campaigns').select('id').eq('event_id', id);
+      const { data: camps } = await supabase.from('rsvp_campaigns').select('*').eq('event_id', id).order('created_at', { ascending: false });
       const ids = (camps || []).map((c) => c.id);
+      setCampaign((camps && camps[0]) || null);
+      setCampaignIds(ids);
       if (ids.length) {
         const { data: inv } = await supabase.from('rsvp_invitations')
-          .select('id, name, email, status, sent_channels, guests_count').in('campaign_id', ids);
+          .select('id, member_id, name, email, status, sent_channels, guests_count').in('campaign_id', ids);
         setInvites(inv || []);
       } else setInvites([]);
-    } catch { setInvites([]); }
+    } catch { setInvites([]); setCampaign(null); setCampaignIds([]); }
   }, [id]);
 
   useEffect(() => { load(); }, [load]);
@@ -94,6 +99,41 @@ export default function EventDetailPage() {
     if (error) return toast.error(error.message);
     toast.success('Wydarzenie usunięte');
     navigate(-1);
+  };
+
+  // Zapewnij kampanię RSVP powiązaną z wydarzeniem (utwórz szkic, jeśli brak) — wspólną dla
+  // zaproszeń i automatyzacji przypomnień. Zwraca obiekt kampanii.
+  const ensureCampaign = async () => {
+    if (campaign) return campaign;
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from('rsvp_campaigns').insert({
+      title: ev.title || 'Wydarzenie', event_type: ev.event_type || 'event',
+      event_date: String(ev.date || '').slice(0, 10) || null, event_time: ev.time || null,
+      location: ev.location || null, channels: ['email'], status: 'draft',
+      created_by: user?.email || null, campus_id: ev.campus_id || null, event_id: ev.id,
+    }).select().single();
+    if (error) throw error;
+    setCampaign(data);
+    setCampaignIds((prev) => [data.id, ...prev]);
+    return data;
+  };
+
+  // Ręczne przypomnienie osobom bez odpowiedzi (status pending) — teraz.
+  const sendReminder = async () => {
+    const ids = campaignIds.length ? campaignIds : (campaign ? [campaign.id] : []);
+    if (!ids.length) return toast.info('Najpierw wyślij zaproszenia.');
+    setRemindBusy(true);
+    try {
+      let total = 0;
+      for (const cid of ids) {
+        const { data, error } = await supabase.functions.invoke('rsvp-send', { body: { campaign_id: cid, mode: 'reminder' } });
+        if (error || data?.error) throw new Error(data?.error || error?.message);
+        total += (data?.stats?.email || 0) + (data?.stats?.sms || 0) + (data?.stats?.push || 0);
+      }
+      toast.success(total ? `Wysłano przypomnienia (${total}).` : 'Brak osób do przypomnienia.');
+      load();
+    } catch (e) { toast.error('Nie udało się wysłać przypomnień: ' + (e.message || e)); }
+    finally { setRemindBusy(false); }
   };
 
   if (loading) return <Spinner center size={28} />;
@@ -260,10 +300,20 @@ export default function EventDetailPage() {
 
       {/* Zaproszenia (do kogo wysłaliśmy) */}
       <Card icon={Send} title="Zaproszenia" actions={
-        canManage && <button onClick={() => setShowInvite(true)} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5"><Send size={14} /> Wyślij zaproszenia</button>
+        canManage && (
+          <div className="flex items-center gap-2">
+            {invCounts.pending > 0 && (
+              <button onClick={sendReminder} disabled={remindBusy}
+                className="text-sm px-3 py-1.5 rounded-lg border border-amber-300 text-amber-700 dark:border-amber-500/40 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 flex items-center gap-1.5 disabled:opacity-60">
+                <Clock size={14} /> {remindBusy ? 'Wysyłanie…' : `Przypomnij oczekującym (${invCounts.pending})`}
+              </button>
+            )}
+            <button onClick={() => setShowInvite(true)} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5"><Send size={14} /> Wyślij zaproszenia</button>
+          </div>
+        )
       }>
         {invites.length === 0 ? (
-          <p className="text-sm text-gray-400">Brak wysłanych zaproszeń. Użyj „Wyślij zaproszenia" (moduł Obecność/RSVP), aby zaprosić osoby — statusy pojawią się tutaj.</p>
+          <p className="text-sm text-gray-400">Brak wysłanych zaproszeń. Kliknij „Wyślij zaproszenia", aby zaprosić osoby — statusy odpowiedzi pojawią się tutaj.</p>
         ) : (
           <>
             <div className="flex flex-wrap gap-2 mb-3 text-xs">
@@ -291,15 +341,28 @@ export default function EventDetailPage() {
         )}
       </Card>
 
+      {/* Automatyzacja przypomnień */}
+      {canManage && (
+        <ReminderAutomation campaign={campaign} campaignIds={campaignIds} ensureCampaign={ensureCampaign} onSaved={load} />
+      )}
+
       {showInvite && (
-        <EventInviteModal event={ev} onClose={() => setShowInvite(false)} onSent={() => { setShowInvite(false); load(); }} />
+        <EventInviteModal
+          event={ev}
+          ensureCampaign={ensureCampaign}
+          existingMemberIds={invites.map((i) => i.member_id).filter(Boolean)}
+          onClose={() => setShowInvite(false)}
+          onSent={() => { setShowInvite(false); load(); }}
+        />
       )}
     </div>
   );
 }
 
 // Modal: wyślij zaproszenia (kampania RSVP) pre-fill z danych wydarzenia.
-function EventInviteModal({ event, onClose, onSent }) {
+// Reużywa jednej kampanii wydarzenia (ensureCampaign) i wysyła tylko nowe zaproszenia.
+function EventInviteModal({ event, ensureCampaign, existingMemberIds = [], onClose, onSent }) {
+  const invitedSet = new Set(existingMemberIds);
   const [members, setMembers] = useState([]);
   const [sel, setSel] = useState(() => new Set());
   const [search, setSearch] = useState('');
@@ -326,27 +389,28 @@ function EventInviteModal({ event, onClose, onSent }) {
     if (!recips.length) return toast.error('Wybierz odbiorców.');
     const chans = Object.entries(channels).filter(([, v]) => v).map(([k]) => k);
     if (!chans.length) return toast.error('Wybierz co najmniej jeden kanał.');
+    // Pomiń już zaproszonych (dedup po member_id) — wyślemy tylko nowym.
+    const newRecips = recips.filter((m) => !invitedSet.has(m.id));
+    if (!newRecips.length) return toast.info('Wybrane osoby są już zaproszone.');
     setBusy(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: camp, error } = await supabase.from('rsvp_campaigns').insert({
-        title: event.title || 'Wydarzenie', event_type: event.event_type || 'event',
-        event_date: String(event.date || '').slice(0, 10) || null, event_time: event.time || null,
-        location: event.location || null, message: message || null,
-        channels: chans, status: 'draft', created_by: user?.email || null,
-        campus_id: event.campus_id || null, event_id: event.id,
-      }).select().single();
-      if (error) throw error;
-      const invites = recips.map((m) => ({
+      const camp = await ensureCampaign();
+      // Zaktualizuj kanały/treść kampanii pod tę wysyłkę.
+      await supabase.from('rsvp_campaigns').update({ channels: chans, message: message || null }).eq('id', camp.id);
+      const invites = newRecips.map((m) => ({
         campaign_id: camp.id, member_id: m.id, name: name(m),
         email: m.email || null, phone: m.phone || null, token: genToken(),
         status: 'pending', campus_id: event.campus_id || null,
       }));
+      const insertedIds = [];
       for (let i = 0; i < invites.length; i += 500) {
-        const { error: e2 } = await supabase.from('rsvp_invitations').insert(invites.slice(i, i + 500));
+        const { data: ins, error: e2 } = await supabase.from('rsvp_invitations').insert(invites.slice(i, i + 500)).select('id');
         if (e2) throw e2;
+        (ins || []).forEach((r) => insertedIds.push(r.id));
       }
-      const { data: sres, error: serr } = await supabase.functions.invoke('rsvp-send', { body: { campaign_id: camp.id } });
+      const { data: sres, error: serr } = await supabase.functions.invoke('rsvp-send', {
+        body: { campaign_id: camp.id, channels: chans, invitation_ids: insertedIds },
+      });
       if (serr || sres?.error) throw new Error(sres?.error || serr?.message);
       const s = sres?.stats || {};
       toast.success(`Wysłano zaproszenia. E-mail: ${s.email || 0}, SMS: ${s.sms || 0}, Push: ${s.push || 0}${s.failed ? `, niepowodzeń: ${s.failed}` : ''}.`);
@@ -382,13 +446,17 @@ function EventInviteModal({ event, onClose, onSent }) {
           </div>
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Szukaj osoby…" className="w-full mb-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
           <div className="max-h-56 overflow-y-auto custom-scrollbar rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
-            {filtered.length === 0 ? <div className="p-3 text-sm text-gray-400 text-center">Brak osób.</div> : filtered.map((m) => (
-              <label key={m.id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                <input type="checkbox" checked={sel.has(m.id)} onChange={() => toggle(m.id)} className="w-4 h-4 rounded accent-accent-primary" />
-                <span className="text-gray-800 dark:text-gray-100 truncate">{name(m)}</span>
-                {m.email && <span className="text-xs text-gray-400 truncate ml-auto">{m.email}</span>}
-              </label>
-            ))}
+            {filtered.length === 0 ? <div className="p-3 text-sm text-gray-400 text-center">Brak osób.</div> : filtered.map((m) => {
+              const invited = invitedSet.has(m.id);
+              return (
+                <label key={m.id} className={`flex items-center gap-2 px-3 py-2 text-sm ${invited ? 'opacity-60' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}>
+                  <input type="checkbox" checked={invited || sel.has(m.id)} disabled={invited} onChange={() => toggle(m.id)} className="w-4 h-4 rounded accent-accent-primary" />
+                  <span className="text-gray-800 dark:text-gray-100 truncate">{name(m)}</span>
+                  {invited && <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">zaproszony</span>}
+                  {m.email && <span className="text-xs text-gray-400 truncate ml-auto">{m.email}</span>}
+                </label>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -397,5 +465,126 @@ function EventInviteModal({ event, onClose, onSent }) {
         <button onClick={send} disabled={busy || sel.size === 0} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60 flex items-center gap-1.5"><Send size={15} /> Wyślij ({sel.size})</button>
       </div>
     </Modal>
+  );
+}
+
+// Automatyzacja przypomnień: sekwencja kroków (dni przed + kanały + opcjonalna treść) + auto-zamknięcie zapisów.
+const CHANNELS = [['email', 'E-mail'], ['push', 'Push'], ['sms', 'SMS']];
+function ReminderAutomation({ campaign, campaignIds, ensureCampaign, onSaved }) {
+  const fromCampaign = () => {
+    const s = campaign?.reminder_steps;
+    if (Array.isArray(s) && s.length) {
+      return s.map((x) => ({
+        days: Number(x?.days) || 0,
+        channels: Array.isArray(x?.channels) && x.channels.length ? x.channels : ['email'],
+        message: x?.message || '',
+      }));
+    }
+    return [{ days: 1, channels: ['email'], message: '' }];
+  };
+  const [enabled, setEnabled] = useState(!!campaign?.reminder_enabled);
+  const [autoClose, setAutoClose] = useState(!!campaign?.auto_close);
+  const [steps, setSteps] = useState(fromCampaign);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setEnabled(!!campaign?.reminder_enabled);
+    setAutoClose(!!campaign?.auto_close);
+    setSteps(fromCampaign());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaign?.id]);
+
+  const setStep = (i, patch) => setSteps((st) => st.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+  const toggleChannel = (i, ch) => setSteps((st) => st.map((s, idx) => {
+    if (idx !== i) return s;
+    const has = s.channels.includes(ch);
+    const channels = has ? s.channels.filter((c) => c !== ch) : [...s.channels, ch];
+    return { ...s, channels: channels.length ? channels : s.channels };
+  }));
+  const addStep = () => setSteps((st) => [...st, { days: 1, channels: ['email'], message: '' }]);
+  const removeStep = (i) => setSteps((st) => st.filter((_, idx) => idx !== i));
+  const applyPreset = () => setSteps([
+    { days: 7, channels: ['email'], message: '' },
+    { days: 3, channels: ['email', 'push'], message: '' },
+    { days: 1, channels: ['email', 'push', 'sms'], message: '' },
+  ]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const cleanSteps = steps
+        .map((s) => ({
+          days: Math.max(0, Number(s.days) || 0),
+          channels: s.channels.length ? s.channels : ['email'],
+          ...(s.message?.trim() ? { message: s.message.trim() } : {}),
+        }))
+        .sort((a, b) => b.days - a.days);
+      const camp = await ensureCampaign();
+      const ids = campaignIds && campaignIds.length ? campaignIds : [camp.id];
+      const payload = { reminder_enabled: enabled, reminder_steps: cleanSteps, auto_close: autoClose };
+      for (const cid of ids) {
+        const { error } = await supabase.from('rsvp_campaigns').update(payload).eq('id', cid);
+        if (error) throw error;
+      }
+      toast.success('Zapisano automatyzację przypomnień.');
+      onSaved?.();
+    } catch (e) { toast.error('Nie udało się zapisać: ' + (e.message || e)); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <Card icon={Clock} title="Automatyzacja przypomnień" actions={
+      <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="w-4 h-4 rounded accent-accent-primary" />
+        Włączone
+      </label>
+    }>
+      {!enabled ? (
+        <p className="text-sm text-gray-400">Automatyczne przypomnienia wyłączone. Włącz, aby system sam wysyłał ponaglenia osobom bez odpowiedzi w wybranych terminach przed wydarzeniem.</p>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Kroki wysyłane osobom bez odpowiedzi (na X dni przed wydarzeniem):</p>
+            <button onClick={applyPreset} className="text-xs text-accent-primary hover:underline">Ustaw 7 / 3 / 1 (eskalacja)</button>
+          </div>
+
+          {steps.map((s, i) => (
+            <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <input type="number" min="0" max="60" value={s.days}
+                  onChange={(e) => setStep(i, { days: e.target.value })}
+                  className="w-16 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-center" />
+                <span className="text-sm text-gray-600 dark:text-gray-300">dni przed</span>
+                <div className="flex gap-1.5 ml-auto">
+                  {CHANNELS.map(([k, lbl]) => (
+                    <button key={k} type="button" onClick={() => toggleChannel(i, k)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${s.channels.includes(k) ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                      {lbl}
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => removeStep(i)} className="p-1.5 text-gray-400 hover:text-red-500" title="Usuń krok"><X size={15} /></button>
+                </div>
+              </div>
+              <input value={s.message} onChange={(e) => setStep(i, { message: e.target.value })}
+                placeholder="Treść przypomnienia (opcjonalnie — domyślnie jak w kampanii)"
+                className="w-full px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+            </div>
+          ))}
+
+          <button onClick={addStep} className="text-sm text-accent-primary hover:underline">+ Dodaj krok</button>
+
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer rounded-xl bg-gray-50 dark:bg-gray-800/50 px-4 py-3">
+            <input type="checkbox" checked={autoClose} onChange={(e) => setAutoClose(e.target.checked)} className="w-4 h-4 rounded accent-accent-primary" />
+            Automatycznie zamknij zapisy po dacie wydarzenia
+          </label>
+        </div>
+      )}
+
+      <div className="flex justify-end mt-4">
+        <button onClick={save} disabled={saving} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60">
+          {saving ? 'Zapisywanie…' : 'Zapisz automatyzację'}
+        </button>
+      </div>
+    </Card>
   );
 }

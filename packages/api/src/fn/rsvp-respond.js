@@ -13,6 +13,14 @@ export default async function handler(req, reply) {
 
   try {
     if (answer && VALID.includes(answer)) {
+      // Auto-zamknięcie: nie przyjmuj odpowiedzi dla zamkniętej kampanii.
+      const { rows: st } = await req.db.query(
+        `SELECT c.status FROM rsvp_invitations i JOIN rsvp_campaigns c ON c.id = i.campaign_id WHERE i.token = $1`,
+        [token]
+      );
+      if (st[0]?.status === 'closed') {
+        return reply.code(403).send({ error: 'Zapisy na to wydarzenie zostały zamknięte.' });
+      }
       const g = Math.max(0, parseInt(guests, 10) || 0);
       await req.db.query(
         `UPDATE rsvp_invitations SET status = $1, guests_count = $2, responded_at = now() WHERE token = $3`,
