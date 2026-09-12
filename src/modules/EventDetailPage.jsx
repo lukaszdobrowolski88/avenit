@@ -12,8 +12,13 @@ import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
 import SimpleRichEditor from '../components/SimpleRichEditor';
 import EventRSVP from '../components/EventRSVP';
+import Modal from '../components/Modal';
 import { useModuleCalendar, useModuleLabel, useModuleColor } from '../hooks/useModuleLabel';
 import { useCan } from '../components/Can';
+
+const genToken = () => (typeof crypto !== 'undefined' && crypto.randomUUID)
+  ? crypto.randomUUID().replace(/-/g, '')
+  : (Math.random().toString(36).slice(2) + Date.now().toString(36));
 
 const DEFAULT_TYPES = [
   { value: 'spotkanie', label: 'Spotkanie' },
@@ -43,6 +48,7 @@ export default function EventDetailPage() {
   const [fields, setFields] = useState([]);
   const [invites, setInvites] = useState([]);
   const [copied, setCopied] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
 
   const canManage = useCan('module:calendar');
   const moduleTitle = useModuleLabel(ev?.module_key, ev?.module_key || 'Wydarzenie');
@@ -184,7 +190,7 @@ export default function EventDetailPage() {
             Wymaga rejestracji
           </label>
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Podpięty formularz rejestracji</label>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Formularz rejestracji (wewnętrzny)</label>
             <div className="flex items-center gap-2">
               <div className="flex-1">
                 <CustomSelect value={ev.form_id || ''} onChange={(v) => save({ form_id: v || null })}
@@ -200,15 +206,29 @@ export default function EventDetailPage() {
             </div>
             {formLink && <p className="mt-1 text-xs text-gray-400 truncate">{formLink}</p>}
           </div>
-          <div className="flex items-center gap-4 flex-wrap">
+          <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">…lub link do zewnętrznego formularza</label>
+            <div className="flex items-center gap-2">
+              <input value={ev.form_url || ''} onChange={(e) => setEv({ ...ev, form_url: e.target.value })} onBlur={(e) => save({ form_url: e.target.value })} placeholder="https://forms.google.com/…" className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+              {ev.form_url && <a href={ev.form_url} target="_blank" rel="noreferrer" className="p-2 text-accent-primary hover:bg-accent-primary/10 rounded-lg" title="Otwórz"><ExternalLink size={18} /></a>}
+            </div>
+          </div>
+          <div>
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
               <input type="checkbox" checked={!!ev.is_paid} onChange={(e) => save({ is_paid: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" />
               Wydarzenie płatne
             </label>
             {ev.is_paid && (
-              <div className="flex items-center gap-2">
-                <input type="number" min="0" step="0.01" value={ev.price != null ? (ev.price / 100) : ''} onChange={(e) => save({ price: e.target.value === '' ? null : Math.round(parseFloat(e.target.value) * 100) })} placeholder="0.00" className="w-28 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-right" />
-                <span className="text-sm text-gray-500">zł</span>
+              <div className="mt-2 space-y-2">
+                {(ev.prices || []).map((p, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input value={p.label || ''} onChange={(e) => setEv({ ...ev, prices: (ev.prices || []).map((x, j) => j === i ? { ...x, label: e.target.value } : x) })} onBlur={() => save({ prices: ev.prices || [] })} placeholder="Opis (np. Bilet normalny)" className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+                    <input type="number" min="0" step="0.01" value={p.amount != null ? (p.amount / 100) : ''} onChange={(e) => setEv({ ...ev, prices: (ev.prices || []).map((x, j) => j === i ? { ...x, amount: e.target.value === '' ? null : Math.round(parseFloat(e.target.value) * 100) } : x) })} onBlur={() => save({ prices: ev.prices || [] })} placeholder="0.00" className="w-24 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-right" />
+                    <span className="text-sm text-gray-500">zł</span>
+                    <button onClick={() => save({ prices: (ev.prices || []).filter((_, j) => j !== i) })} className="p-1.5 text-gray-400 hover:text-red-500"><X size={16} /></button>
+                  </div>
+                ))}
+                <button onClick={() => save({ prices: [...(ev.prices || []), { label: '', amount: null }] })} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><span className="text-base leading-none">＋</span> Dodaj cenę</button>
               </div>
             )}
           </div>
@@ -240,7 +260,7 @@ export default function EventDetailPage() {
 
       {/* Zaproszenia (do kogo wysłaliśmy) */}
       <Card icon={Send} title="Zaproszenia" actions={
-        canManage && <button onClick={() => navigate('/rsvp')} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1.5"><Send size={14} /> Wyślij zaproszenia</button>
+        canManage && <button onClick={() => setShowInvite(true)} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5"><Send size={14} /> Wyślij zaproszenia</button>
       }>
         {invites.length === 0 ? (
           <p className="text-sm text-gray-400">Brak wysłanych zaproszeń. Użyj „Wyślij zaproszenia" (moduł Obecność/RSVP), aby zaprosić osoby — statusy pojawią się tutaj.</p>
@@ -270,6 +290,112 @@ export default function EventDetailPage() {
           </>
         )}
       </Card>
+
+      {showInvite && (
+        <EventInviteModal event={ev} onClose={() => setShowInvite(false)} onSent={() => { setShowInvite(false); load(); }} />
+      )}
     </div>
+  );
+}
+
+// Modal: wyślij zaproszenia (kampania RSVP) pre-fill z danych wydarzenia.
+function EventInviteModal({ event, onClose, onSent }) {
+  const [members, setMembers] = useState([]);
+  const [sel, setSel] = useState(() => new Set());
+  const [search, setSearch] = useState('');
+  const [channels, setChannels] = useState({ email: true, push: false, sms: false });
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    supabase.from('members').select('id, first_name, last_name, email, phone').order('last_name', { ascending: true })
+      .then(({ data }) => setMembers(data || [])).catch(() => setMembers([]));
+  }, []);
+
+  const name = (m) => `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email || '—';
+  const filtered = members.filter((m) => {
+    const s = search.trim().toLowerCase();
+    return !s || name(m).toLowerCase().includes(s) || (m.email || '').toLowerCase().includes(s);
+  });
+  const toggle = (id) => setSel((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const allShownSelected = filtered.length > 0 && filtered.every((m) => sel.has(m.id));
+  const toggleAll = () => setSel((p) => { const n = new Set(p); if (allShownSelected) filtered.forEach((m) => n.delete(m.id)); else filtered.forEach((m) => n.add(m.id)); return n; });
+
+  const send = async () => {
+    const recips = members.filter((m) => sel.has(m.id));
+    if (!recips.length) return toast.error('Wybierz odbiorców.');
+    const chans = Object.entries(channels).filter(([, v]) => v).map(([k]) => k);
+    if (!chans.length) return toast.error('Wybierz co najmniej jeden kanał.');
+    setBusy(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: camp, error } = await supabase.from('rsvp_campaigns').insert({
+        title: event.title || 'Wydarzenie', event_type: event.event_type || 'event',
+        event_date: String(event.date || '').slice(0, 10) || null, event_time: event.time || null,
+        location: event.location || null, message: message || null,
+        channels: chans, status: 'draft', created_by: user?.email || null,
+        campus_id: event.campus_id || null, event_id: event.id,
+      }).select().single();
+      if (error) throw error;
+      const invites = recips.map((m) => ({
+        campaign_id: camp.id, member_id: m.id, name: name(m),
+        email: m.email || null, phone: m.phone || null, token: genToken(),
+        status: 'pending', campus_id: event.campus_id || null,
+      }));
+      for (let i = 0; i < invites.length; i += 500) {
+        const { error: e2 } = await supabase.from('rsvp_invitations').insert(invites.slice(i, i + 500));
+        if (e2) throw e2;
+      }
+      const { data: sres, error: serr } = await supabase.functions.invoke('rsvp-send', { body: { campaign_id: camp.id } });
+      if (serr || sres?.error) throw new Error(sres?.error || serr?.message);
+      const s = sres?.stats || {};
+      toast.success(`Wysłano zaproszenia. E-mail: ${s.email || 0}, SMS: ${s.sms || 0}, Push: ${s.push || 0}${s.failed ? `, niepowodzeń: ${s.failed}` : ''}.`);
+      onSent();
+    } catch (e) { toast.error('Nie udało się wysłać: ' + (e.message || e)); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <Modal isOpen onClose={onClose} size="md" title={`Wyślij zaproszenia — ${event.title || ''}`}>
+      <div className="p-5 space-y-4">
+        <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
+          {fmtDate(event.date) || '—'}{event.time ? `, ${event.time}` : ''}{event.location ? ` · ${event.location}` : ''}
+        </div>
+        <div>
+          <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Kanały</label>
+          <div className="flex items-center gap-4">
+            {[['email', 'E-mail'], ['push', 'Push'], ['sms', 'SMS']].map(([k, l]) => (
+              <label key={k} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+                <input type="checkbox" checked={!!channels[k]} onChange={(e) => setChannels((c) => ({ ...c, [k]: e.target.checked }))} className="w-4 h-4 rounded accent-accent-primary" /> {l}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="block text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Wiadomość (opcjonalnie)</label>
+          <textarea rows={2} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Zapraszamy na…" className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm resize-none" />
+        </div>
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">Odbiorcy ({sel.size})</label>
+            <button onClick={toggleAll} className="text-xs text-accent-primary hover:text-accent-secondary">{allShownSelected ? 'Odznacz widoczne' : 'Zaznacz widoczne'}</button>
+          </div>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Szukaj osoby…" className="w-full mb-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
+          <div className="max-h-56 overflow-y-auto custom-scrollbar rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
+            {filtered.length === 0 ? <div className="p-3 text-sm text-gray-400 text-center">Brak osób.</div> : filtered.map((m) => (
+              <label key={m.id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <input type="checkbox" checked={sel.has(m.id)} onChange={() => toggle(m.id)} className="w-4 h-4 rounded accent-accent-primary" />
+                <span className="text-gray-800 dark:text-gray-100 truncate">{name(m)}</span>
+                {m.email && <span className="text-xs text-gray-400 truncate ml-auto">{m.email}</span>}
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
+        <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Anuluj</button>
+        <button onClick={send} disabled={busy || sel.size === 0} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60 flex items-center gap-1.5"><Send size={15} /> Wyślij ({sel.size})</button>
+      </div>
+    </Modal>
   );
 }
