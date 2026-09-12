@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
-import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2 } from 'lucide-react';
+import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2, SlidersHorizontal } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import TabHeader from '../../components/TabHeader';
 import TimeInput from '../../components/TimeInput';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
+import { useModuleCalendar, saveModuleCalendar } from '../../hooks/useModuleLabel';
+import Modal from '../../components/Modal';
+import { useCan } from '../../components/Can';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
@@ -359,6 +362,11 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
 export default function EventsTab({ ministry, currentUserEmail: propUserEmail }) {
   const t = useT();
   const config = getModuleConfig(ministry);
+  // Typy wydarzeń tego modułu: z konfiguracji (Ustawienia kalendarza modułu) lub domyślne.
+  const calCfg = useModuleCalendar(ministry);
+  const eventTypes = (calCfg?.types && calCfg.types.length) ? calCfg.types : config.types;
+  const canManageCalendar = useCan('module:settings');
+  const [showTypes, setShowTypes] = useState(false);
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -508,7 +516,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   };
 
   const getTypeLabel = (type) => {
-    const found = config.types.find(t => t.value === type);
+    const found = eventTypes.find(t => t.value === type);
     return found ? found.label : type;
   };
 
@@ -582,12 +590,22 @@ GRANT ALL ON ${config.tableName} TO anon;`;
     <div className="space-y-6">
       {/* Nagłówek */}
       <TabHeader className="!mb-0" title={t('Wydarzenia')} actions={
-        <button
-          onClick={() => setShowModal({ id: null })}
-          className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
-        >
-          <Plus size={18}/> {t('Dodaj wydarzenie')}
-        </button>
+        <div className="flex items-center gap-2">
+          {canManageCalendar && (
+            <button
+              onClick={() => setShowTypes(true)}
+              className="text-sm px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-2"
+            >
+              <SlidersHorizontal size={16}/> {t('Typy')}
+            </button>
+          )}
+          <button
+            onClick={() => setShowModal({ id: null })}
+            className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
+          >
+            <Plus size={18}/> {t('Dodaj wydarzenie')}
+          </button>
+        </div>
       } />
 
       {/* Filtry */}
@@ -609,7 +627,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
             onChange={e => setTypeFilter(e.target.value)}
           >
             <option value="">Wszystkie typy</option>
-            {config.types.map(t => (
+            {eventTypes.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
           </select>
@@ -715,9 +733,53 @@ GRANT ALL ON ${config.tableName} TO anon;`;
           onClose={() => setShowModal(null)}
           onSave={handleSave}
           onDelete={handleDelete}
-          config={config}
+          config={{ ...config, types: eventTypes }}
+        />
+      )}
+
+      {showTypes && (
+        <EventTypesEditor
+          initial={eventTypes}
+          onClose={() => setShowTypes(false)}
+          onSave={async (types) => {
+            try { await saveModuleCalendar(ministry, { ...(calCfg || {}), types }); toast.success(tr('Zapisano typy wydarzeń')); setShowTypes(false); }
+            catch (e) { toast.error(e.message); }
+          }}
         />
       )}
     </div>
+  );
+}
+
+// Edytor typów wydarzeń modułu (label + kolor). Zapis do app_settings['module_calendar'].
+function EventTypesEditor({ initial, onClose, onSave }) {
+  const PALETTE = ['#e2445c', '#fdab3d', '#00c875', '#579bfc', '#a25ddc', '#00c2e0', '#ff5ac4', '#808080'];
+  const [rows, setRows] = useState(() => (initial || []).map((tp) => ({ value: tp.value, label: tp.label, color: tp.color || '#808080' })));
+  const add = () => setRows((r) => [...r, { value: `t_${Date.now().toString(36)}`, label: '', color: PALETTE[r.length % PALETTE.length] }]);
+  const upd = (i, patch) => setRows((r) => r.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const del = (i) => setRows((r) => r.filter((_, j) => j !== i));
+  return (
+    <Modal isOpen onClose={onClose} title={tr('Typy wydarzeń')} size="md">
+      <div className="p-5 space-y-2">
+        {rows.map((row, i) => (
+          <div key={row.value} className="flex items-center gap-2">
+            <input value={row.label} onChange={(e) => upd(i, { label: e.target.value })} placeholder={tr('Nazwa typu')}
+              className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-accent-primary/30" />
+            <div className="flex items-center gap-1 shrink-0">
+              {PALETTE.map((c) => (
+                <button key={c} onClick={() => upd(i, { color: c })} title={c}
+                  className={`w-5 h-5 rounded-md ring-1 ring-black/10 ${row.color === c ? 'ring-2 ring-offset-1 ring-gray-800 dark:ring-white' : ''}`} style={{ backgroundColor: c }} />
+              ))}
+            </div>
+            <button onClick={() => del(i)} className="p-1.5 text-gray-400 hover:text-red-500 shrink-0"><X size={16} /></button>
+          </div>
+        ))}
+        <button onClick={add} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary mt-1"><Plus size={15} /> {tr('Dodaj typ')}</button>
+      </div>
+      <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
+        <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{tr('Anuluj')}</button>
+        <button onClick={() => onSave(rows.filter((r) => r.label.trim()))} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">{tr('Zapisz')}</button>
+      </div>
+    </Modal>
   );
 }
