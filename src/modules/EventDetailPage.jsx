@@ -170,6 +170,24 @@ export default function EventDetailPage() {
     save({ attachments: list.filter((_, i) => i !== idx) });
   };
 
+  // Utwórz nowy program z modułu Programy prefillowany danymi wydarzenia, podepnij i otwórz edytor.
+  const createProgram = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase.from('programs').insert([{
+        date: String(ev.date || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
+        title: ev.title || null,
+        campus_id: ev.campus_id || null,
+        created_by: user?.email || null,
+      }]).select().single();
+      if (error) throw error;
+      setPrograms((prev) => [{ id: data.id, title: data.title, type: data.type, date: data.date }, ...prev]);
+      save({ program_id: data.id });
+      toast.success('Utworzono program — otwieram edytor.');
+      navigate(`/programs/${data.id}`);
+    } catch (e) { toast.error('Nie udało się utworzyć programu: ' + (e.message || e)); }
+  };
+
   if (loading) return <Spinner center size={28} />;
   if (!ev) return <div className="max-w-3xl mx-auto py-10"><EmptyState icon={Calendar} title="Nie znaleziono wydarzenia" subtitle="Mogło zostać usunięte." /></div>;
 
@@ -257,7 +275,13 @@ export default function EventDetailPage() {
       </Card>
 
       {/* Program (z modułu Programy) */}
-      <Card icon={ClipboardList} title="Program">
+      <Card icon={ClipboardList} title="Program" actions={
+        canManage && (
+          <button onClick={createProgram} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1.5">
+            <ClipboardList size={14} /> Nowy program
+          </button>
+        )
+      }>
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <CustomSelect value={ev.program_id || ''} onChange={(v) => save({ program_id: v || null })}
