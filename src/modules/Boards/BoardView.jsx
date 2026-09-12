@@ -142,10 +142,11 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
 
   return (
     <div>
-      {/* Nagłówek tablicy — kanon TabHeader (flat, jak pozostałe zakładki) */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          {!embedded && onBack && (
+      {/* Nazwa tablicy — tylko w widoku samodzielnym (Projekty). W osadzeniu moduł ma już swój
+          nagłówek + zakładkę, więc druga wielka nazwa byłaby zbędnym trzecim poziomem tytułu. */}
+      {!embedded && (
+        <div className="flex items-center gap-2 min-w-0 mb-4">
+          {onBack && (
             <button onClick={onBack} className="p-1.5 -ml-1.5 shrink-0 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><ArrowLeft size={20} /></button>
           )}
           <input value={data.board.name} readOnly={!canUpdateBoard}
@@ -153,26 +154,30 @@ export default function BoardView({ boardId, userEmail, userName, onBack, embedd
             onBlur={(e) => { if (canUpdateBoard) supabase.from('boards').update({ name: e.target.value }).eq('id', boardId); }}
             className={`text-2xl font-bold bg-transparent outline-none text-gray-900 dark:text-white w-full min-w-0 truncate ${canUpdateBoard ? 'rounded-lg px-1 -mx-1 focus:ring-2 focus:ring-accent-primary/30' : 'cursor-default'}`} />
         </div>
-        <div className="flex items-center gap-2 flex-wrap sm:justify-end shrink-0">
-          <Button size="sm" variant="primary" icon={Sparkles} onClick={() => setShowSidekick(true)}>AI Sidekick</Button>
-          {canManageAutomations && (
-            <Button size="sm" variant="outline" icon={Zap} onClick={() => setShowAutomations(true)}>
-              Automatyzacje{automations.automations.length > 0 && <span className="text-xs text-gray-400 ml-1">{automations.automations.length}</span>}
-            </Button>
-          )}
-          <Button size="sm" variant="outline" icon={Activity} onClick={() => setShowActivity(true)} title="Aktywność tablicy" className="!px-2" />
-        </div>
-      </div>
+      )}
 
-      {/* Zakładki widoków */}
-      <div className="flex items-center gap-1 mb-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto custom-scrollbar">
-        {data.views.map(v => (
-          <ViewTab key={v.id} view={v} active={activeViewId === v.id} onSelect={setActiveViewId} data={data}
-            canManage={canManageViews} canDelete={data.views.length > 1}
-            onDelete={() => { if (!confirm(`Usunąć widok „${v.name}"?`)) return; data.deleteView(v.id); if (activeViewId === v.id) setActiveViewId(data.views.find(x => x.id !== v.id)?.id); }}
-            onDuplicated={(nv) => nv && setActiveViewId(nv.id)} />
-        ))}
-        {canManageViews && <AddViewButton onAdd={(type, label) => data.addView(type, label).then(v => v && setActiveViewId(v.id))} />}
+      {/* Rząd sterowania: zakładki widoków (kanon ResponsiveTabs — podkreślenie akcentem) + akcje tablicy */}
+      <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
+        <div className="flex items-end justify-between gap-3">
+          <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar min-w-0">
+            {data.views.map(v => (
+              <ViewTab key={v.id} view={v} active={activeViewId === v.id} onSelect={setActiveViewId} data={data}
+                canManage={canManageViews} canDelete={data.views.length > 1}
+                onDelete={() => { if (!confirm(`Usunąć widok „${v.name}"?`)) return; data.deleteView(v.id); if (activeViewId === v.id) setActiveViewId(data.views.find(x => x.id !== v.id)?.id); }}
+                onDuplicated={(nv) => nv && setActiveViewId(nv.id)} />
+            ))}
+            {canManageViews && <AddViewButton onAdd={(type, label) => data.addView(type, label).then(v => v && setActiveViewId(v.id))} />}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap justify-end shrink-0 pb-2">
+            <Button size="sm" variant="primary" icon={Sparkles} onClick={() => setShowSidekick(true)}>AI Sidekick</Button>
+            {canManageAutomations && (
+              <Button size="sm" variant="outline" icon={Zap} onClick={() => setShowAutomations(true)}>
+                Automatyzacje{automations.automations.length > 0 && <span className="text-xs text-gray-400 ml-1">{automations.automations.length}</span>}
+              </Button>
+            )}
+            <Button size="sm" variant="outline" icon={Activity} onClick={() => setShowActivity(true)} title="Aktywność tablicy" className="!px-2" />
+          </div>
+        </div>
       </div>
 
       {!['form', 'doc'].includes(activeView?.type || 'table') && (
@@ -213,7 +218,7 @@ function ViewTab({ view, active, onSelect, data, canManage, canDelete, onDelete,
           className="mx-1 my-1 px-2 py-1 text-sm bg-white dark:bg-gray-700 rounded outline-none ring-2 ring-accent-primary/40 w-28" />
       ) : (
         <button onClick={() => onSelect(view.id)}
-          className={`flex items-center gap-1.5 pl-3 pr-1 py-2 text-sm whitespace-nowrap ${active ? 'text-accent-primary' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}>
+          className={`flex items-center gap-2 pl-3.5 pr-1.5 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${active ? 'text-accent-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'}`}>
           <Icon size={15} /> {view.name} {view.is_default && <Star size={11} className="fill-amber-400 text-amber-400" />}
         </button>
       )}

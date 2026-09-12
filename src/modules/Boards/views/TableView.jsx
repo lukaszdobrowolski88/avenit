@@ -81,11 +81,11 @@ const ItemRow = React.memo(function ItemRow({ item, columns, groupColor, people,
   // ekranem). contain-intrinsic-size 'auto 38px' pamięta realną wysokość → bez skoków scrolla.
   const style = {
     transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1,
-    contentVisibility: isDragging ? 'visible' : 'auto', containIntrinsicSize: 'auto 38px',
+    contentVisibility: isDragging ? 'visible' : 'auto', containIntrinsicSize: 'auto 42px',
   };
   return (
     <div ref={setNodeRef} style={style}
-      className={`flex items-stretch border-b border-gray-100 dark:border-gray-700/60 hover:bg-gray-50/70 dark:hover:bg-gray-700/30 group/row min-h-[38px] ${isSub ? 'bg-gray-50/50 dark:bg-gray-800/40' : 'bg-white dark:bg-gray-800'}`}>
+      className={`flex items-stretch border-b border-gray-100 dark:border-gray-700/60 hover:bg-gray-50/70 dark:hover:bg-gray-700/30 group/row min-h-[42px] ${isSub ? 'bg-gray-50/50 dark:bg-gray-800/40' : 'bg-white dark:bg-gray-800'}`}>
       <div className="flex items-center justify-center shrink-0" style={{ width: HANDLE_W }}>
         {isSub ? null : (
           <>
@@ -158,13 +158,14 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
 
   return (
     <div className="mb-6">
-      {/* Nagłówek grupy */}
-      <div className="flex items-center gap-2 mb-1 pl-1" style={{ color: group.color }}>
-        <button onClick={() => api.updateGroup(group.id, { collapsed: !collapsed })} className="p-0.5">
+      {/* Nagłówek grupy — kanon: neutralna nazwa + kolorowa kropka + pigułka z licznikiem */}
+      <div className="flex items-center gap-2 mb-1.5 pl-0.5 text-gray-900 dark:text-white">
+        <button onClick={() => api.updateGroup(group.id, { collapsed: !collapsed })} className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
           {collapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
         </button>
+        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
         <GroupTitle group={group} canEdit={canEditStructure} onRename={(name) => api.updateGroup(group.id, { name })} />
-        <span className="text-xs text-gray-400 font-normal">{groupItems.length}</span>
+        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/60 rounded-full px-2 py-0.5">{groupItems.length}</span>
         {canEditStructure && (
         <Popover align="left" width={180} trigger={
           <button className="text-gray-300 hover:text-gray-500 p-0.5"><MoreHorizontal size={16} /></button>
@@ -188,13 +189,13 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
       </div>
 
       {!collapsed && (
-        <div className="overflow-x-auto custom-scrollbar rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="overflow-x-auto custom-scrollbar rounded-2xl border border-gray-200 dark:border-gray-700">
           <div style={{ minWidth: totalWidth }}>
             {/* Nagłówek kolumn */}
-            <div className="flex items-stretch bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700 h-9 sticky top-0 z-10">
+            <div className="flex items-stretch bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700 h-10 sticky top-0 z-10">
               <div className="shrink-0" style={{ width: HANDLE_W }} />
               <div className="shrink-0" style={{ width: 4 }} />
-              <div className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-500 dark:text-gray-300" style={{ flex: 1, minWidth: NAME_MIN }}>Element</div>
+              <div className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500" style={{ flex: 1, minWidth: NAME_MIN }}>Element</div>
               {columns.map(col => (
                 <div key={col.id} className="border-r border-gray-200 dark:border-gray-700 shrink-0 relative" style={{ width: col.width || 160 }}>
                   <ColumnHeader column={col} allColumns={columns} onUpdate={api.updateColumn} onDelete={api.deleteColumn} onReorder={canEditStructure ? api.reorderColumns : undefined} />

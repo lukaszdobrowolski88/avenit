@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import Spinner from '../../components/Spinner';
 import BoardView from './BoardView';
 import { importLegacyTasks } from './lib/legacyImport';
 
@@ -66,12 +66,7 @@ export default function ModuleBoard({ sourceKind, moduleKey = null, title }) {
   }, [sourceKind, moduleKey, title]);
 
   if (phase === 'resolving' || phase === 'importing') {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-gray-400 gap-3">
-        <Loader2 className="animate-spin" size={28} />
-        <p className="text-sm">{phase === 'importing' ? 'Przenoszę zadania do nowej tablicy…' : 'Ładowanie tablicy…'}</p>
-      </div>
-    );
+    return <Spinner center size={28} label={phase === 'importing' ? 'Przenoszę zadania do nowej tablicy…' : 'Ładowanie tablicy…'} />;
   }
   if (phase === 'error') {
     return <div className="text-center py-12 text-red-500 text-sm">Nie udało się otworzyć tablicy: {err}</div>;
