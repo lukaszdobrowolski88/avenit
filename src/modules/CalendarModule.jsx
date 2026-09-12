@@ -10,6 +10,7 @@ import {
   Filter, PanelLeftClose, PanelLeft, AlertTriangle
 } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
+import PageHeader from '../components/PageHeader';
 import ProgramEditorModal from './Programs/ProgramEditorModal';
 import EventRSVP from '../components/EventRSVP';
 import { useCampusQuery } from '../hooks/useCampusQuery';
@@ -2421,13 +2422,7 @@ export default function CalendarModule() {
       <div className="hidden lg:flex lg:flex-col lg:gap-4 h-full">
         {/* HEADER */}
         <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-           <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shrink-0 bg-gradient-to-br from-accent-primary to-accent-secondary"><CalIcon className="text-white" size={24} /></div>
-              <div>
-                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Kalendarz')}</h1>
-                 <p className="text-sm text-gray-500 dark:text-gray-400">{tr('Zarządzanie wydarzeniami i zadaniami')}</p>
-              </div>
-           </div>
+           <PageHeader cover={false} moduleKey="calendar" icon={CalIcon} title={t('Kalendarz')} subtitle={tr('Zarządzanie wydarzeniami i zadaniami')} />
 
            {/* Search bar - pełne pole */}
            <div className="flex-1 max-w-md mx-4">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import ModuleTitle from '../../components/ModuleTitle';
+import PageHeader from '../../components/PageHeader';
 import { Podcast, List, PlayCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
@@ -44,15 +44,7 @@ export default function SermonsModule({ embedded = false }) {
     <div className={embedded ? 'space-y-6' : 'max-w-7xl mx-auto space-y-6'}>
       {/* Nagłówek (pomijany przy osadzeniu) */}
       {!embedded && (
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-lg">
-            <Podcast className="text-white" size={24} />
-          </div>
-          <div>
-            <ModuleTitle moduleKey="sermons" fallback="Kazania" className="text-2xl font-bold text-gray-900 dark:text-white" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">Publiczne archiwum kazań — audio, wideo i odnośniki biblijne</p>
-          </div>
-        </div>
+        <PageHeader moduleKey="sermons" icon={Podcast} title="Kazania" subtitle="Publiczne archiwum kazań — audio, wideo i odnośniki biblijne" />
       )}
 
       {/* Zakładki */}
