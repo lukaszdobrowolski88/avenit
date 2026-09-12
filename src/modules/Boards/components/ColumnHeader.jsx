@@ -43,7 +43,7 @@ export default function ColumnHeader({ column, allColumns = [], onUpdate, onDele
   const commit = () => { setRenaming(false); if (name.trim() && name !== column.name) onUpdate(column.id, { name: name.trim() }); };
 
   return (
-    <div className="h-full flex items-center gap-1.5 px-2 group/col text-xs font-semibold text-gray-500 dark:text-gray-300">
+    <div className="h-full flex items-center gap-1.5 px-2 group/col text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
       <ColumnIcon name={t.icon} size={13} className="text-gray-400 shrink-0" />
       {renaming ? (
         <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onBlur={commit}

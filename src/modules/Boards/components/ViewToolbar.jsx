@@ -74,7 +74,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
     <div className="flex items-center gap-2 mb-4 flex-wrap">
       <Button size="sm" icon={Plus} onClick={onAddItem}>Nowy element</Button>
 
-      <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700/50 rounded-lg px-2.5 py-1.5">
+      <div className="flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2.5 py-1.5">
         <Search size={14} className="text-gray-400" />
         <input value={search || ''} onChange={(e) => onSearch(e.target.value)} placeholder="Szukaj..."
           className="bg-transparent text-sm outline-none w-32 text-gray-700 dark:text-gray-200" />
@@ -82,7 +82,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
 
       {/* Filtry */}
       <Popover width={340} triggerClassName="inline-flex" trigger={
-        <button className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg ${filters.length ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
+        <button className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors ${filters.length ? 'bg-accent-primary/10 text-accent-primary border-accent-primary/30' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
           <SlidersHorizontal size={14} /> Filtruj {filters.length ? `(${filters.length})` : ''}
         </button>
       }>
@@ -127,7 +127,7 @@ export default function ViewToolbar({ columns, config, onUpdateConfig, search, o
 
       {/* Sortowanie */}
       <Popover width={220} triggerClassName="inline-flex" trigger={
-        <button className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg ${sorts.length ? 'bg-accent-primary/10 text-accent-primary' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
+        <button className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border transition-colors ${sorts.length ? 'bg-accent-primary/10 text-accent-primary border-accent-primary/30' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50'}`}>
           <ArrowUpDown size={14} /> Sortuj
         </button>
       }>
