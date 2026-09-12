@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Link as LinkIcon, ExternalLink, Trash2, Calendar, Clock, MapPin,
   Ticket, FileText, Users, Send, Copy, Check, X,
-  Paperclip, Upload, Download, Image as ImageIcon, File as FileIcon,
+  Paperclip, Upload, Download, Image as ImageIcon, File as FileIcon, ClipboardList,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from '../lib/toast';
@@ -46,6 +46,7 @@ export default function EventDetailPage() {
   const [ev, setEv] = useState(null);
   const [loading, setLoading] = useState(true);
   const [forms, setForms] = useState([]);
+  const [programs, setPrograms] = useState([]);
   const [fields, setFields] = useState([]);
   const [invites, setInvites] = useState([]);
   const [campaign, setCampaign] = useState(null);
@@ -88,6 +89,8 @@ export default function EventDetailPage() {
   useEffect(() => {
     supabase.from('forms').select('id, title').eq('is_active', true).order('title', { ascending: true })
       .then(({ data }) => setForms(data || [])).catch(() => {});
+    supabase.from('programs').select('id, title, type, date').order('date', { ascending: false })
+      .then(({ data }) => setPrograms(data || [])).catch(() => {});
   }, []);
 
   const save = (patch) => {
@@ -251,6 +254,24 @@ export default function EventDetailPage() {
           <input value={ev.link || ''} onChange={(e) => setEv({ ...ev, link: e.target.value })} onBlur={(e) => save({ link: e.target.value })} placeholder="https://…" className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm" />
           {ev.link && <a href={ev.link} target="_blank" rel="noreferrer" className="p-2 text-accent-primary hover:bg-accent-primary/10 rounded-lg" title="Otwórz"><ExternalLink size={18} /></a>}
         </div>
+      </Card>
+
+      {/* Program (z modułu Programy) */}
+      <Card icon={ClipboardList} title="Program">
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <CustomSelect value={ev.program_id || ''} onChange={(v) => save({ program_id: v || null })}
+              placeholder="— brak —"
+              options={[{ value: '', label: '— brak —' }, ...programs.map((p) => ({
+                value: p.id,
+                label: `${p.title || p.type || 'Program'}${p.date ? ` · ${fmtDate(p.date)}` : ''}`,
+              }))]} />
+          </div>
+          {ev.program_id && (
+            <button onClick={() => navigate(`/programs/${ev.program_id}`)} className="p-2 text-accent-primary hover:bg-accent-primary/10 rounded-lg" title="Otwórz program"><ExternalLink size={18} /></button>
+          )}
+        </div>
+        {!programs.length && <p className="mt-1 text-xs text-gray-400">Brak programów. Utwórz program w module Programy, aby go tu podpiąć.</p>}
       </Card>
 
       {/* Załączniki / grafiki */}
