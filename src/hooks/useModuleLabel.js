@@ -9,6 +9,7 @@ let _labels = null;   // { key: label }
 let _colors = null;   // { key: '#hex' }
 let _covers = null;   // { key: {type:'color'|'gradient'|'image', value} }
 let _tabs = null;     // { key: { order: [id...], default: 'id' } }
+let _calendar = null; // { key: { types: [{value,label,color}] } } — kastomizacja kalendarza modułu
 let _inflight = null;
 const _subs = new Set();
 
@@ -19,7 +20,7 @@ async function loadAll() {
     try {
       const [mods, settings] = await Promise.all([
         supabase.from('app_modules').select('key, label'),
-        supabase.from('app_settings').select('key, value').in('key', ['module_colors', 'module_covers', 'module_tabs']),
+        supabase.from('app_settings').select('key, value').in('key', ['module_colors', 'module_covers', 'module_tabs', 'module_calendar']),
       ]);
       const lab = {};
       (mods.data || []).forEach((m) => { if (m.key) lab[m.key] = m.label; });
@@ -29,8 +30,9 @@ async function loadAll() {
       try { _colors = JSON.parse(sMap['module_colors'] || '{}') || {}; } catch { _colors = {}; }
       try { _covers = JSON.parse(sMap['module_covers'] || '{}') || {}; } catch { _covers = {}; }
       try { _tabs = JSON.parse(sMap['module_tabs'] || '{}') || {}; } catch { _tabs = {}; }
+      try { _calendar = JSON.parse(sMap['module_calendar'] || '{}') || {}; } catch { _calendar = {}; }
     } catch {
-      _labels = _labels || {}; _colors = _colors || {}; _covers = _covers || {}; _tabs = _tabs || {};
+      _labels = _labels || {}; _colors = _colors || {}; _covers = _covers || {}; _tabs = _tabs || {}; _calendar = _calendar || {};
     }
     _inflight = null;
     _subs.forEach((fn) => fn());
@@ -40,8 +42,24 @@ async function loadAll() {
 
 // Wywołać po zmianie nazwy/koloru/okładki modułu — odświeża cache i nagłówki na żywo.
 export function invalidateModuleLabels() {
-  _labels = null; _colors = null; _covers = null; _tabs = null;
+  _labels = null; _colors = null; _covers = null; _tabs = null; _calendar = null;
   loadAll();
+}
+
+// Kalendarz modułu: { types: [{value,label,color}] } lub null (wtedy użyj domyślnych typów).
+export function useModuleCalendar(key) {
+  return useModuleData(key, () => (_calendar?.[key] || null), null);
+}
+
+// Zapis kastomizacji kalendarza modułu (merge do app_settings 'module_calendar') + odświeżenie.
+export async function saveModuleCalendar(key, cfg) {
+  const { data } = await supabase.from('app_settings').select('value').eq('key', 'module_calendar').maybeSingle();
+  let map = {};
+  try { map = JSON.parse(data?.value || '{}') || {}; } catch { map = {}; }
+  map[key] = cfg;
+  const { error } = await supabase.from('app_settings').upsert({ key: 'module_calendar', value: JSON.stringify(map) }, { onConflict: 'key' });
+  if (error) throw error;
+  invalidateModuleLabels();
 }
 
 function useModuleData(key, pick, fallback) {

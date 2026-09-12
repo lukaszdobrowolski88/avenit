@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
-import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2 } from 'lucide-react';
+import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2, SlidersHorizontal } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import TabHeader from '../../components/TabHeader';
 import TimeInput from '../../components/TimeInput';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
+import { useModuleCalendar, saveModuleCalendar } from '../../hooks/useModuleLabel';
+import Modal from '../../components/Modal';
+import { useCan } from '../../components/Can';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import { toast } from '../../lib/toast';
@@ -240,7 +243,7 @@ function getModuleConfig(ministry) {
 }
 
 // Modal edycji wydarzenia
-const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
+const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [] }) => {
   const t = useT();
   const [form, setForm] = useState({
     id: event?.id || null,
@@ -251,8 +254,10 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
     end_time: event?.end_time || '',
     location: event?.location || '',
     max_participants: event?.max_participants || '',
-    event_type: event?.event_type || config.defaultType
+    event_type: event?.event_type || config.defaultType,
+    custom: event?.custom || {}
   });
+  const setCustom = (key, val) => setForm((f) => ({ ...f, custom: { ...f.custom, [key]: val } }));
 
   const handleSubmit = async () => {
     if (!form.title.trim()) {
@@ -271,7 +276,8 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
       end_time: form.end_time || null,
       location: form.location,
       max_participants: form.max_participants ? parseInt(form.max_participants) : null,
-      event_type: form.event_type || config.defaultType
+      event_type: form.event_type || config.defaultType,
+      custom: form.custom || {}
     };
 
     onSave(form.id, eventData);
@@ -335,6 +341,30 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
             </div>
           </div>
 
+          {fields.length > 0 && (
+            <div className="space-y-3 pt-1 border-t border-gray-100 dark:border-gray-800">
+              {fields.map((f) => (
+                <div key={f.id || f.field_key}>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{f.label}</label>
+                  {f.field_type === 'dropdown' ? (
+                    <CustomSelect
+                      value={form.custom?.[f.field_key] || ''}
+                      onChange={(val) => setCustom(f.field_key, val)}
+                      options={[{ value: '', label: '—' }, ...((f.options || []).map((o) => ({ value: o, label: o })))]}
+                    />
+                  ) : (
+                    <input
+                      type={f.field_type === 'number' ? 'number' : f.field_type === 'date' ? 'date' : 'text'}
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 [color-scheme:light] dark:[color-scheme:dark]"
+                      value={form.custom?.[f.field_key] || ''}
+                      onChange={(e) => setCustom(f.field_key, e.target.value)}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex justify-between items-center gap-3 mt-6">
             {form.id && onDelete ? (
               <button onClick={() => onDelete(form.id)} className="px-4 py-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition font-medium flex items-center gap-2">
@@ -359,6 +389,20 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
 export default function EventsTab({ ministry, currentUserEmail: propUserEmail }) {
   const t = useT();
   const config = getModuleConfig(ministry);
+  // Typy wydarzeń tego modułu: z konfiguracji (Ustawienia kalendarza modułu) lub domyślne.
+  const calCfg = useModuleCalendar(ministry);
+  const eventTypes = (calCfg?.types && calCfg.types.length) ? calCfg.types : config.types;
+  const canManageCalendar = useCan('module:settings');
+  const [showTypes, setShowTypes] = useState(false);
+  const [showFields, setShowFields] = useState(false);
+  // Pola własne wydarzeń tego modułu (definicje z event_custom_fields; wartości w events.custom).
+  const [fields, setFields] = useState([]);
+  const loadFields = () => {
+    supabase.from('event_custom_fields').select('*').eq('module_key', ministry).order('sort_order', { ascending: true })
+      .then(({ data }) => setFields(data || []))
+      .catch(() => setFields([]));
+  };
+  useEffect(() => { loadFields(); /* eslint-disable-next-line */ }, [ministry]);
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -417,38 +461,28 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
 
   const fetchEvents = async () => {
     setLoading(true);
-    // Pobierz tylko nadchodzące wydarzenia (od dzisiaj)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayISO = today.toISOString();
-
+    // Jeden model: wydarzenia modułu = wspólna tabela `events` filtrowana po module_key.
+    const todayStr = new Date().toISOString().split('T')[0];
     try {
       const { data, error } = await withCampusFilter(supabase
-        .from(config.tableName)
+        .from('events')
         .select('*'))
-        .eq('team_type', config.teamType)
-        .gte('start_date', todayISO)
-        .order('start_date', { ascending: true });
+        .eq('module_key', config.teamType)
+        .gte('date', todayStr)
+        .order('date', { ascending: true })
+        .order('time', { ascending: true });
 
       if (error) {
-        // Wykryj PRAWDZIWY brak tabeli (relation ... does not exist / 42P01).
-        // NIE mylić z brakiem kolumny („column ... does not exist") — to błąd schematu,
-        // nie tabeli; wcześniej gołe „does not exist" fałszywie pokazywało ekran „utwórz tabelę".
-        const errMsg = error.message?.toLowerCase() || '';
-        const isTableMissing = error.code === '42P01' ||
-          (errMsg.includes('relation') && errMsg.includes('does not exist'));
-
-        if (isTableMissing) {
-          setTableExists(false);
-          setEvents([]);
-          setLoading(false);
-          return;
-        }
         console.error('Błąd pobierania wydarzeń:', error);
         setEvents([]);
       } else {
         setTableExists(true);
-        setEvents(data || []);
+        // Normalizacja: reszta komponentu operuje na `start_date` (jak dawne module_events),
+        // więc mapujemy date+time → start_date (wall-clock jako UTC, spójnie z modalem).
+        setEvents((data || []).map((r) => ({
+          ...r,
+          start_date: r.date ? `${r.date}T${(r.time || '00:00')}:00.000Z` : null,
+        })));
       }
     } catch (err) {
       console.error('Błąd pobierania wydarzeń:', err);
@@ -458,33 +492,24 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   };
 
   const handleSave = async (id, eventData) => {
+    // eventData z modala: start_date (ISO) + end_time + reszta. Mapujemy na kolumny `events` (date + time).
+    const { start_date, team_type, ...rest } = eventData;
+    const row = {
+      ...rest,
+      module_key: config.teamType,
+      date: start_date ? start_date.split('T')[0] : null,
+      time: start_date && start_date.includes('T') ? start_date.split('T')[1].substring(0, 5) : null,
+    };
     let error = null;
     if (id) {
-      const { error: e } = await supabase.from(config.tableName).update(eventData).eq('id', id);
+      const { error: e } = await supabase.from('events').update(row).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from(config.tableName).insert([{
-        ...eventData,
-        team_type: config.teamType,
-        created_by: userEmail,
-        campus_id: campusIdForInsert
-      }]);
+      const { error: e } = await supabase.from('events').insert([{ ...row, created_by: userEmail, campus_id: campusIdForInsert }]);
       error = e;
     }
 
     if (error) {
-      // Wykryj różne warianty błędu "tabela nie istnieje"
-      const errMsg = error.message?.toLowerCase() || '';
-      const isTableMissing = error.code === '42P01' ||
-        errMsg.includes('does not exist') ||
-        errMsg.includes('schema cache') ||
-        errMsg.includes('could not find');
-
-      if (isTableMissing) {
-        setTableExists(false);
-        setShowModal(null);
-        return;
-      }
       toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
     } else {
       setShowModal(null);
@@ -494,7 +519,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
 
   const handleDelete = async (id) => {
     if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from(config.tableName).delete().eq('id', id);
+      await supabase.from('events').delete().eq('id', id);
       setShowModal(null);
       fetchEvents();
     }
@@ -527,7 +552,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   };
 
   const getTypeLabel = (type) => {
-    const found = config.types.find(t => t.value === type);
+    const found = eventTypes.find(t => t.value === type);
     return found ? found.label : type;
   };
 
@@ -601,12 +626,30 @@ GRANT ALL ON ${config.tableName} TO anon;`;
     <div className="space-y-6">
       {/* Nagłówek */}
       <TabHeader className="!mb-0" title={t('Wydarzenia')} actions={
-        <button
-          onClick={() => setShowModal({ id: null })}
-          className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
-        >
-          <Plus size={18}/> {t('Dodaj wydarzenie')}
-        </button>
+        <div className="flex items-center gap-2">
+          {canManageCalendar && (
+            <>
+              <button
+                onClick={() => setShowTypes(true)}
+                className="text-sm px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-2"
+              >
+                <SlidersHorizontal size={16}/> {t('Typy')}
+              </button>
+              <button
+                onClick={() => setShowFields(true)}
+                className="text-sm px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-2"
+              >
+                <SlidersHorizontal size={16}/> {t('Pola')}
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setShowModal({ id: null })}
+            className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
+          >
+            <Plus size={18}/> {t('Dodaj wydarzenie')}
+          </button>
+        </div>
       } />
 
       {/* Filtry */}
@@ -628,7 +671,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
             onChange={e => setTypeFilter(e.target.value)}
           >
             <option value="">Wszystkie typy</option>
-            {config.types.map(t => (
+            {eventTypes.map(t => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
           </select>
@@ -734,9 +777,133 @@ GRANT ALL ON ${config.tableName} TO anon;`;
           onClose={() => setShowModal(null)}
           onSave={handleSave}
           onDelete={handleDelete}
-          config={config}
+          config={{ ...config, types: eventTypes }}
+          fields={fields}
+        />
+      )}
+
+      {showFields && (
+        <EventFieldsEditor
+          moduleKey={ministry}
+          initial={fields}
+          onClose={() => setShowFields(false)}
+          onSaved={() => { loadFields(); setShowFields(false); }}
+        />
+      )}
+
+      {showTypes && (
+        <EventTypesEditor
+          initial={eventTypes}
+          onClose={() => setShowTypes(false)}
+          onSave={async (types) => {
+            try { await saveModuleCalendar(ministry, { ...(calCfg || {}), types }); toast.success(tr('Zapisano typy wydarzeń')); setShowTypes(false); }
+            catch (e) { toast.error(e.message); }
+          }}
         />
       )}
     </div>
+  );
+}
+
+// Edytor typów wydarzeń modułu (label + kolor). Zapis do app_settings['module_calendar'].
+function EventTypesEditor({ initial, onClose, onSave }) {
+  const PALETTE = ['#e2445c', '#fdab3d', '#00c875', '#579bfc', '#a25ddc', '#00c2e0', '#ff5ac4', '#808080'];
+  const [rows, setRows] = useState(() => (initial || []).map((tp) => ({ value: tp.value, label: tp.label, color: tp.color || '#808080' })));
+  const add = () => setRows((r) => [...r, { value: `t_${Date.now().toString(36)}`, label: '', color: PALETTE[r.length % PALETTE.length] }]);
+  const upd = (i, patch) => setRows((r) => r.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const del = (i) => setRows((r) => r.filter((_, j) => j !== i));
+  return (
+    <Modal isOpen onClose={onClose} title={tr('Typy wydarzeń')} size="md">
+      <div className="p-5 space-y-2">
+        {rows.map((row, i) => (
+          <div key={row.value} className="flex items-center gap-2">
+            <input value={row.label} onChange={(e) => upd(i, { label: e.target.value })} placeholder={tr('Nazwa typu')}
+              className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-accent-primary/30" />
+            <div className="flex items-center gap-1 shrink-0">
+              {PALETTE.map((c) => (
+                <button key={c} onClick={() => upd(i, { color: c })} title={c}
+                  className={`w-5 h-5 rounded-md ring-1 ring-black/10 ${row.color === c ? 'ring-2 ring-offset-1 ring-gray-800 dark:ring-white' : ''}`} style={{ backgroundColor: c }} />
+              ))}
+            </div>
+            <button onClick={() => del(i)} className="p-1.5 text-gray-400 hover:text-red-500 shrink-0"><X size={16} /></button>
+          </div>
+        ))}
+        <button onClick={add} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary mt-1"><Plus size={15} /> {tr('Dodaj typ')}</button>
+      </div>
+      <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
+        <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{tr('Anuluj')}</button>
+        <button onClick={() => onSave(rows.filter((r) => r.label.trim()))} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">{tr('Zapisz')}</button>
+      </div>
+    </Modal>
+  );
+}
+
+// Edytor pól własnych wydarzeń modułu (definicje w event_custom_fields; wartości w events.custom).
+function EventFieldsEditor({ moduleKey, initial, onClose, onSaved }) {
+  const FIELD_TYPES = [
+    { value: 'text', label: tr('Tekst') },
+    { value: 'number', label: tr('Liczba') },
+    { value: 'date', label: tr('Data') },
+    { value: 'dropdown', label: tr('Lista wyboru') },
+  ];
+  const slug = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || `f_${Date.now().toString(36)}`;
+  const [rows, setRows] = useState(() => (initial || []).map((f) => ({
+    field_key: f.field_key, label: f.label || '', field_type: f.field_type || 'text',
+    options: Array.isArray(f.options) ? f.options.join(', ') : '',
+  })));
+  const [busy, setBusy] = useState(false);
+  const add = () => setRows((r) => [...r, { field_key: '', label: '', field_type: 'text', options: '' }]);
+  const upd = (i, patch) => setRows((r) => r.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const del = (i) => setRows((r) => r.filter((_, j) => j !== i));
+  const save = async () => {
+    setBusy(true);
+    try {
+      const valid = rows.filter((r) => r.label.trim());
+      // Replace: usuń definicje modułu i wstaw aktualne. field_key stabilny → wartości w events.custom przeżywają.
+      await supabase.from('event_custom_fields').delete().eq('module_key', moduleKey);
+      if (valid.length) {
+        const payload = valid.map((r, idx) => ({
+          module_key: moduleKey,
+          field_key: r.field_key || slug(r.label),
+          label: r.label.trim(),
+          field_type: r.field_type || 'text',
+          options: r.field_type === 'dropdown' ? r.options.split(',').map((o) => o.trim()).filter(Boolean) : [],
+          sort_order: idx,
+        }));
+        const { error } = await supabase.from('event_custom_fields').insert(payload);
+        if (error) throw error;
+      }
+      toast.success(tr('Zapisano pola'));
+      onSaved();
+    } catch (e) { toast.error(e.message); }
+    finally { setBusy(false); }
+  };
+  return (
+    <Modal isOpen onClose={onClose} title={tr('Pola własne wydarzeń')} size="md">
+      <div className="p-5 space-y-3">
+        {rows.map((row, i) => (
+          <div key={i} className="space-y-2 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+            <div className="flex items-center gap-2">
+              <input value={row.label} onChange={(e) => upd(i, { label: e.target.value })} placeholder={tr('Nazwa pola')}
+                className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-accent-primary/30" />
+              <select value={row.field_type} onChange={(e) => upd(i, { field_type: e.target.value })}
+                className="px-2 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100">
+                {FIELD_TYPES.map((ft) => <option key={ft.value} value={ft.value}>{ft.label}</option>)}
+              </select>
+              <button onClick={() => del(i)} className="p-1.5 text-gray-400 hover:text-red-500 shrink-0"><X size={16} /></button>
+            </div>
+            {row.field_type === 'dropdown' && (
+              <input value={row.options} onChange={(e) => upd(i, { options: e.target.value })} placeholder={tr('Opcje po przecinku, np. Tak, Nie')}
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 outline-none" />
+            )}
+          </div>
+        ))}
+        <button onClick={add} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><Plus size={15} /> {tr('Dodaj pole')}</button>
+      </div>
+      <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
+        <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{tr('Anuluj')}</button>
+        <button onClick={save} disabled={busy} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60">{tr('Zapisz')}</button>
+      </div>
+    </Modal>
   );
 }
