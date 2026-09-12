@@ -20,8 +20,14 @@ export default function StatusCell({ column, value, onChange, onUpdateColumn, re
   };
 
   const pill = label
-    ? <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold text-white truncate max-w-full" style={{ backgroundColor: label.color }}>{label.title}</span>
-    : <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>;
+    ? (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold truncate max-w-full"
+        style={{ backgroundColor: `${label.color}22`, color: label.color }}>
+        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
+        {label.title}
+      </span>
+    )
+    : <span className="text-gray-300 dark:text-gray-600 text-base leading-none opacity-0 group-hover/row:opacity-100 transition-opacity">+</span>;
 
   if (readOnly) {
     return <div className="w-full h-full flex items-center justify-center px-2">{pill}</div>;

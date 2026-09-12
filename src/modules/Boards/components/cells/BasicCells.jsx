@@ -37,11 +37,24 @@ export function NumberCell({ column, value, onChange, readOnly }) {
 }
 
 // ── Data ─────────────────────────────────────────────────────────────
+// Spokojnie jak w Notion: data to zwykły tekst; input pojawia się dopiero po kliknięciu.
+// Puste = pusto, z afordancją „+" na hover wiersza (grupa group/row w wierszu).
 export function DateCell({ value, onChange, readOnly }) {
-  if (readOnly) return <div className="px-2 text-sm text-gray-600 dark:text-gray-300 w-full text-center">{value || ''}</div>;
+  const [editing, setEditing] = useState(false);
+  const fmt = value ? String(value).slice(0, 10).split('-').reverse().join('.') : '';
+  if (readOnly) return <div className="px-2 text-sm text-gray-600 dark:text-gray-300 w-full text-center tabular-nums">{fmt}</div>;
+  if (editing) {
+    return (
+      <input type="date" autoFocus value={value || ''} onChange={(e) => onChange(e.target.value || null)}
+        onBlur={() => setEditing(false)}
+        className="w-full h-full bg-transparent px-2 text-sm text-gray-600 dark:text-gray-300 outline-none text-center focus:ring-2 focus:ring-accent-primary/40 rounded [color-scheme:light] dark:[color-scheme:dark]" />
+    );
+  }
   return (
-    <input type="date" value={value || ''} onChange={(e) => onChange(e.target.value || null)}
-      className="w-full h-full bg-transparent px-2 text-sm text-gray-600 dark:text-gray-300 outline-none text-center focus:ring-2 focus:ring-accent-primary/40 rounded [color-scheme:light] dark:[color-scheme:dark]" />
+    <button onClick={() => setEditing(true)} className="w-full h-full px-2 flex items-center justify-center text-sm text-gray-600 dark:text-gray-300">
+      {fmt ? <span className="tabular-nums">{fmt}</span>
+        : <span className="text-gray-300 dark:text-gray-600 text-base leading-none opacity-0 group-hover/row:opacity-100 transition-opacity">+</span>}
+    </button>
   );
 }
 
@@ -53,7 +66,7 @@ export function TimelineCell({ value, onChange, readOnly }) {
     <div className="w-full h-full flex items-center px-2">
       {v.start ? (
         <div className="w-full rounded-full h-5 flex items-center justify-center text-[11px] text-white bg-accent-primary/80 px-2 truncate">{label}</div>
-      ) : <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>}
+      ) : <span className="text-gray-300 dark:text-gray-600 text-base leading-none opacity-0 group-hover/row:opacity-100 transition-opacity">+</span>}
     </div>
   );
   if (readOnly) return Bar;
@@ -94,7 +107,7 @@ export function LinkCell({ value, onChange, readOnly }) {
     <Popover width={240} trigger={
       <div className="w-full h-full flex items-center px-2 gap-1 text-sm">
         {v.url ? <><LinkIcon size={13} className="text-accent-primary" /><span className="text-accent-primary truncate">{v.text || v.url}</span></>
-          : <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>}
+          : <span className="text-gray-300 dark:text-gray-600 text-base leading-none opacity-0 group-hover/row:opacity-100 transition-opacity">+</span>}
       </div>
     }>
       {() => (
@@ -186,7 +199,7 @@ export function FormulaCell({ column, item, columns }) {
   const result = evalFormula(column?.settings?.expression, item || { cells: {} }, columns || []);
   return (
     <div className="w-full h-full flex items-center justify-end px-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-      {result == null ? <span className="text-gray-300 dark:text-gray-600 text-xs">—</span> : result}
+      {result == null ? null : result}
     </div>
   );
 }
@@ -200,7 +213,7 @@ export function LongTextCell({ value, onChange, readOnly }) {
   return (
     <Popover width={300} trigger={
       <div className="w-full h-full flex items-center px-2 text-sm text-gray-600 dark:text-gray-300 truncate">
-        {preview || <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>}
+        {preview || <span className="text-gray-300 dark:text-gray-600 text-base leading-none opacity-0 group-hover/row:opacity-100 transition-opacity">+</span>}
       </div>
     }>
       {() => (
