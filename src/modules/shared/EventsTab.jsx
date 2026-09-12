@@ -417,38 +417,28 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
 
   const fetchEvents = async () => {
     setLoading(true);
-    // Pobierz tylko nadchodzące wydarzenia (od dzisiaj)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayISO = today.toISOString();
-
+    // Jeden model: wydarzenia modułu = wspólna tabela `events` filtrowana po module_key.
+    const todayStr = new Date().toISOString().split('T')[0];
     try {
       const { data, error } = await withCampusFilter(supabase
-        .from(config.tableName)
+        .from('events')
         .select('*'))
-        .eq('team_type', config.teamType)
-        .gte('start_date', todayISO)
-        .order('start_date', { ascending: true });
+        .eq('module_key', config.teamType)
+        .gte('date', todayStr)
+        .order('date', { ascending: true })
+        .order('time', { ascending: true });
 
       if (error) {
-        // Wykryj PRAWDZIWY brak tabeli (relation ... does not exist / 42P01).
-        // NIE mylić z brakiem kolumny („column ... does not exist") — to błąd schematu,
-        // nie tabeli; wcześniej gołe „does not exist" fałszywie pokazywało ekran „utwórz tabelę".
-        const errMsg = error.message?.toLowerCase() || '';
-        const isTableMissing = error.code === '42P01' ||
-          (errMsg.includes('relation') && errMsg.includes('does not exist'));
-
-        if (isTableMissing) {
-          setTableExists(false);
-          setEvents([]);
-          setLoading(false);
-          return;
-        }
         console.error('Błąd pobierania wydarzeń:', error);
         setEvents([]);
       } else {
         setTableExists(true);
-        setEvents(data || []);
+        // Normalizacja: reszta komponentu operuje na `start_date` (jak dawne module_events),
+        // więc mapujemy date+time → start_date (wall-clock jako UTC, spójnie z modalem).
+        setEvents((data || []).map((r) => ({
+          ...r,
+          start_date: r.date ? `${r.date}T${(r.time || '00:00')}:00.000Z` : null,
+        })));
       }
     } catch (err) {
       console.error('Błąd pobierania wydarzeń:', err);
@@ -458,33 +448,24 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   };
 
   const handleSave = async (id, eventData) => {
+    // eventData z modala: start_date (ISO) + end_time + reszta. Mapujemy na kolumny `events` (date + time).
+    const { start_date, team_type, ...rest } = eventData;
+    const row = {
+      ...rest,
+      module_key: config.teamType,
+      date: start_date ? start_date.split('T')[0] : null,
+      time: start_date && start_date.includes('T') ? start_date.split('T')[1].substring(0, 5) : null,
+    };
     let error = null;
     if (id) {
-      const { error: e } = await supabase.from(config.tableName).update(eventData).eq('id', id);
+      const { error: e } = await supabase.from('events').update(row).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from(config.tableName).insert([{
-        ...eventData,
-        team_type: config.teamType,
-        created_by: userEmail,
-        campus_id: campusIdForInsert
-      }]);
+      const { error: e } = await supabase.from('events').insert([{ ...row, created_by: userEmail, campus_id: campusIdForInsert }]);
       error = e;
     }
 
     if (error) {
-      // Wykryj różne warianty błędu "tabela nie istnieje"
-      const errMsg = error.message?.toLowerCase() || '';
-      const isTableMissing = error.code === '42P01' ||
-        errMsg.includes('does not exist') ||
-        errMsg.includes('schema cache') ||
-        errMsg.includes('could not find');
-
-      if (isTableMissing) {
-        setTableExists(false);
-        setShowModal(null);
-        return;
-      }
       toast.error(`Błąd zapisu wydarzenia: ${error.message}`);
     } else {
       setShowModal(null);
@@ -494,7 +475,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
 
   const handleDelete = async (id) => {
     if (confirm(tr('Czy na pewno chcesz usunąć to wydarzenie?'))) {
-      await supabase.from(config.tableName).delete().eq('id', id);
+      await supabase.from('events').delete().eq('id', id);
       setShowModal(null);
       fetchEvents();
     }
