@@ -96,6 +96,20 @@ export function useModuleTabs(key) {
   return useModuleData(key, () => (_tabs?.[key] || null), null);
 }
 
+// Cała mapa kalendarzy modułów { key: { types:[...] } } — jeden hook (bo kilka modali per render,
+// a hooka nie wywołasz warunkowo/w pętli). Kalendarz woła to raz i czyta konfig per otwarty modal.
+export function useModuleCalendars() {
+  const [map, setMap] = useState(() => _calendar || {});
+  useEffect(() => {
+    let alive = true;
+    const update = () => { if (alive) setMap({ ...(_calendar || {}) }); };
+    _subs.add(update);
+    loadAll().then(update);
+    return () => { alive = false; _subs.delete(update); };
+  }, []);
+  return map;
+}
+
 // Cała mapa kolorów modułów { key: '#hex' } — jeden hook, żeby móc kolorować listę pozycji
 // (np. ikony w pasku bocznym) bez wywoływania useModuleColor w pętli (reguły hooków).
 export function useModuleColors() {
