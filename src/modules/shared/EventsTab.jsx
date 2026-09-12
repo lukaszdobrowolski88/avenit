@@ -243,7 +243,7 @@ function getModuleConfig(ministry) {
 }
 
 // Modal edycji wydarzenia
-const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
+const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [] }) => {
   const t = useT();
   const [form, setForm] = useState({
     id: event?.id || null,
@@ -254,8 +254,10 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
     end_time: event?.end_time || '',
     location: event?.location || '',
     max_participants: event?.max_participants || '',
-    event_type: event?.event_type || config.defaultType
+    event_type: event?.event_type || config.defaultType,
+    custom: event?.custom || {}
   });
+  const setCustom = (key, val) => setForm((f) => ({ ...f, custom: { ...f.custom, [key]: val } }));
 
   const handleSubmit = async () => {
     if (!form.title.trim()) {
@@ -274,7 +276,8 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
       end_time: form.end_time || null,
       location: form.location,
       max_participants: form.max_participants ? parseInt(form.max_participants) : null,
-      event_type: form.event_type || config.defaultType
+      event_type: form.event_type || config.defaultType,
+      custom: form.custom || {}
     };
 
     onSave(form.id, eventData);
@@ -338,6 +341,30 @@ const EventModal = ({ event, onClose, onSave, onDelete, config }) => {
             </div>
           </div>
 
+          {fields.length > 0 && (
+            <div className="space-y-3 pt-1 border-t border-gray-100 dark:border-gray-800">
+              {fields.map((f) => (
+                <div key={f.id || f.field_key}>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{f.label}</label>
+                  {f.field_type === 'dropdown' ? (
+                    <CustomSelect
+                      value={form.custom?.[f.field_key] || ''}
+                      onChange={(val) => setCustom(f.field_key, val)}
+                      options={[{ value: '', label: '—' }, ...((f.options || []).map((o) => ({ value: o, label: o })))]}
+                    />
+                  ) : (
+                    <input
+                      type={f.field_type === 'number' ? 'number' : f.field_type === 'date' ? 'date' : 'text'}
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 [color-scheme:light] dark:[color-scheme:dark]"
+                      value={form.custom?.[f.field_key] || ''}
+                      onChange={(e) => setCustom(f.field_key, e.target.value)}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex justify-between items-center gap-3 mt-6">
             {form.id && onDelete ? (
               <button onClick={() => onDelete(form.id)} className="px-4 py-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition font-medium flex items-center gap-2">
@@ -367,6 +394,15 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   const eventTypes = (calCfg?.types && calCfg.types.length) ? calCfg.types : config.types;
   const canManageCalendar = useCan('module:settings');
   const [showTypes, setShowTypes] = useState(false);
+  const [showFields, setShowFields] = useState(false);
+  // Pola własne wydarzeń tego modułu (definicje z event_custom_fields; wartości w events.custom).
+  const [fields, setFields] = useState([]);
+  const loadFields = () => {
+    supabase.from('event_custom_fields').select('*').eq('module_key', ministry).order('sort_order', { ascending: true })
+      .then(({ data }) => setFields(data || []))
+      .catch(() => setFields([]));
+  };
+  useEffect(() => { loadFields(); /* eslint-disable-next-line */ }, [ministry]);
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -592,12 +628,20 @@ GRANT ALL ON ${config.tableName} TO anon;`;
       <TabHeader className="!mb-0" title={t('Wydarzenia')} actions={
         <div className="flex items-center gap-2">
           {canManageCalendar && (
-            <button
-              onClick={() => setShowTypes(true)}
-              className="text-sm px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-2"
-            >
-              <SlidersHorizontal size={16}/> {t('Typy')}
-            </button>
+            <>
+              <button
+                onClick={() => setShowTypes(true)}
+                className="text-sm px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-2"
+              >
+                <SlidersHorizontal size={16}/> {t('Typy')}
+              </button>
+              <button
+                onClick={() => setShowFields(true)}
+                className="text-sm px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-2"
+              >
+                <SlidersHorizontal size={16}/> {t('Pola')}
+              </button>
+            </>
           )}
           <button
             onClick={() => setShowModal({ id: null })}
@@ -734,6 +778,16 @@ GRANT ALL ON ${config.tableName} TO anon;`;
           onSave={handleSave}
           onDelete={handleDelete}
           config={{ ...config, types: eventTypes }}
+          fields={fields}
+        />
+      )}
+
+      {showFields && (
+        <EventFieldsEditor
+          moduleKey={ministry}
+          initial={fields}
+          onClose={() => setShowFields(false)}
+          onSaved={() => { loadFields(); setShowFields(false); }}
         />
       )}
 
@@ -779,6 +833,76 @@ function EventTypesEditor({ initial, onClose, onSave }) {
       <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
         <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{tr('Anuluj')}</button>
         <button onClick={() => onSave(rows.filter((r) => r.label.trim()))} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">{tr('Zapisz')}</button>
+      </div>
+    </Modal>
+  );
+}
+
+// Edytor pól własnych wydarzeń modułu (definicje w event_custom_fields; wartości w events.custom).
+function EventFieldsEditor({ moduleKey, initial, onClose, onSaved }) {
+  const FIELD_TYPES = [
+    { value: 'text', label: tr('Tekst') },
+    { value: 'number', label: tr('Liczba') },
+    { value: 'date', label: tr('Data') },
+    { value: 'dropdown', label: tr('Lista wyboru') },
+  ];
+  const slug = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || `f_${Date.now().toString(36)}`;
+  const [rows, setRows] = useState(() => (initial || []).map((f) => ({
+    field_key: f.field_key, label: f.label || '', field_type: f.field_type || 'text',
+    options: Array.isArray(f.options) ? f.options.join(', ') : '',
+  })));
+  const [busy, setBusy] = useState(false);
+  const add = () => setRows((r) => [...r, { field_key: '', label: '', field_type: 'text', options: '' }]);
+  const upd = (i, patch) => setRows((r) => r.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const del = (i) => setRows((r) => r.filter((_, j) => j !== i));
+  const save = async () => {
+    setBusy(true);
+    try {
+      const valid = rows.filter((r) => r.label.trim());
+      // Replace: usuń definicje modułu i wstaw aktualne. field_key stabilny → wartości w events.custom przeżywają.
+      await supabase.from('event_custom_fields').delete().eq('module_key', moduleKey);
+      if (valid.length) {
+        const payload = valid.map((r, idx) => ({
+          module_key: moduleKey,
+          field_key: r.field_key || slug(r.label),
+          label: r.label.trim(),
+          field_type: r.field_type || 'text',
+          options: r.field_type === 'dropdown' ? r.options.split(',').map((o) => o.trim()).filter(Boolean) : [],
+          sort_order: idx,
+        }));
+        const { error } = await supabase.from('event_custom_fields').insert(payload);
+        if (error) throw error;
+      }
+      toast.success(tr('Zapisano pola'));
+      onSaved();
+    } catch (e) { toast.error(e.message); }
+    finally { setBusy(false); }
+  };
+  return (
+    <Modal isOpen onClose={onClose} title={tr('Pola własne wydarzeń')} size="md">
+      <div className="p-5 space-y-3">
+        {rows.map((row, i) => (
+          <div key={i} className="space-y-2 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+            <div className="flex items-center gap-2">
+              <input value={row.label} onChange={(e) => upd(i, { label: e.target.value })} placeholder={tr('Nazwa pola')}
+                className="flex-1 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100 outline-none focus:ring-2 focus:ring-accent-primary/30" />
+              <select value={row.field_type} onChange={(e) => upd(i, { field_type: e.target.value })}
+                className="px-2 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100">
+                {FIELD_TYPES.map((ft) => <option key={ft.value} value={ft.value}>{ft.label}</option>)}
+              </select>
+              <button onClick={() => del(i)} className="p-1.5 text-gray-400 hover:text-red-500 shrink-0"><X size={16} /></button>
+            </div>
+            {row.field_type === 'dropdown' && (
+              <input value={row.options} onChange={(e) => upd(i, { options: e.target.value })} placeholder={tr('Opcje po przecinku, np. Tak, Nie')}
+                className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200 outline-none" />
+            )}
+          </div>
+        ))}
+        <button onClick={add} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><Plus size={15} /> {tr('Dodaj pole')}</button>
+      </div>
+      <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
+        <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{tr('Anuluj')}</button>
+        <button onClick={save} disabled={busy} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60">{tr('Zapisz')}</button>
       </div>
     </Modal>
   );
