@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2, SlidersHorizontal } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
@@ -376,6 +377,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [] }) =
 // Główny komponent EventsTab
 export default function EventsTab({ ministry, currentUserEmail: propUserEmail }) {
   const t = useT();
+  const navigate = useNavigate();
   const config = getModuleConfig(ministry);
   // Typy wydarzeń tego modułu: z konfiguracji (Ustawienia kalendarza modułu) lub domyślne.
   const calCfg = useModuleCalendar(ministry);
@@ -694,7 +696,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                     return (
                       <div
                         key={ev.id}
-                        onClick={() => setShowModal(ev)}
+                        onClick={() => navigate(`/wydarzenie/${ev.id}`)}
                         className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark transition cursor-pointer group"
                       >
                         <div className="flex items-start gap-4">

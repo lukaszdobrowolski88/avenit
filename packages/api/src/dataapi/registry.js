@@ -78,6 +78,11 @@ export const REGISTRY = {
   module_events: T(null),
   // Zapisy (RSVP) — każdy zalogowany może zapisać/wypisać siebie (jak notifications/user_presence).
   event_registrations: T(null),
+  // Zaproszenia RSVP (kampanie + pozycje) — rodzina RSVP, dostęp jak event_registrations
+  // (otwarte dla zalogowanych; UI gejtuje tworzenie/wysyłkę). Potrzebne m.in. sekcji
+  // „Zaproszenia" na stronie wydarzenia oraz modułowi Rsvp.
+  rsvp_campaigns: T(null),
+  rsvp_invitations: T(null),
   tasks: T('module:calendar'),
   user_task_comments: T(null),
 
