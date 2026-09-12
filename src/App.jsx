@@ -70,6 +70,7 @@ const MailModule = lazy(() => import('./modules/Mail/MailModule'));
 const FormsModule = lazy(() => import('./modules/Forms/FormsModule'));
 const CustomModule = lazy(() => import('./modules/CustomModule/CustomModule'));
 const BoardsModule = lazy(() => import('./modules/Boards/BoardsModule'));
+const EventDetailPage = lazy(() => import('./modules/EventDetailPage'));
 import { tr } from './i18n';
 
 // Lista kluczy systemowych modułów (mają dedykowane komponenty)
@@ -575,6 +576,9 @@ function AppInner() {
                 } />
                 <Route path="/projekty" element={
                   <ProtectedRoute resource="module:boards"><BoardsModule /></ProtectedRoute>
+                } />
+                <Route path="/wydarzenie/:id" element={
+                  <ProtectedRoute resource="module:calendar"><EventDetailPage /></ProtectedRoute>
                 } />
                 <Route path="/settings" element={
                   <ProtectedRoute resource="module:settings"><GlobalSettings /></ProtectedRoute>
