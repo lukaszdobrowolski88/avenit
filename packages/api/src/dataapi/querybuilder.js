@@ -271,7 +271,7 @@ export function buildQuery(q) {
           (row) =>
             `(${columns
               .map((c) => {
-                params.push(normalizeValue(row[c]));
+                params.push(normalizeValue(row[c], table, c));
                 return `$${params.length}`;
               })
               .join(', ')})`
@@ -292,7 +292,7 @@ export function buildQuery(q) {
           (row) =>
             `(${columns
               .map((c) => {
-                params.push(normalizeValue(row[c]));
+                params.push(normalizeValue(row[c], table, c));
                 return `$${params.length}`;
               })
               .join(', ')})`
@@ -325,7 +325,7 @@ export function buildQuery(q) {
       if (!columns.length) throw new ApiError(400, 'Brak danych do aktualizacji');
       if (!q.filters?.length) throw new ApiError(400, 'UPDATE bez filtrów jest zabroniony');
       const sets = columns.map((c) => {
-        params.push(normalizeValue(values[c]));
+        params.push(normalizeValue(values[c], table, c));
         return `${quoteIdent(c)} = $${params.length}`;
       });
       const where = buildWhere(q.filters, params, alias, hidden);
@@ -361,13 +361,43 @@ function collectColumns(rows, hidden) {
   return [...set];
 }
 
-// Obiekty/tablice serializujemy do JSON (kolumny jsonb); pg sam obsłuży resztę.
-function normalizeValue(v) {
+// Kolumny o natywnym typie tablicowym PG (text[]/_text). Dla nich wartość tablicową
+// przekazujemy SUROWO, żeby node-postgres zbudował literał tablicy PG ('{a,b}').
+// Wszystkie inne kolumny tablicowe/obiektowe traktujemy jako jsonb i serializujemy
+// przez JSON.stringify. Kluczem jest to, że pusta tablica [] przekazana surowo staje
+// się literałem '{}', który dla kolumny jsonb parsuje się jako pusty OBIEKT {} — a nie
+// tablica — co psuło np. forms.fields (crash "d.find is not a function").
+// UWAGA: dodając nową kolumnę typu text[]/ARRAY, DOPISZ ją tutaj — inaczej insert/update
+// tej kolumny się wywali (JSON.stringify trafi do kolumny tablicowej).
+const NATIVE_ARRAY_COLUMNS = new Set([
+  'app_users.backup_codes',
+  'app_users.totp_backup_codes',
+  'board_item_updates.likes',
+  'board_item_updates.mentions',
+  'boards.editors',
+  'members.ministries',
+  'members.tags',
+  'push_campaign_segments.emails',
+  'push_user_preferences.category_opt_outs',
+  'sms_campaign_segments.emails',
+  'sms_campaign_segments.phones',
+  'sms_user_preferences.category_opt_outs',
+  'songs.tags',
+  'tasks.tags',
+  'teachings.tags',
+]);
+
+// Obiekty/tablice serializujemy do JSON (kolumny jsonb); natywne kolumny tablicowe
+// (NATIVE_ARRAY_COLUMNS) przekazujemy surowo — pg sam zbuduje literał tablicy.
+function normalizeValue(v, table, col) {
   if (v === undefined) return null;
-  if (v !== null && typeof v === 'object' && !(v instanceof Date) && !Array.isArray(v)) {
-    return JSON.stringify(v);
+  if (v === null) return null;
+  if (v instanceof Date) return v;
+  const isNativeArray = table && col && NATIVE_ARRAY_COLUMNS.has(`${table}.${col}`);
+  if (Array.isArray(v)) {
+    return isNativeArray ? v : JSON.stringify(v);
   }
-  if (Array.isArray(v) && v.some((x) => x !== null && typeof x === 'object')) {
+  if (typeof v === 'object') {
     return JSON.stringify(v);
   }
   return v;
