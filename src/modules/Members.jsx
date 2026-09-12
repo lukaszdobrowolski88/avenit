@@ -12,7 +12,7 @@ import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
 import MemberProfile from '../components/MemberProfile';
 import Can, { useCan } from '../components/Can';
-import CareFieldsTab from './Care/CareFieldsTab';
+import CareModule from './Care/CareModule';
 import AttendanceTab from './AttendanceTab';
 import MaterialsTab from './shared/MaterialsTab';
 import { useT } from '../i18n';
@@ -652,14 +652,10 @@ export default function Members() {
         </section>
       )}
 
-      {/* OPIEKA (CRM) — globalne pola własne; opieka per-członek jest w profilu członka */}
+      {/* OPIEKA (CRM) — pełna kartoteka opieki (lista osób + notatki/opieka/kamienie/tagi/pola)
+          oraz definicje pól własnych. Opieka per-członek jest też w profilu (ikona podglądu). */}
       {activeTab === 'care' && canCare && (
-        <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300">
-          <div className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-            {t('Notatki, opieka duszpasterska, kamienie milowe i tagi znajdziesz w profilu każdego członka (ikona podglądu). Poniżej zarządzasz definicjami pól własnych.')}
-          </div>
-          <CareFieldsTab />
-        </section>
+        <CareModule embedded />
       )}
 
       {/* FILES TAB */}
