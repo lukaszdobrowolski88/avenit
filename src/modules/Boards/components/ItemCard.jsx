@@ -3,6 +3,9 @@ import { MessageSquare, Calendar, CornerDownRight, Paperclip, Star } from 'lucid
 import { Avatar } from './cells/PeopleCell';
 import { findLabel, resolveOptions } from '../lib/columnTypes';
 
+// Data ISO (yyyy-mm-dd) → dd.mm.yyyy (spójnie z tabelą).
+const fmtD = (d) => (d ? String(d).slice(0, 10).split('-').reverse().join('.') : '');
+
 // Karta elementu (Kanban / Kalendarz) — pokazuje kluczowe informacje bez otwierania modala.
 export default function ItemCard({ item, columns, onOpen, updatesCount = 0, subCount = 0, dragHandleProps }) {
   const statusCols = columns.filter(c => c.type === 'status');
@@ -28,7 +31,7 @@ export default function ItemCard({ item, columns, onOpen, updatesCount = 0, subC
     .filter(x => x.v != null && x.v !== '')
     .slice(0, 2);
 
-  const dateLabel = dateVal || (tl?.start ? `${tl.start}${tl.end ? '–' + tl.end : ''}` : null);
+  const dateLabel = (dateVal && fmtD(dateVal)) || (tl?.start ? `${fmtD(tl.start)}${tl.end ? '–' + fmtD(tl.end) : ''}` : null);
   const pills = [
     ...priorityCols.map(c => findLabel(c, item.cells?.[c.id])).filter(Boolean),
     ...statusCols.map(c => findLabel(c, item.cells?.[c.id])).filter(Boolean),
@@ -50,9 +53,15 @@ export default function ItemCard({ item, columns, onOpen, updatesCount = 0, subC
       {(pills.length > 0 || tags.length > 0) && (
         <div className="flex flex-wrap gap-1 mt-2">
           {pills.map((l, i) => (
-            <span key={i} className="text-[11px] px-2 py-0.5 rounded-full text-white font-medium" style={{ backgroundColor: l.color }}>{l.title}</span>
+            <span key={i} className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md font-semibold" style={{ backgroundColor: `${l.color}22`, color: l.color }}>
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: l.color }} />{l.title}
+            </span>
           ))}
-          {tags.map(o => <span key={o.id} className="text-[11px] px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: o.color }}>{o.title}</span>)}
+          {tags.map(o => (
+            <span key={o.id} className="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-md font-medium" style={{ backgroundColor: `${o.color}22`, color: o.color }}>
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: o.color }} />{o.title}
+            </span>
+          ))}
         </div>
       )}
 
