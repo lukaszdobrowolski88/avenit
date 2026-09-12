@@ -469,7 +469,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
         // więc mapujemy date+time → start_date (wall-clock jako UTC, spójnie z modalem).
         setEvents((data || []).map((r) => ({
           ...r,
-          start_date: r.date ? `${r.date}T${(r.time || '00:00')}:00.000Z` : null,
+          start_date: r.date ? `${String(r.date).slice(0, 10)}T${(r.time || '00:00')}:00.000Z` : null,
         })));
       }
     } catch (err) {
