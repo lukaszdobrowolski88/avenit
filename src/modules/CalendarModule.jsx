@@ -720,7 +720,7 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config
     const eventData = {
       title: eventForm.title.trim(),
       description: eventForm.description.trim(),
-      start_date: eventForm.start_date ? new Date(eventForm.start_date + (eventForm.event_time ? 'T' + eventForm.event_time : 'T00:00:00')).toISOString() : null,
+      start_date: eventForm.start_date ? `${String(eventForm.start_date).slice(0, 10)}T${eventForm.event_time || '00:00'}:00.000Z` : null,
       end_time: eventForm.end_time || null,
       location: eventForm.location,
       max_participants: eventForm.max_participants ? parseInt(eventForm.max_participants) : null,
@@ -983,7 +983,7 @@ export default function CalendarModule() {
         const d = new Date(ev.date);
         if (isNaN(d.getTime())) return;
         const timeStr = ev.time || '10:00';
-        const sd = `${ev.date}T${(ev.time || '00:00')}:00.000Z`; // reconstrukt dla modala służby
+        const sd = `${String(ev.date).slice(0, 10)}T${(ev.time || '00:00')}:00.000Z`; // reconstrukt dla modala służby
         if (isModuleKey(ev.module_key)) {
             const meta = TEAM_META[ev.module_key] || { emoji: '📅', team: ev.module_key, type: 'module_event' };
             all.push({
