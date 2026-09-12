@@ -51,27 +51,35 @@ export function rsvpBase(slug) {
 }
 
 // Wyślij pojedyncze zaproszenie wybranymi kanałami. Zwraca { sent:[], failed }.
-export async function sendInvitation(db, base, campaign, inv, { reminder = false } = {}) {
-  const channels = Array.isArray(campaign.channels) ? campaign.channels : ['push'];
-  const when = eventLine(campaign);
+// opts.channels / opts.message pozwalają nadpisać kanały i treść (kroki przypomnień z eskalacją).
+export async function sendInvitation(db, base, campaign, inv, { reminder = false, channels, message } = {}) {
+  const eff = {
+    ...campaign,
+    channels: Array.isArray(channels) && channels.length
+      ? channels
+      : (Array.isArray(campaign.channels) ? campaign.channels : ['push']),
+    message: (message !== undefined && message !== null && message !== '') ? message : campaign.message,
+  };
+  const chans = eff.channels;
+  const when = eventLine(eff);
   const link = `${base}/rsvp/${inv.token}`;
   const prefix = reminder ? 'Przypomnienie: ' : '';
   const sent = [];
   let failed = 0;
 
-  if (channels.includes('email') && inv.email) {
-    if (await sendResend(inv.email, `${prefix}Potwierdź obecność: ${campaign.title}`, emailHtml(campaign, link, reminder))) sent.push('email');
+  if (chans.includes('email') && inv.email) {
+    if (await sendResend(inv.email, `${prefix}Potwierdź obecność: ${eff.title}`, emailHtml(eff, link, reminder))) sent.push('email');
     else failed++;
   }
-  if (channels.includes('sms') && inv.phone) {
-    const r = await sendSmsCore(db, { phone: inv.phone, message: `${prefix}${campaign.title}${when ? ` (${when})` : ''}. Potwierdź obecność: ${link}` });
+  if (chans.includes('sms') && inv.phone) {
+    const r = await sendSmsCore(db, { phone: inv.phone, message: `${prefix}${eff.title}${when ? ` (${when})` : ''}. Potwierdź obecność: ${link}` });
     if (r.body?.sent === 1) sent.push('sms'); else failed++;
   }
-  if (channels.includes('push') && inv.email) {
+  if (chans.includes('push') && inv.email) {
     const r = await sendPushCore(db, {
       user_email: inv.email,
-      title: `${prefix}${campaign.title}`,
-      body: `${campaign.message || 'Czy będziesz obecny/a?'}${when ? ` — ${when}` : ''}`,
+      title: `${prefix}${eff.title}`,
+      body: `${eff.message || 'Czy będziesz obecny/a?'}${when ? ` — ${when}` : ''}`,
       link,
       category_id: 'rsvp_invite',       // przyciski Będę / Nie będę wprost w powiadomieniu (mobile)
       data: { rsvp_token: inv.token },
@@ -87,23 +95,42 @@ export async function sendInvitation(db, base, campaign, inv, { reminder = false
 
 export default async function handler(req, reply) {
   if (!req.db || !req.tenant) return reply.code(404).send({ error: 'Nieznany tenant' });
-  const { campaign_id } = req.body || {};
+  const { campaign_id, mode, channels, invitation_ids } = req.body || {};
   if (!campaign_id) return reply.code(400).send({ error: 'Brak campaign_id' });
 
   const { rows: campRows } = await req.db.query(`SELECT * FROM rsvp_campaigns WHERE id = $1`, [campaign_id]);
   const campaign = campRows[0];
   if (!campaign) return reply.code(404).send({ error: 'Nie znaleziono kampanii' });
 
+  const isReminder = mode === 'reminder';
   const base = rsvpBase(req.tenant.slug);
-  const { rows: invitations } = await req.db.query(`SELECT * FROM rsvp_invitations WHERE campaign_id = $1`, [campaign_id]);
 
+  // Tryb reminder: tylko osoby oczekujące (bez odpowiedzi). Zaproszenie: wszyscy lub wskazani.
+  const clauses = ['campaign_id = $1'];
+  const params = [campaign_id];
+  if (isReminder) clauses.push(`status = 'pending'`);
+  if (Array.isArray(invitation_ids) && invitation_ids.length) {
+    params.push(invitation_ids);
+    clauses.push(`id = ANY($${params.length}::uuid[])`);
+  }
+  const { rows: invitations } = await req.db.query(
+    `SELECT * FROM rsvp_invitations WHERE ${clauses.join(' AND ')}`, params
+  );
+
+  const overrideChannels = Array.isArray(channels) && channels.length ? channels : undefined;
   const stats = { total: invitations.length, email: 0, sms: 0, push: 0, failed: 0 };
   for (const inv of invitations) {
-    const { sent, failed } = await sendInvitation(req.db, base, campaign, inv, { reminder: false });
+    const { sent, failed } = await sendInvitation(req.db, base, campaign, inv, { reminder: isReminder, channels: overrideChannels });
     sent.forEach((ch) => { stats[ch] = (stats[ch] || 0) + 1; });
     stats.failed += failed;
+    if (isReminder && sent.length) {
+      await req.db.query(`UPDATE rsvp_invitations SET reminded_at = now() WHERE id = $1`, [inv.id]);
+    }
   }
 
-  await req.db.query(`UPDATE rsvp_campaigns SET status = 'sent', sent_at = now() WHERE id = $1`, [campaign_id]);
+  // Zaproszenie oznacza kampanię jako wysłaną; ręczne przypomnienie nie zmienia statusu.
+  if (!isReminder) {
+    await req.db.query(`UPDATE rsvp_campaigns SET status = 'sent', sent_at = COALESCE(sent_at, now()) WHERE id = $1`, [campaign_id]);
+  }
   return reply.send({ success: true, stats });
 }
