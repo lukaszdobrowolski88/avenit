@@ -95,6 +95,10 @@ export const REGISTRY = {
   member_milestones: T('module:members'),
   member_tags: T('module:members'),
   member_custom_fields: T('module:members'),
+  // Definicje pól własnych wydarzeń (kalendarz, per module_key). Odczyt otwarty (potrzebny
+  // do renderu pól przy wydarzeniach w każdym module); zapis tylko admin (edytor „Pola"
+  // bramkowany module:settings po stronie UI).
+  event_custom_fields: T(null, { writeRoles: ADMIN_ROLES }),
   member_custom_values: T('module:members'),
 
   // ── Uwielbienie / zespoły ───────────────────────────────────────────────
