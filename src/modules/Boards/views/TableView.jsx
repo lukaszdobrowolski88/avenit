@@ -197,7 +197,7 @@ function GroupBlock({ group, columns, visibleItems, allItems, people, me, api, o
             <div className="flex items-stretch bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700 h-10 sticky top-0 z-10">
               <div className="shrink-0" style={{ width: HANDLE_W }} />
               <div className="shrink-0" style={{ width: 4 }} />
-              <div className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500" style={{ flex: 1, minWidth: NAME_MIN }}>Element</div>
+              <div className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500" style={{ flex: 1, minWidth: NAME_MIN }}>Element</div>
               {columns.map(col => (
                 <div key={col.id} className="border-r border-gray-200 dark:border-gray-700 shrink-0 relative" style={{ width: col.width || 160 }}>
                   <ColumnHeader column={col} allColumns={columns} onUpdate={api.updateColumn} onDelete={api.deleteColumn} onReorder={canEditStructure ? api.reorderColumns : undefined} />
