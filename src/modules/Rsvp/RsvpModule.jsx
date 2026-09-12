@@ -17,19 +17,45 @@ const EVENT_TYPES = [
   { value: 'event', label: 'Wydarzenie' },
   { value: 'custom', label: 'Inne' },
 ];
-const AUDIENCE = [
-  { value: 'all', label: 'Wszyscy członkowie' },
-  { value: 'home_group', label: 'Grupa domowa' },
-  { value: 'status', label: 'Wg statusu' },
+// Tryby doboru odbiorców (rozbudowane): wszyscy / wg kryteriów (multi) / ręczny wybór.
+const AUDIENCE_MODES = [
+  { value: 'all', label: 'Wszyscy' },
+  { value: 'criteria', label: 'Wg kryteriów' },
   { value: 'manual', label: 'Wybór ręczny' },
 ];
-const STATUSES = [
-  { value: 'Członek', label: 'Członkowie' },
-  { value: 'Sympatyk', label: 'Sympatycy' },
-  { value: 'Gość', label: 'Goście' },
-];
+
+const MINISTRY_LABELS = {
+  worship_team: 'Zespół Uwielbienia', media_team: 'Media Team',
+  atmosfera_team: 'Atmosfera Team', kids_ministry: 'Małe Avenit',
+};
+const prettyMinistry = (k) => MINISTRY_LABELS[k] || String(k || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
 const memberName = (m) => `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email || 'Członek';
+
+const eventOptionLabel = (e) => {
+  const d = e.date ? new Date(e.date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' }) : null;
+  return `${e.title || 'Wydarzenie'}${d ? ` · ${d}${e.time ? ' ' + String(e.time).slice(0, 5) : ''}` : ''}`;
+};
+
+// Wielokrotny wybór (chipy) — używany w konfiguracji odbiorców.
+function ChipToggle({ options, selected, onToggle, empty }) {
+  if (!options.length) return <p className="text-xs text-gray-400 italic px-1">{empty}</p>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map(opt => {
+        const val = typeof opt === 'object' ? opt.value : opt;
+        const lbl = typeof opt === 'object' ? opt.label : opt;
+        const on = selected.includes(val);
+        return (
+          <button key={String(val)} type="button" onClick={() => onToggle(val)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${on ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-accent-primary-light'}`}>
+            {lbl}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 function genToken() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return 'r' + crypto.randomUUID().replace(/-/g, '');
   return 'r' + Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -41,6 +67,7 @@ export default function RsvpModule() {
   const [invByCampaign, setInvByCampaign] = useState({});
   const [members, setMembers] = useState([]);
   const [homeGroups, setHomeGroups] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null); // campaign obj
   const [modalOpen, setModalOpen] = useState(false);
@@ -61,7 +88,7 @@ export default function RsvpModule() {
         setInvByCampaign(grouped);
       } else setInvByCampaign({});
 
-      let mq = supabase.from('members').select('id, first_name, last_name, email, phone, status, home_group_id').order('last_name');
+      let mq = supabase.from('members').select('id, first_name, last_name, email, phone, status, home_group_id, ministries, tags').order('last_name');
       mq = withCampusFilter(mq);
       const { data: mem } = await mq;
       setMembers(mem || []);
@@ -72,6 +99,13 @@ export default function RsvpModule() {
         const { data: hg } = await hq;
         setHomeGroups(hg || []);
       } catch { setHomeGroups([]); }
+
+      try {
+        let eq = supabase.from('events').select('id, title, module_key, event_type, date, time, location').order('date', { ascending: false });
+        eq = withCampusFilter(eq);
+        const { data: evs } = await eq;
+        setEvents(evs || []);
+      } catch { setEvents([]); }
     } catch (err) {
       console.error('RSVP load error:', err);
     } finally {
@@ -125,6 +159,14 @@ export default function RsvpModule() {
                       {EVENT_TYPES.find(e => e.value === c.event_type)?.label || c.event_type}
                       {c.event_date ? ` · ${new Date(c.event_date).toLocaleDateString('pl-PL')}` : ''}
                     </p>
+                    {c.event_id && (() => {
+                      const ev = events.find(e => e.id === c.event_id);
+                      return ev ? (
+                        <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-medium text-accent-primary bg-accent-primary-lightest/60 dark:bg-accent-primary/10 px-1.5 py-0.5 rounded">
+                          <CalendarCheck size={11} /> {ev.title}
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
                   <span className={`text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded ${c.status === 'sent' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
                     {c.status === 'sent' ? 'Wysłane' : 'Szkic'}
@@ -144,7 +186,7 @@ export default function RsvpModule() {
 
       {modalOpen && (
         <CreateCampaignModal
-          members={members} homeGroups={homeGroups} campusIdForInsert={campusIdForInsert}
+          members={members} homeGroups={homeGroups} events={events} campusIdForInsert={campusIdForInsert}
           onClose={() => setModalOpen(false)}
           onCreated={() => { setModalOpen(false); load(); }}
         />
@@ -154,29 +196,82 @@ export default function RsvpModule() {
 }
 
 // ---------------- Tworzenie kampanii ----------------
-function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, onCreated }) {
+function CreateCampaignModal({ members, homeGroups, events, campusIdForInsert, onClose, onCreated }) {
+  const [eventId, setEventId] = useState('');
   const [form, setForm] = useState({
     title: '', event_type: 'event', event_date: '', event_time: '', location: '', message: '',
   });
   const [channels, setChannels] = useState({ push: true, email: true, sms: false });
   const [audience, setAudience] = useState('all');
-  const [homeGroupId, setHomeGroupId] = useState('');
-  const [statusVal, setStatusVal] = useState('Członek');
+  const [criteria, setCriteria] = useState({ statuses: [], groups: [], ministries: [], tags: [] });
+  const [excludedIds, setExcludedIds] = useState([]);
   const [manualIds, setManualIds] = useState([]);
   const [search, setSearch] = useState('');
+  const [showList, setShowList] = useState(false);
   const [saving, setSaving] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderDays, setReminderDays] = useState(1);
   const [isSeries, setIsSeries] = useState(false);
   const [seriesInterval, setSeriesInterval] = useState(7);
 
-  const recipients = useMemo(() => {
-    if (audience === 'all') return members;
-    if (audience === 'home_group') return members.filter(m => m.home_group_id === homeGroupId);
-    if (audience === 'status') return members.filter(m => m.status === statusVal);
+  // Opcje kryteriów wyliczane z realnych danych członków.
+  const statusOptions = useMemo(
+    () => [...new Set(members.map(m => m.status).filter(Boolean))].map(v => ({ value: v, label: v })),
+    [members]
+  );
+  const groupOptions = useMemo(() => homeGroups.map(g => ({ value: g.id, label: g.name })), [homeGroups]);
+  const ministryOptions = useMemo(() => {
+    const s = new Set();
+    members.forEach(m => (m.ministries || []).forEach(x => x && s.add(x)));
+    return [...s].map(v => ({ value: v, label: prettyMinistry(v) }));
+  }, [members]);
+  const tagOptions = useMemo(() => {
+    const s = new Set();
+    members.forEach(m => (m.tags || []).forEach(x => x && s.add(x)));
+    return [...s].map(v => ({ value: v, label: v }));
+  }, [members]);
+
+  const toggleCrit = (cat, val) => setCriteria(c => ({
+    ...c,
+    [cat]: c[cat].includes(val) ? c[cat].filter(x => x !== val) : [...c[cat], val],
+  }));
+  const toggleExclude = (id) => setExcludedIds(ids => ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id]);
+
+  // Wybór istniejącego wydarzenia → prefill pól (nadal edytowalnych) + powiązanie event_id.
+  const onPickEvent = (val) => {
+    setEventId(val);
+    if (!val) return;
+    const ev = events.find(e => String(e.id) === String(val));
+    if (!ev) return;
+    setForm(f => ({
+      ...f,
+      title: ev.title || f.title,
+      event_date: ev.date ? String(ev.date).slice(0, 10) : f.event_date,
+      event_time: ev.time ? String(ev.time).slice(0, 5) : f.event_time,
+      location: ev.location || f.location,
+      event_type: 'event',
+    }));
+  };
+
+  // Baza wg trybu i kryteriów (w obrębie kategorii OR, między kategoriami AND).
+  const base = useMemo(() => {
     if (audience === 'manual') return members.filter(m => manualIds.includes(m.id));
-    return [];
-  }, [audience, members, homeGroupId, statusVal, manualIds]);
+    if (audience === 'criteria') {
+      const { statuses, groups, ministries, tags } = criteria;
+      return members.filter(m => {
+        if (statuses.length && !statuses.includes(m.status)) return false;
+        if (groups.length && !groups.includes(m.home_group_id)) return false;
+        if (ministries.length && !(m.ministries || []).some(x => ministries.includes(x))) return false;
+        if (tags.length && !(m.tags || []).some(x => tags.includes(x))) return false;
+        return true;
+      });
+    }
+    return members; // 'all'
+  }, [audience, members, manualIds, criteria]);
+
+  // Odbiorcy końcowi = baza minus ręcznie wykluczeni (dostrajanie listy).
+  const recipients = useMemo(() => base.filter(m => !excludedIds.includes(m.id)), [base, excludedIds]);
+  const excludedInBase = base.length - recipients.length;
 
   const manualFiltered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -193,6 +288,7 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
       const user = await getCachedUser();
       const payload = {
         title: form.title.trim(), event_type: form.event_type,
+        event_id: eventId ? Number(eventId) : null,
         event_date: form.event_date || null, event_time: form.event_time || null,
         location: form.location || null, message: form.message || null,
         channels: chans, status: 'draft', created_by: user?.email || null, campus_id: campusIdForInsert,
@@ -237,11 +333,27 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
             <button onClick={onClose} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={18} /></button>
           </div>
           <div className="p-5 space-y-4">
+            {/* Powiązanie z istniejącym wydarzeniem (kalendarz) lub wpis ręczny */}
+            <div>
+              <CustomSelect
+                label="Wydarzenie"
+                value={eventId}
+                onChange={onPickEvent}
+                placeholder="— wpisz ręcznie —"
+                options={[{ value: '', label: '— wpisz ręcznie —' }, ...events.map(e => ({ value: String(e.id), label: eventOptionLabel(e) }))]}
+              />
+              {eventId
+                ? <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 ml-1">Powiązano z wydarzeniem — pola poniżej możesz doprecyzować.</p>
+                : <p className="text-xs text-gray-400 mt-1 ml-1">Wybierz utworzone wydarzenie lub wpisz szczegóły ręcznie.</p>}
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Tytuł</label>
               <input data-tour="rsvp-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="np. Grupa domowa — wtorek" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
             </div>
-            <CustomSelect label="Typ" value={form.event_type} onChange={v => setForm(f => ({ ...f, event_type: v }))} options={EVENT_TYPES} />
+            {!eventId && (
+              <CustomSelect label="Typ" value={form.event_type} onChange={v => setForm(f => ({ ...f, event_type: v }))} options={EVENT_TYPES} />
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Data</label>
@@ -296,15 +408,41 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
             </div>
             {isSeries && <p className="text-xs text-gray-400 -mt-2">Seria automatycznie wygeneruje kolejne zaproszenia dla wybranej publiczności (pierwsze wystąpienie w dniu wydarzenia).</p>}
 
-            {/* Odbiorcy */}
-            <CustomSelect label="Odbiorcy" value={audience} onChange={setAudience} options={AUDIENCE} />
-            {audience === 'home_group' && (
-              <CustomSelect label="Grupa domowa" value={homeGroupId} onChange={setHomeGroupId}
-                options={[{ value: '', label: '— wybierz —' }, ...homeGroups.map(g => ({ value: g.id, label: g.name }))]} />
+            {/* Odbiorcy — rozbudowana konfiguracja */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 ml-1">Odbiorcy</label>
+              <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700/40 rounded-xl">
+                {AUDIENCE_MODES.map(m => (
+                  <button key={m.value} type="button" onClick={() => setAudience(m.value)}
+                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition ${audience === m.value ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}>
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {audience === 'criteria' && (
+              <div className="space-y-3 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Status</p>
+                  <ChipToggle options={statusOptions} selected={criteria.statuses} onToggle={v => toggleCrit('statuses', v)} empty="Brak statusów" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Grupy domowe</p>
+                  <ChipToggle options={groupOptions} selected={criteria.groups} onToggle={v => toggleCrit('groups', v)} empty="Brak grup domowych" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Służby</p>
+                  <ChipToggle options={ministryOptions} selected={criteria.ministries} onToggle={v => toggleCrit('ministries', v)} empty="Brak przypisanych służb" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Tagi</p>
+                  <ChipToggle options={tagOptions} selected={criteria.tags} onToggle={v => toggleCrit('tags', v)} empty="Brak tagów" />
+                </div>
+                <p className="text-[11px] text-gray-400">W obrębie kategorii warunki łączą się przez LUB, między kategoriami przez ORAZ.</p>
+              </div>
             )}
-            {audience === 'status' && (
-              <CustomSelect label="Status" value={statusVal} onChange={setStatusVal} options={STATUSES} />
-            )}
+
             {audience === 'manual' && (
               <div>
                 <div className="relative mb-2">
@@ -318,12 +456,35 @@ function CreateCampaignModal({ members, homeGroups, campusIdForInsert, onClose, 
                       <span className="text-gray-700 dark:text-gray-200">{memberName(m)}</span>
                     </label>
                   ))}
+                  {manualFiltered.length > 100 && <p className="px-3 py-2 text-xs text-gray-400">Pokazano 100 z {manualFiltered.length} — zawęź wyszukiwaniem.</p>}
                 </div>
               </div>
             )}
 
-            <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 rounded-xl px-4 py-2">
-              Odbiorców: <b className="text-gray-900 dark:text-white">{recipients.length}</b>
+            {/* Podsumowanie + dostrajanie listy (wyklucz pojedyncze osoby) */}
+            <div className="rounded-xl bg-gray-50 dark:bg-gray-700/30 px-4 py-2.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400">
+                  Odbiorców: <b className="text-gray-900 dark:text-white">{recipients.length}</b>
+                  {excludedInBase > 0 && <span className="text-gray-400"> (wykluczono {excludedInBase})</span>}
+                </span>
+                {audience !== 'manual' && base.length > 0 && (
+                  <button type="button" onClick={() => setShowList(s => !s)} className="text-xs font-medium text-accent-primary hover:underline">
+                    {showList ? 'Ukryj listę' : 'Dostosuj listę'}
+                  </button>
+                )}
+              </div>
+              {showList && audience !== 'manual' && (
+                <div className="mt-2 max-h-44 overflow-y-auto custom-scrollbar rounded-lg border border-gray-200 dark:border-gray-600 divide-y divide-gray-100 dark:divide-gray-700/50 bg-white dark:bg-gray-800">
+                  {base.slice(0, 300).map(m => (
+                    <label key={m.id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                      <input type="checkbox" checked={!excludedIds.includes(m.id)} onChange={() => toggleExclude(m.id)} className="rounded accent-emerald-500" />
+                      <span className={excludedIds.includes(m.id) ? 'text-gray-400 line-through' : 'text-gray-700 dark:text-gray-200'}>{memberName(m)}</span>
+                    </label>
+                  ))}
+                  {base.length > 300 && <p className="px-3 py-2 text-xs text-gray-400">Pokazano 300 z {base.length}.</p>}
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
