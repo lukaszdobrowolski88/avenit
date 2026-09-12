@@ -81,3 +81,26 @@ test('buildQuery: identyfikator SQL-injection odrzucony', () => {
     ApiError
   );
 });
+
+test('normalizeValue: pusta tablica do kolumny jsonb -> JSON "[]" (nie literał PG {})', () => {
+  // Regresja: [] przekazana surowo stawała się '{}'::jsonb = pusty obiekt -> crash "d.find is not a function".
+  const { params } = buildQuery({ table: 'forms', op: 'insert', values: { fields: [] } });
+  assert.equal(params[0], '[]');
+});
+
+test('normalizeValue: tablica obiektów do jsonb -> JSON string', () => {
+  const { params } = buildQuery({ table: 'forms', op: 'insert', values: { fields: [{ id: 'x', type: 'text' }] } });
+  assert.equal(params[0], JSON.stringify([{ id: 'x', type: 'text' }]));
+});
+
+test('normalizeValue: UPDATE pustej tablicy jsonb -> JSON "[]"', () => {
+  const { params } = buildQuery({ table: 'forms', op: 'update', values: { fields: [] }, filters: [{ type: 'eq', column: 'id', value: '1' }] });
+  assert.equal(params[0], '[]');
+});
+
+test('normalizeValue: natywna kolumna text[] (members.tags) zostaje surową tablicą', () => {
+  const nonEmpty = buildQuery({ table: 'members', op: 'insert', values: { tags: ['vip', 'nowy'] } });
+  assert.deepEqual(nonEmpty.params[0], ['vip', 'nowy']);
+  const empty = buildQuery({ table: 'members', op: 'insert', values: { tags: [] } });
+  assert.deepEqual(empty.params[0], []);
+});

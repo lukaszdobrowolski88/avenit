@@ -35,8 +35,9 @@ export default function FormBuilder({
 }) {
   const [title, setTitle] = useState(form?.title || 'Nowy formularz');
   const [description, setDescription] = useState(form?.description || '');
-  const [fields, setFields] = useState(form?.fields || []);
-  const [settings, setSettings] = useState(form?.settings || {});
+  // fields MUSI być tablicą — legacy wiersze mogły zapisać jsonb '{}' (obiekt) zamiast '[]'
+  const [fields, setFields] = useState(Array.isArray(form?.fields) ? form.fields : []);
+  const [settings, setSettings] = useState(form?.settings && typeof form.settings === 'object' && !Array.isArray(form.settings) ? form.settings : {});
   const [selectedFieldId, setSelectedFieldId] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -55,8 +56,8 @@ export default function FormBuilder({
     if (form) {
       setTitle(form.title || 'Nowy formularz');
       setDescription(form.description || '');
-      setFields(form.fields || []);
-      setSettings(form.settings || {});
+      setFields(Array.isArray(form.fields) ? form.fields : []);
+      setSettings(form.settings && typeof form.settings === 'object' && !Array.isArray(form.settings) ? form.settings : {});
     }
   }, [form?.id]);
 
