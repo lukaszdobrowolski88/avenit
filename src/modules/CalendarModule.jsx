@@ -15,6 +15,7 @@ import ProgramEditorModal from './Programs/ProgramEditorModal';
 import EventRSVP from '../components/EventRSVP';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useModules } from '../hooks/useModules';
+import { useModuleCalendars } from '../hooks/useModuleLabel';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
@@ -692,7 +693,7 @@ const MINISTRY_EVENT_CONFIG = {
   }
 };
 
-const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config: configProp }) => {
+const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config: configProp, fields = [] }) => {
   const config = configProp || MINISTRY_EVENT_CONFIG[ministry];
   const [eventForm, setEventForm] = useState({
     id: event?.id || null,
@@ -703,8 +704,10 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config
     end_time: event?.end_time || '',
     location: event?.location || '',
     max_participants: event?.max_participants || '',
-    event_type: event?.event_type || config?.defaultType || 'spotkanie'
+    event_type: event?.event_type || config?.defaultType || 'spotkanie',
+    custom: event?.custom || {}
   });
+  const setCustom = (key, val) => setEventForm((f) => ({ ...f, custom: { ...f.custom, [key]: val } }));
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleSubmit = async () => {
@@ -720,7 +723,8 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config
       end_time: eventForm.end_time || null,
       location: eventForm.location,
       max_participants: eventForm.max_participants ? parseInt(eventForm.max_participants) : null,
-      event_type: eventForm.event_type || config?.defaultType
+      event_type: eventForm.event_type || config?.defaultType,
+      custom: eventForm.custom || {}
     };
 
     onSave(eventForm.id, eventData);
@@ -794,6 +798,30 @@ const ModalMinistryEvent = ({ event, onClose, onSave, onDelete, ministry, config
             </div>
           </div>
 
+          {fields.length > 0 && (
+            <div className="space-y-3 pt-1 border-t border-gray-100 dark:border-gray-800">
+              {fields.map((f) => (
+                <div key={f.id || f.field_key}>
+                  <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{f.label}</label>
+                  {f.field_type === 'dropdown' ? (
+                    <CustomSelect
+                      value={eventForm.custom?.[f.field_key] || ''}
+                      onChange={(val) => setCustom(f.field_key, val)}
+                      options={[{ value: '', label: '—' }, ...((f.options || []).map((o) => ({ value: o, label: o })))]}
+                    />
+                  ) : (
+                    <input
+                      type={f.field_type === 'number' ? 'number' : f.field_type === 'date' ? 'date' : 'text'}
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 [color-scheme:light] dark:[color-scheme:dark]"
+                      value={eventForm.custom?.[f.field_key] || ''}
+                      onChange={(e) => setCustom(f.field_key, e.target.value)}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex justify-between items-center gap-3 mt-6">
             {eventForm.id && onDelete ? (
               <button onClick={handleDeleteClick} className="px-4 py-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition font-medium flex items-center gap-2">
@@ -854,6 +882,23 @@ export default function CalendarModule() {
       { value: 'inne', label: t('Inne') },
     ],
   });
+  // Skonfigurowane typy (app_settings) + pola własne (event_custom_fields) per moduł —
+  // żeby modale otwierane z PICKERA kalendarza honorowały to samo co zakładka modułu.
+  const calMap = useModuleCalendars();
+  const [eventFields, setEventFields] = useState({});
+  useEffect(() => {
+    supabase.from('event_custom_fields').select('*').order('sort_order', { ascending: true })
+      .then(({ data }) => {
+        const g = {};
+        (data || []).forEach((f) => { (g[f.module_key] = g[f.module_key] || []).push(f); });
+        setEventFields(g);
+      }).catch(() => setEventFields({}));
+  }, []);
+  const ministryConfig = (key) => {
+    const base = MINISTRY_EVENT_CONFIG[key] || moduleEventConfig(key);
+    const cfgTypes = calMap[key]?.types;
+    return cfgTypes?.length ? { ...base, types: cfgTypes } : base;
+  };
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState([]);
   const [songs, setSongs] = useState([]);
@@ -2698,6 +2743,8 @@ export default function CalendarModule() {
         <ModalMinistryEvent
           event={modals.mlodziezowkaEvent}
           ministry="mlodziezowka"
+          config={ministryConfig('mlodziezowka')}
+          fields={eventFields['mlodziezowka'] || []}
           onClose={() => setModals({...modals, mlodziezowkaEvent: null})}
           onSave={handleSaveMlodziezowkaEvent}
           onDelete={handleDeleteMlodziezowkaEvent}
@@ -2708,6 +2755,8 @@ export default function CalendarModule() {
         <ModalMinistryEvent
           event={modals.worshipEvent}
           ministry="worship"
+          config={ministryConfig('worship')}
+          fields={eventFields['worship'] || []}
           onClose={() => setModals({...modals, worshipEvent: null})}
           onSave={handleSaveWorshipEvent}
           onDelete={handleDeleteWorshipEvent}
@@ -2718,6 +2767,8 @@ export default function CalendarModule() {
         <ModalMinistryEvent
           event={modals.mediaEvent}
           ministry="media"
+          config={ministryConfig('media')}
+          fields={eventFields['media'] || []}
           onClose={() => setModals({...modals, mediaEvent: null})}
           onSave={handleSaveMediaEvent}
           onDelete={handleDeleteMediaEvent}
@@ -2728,6 +2779,8 @@ export default function CalendarModule() {
         <ModalMinistryEvent
           event={modals.atmosferaEvent}
           ministry="atmosfera"
+          config={ministryConfig('atmosfera')}
+          fields={eventFields['atmosfera'] || []}
           onClose={() => setModals({...modals, atmosferaEvent: null})}
           onSave={handleSaveAtmosferaEvent}
           onDelete={handleDeleteAtmosferaEvent}
@@ -2738,6 +2791,8 @@ export default function CalendarModule() {
         <ModalMinistryEvent
           event={modals.kidsEvent}
           ministry="kids"
+          config={ministryConfig('kids')}
+          fields={eventFields['kids'] || []}
           onClose={() => setModals({...modals, kidsEvent: null})}
           onSave={handleSaveKidsEvent}
           onDelete={handleDeleteKidsEvent}
@@ -2748,6 +2803,8 @@ export default function CalendarModule() {
         <ModalMinistryEvent
           event={modals.homegroupsEvent}
           ministry="homegroups"
+          config={ministryConfig('homegroups')}
+          fields={eventFields['homegroups'] || []}
           onClose={() => setModals({...modals, homegroupsEvent: null})}
           onSave={handleSaveHomegroupsEvent}
           onDelete={handleDeleteHomegroupsEvent}
@@ -2758,7 +2815,8 @@ export default function CalendarModule() {
         <ModalMinistryEvent
           event={modals.moduleEvent}
           ministry={modals.moduleEvent.moduleKey}
-          config={moduleEventConfig(modals.moduleEvent.moduleKey)}
+          config={ministryConfig(modals.moduleEvent.moduleKey)}
+          fields={eventFields[modals.moduleEvent.moduleKey] || []}
           onClose={() => setModals({...modals, moduleEvent: null})}
           onSave={(id, d) => handleSaveModuleEvent(modals.moduleEvent.moduleKey, id, d)}
           onDelete={handleDeleteModuleEvent}
