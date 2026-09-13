@@ -21,6 +21,7 @@ import { useModules } from '../../../hooks/useModules';
 import { supabase } from '../../../lib/supabase';
 import ModuleEditor from './ModuleEditor';
 import TabManager from './TabManager';
+import EventConfigModal from './EventConfigModal';
 import { MODULE_TEMPLATES, iconForType } from './moduleTemplates';
 import { WIDGET_TYPES } from '../../CustomModule/components/ModuleWidget';
 import { callAi } from '../../AI/lib/aiApi';
@@ -30,7 +31,7 @@ import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 
 // Sortable Module Item
-function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, onDuplicate, onSaveTemplate, tabCount }) {
+function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, onDuplicate, onSaveTemplate, onEventConfig, tabCount }) {
   const t = useT();
   const {
     attributes,
@@ -84,6 +85,18 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
           {module.path}
         </p>
       </div>
+
+      {/* Konfiguracja wydarzeń (typy/pola/zakładki wg typu; dla „Wydarzenia" też picker) */}
+      {isEventModule(module.key) && (
+        <button
+          onClick={() => onEventConfig(module)}
+          className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-accent-primary-lighter dark:hover:bg-accent-primary-darkest/30 hover:text-accent-primary dark:hover:text-accent-primary-light rounded-lg transition flex items-center gap-1.5"
+          title={tr('Konfiguracja wydarzeń')}
+        >
+          <Icons.CalendarDays size={14} />
+          {tr('Wydarzenia')}
+        </button>
+      )}
 
       {/* Tabs Button */}
       <button
@@ -156,10 +169,14 @@ function SortableModuleItem({ module, onEdit, onDelete, onToggle, onManageTabs, 
   );
 }
 
-// Moduły podstawowe - nie można ich edytować ani usuwać w tym widoku
-const CORE_MODULE_KEYS = ['dashboard', 'programs', 'calendar'];
+// Moduły podstawowe - nie można ich edytować ani usuwać w tym widoku.
+// „calendar" (Wydarzenia) pokazujemy, bo tam konfiguruje się typy/pola/zakładki/picker.
+const CORE_MODULE_KEYS = ['dashboard', 'programs'];
 // Moduły wtopione w inny moduł (istnieją tylko technicznie) — nie pokazuj jako osobne.
 const MERGED_INTO_OTHER = ['sermons']; // Kazania są zakładką w Nauczaniu
+// Moduły z kalendarzem wydarzeń (mają konfigurację Typy/Pola/Zakładki). 'calendar' = kalendarz „Ogólne".
+const EVENT_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
+const isEventModule = (key) => key === 'calendar' || EVENT_MODULES.includes(key);
 
 export default function ModuleManager() {
   const t = useT();
@@ -195,6 +212,7 @@ export default function ModuleManager() {
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [eventCfg, setEventCfg] = useState(null); // moduł do konfiguracji wydarzeń
 
   const ALLOWED_TAB_TYPES = new Set([...WIDGET_TYPES, 'board', 'custom', 'empty']);
 
@@ -426,6 +444,7 @@ export default function ModuleManager() {
                   onManageTabs={handleManageTabs}
                   onDuplicate={handleDuplicateModule}
                   onSaveTemplate={handleSaveTemplate}
+                  onEventConfig={setEventCfg}
                   tabCount={(tabs[module.id] || []).length}
                 />
               ))}
@@ -545,6 +564,15 @@ export default function ModuleManager() {
           onUpdateTab={updateTab}
           onDeleteTab={deleteTab}
           onReorderTabs={updateTabOrder}
+        />
+      )}
+
+      {eventCfg && (
+        <EventConfigModal
+          moduleKey={eventCfg.key}
+          label={eventCfg.label}
+          isGeneral={eventCfg.key === 'calendar'}
+          onClose={() => setEventCfg(null)}
         />
       )}
 

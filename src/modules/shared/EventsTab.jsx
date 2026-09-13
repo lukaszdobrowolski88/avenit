@@ -382,9 +382,6 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   // Typy wydarzeń tego modułu: z konfiguracji (Ustawienia kalendarza modułu) lub domyślne.
   const calCfg = useModuleCalendar(ministry);
   const eventTypes = (calCfg?.types && calCfg.types.length) ? calCfg.types : config.types;
-  const canManageCalendar = useCan('module:settings');
-  const [showTypes, setShowTypes] = useState(false);
-  const [showFields, setShowFields] = useState(false);
   // Pola własne wydarzeń tego modułu (definicje z event_custom_fields; wartości w events.custom).
   const [fields, setFields] = useState([]);
   const loadFields = () => {
@@ -632,22 +629,6 @@ GRANT ALL ON ${config.tableName} TO anon;`;
       {/* Nagłówek */}
       <TabHeader className="!mb-0" title={t('Wydarzenia')} actions={
         <div className="flex items-center gap-2">
-          {canManageCalendar && (
-            <>
-              <button
-                onClick={() => setShowTypes(true)}
-                className="text-sm px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-2"
-              >
-                <SlidersHorizontal size={16}/> {t('Typy')}
-              </button>
-              <button
-                onClick={() => setShowFields(true)}
-                className="text-sm px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-2"
-              >
-                <SlidersHorizontal size={16}/> {t('Pola')}
-              </button>
-            </>
-          )}
           <button
             onClick={() => setShowModal({ id: null })}
             className="bg-gradient-to-r from-accent-primary to-accent-secondary text-white text-sm px-5 py-2.5 rounded-xl font-medium hover:shadow-lg hover:shadow-accent-primary-light/50 transition flex items-center gap-2"
@@ -785,31 +766,12 @@ GRANT ALL ON ${config.tableName} TO anon;`;
         />
       )}
 
-      {showFields && (
-        <EventFieldsEditor
-          moduleKey={ministry}
-          initial={fields}
-          onClose={() => setShowFields(false)}
-          onSaved={() => { loadFields(); setShowFields(false); }}
-        />
-      )}
-
-      {showTypes && (
-        <EventTypesEditor
-          initial={eventTypes}
-          onClose={() => setShowTypes(false)}
-          onSave={async (types) => {
-            try { await saveModuleCalendar(ministry, { ...(calCfg || {}), types }); toast.success(tr('Zapisano typy wydarzeń')); setShowTypes(false); }
-            catch (e) { toast.error(e.message); }
-          }}
-        />
-      )}
     </div>
   );
 }
 
 // Edytor typów wydarzeń modułu (label + kolor). Zapis do app_settings['module_calendar'].
-function EventTypesEditor({ initial, onClose, onSave }) {
+export function EventTypesEditor({ initial, onClose, onSave }) {
   const PALETTE = ['#e2445c', '#fdab3d', '#00c875', '#579bfc', '#a25ddc', '#00c2e0', '#ff5ac4', '#808080'];
   const [rows, setRows] = useState(() => (initial || []).map((tp) => ({ value: tp.value, label: tp.label, color: tp.color || '#808080' })));
   const add = () => setRows((r) => [...r, { value: `t_${Date.now().toString(36)}`, label: '', color: PALETTE[r.length % PALETTE.length] }]);
@@ -842,7 +804,7 @@ function EventTypesEditor({ initial, onClose, onSave }) {
 }
 
 // Edytor pól własnych wydarzeń modułu (definicje w event_custom_fields; wartości w events.custom).
-function EventFieldsEditor({ moduleKey, initial, onClose, onSaved }) {
+export function EventFieldsEditor({ moduleKey, initial, onClose, onSaved }) {
   const FIELD_TYPES = [
     { value: 'text', label: tr('Tekst') },
     { value: 'number', label: tr('Liczba') },
