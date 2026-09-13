@@ -234,6 +234,8 @@ export default function EventDetailPage() {
       const { data, error } = await supabase.from('programs').insert([{
         date: String(ev.date || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
         title: ev.title || null,
+        schedule: [],
+        song_ids: [],
         campus_id: ev.campus_id || null,
         created_by: user?.email || null,
       }]).select().single();

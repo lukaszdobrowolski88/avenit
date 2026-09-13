@@ -2265,8 +2265,13 @@ export default function ProgramDetail() {
     setIsLoadingProgram(true);
     const { data, error } = await supabase.from('programs').select('*').eq('id', programId).single();
     if (data && !error) {
-      // Map DB 'notes' to frontend 'globalNotes'
-      const programData = { ...data, globalNotes: data.notes || '' };
+      // Map DB 'notes' to frontend 'globalNotes'; zabezpiecz tablice (nowy program może mieć null).
+      const programData = {
+        ...data,
+        schedule: Array.isArray(data.schedule) ? data.schedule : [],
+        song_ids: Array.isArray(data.song_ids) ? data.song_ids : [],
+        globalNotes: data.notes || '',
+      };
       setProgram(programData);
       setOriginalProgram(JSON.parse(JSON.stringify(programData)));
     } else {
