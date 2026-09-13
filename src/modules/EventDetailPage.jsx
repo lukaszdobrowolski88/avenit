@@ -720,6 +720,7 @@ export default function EventDetailPage() {
           canManage={canManage}
           onSaveAssignments={(a) => save({ assignments: a })}
           onSaveTeams={(csv) => save({ team_types: csv })}
+          onSaveLayout={(l) => save({ team_layout: l })}
         />
       )}
 
