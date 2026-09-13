@@ -1225,7 +1225,7 @@ export default function GlobalSettings() {
             <div className="space-y-3">
               {/* Moduły z tabeli app_modules (nowy system) */}
               {dbModules
-                .filter(mod => !['dashboard', 'programs', 'calendar'].includes(mod.key)) // Pomijamy moduły core
+                .filter(mod => !['dashboard', 'programs'].includes(mod.key)) // Pomijamy tylko Pulpit/Programy; „Wydarzenia" pokazujemy
                 .map(mod => (
                 <div key={mod.id} className="flex items-center justify-between p-4 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:shadow-sm transition">
                   <div>
