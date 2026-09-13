@@ -1,28 +1,24 @@
 // Moduł „Wydarzenia" — pełnoprawny moduł (zastępuje dawny „Kalendarz").
-// Wygląd i konfiguracja jak inne moduły: PageHeader (okładka/kolor/nazwa z konfiguracji
-// modułu 'calendar') + ResponsiveTabs. Zakładki: Lista | Kalendarz | Archiwum.
-// Widoczność wydarzeń egzekwowana serwerowo (PR A) niezależnie od widoku.
-import { useState, lazy, Suspense } from 'react';
-import { Calendar as CalendarIcon, List, Archive, Plus } from 'lucide-react';
+// Jeden widok z przełącznikiem Kafelki/Lista/Kalendarz (w EventsListView) + filtr archiwum.
+// „Nowe wydarzenie" otwiera szybki formularz → tworzy wydarzenie i otwiera jego stronę.
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Calendar as CalendarIcon, Plus, Save } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
-import ResponsiveTabs from '../../components/ResponsiveTabs';
-import Spinner from '../../components/Spinner';
+import Modal from '../../components/Modal';
+import CustomSelect from '../../components/CustomSelect';
+import { supabase } from '../../lib/supabase';
+import { toast } from '../../lib/toast';
 import { useModuleLabel } from '../../hooks/useModuleLabel';
+import { useModules } from '../../hooks/useModules';
+import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useT } from '../../i18n';
 import EventsListView from './EventsListView';
 
-const CalendarModule = lazy(() => import('../CalendarModule'));
-
 export default function EventsModule() {
   const t = useT();
-  const [activeTab, setActiveTab] = useState('lista');
   const title = useModuleLabel('calendar', 'Wydarzenia');
-
-  const tabs = [
-    { id: 'lista', label: t('Lista'), icon: List },
-    { id: 'kalendarz', label: t('Kalendarz'), icon: CalendarIcon },
-    { id: 'archiwum', label: t('Archiwum'), icon: Archive },
-  ];
+  const [showCreate, setShowCreate] = useState(false);
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-accent-primary-lightest/50 via-white to-accent-secondary-lightest/50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
@@ -31,29 +27,102 @@ export default function EventsModule() {
           moduleKey="calendar"
           icon={CalendarIcon}
           title={title}
-          subtitle={t('Wszystkie wydarzenia — lista, kalendarz i archiwum')}
+          subtitle={t('Wszystkie wydarzenia — kafelki, lista, kalendarz i archiwum')}
           actions={
-            activeTab !== 'kalendarz' && (
-              <button onClick={() => setActiveTab('kalendarz')}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all">
-                <Plus size={18} />
-                {t('Nowe wydarzenie')}
-              </button>
-            )
+            <button onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all">
+              <Plus size={18} />
+              {t('Nowe wydarzenie')}
+            </button>
           }
         />
-        <ResponsiveTabs moduleKey="calendar" tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mt-4" />
       </div>
 
-      <div className={`flex-1 min-h-0 ${activeTab === 'kalendarz' ? 'p-2 md:p-4' : 'overflow-auto p-4 md:p-6'}`}>
-        {activeTab === 'lista' && <EventsListView mode="list" />}
-        {activeTab === 'archiwum' && <EventsListView mode="archive" />}
-        {activeTab === 'kalendarz' && (
-          <Suspense fallback={<Spinner center size={28} />}>
-            <CalendarModule embedded />
-          </Suspense>
-        )}
+      <div className="flex-1 min-h-0 overflow-auto p-4 md:p-6">
+        <EventsListView />
       </div>
+
+      {showCreate && <CreateEventModal onClose={() => setShowCreate(false)} />}
     </div>
+  );
+}
+
+// Szybkie tworzenie wydarzenia — minimalny formularz, resztę (typ/opis/płatność/rejestracja/
+// widoczność/pola własne) ustawia się na stronie wydarzenia.
+function CreateEventModal({ onClose }) {
+  const t = useT();
+  const navigate = useNavigate();
+  const { modules } = useModules();
+  const { campusIdForInsert } = useCampusQuery();
+  const [form, setForm] = useState({ title: '', module_key: '', date: '', time: '', end_time: '', location: '' });
+  const [saving, setSaving] = useState(false);
+
+  const moduleOptions = [
+    { value: '', label: t('Ogólne') },
+    ...modules.filter((m) => m.is_enabled).map((m) => ({ value: m.key, label: m.label })),
+  ];
+
+  const create = async () => {
+    if (!form.title.trim()) { toast.error(t('Podaj tytuł')); return; }
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase.from('events').insert([{
+        title: form.title.trim(),
+        module_key: form.module_key || null,
+        date: form.date || null,
+        time: form.time || null,
+        end_time: form.end_time || null,
+        location: form.location || null,
+        created_by: user?.email || null,
+        campus_id: campusIdForInsert,
+      }]).select().single();
+      if (error) throw error;
+      toast.success(t('Utworzono wydarzenie'));
+      navigate(`/wydarzenie/${data.id}`);
+    } catch (e) { toast.error('Nie udało się utworzyć: ' + (e.message || e)); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <Modal isOpen onClose={onClose} size="md" title={t('Nowe wydarzenie')}>
+      <div className="p-5 space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Tytuł')}</label>
+          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('Nazwa wydarzenia')}
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+        </div>
+        <CustomSelect label={t('Kalendarz / moduł')} value={form.module_key} onChange={(v) => setForm({ ...form, module_key: v })} options={moduleOptions} />
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Data')}</label>
+            <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
+              className="w-full px-3 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Godzina')}</label>
+            <input value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} placeholder="18:00"
+              className="w-full px-3 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Koniec')}</label>
+            <input value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} placeholder="20:00"
+              className="w-full px-3 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Lokalizacja')}</label>
+          <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder={t('Miejsce')}
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+        </div>
+        <p className="text-xs text-gray-400">{t('Szczegóły (typ, opis, płatność, rejestracja, widoczność, pola własne) ustawisz na stronie wydarzenia.')}</p>
+      </div>
+      <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
+        <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{t('Anuluj')}</button>
+        <button onClick={create} disabled={saving} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60 flex items-center gap-1.5">
+          <Save size={15} /> {saving ? t('Tworzenie…') : t('Utwórz i otwórz')}
+        </button>
+      </div>
+    </Modal>
   );
 }
