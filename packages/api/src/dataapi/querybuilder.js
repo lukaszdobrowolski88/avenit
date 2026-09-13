@@ -240,13 +240,55 @@ export function buildQuery(q) {
     return `(${alias}."campus_id" = $${params.length} OR ${alias}."campus_id" IS NULL)`;
   };
 
+  // Widoczność wydarzeń (audytorium segmentowe). Aktywne WYŁĄCZNIE dla tabeli events, SELECT,
+  // gdy routes ustawi q.__visibilityScope (czyli user nie jest adminem). Gdy segmenty są puste/null
+  // => brak ograniczeń (SQL nie ukrywa nic — zachowanie jak dotąd). Fail-closed: nie pasujesz => nie widzisz.
+  const vis = (q.__visibilityScope && table === 'events' && q.op === 'select') ? q.__visibilityScope : null;
+  const visibilityClause = () => {
+    const p = (val) => { params.push(val); return params.length; };
+    const pEmail = p(vis.email || '');
+    const pRole = p(vis.role || '');
+    const pCampus = p(vis.campusId != null ? String(vis.campusId) : null);
+    const pHome = p(vis.homeGroupId != null ? String(vis.homeGroupId) : null);
+    const pMemberTxt = p(vis.memberId != null ? String(vis.memberId) : null);
+    const pMemberInt = p(vis.memberId != null ? vis.memberId : null);
+    const pMin = p(Array.isArray(vis.ministries) ? vis.ministries.map(String) : []);
+    const pTags = p(Array.isArray(vis.tags) ? vis.tags.map(String) : []);
+    return `(
+      ${alias}.visibility_segments IS NULL
+      OR jsonb_typeof(${alias}.visibility_segments) <> 'array'
+      OR jsonb_array_length(${alias}.visibility_segments) = 0
+      OR EXISTS (
+        SELECT 1 FROM jsonb_array_elements(${alias}.visibility_segments) seg
+        WHERE seg->>'type' = 'everyone'
+          OR (seg->>'type' = 'owner' AND ${alias}.created_by = $${pEmail})
+          OR (seg->>'type' = 'role' AND jsonb_exists(seg->'values', $${pRole}))
+          OR (seg->>'type' = 'campus' AND $${pCampus} IS NOT NULL AND jsonb_exists(seg->'values', $${pCampus}))
+          OR (seg->>'type' = 'home_group' AND $${pHome} IS NOT NULL AND jsonb_exists(seg->'values', $${pHome}))
+          OR (seg->>'type' = 'member' AND $${pMemberTxt} IS NOT NULL AND jsonb_exists(seg->'values', $${pMemberTxt}))
+          OR (seg->>'type' = 'ministry' AND jsonb_exists_any(seg->'values', $${pMin}::text[]))
+          OR (seg->>'type' = 'tag' AND jsonb_exists_any(seg->'values', $${pTags}::text[]))
+          OR (seg->>'type' = 'invited' AND EXISTS (
+                SELECT 1 FROM rsvp_invitations ri JOIN rsvp_campaigns rc ON rc.id = ri.campaign_id
+                WHERE rc.event_id = ${alias}.id
+                  AND (($${pMemberInt}::int IS NOT NULL AND ri.member_id = $${pMemberInt}::int)
+                       OR ($${pEmail} <> '' AND lower(ri.email) = lower($${pEmail})))
+             ))
+      )
+    )`;
+  };
+
   switch (q.op) {
     case 'select': {
       const parsed = parseSelect(q.select);
       const cols = buildSelectColumns(table, parsed, alias, params);
       const usesJsonbRow = cols.some((c) => c.endsWith('AS __row'));
       const where = buildWhere(q.filters, params, alias, hidden);
-      const selWhere = campusId != null ? (where ? `${where} AND ${campusClause()}` : ` WHERE ${campusClause()}`) : where;
+      let selWhere = campusId != null ? (where ? `${where} AND ${campusClause()}` : ` WHERE ${campusClause()}`) : where;
+      if (vis) {
+        const vc = visibilityClause();
+        selWhere = selWhere ? `${selWhere} AND ${vc}` : ` WHERE ${vc}`;
+      }
       let sql = `SELECT ${cols.join(', ')} FROM ${tbl} ${alias}${selWhere}`;
       if (q.order?.length) {
         const orderParts = q.order.map((o) => {

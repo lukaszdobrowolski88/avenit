@@ -33,7 +33,7 @@ export default async function dataApiRoutes(app) {
     const q = req.body || {};
     try {
       const { rows: userRows } = await req.db.query(
-        `SELECT is_super_admin, campus_id, role FROM app_users WHERE id = $1`, [req.user.id]
+        `SELECT is_super_admin, campus_id, role, member_id FROM app_users WHERE id = $1`, [req.user.id]
       );
       const user = {
         ...req.user,
@@ -48,6 +48,30 @@ export default async function dataApiRoutes(app) {
       const { adminRoles } = await loadGrants(req.db, req.tenant.db_name);
       const isAdmin = user.is_super_admin || adminRoles.has(user.role);
       if (!isAdmin && user.campus_id != null) q.__campusScope = { campusId: user.campus_id };
+
+      // Widoczność wydarzeń: kontekst zalogowanego dla egzekwowania audytorium (segmentów).
+      // Tylko dla nie-adminów i tylko przy odczycie events (admin widzi wszystko). Fail-closed:
+      // brak membera => segmenty grupowe (grupa/służba/tag/home_group) po prostu nie łapią.
+      if (!isAdmin && q.table === 'events' && q.op === 'select') {
+        const memberId = userRows[0]?.member_id ?? null;
+        let homeGroupId = null, ministries = [], tags = [];
+        if (memberId != null) {
+          try {
+            const { rows: mem } = await req.db.query(
+              `SELECT home_group_id, ministries, tags FROM members WHERE id = $1`, [memberId]
+            );
+            if (mem[0]) {
+              homeGroupId = mem[0].home_group_id ?? null;
+              ministries = Array.isArray(mem[0].ministries) ? mem[0].ministries : [];
+              tags = Array.isArray(mem[0].tags) ? mem[0].tags : [];
+            }
+          } catch { /* brak kolumn/tabeli w tenancie — kontekst pusty (fail-closed) */ }
+        }
+        q.__visibilityScope = {
+          role: user.role, campusId: user.campus_id, email: req.user.email,
+          memberId, homeGroupId, ministries, tags,
+        };
+      }
 
       const access = await canAccess({
         pool: req.db,
