@@ -278,12 +278,16 @@ export default function EventDetailPage() {
   const progTotal = progItems.reduce((s, it) => s + (Number(it?.duration) || 0), 0);
   const progSongs = progItems.filter((it) => it?.type === 'song').length;
 
-  // Służby dla tej zakładki: z configu (module_key+event_type → teams), fallback = moduł-służba.
+  // Służby dla tej zakładki. Priorytet: override per wydarzenie (events.team_types, CSV) →
+  // reguła event_type_teams (module_key+event_type) → fallback moduł-służba.
   const KNOWN_TEAM_MODULES = ['worship', 'media', 'atmosfera', 'kids'];
   const teamRule = (typeTeams || []).find((r) => (r?.module_key || '') === (ev.module_key || '') && r?.event_type && r.event_type === ev.event_type);
-  const teamTypes = (teamRule && Array.isArray(teamRule.teams) && teamRule.teams.length)
+  const defaultTeamTypes = (teamRule && Array.isArray(teamRule.teams) && teamRule.teams.length)
     ? teamRule.teams
     : (ev.module_key && KNOWN_TEAM_MODULES.includes(ev.module_key) ? [ev.module_key] : []);
+  const teamTypes = (typeof ev.team_types === 'string')
+    ? ev.team_types.split(',').map((s) => s.trim()).filter(Boolean)
+    : defaultTeamTypes;
 
   // Dodatkowe zakładki wg typu wydarzenia (konfiguracja w Ustawieniach wydarzeń).
   const extraTabs = [];
@@ -297,7 +301,7 @@ export default function EventDetailPage() {
     { id: 'szczegoly', label: 'Szczegóły', icon: FileText },
     { id: 'program', label: 'Program', icon: ClipboardList, badge: ev.program_id ? '●' : null },
     { id: 'rejestracja', label: 'Rejestracja i płatność', icon: Ticket, badge: (ev.registration_required || ev.is_paid) ? '●' : null },
-    ...(teamTypes.length ? [{ id: 'sluzby', label: 'Służby', icon: Users }] : []),
+    { id: 'sluzby', label: 'Służby', icon: Users, badge: teamTypes.length ? '●' : null },
     { id: 'uczestnicy', label: 'Uczestnicy', icon: Users, badge: invites.length || null },
     { id: 'zalaczniki', label: 'Załączniki', icon: Paperclip, badge: (ev.attachments?.length) || null },
     ...extraTabs.map((x) => ({ id: x.id, label: x.label, icon: FileText })),
@@ -707,13 +711,15 @@ export default function EventDetailPage() {
       )}
       </div>)}
 
-      {/* Służby — przypisania służb per team_type (config event_type_teams / fallback moduł) */}
+      {/* Służby — przypisania służb per team_type (override per wydarzenie / config / fallback) */}
       {tab === 'sluzby' && (
         <EventTeamsTab
           event={ev}
           teamTypes={teamTypes}
+          defaultTeamTypes={defaultTeamTypes}
           canManage={canManage}
           onSaveAssignments={(a) => save({ assignments: a })}
+          onSaveTeams={(csv) => save({ team_types: csv })}
         />
       )}
 

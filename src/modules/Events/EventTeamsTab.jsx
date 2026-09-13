@@ -3,7 +3,7 @@
 // przez team_member_roles; wybór zapisywany w events.assignments[team_type][field_key] (CSV),
 // wysyłka zaproszeń + statusy przez silnik schedule_assignments (event_id, PR2).
 import React, { useState, useEffect, useCallback } from 'react';
-import { Send, Check, Clock, X as XIcon, Plus, Users } from 'lucide-react';
+import { Send, Check, Clock, X as XIcon, Plus, Users, Settings2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../lib/toast';
 import { getCachedUser } from '../../lib/supabase';
@@ -19,16 +19,47 @@ const TEAM_LABELS = {
   worship: 'Zespół Uwielbienia', media: 'Media Team', atmosfera: 'Atmosfera Team',
   kids: 'Małe Avenit', mc: 'Scena / MC',
 };
+// Bazowe (systemowe) służby zawsze dostępne w pickerze; custom moduły dochodzą z app_modules.
+const SYSTEM_TEAM_OPTIONS = [
+  { value: 'worship', label: 'Zespół Uwielbienia' }, { value: 'media', label: 'Media Team' },
+  { value: 'atmosfera', label: 'Atmosfera Team' }, { value: 'kids', label: 'Małe Avenit' },
+  { value: 'mc', label: 'Scena / MC' },
+];
 const teamLabel = (t, moduleLabelMap) => moduleLabelMap?.[t] || TEAM_LABELS[t] || t;
 const csvNames = (s) => String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
 
-export default function EventTeamsTab({ event, teamTypes, canManage, onSaveAssignments, moduleLabelMap }) {
+export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canManage, onSaveAssignments, onSaveTeams, moduleLabelMap }) {
   const { createAssignment, removeEventAssignment, fetchAssignmentsForEvents, getEventAssignmentStatus, sendInvitesForEvent } = useScheduleAssignments();
   const [teams, setTeams] = useState(null); // [{ teamType, roles, members, eligible }]
   const [assign, setAssign] = useState(event.assignments && typeof event.assignments === 'object' ? event.assignments : {});
   const [openRole, setOpenRole] = useState(null); // `${teamType}:${field_key}`
   const [sending, setSending] = useState(null); // teamType w trakcie wysyłki
   const [, force] = useState(0);
+  const [teamOptions, setTeamOptions] = useState(SYSTEM_TEAM_OPTIONS);
+  const [showPicker, setShowPicker] = useState(false);
+
+  // Opcje pickera: systemowe służby + moduły custom (z app_modules).
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data } = await supabase.from('app_modules').select('module_key, label, is_system');
+        const custom = (data || []).filter((m) => m?.module_key && m.is_system === false)
+          .map((m) => ({ value: m.module_key, label: m.label || m.module_key }));
+        const seen = new Set();
+        const merged = [...SYSTEM_TEAM_OPTIONS, ...custom].filter((o) => (seen.has(o.value) ? false : seen.add(o.value)));
+        if (alive) setTeamOptions(merged);
+      } catch { /* zostają systemowe */ }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const toggleTeamType = (value) => {
+    const cur = new Set(teamTypes);
+    if (cur.has(value)) cur.delete(value); else cur.add(value);
+    onSaveTeams?.([...cur].join(', '));
+  };
+  const resetTeams = () => onSaveTeams?.(null); // wróć do domyślnych (reguła typu / moduł)
 
   // Załaduj role/osoby/przypisania dla każdej służby.
   useEffect(() => {
@@ -49,7 +80,7 @@ export default function EventTeamsTab({ event, teamTypes, canManage, onSaveAssig
       if (alive) setTeams(out);
     })();
     return () => { alive = false; };
-  }, [teamTypes]);
+  }, [teamTypes.join(',')]);
 
   useEffect(() => { fetchAssignmentsForEvents([event.id]).then(() => force((n) => n + 1)); }, [event.id, fetchAssignmentsForEvents]);
 
@@ -106,13 +137,49 @@ export default function EventTeamsTab({ event, teamTypes, canManage, onSaveAssig
     return null;
   };
 
-  if (!teamTypes.length) {
-    return <p className="text-sm text-gray-400">Dla tego typu wydarzenia nie skonfigurowano służb. Ustaw je w: Ustawienia → Zarządzanie → „Wydarzenia" → Służby wg typu.</p>;
-  }
-  if (teams === null) return <Spinner center size={24} />;
+  const managing = canManage && !!onSaveTeams;
+  const isOverridden = typeof event.team_types === 'string';
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      {/* Pasek zarządzania służbami na tym wydarzeniu (override per wydarzenie) */}
+      {managing && (
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <p className="text-xs text-gray-400">
+            {teamTypes.length
+              ? <>Służby na tym wydarzeniu: <span className="text-gray-500 dark:text-gray-300">{teamTypes.map((t) => teamLabel(t, moduleLabelMap)).join(', ')}</span></>
+              : 'Brak wybranych służb dla tego wydarzenia.'}
+          </p>
+          <div className="flex items-center gap-2">
+            {isOverridden && <button onClick={resetTeams} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">Przywróć domyślne</button>}
+            <button onClick={() => setShowPicker((v) => !v)} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 flex items-center gap-1.5">
+              <Settings2 size={14} /> Zarządzaj służbami
+            </button>
+          </div>
+        </div>
+      )}
+      {managing && showPicker && (
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Zaznacz służby dla tego wydarzenia (pojawią się w grafiku i w zakładce „Służby"):</p>
+          <div className="flex flex-wrap gap-1.5">
+            {teamOptions.map((o) => (
+              <button key={o.value} type="button" onClick={() => toggleTeamType(o.value)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${teamTypes.includes(o.value) ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+          {defaultTeamTypes?.length ? <p className="text-[11px] text-gray-400 mt-2">Domyślnie (z typu/modułu): {defaultTeamTypes.map((t) => teamLabel(t, moduleLabelMap)).join(', ')}.</p> : null}
+        </div>
+      )}
+
+      {teamTypes.length === 0 ? (
+        <div className="p-6 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Brak służb na tym wydarzeniu.</p>
+          <p className="text-xs text-gray-400 mt-1">{managing ? 'Kliknij „Zarządzaj służbami", aby je dodać. Domyślne dla całego typu ustawisz w Ustawienia → Zarządzanie → „Wydarzenia" → Służby wg typu.' : 'Służby nie zostały skonfigurowane.'}</p>
+        </div>
+      ) : teams === null ? <Spinner center size={24} /> : (
+      <div className="space-y-5">
       {teams.map((team) => {
         const pendingCount = team.roles.reduce((acc, role) => acc + csvNames(assign?.[team.teamType]?.[role.field_key])
           .filter((n) => getEventAssignmentStatus(event.id, team.teamType, role.field_key, n) === 'pending').length, 0);
@@ -179,6 +246,8 @@ export default function EventTeamsTab({ event, teamTypes, canManage, onSaveAssig
           </section>
         );
       })}
+      </div>
+      )}
     </div>
   );
 }
