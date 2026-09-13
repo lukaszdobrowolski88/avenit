@@ -12,14 +12,21 @@ export default async function publicPageRoutes(app) {
     if (!UUID_RE.test(token)) return reply.code(404).send({ error: 'Nieprawidłowy token' });
     try {
       const { rows } = await req.db.query(
-        `SELECT program_id, role_key, assigned_name, assigned_by_name, status
+        `SELECT program_id, event_id, role_key, assigned_name, assigned_by_name, status
            FROM schedule_assignments WHERE token = $1`,
         [token]
       );
       if (!rows.length) return reply.code(404).send({ error: 'Nie znaleziono przypisania' });
-      const { rows: progRows } = await req.db.query(
-        `SELECT date, title FROM programs WHERE id = $1`, [rows[0].program_id]
-      );
+      // Kontekst (data/tytuł): wydarzenie (events) lub program (programs). Zwracamy pod `program`
+      // dla zgodności ze stroną odpowiedzi (pokazuje date/title niezależnie od źródła).
+      let ctx = null;
+      if (rows[0].event_id) {
+        const { rows: evRows } = await req.db.query(`SELECT date, title FROM events WHERE id = $1`, [rows[0].event_id]);
+        ctx = evRows[0] ? { date: evRows[0].date, title: evRows[0].title } : null;
+      } else {
+        const { rows: progRows } = await req.db.query(`SELECT date, title FROM programs WHERE id = $1`, [rows[0].program_id]);
+        ctx = progRows[0] ? { date: progRows[0].date, title: progRows[0].title } : null;
+      }
       return reply.send({
         assignments: rows.map((r) => ({
           role_key: r.role_key,
@@ -28,7 +35,7 @@ export default async function publicPageRoutes(app) {
           status: r.status,
         })),
         status: rows[0].status,
-        program: progRows[0] ? { date: progRows[0].date, title: progRows[0].title } : null,
+        program: ctx,
       });
     } catch (err) {
       req.log?.error?.({ err }, 'public assignment fetch failed');
@@ -45,7 +52,7 @@ export default async function publicPageRoutes(app) {
     if (action !== 'accept' && action !== 'reject') return reply.code(400).send({ error: 'Nieprawidłowa akcja' });
     try {
       const { rows } = await req.db.query(
-        `SELECT program_id, role_key, assigned_name, status FROM schedule_assignments WHERE token = $1`,
+        `SELECT program_id, event_id, team_type, role_key, assigned_name, status FROM schedule_assignments WHERE token = $1`,
         [token]
       );
       if (!rows.length) return reply.code(404).send({ error: 'Nie znaleziono przypisania' });
@@ -59,22 +66,35 @@ export default async function publicPageRoutes(app) {
           WHERE token = $2 AND status = 'pending'`,
         [newStatus, token]
       );
-      // Odrzucenie: usuń osobę ze WSZYSTKICH jej ról w grafiku programu (programs.zespol).
+      // Odrzucenie: usuń osobę ze WSZYSTKICH jej ról w grafiku.
       if (action === 'reject') {
-        const { rows: progRows } = await req.db.query(
-          `SELECT zespol FROM programs WHERE id = $1`, [rows[0].program_id]
-        );
-        const zespol = progRows[0]?.zespol;
-        if (zespol && typeof zespol === 'object') {
-          const updated = { ...zespol };
-          for (const r of rows) {
-            const names = String(updated[r.role_key] || '').split(',').map((s) => s.trim()).filter(Boolean);
-            updated[r.role_key] = names.filter((n) => n !== r.assigned_name).join(', ');
+        if (rows[0].event_id) {
+          // Grafik na WYDARZENIU: events.assignments[team_type][role_key] (CSV imion).
+          const { rows: evRows } = await req.db.query(`SELECT assignments FROM events WHERE id = $1`, [rows[0].event_id]);
+          const asg = evRows[0]?.assignments;
+          if (asg && typeof asg === 'object') {
+            const updated = { ...asg };
+            for (const r of rows) {
+              const team = updated[r.team_type] && typeof updated[r.team_type] === 'object' ? { ...updated[r.team_type] } : null;
+              if (!team) continue;
+              const names = String(team[r.role_key] || '').split(',').map((s) => s.trim()).filter(Boolean);
+              team[r.role_key] = names.filter((n) => n !== r.assigned_name).join(', ');
+              updated[r.team_type] = team;
+            }
+            await req.db.query(`UPDATE events SET assignments = $1::jsonb WHERE id = $2`, [JSON.stringify(updated), rows[0].event_id]);
           }
-          await req.db.query(
-            `UPDATE programs SET zespol = $1::jsonb WHERE id = $2`,
-            [JSON.stringify(updated), rows[0].program_id]
-          );
+        } else {
+          // Grafik na PROGRAMIE (istniejący): programs.zespol.
+          const { rows: progRows } = await req.db.query(`SELECT zespol FROM programs WHERE id = $1`, [rows[0].program_id]);
+          const zespol = progRows[0]?.zespol;
+          if (zespol && typeof zespol === 'object') {
+            const updated = { ...zespol };
+            for (const r of rows) {
+              const names = String(updated[r.role_key] || '').split(',').map((s) => s.trim()).filter(Boolean);
+              updated[r.role_key] = names.filter((n) => n !== r.assigned_name).join(', ');
+            }
+            await req.db.query(`UPDATE programs SET zespol = $1::jsonb WHERE id = $2`, [JSON.stringify(updated), rows[0].program_id]);
+          }
         }
       }
       return reply.send({ ok: true, status: newStatus });

@@ -22,7 +22,7 @@ const ROLE_NAMES = {
 };
 const roleName = (key, fallbackLabel) => fallbackLabel || ROLE_NAMES[key] || key;
 
-function emailHtml({ assignedByName, roles, programDate, programTitle, acceptUrl, rejectUrl }) {
+function emailHtml({ assignedByName, roles, programDate, programTitle, acceptUrl, rejectUrl, contextLabel = 'Program' }) {
   const rolesHtml = roles.map((r) => `
     <tr><td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;color:#1f2937;font-size:15px;font-weight:600;">${r}</td></tr>`).join('');
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -39,7 +39,7 @@ function emailHtml({ assignedByName, roles, programDate, programTitle, acceptUrl
 <p style="margin:4px 0 0;color:#1f2937;font-size:16px;font-weight:600;">${programDate}</p></td></tr>
 <tr><td style="padding:12px 16px 4px;"><span style="color:#6b7280;font-size:12px;text-transform:uppercase;">Służby</span></td></tr>
 ${rolesHtml}
-<tr><td style="padding:12px 16px;"><span style="color:#6b7280;font-size:12px;text-transform:uppercase;">Program</span>
+<tr><td style="padding:12px 16px;"><span style="color:#6b7280;font-size:12px;text-transform:uppercase;">${contextLabel}</span>
 <p style="margin:4px 0 0;color:#1f2937;font-size:16px;font-weight:600;">${programTitle}</p></td></tr></table></td></tr>
 <tr><td style="padding:0 32px 32px;"><table width="100%" cellpadding="0" cellspacing="0">
 <tr><td style="padding-bottom:12px;"><a href="${acceptUrl}" style="display:block;padding:14px 24px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;text-align:center;border-radius:12px;font-weight:700;font-size:16px;">✓ Akceptuję${roles.length > 1 ? ' wszystkie' : ''}</a></td></tr>
@@ -51,21 +51,36 @@ ${rolesHtml}
 
 export default async function handler(req, reply) {
   try {
-    const { programId, teamType, baseUrl } = req.body || {};
-    if (!programId) return reply.code(400).send({ error: 'Brak programId' });
+    const { programId, eventId, teamType, baseUrl } = req.body || {};
+    const scopeId = eventId || programId;
+    if (!scopeId) return reply.code(400).send({ error: 'Brak programId/eventId' });
+    const scopeCol = eventId ? 'event_id' : 'program_id';
     const origin = String(baseUrl || `https://${req.headers.host}`).replace(/\/+$/, '');
 
-    const { rows: progRows } = await req.db.query(`SELECT date, title FROM programs WHERE id = $1`, [programId]);
-    if (!progRows[0]) return reply.code(404).send({ error: 'Program not found' });
-    const programDate = new Date(progRows[0].date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    const programTitle = progRows[0].title?.trim() || 'Nabożeństwo';
+    // Źródło daty/tytułu i link push: wydarzenie (events) lub program (programs).
+    let programDate, programTitle, pushLink, contextLabel;
+    if (eventId) {
+      const { rows } = await req.db.query(`SELECT date, title FROM events WHERE id = $1`, [eventId]);
+      if (!rows[0]) return reply.code(404).send({ error: 'Event not found' });
+      programDate = new Date(rows[0].date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      programTitle = rows[0].title?.trim() || 'Wydarzenie';
+      pushLink = `/wydarzenie/${eventId}`;
+      contextLabel = 'Wydarzenie';
+    } else {
+      const { rows } = await req.db.query(`SELECT date, title FROM programs WHERE id = $1`, [programId]);
+      if (!rows[0]) return reply.code(404).send({ error: 'Program not found' });
+      programDate = new Date(rows[0].date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      programTitle = rows[0].title?.trim() || 'Nabożeństwo';
+      pushLink = `/programs/${programId}`;
+      contextLabel = 'Program';
+    }
 
-    // Scope po team_type: programy są WSPÓLNE dla zespołów, więc bez tego filtra wysyłka
-    // z jednego grafiku ruszyłaby przypisania innego zespołu dla tej samej daty.
+    // Scope po team_type: programy/wydarzenia są WSPÓLNE dla zespołów, więc bez tego filtra
+    // wysyłka z jednego grafiku ruszyłaby przypisania innego zespołu dla tej samej daty.
     const { rows: all } = await req.db.query(
       `SELECT id, role_key, role_label, assigned_name, assigned_email, assigned_by_name, status, email_sent_at
-         FROM schedule_assignments WHERE program_id = $1${teamType ? ' AND team_type = $2' : ''}`,
-      teamType ? [programId, teamType] : [programId]
+         FROM schedule_assignments WHERE ${scopeCol} = $1${teamType ? ' AND team_type = $2' : ''}`,
+      teamType ? [scopeId, teamType] : [scopeId]
     );
 
     // Grupuj oczekujące, NIEwysłane przypisania (z e-mailem) per osoba. Wysyłamy do każdego,
@@ -98,7 +113,7 @@ export default async function handler(req, reply) {
       const roleLabels = person.roleLabels;
       const acceptUrl = `${origin}/assignment-response?token=${token}&action=accept`;
       const rejectUrl = `${origin}/assignment-response?token=${token}&action=reject`;
-      const html = emailHtml({ assignedByName: person.by || 'Administrator', roles: roleLabels, programDate, programTitle, acceptUrl, rejectUrl });
+      const html = emailHtml({ assignedByName: person.by || 'Administrator', roles: roleLabels, programDate, programTitle, acceptUrl, rejectUrl, contextLabel });
       const subject = roleLabels.length > 1
         ? `Zaproszenie do służby (${roleLabels.length}) — ${programDate}`
         : `Zaproszenie do służby: ${roleLabels[0]} — ${programDate}`;
@@ -115,8 +130,8 @@ export default async function handler(req, reply) {
       // Wspólny token + stempel wysyłki na wszystkich (niewysłanych) przypisaniach osoby.
       await req.db.query(
         `UPDATE schedule_assignments SET token = $1, email_sent_at = now()
-          WHERE program_id = $2 AND lower(assigned_email) = $3 AND status = 'pending' AND email_sent_at IS NULL${teamType ? ' AND team_type = $4' : ''}`,
-        teamType ? [token, programId, person.email.toLowerCase(), teamType] : [token, programId, person.email.toLowerCase()]
+          WHERE ${scopeCol} = $2 AND lower(assigned_email) = $3 AND status = 'pending' AND email_sent_at IS NULL${teamType ? ' AND team_type = $4' : ''}`,
+        teamType ? [token, scopeId, person.email.toLowerCase(), teamType] : [token, scopeId, person.email.toLowerCase()]
       );
       sent++;
 
@@ -126,7 +141,7 @@ export default async function handler(req, reply) {
           user_email: person.email,
           title: 'Nowe zaproszenie do służby',
           body: `${roleLabels.join(', ')} — ${programDate}`,
-          link: `/programs/${programId}`,
+          link: pushLink,
         });
       } catch (e) { req.log?.warn?.({ err: e }, 'invite push failed'); }
     }

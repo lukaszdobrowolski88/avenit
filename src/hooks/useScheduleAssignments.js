@@ -102,6 +102,7 @@ export function useScheduleAssignments() {
    */
   const createAssignment = useCallback(async ({
     programId,
+    eventId,
     teamType,
     roleKey,
     roleLabel,
@@ -116,43 +117,48 @@ export function useScheduleAssignments() {
     try {
       // Jeśli przypisanie do siebie - automatycznie zaakceptowane
       const status = isSelfAssignment ? 'accepted' : 'pending';
+      const base = {
+        team_type: teamType,
+        role_key: roleKey,
+        role_label: roleLabel || null,
+        assigned_name: assignedName,
+        assigned_email: assignedEmail,
+        assigned_by_email: assignedByEmail,
+        assigned_by_name: assignedByName,
+        status,
+        responded_at: isSelfAssignment ? new Date().toISOString() : null,
+      };
 
-      const { data, error } = await supabase
-        .from('schedule_assignments')
-        .upsert({
-          program_id: programId,
-          team_type: teamType,
-          role_key: roleKey,
-          role_label: roleLabel || null,
-          assigned_name: assignedName,
-          assigned_email: assignedEmail,
-          assigned_by_email: assignedByEmail,
-          assigned_by_name: assignedByName,
-          status: status,
-          responded_at: isSelfAssignment ? new Date().toISOString() : null
-        }, {
-          onConflict: 'program_id,team_type,role_key,assigned_name'
-        })
-        .select()
-        .single();
+      let data, error;
+      if (eventId) {
+        // Grafik/służby na WYDARZENIU. Ręczny upsert (częściowy unikat event_id → PostgREST
+        // nie wnioskuje predykatu z onConflict): sprawdź istniejący wiersz, potem update/insert.
+        const { data: existing } = await supabase.from('schedule_assignments').select('id')
+          .eq('event_id', eventId).eq('team_type', teamType).eq('role_key', roleKey).eq('assigned_name', assignedName).maybeSingle();
+        if (existing) {
+          ({ data, error } = await supabase.from('schedule_assignments').update(base).eq('id', existing.id).select().single());
+        } else {
+          ({ data, error } = await supabase.from('schedule_assignments').insert({ event_id: eventId, ...base }).select().single());
+        }
+      } else {
+        ({ data, error } = await supabase.from('schedule_assignments').upsert(
+          { program_id: programId, ...base },
+          { onConflict: 'program_id,team_type,role_key,assigned_name' }
+        ).select().single());
+      }
 
       if (error) throw error;
 
       // Aktualizuj lokalny stan - dodaj nowe przypisanie lub zaktualizuj istniejące
       setAssignments(prev => {
-        const existingIndex = prev.findIndex(
-          a => a.program_id === programId &&
-               a.team_type === teamType &&
-               a.role_key === roleKey &&
-               a.assigned_name === assignedName
-        );
+        const matches = (a) => (eventId ? a.event_id === eventId : a.program_id === programId) &&
+               a.team_type === teamType && a.role_key === roleKey && a.assigned_name === assignedName;
+        const existingIndex = prev.findIndex(matches);
         if (existingIndex >= 0) {
-          // Zaktualizuj istniejące
           const updated = [...prev];
           updated[existingIndex] = data;
           return updated;
         }
-        // Dodaj nowe
         return [...prev, data];
       });
 
@@ -195,6 +201,48 @@ export function useScheduleAssignments() {
     } catch (err) {
       console.error('Error removing assignment:', err);
       return { success: false, error: err.message };
+    }
+  }, []);
+
+  /**
+   * Usuń przypisanie wydarzenia (grafik/służby na events).
+   */
+  const removeEventAssignment = useCallback(async (eventId, teamType, roleKey, assignedName) => {
+    try {
+      const { error } = await supabase
+        .from('schedule_assignments')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('team_type', teamType)
+        .eq('role_key', roleKey)
+        .eq('assigned_name', assignedName);
+      if (error) throw error;
+      setAssignments(prev => prev.filter(
+        a => !(a.event_id === eventId && a.team_type === teamType && a.role_key === roleKey && a.assigned_name === assignedName)
+      ));
+      return { success: true };
+    } catch (err) {
+      console.error('Error removing event assignment:', err);
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  /**
+   * Pobierz przypisania dla wielu wydarzeń (bulk) — do grafiku nad wydarzeniami.
+   */
+  const fetchAssignmentsForEvents = useCallback(async (eventIds) => {
+    if (!eventIds || eventIds.length === 0) return [];
+    try {
+      const { data, error } = await supabase
+        .from('schedule_assignments')
+        .select('*')
+        .in('event_id', eventIds);
+      if (error) throw error;
+      setAssignments(data || []);
+      return data || [];
+    } catch (err) {
+      console.error('Error fetching event assignments:', err);
+      return [];
     }
   }, []);
 
@@ -373,6 +421,19 @@ export function useScheduleAssignments() {
   }, [assignments]);
 
   /**
+   * Status przypisania osoby dla wydarzenia (grafik/służby na events).
+   */
+  const getEventAssignmentStatus = useCallback((eventId, teamType, roleKey, assignedName) => {
+    const assignment = assignments.find(
+      a => a.event_id === eventId &&
+           a.team_type === teamType &&
+           a.role_key === roleKey &&
+           a.assigned_name === assignedName
+    );
+    return assignment?.status || null;
+  }, [assignments]);
+
+  /**
    * Wsadowa wysyłka zaproszeń dla programu (daty). Jeden łączony e-mail + push per osoba,
    * tylko do osób, którym wcześniej nie wysłano dla tej daty. Zwraca { success, sent, skipped }.
    */
@@ -388,19 +449,38 @@ export function useScheduleAssignments() {
     }
   }, []);
 
+  /**
+   * Wsadowa wysyłka zaproszeń dla WYDARZENIA (grafik/służby na events).
+   */
+  const sendInvitesForEvent = useCallback(async (eventId, teamType) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-assignment-invites', {
+        body: { eventId, teamType, baseUrl: window.location.origin },
+      });
+      if (error || data?.error) return { success: false, error: data?.error || error?.message };
+      return { success: true, ...data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
   return {
     loading,
     assignments,
     fetchAssignments,
     fetchAssignmentsForPrograms,
+    fetchAssignmentsForEvents,
     fetchPendingAssignments,
     createAssignment,
     removeAssignment,
+    removeEventAssignment,
     acceptAssignment,
     rejectAssignment,
     acceptByToken,
     rejectByToken,
     getAssignmentStatus,
-    sendInvitesForProgram
+    getEventAssignmentStatus,
+    sendInvitesForProgram,
+    sendInvitesForEvent
   };
 }
