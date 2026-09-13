@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Spinner from '../../components/Spinner';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
-import { ChevronUp, ChevronDown, Check, UserX, Send, Clock, X as XIcon } from 'lucide-react';
+import { ChevronUp, ChevronDown, Check, UserX, Send, Clock, X as XIcon, Download } from 'lucide-react';
 import { toast } from '../../lib/toast';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { useT } from '../../i18n';
@@ -337,6 +337,26 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     await writeAssignments(eventId, (teamData) => { teamData.notatki = value; });
   };
 
+  const updateAbsence = async (eventId, value) => {
+    await writeAssignments(eventId, (teamData) => { teamData.absencja = value; });
+  };
+
+  // Eksport widocznego grafiku (wszystkie wydarzenia tej służby) do CSV.
+  const exportCsv = () => {
+    const header = ['Data', 'Wydarzenie', ...columns.map((c) => c.label), 'Absencja', 'Notatki'];
+    const rows = teamEvents.slice().sort((a, b) => new Date(a.date) - new Date(b.date)).map((ev) => {
+      const td = ev.assignments?.[teamType] || {};
+      return [formatDateShort(ev.date), ev.title || '', ...columns.map((c) => td[c.key] || ''), td.absencja || '', td.notatki || ''];
+    });
+    const esc = (cell) => `"${String(cell).replace(/"/g, '""')}"`;
+    const csv = [header, ...rows].map((r) => r.map(esc).join(',')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `grafik-${teamType}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const sendForEvent = async (eventId) => {
     const res = await sendInvitesForEvent(eventId, teamType);
     if (res?.success) {
@@ -378,6 +398,12 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           Grafik
         </h2>
+        {teamEvents.length > 0 && (
+          <button onClick={exportCsv}
+            className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+            <Download size={15} /> Eksport CSV
+          </button>
+        )}
       </div>
 
       {members.length === 0 ? (
@@ -417,13 +443,16 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                           {columns.map(col => (
                             <th key={col.key} className="p-3 font-semibold min-w-[130px]">{col.label}</th>
                           ))}
+                          <th className="p-3 font-semibold min-w-[130px] text-red-500 dark:text-red-400">Absencja</th>
                           <th className="p-3 font-semibold min-w-[150px]">Notatki</th>
                         </tr>
                       </thead>
                       <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700 relative">
                         {groupedEvents[monthKey]
                           .sort((a, b) => new Date(a.date) - new Date(b.date))
-                          .map((ev) => (
+                          .map((ev) => {
+                          const absentList = csvNames(ev.assignments?.[teamType]?.absencja);
+                          return (
                             <tr key={ev.id} className="hover:bg-white/60 dark:hover:bg-gray-700/30 transition relative">
                               <td className="p-3 font-medium text-gray-700 dark:text-gray-300 text-xs">
                                 <div className="flex flex-col gap-1.5 items-start">
@@ -444,9 +473,17 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                                     options={getMembersForRole(col.roleId)}
                                     value={ev.assignments?.[teamType]?.[col.key] || ''}
                                     onChange={(val) => updateRole(ev.id, col.key, col.label, val)}
+                                    absentMembers={absentList}
                                   />
                                 </td>
                               ))}
+                              <td className="p-2 relative">
+                                <TableMultiSelect
+                                  options={members}
+                                  value={ev.assignments?.[teamType]?.absencja || ''}
+                                  onChange={(val) => updateAbsence(ev.id, val)}
+                                />
+                              </td>
                               <td className="p-2">
                                 <input
                                   className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light dark:focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
@@ -456,7 +493,7 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                                 />
                               </td>
                             </tr>
-                          ))}
+                          );})}
                       </tbody>
                     </table>
                   </div>
