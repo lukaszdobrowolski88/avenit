@@ -3,7 +3,7 @@
 // typ, moduł/służba, płatne, z rejestracją. Archiwum = data < dziś LUB is_archived.
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Ticket, CreditCard, Archive, RotateCcw, Search, X } from 'lucide-react';
+import { Calendar, MapPin, Ticket, CreditCard, Archive, RotateCcw, Search, X, Clock, List, LayoutGrid } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useModules } from '../../hooks/useModules';
@@ -30,6 +30,10 @@ export default function EventsListView({ mode = 'list' }) {
   const [moduleF, setModuleF] = useState('');
   const [paidOnly, setPaidOnly] = useState(false);
   const [regOnly, setRegOnly] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    try { return localStorage.getItem('events_view_mode') || 'cards'; } catch { return 'cards'; }
+  });
+  const setView = (m) => { setViewMode(m); try { localStorage.setItem('events_view_mode', m); } catch { /* ignore */ } };
 
   const moduleLabel = useCallback((k) => modules.find((m) => m.key === k)?.label || k || '—', [modules]);
 
@@ -109,7 +113,15 @@ export default function EventsListView({ mode = 'list' }) {
           className={`px-3 py-2 rounded-xl text-sm font-medium border transition flex items-center gap-1.5 ${regOnly ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
           <Ticket size={14} /> Z rejestracją
         </button>
-        <span className="ml-auto text-xs text-gray-400">{filtered.length} wydarzeń</span>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="flex items-center gap-0.5 p-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <button onClick={() => setView('cards')} title="Kafelki"
+              className={`p-1.5 rounded-md transition ${viewMode === 'cards' ? 'bg-white dark:bg-gray-900 text-accent-primary shadow-sm' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}><LayoutGrid size={16} /></button>
+            <button onClick={() => setView('list')} title="Lista"
+              className={`p-1.5 rounded-md transition ${viewMode === 'list' ? 'bg-white dark:bg-gray-900 text-accent-primary shadow-sm' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}><List size={16} /></button>
+          </div>
+          <span className="text-xs text-gray-400 whitespace-nowrap">{filtered.length} wydarzeń</span>
+        </div>
       </div>
 
       {loading ? <Spinner center size={28} />
@@ -117,8 +129,8 @@ export default function EventsListView({ mode = 'list' }) {
           <EmptyState icon={mode === 'archive' ? Archive : Calendar}
             title={mode === 'archive' ? 'Archiwum jest puste' : 'Brak wydarzeń'}
             subtitle={mode === 'archive' ? 'Wydarzenia przeszłe i zarchiwizowane pojawią się tutaj.' : 'Nadchodzące wydarzenia pojawią się tutaj.'} />
-        ) : (
-          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+        ) : viewMode === 'list' ? (
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100 dark:border-gray-800">
@@ -151,10 +163,10 @@ export default function EventsListView({ mode = 'list' }) {
                       {e.location ? <span className="inline-flex items-center gap-1"><MapPin size={12} className="text-gray-400" />{e.location}</span> : '—'}
                     </td>
                     <td className="px-4 py-2.5 text-right whitespace-nowrap" onClick={(ev) => ev.stopPropagation()}>
-                      {e.is_archived ? (
+                      {mode === 'archive' ? (e.is_archived && (
                         <button onClick={() => setArchived(e.id, false)} title="Przywróć"
                           className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition"><RotateCcw size={16} /></button>
-                      ) : (
+                      )) : (
                         <button onClick={() => setArchived(e.id, true)} title="Archiwizuj"
                           className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition"><Archive size={16} /></button>
                       )}
@@ -163,6 +175,63 @@ export default function EventsListView({ mode = 'list' }) {
                 ))}
               </tbody>
             </table>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filtered.map((e) => {
+              const d = e.date ? new Date(String(e.date).slice(0, 10) + 'T00:00:00') : null;
+              const canRestore = mode === 'archive' && e.is_archived;
+              const canArchive = mode !== 'archive';
+              return (
+                <div key={e.id} onClick={() => navigate(`/wydarzenie/${e.id}`)}
+                  className="group relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4 hover:shadow-lg hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark transition cursor-pointer flex flex-col">
+                  {/* Nagłówek: data + typ */}
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="bg-gradient-to-br from-accent-primary to-accent-secondary text-white rounded-xl px-3 py-2 text-center min-w-[56px]">
+                      {d ? (<>
+                        <div className="text-xl font-bold leading-none">{d.getDate()}</div>
+                        <div className="text-[10px] uppercase opacity-90 mt-0.5">{d.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
+                      </>) : <div className="text-xs py-1">—</div>}
+                    </div>
+                    {e.event_type && <span className="px-2 py-1 text-[11px] rounded-full font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 shrink-0">{e.event_type}</span>}
+                  </div>
+
+                  {/* Tytuł + oznaczenia */}
+                  <h4 className="font-bold text-gray-800 dark:text-gray-100 truncate">{e.title || '—'}</h4>
+                  {(e.is_paid || e.registration_required || e.is_archived) && (
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {e.is_paid && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">płatne</span>}
+                      {e.registration_required && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">rejestracja</span>}
+                      {e.is_archived && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300">archiwum</span>}
+                    </div>
+                  )}
+
+                  {/* Meta */}
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                    {e.time && <span className="flex items-center gap-1"><Clock size={13} /> {fmtTime(e.time)}{e.end_time ? ` - ${fmtTime(e.end_time)}` : ''}</span>}
+                    {e.location && <span className="flex items-center gap-1"><MapPin size={13} /> {e.location}</span>}
+                    <span className="flex items-center gap-1"><Calendar size={13} /> {moduleLabel(e.module_key)}</span>
+                  </div>
+
+                  {/* Stopka: archiwizacja / przywróć */}
+                  {(canArchive || canRestore) && (
+                    <div className="flex items-center justify-end mt-auto pt-3 border-t border-gray-100 dark:border-gray-800" onClick={(ev) => ev.stopPropagation()}>
+                      {canRestore ? (
+                        <button onClick={() => setArchived(e.id, false)}
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg text-gray-500 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition">
+                          <RotateCcw size={14} /> Przywróć
+                        </button>
+                      ) : (
+                        <button onClick={() => setArchived(e.id, true)}
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg text-gray-500 hover:text-purple-600 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition">
+                          <Archive size={14} /> Archiwizuj
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
     </div>
