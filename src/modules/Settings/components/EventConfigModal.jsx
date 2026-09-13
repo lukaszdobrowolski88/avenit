@@ -2,7 +2,7 @@
 // W jednym miejscu (Ustawienia → Zarządzanie modułami): Typy, Pola własne, Zakładki wg typu,
 // a dla kalendarza „Ogólne" dodatkowo — które moduły widać w pickerze „Kalendarz / moduł".
 import React, { useState, useEffect } from 'react';
-import { X, Plus, SlidersHorizontal, ListChecks, LayoutList } from 'lucide-react';
+import { X, Plus, SlidersHorizontal, ListChecks, LayoutList, Users } from 'lucide-react';
 import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
 import { supabase } from '../../../lib/supabase';
@@ -19,6 +19,13 @@ const OGOLNE_TYPES = [
   { value: 'inne', label: 'Inne' },
 ];
 const DEFAULT_EVENT_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
+const TEAM_OPTIONS = [
+  { value: 'worship', label: 'Zespół Uwielbienia' },
+  { value: 'media', label: 'Media Team' },
+  { value: 'atmosfera', label: 'Atmosfera Team' },
+  { value: 'kids', label: 'Małe Avenit' },
+  { value: 'mc', label: 'Scena / MC' },
+];
 const slugTab = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || ('t' + Math.random().toString(36).slice(2, 7));
 
 export default function EventConfigModal({ moduleKey, label, isGeneral = false, onClose }) {
@@ -32,6 +39,8 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
   const [fields, setFields] = useState([]);
   const [rules, setRules] = useState(null);       // [{event_type, tabsText}]
   const [otherRules, setOtherRules] = useState([]); // reguły innych zakresów (zachowujemy)
+  const [teamRules, setTeamRules] = useState(null); // [{event_type, teams:[team_type]}]
+  const [otherTeamRules, setOtherTeamRules] = useState([]);
   const [pickerSel, setPickerSel] = useState(null); // Set kluczy (tylko isGeneral)
   const [saving, setSaving] = useState(false);
 
@@ -50,6 +59,14 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
         event_type: r.event_type || '', tabsText: (r.tabs || []).map((x) => x.label).join(', '),
       })));
     }).catch(() => { setRules([]); setOtherRules([]); });
+    supabase.from('app_settings').select('value').eq('key', 'event_type_teams').maybeSingle().then(({ data }) => {
+      let all = []; try { all = JSON.parse(data?.value || '[]'); } catch { all = []; }
+      if (!Array.isArray(all)) all = [];
+      setOtherTeamRules(all.filter((r) => (r?.module_key || '') !== scopeKey));
+      setTeamRules(all.filter((r) => (r?.module_key || '') === scopeKey).map((r) => ({
+        event_type: r.event_type || '', teams: Array.isArray(r.teams) ? r.teams : [],
+      })));
+    }).catch(() => { setTeamRules([]); setOtherTeamRules([]); });
     if (isGeneral) {
       supabase.from('app_settings').select('value').eq('key', 'event_calendars').maybeSingle().then(({ data }) => {
         let arr = null; try { arr = JSON.parse(data?.value || 'null'); } catch { arr = null; }
@@ -66,6 +83,12 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
   const delRule = (i) => setRules((r) => r.filter((_, j) => j !== i));
   const togglePicker = (key) => setPickerSel((prev) => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
 
+  const teamOptions = [...TEAM_OPTIONS, ...(!isGeneral && !TEAM_OPTIONS.some((o) => o.value === moduleKey) ? [{ value: moduleKey, label }] : [])];
+  const addTeamRule = () => setTeamRules((r) => [...(r || []), { event_type: '', teams: [] }]);
+  const updTeamRule = (i, patch) => setTeamRules((r) => r.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const delTeamRule = (i) => setTeamRules((r) => r.filter((_, j) => j !== i));
+  const toggleTeam = (i, tt) => setTeamRules((r) => r.map((x, j) => (j === i ? { ...x, teams: x.teams.includes(tt) ? x.teams.filter((t) => t !== tt) : [...x.teams, tt] } : x)));
+
   const save = async () => {
     setSaving(true);
     try {
@@ -75,7 +98,14 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
         tabs: r.tabsText.split(',').map((s) => s.trim()).filter(Boolean).map((l) => ({ id: slugTab(l), label: l })),
       }));
       const merged = [...otherRules, ...scopeRules];
-      const ops = [supabase.from('app_settings').upsert({ key: 'event_type_tabs', value: JSON.stringify(merged) }, { onConflict: 'key' })];
+      const scopeTeamRules = (teamRules || []).filter((r) => r.event_type && r.teams.length).map((r) => ({
+        module_key: scopeKey, event_type: r.event_type, teams: r.teams,
+      }));
+      const mergedTeams = [...otherTeamRules, ...scopeTeamRules];
+      const ops = [
+        supabase.from('app_settings').upsert({ key: 'event_type_tabs', value: JSON.stringify(merged) }, { onConflict: 'key' }),
+        supabase.from('app_settings').upsert({ key: 'event_type_teams', value: JSON.stringify(mergedTeams) }, { onConflict: 'key' }),
+      ];
       if (isGeneral) ops.push(supabase.from('app_settings').upsert({ key: 'event_calendars', value: JSON.stringify([...(pickerSel || [])]) }, { onConflict: 'key' }));
       const res = await Promise.all(ops);
       for (const r of res) if (r.error) throw r.error;
@@ -124,6 +154,38 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
                 {typeList.length === 0
                   ? <p className="text-xs text-amber-600 dark:text-amber-400">Najpierw zdefiniuj „Typy wydarzeń", aby móc przypisać do nich zakładki.</p>
                   : <button onClick={addRule} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><Plus size={15} /> Dodaj regułę</button>}
+              </div>
+            )}
+          </div>
+
+          {/* Służby wg typu */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Users size={16} className="text-accent-primary" />
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Służby wg typu</h4>
+            </div>
+            <p className="text-xs text-gray-400">Które służby pojawią się w zakładce „Służby" wydarzenia danego typu (np. Nabożeństwo → Uwielbienie, Media, Atmosfera, Kids). Bez reguły — pokazuje służbę tego modułu.</p>
+            {teamRules === null ? <p className="text-sm text-gray-400 py-2">Wczytywanie…</p> : (
+              <div className="space-y-2">
+                {teamRules.map((r, i) => (
+                  <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-48"><CustomSelect value={r.event_type} onChange={(v) => updTeamRule(i, { event_type: v })} options={typeOpts} /></div>
+                      <button onClick={() => delTeamRule(i)} className="ml-auto p-1.5 text-gray-400 hover:text-red-500"><X size={16} /></button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {teamOptions.map((o) => (
+                        <button key={o.value} type="button" onClick={() => toggleTeam(i, o.value)}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${r.teams.includes(o.value) ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {typeList.length === 0
+                  ? <p className="text-xs text-amber-600 dark:text-amber-400">Najpierw zdefiniuj „Typy wydarzeń", aby przypisać do nich służby.</p>
+                  : <button onClick={addTeamRule} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><Plus size={15} /> Dodaj regułę</button>}
               </div>
             )}
           </div>

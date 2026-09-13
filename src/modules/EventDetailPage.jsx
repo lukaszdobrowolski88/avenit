@@ -14,6 +14,7 @@ import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
 import SimpleRichEditor from '../components/SimpleRichEditor';
 import EventRSVP from '../components/EventRSVP';
+import EventTeamsTab from './Events/EventTeamsTab';
 import Modal from '../components/Modal';
 import { useModuleCalendar, useModuleLabel, useModuleColor } from '../hooks/useModuleLabel';
 import { useCan } from '../components/Can';
@@ -94,6 +95,7 @@ export default function EventDetailPage() {
   const [programDetail, setProgramDetail] = useState(null);
   const [songs, setSongs] = useState([]);
   const [typeTabs, setTypeTabs] = useState([]); // konfiguracja zakładek wg typu (app_settings)
+  const [typeTeams, setTypeTeams] = useState([]); // konfiguracja służb wg typu (app_settings)
   const [fields, setFields] = useState([]);
   const [invites, setInvites] = useState([]);
   const [campaign, setCampaign] = useState(null);
@@ -144,6 +146,9 @@ export default function EventDetailPage() {
       .then(({ data }) => setSongs(data || [])).catch(() => {});
     supabase.from('app_settings').select('value').eq('key', 'event_type_tabs').maybeSingle()
       .then(({ data }) => { try { const a = data?.value ? JSON.parse(data.value) : []; setTypeTabs(Array.isArray(a) ? a : []); } catch { setTypeTabs([]); } })
+      .catch(() => {});
+    supabase.from('app_settings').select('value').eq('key', 'event_type_teams').maybeSingle()
+      .then(({ data }) => { try { const a = data?.value ? JSON.parse(data.value) : []; setTypeTeams(Array.isArray(a) ? a : []); } catch { setTypeTeams([]); } })
       .catch(() => {});
   }, []);
 
@@ -273,6 +278,13 @@ export default function EventDetailPage() {
   const progTotal = progItems.reduce((s, it) => s + (Number(it?.duration) || 0), 0);
   const progSongs = progItems.filter((it) => it?.type === 'song').length;
 
+  // Służby dla tej zakładki: z configu (module_key+event_type → teams), fallback = moduł-służba.
+  const KNOWN_TEAM_MODULES = ['worship', 'media', 'atmosfera', 'kids'];
+  const teamRule = (typeTeams || []).find((r) => (r?.module_key || '') === (ev.module_key || '') && r?.event_type && r.event_type === ev.event_type);
+  const teamTypes = (teamRule && Array.isArray(teamRule.teams) && teamRule.teams.length)
+    ? teamRule.teams
+    : (ev.module_key && KNOWN_TEAM_MODULES.includes(ev.module_key) ? [ev.module_key] : []);
+
   // Dodatkowe zakładki wg typu wydarzenia (konfiguracja w Ustawieniach wydarzeń).
   const extraTabs = [];
   (typeTabs || []).forEach((rule) => {
@@ -285,6 +297,7 @@ export default function EventDetailPage() {
     { id: 'szczegoly', label: 'Szczegóły', icon: FileText },
     { id: 'program', label: 'Program', icon: ClipboardList, badge: ev.program_id ? '●' : null },
     { id: 'rejestracja', label: 'Rejestracja i płatność', icon: Ticket, badge: (ev.registration_required || ev.is_paid) ? '●' : null },
+    ...(teamTypes.length ? [{ id: 'sluzby', label: 'Służby', icon: Users }] : []),
     { id: 'uczestnicy', label: 'Uczestnicy', icon: Users, badge: invites.length || null },
     { id: 'zalaczniki', label: 'Załączniki', icon: Paperclip, badge: (ev.attachments?.length) || null },
     ...extraTabs.map((x) => ({ id: x.id, label: x.label, icon: FileText })),
@@ -693,6 +706,16 @@ export default function EventDetailPage() {
         <ReminderAutomation campaign={campaign} campaignIds={campaignIds} ensureCampaign={ensureCampaign} onSaved={load} />
       )}
       </div>)}
+
+      {/* Służby — przypisania służb per team_type (config event_type_teams / fallback moduł) */}
+      {tab === 'sluzby' && (
+        <EventTeamsTab
+          event={ev}
+          teamTypes={teamTypes}
+          canManage={canManage}
+          onSaveAssignments={(a) => save({ assignments: a })}
+        />
+      )}
 
       {/* Zakładki wg typu (konfigurowalne) — na razie notatki/informacje na zakładkę */}
       {tab.startsWith('custom:') && (() => {
