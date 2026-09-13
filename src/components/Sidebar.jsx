@@ -266,7 +266,7 @@ export default function Sidebar() {
   const coreLinks = [
     { path: '/', icon: LayoutDashboard, label: tr('Pulpit'), show: true, key: 'dashboard' },
     { path: '/programs', icon: FileText, label: tr('Programy'), show: hasModuleAccess('module:programs'), key: 'programs' },
-    { path: '/wydarzenia', icon: Calendar, label: tr('Wydarzenia'), show: hasModuleAccess('module:calendar'), key: 'calendar' },
+    // „Wydarzenia" (calendar) renderujemy z listy dynamicznej (app_modules) — respektuje is_enabled/label/ścieżkę.
   ];
 
   // Statyczne linki modułów (fallback jeśli brak danych z bazy)
@@ -299,7 +299,7 @@ export default function Sidebar() {
   // Wygeneruj linki modułów z bazy danych
   const getDynamicModuleLinks = () => {
     // Filtruj moduły: pomijamy dashboard, programs, calendar (są w coreLinks) oraz settings (osobno)
-    const coreKeys = ['dashboard', 'programs', 'calendar', 'settings'];
+    const coreKeys = ['dashboard', 'programs', 'settings'];
 
     return dynamicModules
       .filter(mod => !coreKeys.includes(mod.key))
