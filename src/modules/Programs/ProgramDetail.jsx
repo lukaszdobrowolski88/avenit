@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import Can from '../../components/Can';
 import { useUnsavedChanges } from '../../contexts/UnsavedChangesContext';
@@ -2085,6 +2085,8 @@ export default function ProgramDetail() {
   const t = useT();
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const backEventId = searchParams.get('event'); // przyszliśmy z wydarzenia → powrót do niego
   const isNewProgram = id === 'new';
   const { setHasUnsavedChanges: setGlobalUnsavedChanges, setOnSaveCallback } = useUnsavedChanges();
   const { withCampusFilter, campusIdForInsert } = useCampusQuery();
@@ -2789,11 +2791,12 @@ export default function ProgramDetail() {
   };
 
   const handleBackToList = () => {
+    const target = backEventId ? `/wydarzenie/${backEventId}` : '/programs';
     if (hasUnsavedChanges()) {
-      setPendingAction({ type: 'navigate', payload: '/programs' });
+      setPendingAction({ type: 'navigate', payload: target });
       setShowUnsavedModal(true);
     } else {
-      navigate('/programs');
+      navigate(target);
     }
   };
 
@@ -2841,7 +2844,7 @@ export default function ProgramDetail() {
             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-4 hover:text-accent-primary dark:hover:text-accent-primary-light transition"
           >
             <ArrowLeft size={20} />
-            <span className="font-medium">{t('Wróć do listy')}</span>
+            <span className="font-medium">{backEventId ? t('Wróć do wydarzenia') : t('Wróć do listy')}</span>
           </button>
 
           <div className="bg-white/70 dark:bg-gray-800/50 backdrop-blur-xl rounded-2xl border border-gray-200/60 dark:border-gray-700/50 p-5 lg:p-6 mb-6 lg:mb-8 relative">

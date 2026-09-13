@@ -4,6 +4,7 @@ import {
   ArrowLeft, Link as LinkIcon, ExternalLink, Trash2, Calendar, Clock, MapPin,
   Ticket, FileText, Users, Send, Copy, Check, X,
   Paperclip, Upload, Download, Image as ImageIcon, File as FileIcon, ClipboardList, Eye, Search,
+  Music, Type, MoreHorizontal, User,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from '../lib/toast';
@@ -33,7 +34,13 @@ const fmtDur = (sec) => {
   const m = Math.floor(s / 60);
   return `${m}:${String(s % 60).padStart(2, '0')}`;
 };
-const PROG_ITEM_LABEL = { song: 'Pieśń', header: 'Nagłówek', media: 'Media', item: 'Element' };
+// Typy elementów planu programu — odwzorowanie z modułu Programy (ikony/kolory).
+const PROG_ITEM_TYPES = {
+  item: { label: 'Element', icon: Type, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800' },
+  header: { label: 'Nagłówek', icon: MoreHorizontal, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
+  song: { label: 'Pieśń', icon: Music, color: 'text-accent-primary dark:text-accent-primary-light', bg: 'bg-accent-primary-lightest dark:bg-accent-primary-darkest/30' },
+  media: { label: 'Media', icon: ImageIcon, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+};
 
 // Widoczność wydarzenia — presety (PR B). Zaawansowany builder (służby/grupy/osoby) w PR C.
 // module_key wydarzenia → klucz służby (dla presetu „Ta służba").
@@ -85,6 +92,7 @@ export default function EventDetailPage() {
   const [forms, setForms] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [programDetail, setProgramDetail] = useState(null);
+  const [songs, setSongs] = useState([]);
   const [fields, setFields] = useState([]);
   const [invites, setInvites] = useState([]);
   const [campaign, setCampaign] = useState(null);
@@ -131,6 +139,8 @@ export default function EventDetailPage() {
       .then(({ data }) => setForms(data || [])).catch(() => {});
     supabase.from('programs').select('id, title, type, date').order('date', { ascending: false })
       .then(({ data }) => setPrograms(data || [])).catch(() => {});
+    supabase.from('songs').select('id, title, key')
+      .then(({ data }) => setSongs(data || [])).catch(() => {});
   }, []);
 
   // Podgląd podpiętego programu (plan/pieśni) — do zakładki „Program".
@@ -231,7 +241,7 @@ export default function EventDetailPage() {
       setPrograms((prev) => [{ id: data.id, title: data.title, type: data.type, date: data.date }, ...prev]);
       save({ program_id: data.id });
       toast.success('Utworzono program — otwieram edytor.');
-      navigate(`/programs/${data.id}`);
+      navigate(`/programs/${data.id}?event=${id}`);
     } catch (e) { toast.error('Nie udało się utworzyć programu: ' + (e.message || e)); }
   };
 
@@ -407,7 +417,7 @@ export default function EventDetailPage() {
               <ClipboardList size={14} /> Nowy program
             </button>
             {ev.program_id && (
-              <button onClick={() => navigate(`/programs/${ev.program_id}`)} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5">
+              <button onClick={() => navigate(`/programs/${ev.program_id}?event=${ev.id}`)} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5">
                 <ExternalLink size={14} /> Otwórz / edytuj
               </button>
             )}
@@ -443,18 +453,35 @@ export default function EventDetailPage() {
               <p className="text-sm text-gray-400">Program nie ma jeszcze elementów. Kliknij „Otwórz / edytuj", aby dodać plan.</p>
             ) : (
               <div className="rounded-xl border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden">
-                {progItems.map((it, idx) => (it?.type === 'header' ? (
-                  <div key={it.id || idx} className="px-3 py-2 bg-gray-50 dark:bg-gray-800/50 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">{it.title || 'Sekcja'}</div>
-                ) : (
-                  <div key={it.id || idx} className="flex items-center gap-3 px-3 py-2 text-sm">
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 shrink-0 w-16 text-center">{PROG_ITEM_LABEL[it?.type] || 'Element'}</span>
-                    <span className="flex-1 min-w-0 truncate text-gray-800 dark:text-gray-100">
-                      {it?.title || (it?.type === 'song' ? 'Pieśń' : 'Element')}
-                      {it?.person ? <span className="text-gray-400"> · {it.person}</span> : null}
-                    </span>
-                    <span className="text-xs text-gray-400 shrink-0 tabular-nums">{fmtDur(it?.duration)}</span>
-                  </div>
-                )))}
+                {progItems.map((it, idx) => {
+                  if (it?.type === 'header') {
+                    return <div key={it.id || idx} className="px-3 py-2 bg-amber-50 dark:bg-amber-900/20 text-xs font-bold uppercase tracking-wide text-amber-700 dark:text-amber-400">{it.title || 'Sekcja'}</div>;
+                  }
+                  const tdef = PROG_ITEM_TYPES[it?.type] || PROG_ITEM_TYPES.item;
+                  const Icon = tdef.icon;
+                  const song = it?.type === 'song' && it?.songId ? songs.find((s) => s.id === it.songId) : null;
+                  const itemTitle = it?.type === 'song' ? (it?.title || song?.title || 'Pieśń') : (it?.title || 'Element');
+                  const songKey = it?.songKey || song?.key;
+                  return (
+                    <div key={it.id || idx} className="flex items-start gap-3 px-3 py-2.5">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${tdef.bg}`}><Icon size={14} className={tdef.color} /></div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm text-gray-800 dark:text-gray-100 truncate">{itemTitle}</div>
+                        {(it?.person || (it?.timing && it.timing !== 'during') || (it?.type === 'song' && songKey)) && (
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {it?.person && <span className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1"><User size={10} className="text-gray-400" /> {it.person}</span>}
+                            {it?.timing && it.timing !== 'during' && (
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${it.timing === 'before' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'}`}>{it.timing === 'before' ? 'Przed' : 'Po'}</span>
+                            )}
+                            {it?.type === 'song' && songKey && <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent-primary-lightest dark:bg-accent-primary-darkest/30 text-accent-primary font-semibold">{songKey}</span>}
+                          </div>
+                        )}
+                        {it?.details && <div className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-pre-line mt-0.5 leading-snug">{it.details}</div>}
+                      </div>
+                      <span className="text-xs text-gray-400 shrink-0 tabular-nums mt-1">{fmtDur(it?.duration)}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
