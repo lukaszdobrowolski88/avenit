@@ -109,7 +109,7 @@ export default function EventDetailPage() {
   const canManage = useCan('module:calendar');
   const moduleTitle = useModuleLabel(ev?.module_key, ev?.module_key || 'Wydarzenie');
   const moduleColor = useModuleColor(ev?.module_key);
-  const calCfg = useModuleCalendar(ev?.module_key);
+  const calCfg = useModuleCalendar(ev?.module_key || 'general'); // brak modułu → typy kalendarza „Ogólne"
   const types = calCfg?.types?.length ? calCfg.types : DEFAULT_TYPES;
 
   const load = useCallback(async () => {
