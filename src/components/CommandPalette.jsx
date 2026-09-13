@@ -96,7 +96,7 @@ const SEARCHERS = [
         id: `event-${e.id}`,
         label: e.title || 'Wydarzenie',
         sub: [e.date ? new Date(e.date).toLocaleDateString('pl-PL') : '', e.location].filter(Boolean).join(' · '),
-        path: '/calendar',
+        path: `/wydarzenie/${e.id}`,
       }));
     },
   },

@@ -266,7 +266,7 @@ export default function Sidebar() {
   const coreLinks = [
     { path: '/', icon: LayoutDashboard, label: tr('Pulpit'), show: true, key: 'dashboard' },
     { path: '/programs', icon: FileText, label: tr('Programy'), show: hasModuleAccess('module:programs'), key: 'programs' },
-    { path: '/calendar', icon: Calendar, label: tr('Kalendarz'), show: hasModuleAccess('module:calendar'), key: 'calendar' },
+    { path: '/wydarzenia', icon: Calendar, label: tr('Wydarzenia'), show: hasModuleAccess('module:calendar'), key: 'calendar' },
   ];
 
   // Statyczne linki modułów (fallback jeśli brak danych z bazy)
