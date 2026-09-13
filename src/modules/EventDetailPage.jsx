@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Link as LinkIcon, ExternalLink, Trash2, Calendar, Clock, MapPin,
   Ticket, FileText, Users, Send, Copy, Check, X,
-  Paperclip, Upload, Download, Image as ImageIcon, File as FileIcon, ClipboardList, Eye,
+  Paperclip, Upload, Download, Image as ImageIcon, File as FileIcon, ClipboardList, Eye, Search,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from '../lib/toast';
@@ -84,6 +84,7 @@ export default function EventDetailPage() {
   const [campaignIds, setCampaignIds] = useState([]);
   const [copied, setCopied] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [showVisBuilder, setShowVisBuilder] = useState(false);
   const [remindBusy, setRemindBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = React.useRef(null);
@@ -341,6 +342,10 @@ export default function EventDetailPage() {
                       {p.label}
                     </button>
                   ))}
+                  <button type="button" onClick={() => setShowVisBuilder(true)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium border border-dashed border-gray-300 dark:border-gray-600 text-accent-primary hover:bg-accent-primary/5">
+                    Zaawansowane…
+                  </button>
                 </div>
                 <p className="text-xs text-gray-400">{HINTS[current] || HINTS.all}</p>
               </div>
@@ -564,6 +569,14 @@ export default function EventDetailPage() {
           existingMemberIds={invites.map((i) => i.member_id).filter(Boolean)}
           onClose={() => setShowInvite(false)}
           onSent={() => { setShowInvite(false); load(); }}
+        />
+      )}
+
+      {showVisBuilder && (
+        <VisibilityBuilderModal
+          initial={ev.visibility_segments}
+          onClose={() => setShowVisBuilder(false)}
+          onSave={(segs) => { save({ visibility_segments: segs }); setShowVisBuilder(false); }}
         />
       )}
     </div>
@@ -797,5 +810,159 @@ function ReminderAutomation({ campaign, campaignIds, ensureCampaign, onSaved }) 
         </button>
       </div>
     </Card>
+  );
+}
+
+// ---------------- Zaawansowany builder audytorium (widoczność) ----------------
+const VIS_ROLES = [
+  { value: 'rada_starszych', label: 'Rada Starszych' },
+  { value: 'koordynator', label: 'Koordynatorzy' },
+  { value: 'lider', label: 'Liderzy' },
+  { value: 'czlonek', label: 'Członkowie' },
+];
+const VIS_MINISTRY_LABELS = { worship_team: 'Zespół Uwielbienia', media_team: 'Media Team', atmosfera_team: 'Atmosfera Team', kids_ministry: 'Małe Avenit' };
+const prettyMin = (k) => VIS_MINISTRY_LABELS[k] || String(k || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+const memName = (m) => `${m.first_name || ''} ${m.last_name || ''}`.trim() || m.email || 'Osoba';
+
+function VisChips({ options, selected, onToggle, empty }) {
+  if (!options.length) return <p className="text-xs text-gray-400 italic">{empty}</p>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map((o) => {
+        const on = selected.includes(o.value);
+        return (
+          <button key={o.value} type="button" onClick={() => onToggle(o.value)}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${on ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-accent-primary-light'}`}>
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function fromSegments(arr) {
+  const s = { everyone: false, invited: false, owner: false, roles: [], ministries: [], groups: [], campuses: [], tags: [], members: [] };
+  if (!Array.isArray(arr)) return s;
+  for (const x of arr) {
+    if (x?.type === 'everyone') s.everyone = true;
+    else if (x?.type === 'invited') s.invited = true;
+    else if (x?.type === 'owner') s.owner = true;
+    else if (x?.type === 'role') s.roles = (x.values || []).map(String);
+    else if (x?.type === 'ministry') s.ministries = (x.values || []).map(String);
+    else if (x?.type === 'home_group') s.groups = (x.values || []).map(String);
+    else if (x?.type === 'campus') s.campuses = (x.values || []).map(String);
+    else if (x?.type === 'tag') s.tags = (x.values || []).map(String);
+    else if (x?.type === 'member') s.members = (x.values || []).map(String);
+  }
+  return s;
+}
+function toSegments(s) {
+  if (s.everyone) return null; // wszyscy = brak ograniczeń
+  const out = [];
+  if (s.roles.length) out.push({ type: 'role', values: s.roles });
+  if (s.ministries.length) out.push({ type: 'ministry', values: s.ministries });
+  if (s.groups.length) out.push({ type: 'home_group', values: s.groups });
+  if (s.campuses.length) out.push({ type: 'campus', values: s.campuses });
+  if (s.tags.length) out.push({ type: 'tag', values: s.tags });
+  if (s.members.length) out.push({ type: 'member', values: s.members });
+  if (s.invited) out.push({ type: 'invited' });
+  if (s.owner) out.push({ type: 'owner' });
+  return out.length ? out : null;
+}
+
+function VisibilityBuilderModal({ initial, onClose, onSave }) {
+  const [s, setS] = useState(() => fromSegments(initial));
+  const [members, setMembers] = useState([]);
+  const [homeGroups, setHomeGroups] = useState([]);
+  const [campuses, setCampuses] = useState([]);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    supabase.from('members').select('id, first_name, last_name, email, ministries, tags').order('last_name', { ascending: true })
+      .then(({ data }) => setMembers(data || [])).catch(() => setMembers([]));
+    supabase.from('home_groups').select('id, name').order('name', { ascending: true })
+      .then(({ data }) => setHomeGroups(data || [])).catch(() => setHomeGroups([]));
+    supabase.from('campuses').select('id, name').order('name', { ascending: true })
+      .then(({ data }) => setCampuses(data || [])).catch(() => setCampuses([]));
+  }, []);
+
+  const ministryOptions = React.useMemo(() => {
+    const set = new Set();
+    members.forEach((m) => (m.ministries || []).forEach((x) => x && set.add(x)));
+    return [...set].map((v) => ({ value: String(v), label: prettyMin(v) }));
+  }, [members]);
+  const tagOptions = React.useMemo(() => {
+    const set = new Set();
+    members.forEach((m) => (m.tags || []).forEach((x) => x && set.add(x)));
+    return [...set].map((v) => ({ value: String(v), label: String(v) }));
+  }, [members]);
+  const groupOptions = homeGroups.map((g) => ({ value: String(g.id), label: g.name }));
+  const campusOptions = campuses.map((c) => ({ value: String(c.id), label: c.name }));
+
+  const toggle = (key, val) => setS((prev) => ({ ...prev, [key]: prev[key].includes(val) ? prev[key].filter((x) => x !== val) : [...prev[key], val] }));
+  const memberFiltered = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return q ? members.filter((m) => memName(m).toLowerCase().includes(q)) : members;
+  }, [members, search]);
+
+  return (
+    <Modal isOpen onClose={onClose} size="md" title="Zaawansowane audytorium — kto widzi">
+      <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <p className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
+          Wydarzenie zobaczy osoba pasująca do <b>któregokolwiek</b> z zaznaczonych kryteriów. Administratorzy widzą zawsze.
+        </p>
+
+        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer rounded-xl bg-gray-50 dark:bg-gray-800/50 px-4 py-2.5">
+          <input type="checkbox" checked={s.everyone} onChange={(e) => setS({ ...s, everyone: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" />
+          Wszyscy (bez ograniczeń) — nadrzędne wobec pozostałych
+        </label>
+
+        {!s.everyone && (
+          <>
+            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Role</p>
+              <VisChips options={VIS_ROLES} selected={s.roles} onToggle={(v) => toggle('roles', v)} empty="—" /></div>
+            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Służby</p>
+              <VisChips options={ministryOptions} selected={s.ministries} onToggle={(v) => toggle('ministries', v)} empty="Brak przypisanych służb" /></div>
+            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Grupy domowe</p>
+              <VisChips options={groupOptions} selected={s.groups} onToggle={(v) => toggle('groups', v)} empty="Brak grup domowych" /></div>
+            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Kampusy</p>
+              <VisChips options={campusOptions} selected={s.campuses} onToggle={(v) => toggle('campuses', v)} empty="Brak kampusów" /></div>
+            <div><p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Tagi</p>
+              <VisChips options={tagOptions} selected={s.tags} onToggle={(v) => toggle('tags', v)} empty="Brak tagów" /></div>
+
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+                <input type="checkbox" checked={s.invited} onChange={(e) => setS({ ...s, invited: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" /> Zaproszeni/zapisani
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+                <input type="checkbox" checked={s.owner} onChange={(e) => setS({ ...s, owner: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" /> Organizatorzy
+              </label>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Pojedyncze osoby ({s.members.length})</p>
+              <div className="relative mb-2">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Szukaj osoby…" className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+              </div>
+              <div className="max-h-40 overflow-y-auto custom-scrollbar rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-50 dark:divide-gray-700/50">
+                {memberFiltered.slice(0, 100).map((m) => (
+                  <label key={m.id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <input type="checkbox" checked={s.members.includes(String(m.id))} onChange={() => toggle('members', String(m.id))} className="w-4 h-4 rounded accent-accent-primary" />
+                    <span className="text-gray-800 dark:text-gray-100 truncate">{memName(m)}</span>
+                  </label>
+                ))}
+                {memberFiltered.length > 100 && <p className="px-3 py-2 text-xs text-gray-400">Pokazano 100 z {memberFiltered.length} — zawęź wyszukiwaniem.</p>}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+      <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
+        <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Anuluj</button>
+        <button onClick={() => onSave(toSegments(s))} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">Zapisz widoczność</button>
+      </div>
+    </Modal>
   );
 }
