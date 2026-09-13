@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2, SlidersHorizontal } from 'lucide-react';
+import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2, SlidersHorizontal, Archive, RotateCcw } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import TabHeader from '../../components/TabHeader';
 import TimeInput from '../../components/TimeInput';
@@ -400,6 +400,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   const [searchFilter, setSearchFilter] = useState('');
   const [rsvpMap, setRsvpMap] = useState({}); // event_id -> { count, mine } (RSVP wydarzeń modułu)
   const [typeFilter, setTypeFilter] = useState('');
+  const [eventScope, setEventScope] = useState('upcoming'); // 'upcoming' | 'archive'
   const [tableExists, setTableExists] = useState(true);
   const [userEmail, setUserEmail] = useState(propUserEmail || null);
 
@@ -452,13 +453,12 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   const fetchEvents = async () => {
     setLoading(true);
     // Jeden model: wydarzenia modułu = wspólna tabela `events` filtrowana po module_key.
-    const todayStr = new Date().toISOString().split('T')[0];
+    // Ładujemy WSZYSTKIE (bez filtra daty) — podział na nadchodzące/archiwalne robimy w UI.
     try {
       const { data, error } = await withCampusFilter(supabase
         .from('events')
         .select('*'))
         .eq('module_key', config.teamType)
-        .gte('date', todayStr)
         .order('date', { ascending: true })
         .order('time', { ascending: true });
 
@@ -515,6 +515,13 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     }
   };
 
+  const toggleArchive = async (ev, val) => {
+    const { error } = await supabase.from('events').update({ is_archived: val }).eq('id', ev.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(val ? tr('Przeniesiono do archiwum') : tr('Przywrócono'));
+    fetchEvents();
+  };
+
   const filteredEvents = events.filter(ev => {
     const matchesSearch = !searchFilter ||
       ev.title?.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -523,8 +530,15 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     return matchesSearch && matchesType;
   });
 
-  // Grupowanie wydarzeń po miesiącach
-  const eventsByMonth = filteredEvents.reduce((acc, ev) => {
+  // Podział: nadchodzące vs archiwalne (przeszłe LUB ręcznie zarchiwizowane).
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const isArchivedEvent = (ev) => ev.is_archived || (ev.start_date && String(ev.start_date).slice(0, 10) < todayStr);
+  const upcomingEvents = filteredEvents.filter((ev) => !isArchivedEvent(ev));
+  const archiveEvents = filteredEvents.filter((ev) => isArchivedEvent(ev));
+  const scopedEvents = eventScope === 'archive' ? archiveEvents : upcomingEvents;
+
+  // Grupowanie po miesiącach (archiwum: od najnowszych).
+  const eventsByMonth = scopedEvents.reduce((acc, ev) => {
     if (!ev.start_date) return acc;
     const date = new Date(ev.start_date);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -532,6 +546,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     acc[monthKey].push(ev);
     return acc;
   }, {});
+  const monthKeys = Object.keys(eventsByMonth).sort((a, b) => (eventScope === 'archive' ? b.localeCompare(a) : a.localeCompare(b)));
 
   const colorClasses = {
     purple: 'from-purple-500 to-indigo-500',
@@ -668,87 +683,85 @@ GRANT ALL ON ${config.tableName} TO anon;`;
         </div>
       </div>
 
-      {/* Lista wydarzeń */}
+      {/* Przełącznik: nadchodzące / archiwalne */}
+      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl w-fit">
+        {[['upcoming', t('Nadchodzące'), upcomingEvents.length], ['archive', t('Archiwalne'), archiveEvents.length]].map(([id, label, n]) => (
+          <button key={id} onClick={() => setEventScope(id)}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${eventScope === id ? 'bg-white dark:bg-gray-900 text-accent-primary dark:text-accent-primary-light shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
+            {label} <span className="opacity-60">({n})</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Kafelki wydarzeń */}
       {loading ? (
         <div className="flex justify-center items-center py-20">
           <div className="w-10 h-10 border-4 border-accent-primary-light border-t-transparent rounded-full animate-spin"></div>
         </div>
-      ) : filteredEvents.length === 0 ? (
+      ) : scopedEvents.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <Calendar size={48} className="mx-auto mb-4 opacity-50" />
-          <p className="text-lg">{t('Brak wydarzeń')}</p>
-          <p className="text-sm">{t('Kliknij "Dodaj wydarzenie" aby utworzyć pierwsze')}</p>
+          <p className="text-lg">{eventScope === 'archive' ? t('Brak archiwalnych wydarzeń') : t('Brak wydarzeń')}</p>
+          {eventScope !== 'archive' && <p className="text-sm">{t('Kliknij "Dodaj wydarzenie" aby utworzyć pierwsze')}</p>}
         </div>
       ) : (
         <div className="space-y-8">
-          {Object.entries(eventsByMonth).sort().map(([monthKey, monthEvents]) => {
+          {monthKeys.map((monthKey) => {
+            const monthEvents = eventsByMonth[monthKey];
             const [year, month] = monthKey.split('-');
             const monthName = new Date(parseInt(year), parseInt(month) - 1, 1).toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
 
             return (
               <div key={monthKey}>
-                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-4 capitalize">{monthName}</h3>
-                <div className="space-y-3">
+                <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-3 capitalize">{monthName}</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   {monthEvents.map(ev => {
                     const date = new Date(ev.start_date);
                     const timeStr = ev.start_date?.includes('T') ? ev.start_date.split('T')[1].substring(0,5) : null;
+                    const archived = isArchivedEvent(ev);
 
                     return (
                       <div
                         key={ev.id}
                         onClick={() => navigate(`/wydarzenie/${ev.id}`)}
-                        className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark transition cursor-pointer group"
+                        className={`group relative bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-4 hover:shadow-lg hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark transition cursor-pointer flex flex-col ${archived && eventScope === 'archive' ? 'opacity-90' : ''}`}
                       >
-                        <div className="flex items-start gap-4">
-                          {/* Data */}
-                          <div className={`bg-gradient-to-br ${colorClasses[config.color] || 'from-accent-primary-light to-accent-secondary-light'} text-white rounded-xl p-3 text-center min-w-[70px]`}>
-                            <div className="text-2xl font-bold">{date.getDate()}</div>
-                            <div className="text-xs uppercase opacity-90">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
+                        {/* Nagłówek kafelka: data + typ */}
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <div className={`bg-gradient-to-br ${colorClasses[config.color] || 'from-accent-primary-light to-accent-secondary-light'} text-white rounded-xl px-3 py-2 text-center min-w-[56px]`}>
+                            <div className="text-xl font-bold leading-none">{date.getDate()}</div>
+                            <div className="text-[10px] uppercase opacity-90 mt-0.5">{date.toLocaleDateString('pl-PL', { weekday: 'short' })}</div>
                           </div>
+                          <span className={`px-2 py-1 text-[11px] rounded-full font-medium bg-gradient-to-r ${colorClasses[config.color] || 'from-accent-primary-light to-accent-secondary-light'} text-white shrink-0`}>
+                            {getTypeLabel(ev.event_type)}
+                          </span>
+                        </div>
 
-                          {/* Treść */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-bold text-gray-800 dark:text-gray-200 text-lg">{ev.title}</h4>
-                              <span className={`px-2 py-1 text-xs rounded-full font-medium bg-gradient-to-r ${colorClasses[config.color] || 'from-accent-primary-light to-accent-secondary-light'} text-white`}>
-                                {getTypeLabel(ev.event_type)}
-                              </span>
-                            </div>
-                            {ev.description && (
-                              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{ev.description}</p>
-                            )}
-                            <div className="flex flex-wrap gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
-                              {timeStr && (
-                                <span className="flex items-center gap-1">
-                                  <Clock size={14} /> {timeStr}{ev.end_time ? ` - ${ev.end_time}` : ''}
-                                </span>
-                              )}
-                              {ev.location && (
-                                <span className="flex items-center gap-1">
-                                  <MapPin size={14} /> {ev.location}
-                                </span>
-                              )}
-                              {ev.max_participants && (
-                                <span className="flex items-center gap-1">
-                                  <Users size={14} /> max. {ev.max_participants}
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                        {/* Treść */}
+                        <h4 className="font-bold text-gray-800 dark:text-gray-100 truncate">{ev.title}</h4>
+                        {ev.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{ev.description}</p>}
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-xs text-gray-500 dark:text-gray-400">
+                          {timeStr && <span className="flex items-center gap-1"><Clock size={13} /> {timeStr}{ev.end_time ? ` - ${ev.end_time}` : ''}</span>}
+                          {ev.location && <span className="flex items-center gap-1"><MapPin size={13} /> {ev.location}</span>}
+                          {ev.max_participants && <span className="flex items-center gap-1"><Users size={13} /> max. {ev.max_participants}</span>}
+                        </div>
 
-                          {/* Akcje */}
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); toggleRsvp(ev); }}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition ${rsvpMap[ev.id]?.mine ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                              title={tr('Potwierdź obecność')}
-                            >
-                              <Users size={14} /> {rsvpMap[ev.id]?.mine ? tr('Będę') : tr('Potwierdź')}{rsvpMap[ev.id]?.count ? ` · ${rsvpMap[ev.id].count}` : ''}
-                            </button>
-                            <button className="opacity-0 group-hover:opacity-100 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-                              <Edit2 size={16} className="text-gray-400" />
-                            </button>
-                          </div>
+                        {/* Stopka: RSVP + archiwizacja */}
+                        <div className="flex items-center gap-2 mt-auto pt-3 border-t border-gray-100 dark:border-gray-800">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleRsvp(ev); }}
+                            className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition ${rsvpMap[ev.id]?.mine ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                            title={tr('Potwierdź obecność')}
+                          >
+                            <Users size={14} /> {rsvpMap[ev.id]?.mine ? tr('Będę') : tr('Potwierdź')}{rsvpMap[ev.id]?.count ? ` · ${rsvpMap[ev.id].count}` : ''}
+                          </button>
+                          {eventScope === 'upcoming' ? (
+                            <button onClick={(e) => { e.stopPropagation(); toggleArchive(ev, true); }} title={tr('Archiwizuj')}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition"><Archive size={15} /></button>
+                          ) : ev.is_archived ? (
+                            <button onClick={(e) => { e.stopPropagation(); toggleArchive(ev, false); }} title={tr('Przywróć')}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-green-600 hover:bg-gray-100 dark:hover:bg-gray-800 opacity-0 group-hover:opacity-100 transition"><RotateCcw size={15} /></button>
+                          ) : null}
                         </div>
                       </div>
                     );
