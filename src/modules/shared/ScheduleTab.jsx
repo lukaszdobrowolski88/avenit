@@ -1,13 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Spinner from '../../components/Spinner';
 import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabase';
-import { ChevronUp, ChevronDown, Check, UserX } from 'lucide-react';
+import { ChevronUp, ChevronDown, Check, UserX, Send, Clock, X as XIcon } from 'lucide-react';
+import { toast } from '../../lib/toast';
 import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
 import { useScheduleAssignments } from '../../hooks/useScheduleAssignments';
-import ScheduleSendButton from '../../components/ScheduleSendButton';
+import { getCachedUser } from '../../lib/supabase';
+
+// Grafik nad WYDARZENIAMI (twardy switch z programów). Wiersze = wydarzenia danej służby:
+// wydarzenie należy do służby, jeśli reguła event_type_teams (module_key, event_type) zawiera
+// tę służbę, a w braku reguły — gdy to wydarzenie własnego modułu (module_key === teamType).
+// Kolumny = role z team_roles(team_type). Zapis w events.assignments[teamType][field_key] (CSV);
+// wysyłka/statusy przez silnik schedule_assignments po event_id (ten sam co zakładka „Służby").
+
+// Mapowanie tabeli osób służby (zgodne z EventTeamsTab).
+const TEAM_MEMBER_TABLE = {
+  worship: 'worship_team', media: 'media_team', atmosfera: 'atmosfera_members',
+  kids: 'kids_teachers', mc: 'custom_mc_members',
+};
+const memberTableFor = (teamType) => TEAM_MEMBER_TABLE[teamType] || `custom_${teamType}_members`;
+const csvNames = (s) => String(s || '').split(',').map((x) => x.trim()).filter(Boolean);
 
 // Hook do obliczania pozycji dropdowna
 function useDropdownPosition(triggerRef, isOpen) {
@@ -99,6 +114,9 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
             left: coords.left
           }}
         >
+          {options.length === 0 && (
+            <div className="px-3 py-2 text-xs text-gray-400 italic">{t('Brak osób w tej służbie')}</div>
+          )}
           {options.map((person) => {
             const isSelected = selectedItems.includes(person.full_name);
             const isAbsent = absentMembers.includes(person.full_name);
@@ -126,92 +144,110 @@ const TableMultiSelect = ({ options, value, onChange, absentMembers = [] }) => {
   );
 };
 
+// Przycisk „Wyślij" + status akceptacji per wydarzenie (grafik nad wydarzeniami).
+// Przypisania są już zsynchronizowane do schedule_assignments przy każdym wyborze osoby
+// (createAssignment/removeEventAssignment z event_id), więc tu tylko wysyłamy i pokazujemy status.
+function EventSendCell({ eventId, teamType, assignments, onSent }) {
+  const [loading, setLoading] = useState(false);
+  const rows = (assignments || []).filter((a) => a.event_id === eventId && a.team_type === teamType);
+  const accepted = rows.filter((a) => a.status === 'accepted').length;
+  const rejected = rows.filter((a) => a.status === 'rejected').length;
+  const pending = rows.filter((a) => a.status === 'pending').length;
+  // „Do wysłania" = oczekujące, którym jeszcze nie wysłano maila.
+  const toSend = rows.filter((a) => a.status === 'pending' && !a.email_sent_at && a.assigned_email).length;
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <button
+        onClick={async () => { setLoading(true); try { await onSent(); } finally { setLoading(false); } }}
+        disabled={loading}
+        title={toSend ? 'Wyślij zaproszenia (mail + push) do przypisanych osób' : 'Brak nowych osób do powiadomienia'}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition ${loading ? 'opacity-60' : ''} ${toSend ? 'bg-gradient-to-r from-accent-primary to-accent-secondary text-white hover:shadow' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'}`}>
+        <Send size={12} /> {loading ? '...' : toSend ? `Wyślij (${toSend})` : 'Wyślij'}
+      </button>
+      {rows.length > 0 && (
+        <span className="inline-flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400">
+          {accepted > 0 && <span className="inline-flex items-center gap-0.5 text-green-600 dark:text-green-400"><Check size={11} />{accepted}</span>}
+          {pending > 0 && <span className="inline-flex items-center gap-0.5 text-amber-500"><Clock size={11} />{pending}</span>}
+          {rejected > 0 && <span className="inline-flex items-center gap-0.5 text-red-500"><XIcon size={11} />{rejected}</span>}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // Główny komponent grafiku
 export default function ScheduleTab({ moduleKey, moduleName }) {
   const t = useT();
   const { getCampus } = useCampusBadge();
-  const [programs, setPrograms] = useState([]);
+  const teamType = moduleKey;
+  const memberTableName = memberTableFor(teamType);
+  const [events, setEvents] = useState([]);
   const [members, setMembers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [memberRoles, setMemberRoles] = useState([]);
+  const [typeTeams, setTypeTeams] = useState([]);
   const [expandedMonths, setExpandedMonths] = useState({});
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState({ email: '', name: '' });
 
-  // Powiadomienia grafiku (ten sam silnik co Grupa Uwielbienia). team_type = klucz modułu,
-  // więc KAŻDY moduł z Kreatora (szablon/ręczny) z zakładką Grafik dostaje wysyłkę automatycznie.
-  const { assignments: schedAssignments, fetchAssignmentsForPrograms, createAssignment, removeAssignment, sendInvitesForProgram } = useScheduleAssignments();
+  const { assignments: schedAssignments, fetchAssignmentsForEvents, createAssignment, removeEventAssignment, sendInvitesForEvent } = useScheduleAssignments();
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) setCurrentUser({ email: data.user.email, name: data.user.user_metadata?.full_name || data.user.email });
-    });
-  }, []);
-  useEffect(() => {
-    const ids = programs.map((p) => p.id).filter(Boolean);
-    if (ids.length) fetchAssignmentsForPrograms(ids);
-  }, [programs, fetchAssignmentsForPrograms]);
-
-  const memberTableName = `custom_${moduleKey}_members`;
-  const scheduleFieldKey = `custom_${moduleKey}_schedule`;
-
-  // Próbuj utworzyć kolumnę grafiku w tabeli programs jeśli nie istnieje
-  const ensureScheduleColumnExists = async () => {
-    try {
-      await supabase.rpc('create_schedule_column', {
-        module_key: moduleKey
-      });
-      return true;
-    } catch (err) {
-      // Ignoruj błąd - kolumna może już istnieć lub RPC nie jest dostępne
-      return false;
-    }
-  };
+    const ids = events.map((e) => e.id).filter(Boolean);
+    if (ids.length) fetchAssignmentsForEvents(ids);
+  }, [events, fetchAssignmentsForEvents]);
 
   useEffect(() => {
     fetchData();
   }, [moduleKey]);
 
+  // Czy wydarzenie należy do tej służby (spójne z zakładką „Służby" na wydarzeniu).
+  const includesThisTeam = useCallback((ev) => {
+    const rule = (typeTeams || []).find((r) => (r?.module_key || '') === (ev.module_key || '') && r?.event_type === ev.event_type);
+    if (rule && Array.isArray(rule.teams) && rule.teams.length) return rule.teams.includes(teamType);
+    return (ev.module_key || '') === teamType; // brak reguły → służba = moduł wydarzenia
+  }, [typeTeams, teamType]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Pobierz programy
-      const { data: progData } = await supabase
-        .from('programs')
+      // Reguły służb wg typu (żeby grafik pokazał też wydarzenia z INNYCH modułów, gdzie ta służba służy).
+      let rules = [];
+      try {
+        const { data: ts } = await supabase.from('app_settings').select('value').eq('key', 'event_type_teams').maybeSingle();
+        rules = ts?.value ? (typeof ts.value === 'string' ? JSON.parse(ts.value) : ts.value) : [];
+      } catch { rules = []; }
+      setTypeTeams(Array.isArray(rules) ? rules : []);
+
+      // Wszystkie wydarzenia (grupujemy po miesiącach, jak dawniej programy).
+      const { data: evData } = await supabase
+        .from('events')
         .select('*')
         .order('date', { ascending: false });
+      setEvents(evData || []);
 
-      setPrograms(progData || []);
-
-      // Pobierz członków modułu (obsługa braku tabeli)
+      // Osoby służby (obsługa braku tabeli).
       const { data: membersData, error: membersError } = await supabase
         .from(memberTableName)
         .select('*')
         .order('full_name');
+      if (membersError && membersError.code === '42P01') setMembers([]);
+      else setMembers(membersData || []);
 
-      // Jeśli tabela nie istnieje (błąd 42P01), ustaw pustą listę
-      if (membersError && membersError.code === '42P01') {
-        console.log(`Tabela ${memberTableName} nie istnieje jeszcze`);
-        setMembers([]);
-      } else {
-        setMembers(membersData || []);
-      }
-
-      // Pobierz służby dla tego modułu
+      // Role służby.
       const { data: rolesData } = await supabase
         .from('team_roles')
         .select('*')
-        .eq('team_type', moduleKey)
+        .eq('team_type', teamType)
         .eq('is_active', true)
         .order('display_order');
-
       setRoles(rolesData || []);
 
-      // Pobierz przypisania członków do służb
+      // Przypisania osób do ról (kto do której roli).
       const { data: memberRolesData } = await supabase
         .from('team_member_roles')
         .select('*')
         .eq('member_table', memberTableName);
-
       setMemberRoles(memberRolesData || []);
     } catch (err) {
       console.error('Błąd pobierania danych grafiku:', err);
@@ -220,17 +256,20 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     }
   };
 
-  // Grupowanie programów po miesiącach
-  const groupedPrograms = programs.reduce((acc, prog) => {
-    if (!prog.date) return acc;
-    const date = new Date(prog.date);
+  // Tylko wydarzenia tej służby.
+  const teamEvents = events.filter(includesThisTeam);
+
+  // Grupowanie po miesiącach
+  const groupedEvents = teamEvents.reduce((acc, ev) => {
+    if (!ev.date) return acc;
+    const date = new Date(ev.date);
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     if (!acc[key]) acc[key] = [];
-    acc[key].push(prog);
+    acc[key].push(ev);
     return acc;
   }, {});
 
-  const sortedMonths = Object.keys(groupedPrograms).sort().reverse();
+  const sortedMonths = Object.keys(groupedEvents).sort().reverse();
 
   useEffect(() => {
     const currentMonthKey = new Date().toISOString().slice(0, 7);
@@ -251,66 +290,75 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
     return new Date(dateString).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
-  const updateRole = async (programId, field, value) => {
-    const programToUpdate = programs.find(p => p.id === programId);
-    if (!programToUpdate) return;
-
-    const currentData = programToUpdate[scheduleFieldKey] || {};
-    const updatedData = { ...currentData, [field]: value };
-
-    // Aktualizuj lokalnie
-    setPrograms(prev => prev.map(p => {
-      if (p.id === programId) {
-        return { ...p, [scheduleFieldKey]: updatedData };
-      }
-      return p;
-    }));
-
-    // Upewnij się że kolumna grafiku istnieje przed zapisem
-    await ensureScheduleColumnExists();
-
-    // Zapisz do bazy
-    await supabase.from('programs').update({ [scheduleFieldKey]: updatedData }).eq('id', programId);
+  // Zapis pola grafiku w events.assignments[teamType]; jednocześnie synchronizacja do schedule_assignments.
+  const writeAssignments = async (eventId, updater) => {
+    const ev = events.find((e) => e.id === eventId);
+    if (!ev) return;
+    const teamData = { ...(ev.assignments?.[teamType] || {}) };
+    updater(teamData);
+    const updatedAssignments = { ...(ev.assignments || {}), [teamType]: teamData };
+    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, assignments: updatedAssignments } : e));
+    await supabase.from('events').update({ assignments: updatedAssignments }).eq('id', eventId);
   };
 
-  const updateNotes = async (programId, value) => {
-    const programToUpdate = programs.find(p => p.id === programId);
-    if (!programToUpdate) return;
+  const updateRole = async (eventId, roleKey, roleLabel, value) => {
+    const ev = events.find((e) => e.id === eventId);
+    if (!ev) return;
+    const before = csvNames(ev.assignments?.[teamType]?.[roleKey]);
+    const after = csvNames(value);
+    const added = after.filter((n) => !before.includes(n));
+    const removed = before.filter((n) => !after.includes(n));
 
-    const currentData = programToUpdate[scheduleFieldKey] || {};
-    const updatedData = { ...currentData, notatki: value };
+    await writeAssignments(eventId, (teamData) => { teamData[roleKey] = after.join(', '); });
 
-    setPrograms(prev => prev.map(p => {
-      if (p.id === programId) {
-        return { ...p, [scheduleFieldKey]: updatedData };
+    try {
+      const me = await getCachedUser();
+      for (const name of added) {
+        const m = members.find((x) => x.full_name === name);
+        await createAssignment({
+          eventId, teamType, roleKey, roleLabel,
+          assignedName: name, assignedEmail: m?.email || null,
+          assignedByEmail: me?.email || null, assignedByName: me?.email?.split('@')[0] || 'Administrator',
+          isSelfAssignment: !!(me?.email && m?.email && me.email.toLowerCase() === m.email.toLowerCase()),
+        });
       }
-      return p;
-    }));
-
-    // Upewnij się że kolumna grafiku istnieje przed zapisem
-    await ensureScheduleColumnExists();
-
-    await supabase.from('programs').update({ [scheduleFieldKey]: updatedData }).eq('id', programId);
+      for (const name of removed) {
+        await removeEventAssignment(eventId, teamType, roleKey, name);
+      }
+      if (added.length || removed.length) await fetchAssignmentsForEvents(teamEvents.map((e) => e.id).filter(Boolean));
+    } catch (e) {
+      toast.error(e.message || 'Błąd zapisu przypisania');
+    }
   };
 
-  // Kolumny na podstawie służb
+  const updateNotes = async (eventId, value) => {
+    await writeAssignments(eventId, (teamData) => { teamData.notatki = value; });
+  };
+
+  const sendForEvent = async (eventId) => {
+    const res = await sendInvitesForEvent(eventId, teamType);
+    if (res?.success) {
+      if (res.sent > 0) toast.success(`Wysłano powiadomienia: ${res.sent}${res.failed ? `, niepowodzeń: ${res.failed}` : ''}`);
+      else if (res.emailReady === false) toast.error(res.error || 'Brak konfiguracji e-mail na serwerze.');
+      else toast.info('Brak nowych osób do powiadomienia (sprawdź, czy mają e-mail w profilu).');
+    } else {
+      toast.error(res?.error || 'Nie udało się wysłać powiadomień.');
+    }
+    await fetchAssignmentsForEvents(teamEvents.map((e) => e.id).filter(Boolean));
+  };
+
+  // Kolumny na podstawie ról
   const columns = roles.length > 0
     ? roles.map(role => ({ key: role.field_key, label: role.name, roleId: role.id }))
     : [{ key: 'osoba', label: t('Osoba'), roleId: null }];
 
-  // Filtrowanie członków według służby
+  // Filtrowanie osób według roli
   const getMembersForRole = (roleId) => {
-    if (!roleId || memberRoles.length === 0) {
-      return members;
-    }
+    if (!roleId || memberRoles.length === 0) return members;
     const assignedMemberIds = memberRoles
       .filter(mr => mr.role_id === roleId)
-      .map(mr => mr.member_id);
-
-    if (assignedMemberIds.length === 0) {
-      return members;
-    }
-
+      .map(mr => String(mr.member_id));
+    if (assignedMemberIds.length === 0) return members;
     return members.filter(member => assignedMemberIds.includes(String(member.id)));
   };
 
@@ -334,14 +382,14 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
         <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
           <p className="text-gray-500 dark:text-gray-400">{t('Brak członków w zespole')}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            {tr('Najpierw dodaj członków w zakładce "Członkowie"')}
+            {tr('Najpierw dodaj członków w zakładce "Służby"')}
           </p>
         </div>
       ) : sortedMonths.length === 0 ? (
         <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-center">
-          <p className="text-gray-500 dark:text-gray-400">{t('Brak programów')}</p>
+          <p className="text-gray-500 dark:text-gray-400">{t('Brak wydarzeń')}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            Dodaj programy w module "Programy"
+            Dodaj wydarzenia w tym module albo przypisz tę służbę do typu wydarzenia w Ustawieniach.
           </p>
         </div>
       ) : (
@@ -371,24 +419,20 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                         </tr>
                       </thead>
                       <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700 relative">
-                        {groupedPrograms[monthKey]
+                        {groupedEvents[monthKey]
                           .sort((a, b) => new Date(a.date) - new Date(b.date))
-                          .map((prog) => (
-                            <tr key={prog.id} className="hover:bg-white/60 dark:hover:bg-gray-700/30 transition relative">
-                              <td className="p-3 font-medium text-gray-700 dark:text-gray-300 font-mono text-xs">
+                          .map((ev) => (
+                            <tr key={ev.id} className="hover:bg-white/60 dark:hover:bg-gray-700/30 transition relative">
+                              <td className="p-3 font-medium text-gray-700 dark:text-gray-300 text-xs">
                                 <div className="flex flex-col gap-1.5 items-start">
-                                  <span>{formatDateShort(prog.date)}</span>
-                                  <CampusBadge campus={getCampus(prog.campus_id)} />
-                                  <ScheduleSendButton
-                                    program={prog}
-                                    teamType={moduleKey}
-                                    gridData={prog[scheduleFieldKey]}
-                                    roleColumns={columns}
-                                    members={members}
+                                  <span className="font-mono">{formatDateShort(ev.date)}</span>
+                                  {ev.title && <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">{ev.title}</span>}
+                                  <CampusBadge campus={getCampus(ev.campus_id)} />
+                                  <EventSendCell
+                                    eventId={ev.id}
+                                    teamType={teamType}
                                     assignments={schedAssignments}
-                                    hook={{ createAssignment, removeAssignment, sendInvitesForProgram }}
-                                    currentUser={currentUser}
-                                    onRefresh={() => fetchAssignmentsForPrograms(programs.map((p) => p.id).filter(Boolean))}
+                                    onSent={() => sendForEvent(ev.id)}
                                   />
                                 </div>
                               </td>
@@ -396,8 +440,8 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                                 <td key={col.key} className="p-2 relative">
                                   <TableMultiSelect
                                     options={getMembersForRole(col.roleId)}
-                                    value={prog[scheduleFieldKey]?.[col.key] || ''}
-                                    onChange={(val) => updateRole(prog.id, col.key, val)}
+                                    value={ev.assignments?.[teamType]?.[col.key] || ''}
+                                    onChange={(val) => updateRole(ev.id, col.key, col.label, val)}
                                   />
                                 </td>
                               ))}
@@ -405,8 +449,8 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
                                 <input
                                   className="w-full bg-transparent border-b border-transparent hover:border-gray-300 dark:hover:border-gray-600 focus:border-accent-primary-light dark:focus:border-accent-primary-light text-xs p-1 outline-none transition placeholder-gray-300 dark:placeholder-gray-600 text-gray-700 dark:text-gray-300"
                                   placeholder="Wpisz..."
-                                  defaultValue={prog[scheduleFieldKey]?.notatki || ''}
-                                  onBlur={(e) => updateNotes(prog.id, e.target.value)}
+                                  defaultValue={ev.assignments?.[teamType]?.notatki || ''}
+                                  onBlur={(e) => updateNotes(ev.id, e.target.value)}
                                 />
                               </td>
                             </tr>

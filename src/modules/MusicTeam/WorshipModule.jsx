@@ -9,6 +9,7 @@ import { CampusBadge, useCampusBadge } from '../../components/CampusBadge';
 import FinanceTab from '../shared/FinanceTab';
 import WallTab from '../shared/WallTab';
 import EventsTab from '../shared/EventsTab';
+import EventScheduleTab from '../shared/ScheduleTab';
 import MaterialsTab from '../shared/MaterialsTab';
 import EquipmentTab from '../shared/EquipmentTab';
 import RolesTab from '../../components/RolesTab';
@@ -2589,25 +2590,10 @@ export default function WorshipModule() {
         </section>
       )}
 
-      {/* SEKCJA 1: GRAFIK ZESPOŁU */}
+      {/* SEKCJA 1: GRAFIK ZESPOŁU — nad wydarzeniami (twardy switch z programów) */}
       {activeTab === 'schedule' && (
       <section data-tour="grafik-section" className="bg-white dark:bg-gray-900 rounded-2xl lg:rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 lg:p-6 relative z-[50] transition-colors">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 lg:mb-6">
-          <h2 className="text-xl lg:text-2xl font-bold text-gray-800 dark:text-gray-100">{t('Grafik Zespołu')}</h2>
-        </div>
-        <ScheduleTable
-          programs={programs}
-          worshipTeam={team}
-          onUpdateProgram={handleProgramUpdate}
-          roles={worshipRoles}
-          memberRoles={memberRoles}
-          currentUser={currentUser}
-          assignments={assignments}
-          onCreateAssignment={createAssignment}
-          onRemoveAssignment={removeAssignment}
-          onSendInvites={(pid) => sendInvitesForProgram(pid, 'worship')}
-          onRefreshAssignments={() => fetchAssignmentsForPrograms(programs.map(p => p.id))}
-        />
+        <EventScheduleTab moduleKey="worship" />
       </section>
       )}
 
