@@ -3,13 +3,13 @@
 // „Nowe wydarzenie" otwiera szybki formularz → tworzy wydarzenie i otwiera jego stronę.
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar as CalendarIcon, Plus, Save, Settings } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Save, Settings, X } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import CustomSelect from '../../components/CustomSelect';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../lib/toast';
-import { useModuleLabel } from '../../hooks/useModuleLabel';
+import { useModuleLabel, useModuleCalendars } from '../../hooks/useModuleLabel';
 import { useModules } from '../../hooks/useModules';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useCan } from '../../components/Can';
@@ -19,12 +19,28 @@ import EventsListView from './EventsListView';
 // Domyślne moduły-kalendarze widoczne w pickerze (gdy admin nic nie skonfiguruje).
 const DEFAULT_EVENT_MODULES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'mlodziezowka'];
 
+// Typy dla kalendarza „Ogólne" (spójne z EventDetailPage DEFAULT_TYPES).
+const OGOLNE_TYPES = [
+  { value: 'spotkanie', label: 'Spotkanie' },
+  { value: 'wydarzenie', label: 'Wydarzenie' },
+  { value: 'szkolenie', label: 'Szkolenie' },
+  { value: 'inne', label: 'Inne' },
+];
+const slugTab = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || ('t' + Math.random().toString(36).slice(2, 7));
+
 async function readEventCalendars() {
   try {
     const { data } = await supabase.from('app_settings').select('value').eq('key', 'event_calendars').maybeSingle();
     if (data?.value) { const arr = JSON.parse(data.value); if (Array.isArray(arr)) return arr; }
   } catch { /* brak konfiguracji */ }
   return null;
+}
+async function readEventTypeTabs() {
+  try {
+    const { data } = await supabase.from('app_settings').select('value').eq('key', 'event_type_tabs').maybeSingle();
+    if (data?.value) { const arr = JSON.parse(data.value); if (Array.isArray(arr)) return arr; }
+  } catch { /* brak konfiguracji */ }
+  return [];
 }
 
 export default function EventsModule() {
@@ -153,28 +169,50 @@ function CreateEventModal({ onClose }) {
   );
 }
 
-// Ustawienia wydarzeń — na razie: które moduły-kalendarze widoczne w pickerze „Kalendarz / moduł".
+// Ustawienia wydarzeń: (A) kalendarze w pickerze, (B) zakładki wg typu wydarzenia.
 function EventSettingsModal({ onClose }) {
   const t = useT();
   const { modules } = useModules();
-  const [selected, setSelected] = useState(null); // Set kluczy
+  const calendars = useModuleCalendars(); // { key: { types:[{value,label}] } }
+  const [selected, setSelected] = useState(null); // Set kluczy modułów w pickerze
+  const [rules, setRules] = useState(null);       // [{module_key, event_type, tabsText}]
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     readEventCalendars().then((arr) => setSelected(new Set(Array.isArray(arr) ? arr : DEFAULT_EVENT_MODULES)));
+    readEventTypeTabs().then((arr) => setRules(arr.map((r) => ({
+      module_key: r.module_key || '', event_type: r.event_type || '',
+      tabsText: (r.tabs || []).map((x) => x.label).join(', '),
+    }))));
   }, []);
 
   const enabledModules = modules.filter((m) => m.is_enabled);
-  const toggle = (key) => setSelected((prev) => {
-    const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n;
-  });
+  const toggle = (key) => setSelected((prev) => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+
+  const moduleOpts = [{ value: '', label: t('Ogólne') }, ...enabledModules.map((m) => ({ value: m.key, label: m.label }))];
+  const typeOptsFor = (mk) => {
+    const types = mk ? (calendars[mk]?.types || []) : OGOLNE_TYPES;
+    return [{ value: '', label: '— wybierz typ —' }, ...types.map((tp) => ({ value: tp.value, label: tp.label }))];
+  };
+  const addRule = () => setRules((r) => [...(r || []), { module_key: '', event_type: '', tabsText: '' }]);
+  const updRule = (i, patch) => setRules((r) => r.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const delRule = (i) => setRules((r) => r.filter((_, j) => j !== i));
 
   const save = async () => {
     setSaving(true);
     try {
-      const arr = [...(selected || [])];
-      const { error } = await supabase.from('app_settings').upsert({ key: 'event_calendars', value: JSON.stringify(arr) }, { onConflict: 'key' });
-      if (error) throw error;
+      const calArr = [...(selected || [])];
+      const tabsArr = (rules || []).filter((r) => r.event_type && r.tabsText.trim()).map((r) => ({
+        module_key: r.module_key || '',
+        event_type: r.event_type,
+        tabs: r.tabsText.split(',').map((s) => s.trim()).filter(Boolean).map((label) => ({ id: slugTab(label), label })),
+      }));
+      const [a, b] = await Promise.all([
+        supabase.from('app_settings').upsert({ key: 'event_calendars', value: JSON.stringify(calArr) }, { onConflict: 'key' }),
+        supabase.from('app_settings').upsert({ key: 'event_type_tabs', value: JSON.stringify(tabsArr) }, { onConflict: 'key' }),
+      ]);
+      if (a.error) throw a.error;
+      if (b.error) throw b.error;
       toast.success(t('Zapisano ustawienia'));
       onClose();
     } catch (e) { toast.error('Nie udało się zapisać: ' + (e.message || e)); }
@@ -182,25 +220,51 @@ function EventSettingsModal({ onClose }) {
   };
 
   return (
-    <Modal isOpen onClose={onClose} size="md" title={t('Ustawienia wydarzeń')}>
-      <div className="p-5 space-y-3">
-        <div>
-          <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Kalendarze w pickerze</h4>
-          <p className="text-xs text-gray-400 mt-0.5">Zaznacz moduły, które mają pojawiać się w polu „Kalendarz / moduł" przy dodawaniu wydarzenia. „Ogólne" jest zawsze dostępne.</p>
-        </div>
-        {selected === null ? (
-          <p className="text-sm text-gray-400 py-4 text-center">Wczytywanie…</p>
-        ) : (
-          <div className="max-h-72 overflow-y-auto custom-scrollbar rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-50 dark:divide-gray-700/50">
-            {enabledModules.map((m) => (
-              <label key={m.key} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                <input type="checkbox" checked={selected.has(m.key)} onChange={() => toggle(m.key)} className="w-4 h-4 rounded accent-accent-primary" />
-                <span className="text-gray-700 dark:text-gray-200">{m.label}</span>
-                <span className="ml-auto text-[11px] text-gray-400">{m.key}</span>
-              </label>
-            ))}
+    <Modal isOpen onClose={onClose} size="lg" title={t('Ustawienia wydarzeń')}>
+      <div className="p-5 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        {/* A. Kalendarze w pickerze */}
+        <div className="space-y-2">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Kalendarze w pickerze</h4>
+            <p className="text-xs text-gray-400 mt-0.5">Które moduły pojawiają się w polu „Kalendarz / moduł" przy dodawaniu wydarzenia. „Ogólne" jest zawsze dostępne.</p>
           </div>
-        )}
+          {selected === null ? <p className="text-sm text-gray-400 py-3 text-center">Wczytywanie…</p> : (
+            <div className="max-h-56 overflow-y-auto custom-scrollbar rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-50 dark:divide-gray-700/50">
+              {enabledModules.map((m) => (
+                <label key={m.key} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                  <input type="checkbox" checked={selected.has(m.key)} onChange={() => toggle(m.key)} className="w-4 h-4 rounded accent-accent-primary" />
+                  <span className="text-gray-700 dark:text-gray-200">{m.label}</span>
+                  <span className="ml-auto text-[11px] text-gray-400">{m.key}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* B. Zakładki wg typu wydarzenia */}
+        <div className="space-y-2">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Zakładki wg typu wydarzenia</h4>
+            <p className="text-xs text-gray-400 mt-0.5">Dla wybranego kalendarza i typu (np. Nabożeństwo) dodaj dodatkowe zakładki na stronie wydarzenia (np. „Szkółka Niedzielna", „Atmosfera Team"). Nazwy po przecinku.</p>
+          </div>
+          {rules === null ? <p className="text-sm text-gray-400 py-3 text-center">Wczytywanie…</p> : (
+            <div className="space-y-2">
+              {rules.map((r, i) => (
+                <div key={i} className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-44"><CustomSelect value={r.module_key} onChange={(v) => updRule(i, { module_key: v, event_type: '' })} options={moduleOpts} /></div>
+                    <div className="w-44"><CustomSelect value={r.event_type} onChange={(v) => updRule(i, { event_type: v })} options={typeOptsFor(r.module_key)} /></div>
+                    <button onClick={() => delRule(i)} className="ml-auto p-1.5 text-gray-400 hover:text-red-500"><X size={16} /></button>
+                  </div>
+                  <input value={r.tabsText} onChange={(e) => updRule(i, { tabsText: e.target.value })}
+                    placeholder="Zakładki po przecinku, np. Szkółka Niedzielna, Atmosfera Team"
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+                </div>
+              ))}
+              <button onClick={addRule} className="flex items-center gap-1.5 text-sm text-accent-primary hover:text-accent-secondary"><Plus size={15} /> Dodaj regułę</button>
+            </div>
+          )}
+        </div>
       </div>
       <div className="flex justify-end gap-2 px-5 py-4 border-t border-gray-200 dark:border-gray-700">
         <button onClick={onClose} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{t('Anuluj')}</button>

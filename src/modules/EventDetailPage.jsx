@@ -93,6 +93,7 @@ export default function EventDetailPage() {
   const [programs, setPrograms] = useState([]);
   const [programDetail, setProgramDetail] = useState(null);
   const [songs, setSongs] = useState([]);
+  const [typeTabs, setTypeTabs] = useState([]); // konfiguracja zakładek wg typu (app_settings)
   const [fields, setFields] = useState([]);
   const [invites, setInvites] = useState([]);
   const [campaign, setCampaign] = useState(null);
@@ -141,6 +142,9 @@ export default function EventDetailPage() {
       .then(({ data }) => setPrograms(data || [])).catch(() => {});
     supabase.from('songs').select('id, title, key')
       .then(({ data }) => setSongs(data || [])).catch(() => {});
+    supabase.from('app_settings').select('value').eq('key', 'event_type_tabs').maybeSingle()
+      .then(({ data }) => { try { const a = data?.value ? JSON.parse(data.value) : []; setTypeTabs(Array.isArray(a) ? a : []); } catch { setTypeTabs([]); } })
+      .catch(() => {});
   }, []);
 
   // Podgląd podpiętego programu (plan/pieśni) — do zakładki „Program".
@@ -269,12 +273,21 @@ export default function EventDetailPage() {
   const progTotal = progItems.reduce((s, it) => s + (Number(it?.duration) || 0), 0);
   const progSongs = progItems.filter((it) => it?.type === 'song').length;
 
+  // Dodatkowe zakładki wg typu wydarzenia (konfiguracja w Ustawieniach wydarzeń).
+  const extraTabs = [];
+  (typeTabs || []).forEach((rule) => {
+    if ((rule?.module_key || '') === (ev.module_key || '') && rule?.event_type && rule.event_type === ev.event_type) {
+      (rule.tabs || []).forEach((tb) => { if (tb?.id) extraTabs.push({ id: `custom:${tb.id}`, label: tb.label || 'Zakładka' }); });
+    }
+  });
+
   const TABS = [
     { id: 'szczegoly', label: 'Szczegóły', icon: FileText },
     { id: 'program', label: 'Program', icon: ClipboardList, badge: ev.program_id ? '●' : null },
     { id: 'rejestracja', label: 'Rejestracja i płatność', icon: Ticket, badge: (ev.registration_required || ev.is_paid) ? '●' : null },
     { id: 'uczestnicy', label: 'Uczestnicy', icon: Users, badge: invites.length || null },
     { id: 'zalaczniki', label: 'Załączniki', icon: Paperclip, badge: (ev.attachments?.length) || null },
+    ...extraTabs.map((x) => ({ id: x.id, label: x.label, icon: FileText })),
     ...(canManage ? [{ id: 'widocznosc', label: 'Widoczność', icon: Eye }] : []),
   ];
 
@@ -680,6 +693,22 @@ export default function EventDetailPage() {
         <ReminderAutomation campaign={campaign} campaignIds={campaignIds} ensureCampaign={ensureCampaign} onSaved={load} />
       )}
       </div>)}
+
+      {/* Zakładki wg typu (konfigurowalne) — na razie notatki/informacje na zakładkę */}
+      {tab.startsWith('custom:') && (() => {
+        const key = `tabhtml_${tab.slice('custom:'.length)}`;
+        const label = extraTabs.find((x) => x.id === tab)?.label || 'Zakładka';
+        return (
+          <div className="space-y-5">
+            <Card icon={FileText} title={label}>
+              <SimpleRichEditor content={ev.custom?.[key] || ''} onChange={(html) => setEv({ ...ev, custom: { ...(ev.custom || {}), [key]: html } })} placeholder={`Notatki / informacje — ${label}…`} />
+              <div className="mt-2 flex justify-end">
+                <button onClick={() => save({ custom: { ...(ev.custom || {}), [key]: ev.custom?.[key] || '' } })} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium">Zapisz</button>
+              </div>
+            </Card>
+          </div>
+        );
+      })()}
 
       {showInvite && (
         <EventInviteModal
