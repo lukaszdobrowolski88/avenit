@@ -202,7 +202,9 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   }, [moduleKey]);
 
   // Czy wydarzenie należy do tej służby (spójne z zakładką „Służby" na wydarzeniu).
+  // Priorytet: override per wydarzenie (events.team_types, CSV) → reguła typu → moduł-służba.
   const includesThisTeam = useCallback((ev) => {
+    if (ev.team_types != null) return csvNames(ev.team_types).includes(teamType);
     const rule = (typeTeams || []).find((r) => (r?.module_key || '') === (ev.module_key || '') && r?.event_type === ev.event_type);
     if (rule && Array.isArray(rule.teams) && rule.teams.length) return rule.teams.includes(teamType);
     return (ev.module_key || '') === teamType; // brak reguły → służba = moduł wydarzenia
