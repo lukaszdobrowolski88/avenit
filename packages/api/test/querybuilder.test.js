@@ -104,3 +104,28 @@ test('normalizeValue: natywna kolumna text[] (members.tags) zostaje surową tabl
   const empty = buildQuery({ table: 'members', op: 'insert', values: { tags: [] } });
   assert.deepEqual(empty.params[0], []);
 });
+
+test('widoczność: BEZ __visibilityScope events SELECT nie ma klauzuli (non-breaking)', () => {
+  const { sql } = buildQuery({ table: 'events', op: 'select' });
+  assert.ok(!sql.includes('visibility_segments'), 'nie powinno być klauzuli widoczności');
+});
+
+test('widoczność: Z __visibilityScope events SELECT dokleja klauzulę segmentów', () => {
+  const { sql, params } = buildQuery({
+    table: 'events', op: 'select',
+    __visibilityScope: { role: 'lider', email: 'a@b.pl', campusId: null, homeGroupId: null, memberId: 5, ministries: ['media_team'], tags: [] },
+  });
+  assert.ok(sql.includes('visibility_segments'), 'powinna być kolumna widoczności');
+  assert.ok(sql.includes('jsonb_array_elements'), 'iteracja po segmentach');
+  assert.ok(sql.includes('jsonb_exists'), 'sprawdzenie przynależności do segmentu');
+  assert.ok(sql.includes("seg->>'type' = 'invited'"), 'segment invited');
+  assert.ok(params.includes('a@b.pl') && params.includes('lider'), 'parametry kontekstu użytkownika');
+});
+
+test('widoczność: __visibilityScope ignorowany dla tabel innych niż events', () => {
+  const { sql } = buildQuery({
+    table: 'members', op: 'select',
+    __visibilityScope: { role: 'lider', email: 'a@b.pl', memberId: 5, ministries: [], tags: [] },
+  });
+  assert.ok(!sql.includes('visibility_segments'), 'widoczność tylko dla events');
+});
