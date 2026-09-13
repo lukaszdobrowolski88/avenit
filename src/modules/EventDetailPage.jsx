@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Link as LinkIcon, ExternalLink, Trash2, Calendar, Clock, MapPin,
   Ticket, FileText, Users, Send, Copy, Check, X,
-  Paperclip, Upload, Download, Image as ImageIcon, File as FileIcon, ClipboardList,
+  Paperclip, Upload, Download, Image as ImageIcon, File as FileIcon, ClipboardList, Eye,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from '../lib/toast';
@@ -28,6 +28,37 @@ const DEFAULT_TYPES = [
   { value: 'inne', label: 'Inne' },
 ];
 const fmtDate = (d) => (d ? String(d).slice(0, 10).split('-').reverse().join('.') : '');
+
+// Widoczność wydarzenia — presety (PR B). Zaawansowany builder (służby/grupy/osoby) w PR C.
+// module_key wydarzenia → klucz służby (dla presetu „Ta służba").
+const MODULE_TO_MINISTRY = { media: 'media_team', worship: 'worship_team', atmosfera: 'atmosfera_team', kids: 'kids_ministry' };
+const STAFF_ROLES = ['rada_starszych', 'koordynator', 'lider'];
+const presetToSegments = (id, ministryKey) => {
+  switch (id) {
+    case 'all': return null; // brak ograniczeń = widoczne dla wszystkich (default)
+    case 'ministry': return ministryKey ? [{ type: 'ministry', values: [ministryKey] }] : null;
+    case 'elders': return [{ type: 'role', values: ['rada_starszych'] }];
+    case 'staff': return [{ type: 'role', values: STAFF_ROLES }];
+    case 'owner': return [{ type: 'owner' }];
+    case 'invited': return [{ type: 'invited' }];
+    default: return null;
+  }
+};
+const detectPreset = (segs, ministryKey) => {
+  if (!Array.isArray(segs) || segs.length === 0) return 'all';
+  if (segs.length === 1) {
+    const s = segs[0];
+    if (s.type === 'owner') return 'owner';
+    if (s.type === 'invited') return 'invited';
+    if (s.type === 'role') {
+      const v = [...(s.values || [])].sort().join(',');
+      if (v === 'rada_starszych') return 'elders';
+      if (v === [...STAFF_ROLES].sort().join(',')) return 'staff';
+    }
+    if (s.type === 'ministry' && ministryKey && (s.values || []).length === 1 && s.values[0] === ministryKey) return 'ministry';
+  }
+  return 'custom'; // ustawione zaawansowanym builderem (PR C) — nie nadpisujemy w tle
+};
 const Card = ({ icon: Icon, title, children, actions }) => (
   <section className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
     <div className="flex items-center justify-between mb-3">
@@ -273,6 +304,50 @@ export default function EventDetailPage() {
           {ev.link && <a href={ev.link} target="_blank" rel="noreferrer" className="p-2 text-accent-primary hover:bg-accent-primary/10 rounded-lg" title="Otwórz"><ExternalLink size={18} /></a>}
         </div>
       </Card>
+
+      {/* Kto widzi wydarzenie (widoczność) */}
+      {canManage && (
+        <Card icon={Eye} title="Kto widzi wydarzenie">
+          {(() => {
+            const ministryKey = MODULE_TO_MINISTRY[ev.module_key];
+            const current = detectPreset(ev.visibility_segments, ministryKey);
+            const presets = [
+              { id: 'all', label: 'Wszyscy' },
+              ...(ministryKey ? [{ id: 'ministry', label: 'Ta służba' }] : []),
+              { id: 'elders', label: 'Rada Starszych' },
+              { id: 'staff', label: 'Kadra (liderzy)' },
+              { id: 'owner', label: 'Tylko organizatorzy' },
+              { id: 'invited', label: 'Zaproszeni' },
+            ];
+            const HINTS = {
+              all: 'Widoczne dla wszystkich z dostępem do kalendarza.',
+              ministry: 'Widoczne tylko dla członków tej służby (oraz administratorów).',
+              elders: 'Widoczne tylko dla Rady Starszych (oraz administratorów).',
+              staff: 'Widoczne dla liderów, koordynatorów i Rady Starszych (oraz administratorów).',
+              owner: 'Widoczne tylko dla organizatorów / twórcy (oraz administratorów).',
+              invited: 'Widoczne tylko dla osób zaproszonych lub zapisanych na to wydarzenie.',
+              custom: 'Ustawiono zaawansowane audytorium (służby / grupy / osoby).',
+            };
+            return (
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {current === 'custom' && (
+                    <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent-primary text-white">Zaawansowane (własne)</span>
+                  )}
+                  {presets.map((p) => (
+                    <button key={p.id} type="button"
+                      onClick={() => save({ visibility_segments: presetToSegments(p.id, ministryKey) })}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${current === p.id ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-accent-primary-light'}`}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400">{HINTS[current] || HINTS.all}</p>
+              </div>
+            );
+          })()}
+        </Card>
+      )}
 
       {/* Program (z modułu Programy) */}
       <Card icon={ClipboardList} title="Program" actions={
