@@ -17,6 +17,7 @@ import EventRSVP from '../components/EventRSVP';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useModules } from '../hooks/useModules';
 import { useModuleCalendars } from '../hooks/useModuleLabel';
+import EventsListView from './Events/EventsListView';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
@@ -923,6 +924,7 @@ export default function CalendarModule() {
     moduleEvent: null      // { moduleKey, ...event } - generyczny modal wydarzenia dowolnego modułu (custom)
   });
   const [view, setView] = useState('month');
+  const [hubTab, setHubTab] = useState('calendar'); // 'calendar' | 'list' | 'archive'
   const [eventCategories, setEventCategories] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
@@ -2516,8 +2518,31 @@ export default function CalendarModule() {
       )
   }
 
+  // Pasek zakładek huba „Wydarzenia": Kalendarz | Lista | Archiwum.
+  const HubTabs = (
+    <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl w-fit">
+      {[['calendar', t('Kalendarz')], ['list', t('Lista')], ['archive', t('Archiwum')]].map(([id, label]) => (
+        <button key={id} onClick={() => setHubTab(id)}
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${hubTab === id ? 'bg-white dark:bg-gray-900 text-accent-primary dark:text-accent-primary-light shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
+  // Lista / Archiwum — osobny widok pytający wprost tabelę events (widoczność serwerowa).
+  if (hubTab !== 'calendar') {
+    return (
+      <div className="h-[calc(100vh-3rem)] flex flex-col gap-3 p-1 lg:p-0">
+        {HubTabs}
+        <EventsListView mode={hubTab} />
+      </div>
+    );
+  }
+
   return (
     <div className="h-[calc(100vh-3rem)] flex flex-col gap-2 lg:gap-4">
+      {HubTabs}
       {/* MOBILE VIEW - Nowy widok kalendarza */}
       <div className="lg:hidden h-full">
         <MobileScheduleWrapper />
