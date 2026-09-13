@@ -71,6 +71,7 @@ const FormsModule = lazy(() => import('./modules/Forms/FormsModule'));
 const CustomModule = lazy(() => import('./modules/CustomModule/CustomModule'));
 const BoardsModule = lazy(() => import('./modules/Boards/BoardsModule'));
 const EventDetailPage = lazy(() => import('./modules/EventDetailPage'));
+const EventsModule = lazy(() => import('./modules/Events/EventsModule'));
 import { tr } from './i18n';
 
 // Lista kluczy systemowych modułów (mają dedykowane komponenty)
@@ -495,8 +496,11 @@ function AppInner() {
                 <Route path="/programs/:id" element={
                   <ProtectedRoute resource="module:programs"><ProgramDetail /></ProtectedRoute>
                 } />
+                <Route path="/wydarzenia" element={
+                  <ProtectedRoute resource="module:calendar"><EventsModule /></ProtectedRoute>
+                } />
                 <Route path="/calendar" element={
-                  <ProtectedRoute resource="module:calendar"><CalendarModule /></ProtectedRoute>
+                  <ProtectedRoute resource="module:calendar"><EventsModule /></ProtectedRoute>
                 } />
                 <Route path="/members" element={
                   <ProtectedRoute resource="module:members"><Members /></ProtectedRoute>
