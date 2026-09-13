@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import FinanceTab from '../shared/FinanceTab';
 import EventsTab from '../shared/EventsTab';
+import EventScheduleTab from '../shared/ScheduleTab';
 import MaterialsTab from '../shared/MaterialsTab';
 import EquipmentTab from '../shared/EquipmentTab';
 import CheckinTab from './checkin/CheckinTab';
@@ -619,15 +620,10 @@ export default function KidsModule() {
         </section>
       )}
 
-      {/* GRAFIK TAB */}
+      {/* GRAFIK TAB — nad wydarzeniami (twardy switch z programów) */}
       {activeTab === 'schedule' && (
         <section className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-          <div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Grafik Nauczycieli</h2></div>
-          <ScheduleTable programs={programs} teachers={teachers} groups={groups} onUpdateProgram={handleProgramUpdate}
-            assignments={schedAssignments}
-            scheduleHook={{ createAssignment, removeAssignment, sendInvitesForProgram }}
-            currentUser={currentUser}
-            onRefreshAssignments={() => fetchAssignmentsForPrograms(programs.map((p) => p.id).filter(Boolean))} />
+          <EventScheduleTab moduleKey="kids" />
         </section>
       )}
 

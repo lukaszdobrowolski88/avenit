@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import FinanceTab from './shared/FinanceTab';
 import EventsTab from './shared/EventsTab';
+import EventScheduleTab from './shared/ScheduleTab';
 import MaterialsTab from './shared/MaterialsTab';
 import EquipmentTab from './shared/EquipmentTab';
 import RolesTab from '../components/RolesTab';
@@ -759,23 +760,10 @@ export default function AtmosferaTeamModule() {
         </section>
       )}
 
-      {/* GRAFIK */}
+      {/* GRAFIK — nad wydarzeniami (twardy switch z programów) */}
       {activeTab === 'schedule' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[50] transition-colors duration-300">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{tr('Grafik')}</h2>
-        </div>
-        <ScheduleTable
-          programs={programs}
-          team={team}
-          onUpdateProgram={handleProgramUpdate}
-          roles={atmosferaRoles}
-          memberRoles={memberRoles}
-          assignments={schedAssignments}
-          scheduleHook={{ createAssignment, removeAssignment, sendInvitesForProgram }}
-          currentUser={{ email: currentUserEmail, name: team.find((m) => m.email === currentUserEmail)?.full_name || '' }}
-          onRefreshAssignments={() => fetchAssignmentsForPrograms(programs.map((p) => p.id).filter(Boolean))}
-        />
+        <EventScheduleTab moduleKey="atmosfera" />
       </section>
       )}
 

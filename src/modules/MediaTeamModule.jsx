@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import FinanceTab from './shared/FinanceTab';
 import EventsTab from './shared/EventsTab';
+import EventScheduleTab from './shared/ScheduleTab';
 import MaterialsTab from './shared/MaterialsTab';
 import EquipmentTab from './shared/EquipmentTab';
 import RolesTab from '../components/RolesTab';
@@ -1138,21 +1139,10 @@ export default function MediaTeamModule() {
         </section>
       )}
 
-      {/* SEKCJA 1: GRAFIK MEDIA TEAM */}
+      {/* SEKCJA 1: GRAFIK MEDIA TEAM — nad wydarzeniami (twardy switch z programów) */}
       {activeTab === 'schedule' && (
       <section data-tour="media-grafik-section" className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 relative z-[50] transition-colors duration-300">
-        <TabHeader title="Grafik" />
-        <ScheduleTable
-          programs={programs}
-          mediaTeam={team}
-          onUpdateProgram={handleProgramUpdate}
-          roles={mediaRoles}
-          memberRoles={memberRoles}
-          assignments={schedAssignments}
-          scheduleHook={{ createAssignment, removeAssignment, sendInvitesForProgram }}
-          currentUser={{ email: currentUserEmail, name: team.find((m) => m.email === currentUserEmail)?.full_name || '' }}
-          onRefreshAssignments={() => fetchAssignmentsForPrograms(programs.map((p) => p.id).filter(Boolean))}
-        />
+        <EventScheduleTab moduleKey="media" />
       </section>
       )}
 
