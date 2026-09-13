@@ -86,6 +86,7 @@ export default function EventDetailPage() {
   const [showInvite, setShowInvite] = useState(false);
   const [showVisBuilder, setShowVisBuilder] = useState(false);
   const [remindBusy, setRemindBusy] = useState(false);
+  const [tab, setTab] = useState('szczegoly');
   const [uploading, setUploading] = useState(false);
   const fileRef = React.useRef(null);
 
@@ -238,8 +239,16 @@ export default function EventDetailPage() {
   };
   const roField = !canManage;
 
+  const TABS = [
+    { id: 'szczegoly', label: 'Szczegóły', icon: FileText },
+    { id: 'rejestracja', label: 'Rejestracja i płatność', icon: Ticket },
+    { id: 'uczestnicy', label: 'Uczestnicy', icon: Users },
+    { id: 'zalaczniki', label: 'Załączniki', icon: Paperclip },
+    ...(canManage ? [{ id: 'widocznosc', label: 'Widoczność', icon: Eye }] : []),
+  ];
+
   return (
-    <div className="max-w-3xl mx-auto space-y-5 pb-16">
+    <div className="w-full space-y-5 pb-16">
       {/* Nagłówek */}
       <div className="flex items-start gap-3">
         <button onClick={() => navigate(-1)} className="mt-1 p-1.5 -ml-1.5 shrink-0 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"><ArrowLeft size={20} /></button>
@@ -264,6 +273,18 @@ export default function EventDetailPage() {
         )}
       </div>
 
+      {/* Zakładki */}
+      <div className="flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-800">
+        {TABS.map((tb) => (
+          <button key={tb.id} onClick={() => setTab(tb.id)}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition ${tab === tb.id ? 'border-accent-primary text-accent-primary' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
+            <tb.icon size={16} /> {tb.label}
+          </button>
+        ))}
+      </div>
+
+      {/* SZCZEGÓŁY */}
+      {tab === 'szczegoly' && (<div className="space-y-5">
       {/* Podstawowe: data / godziny / lokalizacja / typ */}
       <Card icon={Calendar} title="Termin i miejsce">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -305,9 +326,10 @@ export default function EventDetailPage() {
           {ev.link && <a href={ev.link} target="_blank" rel="noreferrer" className="p-2 text-accent-primary hover:bg-accent-primary/10 rounded-lg" title="Otwórz"><ExternalLink size={18} /></a>}
         </div>
       </Card>
+      </div>)}
 
-      {/* Kto widzi wydarzenie (widoczność) */}
-      {canManage && (
+      {/* WIDOCZNOŚĆ */}
+      {tab === 'widocznosc' && canManage && (
         <Card icon={Eye} title="Kto widzi wydarzenie">
           {(() => {
             const ministryKey = MODULE_TO_MINISTRY[ev.module_key];
@@ -355,6 +377,7 @@ export default function EventDetailPage() {
       )}
 
       {/* Program (z modułu Programy) */}
+      {tab === 'szczegoly' && (<div className="space-y-5">
       <Card icon={ClipboardList} title="Program" actions={
         canManage && (
           <button onClick={createProgram} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1.5">
@@ -377,8 +400,10 @@ export default function EventDetailPage() {
         </div>
         {!programs.length && <p className="mt-1 text-xs text-gray-400">Brak programów. Utwórz program w module Programy, aby go tu podpiąć.</p>}
       </Card>
+      </div>)}
 
-      {/* Załączniki / grafiki */}
+      {/* ZAŁĄCZNIKI */}
+      {tab === 'zalaczniki' && (<div className="space-y-5">
       <Card icon={Paperclip} title="Załączniki i grafiki" actions={
         canManage && (
           <>
@@ -423,8 +448,10 @@ export default function EventDetailPage() {
           </div>
         )}
       </Card>
+      </div>)}
 
-      {/* Rejestracja + płatność */}
+      {/* REJESTRACJA */}
+      {tab === 'rejestracja' && (<div className="space-y-5">
       <Card icon={Ticket} title="Rejestracja i płatność">
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
@@ -490,9 +517,10 @@ export default function EventDetailPage() {
           </div>
         </div>
       </Card>
+      </div>)}
 
-      {/* Pola własne */}
-      {fields.length > 0 && (
+      {/* SZCZEGÓŁY — pola własne */}
+      {tab === 'szczegoly' && fields.length > 0 && (
         <Card icon={FileText} title="Pola własne">
           <div className="space-y-3">
             {fields.map((f) => (
@@ -509,7 +537,8 @@ export default function EventDetailPage() {
         </Card>
       )}
 
-      {/* Obecność (kto potwierdził / zapisani) */}
+      {/* UCZESTNICY */}
+      {tab === 'uczestnicy' && (<div className="space-y-5">
       <Card icon={Users} title="Obecność / zapisani">
         <EventRSVP eventId={ev.id} maxParticipants={ev.max_participants} />
       </Card>
@@ -561,6 +590,7 @@ export default function EventDetailPage() {
       {canManage && (
         <ReminderAutomation campaign={campaign} campaignIds={campaignIds} ensureCampaign={ensureCampaign} onSaved={load} />
       )}
+      </div>)}
 
       {showInvite && (
         <EventInviteModal
