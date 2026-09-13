@@ -86,6 +86,18 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
 
   useEffect(() => { fetchAssignmentsForEvents([event.id]).then(() => force((n) => n + 1)); }, [event.id, fetchAssignmentsForEvents]);
 
+  // Zwiń rozwinięte pole wyboru osoby przy kliknięciu poza nie (klik w inny „Dodaj"
+  // otwiera nowe i zamyka stare, bo openRole jest pojedynczy).
+  useEffect(() => {
+    if (!openRole) return;
+    const onDown = (e) => {
+      if (e.target.closest('[data-role-popover]') || e.target.closest('[data-role-toggle]')) return;
+      setOpenRole(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [openRole]);
+
   const persist = useCallback((next) => { setAssign(next); onSaveAssignments(next); }, [onSaveAssignments]);
   const persistLayout = useCallback((next) => { setLayout(next); onSaveLayout?.(next); }, [onSaveLayout]);
 
@@ -323,14 +335,14 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
                               </span>
                             ))}
                             {canManage && (
-                              <button onClick={() => setOpenRole(openRole === key ? null : key)}
+                              <button data-role-toggle={key} onClick={() => setOpenRole(openRole === key ? null : key)}
                                 className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs border border-dashed border-gray-300 dark:border-gray-600 text-accent-primary hover:bg-accent-primary/5">
                                 <Plus size={12} /> Dodaj
                               </button>
                             )}
                           </div>
                           {openRole === key && canManage && (
-                            <div className="mt-2 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <div data-role-popover={key} className="mt-2 rounded-lg border border-gray-200 dark:border-gray-700">
                               {pick.length > 0 && (
                                 <div className="max-h-40 overflow-y-auto custom-scrollbar divide-y divide-gray-50 dark:divide-gray-700/50">
                                   {pick.map((m) => (
