@@ -28,6 +28,12 @@ const DEFAULT_TYPES = [
   { value: 'inne', label: 'Inne' },
 ];
 const fmtDate = (d) => (d ? String(d).slice(0, 10).split('-').reverse().join('.') : '');
+const fmtDur = (sec) => {
+  const s = Math.max(0, Math.round(Number(sec) || 0));
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2, '0')}`;
+};
+const PROG_ITEM_LABEL = { song: 'Pieśń', header: 'Nagłówek', media: 'Media', item: 'Element' };
 
 // Widoczność wydarzenia — presety (PR B). Zaawansowany builder (służby/grupy/osoby) w PR C.
 // module_key wydarzenia → klucz służby (dla presetu „Ta służba").
@@ -78,6 +84,7 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [forms, setForms] = useState([]);
   const [programs, setPrograms] = useState([]);
+  const [programDetail, setProgramDetail] = useState(null);
   const [fields, setFields] = useState([]);
   const [invites, setInvites] = useState([]);
   const [campaign, setCampaign] = useState(null);
@@ -125,6 +132,13 @@ export default function EventDetailPage() {
     supabase.from('programs').select('id, title, type, date').order('date', { ascending: false })
       .then(({ data }) => setPrograms(data || [])).catch(() => {});
   }, []);
+
+  // Podgląd podpiętego programu (plan/pieśni) — do zakładki „Program".
+  useEffect(() => {
+    if (!ev?.program_id) { setProgramDetail(null); return; }
+    supabase.from('programs').select('id, title, date, schedule, song_ids').eq('id', ev.program_id).maybeSingle()
+      .then(({ data }) => setProgramDetail(data || null)).catch(() => setProgramDetail(null));
+  }, [ev?.program_id]);
 
   const save = (patch) => {
     setEv((e) => ({ ...e, ...patch }));
@@ -239,11 +253,16 @@ export default function EventDetailPage() {
   };
   const roField = !canManage;
 
+  const progItems = Array.isArray(programDetail?.schedule) ? programDetail.schedule : [];
+  const progTotal = progItems.reduce((s, it) => s + (Number(it?.duration) || 0), 0);
+  const progSongs = progItems.filter((it) => it?.type === 'song').length;
+
   const TABS = [
     { id: 'szczegoly', label: 'Szczegóły', icon: FileText },
-    { id: 'rejestracja', label: 'Rejestracja i płatność', icon: Ticket },
-    { id: 'uczestnicy', label: 'Uczestnicy', icon: Users },
-    { id: 'zalaczniki', label: 'Załączniki', icon: Paperclip },
+    { id: 'program', label: 'Program', icon: ClipboardList, badge: ev.program_id ? '●' : null },
+    { id: 'rejestracja', label: 'Rejestracja i płatność', icon: Ticket, badge: (ev.registration_required || ev.is_paid) ? '●' : null },
+    { id: 'uczestnicy', label: 'Uczestnicy', icon: Users, badge: invites.length || null },
+    { id: 'zalaczniki', label: 'Załączniki', icon: Paperclip, badge: (ev.attachments?.length) || null },
     ...(canManage ? [{ id: 'widocznosc', label: 'Widoczność', icon: Eye }] : []),
   ];
 
@@ -279,6 +298,9 @@ export default function EventDetailPage() {
           <button key={tb.id} onClick={() => setTab(tb.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition ${tab === tb.id ? 'border-accent-primary text-accent-primary' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
             <tb.icon size={16} /> {tb.label}
+            {tb.badge != null && (
+              <span className={`text-[10px] ${tb.badge === '●' ? 'text-accent-primary' : 'px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>{tb.badge}</span>
+            )}
           </button>
         ))}
       </div>
@@ -376,17 +398,24 @@ export default function EventDetailPage() {
         </Card>
       )}
 
-      {/* Program (z modułu Programy) */}
-      {tab === 'szczegoly' && (<div className="space-y-5">
+      {/* PROGRAM */}
+      {tab === 'program' && (<div className="space-y-5">
       <Card icon={ClipboardList} title="Program" actions={
         canManage && (
-          <button onClick={createProgram} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1.5">
-            <ClipboardList size={14} /> Nowy program
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={createProgram} className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1.5">
+              <ClipboardList size={14} /> Nowy program
+            </button>
+            {ev.program_id && (
+              <button onClick={() => navigate(`/programs/${ev.program_id}`)} className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5">
+                <ExternalLink size={14} /> Otwórz / edytuj
+              </button>
+            )}
+          </div>
         )
       }>
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 max-w-md">
             <CustomSelect value={ev.program_id || ''} onChange={(v) => save({ program_id: v || null })}
               placeholder="— brak —"
               options={[{ value: '', label: '— brak —' }, ...programs.map((p) => ({
@@ -395,10 +424,41 @@ export default function EventDetailPage() {
               }))]} />
           </div>
           {ev.program_id && (
-            <button onClick={() => navigate(`/programs/${ev.program_id}`)} className="p-2 text-accent-primary hover:bg-accent-primary/10 rounded-lg" title="Otwórz program"><ExternalLink size={18} /></button>
+            <button onClick={() => save({ program_id: null })} className="text-sm text-gray-400 hover:text-red-500">Odepnij</button>
           )}
         </div>
-        {!programs.length && <p className="mt-1 text-xs text-gray-400">Brak programów. Utwórz program w module Programy, aby go tu podpiąć.</p>}
+        {!programs.length && <p className="mt-1 text-xs text-gray-400">Brak programów. Kliknij „Nowy program", aby utworzyć i podpiąć.</p>}
+
+        {/* Podgląd planu podpiętego programu */}
+        {ev.program_id && programDetail && (
+          <div className="mt-4 border-t border-gray-100 dark:border-gray-800 pt-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm mb-3">
+              <span className="font-semibold text-gray-800 dark:text-gray-100">{programDetail.title || 'Program'}</span>
+              {programDetail.date && <span className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400"><Calendar size={13} /> {fmtDate(programDetail.date)}</span>}
+              <span className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400"><Clock size={13} /> {fmtDur(progTotal)} łącznie</span>
+              <span className="text-gray-500 dark:text-gray-400">{progItems.length} elementów</span>
+              <span className="text-gray-500 dark:text-gray-400">{progSongs} pieśni</span>
+            </div>
+            {progItems.length === 0 ? (
+              <p className="text-sm text-gray-400">Program nie ma jeszcze elementów. Kliknij „Otwórz / edytuj", aby dodać plan.</p>
+            ) : (
+              <div className="rounded-xl border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden">
+                {progItems.map((it, idx) => (it?.type === 'header' ? (
+                  <div key={it.id || idx} className="px-3 py-2 bg-gray-50 dark:bg-gray-800/50 text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">{it.title || 'Sekcja'}</div>
+                ) : (
+                  <div key={it.id || idx} className="flex items-center gap-3 px-3 py-2 text-sm">
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 shrink-0 w-16 text-center">{PROG_ITEM_LABEL[it?.type] || 'Element'}</span>
+                    <span className="flex-1 min-w-0 truncate text-gray-800 dark:text-gray-100">
+                      {it?.title || (it?.type === 'song' ? 'Pieśń' : 'Element')}
+                      {it?.person ? <span className="text-gray-400"> · {it.person}</span> : null}
+                    </span>
+                    <span className="text-xs text-gray-400 shrink-0 tabular-nums">{fmtDur(it?.duration)}</span>
+                  </div>
+                )))}
+              </div>
+            )}
+          </div>
+        )}
       </Card>
       </div>)}
 
