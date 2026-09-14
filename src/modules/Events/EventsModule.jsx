@@ -8,6 +8,7 @@ import { Calendar as CalendarIcon, Plus, Save } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import CustomSelect from '../../components/CustomSelect';
+import TimeInput from '../../components/TimeInput';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../lib/toast';
 import { useModuleLabel } from '../../hooks/useModuleLabel';
@@ -65,11 +66,18 @@ function CreateEventModal({ onClose }) {
   const navigate = useNavigate();
   const { modules } = useModules();
   const { campusIdForInsert } = useCampusQuery();
-  const [form, setForm] = useState({ title: '', module_key: '', date: '', time: '', end_time: '', location: '' });
+  const [form, setForm] = useState({ title: '', module_key: '', date: '', time: '', end_time: '', location: '', home_group_id: '' });
   const [saving, setSaving] = useState(false);
   const [allowed, setAllowed] = useState(null); // klucze modułów-kalendarzy w pickerze
+  const [homeGroups, setHomeGroups] = useState([]);
+  const isHomeGroups = form.module_key === 'homegroups';
 
   useEffect(() => { readEventCalendars().then(setAllowed); }, []);
+  // Dynamiczny wybór grupy domowej, gdy jako kalendarz/moduł wybrano „Grupy domowe".
+  useEffect(() => {
+    if (!isHomeGroups || homeGroups.length) return;
+    supabase.from('home_groups').select('id, name, campus_id').order('name').then(({ data }) => setHomeGroups(data || []), () => {});
+  }, [isHomeGroups, homeGroups.length]);
 
   const allowedKeys = Array.isArray(allowed) ? allowed : DEFAULT_EVENT_MODULES;
   const moduleOptions = [
@@ -82,7 +90,7 @@ function CreateEventModal({ onClose }) {
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data, error } = await supabase.from('events').insert([{
+      const row = {
         title: form.title.trim(),
         module_key: form.module_key || null,
         date: form.date || null,
@@ -91,7 +99,15 @@ function CreateEventModal({ onClose }) {
         location: form.location || null,
         created_by: user?.email || null,
         campus_id: campusIdForInsert,
-      }]).select().single();
+      };
+      // Grupa domowa: przypisanie + widoczność dla członków + dziedziczenie kampusu grupy.
+      if (isHomeGroups && form.home_group_id) {
+        const g = homeGroups.find((x) => String(x.id) === String(form.home_group_id));
+        row.home_group_id = form.home_group_id;
+        row.visibility_segments = [{ type: 'home_group', values: [String(form.home_group_id)], label: g?.name || undefined }];
+        if (g && g.campus_id != null) row.campus_id = g.campus_id;
+      }
+      const { data, error } = await supabase.from('events').insert([row]).select().single();
       if (error) throw error;
       toast.success(t('Utworzono wydarzenie'));
       navigate(`/wydarzenie/${data.id}`);
@@ -107,7 +123,18 @@ function CreateEventModal({ onClose }) {
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('Nazwa wydarzenia')}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
         </div>
-        <CustomSelect label={t('Kalendarz / moduł')} value={form.module_key} onChange={(v) => setForm({ ...form, module_key: v })} options={moduleOptions} />
+        <CustomSelect label={t('Kalendarz / moduł')} value={form.module_key} onChange={(v) => setForm({ ...form, module_key: v, home_group_id: '' })} options={moduleOptions} />
+        {isHomeGroups && (
+          <div>
+            <CustomSelect
+              label={t('Grupa domowa')}
+              value={form.home_group_id}
+              onChange={(v) => setForm({ ...form, home_group_id: v })}
+              options={[{ value: '', label: t('Cała społeczność (bez grupy)') }, ...homeGroups.map((g) => ({ value: g.id, label: g.name }))]}
+            />
+            <p className="text-[11px] text-gray-400 mt-1 ml-1">{form.home_group_id ? t('Widoczne dla członków tej grupy domowej.') : t('Widoczne dla całej społeczności.')} {t('Więcej opcji (liderzy, miks) — na stronie wydarzenia lub w module Grupy domowe.')}</p>
+          </div>
+        )}
         <div className="grid grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Data')}</label>
@@ -116,12 +143,12 @@ function CreateEventModal({ onClose }) {
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Godzina')}</label>
-            <input value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} placeholder="18:00"
+            <TimeInput value={form.time} onChange={(v) => setForm({ ...form, time: v })}
               className="w-full px-3 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Koniec')}</label>
-            <input value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} placeholder="20:00"
+            <TimeInput value={form.end_time} onChange={(v) => setForm({ ...form, end_time: v })}
               className="w-full px-3 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
           </div>
         </div>
