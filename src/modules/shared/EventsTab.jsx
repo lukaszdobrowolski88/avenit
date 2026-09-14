@@ -342,6 +342,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
                 onChange={val => setForm({...form, home_group_id: val})}
                 options={[{ value: '', label: t('Cała społeczność (bez grupy)') }, ...homeGroups.map((g) => ({ value: g.id, label: g.name }))]}
               />
+              <p className="text-[11px] text-gray-400 mt-1 ml-1">{form.home_group_id ? t('Widoczne dla członków tej grupy domowej.') : t('Widoczne dla całej społeczności.')}</p>
             </div>
           )}
 
@@ -509,6 +510,17 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
       date: start_date ? start_date.split('T')[0] : null,
       time: start_date && start_date.includes('T') ? start_date.split('T')[1].substring(0, 5) : null,
     };
+
+    // Auto-widoczność: wydarzenie przypisane do grupy domowej jest widoczne dla jej członków
+    // (segment 'home_group' egzekwowany serwerowo). Zachowujemy inne, ręczne segmenty.
+    if (isHomeGroups) {
+      const existing = id ? events.find((e) => e.id === id)?.visibility_segments : null;
+      let segs = Array.isArray(existing) ? existing.filter((s) => s?.type !== 'home_group') : [];
+      if (rest.home_group_id) {
+        segs = [...segs, { type: 'home_group', values: [String(rest.home_group_id)], label: homeGroupName(rest.home_group_id) || undefined }];
+      }
+      row.visibility_segments = segs;
+    }
     let error = null;
     if (id) {
       const { error: e } = await supabase.from('events').update(row).eq('id', id);
