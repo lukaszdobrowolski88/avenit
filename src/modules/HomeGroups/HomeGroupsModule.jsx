@@ -1279,15 +1279,14 @@ export default function HomeGroupsModule() {
                       <div>
                         <CustomSelect
                           label={tr('Rola w tej grupie')}
-                          value={personForm.role}
+                          value={personForm.role === 'coordinator' ? 'leader' : personForm.role}
                           onChange={(val) => setPersonForm({ ...personForm, role: val })}
                           options={[
                             { value: 'member', label: tr('Członek') },
                             { value: 'leader', label: tr('Lider') },
-                            { value: 'coordinator', label: tr('Koordynator') },
                           ]}
                         />
-                        <p className="text-[11px] text-gray-400 mt-1 ml-1">{tr('Tę samą osobę możesz dodać do kilku grup z różnymi rolami.')}</p>
+                        <p className="text-[11px] text-gray-400 mt-1 ml-1">{tr('Tę samą osobę możesz dodać do kilku grup z różnymi rolami. Koordynatora (nad liderami) ustawisz w zakładce „Liderzy".')}</p>
                       </div>
                     </>
                   )}

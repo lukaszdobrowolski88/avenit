@@ -82,9 +82,17 @@ export default async function dataApiRoutes(app) {
             if (r.role === 'leader' || r.role === 'coordinator' || r.is_leader === true) leaderGroupIds.add(String(r.group_id));
           }
         } catch { /* brak tabeli — pomijamy */ }
+        // Koordynator = rola nadrzędna nad liderami (globalna, z katalogu liderów home_group_leaders).
+        let isCoordinator = false;
+        try {
+          const { rows: co } = await req.db.query(
+            `SELECT 1 FROM home_group_leaders WHERE lower(email) = lower($1) AND role = 'coordinator' LIMIT 1`, [req.user.email]
+          );
+          isCoordinator = co.length > 0;
+        } catch { /* brak tabeli — pomijamy */ }
         q.__visibilityScope = {
           role: user.role, campusId: user.campus_id, email: req.user.email,
-          memberId, homeGroupIds: [...homeGroupIds], leaderGroupIds: [...leaderGroupIds], ministries, tags,
+          memberId, homeGroupIds: [...homeGroupIds], leaderGroupIds: [...leaderGroupIds], isCoordinator, ministries, tags,
         };
       }
 

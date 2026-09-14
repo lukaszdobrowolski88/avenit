@@ -250,6 +250,7 @@ function buildHgSegments(keys, nameOf) {
   const leadGroups = keys.filter((k) => k.startsWith('lead:')).map((k) => k.slice(5));
   if (keys.includes('all_members')) segs.push({ type: 'home_group_member', label: 'Członkowie grup domowych' });
   if (keys.includes('all_leaders')) segs.push({ type: 'home_group_leader', label: 'Liderzy grup domowych' });
+  if (keys.includes('all_coords')) segs.push({ type: 'home_group_coordinator', label: 'Koordynatorzy grup domowych' });
   if (memGroups.length) segs.push({ type: 'home_group', values: memGroups, label: memGroups.map(nameOf).filter(Boolean).join(', ') || undefined });
   if (leadGroups.length) segs.push({ type: 'home_group_leader', values: leadGroups, label: 'Liderzy: ' + (leadGroups.map(nameOf).filter(Boolean).join(', ') || '') });
   return segs;
@@ -276,6 +277,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
       const keys = [];
       segs.forEach((s) => {
         if (s?.type === 'home_group_member') keys.push('all_members');
+        else if (s?.type === 'home_group_coordinator') keys.push('all_coords');
         else if (s?.type === 'home_group_leader') {
           if (Array.isArray(s.values) && s.values.length) s.values.forEach((v) => keys.push(`lead:${v}`));
           else keys.push('all_leaders');
@@ -378,6 +380,10 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
                   <input type="checkbox" checked={form.visKeys.includes('all_leaders')} onChange={() => toggleVis('all_leaders')} className="w-4 h-4 rounded accent-accent-primary" />
                   <span className="text-gray-700 dark:text-gray-200">{t('Liderzy grup domowych')}</span>
                 </label>
+                <label className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={form.visKeys.includes('all_coords')} onChange={() => toggleVis('all_coords')} className="w-4 h-4 rounded accent-accent-primary" />
+                  <span className="text-gray-700 dark:text-gray-200">{t('Koordynatorzy grup domowych')}</span>
+                </label>
                 <div className="max-h-44 overflow-y-auto custom-scrollbar">
                   {homeGroups.map((g) => (
                     <div key={g.id} className="flex items-center justify-between gap-2 px-3 py-2">
@@ -470,6 +476,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     const parts = [];
     segs.forEach((s) => {
       if (s?.type === 'home_group_member') parts.push('Wszyscy członkowie');
+      else if (s?.type === 'home_group_coordinator') parts.push('Koordynatorzy');
       else if (s?.type === 'home_group_leader') {
         if (Array.isArray(s.values) && s.values.length) parts.push('Liderzy: ' + s.values.map(homeGroupName).filter(Boolean).join(', '));
         else parts.push('Wszyscy liderzy');
@@ -581,7 +588,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     // ręczne segmenty (np. role/kampus) — nadpisujemy tylko segmenty związane z grupami domowymi.
     if (isHomeGroups) {
       const existing = id ? events.find((e) => e.id === id)?.visibility_segments : null;
-      const HG_TYPES = ['home_group', 'home_group_member', 'home_group_leader'];
+      const HG_TYPES = ['home_group', 'home_group_member', 'home_group_leader', 'home_group_coordinator'];
       const kept = Array.isArray(existing) ? existing.filter((s) => !HG_TYPES.includes(s?.type)) : [];
       row.visibility_segments = [...kept, ...(_visSegs || [])];
     }
