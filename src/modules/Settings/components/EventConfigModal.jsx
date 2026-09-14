@@ -56,7 +56,7 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
       if (!Array.isArray(all)) all = [];
       setOtherRules(all.filter((r) => (r?.module_key || '') !== scopeKey));
       setRules(all.filter((r) => (r?.module_key || '') === scopeKey).map((r) => ({
-        event_type: r.event_type || '', tabsText: (r.tabs || []).map((x) => x.label).join(', '),
+        event_type: r.event_type || '', tabsText: (r.tabs || []).map((x) => x.label).join(', '), materials: !!r.materials,
       })));
     }).catch(() => { setRules([]); setOtherRules([]); });
     supabase.from('app_settings').select('value').eq('key', 'event_type_teams').maybeSingle().then(({ data }) => {
@@ -78,7 +78,7 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
   const typeList = (calendars[cfgKey]?.types?.length ? calendars[cfgKey].types : (isGeneral ? OGOLNE_TYPES : []));
   const typeOpts = [{ value: '', label: '— wybierz typ —' }, ...typeList.map((tp) => ({ value: tp.value, label: tp.label }))];
 
-  const addRule = () => setRules((r) => [...(r || []), { event_type: '', tabsText: '' }]);
+  const addRule = () => setRules((r) => [...(r || []), { event_type: '', tabsText: '', materials: false }]);
   const updRule = (i, patch) => setRules((r) => r.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const delRule = (i) => setRules((r) => r.filter((_, j) => j !== i));
   const togglePicker = (key) => setPickerSel((prev) => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
@@ -92,10 +92,11 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
   const save = async () => {
     setSaving(true);
     try {
-      const scopeRules = (rules || []).filter((r) => r.event_type && r.tabsText.trim()).map((r) => ({
+      const scopeRules = (rules || []).filter((r) => r.event_type && (r.tabsText.trim() || r.materials)).map((r) => ({
         module_key: scopeKey,
         event_type: r.event_type,
         tabs: r.tabsText.split(',').map((s) => s.trim()).filter(Boolean).map((l) => ({ id: slugTab(l), label: l })),
+        materials: !!r.materials,
       }));
       const merged = [...otherRules, ...scopeRules];
       const scopeTeamRules = (teamRules || []).filter((r) => r.event_type && r.teams.length).map((r) => ({
@@ -149,6 +150,10 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
                     <input value={r.tabsText} onChange={(e) => updRule(i, { tabsText: e.target.value })}
                       placeholder="Zakładki po przecinku, np. Szkółka Niedzielna, Atmosfera Team"
                       className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+                    <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                      <input type="checkbox" checked={!!r.materials} onChange={(e) => updRule(i, { materials: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" />
+                      {tr('Zakładka „Materiały" (upload + podpinanie plików)')}
+                    </label>
                   </div>
                 ))}
                 {typeList.length === 0

@@ -1,6 +1,7 @@
-// Zakładka „Materiały" na wydarzeniu (grupy domowe). Łączy wydarzenie z plikami z systemu
-// Materiałów/Pliki przez tabelę event_materials. Można wgrać nowy plik (trafia do folderu grupy
-// — więc widoczny też w grupie i udostępniony członkom) albo podpiąć istniejący materiał grup domowych.
+// Zakładka „Materiały" na wydarzeniu (dowolny moduł). Łączy wydarzenie z plikami z systemu
+// Materiałów/Pliki przez tabelę event_materials. Można wgrać nowy plik albo podpiąć istniejący
+// materiał tego modułu. Dla grup domowych upload trafia do folderu grupy (widoczny też w grupie
+// i udostępniony członkom); dla innych modułów — do Materiałów/Pliki danego modułu.
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Upload, Link as LinkIcon, Trash2, Plus, FileText, X, Search } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -12,6 +13,8 @@ const fileUrl = (path) => supabase.storage.from('materials').getPublicUrl(path).
 const fmtSize = (b) => (!b ? '' : b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
 export default function EventMaterialsTab({ event, canManage }) {
+  const teamType = event.module_key || null; // materiały tego modułu (null = ogólne/globalne)
+  const isHomeGroup = event.module_key === 'homegroups';
   const [linked, setLinked] = useState(null);
   const [group, setGroup] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -30,10 +33,10 @@ export default function EventMaterialsTab({ event, canManage }) {
 
   useEffect(() => { loadLinked(); }, [loadLinked]);
   useEffect(() => {
-    if (!event.home_group_id) { setGroup(null); return; }
+    if (!isHomeGroup || !event.home_group_id) { setGroup(null); return; }
     supabase.from('home_groups').select('id, name, materials_folder_id').eq('id', event.home_group_id).maybeSingle()
       .then(({ data }) => setGroup(data || null), () => setGroup(null));
-  }, [event.home_group_id]);
+  }, [isHomeGroup, event.home_group_id]);
 
   const onUpload = async (file) => {
     if (!file) return;
@@ -42,16 +45,16 @@ export default function EventMaterialsTab({ event, canManage }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const email = user?.email || null;
-      // Do folderu grupy (jeśli wydarzenie ma grupę) → widoczne też w grupie i udostępnione członkom.
-      const folderId = group ? await ensureGroupFolder(group) : null;
+      // Grupa domowa → folder grupy (widoczne w grupie + udostępnione członkom); inne moduły → Pliki modułu.
+      const folderId = (isHomeGroup && group) ? await ensureGroupFolder(group) : null;
       const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const storagePath = `homegroups/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${sanitized}`;
+      const storagePath = `${teamType || 'general'}/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${sanitized}`;
       const { error: upErr } = await supabase.storage.from('materials').upload(storagePath, file);
       if (upErr) throw upErr;
       const { data: mf, error: insErr } = await supabase.from('materials_files').insert({
         name: file.name, storage_path: storagePath, file_size: file.size,
         mime_type: file.type || 'application/octet-stream', folder_id: folderId,
-        team_type: 'homegroups', uploaded_by: email,
+        team_type: teamType, uploaded_by: email,
       }).select().single();
       if (insErr) throw insErr;
       await supabase.from('event_materials').insert({ event_id: event.id, file_id: mf.id });
@@ -65,7 +68,9 @@ export default function EventMaterialsTab({ event, canManage }) {
     setShowPicker(true);
     setPickList(null);
     const linkedIds = new Set((linked || []).map((f) => f.id));
-    const { data } = await supabase.from('materials_files').select('*').eq('team_type', 'homegroups').order('name');
+    let q = supabase.from('materials_files').select('*');
+    q = teamType ? q.eq('team_type', teamType) : q.is('team_type', null);
+    const { data } = await q.order('name');
     setPickList((data || []).filter((f) => !linkedIds.has(f.id)));
   };
 
