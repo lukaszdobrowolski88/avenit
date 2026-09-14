@@ -306,7 +306,6 @@ export default function EventDetailPage() {
     { id: 'rejestracja', label: 'Rejestracja i płatność', icon: Ticket, badge: (ev.registration_required || ev.is_paid) ? '●' : null },
     { id: 'sluzby', label: 'Służby', icon: Users, badge: (teamTypes.length || Object.keys(ev.assignments || {}).length || (ev.team_layout?.sections?.length)) ? '●' : null },
     { id: 'uczestnicy', label: 'Uczestnicy', icon: Users, badge: invites.length || null },
-    ...(!materialsEnabled ? [{ id: 'zalaczniki', label: 'Załączniki', icon: Paperclip, badge: (ev.attachments?.length) || null }] : []),
     ...(materialsEnabled ? [{ id: 'materialy', label: 'Materiały', icon: FolderOpen }] : []),
     ...extraTabs.map((x) => ({ id: x.id, label: x.label, icon: FileText })),
     ...(canManage ? [{ id: 'widocznosc', label: 'Widoczność', icon: Eye }] : []),
@@ -526,53 +525,6 @@ export default function EventDetailPage() {
       </div>)}
 
       {/* ZAŁĄCZNIKI */}
-      {tab === 'zalaczniki' && (<div className="space-y-5">
-      <Card icon={Paperclip} title="Załączniki i grafiki" actions={
-        canManage && (
-          <>
-            <input ref={fileRef} type="file" multiple onChange={(e) => uploadAttachments(e.target.files)} className="hidden" />
-            <button onClick={() => fileRef.current?.click()} disabled={uploading}
-              className="text-sm px-3 py-1.5 rounded-lg bg-gradient-to-r from-accent-primary to-accent-secondary text-white flex items-center gap-1.5 disabled:opacity-60">
-              <Upload size={14} /> {uploading ? 'Wgrywanie…' : 'Dodaj pliki'}
-            </button>
-          </>
-        )
-      }>
-        {(ev.attachments || []).length === 0 ? (
-          <p className="text-sm text-gray-400">Brak załączników. Dodaj grafiki (plakat, harmonogram) lub pliki (PDF, dokumenty).</p>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {(ev.attachments || []).map((a, i) => {
-              const isImg = (a.type || '').startsWith('image/');
-              return (
-                <div key={a.path || i} className="group relative rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-800/50">
-                  <a href={a.url} target="_blank" rel="noreferrer" className="block">
-                    {isImg ? (
-                      <img src={a.url} alt={a.name} className="w-full h-28 object-cover" />
-                    ) : (
-                      <div className="w-full h-28 flex items-center justify-center text-gray-400">
-                        <FileIcon size={30} />
-                      </div>
-                    )}
-                    <div className="px-2 py-1.5 flex items-center gap-1.5">
-                      {isImg ? <ImageIcon size={13} className="text-accent-primary shrink-0" /> : <Download size={13} className="text-accent-primary shrink-0" />}
-                      <span className="text-xs text-gray-700 dark:text-gray-200 truncate">{a.name}</span>
-                    </div>
-                  </a>
-                  {canManage && (
-                    <button onClick={() => removeAttachment(i)} title="Usuń"
-                      className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-white/90 dark:bg-gray-900/90 text-gray-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">
-                      <Trash2 size={14} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
-      </div>)}
-
       {/* REJESTRACJA */}
       {tab === 'rejestracja' && (<div className="space-y-5">
       <Card icon={Ticket} title="Rejestracja i płatność">
