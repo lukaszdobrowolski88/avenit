@@ -306,7 +306,7 @@ export default function EventDetailPage() {
     { id: 'rejestracja', label: 'Rejestracja i płatność', icon: Ticket, badge: (ev.registration_required || ev.is_paid) ? '●' : null },
     { id: 'sluzby', label: 'Służby', icon: Users, badge: (teamTypes.length || Object.keys(ev.assignments || {}).length || (ev.team_layout?.sections?.length)) ? '●' : null },
     { id: 'uczestnicy', label: 'Uczestnicy', icon: Users, badge: invites.length || null },
-    { id: 'zalaczniki', label: 'Załączniki', icon: Paperclip, badge: (ev.attachments?.length) || null },
+    ...(!materialsEnabled ? [{ id: 'zalaczniki', label: 'Załączniki', icon: Paperclip, badge: (ev.attachments?.length) || null }] : []),
     ...(materialsEnabled ? [{ id: 'materialy', label: 'Materiały', icon: FolderOpen }] : []),
     ...extraTabs.map((x) => ({ id: x.id, label: x.label, icon: FileText })),
     ...(canManage ? [{ id: 'widocznosc', label: 'Widoczność', icon: Eye }] : []),
