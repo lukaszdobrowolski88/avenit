@@ -4,7 +4,7 @@ import {
   ArrowLeft, Link as LinkIcon, ExternalLink, Trash2, Calendar, Clock, MapPin,
   Ticket, FileText, Users, Send, Copy, Check, X,
   Paperclip, Upload, Download, Image as ImageIcon, File as FileIcon, ClipboardList, Eye, Search,
-  Music, Type, MoreHorizontal, User,
+  Music, Type, MoreHorizontal, User, FolderOpen,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toast } from '../lib/toast';
@@ -15,6 +15,7 @@ import CustomDatePicker from '../components/CustomDatePicker';
 import SimpleRichEditor from '../components/SimpleRichEditor';
 import EventRSVP from '../components/EventRSVP';
 import EventTeamsTab from './Events/EventTeamsTab';
+import EventMaterialsTab from './Events/EventMaterialsTab';
 import Modal from '../components/Modal';
 import { useModuleCalendar, useModuleLabel, useModuleColor } from '../hooks/useModuleLabel';
 import { useCan } from '../components/Can';
@@ -288,6 +289,8 @@ export default function EventDetailPage() {
   const teamTypes = (typeof ev.team_types === 'string')
     ? ev.team_types.split(',').map((s) => s.trim()).filter(Boolean)
     : defaultTeamTypes;
+  // Wydarzenie grup domowych → zakładka „Materiały" (upload + podpinanie materiałów grup).
+  const isHomeGroupEvent = ev.module_key === 'homegroups' || !!ev.home_group_id;
 
   // Dodatkowe zakładki wg typu wydarzenia (konfiguracja w Ustawieniach wydarzeń).
   const extraTabs = [];
@@ -304,6 +307,7 @@ export default function EventDetailPage() {
     { id: 'sluzby', label: 'Służby', icon: Users, badge: (teamTypes.length || Object.keys(ev.assignments || {}).length || (ev.team_layout?.sections?.length)) ? '●' : null },
     { id: 'uczestnicy', label: 'Uczestnicy', icon: Users, badge: invites.length || null },
     { id: 'zalaczniki', label: 'Załączniki', icon: Paperclip, badge: (ev.attachments?.length) || null },
+    ...(isHomeGroupEvent ? [{ id: 'materialy', label: 'Materiały', icon: FolderOpen }] : []),
     ...extraTabs.map((x) => ({ id: x.id, label: x.label, icon: FileText })),
     ...(canManage ? [{ id: 'widocznosc', label: 'Widoczność', icon: Eye }] : []),
   ];
@@ -722,6 +726,11 @@ export default function EventDetailPage() {
           onSaveTeams={(csv) => save({ team_types: csv })}
           onSaveLayout={(l) => save({ team_layout: l })}
         />
+      )}
+
+      {/* Materiały — upload + podpinanie materiałów grup domowych (event_materials) */}
+      {tab === 'materialy' && (
+        <EventMaterialsTab event={ev} canManage={canManage} />
       )}
 
       {/* Zakładki wg typu (konfigurowalne) — na razie notatki/informacje na zakładkę */}
