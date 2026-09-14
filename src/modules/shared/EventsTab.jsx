@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2, SlidersHorizontal, Archive, RotateCcw } from 'lucide-react';
+import { Plus, Search, Trash2, X, Calendar, MapPin, Users, ChevronLeft, ChevronRight, Save, Clock, Filter, Edit2, SlidersHorizontal, Archive, RotateCcw, Home } from 'lucide-react';
 import CustomSelect from '../../components/CustomSelect';
 import TabHeader from '../../components/TabHeader';
 import TimeInput from '../../components/TimeInput';
@@ -244,7 +244,7 @@ function getModuleConfig(ministry) {
 }
 
 // Modal edycji wydarzenia
-const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [] }) => {
+const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], homeGroups = [] }) => {
   const t = useT();
   const [form, setForm] = useState({
     id: event?.id || null,
@@ -256,6 +256,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [] }) =
     location: event?.location || '',
     max_participants: event?.max_participants || '',
     event_type: event?.event_type || config.defaultType,
+    home_group_id: event?.home_group_id || '',
     custom: event?.custom || {}
   });
   const setCustom = (key, val) => setForm((f) => ({ ...f, custom: { ...f.custom, [key]: val } }));
@@ -278,6 +279,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [] }) =
       location: form.location,
       max_participants: form.max_participants ? parseInt(form.max_participants) : null,
       event_type: form.event_type || config.defaultType,
+      home_group_id: form.home_group_id || null,
       custom: form.custom || {}
     };
 
@@ -331,6 +333,17 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [] }) =
               />
             </div>
           </div>
+
+          {homeGroups.length > 0 && (
+            <div>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Grupa domowa')}</label>
+              <CustomSelect
+                value={form.home_group_id}
+                onChange={val => setForm({...form, home_group_id: val})}
+                options={[{ value: '', label: t('Cała społeczność (bez grupy)') }, ...homeGroups.map((g) => ({ value: g.id, label: g.name }))]}
+              />
+            </div>
+          )}
 
           {fields.length > 0 && (
             <div className="space-y-3 pt-1 border-t border-gray-100 dark:border-gray-800">
@@ -390,6 +403,14 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
       .catch(() => setFields([]));
   };
   useEffect(() => { loadFields(); /* eslint-disable-next-line */ }, [ministry]);
+  // Grupy domowe (tylko moduł homegroups): wybór grupy dla wydarzenia + filtr.
+  const isHomeGroups = ministry === 'homegroups';
+  const [homeGroups, setHomeGroups] = useState([]);
+  useEffect(() => {
+    if (!isHomeGroups) { setHomeGroups([]); return; }
+    supabase.from('home_groups').select('id, name').order('name').then(({ data }) => setHomeGroups(data || []), () => {});
+  }, [isHomeGroups]);
+  const homeGroupName = (id) => homeGroups.find((g) => String(g.id) === String(id))?.name || null;
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -397,6 +418,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   const [searchFilter, setSearchFilter] = useState('');
   const [rsvpMap, setRsvpMap] = useState({}); // event_id -> { count, mine } (RSVP wydarzeń modułu)
   const [typeFilter, setTypeFilter] = useState('');
+  const [groupFilter, setGroupFilter] = useState(''); // filtr po grupie domowej
   const [eventScope, setEventScope] = useState('upcoming'); // 'upcoming' | 'archive'
   const [tableExists, setTableExists] = useState(true);
   const [userEmail, setUserEmail] = useState(propUserEmail || null);
@@ -524,7 +546,8 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
       ev.title?.toLowerCase().includes(searchFilter.toLowerCase()) ||
       ev.description?.toLowerCase().includes(searchFilter.toLowerCase());
     const matchesType = !typeFilter || ev.event_type === typeFilter;
-    return matchesSearch && matchesType;
+    const matchesGroup = !groupFilter || String(ev.home_group_id) === String(groupFilter);
+    return matchesSearch && matchesType && matchesGroup;
   });
 
   // Podział: nadchodzące vs archiwalne (przeszłe LUB ręcznie zarchiwizowane).
@@ -662,6 +685,21 @@ GRANT ALL ON ${config.tableName} TO anon;`;
             ))}
           </select>
         </div>
+        {isHomeGroups && homeGroups.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Home size={16} className="text-gray-400" />
+            <select
+              className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-xl text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+              value={groupFilter}
+              onChange={e => setGroupFilter(e.target.value)}
+            >
+              <option value="">{t('Wszystkie grupy')}</option>
+              {homeGroups.map(g => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Przełącznik: nadchodzące / archiwalne */}
@@ -725,6 +763,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                           {timeStr && <span className="flex items-center gap-1"><Clock size={13} /> {timeStr}{ev.end_time ? ` - ${ev.end_time}` : ''}</span>}
                           {ev.location && <span className="flex items-center gap-1"><MapPin size={13} /> {ev.location}</span>}
                           {ev.max_participants && <span className="flex items-center gap-1"><Users size={13} /> max. {ev.max_participants}</span>}
+                          {isHomeGroups && ev.home_group_id && homeGroupName(ev.home_group_id) && <span className="flex items-center gap-1 text-accent-primary"><Home size={13} /> {homeGroupName(ev.home_group_id)}</span>}
                         </div>
 
                         {/* Stopka: RSVP + archiwizacja */}
@@ -763,6 +802,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
           onDelete={handleDelete}
           config={{ ...config, types: eventTypes }}
           fields={fields}
+          homeGroups={homeGroups}
         />
       )}
 
