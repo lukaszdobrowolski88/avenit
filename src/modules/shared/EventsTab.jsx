@@ -256,7 +256,14 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
     location: event?.location || '',
     max_participants: event?.max_participants || '',
     event_type: event?.event_type || config.defaultType,
-    home_group_id: event?.home_group_id || '',
+    // Cel widoczności (moduł homegroups): '' = cała społeczność, '__all_hg__' = wszyscy członkowie
+    // grup domowych, '__hg_leaders__' = liderzy grup, albo konkretne id grupy domowej.
+    visTarget: event?.home_group_id
+      ? String(event.home_group_id)
+      : (Array.isArray(event?.visibility_segments)
+          ? (event.visibility_segments.some((s) => s?.type === 'home_group_leader') ? '__hg_leaders__'
+            : event.visibility_segments.some((s) => s?.type === 'home_group_member') ? '__all_hg__' : '')
+          : ''),
     custom: event?.custom || {}
   });
   const setCustom = (key, val) => setForm((f) => ({ ...f, custom: { ...f.custom, [key]: val } }));
@@ -279,7 +286,10 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
       location: form.location,
       max_participants: form.max_participants ? parseInt(form.max_participants) : null,
       event_type: form.event_type || config.defaultType,
-      home_group_id: form.home_group_id || null,
+      // Konkretna grupa → zapisujemy home_group_id (badge/filtr); presety (__all_hg__/__hg_leaders__)
+      // nie są jedną grupą, więc home_group_id = null, a zasięg wyrażamy segmentem widoczności.
+      home_group_id: (form.visTarget && form.visTarget !== '__all_hg__' && form.visTarget !== '__hg_leaders__') ? form.visTarget : null,
+      _visTarget: form.visTarget,
       custom: form.custom || {}
     };
 
@@ -336,13 +346,23 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
 
           {homeGroups.length > 0 && (
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Grupa domowa')}</label>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Widoczność')}</label>
               <CustomSelect
-                value={form.home_group_id}
-                onChange={val => setForm({...form, home_group_id: val})}
-                options={[{ value: '', label: t('Cała społeczność (bez grupy)') }, ...homeGroups.map((g) => ({ value: g.id, label: g.name }))]}
+                value={form.visTarget}
+                onChange={val => setForm({...form, visTarget: val})}
+                options={[
+                  { value: '', label: t('Cała społeczność (wszyscy)') },
+                  { value: '__all_hg__', label: t('Wszyscy członkowie grup domowych') },
+                  { value: '__hg_leaders__', label: t('Liderzy grup domowych') },
+                  ...homeGroups.map((g) => ({ value: g.id, label: `${t('Grupa')}: ${g.name}` })),
+                ]}
               />
-              <p className="text-[11px] text-gray-400 mt-1 ml-1">{form.home_group_id ? t('Widoczne dla członków tej grupy domowej.') : t('Widoczne dla całej społeczności.')}</p>
+              <p className="text-[11px] text-gray-400 mt-1 ml-1">
+                {form.visTarget === '' ? t('Widoczne dla całej społeczności.')
+                  : form.visTarget === '__all_hg__' ? t('Widoczne dla wszystkich członków grup domowych.')
+                  : form.visTarget === '__hg_leaders__' ? t('Widoczne dla liderów grup domowych.')
+                  : t('Widoczne dla członków tej grupy domowej.')}
+              </p>
             </div>
           )}
 
@@ -412,6 +432,14 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     supabase.from('home_groups').select('id, name').order('name').then(({ data }) => setHomeGroups(data || []), () => {});
   }, [isHomeGroups]);
   const homeGroupName = (id) => homeGroups.find((g) => String(g.id) === String(id))?.name || null;
+  // Etykieta zasięgu wydarzenia (badge na kafelku) dla modułu grup domowych.
+  const visBadge = (ev) => {
+    if (ev.home_group_id) return homeGroupName(ev.home_group_id);
+    const segs = Array.isArray(ev.visibility_segments) ? ev.visibility_segments : [];
+    if (segs.some((s) => s?.type === 'home_group_leader')) return 'Liderzy grup';
+    if (segs.some((s) => s?.type === 'home_group_member')) return 'Członkowie grup';
+    return null;
+  };
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -503,7 +531,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
 
   const handleSave = async (id, eventData) => {
     // eventData z modala: start_date (ISO) + end_time + reszta. Mapujemy na kolumny `events` (date + time).
-    const { start_date, team_type, ...rest } = eventData;
+    const { start_date, team_type, _visTarget, ...rest } = eventData;
     const row = {
       ...rest,
       module_key: config.teamType,
@@ -511,14 +539,15 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
       time: start_date && start_date.includes('T') ? start_date.split('T')[1].substring(0, 5) : null,
     };
 
-    // Auto-widoczność: wydarzenie przypisane do grupy domowej jest widoczne dla jej członków
-    // (segment 'home_group' egzekwowany serwerowo). Zachowujemy inne, ręczne segmenty.
+    // Auto-widoczność wg wybranego celu (segmenty egzekwowane serwerowo). Zachowujemy inne,
+    // ręczne segmenty (np. role/kampus) — nadpisujemy tylko segmenty związane z grupami domowymi.
     if (isHomeGroups) {
       const existing = id ? events.find((e) => e.id === id)?.visibility_segments : null;
-      let segs = Array.isArray(existing) ? existing.filter((s) => s?.type !== 'home_group') : [];
-      if (rest.home_group_id) {
-        segs = [...segs, { type: 'home_group', values: [String(rest.home_group_id)], label: homeGroupName(rest.home_group_id) || undefined }];
-      }
+      const HG_TYPES = ['home_group', 'home_group_member', 'home_group_leader'];
+      let segs = Array.isArray(existing) ? existing.filter((s) => !HG_TYPES.includes(s?.type)) : [];
+      if (_visTarget === '__all_hg__') segs.push({ type: 'home_group_member', label: 'Członkowie grup domowych' });
+      else if (_visTarget === '__hg_leaders__') segs.push({ type: 'home_group_leader', label: 'Liderzy grup domowych' });
+      else if (_visTarget) segs.push({ type: 'home_group', values: [String(_visTarget)], label: homeGroupName(_visTarget) || undefined });
       row.visibility_segments = segs;
     }
     let error = null;
@@ -775,7 +804,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                           {timeStr && <span className="flex items-center gap-1"><Clock size={13} /> {timeStr}{ev.end_time ? ` - ${ev.end_time}` : ''}</span>}
                           {ev.location && <span className="flex items-center gap-1"><MapPin size={13} /> {ev.location}</span>}
                           {ev.max_participants && <span className="flex items-center gap-1"><Users size={13} /> max. {ev.max_participants}</span>}
-                          {isHomeGroups && ev.home_group_id && homeGroupName(ev.home_group_id) && <span className="flex items-center gap-1 text-accent-primary"><Home size={13} /> {homeGroupName(ev.home_group_id)}</span>}
+                          {isHomeGroups && visBadge(ev) && <span className="flex items-center gap-1 text-accent-primary"><Home size={13} /> {visBadge(ev)}</span>}
                         </div>
 
                         {/* Stopka: RSVP + archiwizacja */}

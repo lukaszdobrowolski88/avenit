@@ -76,9 +76,17 @@ export default async function dataApiRoutes(app) {
           );
           for (const r of hgm) if (r.group_id != null) homeGroupIds.add(String(r.group_id));
         } catch { /* brak tabeli — pomijamy */ }
+        // Czy użytkownik jest liderem którejś grupy domowej (segment 'home_group_leader').
+        let isHgLeader = false;
+        try {
+          const { rows: hgl } = await req.db.query(
+            `SELECT 1 FROM home_group_leaders WHERE lower(email) = lower($1) LIMIT 1`, [req.user.email]
+          );
+          isHgLeader = hgl.length > 0;
+        } catch { /* brak tabeli — pomijamy */ }
         q.__visibilityScope = {
           role: user.role, campusId: user.campus_id, email: req.user.email,
-          memberId, homeGroupIds: [...homeGroupIds], ministries, tags,
+          memberId, homeGroupIds: [...homeGroupIds], isHgLeader, ministries, tags,
         };
       }
 
