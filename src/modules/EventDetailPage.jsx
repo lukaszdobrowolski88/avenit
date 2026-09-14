@@ -289,8 +289,6 @@ export default function EventDetailPage() {
   const teamTypes = (typeof ev.team_types === 'string')
     ? ev.team_types.split(',').map((s) => s.trim()).filter(Boolean)
     : defaultTeamTypes;
-  // Wydarzenie grup domowych → zakładka „Materiały" (upload + podpinanie materiałów grup).
-  const isHomeGroupEvent = ev.module_key === 'homegroups' || !!ev.home_group_id;
 
   // Dodatkowe zakładki wg typu wydarzenia (konfiguracja w Ustawieniach wydarzeń).
   const extraTabs = [];
@@ -307,7 +305,7 @@ export default function EventDetailPage() {
     { id: 'sluzby', label: 'Służby', icon: Users, badge: (teamTypes.length || Object.keys(ev.assignments || {}).length || (ev.team_layout?.sections?.length)) ? '●' : null },
     { id: 'uczestnicy', label: 'Uczestnicy', icon: Users, badge: invites.length || null },
     { id: 'zalaczniki', label: 'Załączniki', icon: Paperclip, badge: (ev.attachments?.length) || null },
-    ...(isHomeGroupEvent ? [{ id: 'materialy', label: 'Materiały', icon: FolderOpen }] : []),
+    { id: 'materialy', label: 'Materiały', icon: FolderOpen },
     ...extraTabs.map((x) => ({ id: x.id, label: x.label, icon: FileText })),
     ...(canManage ? [{ id: 'widocznosc', label: 'Widoczność', icon: Eye }] : []),
   ];
