@@ -202,8 +202,11 @@ export default function ScheduleTab({ moduleKey, moduleName }) {
   }, [moduleKey]);
 
   // Czy wydarzenie należy do tej służby (spójne z zakładką „Służby" na wydarzeniu).
-  // Priorytet: override per wydarzenie (events.team_types, CSV) → reguła typu → moduł-służba.
+  // 0) event ma już przypisania tej służby → zawsze pokaż (nie gub danych po zmianie typu/reguły).
+  // Dalej priorytet: override per wydarzenie (events.team_types) → reguła typu → moduł-służba.
   const includesThisTeam = useCallback((ev) => {
+    const asg = ev.assignments?.[teamType];
+    if (asg && Object.entries(asg).some(([k, v]) => k !== 'notatki' && k !== 'absencja' && csvNames(v).length)) return true;
     if (ev.team_types != null) return csvNames(ev.team_types).includes(teamType);
     const rule = (typeTeams || []).find((r) => (r?.module_key || '') === (ev.module_key || '') && r?.event_type === ev.event_type);
     if (rule && Array.isArray(rule.teams) && rule.teams.length) return rule.teams.includes(teamType);
