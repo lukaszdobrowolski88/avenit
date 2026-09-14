@@ -290,25 +290,23 @@ export default function EventDetailPage() {
     ? ev.team_types.split(',').map((s) => s.trim()).filter(Boolean)
     : defaultTeamTypes;
 
-  // Dodatkowe zakładki wg typu wydarzenia (konfiguracja w Ustawieniach wydarzeń).
+  // Konfiguracja zakładek wg typu (Ustawienia): własne zakładki + włączanie/wyłączanie wbudowanych.
+  const tabRule = (typeTabs || []).find((r) => (r?.module_key || '') === (ev.module_key || '') && r?.event_type && r.event_type === ev.event_type) || null;
+  const tabBi = tabRule?.builtins || null;
+  const tabOn = (id, def) => (tabBi && id in tabBi) ? tabBi[id] === true : def;
+  const materialsEnabled = tabBi && 'materialy' in tabBi ? tabBi.materialy === true : (tabRule?.materials === true);
   const extraTabs = [];
-  let materialsEnabled = false;
-  (typeTabs || []).forEach((rule) => {
-    if ((rule?.module_key || '') === (ev.module_key || '') && rule?.event_type && rule.event_type === ev.event_type) {
-      (rule.tabs || []).forEach((tb) => { if (tb?.id) extraTabs.push({ id: `custom:${tb.id}`, label: tb.label || 'Zakładka' }); });
-      if (rule.materials) materialsEnabled = true;
-    }
-  });
+  (tabRule?.tabs || []).forEach((tb) => { if (tb?.id) extraTabs.push({ id: `custom:${tb.id}`, label: tb.label || 'Zakładka' }); });
 
   const TABS = [
     { id: 'szczegoly', label: 'Szczegóły', icon: FileText },
-    { id: 'program', label: 'Program', icon: ClipboardList, badge: ev.program_id ? '●' : null },
-    { id: 'rejestracja', label: 'Rejestracja i płatność', icon: Ticket, badge: (ev.registration_required || ev.is_paid) ? '●' : null },
-    { id: 'sluzby', label: 'Służby', icon: Users, badge: (teamTypes.length || Object.keys(ev.assignments || {}).length || (ev.team_layout?.sections?.length)) ? '●' : null },
-    { id: 'uczestnicy', label: 'Uczestnicy', icon: Users, badge: invites.length || null },
+    ...(tabOn('program', true) ? [{ id: 'program', label: 'Program', icon: ClipboardList, badge: ev.program_id ? '●' : null }] : []),
+    ...(tabOn('rejestracja', true) ? [{ id: 'rejestracja', label: 'Rejestracja i płatność', icon: Ticket, badge: (ev.registration_required || ev.is_paid) ? '●' : null }] : []),
+    ...(tabOn('sluzby', true) ? [{ id: 'sluzby', label: 'Służby', icon: Users, badge: (teamTypes.length || Object.keys(ev.assignments || {}).length || (ev.team_layout?.sections?.length)) ? '●' : null }] : []),
+    ...(tabOn('uczestnicy', true) ? [{ id: 'uczestnicy', label: 'Uczestnicy', icon: Users, badge: invites.length || null }] : []),
     ...(materialsEnabled ? [{ id: 'materialy', label: 'Materiały', icon: FolderOpen }] : []),
     ...extraTabs.map((x) => ({ id: x.id, label: x.label, icon: FileText })),
-    ...(canManage ? [{ id: 'widocznosc', label: 'Widoczność', icon: Eye }] : []),
+    ...(canManage && tabOn('widocznosc', true) ? [{ id: 'widocznosc', label: 'Widoczność', icon: Eye }] : []),
   ];
 
   return (

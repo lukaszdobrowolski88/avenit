@@ -28,6 +28,16 @@ const TEAM_OPTIONS = [
 ];
 const slugTab = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || ('t' + Math.random().toString(36).slice(2, 7));
 
+// Wbudowane zakładki wydarzenia — włączanie/wyłączanie per typ. `def` = domyślnie widoczna.
+const BUILTIN_EVENT_TABS = [
+  { id: 'program', label: 'Program', def: true },
+  { id: 'rejestracja', label: 'Rejestracja i płatność', def: true },
+  { id: 'sluzby', label: 'Służby', def: true },
+  { id: 'uczestnicy', label: 'Uczestnicy', def: true },
+  { id: 'materialy', label: 'Materiały', def: false },
+  { id: 'widocznosc', label: 'Widoczność', def: true },
+];
+
 export default function EventConfigModal({ moduleKey, label, isGeneral = false, onClose }) {
   const { modules } = useModules();
   const calendars = useModuleCalendars();
@@ -56,7 +66,8 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
       if (!Array.isArray(all)) all = [];
       setOtherRules(all.filter((r) => (r?.module_key || '') !== scopeKey));
       setRules(all.filter((r) => (r?.module_key || '') === scopeKey).map((r) => ({
-        event_type: r.event_type || '', tabsText: (r.tabs || []).map((x) => x.label).join(', '), materials: !!r.materials,
+        event_type: r.event_type || '', tabsText: (r.tabs || []).map((x) => x.label).join(', '),
+        builtins: (r.builtins && typeof r.builtins === 'object') ? { ...r.builtins } : (r.materials ? { materialy: true } : {}),
       })));
     }).catch(() => { setRules([]); setOtherRules([]); });
     supabase.from('app_settings').select('value').eq('key', 'event_type_teams').maybeSingle().then(({ data }) => {
@@ -78,8 +89,13 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
   const typeList = (calendars[cfgKey]?.types?.length ? calendars[cfgKey].types : (isGeneral ? OGOLNE_TYPES : []));
   const typeOpts = [{ value: '', label: '— wybierz typ —' }, ...typeList.map((tp) => ({ value: tp.value, label: tp.label }))];
 
-  const addRule = () => setRules((r) => [...(r || []), { event_type: '', tabsText: '', materials: false }]);
+  const addRule = () => setRules((r) => [...(r || []), { event_type: '', tabsText: '', builtins: {} }]);
   const updRule = (i, patch) => setRules((r) => r.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  const toggleBuiltin = (i, id, def) => setRules((r) => r.map((x, j) => {
+    if (j !== i) return x;
+    const cur = (x.builtins && id in x.builtins) ? x.builtins[id] : def;
+    return { ...x, builtins: { ...(x.builtins || {}), [id]: !cur } };
+  }));
   const delRule = (i) => setRules((r) => r.filter((_, j) => j !== i));
   const togglePicker = (key) => setPickerSel((prev) => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
 
@@ -92,11 +108,12 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
   const save = async () => {
     setSaving(true);
     try {
-      const scopeRules = (rules || []).filter((r) => r.event_type && (r.tabsText.trim() || r.materials)).map((r) => ({
+      const scopeRules = (rules || []).filter((r) => r.event_type && (r.tabsText.trim() || (r.builtins && Object.keys(r.builtins).length))).map((r) => ({
         module_key: scopeKey,
         event_type: r.event_type,
         tabs: r.tabsText.split(',').map((s) => s.trim()).filter(Boolean).map((l) => ({ id: slugTab(l), label: l })),
-        materials: !!r.materials,
+        builtins: r.builtins || {},
+        materials: !!(r.builtins && r.builtins.materialy), // legacy mirror
       }));
       const merged = [...otherRules, ...scopeRules];
       const scopeTeamRules = (teamRules || []).filter((r) => r.event_type && r.teams.length).map((r) => ({
@@ -138,7 +155,7 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
               <LayoutList size={16} className="text-accent-primary" />
               <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{tr('Zakładki wg typu')}</h4>
             </div>
-            <p className="text-xs text-gray-400">Dla wybranego typu dodaj dodatkowe zakładki na stronie wydarzenia (nazwy po przecinku), np. „Szkółka Niedzielna, Atmosfera Team".</p>
+            <p className="text-xs text-gray-400">Dla wybranego typu włącz/wyłącz wbudowane zakładki wydarzenia oraz dodaj własne (nazwy po przecinku). „Szczegóły" są zawsze widoczne.</p>
             {rules === null ? <p className="text-sm text-gray-400 py-2">Wczytywanie…</p> : (
               <div className="space-y-2">
                 {rules.map((r, i) => (
@@ -148,12 +165,23 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
                       <button onClick={() => delRule(i)} className="ml-auto p-1.5 text-gray-400 hover:text-red-500"><X size={16} /></button>
                     </div>
                     <input value={r.tabsText} onChange={(e) => updRule(i, { tabsText: e.target.value })}
-                      placeholder="Zakładki po przecinku, np. Szkółka Niedzielna, Atmosfera Team"
+                      placeholder="Własne zakładki po przecinku, np. Szkółka Niedzielna, Atmosfera Team"
                       className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
-                    <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
-                      <input type="checkbox" checked={!!r.materials} onChange={(e) => updRule(i, { materials: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" />
-                      {tr('Zakładka „Materiały" (upload + podpinanie plików)')}
-                    </label>
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Widoczne zakładki</p>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                        <span className="flex items-center gap-1.5 text-xs text-gray-400"><span className="w-4 h-4 inline-flex items-center justify-center">✓</span>Szczegóły</span>
+                        {BUILTIN_EVENT_TABS.map((bt) => {
+                          const on = (r.builtins && bt.id in r.builtins) ? r.builtins[bt.id] : bt.def;
+                          return (
+                            <label key={bt.id} className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                              <input type="checkbox" checked={!!on} onChange={() => toggleBuiltin(i, bt.id, bt.def)} className="w-4 h-4 rounded accent-accent-primary" />
+                              {bt.label}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 ))}
                 {typeList.length === 0
