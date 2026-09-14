@@ -9,6 +9,19 @@ export const LANGUAGES = [
 ];
 
 const en = {
+  'Kampus': 'Campus',
+  'Kampusy': 'Campuses',
+  'Wszystkie kampusy': 'All campuses',
+  'Wszystkie kampusy (brak ograniczeń)': 'All campuses (no restrictions)',
+  'Wybierz kampus...': 'Select a campus...',
+  'Dodaj kampus': 'Add campus',
+  'Nowy kampus': 'New campus',
+  'Edytuj kampus': 'Edit campus',
+  'Brak kampusów': 'No campuses',
+  'Kampus usunięty.': 'Campus deleted.',
+  'Zarządzaj kampusami kościoła.': 'Manage church campuses.',
+  'Dodaj pierwszy kampus, aby włączyć tryb multi-campus.': 'Add the first campus to enable multi-campus mode.',
+  'Użytkownik przypisany do kampusu widzi tylko dane tego kampusu.': "A user assigned to a campus sees only that campus's data.",
   // ── Onboarding: przewodniki procesowe (moduły 3) ──
   'Nowa kampania SMS': 'New SMS campaign',
   'Kliknij „Nowa kampania", aby stworzyć wysyłkę SMS.': 'Click "New campaign" to create an SMS send.',
@@ -2207,6 +2220,19 @@ const en = {
 };
 
 const uk = {
+  'Kampus': 'Кампус',
+  'Kampusy': 'Кампуси',
+  'Wszystkie kampusy': 'Усі кампуси',
+  'Wszystkie kampusy (brak ograniczeń)': 'Усі кампуси (без обмежень)',
+  'Wybierz kampus...': 'Оберіть кампус...',
+  'Dodaj kampus': 'Додати кампус',
+  'Nowy kampus': 'Новий кампус',
+  'Edytuj kampus': 'Редагувати кампус',
+  'Brak kampusów': 'Немає кампусів',
+  'Kampus usunięty.': 'Кампус видалено.',
+  'Zarządzaj kampusami kościoła.': 'Керуйте кампусами церкви.',
+  'Dodaj pierwszy kampus, aby włączyć tryb multi-campus.': 'Додайте перший кампус, щоб увімкнути режим мульти-кампусу.',
+  'Użytkownik przypisany do kampusu widzi tylko dane tego kampusu.': 'Користувач, призначений до кампусу, бачить лише дані цього кампусу.',
   // ── Onboarding: przewodniki procesowe (moduły 3) ──
   'Nowa kampania SMS': 'Нова SMS-кампанія',
   'Kliknij „Nowa kampania", aby stworzyć wysyłkę SMS.': 'Натисніть «Нова кампанія», щоб створити SMS-розсилку.',

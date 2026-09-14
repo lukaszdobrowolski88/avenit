@@ -35,7 +35,7 @@ export default function CampusManager({ onMessage }) {
 
   const save = async () => {
     if (!form.name.trim()) {
-      onMessage?.({ type: 'error', text: 'Nazwa lokalizacji jest wymagana.' });
+      onMessage?.({ type: 'error', text: 'Nazwa kampusu jest wymagana.' });
       return;
     }
 
@@ -59,19 +59,19 @@ export default function CampusManager({ onMessage }) {
       }
     }
 
-    onMessage?.({ type: 'success', text: form.id ? 'Lokalizacja zaktualizowana.' : 'Lokalizacja dodana.' });
+    onMessage?.({ type: 'success', text: form.id ? 'Kampus zaktualizowany.' : 'Kampus dodany.' });
     setShowModal(false);
     fetchCampuses();
   };
 
   const deleteCampus = async (campus) => {
-    if (!window.confirm(`Usunąć lokalizację "${campus.name}"? Powiązane rekordy stracą przypisanie do lokalizacji.`)) return;
+    if (!window.confirm(`Usunąć kampus "${campus.name}"? Powiązane rekordy stracą przypisanie do kampusu.`)) return;
     const { error } = await supabase.from('campuses').delete().eq('id', campus.id);
     if (error) {
       onMessage?.({ type: 'error', text: tr('Błąd usuwania: ') + error.message });
       return;
     }
-    onMessage?.({ type: 'success', text: tr('Lokalizacja usunięta.') });
+    onMessage?.({ type: 'success', text: tr('Kampus usunięty.') });
     fetchCampuses();
   };
 
@@ -104,19 +104,19 @@ export default function CampusManager({ onMessage }) {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white">Lokalizacje / Kampusy</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('Zarządzaj lokalizacjami kościoła. Dane mogą być filtrowane po kampusie.')}</p>
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white">{tr('Kampusy')}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('Zarządzaj kampusami kościoła.')}</p>
         </div>
         <button onClick={openNew} className="bg-accent-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition">
-          <Plus size={18} /> Dodaj lokalizację
+          <Plus size={18} /> {tr('Dodaj kampus')}
         </button>
       </div>
 
       {campuses.length === 0 ? (
         <div className="text-center py-12 text-gray-400 dark:text-gray-500">
           <MapPin size={48} className="mx-auto mb-3 opacity-50" />
-          <p className="font-medium">Brak lokalizacji</p>
-          <p className="text-sm mt-1">{t('Dodaj pierwszą lokalizację, aby włączyć tryb multi-campus.')}</p>
+          <p className="font-medium">{tr('Brak kampusów')}</p>
+          <p className="text-sm mt-1">{t('Dodaj pierwszy kampus, aby włączyć tryb multi-campus.')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -159,7 +159,7 @@ export default function CampusManager({ onMessage }) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between mb-6">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{form.id ? tr('Edytuj lokalizację') : 'Nowa lokalizacja'}</h3>
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{form.id ? tr('Edytuj kampus') : tr('Nowy kampus')}</h3>
               <button onClick={() => setShowModal(false)} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white"><X /></button>
             </div>
             <div className="space-y-4">

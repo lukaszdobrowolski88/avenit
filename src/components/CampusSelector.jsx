@@ -24,7 +24,7 @@ export default function CampusSelector() {
   if (campuses.length < 2) return null;
 
   const selectedCampus = campuses.find(c => c.id === selectedCampusId);
-  const displayName = selectedCampus?.name || 'Wszystkie lokalizacje';
+  const displayName = selectedCampus?.name || tr('Wszystkie kampusy');
 
   if (!canSwitchCampus) {
     // Locked - show campus name without dropdown
@@ -50,7 +50,7 @@ export default function CampusSelector() {
       {isOpen && (
         <div className="absolute left-0 top-full mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-[1001]">
           <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">{tr('Lokalizacja')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-bold">{tr('Kampus')}</p>
           </div>
           <div className="py-1 max-h-64 overflow-y-auto">
             {/* All campuses option */}
@@ -61,7 +61,7 @@ export default function CampusSelector() {
               }`}
             >
               <Building2 size={14} />
-              <span className="flex-1 text-left">Wszystkie lokalizacje</span>
+              <span className="flex-1 text-left">{tr('Wszystkie kampusy')}</span>
               {!selectedCampusId && <Check size={14} className="text-accent-primary" />}
             </button>
 
