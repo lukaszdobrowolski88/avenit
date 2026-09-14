@@ -316,6 +316,8 @@ export default function HomeGroupsModule() {
 
       if (type === 'member') {
         payload.group_id = personForm.group_id || null;
+        payload.role = personForm.role || 'member';
+        payload.is_leader = (personForm.role === 'leader' || personForm.role === 'coordinator');
       }
       if (type === 'leader') {
         payload.role = personForm.role || 'leader';
@@ -410,18 +412,19 @@ export default function HomeGroupsModule() {
         materials: []
       });
     } else {
+      const defRole = type === 'member' ? 'member' : 'leader';
       setPersonForm(item ? {
         full_name: item.full_name || '',
         email: item.email || '',
         phone: item.phone || '',
         group_id: item.group_id || '',
-        role: item.role || 'leader'
+        role: item.role || defRole
       } : {
         full_name: '',
         email: '',
         phone: '',
         group_id: '',
-        role: 'leader'
+        role: defRole
       });
     }
 
@@ -1045,6 +1048,11 @@ export default function HomeGroupsModule() {
                       <span className={`px-2 py-1 rounded-lg text-xs font-bold ${member.group_id ? 'bg-accent-primary-lighter dark:bg-accent-primary-darkest text-accent-primary dark:text-accent-primary-light' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}>
                         {groups.find(g => g.id === member.group_id)?.name || '-'}
                       </span>
+                      {member.role && member.role !== 'member' && (
+                        <span className="ml-1.5 px-2 py-1 rounded-lg text-xs font-bold bg-accent-secondary/10 text-accent-secondary dark:text-accent-secondary-light">
+                          {member.role === 'coordinator' ? tr('Koordynator') : tr('Lider')}
+                        </span>
+                      )}
                     </td>
                     <td className="p-4 text-right flex justify-end gap-2">
                       <button
@@ -1255,18 +1263,33 @@ export default function HomeGroupsModule() {
                     </div>
                   )}
                   {modalType === 'member' && (
-                    <div>
-                      <CustomSelect
-                        label="Grupa"
-                        value={personForm.group_id}
-                        onChange={(val) => setPersonForm({...personForm, group_id: val})}
-                        options={[
-                          { value: '', label: t('Brak') },
-                          ...groups.map(g => ({ value: g.id, label: g.name }))
-                        ]}
-                        placeholder={t('Wybierz grupę...')}
-                      />
-                    </div>
+                    <>
+                      <div>
+                        <CustomSelect
+                          label="Grupa"
+                          value={personForm.group_id}
+                          onChange={(val) => setPersonForm({...personForm, group_id: val})}
+                          options={[
+                            { value: '', label: t('Brak') },
+                            ...groups.map(g => ({ value: g.id, label: g.name }))
+                          ]}
+                          placeholder={t('Wybierz grupę...')}
+                        />
+                      </div>
+                      <div>
+                        <CustomSelect
+                          label={tr('Rola w tej grupie')}
+                          value={personForm.role}
+                          onChange={(val) => setPersonForm({ ...personForm, role: val })}
+                          options={[
+                            { value: 'member', label: tr('Członek') },
+                            { value: 'leader', label: tr('Lider') },
+                            { value: 'coordinator', label: tr('Koordynator') },
+                          ]}
+                        />
+                        <p className="text-[11px] text-gray-400 mt-1 ml-1">{tr('Tę samą osobę możesz dodać do kilku grup z różnymi rolami.')}</p>
+                      </div>
+                    </>
                   )}
                 </div>
               )}

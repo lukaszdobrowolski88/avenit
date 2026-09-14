@@ -250,6 +250,9 @@ export function buildQuery(q) {
     const pRole = p(vis.role || '');
     const pCampus = p(vis.campusId != null ? String(vis.campusId) : null);
     const pHome = p(Array.isArray(vis.homeGroupIds) ? vis.homeGroupIds.map(String) : []);
+    const pHasHome = p(!!(Array.isArray(vis.homeGroupIds) && vis.homeGroupIds.length));
+    const pLeadGroups = p(Array.isArray(vis.leaderGroupIds) ? vis.leaderGroupIds.map(String) : []);
+    const pHasLeader = p(!!(Array.isArray(vis.leaderGroupIds) && vis.leaderGroupIds.length));
     const pMemberTxt = p(vis.memberId != null ? String(vis.memberId) : null);
     const pMemberInt = p(vis.memberId != null ? vis.memberId : null);
     const pMin = p(Array.isArray(vis.ministries) ? vis.ministries.map(String) : []);
@@ -265,6 +268,10 @@ export function buildQuery(q) {
           OR (seg->>'type' = 'role' AND jsonb_exists(seg->'values', $${pRole}))
           OR (seg->>'type' = 'campus' AND $${pCampus} IS NOT NULL AND jsonb_exists(seg->'values', $${pCampus}))
           OR (seg->>'type' = 'home_group' AND jsonb_exists_any(seg->'values', $${pHome}::text[]))
+          OR (seg->>'type' = 'home_group_member' AND $${pHasHome}::boolean)
+          OR (seg->>'type' = 'home_group_leader' AND (CASE
+                WHEN seg->'values' IS NULL OR jsonb_array_length(seg->'values') = 0 THEN $${pHasLeader}::boolean
+                ELSE jsonb_exists_any(seg->'values', $${pLeadGroups}::text[]) END))
           OR (seg->>'type' = 'member' AND $${pMemberTxt} IS NOT NULL AND jsonb_exists(seg->'values', $${pMemberTxt}))
           OR (seg->>'type' = 'ministry' AND jsonb_exists_any(seg->'values', $${pMin}::text[]))
           OR (seg->>'type' = 'tag' AND jsonb_exists_any(seg->'values', $${pTags}::text[]))
