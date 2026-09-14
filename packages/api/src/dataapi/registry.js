@@ -133,7 +133,7 @@ export const REGISTRY = {
   // ── Grupy domowe ────────────────────────────────────────────────────────
   home_groups: T('module:homegroups', {
     relationships: {
-      home_group_leaders: { table: 'home_group_leaders', column: 'home_group_id', type: 'many' },
+      home_group_leaders: { table: 'home_group_leaders', column: 'group_id', type: 'many' },
       home_group_members: { table: 'home_group_members', column: 'group_id', type: 'many' },
     },
   }),
