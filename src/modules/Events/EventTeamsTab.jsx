@@ -63,12 +63,20 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
     return () => { alive = false; };
   }, []);
 
+  // Służby do pokazania = wybrane (teamTypes) + te, które MAJĄ już przypisania (żeby nigdy nie
+  // ukryć danych po zmianie typu/reguły lub „Przywróć domyślne"). Własne sekcje idą osobno (layout).
+  const customSectionKeys = (layout.sections || []).map((s) => s.key);
+  const assignedTeamKeys = Object.keys(assign || {}).filter(
+    (k) => !customSectionKeys.includes(k) && Object.entries(assign[k] || {}).some(([rk, v]) => rk !== 'notatki' && rk !== 'absencja' && csvNames(v).length)
+  );
+  const effectiveTeamTypes = [...new Set([...teamTypes, ...assignedTeamKeys])];
+
   // Załaduj role/osoby/eligibility dla służb (team_type). Własne sekcje nie mają tabeli osób.
   useEffect(() => {
     let alive = true;
     (async () => {
       const out = {};
-      for (const tt of teamTypes) {
+      for (const tt of effectiveTeamTypes) {
         const table = memberTableFor(tt);
         const [rolesRes, membersRes, tmrRes] = await Promise.all([
           supabase.from('team_roles').select('id, field_key, name, display_order').eq('team_type', tt).eq('is_active', true).order('display_order', { ascending: true }),
@@ -82,7 +90,7 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
       if (alive) setTeamData(out);
     })();
     return () => { alive = false; };
-  }, [teamTypes.join(',')]);
+  }, [effectiveTeamTypes.join(',')]);
 
   useEffect(() => { fetchAssignmentsForEvents([event.id]).then(() => force((n) => n + 1)); }, [event.id, fetchAssignmentsForEvents]);
 
@@ -103,7 +111,7 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
 
   // --- Sekcje (służby + własne) ---
   const sections = [
-    ...teamTypes.map((tt) => ({ key: tt, label: teamLabel(tt, moduleLabelMap), isCustom: false })),
+    ...effectiveTeamTypes.map((tt) => ({ key: tt, label: teamLabel(tt, moduleLabelMap), isCustom: false })),
     ...(layout.sections || []).map((s) => ({ key: s.key, label: s.label, isCustom: true })),
   ];
 
@@ -285,7 +293,7 @@ export default function EventTeamsTab({ event, teamTypes, defaultTeamTypes, canM
           <p className="text-sm text-gray-500 dark:text-gray-400">Brak służb na tym wydarzeniu.</p>
           <p className="text-xs text-gray-400 mt-1">{managing ? 'Kliknij „Zarządzaj służbami", aby dodać służby lub własną sekcję.' : 'Służby nie zostały skonfigurowane.'}</p>
         </div>
-      ) : (teamTypes.length > 0 && teamData === null) ? <Spinner center size={24} /> : (
+      ) : (effectiveTeamTypes.length > 0 && teamData === null) ? <Spinner center size={24} /> : (
         <div className="space-y-5">
           {sections.map((section) => {
             const roles = rolesForSection(section);
