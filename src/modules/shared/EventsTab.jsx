@@ -467,7 +467,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
   const [homeGroups, setHomeGroups] = useState([]);
   useEffect(() => {
     if (!isHomeGroups) { setHomeGroups([]); return; }
-    supabase.from('home_groups').select('id, name').order('name').then(({ data }) => setHomeGroups(data || []), () => {});
+    supabase.from('home_groups').select('id, name, campus_id').order('name').then(({ data }) => setHomeGroups(data || []), () => {});
   }, [isHomeGroups]);
   const homeGroupName = (id) => homeGroups.find((g) => String(g.id) === String(id))?.name || null;
   // Etykieta zasięgu wydarzenia (badge na kafelku) dla modułu grup domowych.
@@ -591,13 +591,18 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
       const HG_TYPES = ['home_group', 'home_group_member', 'home_group_leader', 'home_group_coordinator'];
       const kept = Array.isArray(existing) ? existing.filter((s) => !HG_TYPES.includes(s?.type)) : [];
       row.visibility_segments = [...kept, ...(_visSegs || [])];
+      // Wydarzenie przypisane do konkretnej grupy dziedziczy kampus tej grupy (spójność multi-campus).
+      if (rest.home_group_id) {
+        const g = homeGroups.find((x) => String(x.id) === String(rest.home_group_id));
+        if (g && g.campus_id != null) row.campus_id = g.campus_id;
+      }
     }
     let error = null;
     if (id) {
       const { error: e } = await supabase.from('events').update(row).eq('id', id);
       error = e;
     } else {
-      const { error: e } = await supabase.from('events').insert([{ ...row, created_by: userEmail, campus_id: campusIdForInsert }]);
+      const { error: e } = await supabase.from('events').insert([{ ...row, created_by: userEmail, campus_id: row.campus_id != null ? row.campus_id : campusIdForInsert }]);
       error = e;
     }
 

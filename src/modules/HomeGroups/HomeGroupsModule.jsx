@@ -597,7 +597,9 @@ export default function HomeGroupsModule() {
   };
 
   const getFilteredTasks = () => {
+    const visible = new Set(groups.map((g) => g.id));
     return tasks.filter(task => {
+      if (task.group_id && !visible.has(task.group_id)) return false; // tylko zadania grup z wybranego kampusu
       if (filterScope === 'mine' && task.assigned_to !== currentUserEmail) return false;
       if (filterStatus === 'active' && task.status === 'Gotowe') return false;
       if (filterStatus === 'completed' && task.status !== 'Gotowe') return false;
@@ -766,18 +768,24 @@ export default function HomeGroupsModule() {
     }
   };
 
-  // Filtered data
+  // Filtered data. `groups` jest już przefiltrowane po wybranym kampusie (withCampusFilter),
+  // a members/leaders/tasks nie mają campus_id — wiążemy je przez grupę: pokazujemy tylko osoby
+  // z grup widocznych w tym kampusie (osoby bez grupy oraz koordynatorzy globalni — zawsze).
+  const visibleGroupIds = new Set(groups.map((g) => g.id));
+  const inVisibleCampus = (groupId) => !groupId || visibleGroupIds.has(groupId);
+
   const filteredGroups = groups.filter(g =>
     g.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredLeaders = leaders
     .filter(l => l.full_name?.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(l => l.role === 'coordinator' || inVisibleCampus(l.group_id))
     .sort((a, b) => (a.role === 'coordinator' ? -1 : 0) - (b.role === 'coordinator' ? -1 : 0));
 
-  const filteredMembers = members.filter(m =>
-    m.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMembers = members
+    .filter(m => m.full_name?.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(m => inVisibleCampus(m.group_id));
 
   const groupMembers = members.filter(m => m.group_id === currentGroup?.id);
   const availableMembers = members.filter(m => !m.group_id);
