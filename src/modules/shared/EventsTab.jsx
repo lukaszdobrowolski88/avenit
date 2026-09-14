@@ -243,9 +243,22 @@ function getModuleConfig(ministry) {
   };
 }
 
+// Buduje segmenty widoczności grup domowych z zestawu wybranych kluczy.
+function buildHgSegments(keys, nameOf) {
+  const segs = [];
+  const memGroups = keys.filter((k) => k.startsWith('mem:')).map((k) => k.slice(4));
+  const leadGroups = keys.filter((k) => k.startsWith('lead:')).map((k) => k.slice(5));
+  if (keys.includes('all_members')) segs.push({ type: 'home_group_member', label: 'Członkowie grup domowych' });
+  if (keys.includes('all_leaders')) segs.push({ type: 'home_group_leader', label: 'Liderzy grup domowych' });
+  if (memGroups.length) segs.push({ type: 'home_group', values: memGroups, label: memGroups.map(nameOf).filter(Boolean).join(', ') || undefined });
+  if (leadGroups.length) segs.push({ type: 'home_group_leader', values: leadGroups, label: 'Liderzy: ' + (leadGroups.map(nameOf).filter(Boolean).join(', ') || '') });
+  return segs;
+}
+
 // Modal edycji wydarzenia
 const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], homeGroups = [] }) => {
   const t = useT();
+  const hgNameOf = (id) => homeGroups.find((g) => String(g.id) === String(id))?.name || null;
   const [form, setForm] = useState({
     id: event?.id || null,
     title: event?.title || '',
@@ -256,9 +269,24 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
     location: event?.location || '',
     max_participants: event?.max_participants || '',
     event_type: event?.event_type || config.defaultType,
-    home_group_id: event?.home_group_id || '',
+    // Widoczność (moduł homegroups): zbiór kluczy — 'all_members', 'all_leaders',
+    // `mem:<groupId>` (członkowie grupy), `lead:<groupId>` (liderzy grupy). Pusto = cała społeczność.
+    visKeys: (() => {
+      const segs = Array.isArray(event?.visibility_segments) ? event.visibility_segments : [];
+      const keys = [];
+      segs.forEach((s) => {
+        if (s?.type === 'home_group_member') keys.push('all_members');
+        else if (s?.type === 'home_group_leader') {
+          if (Array.isArray(s.values) && s.values.length) s.values.forEach((v) => keys.push(`lead:${v}`));
+          else keys.push('all_leaders');
+        } else if (s?.type === 'home_group' && Array.isArray(s.values)) s.values.forEach((v) => keys.push(`mem:${v}`));
+      });
+      if (!keys.length && event?.home_group_id) keys.push(`mem:${event.home_group_id}`);
+      return keys;
+    })(),
     custom: event?.custom || {}
   });
+  const toggleVis = (key) => setForm((f) => ({ ...f, visKeys: f.visKeys.includes(key) ? f.visKeys.filter((k) => k !== key) : [...f.visKeys, key] }));
   const setCustom = (key, val) => setForm((f) => ({ ...f, custom: { ...f.custom, [key]: val } }));
 
   const handleSubmit = async () => {
@@ -279,9 +307,13 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
       location: form.location,
       max_participants: form.max_participants ? parseInt(form.max_participants) : null,
       event_type: form.event_type || config.defaultType,
-      home_group_id: form.home_group_id || null,
+      home_group_id: null, // ustawiane niżej z wybranych kluczy (pierwsza konkretna grupa — do filtra/badge)
+      _visSegs: buildHgSegments(form.visKeys, hgNameOf),
       custom: form.custom || {}
     };
+    const memGroups = form.visKeys.filter((k) => k.startsWith('mem:')).map((k) => k.slice(4));
+    const leadGroups = form.visKeys.filter((k) => k.startsWith('lead:')).map((k) => k.slice(5));
+    eventData.home_group_id = memGroups[0] || leadGroups[0] || null;
 
     onSave(form.id, eventData);
   };
@@ -336,13 +368,33 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
 
           {homeGroups.length > 0 && (
             <div>
-              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Grupa domowa')}</label>
-              <CustomSelect
-                value={form.home_group_id}
-                onChange={val => setForm({...form, home_group_id: val})}
-                options={[{ value: '', label: t('Cała społeczność (bez grupy)') }, ...homeGroups.map((g) => ({ value: g.id, label: g.name }))]}
-              />
-              <p className="text-[11px] text-gray-400 mt-1 ml-1">{form.home_group_id ? t('Widoczne dla członków tej grupy domowej.') : t('Widoczne dla całej społeczności.')}</p>
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Widoczność')}</label>
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
+                <label className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={form.visKeys.includes('all_members')} onChange={() => toggleVis('all_members')} className="w-4 h-4 rounded accent-accent-primary" />
+                  <span className="text-gray-700 dark:text-gray-200">{t('Wszyscy członkowie grup domowych')}</span>
+                </label>
+                <label className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={form.visKeys.includes('all_leaders')} onChange={() => toggleVis('all_leaders')} className="w-4 h-4 rounded accent-accent-primary" />
+                  <span className="text-gray-700 dark:text-gray-200">{t('Liderzy grup domowych')}</span>
+                </label>
+                <div className="max-h-44 overflow-y-auto custom-scrollbar">
+                  {homeGroups.map((g) => (
+                    <div key={g.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                      <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{g.name}</span>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <label className="flex items-center gap-1 text-xs cursor-pointer text-gray-500 dark:text-gray-400">
+                          <input type="checkbox" checked={form.visKeys.includes(`mem:${g.id}`)} onChange={() => toggleVis(`mem:${g.id}`)} className="w-3.5 h-3.5 rounded accent-accent-primary" /> {t('członkowie')}
+                        </label>
+                        <label className="flex items-center gap-1 text-xs cursor-pointer text-gray-500 dark:text-gray-400">
+                          <input type="checkbox" checked={form.visKeys.includes(`lead:${g.id}`)} onChange={() => toggleVis(`lead:${g.id}`)} className="w-3.5 h-3.5 rounded accent-accent-primary" /> {t('liderzy')}
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1 ml-1">{form.visKeys.length ? t('Widoczne dla zaznaczonych osób (+ administratorzy).') : t('Nic nie zaznaczono = widoczne dla całej społeczności.')}</p>
             </div>
           )}
 
@@ -412,6 +464,20 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
     supabase.from('home_groups').select('id, name').order('name').then(({ data }) => setHomeGroups(data || []), () => {});
   }, [isHomeGroups]);
   const homeGroupName = (id) => homeGroups.find((g) => String(g.id) === String(id))?.name || null;
+  // Etykieta zasięgu wydarzenia (badge na kafelku) dla modułu grup domowych.
+  const visBadge = (ev) => {
+    const segs = Array.isArray(ev.visibility_segments) ? ev.visibility_segments : [];
+    const parts = [];
+    segs.forEach((s) => {
+      if (s?.type === 'home_group_member') parts.push('Wszyscy członkowie');
+      else if (s?.type === 'home_group_leader') {
+        if (Array.isArray(s.values) && s.values.length) parts.push('Liderzy: ' + s.values.map(homeGroupName).filter(Boolean).join(', '));
+        else parts.push('Wszyscy liderzy');
+      } else if (s?.type === 'home_group' && Array.isArray(s.values)) parts.push(s.values.map(homeGroupName).filter(Boolean).join(', '));
+    });
+    if (!parts.length && ev.home_group_id) return homeGroupName(ev.home_group_id);
+    return parts.length ? parts.join(' · ') : null;
+  };
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -503,7 +569,7 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
 
   const handleSave = async (id, eventData) => {
     // eventData z modala: start_date (ISO) + end_time + reszta. Mapujemy na kolumny `events` (date + time).
-    const { start_date, team_type, ...rest } = eventData;
+    const { start_date, team_type, _visSegs, ...rest } = eventData;
     const row = {
       ...rest,
       module_key: config.teamType,
@@ -511,15 +577,13 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
       time: start_date && start_date.includes('T') ? start_date.split('T')[1].substring(0, 5) : null,
     };
 
-    // Auto-widoczność: wydarzenie przypisane do grupy domowej jest widoczne dla jej członków
-    // (segment 'home_group' egzekwowany serwerowo). Zachowujemy inne, ręczne segmenty.
+    // Widoczność wg zaznaczonych opcji (segmenty egzekwowane serwerowo). Zachowujemy inne,
+    // ręczne segmenty (np. role/kampus) — nadpisujemy tylko segmenty związane z grupami domowymi.
     if (isHomeGroups) {
       const existing = id ? events.find((e) => e.id === id)?.visibility_segments : null;
-      let segs = Array.isArray(existing) ? existing.filter((s) => s?.type !== 'home_group') : [];
-      if (rest.home_group_id) {
-        segs = [...segs, { type: 'home_group', values: [String(rest.home_group_id)], label: homeGroupName(rest.home_group_id) || undefined }];
-      }
-      row.visibility_segments = segs;
+      const HG_TYPES = ['home_group', 'home_group_member', 'home_group_leader'];
+      const kept = Array.isArray(existing) ? existing.filter((s) => !HG_TYPES.includes(s?.type)) : [];
+      row.visibility_segments = [...kept, ...(_visSegs || [])];
     }
     let error = null;
     if (id) {
@@ -558,7 +622,8 @@ export default function EventsTab({ ministry, currentUserEmail: propUserEmail })
       ev.title?.toLowerCase().includes(searchFilter.toLowerCase()) ||
       ev.description?.toLowerCase().includes(searchFilter.toLowerCase());
     const matchesType = !typeFilter || ev.event_type === typeFilter;
-    const matchesGroup = !groupFilter || String(ev.home_group_id) === String(groupFilter);
+    const inSegs = Array.isArray(ev.visibility_segments) && ev.visibility_segments.some((s) => (s?.type === 'home_group' || s?.type === 'home_group_leader') && Array.isArray(s.values) && s.values.map(String).includes(String(groupFilter)));
+    const matchesGroup = !groupFilter || String(ev.home_group_id) === String(groupFilter) || inSegs;
     return matchesSearch && matchesType && matchesGroup;
   });
 
@@ -775,7 +840,7 @@ GRANT ALL ON ${config.tableName} TO anon;`;
                           {timeStr && <span className="flex items-center gap-1"><Clock size={13} /> {timeStr}{ev.end_time ? ` - ${ev.end_time}` : ''}</span>}
                           {ev.location && <span className="flex items-center gap-1"><MapPin size={13} /> {ev.location}</span>}
                           {ev.max_participants && <span className="flex items-center gap-1"><Users size={13} /> max. {ev.max_participants}</span>}
-                          {isHomeGroups && ev.home_group_id && homeGroupName(ev.home_group_id) && <span className="flex items-center gap-1 text-accent-primary"><Home size={13} /> {homeGroupName(ev.home_group_id)}</span>}
+                          {isHomeGroups && visBadge(ev) && <span className="flex items-center gap-1 text-accent-primary"><Home size={13} /> {visBadge(ev)}</span>}
                         </div>
 
                         {/* Stopka: RSVP + archiwizacja */}

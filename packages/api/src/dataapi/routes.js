@@ -69,16 +69,22 @@ export default async function dataApiRoutes(app) {
           } catch { /* brak kolumn/tabeli w tenancie — kontekst pusty (fail-closed) */ }
         }
         // Członkostwo w grupach domowych z modułu Grupy domowe (po e-mailu) — źródło niezależne
-        // od members.home_group_id, dzięki temu auto-widoczność łapie osoby dodane w tym module.
+        // od members.home_group_id. Rola per grupa (member/leader/coordinator) → grupy, w których
+        // user jest liderem/koordynatorem (leaderGroupIds), do granularnych segmentów widoczności.
+        const leaderGroupIds = new Set();
         try {
           const { rows: hgm } = await req.db.query(
-            `SELECT group_id FROM home_group_members WHERE lower(email) = lower($1)`, [req.user.email]
+            `SELECT group_id, role, is_leader FROM home_group_members WHERE lower(email) = lower($1)`, [req.user.email]
           );
-          for (const r of hgm) if (r.group_id != null) homeGroupIds.add(String(r.group_id));
+          for (const r of hgm) {
+            if (r.group_id == null) continue;
+            homeGroupIds.add(String(r.group_id));
+            if (r.role === 'leader' || r.role === 'coordinator' || r.is_leader === true) leaderGroupIds.add(String(r.group_id));
+          }
         } catch { /* brak tabeli — pomijamy */ }
         q.__visibilityScope = {
           role: user.role, campusId: user.campus_id, email: req.user.email,
-          memberId, homeGroupIds: [...homeGroupIds], ministries, tags,
+          memberId, homeGroupIds: [...homeGroupIds], leaderGroupIds: [...leaderGroupIds], ministries, tags,
         };
       }
 
