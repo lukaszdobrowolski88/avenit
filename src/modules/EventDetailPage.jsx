@@ -308,6 +308,11 @@ export default function EventDetailPage() {
     ...extraTabs.map((x) => ({ id: x.id, label: x.label, icon: FileText })),
     ...(canManage && tabOn('widocznosc', true) ? [{ id: 'widocznosc', label: 'Widoczność', icon: Eye }] : []),
   ];
+  // Kolejność zakładek wg konfiguracji (Zakładki wg typu). Zakładki spoza order → na końcu (domyślnie).
+  if (tabRule?.order?.length) {
+    const oi = (id) => { const k = tabRule.order.indexOf(id); return k === -1 ? 999 : k; };
+    TABS.sort((a, b) => oi(a.id) - oi(b.id));
+  }
 
   return (
     <div className="w-full space-y-5 pb-16">

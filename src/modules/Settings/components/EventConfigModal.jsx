@@ -2,7 +2,7 @@
 // W jednym miejscu (Ustawienia → Zarządzanie modułami): Typy, Pola własne, Zakładki wg typu,
 // a dla kalendarza „Ogólne" dodatkowo — które moduły widać w pickerze „Kalendarz / moduł".
 import React, { useState, useEffect } from 'react';
-import { X, Plus, SlidersHorizontal, ListChecks, LayoutList, Users } from 'lucide-react';
+import { X, Plus, SlidersHorizontal, ListChecks, LayoutList, Users, ChevronUp, ChevronDown } from 'lucide-react';
 import Modal from '../../../components/Modal';
 import CustomSelect from '../../../components/CustomSelect';
 import { supabase } from '../../../lib/supabase';
@@ -68,6 +68,7 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
       setRules(all.filter((r) => (r?.module_key || '') === scopeKey).map((r) => ({
         event_type: r.event_type || '', tabsText: (r.tabs || []).map((x) => x.label).join(', '),
         builtins: (r.builtins && typeof r.builtins === 'object') ? { ...r.builtins } : (r.materials ? { materialy: true } : {}),
+        order: Array.isArray(r.order) ? r.order : [],
       })));
     }).catch(() => { setRules([]); setOtherRules([]); });
     supabase.from('app_settings').select('value').eq('key', 'event_type_teams').maybeSingle().then(({ data }) => {
@@ -89,12 +90,29 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
   const typeList = (calendars[cfgKey]?.types?.length ? calendars[cfgKey].types : (isGeneral ? OGOLNE_TYPES : []));
   const typeOpts = [{ value: '', label: '— wybierz typ —' }, ...typeList.map((tp) => ({ value: tp.value, label: tp.label }))];
 
-  const addRule = () => setRules((r) => [...(r || []), { event_type: '', tabsText: '', builtins: {} }]);
+  const addRule = () => setRules((r) => [...(r || []), { event_type: '', tabsText: '', builtins: {}, order: [] }]);
   const updRule = (i, patch) => setRules((r) => r.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const toggleBuiltin = (i, id, def) => setRules((r) => r.map((x, j) => {
     if (j !== i) return x;
     const cur = (x.builtins && id in x.builtins) ? x.builtins[id] : def;
     return { ...x, builtins: { ...(x.builtins || {}), [id]: !cur } };
+  }));
+
+  // Lista zakładek reguły w kolejności (baza + wbudowane + własne z tabsText), wg r.order.
+  const tabItemsFor = (r) => {
+    const customs = (r.tabsText || '').split(',').map((s) => s.trim()).filter(Boolean).map((l) => ({ id: `custom:${slugTab(l)}`, label: l, kind: 'custom' }));
+    const items = [{ id: 'szczegoly', label: 'Szczegóły', kind: 'base' }, ...BUILTIN_EVENT_TABS.map((bt) => ({ id: bt.id, label: bt.label, kind: 'builtin', def: bt.def })), ...customs];
+    const order = Array.isArray(r.order) ? r.order : [];
+    const orderedIds = [...order.filter((id) => items.some((it) => it.id === id)), ...items.map((it) => it.id).filter((id) => !order.includes(id))];
+    return orderedIds.map((id) => items.find((it) => it.id === id)).filter(Boolean);
+  };
+  const moveTab = (i, id, dir) => setRules((rs) => rs.map((r, j) => {
+    if (j !== i) return r;
+    const ids = tabItemsFor(r).map((it) => it.id);
+    const pos = ids.indexOf(id); const to = pos + dir;
+    if (pos < 0 || to < 0 || to >= ids.length) return r;
+    [ids[pos], ids[to]] = [ids[to], ids[pos]];
+    return { ...r, order: ids };
   }));
   const delRule = (i) => setRules((r) => r.filter((_, j) => j !== i));
   const togglePicker = (key) => setPickerSel((prev) => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
@@ -108,11 +126,12 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
   const save = async () => {
     setSaving(true);
     try {
-      const scopeRules = (rules || []).filter((r) => r.event_type && (r.tabsText.trim() || (r.builtins && Object.keys(r.builtins).length))).map((r) => ({
+      const scopeRules = (rules || []).filter((r) => r.event_type && (r.tabsText.trim() || (r.builtins && Object.keys(r.builtins).length) || (r.order && r.order.length))).map((r) => ({
         module_key: scopeKey,
         event_type: r.event_type,
         tabs: r.tabsText.split(',').map((s) => s.trim()).filter(Boolean).map((l) => ({ id: slugTab(l), label: l })),
         builtins: r.builtins || {},
+        order: r.order || [],
         materials: !!(r.builtins && r.builtins.materialy), // legacy mirror
       }));
       const merged = [...otherRules, ...scopeRules];
@@ -168,16 +187,26 @@ export default function EventConfigModal({ moduleKey, label, isGeneral = false, 
                       placeholder="Własne zakładki po przecinku, np. Szkółka Niedzielna, Atmosfera Team"
                       className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Widoczne zakładki</p>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                        <span className="flex items-center gap-1.5 text-xs text-gray-400"><span className="w-4 h-4 inline-flex items-center justify-center">✓</span>Szczegóły</span>
-                        {BUILTIN_EVENT_TABS.map((bt) => {
-                          const on = (r.builtins && bt.id in r.builtins) ? r.builtins[bt.id] : bt.def;
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400 mb-1">Zakładki, widoczność i kolejność</p>
+                      <div className="rounded-lg border border-gray-100 dark:border-gray-800 divide-y divide-gray-50 dark:divide-gray-800">
+                        {tabItemsFor(r).map((it, idx, arr) => {
+                          const bt = BUILTIN_EVENT_TABS.find((b) => b.id === it.id);
+                          const on = it.kind === 'builtin' ? ((r.builtins && it.id in r.builtins) ? r.builtins[it.id] : bt.def) : true;
                           return (
-                            <label key={bt.id} className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
-                              <input type="checkbox" checked={!!on} onChange={() => toggleBuiltin(i, bt.id, bt.def)} className="w-4 h-4 rounded accent-accent-primary" />
-                              {bt.label}
-                            </label>
+                            <div key={it.id} className="flex items-center gap-2 px-2 py-1.5">
+                              <div className="flex flex-col">
+                                <button disabled={idx === 0} onClick={() => moveTab(i, it.id, -1)} className="text-gray-400 hover:text-accent-primary disabled:opacity-30"><ChevronUp size={13} /></button>
+                                <button disabled={idx === arr.length - 1} onClick={() => moveTab(i, it.id, 1)} className="text-gray-400 hover:text-accent-primary disabled:opacity-30"><ChevronDown size={13} /></button>
+                              </div>
+                              {it.kind === 'builtin' ? (
+                                <input type="checkbox" checked={!!on} onChange={() => toggleBuiltin(i, it.id, bt.def)} className="w-4 h-4 rounded accent-accent-primary" />
+                              ) : <span className="w-4 inline-block" />}
+                              <span className={`text-sm ${it.kind === 'base' ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
+                                {it.label}
+                                {it.kind === 'base' && <span className="text-[10px] text-gray-400 ml-1">(zawsze)</span>}
+                                {it.kind === 'custom' && <span className="text-[10px] text-gray-400 ml-1">(własna)</span>}
+                              </span>
+                            </div>
                           );
                         })}
                       </div>
