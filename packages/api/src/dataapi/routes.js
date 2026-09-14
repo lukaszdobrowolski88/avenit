@@ -54,22 +54,31 @@ export default async function dataApiRoutes(app) {
       // brak membera => segmenty grupowe (grupa/służba/tag/home_group) po prostu nie łapią.
       if (!isAdmin && q.table === 'events' && q.op === 'select') {
         const memberId = userRows[0]?.member_id ?? null;
-        let homeGroupId = null, ministries = [], tags = [];
+        let ministries = [], tags = [];
+        const homeGroupIds = new Set();
         if (memberId != null) {
           try {
             const { rows: mem } = await req.db.query(
               `SELECT home_group_id, ministries, tags FROM members WHERE id = $1`, [memberId]
             );
             if (mem[0]) {
-              homeGroupId = mem[0].home_group_id ?? null;
+              if (mem[0].home_group_id != null) homeGroupIds.add(String(mem[0].home_group_id));
               ministries = Array.isArray(mem[0].ministries) ? mem[0].ministries : [];
               tags = Array.isArray(mem[0].tags) ? mem[0].tags : [];
             }
           } catch { /* brak kolumn/tabeli w tenancie — kontekst pusty (fail-closed) */ }
         }
+        // Członkostwo w grupach domowych z modułu Grupy domowe (po e-mailu) — źródło niezależne
+        // od members.home_group_id, dzięki temu auto-widoczność łapie osoby dodane w tym module.
+        try {
+          const { rows: hgm } = await req.db.query(
+            `SELECT group_id FROM home_group_members WHERE lower(email) = lower($1)`, [req.user.email]
+          );
+          for (const r of hgm) if (r.group_id != null) homeGroupIds.add(String(r.group_id));
+        } catch { /* brak tabeli — pomijamy */ }
         q.__visibilityScope = {
           role: user.role, campusId: user.campus_id, email: req.user.email,
-          memberId, homeGroupId, ministries, tags,
+          memberId, homeGroupIds: [...homeGroupIds], ministries, tags,
         };
       }
 
