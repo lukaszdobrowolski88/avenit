@@ -33,7 +33,7 @@ const SETTINGS_NAV = [
     { id: 'general', label: tr('Organizacja'), icon: Settings },
     { id: 'appearance', label: tr('Wygląd'), icon: Palette },
     { id: 'localization', label: tr('Regionalne'), icon: Globe },
-    { id: 'campuses', label: tr('Lokalizacje'), icon: Building2 },
+    { id: 'campuses', label: tr('Kampusy'), icon: Building2 },
   ]},
   { group: tr('Zespół i dostęp'), items: [
     { id: 'users', label: tr('Użytkownicy'), icon: Users },
@@ -732,7 +732,7 @@ export default function GlobalSettings() {
   const bulkChangeRole = () => { if (bulkRole) bulkRun(async id => (await supabase.functions.invoke('admin-update-user', { body: { userId: id, role: bulkRole } })).error, tr('Zmieniono rolę')); };
 
   const exportUsersCsv = () => {
-    const rows = [['Imię i nazwisko', 'E-mail', 'Rola', 'Status', 'Lokalizacja', 'Ostatnie logowanie']];
+    const rows = [['Imię i nazwisko', 'E-mail', 'Rola', 'Status', 'Kampus', 'Ostatnie logowanie']];
     filteredUsers.forEach(u => {
       const st = u.status || (u.is_active ? 'active' : 'blocked');
       rows.push([u.full_name || '', u.email || '', definedRoles.find(r => r.key === u.role)?.label || u.role || '', st, campuses.find(c => c.id === u.campus_id)?.name || '', u.last_login_at ? new Date(u.last_login_at).toLocaleString() : '']);
@@ -1531,7 +1531,7 @@ export default function GlobalSettings() {
             )}
             <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
               <table className="w-full text-sm text-left bg-white dark:bg-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4 w-10"><input type="checkbox" checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length} onChange={() => setSelectedUserIds(prev => prev.size === filteredUsers.length ? new Set() : new Set(filteredUsers.map(u => u.id)))} /></th><th className="p-4">{t('Użytkownik')}</th><th className="p-4">{t('Email')}</th><th className="p-4">{t('Rola')}</th>{campuses.length > 0 && <th className="p-4">{t('Lokalizacja')}</th>}<th className="p-4">{t('Status')}</th><th className="p-4">{t('Ostatnie logowanie')}</th><th className="p-4 text-right">{t('Akcje')}</th></tr></thead>
+                <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4 w-10"><input type="checkbox" checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length} onChange={() => setSelectedUserIds(prev => prev.size === filteredUsers.length ? new Set() : new Set(filteredUsers.map(u => u.id)))} /></th><th className="p-4">{t('Użytkownik')}</th><th className="p-4">{t('Email')}</th><th className="p-4">{t('Rola')}</th>{campuses.length > 0 && <th className="p-4">{t('Kampus')}</th>}<th className="p-4">{t('Status')}</th><th className="p-4">{t('Ostatnie logowanie')}</th><th className="p-4 text-right">{t('Akcje')}</th></tr></thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
                   {filteredUsers.map(user => {
                     const roleLabel = definedRoles.find(r => r.key === user.role)?.label || user.role;
@@ -1662,14 +1662,14 @@ export default function GlobalSettings() {
               </div>
               {campuses.length > 0 && (
                 <div>
-                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">Lokalizacja (kampus)</label>
+                  <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase ml-1 mb-1 block">{tr('Kampus')}</label>
                   <CustomSelect
-                    options={[{ value: '', label: t('Wszystkie lokalizacje (brak ograniczeń)') }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
+                    options={[{ value: '', label: t('Wszystkie kampusy (brak ograniczeń)') }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
                     value={userForm.campus_id ? String(userForm.campus_id) : ''}
                     onChange={v => setUserForm({ ...userForm, campus_id: v ? parseInt(v, 10) : null })}
-                    placeholder={t('Wybierz lokalizację...')}
+                    placeholder={t('Wybierz kampus...')}
                   />
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">{t('Użytkownik przypisany do lokalizacji widzi tylko dane tej lokalizacji.')}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">{t('Użytkownik przypisany do kampusu widzi tylko dane tego kampusu.')}</p>
                 </div>
               )}
               {userForm.id && (

@@ -884,11 +884,11 @@ export default function Members() {
                 icon={Home}
               />
 
-              {/* Lokalizacja */}
+              {/* Kampus */}
               {campuses.length > 0 && (
                 <CustomSelect
-                  label="Lokalizacja"
-                  placeholder={tr('Wybierz lokalizację...')}
+                  label={tr('Kampus')}
+                  placeholder={tr('Wybierz kampus...')}
                   value={formData.campus_id ? String(formData.campus_id) : ''}
                   onChange={(val) => setFormData({ ...formData, campus_id: val ? parseInt(val, 10) : null })}
                   options={[{ value: '', label: tr('Brak') }, ...campuses.map(c => ({ value: String(c.id), label: c.name + (c.city ? ` (${c.city})` : '') }))]}
