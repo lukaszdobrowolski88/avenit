@@ -50,6 +50,8 @@ export default function HomeGroupsModule() {
   const [showMaterialsModal, setShowMaterialsModal] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [currentGroup, setCurrentGroup] = useState(null);
+  const [groupMaterials, setGroupMaterials] = useState([]); // materials_files folderu bieżącej grupy
+  const [materialCounts, setMaterialCounts] = useState({}); // group.id -> liczba plików
 
   // Tasks
   const [viewMode, setViewMode] = useState('kanban');
@@ -227,6 +229,21 @@ export default function HomeGroupsModule() {
       if (leadersRes.data) setLeaders(leadersRes.data);
       if (membersRes.data) setMembers(membersRes.data);
       if (tasksRes.data) setTasks(tasksRes.data);
+
+      // Liczniki materiałów per grupa: pliki (materials_files) w folderze grupy.
+      try {
+        const folderToGroup = {};
+        (groupsRes.data || []).forEach((g) => { if (g.materials_folder_id) folderToGroup[g.materials_folder_id] = g.id; });
+        const folderIds = Object.keys(folderToGroup);
+        if (folderIds.length) {
+          const { data: mf } = await supabase.from('materials_files').select('folder_id').in('folder_id', folderIds);
+          const counts = {};
+          (mf || []).forEach((f) => { const gid = folderToGroup[f.folder_id]; if (gid) counts[gid] = (counts[gid] || 0) + 1; });
+          setMaterialCounts(counts);
+        } else {
+          setMaterialCounts({});
+        }
+      } catch { /* liczniki best-effort */ }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error(tr('Błąd pobierania danych: ') + error.message);
@@ -261,6 +278,14 @@ export default function HomeGroupsModule() {
           .update(payload)
           .eq('id', editingItem.id);
         if (error) throw error;
+        // Zsynchronizuj nazwę folderu materiałów, jeśli zmieniono nazwę grupy.
+        if (editingItem.materials_folder_id && editingItem.name !== payload.name) {
+          try {
+            await supabase.from('materials_folders').update({ name: payload.name }).eq('id', editingItem.materials_folder_id);
+            await supabase.from('materials_shares').update({ target_label: payload.name })
+              .eq('target_type', 'home_group').eq('target_id', String(editingItem.id));
+          } catch { /* best-effort */ }
+        }
       } else {
         const { error } = await supabase
           .from('home_groups')
@@ -326,6 +351,22 @@ export default function HomeGroupsModule() {
       const table = type === 'group' ? 'home_groups'
         : type === 'leader' ? 'home_group_leaders'
         : 'home_group_members';
+
+      // Sprzątanie folderu materiałów grupy (pliki + storage + udostępnienia) — best-effort.
+      if (type === 'group') {
+        const grp = groups.find((g) => g.id === id);
+        const folderId = grp?.materials_folder_id;
+        if (folderId) {
+          try {
+            const { data: files } = await supabase.from('materials_files').select('storage_path').eq('folder_id', folderId);
+            const paths = (files || []).map((f) => f.storage_path).filter(Boolean);
+            if (paths.length) await supabase.storage.from('materials').remove(paths);
+            await supabase.from('materials_files').delete().eq('folder_id', folderId);
+            await supabase.from('materials_shares').delete().eq('folder_id', folderId);
+            await supabase.from('materials_folders').delete().eq('id', folderId);
+          } catch { /* best-effort */ }
+        }
+      }
 
       const { error } = await supabase
         .from(table)
@@ -602,49 +643,103 @@ export default function HomeGroupsModule() {
     }
   };
 
-  // Materials functions
-  const addMaterial = async () => {
-    if (!materialForm.title?.trim()) {
-      toast.error(tr('Podaj nazwę materiału'));
-      return;
+  // === Materiały grupy = pliki w folderze grupy (materials_files) ===
+  // Folder (materials_folders, team_type='homegroups') powiązany z grupą przez
+  // home_groups.materials_folder_id i udostępniony całej grupie domowej (materials_shares),
+  // dzięki czemu materiały widać też w „Plikach" i w „Udostępnione mi" u członków — i na odwrót.
+  const MATERIALS_TEAM = 'homegroups';
+
+  const ensureGroupFolder = async (group) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const email = user?.email || null;
+    let folderId = group.materials_folder_id || null;
+
+    if (!folderId) {
+      // Spróbuj znaleźć istniejący folder po nazwie (gdyby powstał wcześniej), inaczej utwórz.
+      const { data: existing } = await supabase.from('materials_folders')
+        .select('id').eq('team_type', MATERIALS_TEAM).eq('name', group.name).is('parent_id', null).limit(1);
+      if (existing && existing[0]) {
+        folderId = existing[0].id;
+      } else {
+        const { data: created, error: cErr } = await supabase.from('materials_folders')
+          .insert({ name: group.name, parent_id: null, team_type: MATERIALS_TEAM, created_by: email })
+          .select().single();
+        if (cErr) throw cErr;
+        folderId = created.id;
+      }
+      await supabase.from('home_groups').update({ materials_folder_id: folderId }).eq('id', group.id);
+      setGroups((prev) => prev.map((g) => g.id === group.id ? { ...g, materials_folder_id: folderId } : g));
+      setCurrentGroup((cg) => cg && cg.id === group.id ? { ...cg, materials_folder_id: folderId } : cg);
     }
 
+    // Zapewnij udostępnienie folderu całej grupie domowej (idempotentnie).
+    try {
+      const { data: sh } = await supabase.from('materials_shares')
+        .select('id').eq('folder_id', folderId).eq('target_type', 'home_group').eq('target_id', String(group.id)).limit(1);
+      if (!sh || !sh[0]) {
+        await supabase.from('materials_shares').insert({
+          folder_id: folderId, file_id: null, target_type: 'home_group',
+          target_id: String(group.id), target_label: group.name, permission: 'view', created_by: email,
+        });
+      }
+    } catch { /* udostępnienie best-effort */ }
+
+    return folderId;
+  };
+
+  const loadGroupMaterials = async (group) => {
+    const folderId = group.materials_folder_id;
+    if (!folderId) { setGroupMaterials([]); return; }
+    const { data } = await supabase.from('materials_files').select('*').eq('folder_id', folderId).order('name');
+    setGroupMaterials(data || []);
+  };
+
+  const openMaterialsModal = async (group) => {
+    setCurrentGroup(group);
+    setGroupMaterials([]);
+    setShowMaterialsModal(true);
+    try {
+      const folderId = await ensureGroupFolder(group);
+      const { data } = await supabase.from('materials_files').select('*').eq('folder_id', folderId).order('name');
+      setGroupMaterials(data || []);
+    } catch (err) {
+      console.error('Błąd wczytywania materiałów:', err);
+    }
+  };
+
+  const addMaterial = async () => {
+    if (!materialForm.attachment) {
+      toast.error(tr('Wybierz plik'));
+      return;
+    }
     setUploading(true);
     try {
-      let attachmentUrl = null;
+      const { data: { user } } = await supabase.auth.getUser();
+      const email = user?.email || null;
+      const folderId = await ensureGroupFolder(currentGroup);
 
-      if (materialForm.attachment) {
-        const fileName = `${Date.now()}_${materialForm.attachment.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('kids-materials')
-          .upload(fileName, materialForm.attachment);
+      const file = materialForm.attachment;
+      if (file.size > 50 * 1024 * 1024) throw new Error('Plik przekracza limit 50MB');
+      const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const storagePath = `${MATERIALS_TEAM}/${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${sanitized}`;
 
-        if (uploadError) throw uploadError;
+      const { error: upErr } = await supabase.storage.from('materials').upload(storagePath, file);
+      if (upErr) throw upErr;
 
-        const { data: urlData } = supabase.storage
-          .from('kids-materials')
-          .getPublicUrl(fileName);
-
-        attachmentUrl = urlData.publicUrl;
-      }
-
-      const newMaterial = {
-        id: Date.now().toString(),
-        title: materialForm.title,
-        type: materialForm.type,
-        attachmentUrl
-      };
-
-      const updatedMaterials = [...(currentGroup.materials || []), newMaterial];
-
-      const { error } = await supabase
-        .from('home_groups')
-        .update({ materials: updatedMaterials })
-        .eq('id', currentGroup.id);
-
-      if (error) throw error;
+      const { error: insErr } = await supabase.from('materials_files').insert({
+        name: materialForm.title?.trim() || file.name,
+        storage_path: storagePath,
+        file_size: file.size,
+        mime_type: file.type || 'application/octet-stream',
+        folder_id: folderId,
+        team_type: MATERIALS_TEAM,
+        description: materialForm.type || null,
+        uploaded_by: email,
+      });
+      if (insErr) throw insErr;
 
       setMaterialForm({ title: '', type: 'Dokument', attachment: null });
+      await loadGroupMaterials({ ...currentGroup, materials_folder_id: folderId });
       fetchData();
     } catch (err) {
       console.error('Błąd dodawania materiału:', err);
@@ -654,18 +749,13 @@ export default function HomeGroupsModule() {
     }
   };
 
-  const deleteMaterial = async (materialId) => {
+  const deleteMaterial = async (file) => {
     if (!confirm(tr('Czy na pewno chcesz usunąć ten materiał?'))) return;
-
     try {
-      const updatedMaterials = (currentGroup.materials || []).filter(m => m.id !== materialId);
-
-      const { error } = await supabase
-        .from('home_groups')
-        .update({ materials: updatedMaterials })
-        .eq('id', currentGroup.id);
-
+      if (file.storage_path) await supabase.storage.from('materials').remove([file.storage_path]);
+      const { error } = await supabase.from('materials_files').delete().eq('id', file.id);
       if (error) throw error;
+      await loadGroupMaterials(currentGroup);
       fetchData();
     } catch (err) {
       console.error('Błąd usuwania materiału:', err);
@@ -808,10 +898,10 @@ export default function HomeGroupsModule() {
                       <Users size={14}/> Członkowie ({memberCount})
                     </button>
                     <button
-                      onClick={() => { setCurrentGroup(group); setShowMaterialsModal(true); }}
+                      onClick={() => openMaterialsModal(group)}
                       className="flex-1 bg-accent-secondary-lightest dark:bg-gray-800 text-accent-secondary dark:text-accent-secondary-light text-xs font-bold py-2 rounded-xl hover:bg-accent-secondary-lighter dark:hover:bg-gray-700 transition flex items-center justify-center gap-1"
                     >
-                      <BookOpen size={14}/> Materiały ({group.materials?.length || 0})
+                      <BookOpen size={14}/> Materiały ({materialCounts[group.id] || 0})
                     </button>
                   </div>
                 </div>
@@ -1322,39 +1412,41 @@ export default function HomeGroupsModule() {
                 </div>
               </div>
 
+              <p className="text-[11px] text-gray-400 mb-2">Materiały trafiają do zakładki „Pliki" (folder „{currentGroup.name}") i są udostępnione członkom tej grupy. Pliki dodane w „Plikach" w tym folderze też pojawią się tutaj.</p>
               <div className="flex-1 overflow-y-auto space-y-2">
-                {(currentGroup.materials || []).map(m => (
+                {groupMaterials.map(m => {
+                  const url = supabase.storage.from('materials').getPublicUrl(m.storage_path).data.publicUrl;
+                  return (
                   <div key={m.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="bg-accent-secondary-lighter dark:bg-accent-secondary-darkest/40 p-2 rounded-lg text-accent-secondary dark:text-accent-secondary-light">
                         <BookOpen size={18}/>
                       </div>
                       <div>
-                        <div className="font-bold text-gray-800 dark:text-gray-200">{m.title}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{m.type}</div>
+                        <div className="font-bold text-gray-800 dark:text-gray-200">{m.name}</div>
+                        {m.description && <div className="text-xs text-gray-500 dark:text-gray-400">{m.description}</div>}
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      {m.attachmentUrl && (
-                        <a
-                          href={m.attachmentUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-accent-secondary hover:bg-accent-secondary-lightest p-2 rounded-lg"
-                        >
-                          <LinkIcon size={18}/>
-                        </a>
-                      )}
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-accent-secondary hover:bg-accent-secondary-lightest p-2 rounded-lg"
+                      >
+                        <LinkIcon size={18}/>
+                      </a>
                       <button
-                        onClick={() => deleteMaterial(m.id)}
+                        onClick={() => deleteMaterial(m)}
                         className="text-red-400 hover:bg-red-50 p-2 rounded-lg"
                       >
                         <Trash2 size={18}/>
                       </button>
                     </div>
                   </div>
-                ))}
-                {(!currentGroup.materials || currentGroup.materials.length === 0) && (
+                  );
+                })}
+                {groupMaterials.length === 0 && (
                   <div className="text-center text-gray-400 dark:text-gray-500 py-8">
                     {tr('Brak materiałów')}
                   </div>
