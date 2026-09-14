@@ -9,6 +9,7 @@ import PageHeader from '../../components/PageHeader';
 import Modal from '../../components/Modal';
 import CustomSelect from '../../components/CustomSelect';
 import TimeInput from '../../components/TimeInput';
+import HomeGroupVisibilityPicker, { buildHgSegments, firstGroupFromKeys } from './HomeGroupVisibilityPicker';
 import { supabase } from '../../lib/supabase';
 import { toast } from '../../lib/toast';
 import { useModuleLabel } from '../../hooks/useModuleLabel';
@@ -66,11 +67,12 @@ function CreateEventModal({ onClose }) {
   const navigate = useNavigate();
   const { modules } = useModules();
   const { campusIdForInsert } = useCampusQuery();
-  const [form, setForm] = useState({ title: '', module_key: '', date: '', time: '', end_time: '', location: '', home_group_id: '' });
+  const [form, setForm] = useState({ title: '', module_key: '', date: '', time: '', end_time: '', location: '', visKeys: [] });
   const [saving, setSaving] = useState(false);
   const [allowed, setAllowed] = useState(null); // klucze modułów-kalendarzy w pickerze
   const [homeGroups, setHomeGroups] = useState([]);
   const isHomeGroups = form.module_key === 'homegroups';
+  const toggleVis = (key) => setForm((f) => ({ ...f, visKeys: f.visKeys.includes(key) ? f.visKeys.filter((k) => k !== key) : [...f.visKeys, key] }));
 
   useEffect(() => { readEventCalendars().then(setAllowed); }, []);
   // Dynamiczny wybór grupy domowej, gdy jako kalendarz/moduł wybrano „Grupy domowe".
@@ -100,12 +102,17 @@ function CreateEventModal({ onClose }) {
         created_by: user?.email || null,
         campus_id: campusIdForInsert,
       };
-      // Grupa domowa: przypisanie + widoczność dla członków + dziedziczenie kampusu grupy.
-      if (isHomeGroups && form.home_group_id) {
-        const g = homeGroups.find((x) => String(x.id) === String(form.home_group_id));
-        row.home_group_id = form.home_group_id;
-        row.visibility_segments = [{ type: 'home_group', values: [String(form.home_group_id)], label: g?.name || undefined }];
-        if (g && g.campus_id != null) row.campus_id = g.campus_id;
+      // Grupa domowa: widoczność wg zaznaczeń (członkowie/liderzy/koordynatorzy/konkretne grupy),
+      // przypisanie do pierwszej konkretnej grupy (badge/filtr) + dziedziczenie jej kampusu.
+      if (isHomeGroups && form.visKeys.length) {
+        const nameOf = (id) => homeGroups.find((x) => String(x.id) === String(id))?.name || null;
+        row.visibility_segments = buildHgSegments(form.visKeys, nameOf);
+        const firstGroup = firstGroupFromKeys(form.visKeys);
+        if (firstGroup) {
+          row.home_group_id = firstGroup;
+          const g = homeGroups.find((x) => String(x.id) === String(firstGroup));
+          if (g && g.campus_id != null) row.campus_id = g.campus_id;
+        }
       }
       const { data, error } = await supabase.from('events').insert([row]).select().single();
       if (error) throw error;
@@ -123,16 +130,12 @@ function CreateEventModal({ onClose }) {
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('Nazwa wydarzenia')}
             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
         </div>
-        <CustomSelect label={t('Kalendarz / moduł')} value={form.module_key} onChange={(v) => setForm({ ...form, module_key: v, home_group_id: '' })} options={moduleOptions} />
+        <CustomSelect label={t('Kalendarz / moduł')} value={form.module_key} onChange={(v) => setForm({ ...form, module_key: v, visKeys: [] })} options={moduleOptions} />
         {isHomeGroups && (
           <div>
-            <CustomSelect
-              label={t('Grupa domowa')}
-              value={form.home_group_id}
-              onChange={(v) => setForm({ ...form, home_group_id: v })}
-              options={[{ value: '', label: t('Cała społeczność (bez grupy)') }, ...homeGroups.map((g) => ({ value: g.id, label: g.name }))]}
-            />
-            <p className="text-[11px] text-gray-400 mt-1 ml-1">{form.home_group_id ? t('Widoczne dla członków tej grupy domowej.') : t('Widoczne dla całej społeczności.')} {t('Więcej opcji (liderzy, miks) — na stronie wydarzenia lub w module Grupy domowe.')}</p>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Widoczność')}</label>
+            <HomeGroupVisibilityPicker homeGroups={homeGroups} visKeys={form.visKeys} onToggle={toggleVis} />
+            <p className="text-[11px] text-gray-400 mt-1 ml-1">{form.visKeys.length ? t('Widoczne dla zaznaczonych osób (+ administratorzy).') : t('Nic nie zaznaczono = widoczne dla całej społeczności.')}</p>
           </div>
         )}
         <div className="grid grid-cols-3 gap-3">

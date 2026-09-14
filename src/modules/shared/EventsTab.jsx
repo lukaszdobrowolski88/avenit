@@ -9,6 +9,7 @@ import TimeInput from '../../components/TimeInput';
 import { useCampusQuery } from '../../hooks/useCampusQuery';
 import { useModuleCalendar, saveModuleCalendar } from '../../hooks/useModuleLabel';
 import Modal from '../../components/Modal';
+import HomeGroupVisibilityPicker, { buildHgSegments, segmentsToVisKeys } from '../Events/HomeGroupVisibilityPicker';
 import { useCan } from '../../components/Can';
 import { useT } from '../../i18n';
 import { tr } from '../../i18n';
@@ -243,19 +244,6 @@ function getModuleConfig(ministry) {
   };
 }
 
-// Buduje segmenty widoczności grup domowych z zestawu wybranych kluczy.
-function buildHgSegments(keys, nameOf) {
-  const segs = [];
-  const memGroups = keys.filter((k) => k.startsWith('mem:')).map((k) => k.slice(4));
-  const leadGroups = keys.filter((k) => k.startsWith('lead:')).map((k) => k.slice(5));
-  if (keys.includes('all_members')) segs.push({ type: 'home_group_member', label: 'Członkowie grup domowych' });
-  if (keys.includes('all_leaders')) segs.push({ type: 'home_group_leader', label: 'Liderzy grup domowych' });
-  if (keys.includes('all_coords')) segs.push({ type: 'home_group_coordinator', label: 'Koordynatorzy grup domowych' });
-  if (memGroups.length) segs.push({ type: 'home_group', values: memGroups, label: memGroups.map(nameOf).filter(Boolean).join(', ') || undefined });
-  if (leadGroups.length) segs.push({ type: 'home_group_leader', values: leadGroups, label: 'Liderzy: ' + (leadGroups.map(nameOf).filter(Boolean).join(', ') || '') });
-  return segs;
-}
-
 // Modal edycji wydarzenia
 const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], homeGroups = [] }) => {
   const t = useT();
@@ -270,22 +258,9 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
     location: event?.location || '',
     max_participants: event?.max_participants || '',
     event_type: event?.event_type || config.defaultType,
-    // Widoczność (moduł homegroups): zbiór kluczy — 'all_members', 'all_leaders',
+    // Widoczność (moduł homegroups): zbiór kluczy — 'all_members', 'all_leaders', 'all_coords',
     // `mem:<groupId>` (członkowie grupy), `lead:<groupId>` (liderzy grupy). Pusto = cała społeczność.
-    visKeys: (() => {
-      const segs = Array.isArray(event?.visibility_segments) ? event.visibility_segments : [];
-      const keys = [];
-      segs.forEach((s) => {
-        if (s?.type === 'home_group_member') keys.push('all_members');
-        else if (s?.type === 'home_group_coordinator') keys.push('all_coords');
-        else if (s?.type === 'home_group_leader') {
-          if (Array.isArray(s.values) && s.values.length) s.values.forEach((v) => keys.push(`lead:${v}`));
-          else keys.push('all_leaders');
-        } else if (s?.type === 'home_group' && Array.isArray(s.values)) s.values.forEach((v) => keys.push(`mem:${v}`));
-      });
-      if (!keys.length && event?.home_group_id) keys.push(`mem:${event.home_group_id}`);
-      return keys;
-    })(),
+    visKeys: segmentsToVisKeys(event?.visibility_segments, event?.home_group_id),
     custom: event?.custom || {}
   });
   const toggleVis = (key) => setForm((f) => ({ ...f, visKeys: f.visKeys.includes(key) ? f.visKeys.filter((k) => k !== key) : [...f.visKeys, key] }));
@@ -371,35 +346,7 @@ const EventModal = ({ event, onClose, onSave, onDelete, config, fields = [], hom
           {homeGroups.length > 0 && (
             <div>
               <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{t('Widoczność')}</label>
-              <div className="rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-800">
-                <label className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={form.visKeys.includes('all_members')} onChange={() => toggleVis('all_members')} className="w-4 h-4 rounded accent-accent-primary" />
-                  <span className="text-gray-700 dark:text-gray-200">{t('Wszyscy członkowie grup domowych')}</span>
-                </label>
-                <label className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={form.visKeys.includes('all_leaders')} onChange={() => toggleVis('all_leaders')} className="w-4 h-4 rounded accent-accent-primary" />
-                  <span className="text-gray-700 dark:text-gray-200">{t('Liderzy grup domowych')}</span>
-                </label>
-                <label className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={form.visKeys.includes('all_coords')} onChange={() => toggleVis('all_coords')} className="w-4 h-4 rounded accent-accent-primary" />
-                  <span className="text-gray-700 dark:text-gray-200">{t('Koordynatorzy grup domowych')}</span>
-                </label>
-                <div className="max-h-44 overflow-y-auto custom-scrollbar">
-                  {homeGroups.map((g) => (
-                    <div key={g.id} className="flex items-center justify-between gap-2 px-3 py-2">
-                      <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{g.name}</span>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <label className="flex items-center gap-1 text-xs cursor-pointer text-gray-500 dark:text-gray-400">
-                          <input type="checkbox" checked={form.visKeys.includes(`mem:${g.id}`)} onChange={() => toggleVis(`mem:${g.id}`)} className="w-3.5 h-3.5 rounded accent-accent-primary" /> {t('członkowie')}
-                        </label>
-                        <label className="flex items-center gap-1 text-xs cursor-pointer text-gray-500 dark:text-gray-400">
-                          <input type="checkbox" checked={form.visKeys.includes(`lead:${g.id}`)} onChange={() => toggleVis(`lead:${g.id}`)} className="w-3.5 h-3.5 rounded accent-accent-primary" /> {t('liderzy')}
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <HomeGroupVisibilityPicker homeGroups={homeGroups} visKeys={form.visKeys} onToggle={toggleVis} />
               <p className="text-[11px] text-gray-400 mt-1 ml-1">{form.visKeys.length ? t('Widoczne dla zaznaczonych osób (+ administratorzy).') : t('Nic nie zaznaczono = widoczne dla całej społeczności.')}</p>
             </div>
           )}
