@@ -16,6 +16,7 @@ import {
 import FinanceTab from '../shared/FinanceTab';
 import HomeGroupsMap from './HomeGroupsMap';
 import EventsTab from '../shared/EventsTab';
+import { ensureGroupFolder as ensureGroupFolderUtil } from './homeGroupFolder';
 import MaterialsTab from '../shared/MaterialsTab';
 import EquipmentTab from '../shared/EquipmentTab';
 import { useUserRole } from '../../hooks/useUserRole';
@@ -655,40 +656,11 @@ export default function HomeGroupsModule() {
   const MATERIALS_TEAM = 'homegroups';
 
   const ensureGroupFolder = async (group) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    const email = user?.email || null;
-    let folderId = group.materials_folder_id || null;
-
-    if (!folderId) {
-      // Spróbuj znaleźć istniejący folder po nazwie (gdyby powstał wcześniej), inaczej utwórz.
-      const { data: existing } = await supabase.from('materials_folders')
-        .select('id').eq('team_type', MATERIALS_TEAM).eq('name', group.name).is('parent_id', null).limit(1);
-      if (existing && existing[0]) {
-        folderId = existing[0].id;
-      } else {
-        const { data: created, error: cErr } = await supabase.from('materials_folders')
-          .insert({ name: group.name, parent_id: null, team_type: MATERIALS_TEAM, created_by: email })
-          .select().single();
-        if (cErr) throw cErr;
-        folderId = created.id;
-      }
-      await supabase.from('home_groups').update({ materials_folder_id: folderId }).eq('id', group.id);
+    const folderId = await ensureGroupFolderUtil(group);
+    if (!group.materials_folder_id) {
       setGroups((prev) => prev.map((g) => g.id === group.id ? { ...g, materials_folder_id: folderId } : g));
       setCurrentGroup((cg) => cg && cg.id === group.id ? { ...cg, materials_folder_id: folderId } : cg);
     }
-
-    // Zapewnij udostępnienie folderu całej grupie domowej (idempotentnie).
-    try {
-      const { data: sh } = await supabase.from('materials_shares')
-        .select('id').eq('folder_id', folderId).eq('target_type', 'home_group').eq('target_id', String(group.id)).limit(1);
-      if (!sh || !sh[0]) {
-        await supabase.from('materials_shares').insert({
-          folder_id: folderId, file_id: null, target_type: 'home_group',
-          target_id: String(group.id), target_label: group.name, permission: 'view', created_by: email,
-        });
-      }
-    } catch { /* udostępnienie best-effort */ }
-
     return folderId;
   };
 

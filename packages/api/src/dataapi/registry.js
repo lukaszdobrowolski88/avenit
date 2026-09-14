@@ -253,6 +253,7 @@ export const REGISTRY = {
   materials_files: T(null),
   materials_folders: T(null),
   materials_shares: T(null),
+  event_materials: T(null),
   // Media (zadania)
   media_tasks: T('module:media'),
   media_task_comments: T('module:media'),
