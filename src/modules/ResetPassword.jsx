@@ -47,9 +47,12 @@ export default function ResetPassword() {
 
     setLoading(true);
 
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: password
-    });
+    // Token z linku resetu (?token=...) — ustawiamy hasło bez zalogowanej sesji.
+    // Fallback do updateUser (gdyby user był już zalogowany, np. wymuszona zmiana).
+    const token = new URLSearchParams(window.location.search).get('token');
+    const { error: updateError } = token
+      ? await supabase.auth.confirmPasswordReset(token, password)
+      : await supabase.auth.updateUser({ password });
 
     if (updateError) {
       setError(updateError.message || tr('Błąd ustawiania hasła'));
