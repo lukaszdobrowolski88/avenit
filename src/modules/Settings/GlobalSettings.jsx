@@ -1529,7 +1529,7 @@ export default function GlobalSettings() {
                 <button onClick={clearSelection} className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:underline ml-auto">{tr('Wyczyść')}</button>
               </div>
             )}
-            <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
               <table className="w-full text-sm text-left bg-white dark:bg-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300"><tr><th className="p-4 w-10"><input type="checkbox" checked={filteredUsers.length > 0 && selectedUserIds.size === filteredUsers.length} onChange={() => setSelectedUserIds(prev => prev.size === filteredUsers.length ? new Set() : new Set(filteredUsers.map(u => u.id)))} /></th><th className="p-4">{t('Użytkownik')}</th><th className="p-4">{t('Email')}</th><th className="p-4">{t('Rola')}</th>{campuses.length > 0 && <th className="p-4">{t('Kampus')}</th>}<th className="p-4">{t('Status')}</th><th className="p-4">{t('Ostatnie logowanie')}</th><th className="p-4 text-right">{t('Akcje')}</th></tr></thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-600">
@@ -1565,7 +1565,8 @@ export default function GlobalSettings() {
                           </div>
                         </td>
                         <td className="p-4 text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : invitedPending ? <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">{tr('zaproszono')}</span> : <span className="text-gray-300 dark:text-gray-600">{tr('nigdy')}</span>}</td>
-                        <td className="p-4 text-right flex justify-end gap-2">
+                        <td className="p-4 text-right whitespace-nowrap">
+                          <div className="flex justify-end gap-2">
                           <button onClick={() => { setUserForm({...user, password: ''}); setAdminNewPassword(''); setRequire2FA(!!user.totp_required); setShowUserModal(true); }} title={t('Edytuj')} className="text-accent-primary dark:text-accent-primary-light hover:bg-accent-primary-lightest dark:hover:bg-gray-600 p-2 rounded-lg"><Edit3 size={16}/></button>
                           {invitedPending && (
                             <button onClick={() => resendInvite(user.id)} title={tr('Ponów zaproszenie')} className="text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Mail size={16}/></button>
@@ -1574,6 +1575,7 @@ export default function GlobalSettings() {
                             <button onClick={() => resetUser2FA(user)} title={tr('Zresetuj 2FA')} className="text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-gray-600 p-2 rounded-lg"><KeyRound size={16}/></button>
                           )}
                           <button onClick={() => deleteUser(user.id)} title={t('Usuń')} className="text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 p-2 rounded-lg"><Trash2 size={16}/></button>
+                          </div>
                         </td>
                       </tr>
                     );
