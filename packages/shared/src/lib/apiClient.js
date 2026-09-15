@@ -398,6 +398,13 @@ export function createApiClient({
       return { data: {}, error: null };
     },
 
+    // Ustawienie hasła z tokenu z linku resetu (bez zalogowanej sesji).
+    async confirmPasswordReset(token, password) {
+      const { res, payload } = await requestJson('/api/auth/reset-password/confirm', { token, password });
+      if (!res.ok) return { data: null, error: { message: payload?.error || 'Błąd' } };
+      return { data: {}, error: null };
+    },
+
     // Wymiana jednorazowego biletu SSO (z app.<domena>) na sesję kościoła.
     async loginWithTicket(ticket) {
       const { res, payload } = await requestJson('/api/auth/ticket', { ticket });
