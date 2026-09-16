@@ -23,6 +23,8 @@ import EmptyState from '../components/EmptyState';
 import HouseholdManager from './Kids/components/HouseholdManager';
 import { useCampusQuery } from '../hooks/useCampusQuery';
 import { useCampus } from '../contexts/CampusContext';
+import { useModuleLabel } from '../hooks/useModuleLabel';
+import { useModules } from '../hooks/useModules';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
 
@@ -34,14 +36,9 @@ const STATUS_OPTIONS = [
   "Gość"
 ];
 
-const MINISTRY_OPTIONS = [
-  { key: 'media_team', label: 'Media Team', table: 'media_team' },
-  { key: 'atmosfera_team', label: tr('Atmosfera Team'), table: 'atmosfera_members' },
-  { key: 'worship_team', label: tr('Grupa Uwielbienia'), table: 'worship_team' },
-  { key: 'home_groups', label: 'Grupy Domowe', table: 'home_group_members' },
-  { key: 'kids_ministry', label: tr('Małe Avenit'), table: 'kids_teachers' },
-  { key: 'administration', label: 'Administracja', table: null }
-];
+// Lista służb budowana dynamicznie w komponencie (etykiety per tenant + moduły custom).
+// Grupy domowe mają osobny, wielokrotny wybór (nie jako pojedyncza „służba").
+const MINISTRY_SYS_KEYS = new Set(['worship', 'media', 'atmosfera', 'kids', 'mc', 'homegroups', 'programs', 'dashboard', 'calendar', 'general', 'members', 'finance', 'teaching', 'prayer_wall', 'boards']);
 
 // --- GŁÓWNY KOMPONENT ---
 
@@ -58,6 +55,28 @@ export default function Members() {
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
   const { campuses } = useCampus();
 
+  // Służby: etykiety z konfiguracji modułów tenanta (nie hardcode) + moduły custom + MC.
+  const lblWorship = useModuleLabel('worship', 'Grupa Uwielbienia');
+  const lblMedia = useModuleLabel('media', 'Media Team');
+  const lblAtmosfera = useModuleLabel('atmosfera', 'Atmosfera Team');
+  const lblKids = useModuleLabel('kids', 'Małe Avenit');
+  const lblMc = useModuleLabel('mc', 'Scena / MC');
+  const { modules } = useModules();
+  const MINISTRY_OPTIONS = React.useMemo(() => {
+    const sys = [
+      { key: 'worship_team', label: lblWorship, table: 'worship_team' },
+      { key: 'media_team', label: lblMedia, table: 'media_team' },
+      { key: 'atmosfera_team', label: lblAtmosfera, table: 'atmosfera_members' },
+      { key: 'kids_ministry', label: lblKids, table: 'kids_teachers' },
+      { key: 'mc_team', label: lblMc, table: 'custom_mc_members' },
+    ];
+    const customs = (modules || [])
+      .filter((m) => m.is_enabled && m.key && !MINISTRY_SYS_KEYS.has(m.key))
+      .map((m) => ({ key: `custom_${m.key}`, label: m.label || m.key, table: `custom_${m.key}_members` }));
+    return [...sys, ...customs, { key: 'administration', label: tr('Administracja'), table: null }];
+  }, [lblWorship, lblMedia, lblAtmosfera, lblKids, lblMc, modules]);
+  const [hgIdsByEmail, setHgIdsByEmail] = useState({}); // email(lower) -> [group_id] (członkostwa w grupach domowych)
+
   // Stan modala
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -72,6 +91,7 @@ export default function Members() {
     phone: '',
     address: '',
     home_group_id: '',
+    home_group_ids: [],
     household_id: '',
     status: 'Sympatyk',
     membership_date: '',
@@ -93,10 +113,11 @@ export default function Members() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [membersResult, groupsResult, householdsResult] = await Promise.all([
+      const [membersResult, groupsResult, householdsResult, hgmResult] = await Promise.all([
         withCampusFilter(supabase.from('members').select('*')).order('last_name'),
         supabase.from('home_groups').select('id, name').order('name'),
-        supabase.from('households').select('*').order('name')
+        supabase.from('households').select('*').order('name'),
+        supabase.from('home_group_members').select('email, group_id').then((r) => r, () => ({ data: [] })),
       ]);
 
       if (membersResult.error) throw membersResult.error;
@@ -106,6 +127,14 @@ export default function Members() {
       setMembers(membersResult.data || []);
       setHomeGroups(groupsResult.data || []);
       setHouseholds(householdsResult.data || []);
+      // Mapa e-mail → grupy domowe (członkostwa) do multi-wyboru i wyświetlania.
+      const map = {};
+      (hgmResult.data || []).forEach((r) => {
+        const e = (r.email || '').toLowerCase();
+        if (!e || r.group_id == null) return;
+        (map[e] = map[e] || []).push(r.group_id);
+      });
+      setHgIdsByEmail(map);
     } catch (error) {
       console.error('Błąd pobierania danych:', error);
     } finally {
@@ -134,12 +163,28 @@ export default function Members() {
       phone: memberData.phone || null
     };
 
-    // Dodaj group_id dla home_group_members
-    if (ministry.table === 'home_group_members' && memberData.home_group_id) {
-      insertData.group_id = memberData.home_group_id;
-    }
+    // Best-effort: moduł custom może nie mieć tabeli członków — nie przerywamy zapisu.
+    try { await supabase.from(ministry.table).insert([insertData]); } catch (e) { console.warn('ministry insert failed', ministry.table, e?.message); }
+  };
 
-    await supabase.from(ministry.table).insert([insertData]);
+  // Synchronizacja członkostw w grupach domowych (home_group_members) — wiele grup na osobę.
+  const syncHomeGroups = async (memberData, ids = []) => {
+    const email = memberData.email;
+    if (!email) return; // bez e-maila nie ma jak powiązać
+    const want = new Set((ids || []).map(String));
+    const { data: cur } = await supabase.from('home_group_members').select('id, group_id').eq('email', email);
+    const curIds = new Set((cur || []).map((r) => String(r.group_id)));
+    const fullName = `${memberData.first_name || ''} ${memberData.last_name || ''}`.trim();
+    for (const gid of want) {
+      if (!curIds.has(gid)) {
+        try { await supabase.from('home_group_members').insert([{ full_name: fullName, email, phone: memberData.phone || null, group_id: gid }]); } catch (e) { console.warn('home_group_members insert', e?.message); }
+      }
+    }
+    for (const r of (cur || [])) {
+      if (!want.has(String(r.group_id))) {
+        try { await supabase.from('home_group_members').delete().eq('id', r.id); } catch (e) { console.warn('home_group_members delete', e?.message); }
+      }
+    }
   };
 
   // Funkcja do usuwania członka ze służby
@@ -180,7 +225,7 @@ export default function Members() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const { id, ...dataToSave } = formData;
+      const { id, home_group_ids = [], ...dataToSave } = formData;
 
       if (!dataToSave.first_name || !dataToSave.last_name) {
         toast.error(tr('Imię i nazwisko są wymagane'));
@@ -197,7 +242,7 @@ export default function Members() {
       // Konwertuj puste stringi na null dla pól opcjonalnych
       if (!dataToSave.membership_date) dataToSave.membership_date = null;
       if (!dataToSave.membership_declaration_url) dataToSave.membership_declaration_url = null;
-      if (!dataToSave.home_group_id) dataToSave.home_group_id = null;
+      dataToSave.home_group_id = home_group_ids[0] || null; // primary (kompatybilność/widoczność)
       if (!dataToSave.household_id) dataToSave.household_id = null;
       if (!dataToSave.address) dataToSave.address = null;
       if (!dataToSave.email) dataToSave.email = null;
@@ -243,6 +288,8 @@ export default function Members() {
 
       // Synchronizuj służby
       await syncMinistries({ ...dataToSave, email: dataToSave.email }, oldMinistries);
+      // Synchronizuj członkostwa w grupach domowych (wiele grup) → home_group_members.
+      await syncHomeGroups({ ...dataToSave, email: dataToSave.email }, home_group_ids);
 
       setShowModal(false);
       fetchData();
@@ -273,6 +320,8 @@ export default function Members() {
             await removeMemberFromMinistry(ministry, member.email);
           }
         }
+        // Usuń z grup domowych.
+        if (member.email) { try { await supabase.from('home_group_members').delete().eq('email', member.email); } catch { /* best-effort */ } }
 
         // Usuń deklarację jeśli istnieje
         if (member.membership_declaration_url) {
@@ -299,6 +348,7 @@ export default function Members() {
         ...member,
         address: member.address || '',
         home_group_id: member.home_group_id || '',
+        home_group_ids: hgIdsByEmail[(member.email || '').toLowerCase()] || (member.home_group_id ? [member.home_group_id] : []),
         household_id: member.household_id || '',
         status: member.status || 'Sympatyk',
         membership_date: member.membership_date || '',
@@ -317,6 +367,7 @@ export default function Members() {
         phone: '',
         address: '',
         home_group_id: '',
+        home_group_ids: [],
         household_id: '',
         status: 'Sympatyk',
         membership_date: '',
@@ -409,7 +460,7 @@ export default function Members() {
     if (!ministries || ministries.length === 0) return [];
     return ministries.map(key => {
       const ministry = MINISTRY_OPTIONS.find(m => m.key === key);
-      return ministry?.label || key;
+      return ministry?.label || (key === 'home_groups' ? tr('Grupy domowe') : key);
     });
   };
 
@@ -872,17 +923,28 @@ export default function Members() {
                 icon={Users}
               />
 
-              {/* Grupa Domowa */}
-              <CustomSelect
-                label="Grupa Domowa"
-                placeholder={tr('Wybierz grupę...')}
-                value={formData.home_group_id}
-                onChange={(val) => setFormData({ ...formData, home_group_id: val })}
-                options={[{ id: '', name: 'Brak' }, ...homeGroups]}
-                mapOptionToValue={(opt) => opt.id}
-                mapOptionToLabel={(opt) => opt.name}
-                icon={Home}
-              />
+              {/* Grupy Domowe (wiele) */}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Grupy domowe')}</label>
+                {homeGroups.length === 0 ? (
+                  <p className="text-sm text-gray-400">{tr('Brak grup domowych')}</p>
+                ) : (
+                  <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 p-3">
+                    <div className="flex flex-wrap gap-2">
+                      {homeGroups.map((g) => {
+                        const sel = (formData.home_group_ids || []).some((x) => String(x) === String(g.id));
+                        return (
+                          <button key={g.id} type="button"
+                            onClick={() => setFormData((f) => ({ ...f, home_group_ids: sel ? f.home_group_ids.filter((x) => String(x) !== String(g.id)) : [...(f.home_group_ids || []), g.id] }))}
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-1.5 ${sel ? 'bg-gradient-to-r from-accent-primary-light to-accent-secondary-light text-white shadow-md' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>
+                            <Home size={13} /> {g.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Kampus */}
               {campuses.length > 0 && (
