@@ -6,7 +6,7 @@ import {
   Plus, Search, Trash2, Edit2, X, User,
   Mail, Phone, CheckCircle, XCircle,
   MapPin, Users, Home, Calendar, FileText,
-  Upload, Eye, Check, FolderOpen, HeartHandshake
+  Upload, Eye, Check, FolderOpen, HeartHandshake, Cake
 } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import CustomDatePicker from '../components/CustomDatePicker';
@@ -77,6 +77,34 @@ export default function Members() {
   }, [lblWorship, lblMedia, lblAtmosfera, lblKids, lblMc, modules]);
   const [hgIdsByEmail, setHgIdsByEmail] = useState({}); // email(lower) -> [group_id] (członkostwa w grupach domowych)
 
+  // Obecność: ostatnie 4 niedziele (25% za każdą). Data lokalna (bez przesunięcia strefy).
+  const fmtDate = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+  const last4Sundays = React.useMemo(() => {
+    const out = []; const d = new Date(); d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - d.getDay()); // ostatnia (lub dzisiejsza) niedziela
+    for (let i = 0; i < 4; i++) { out.push(fmtDate(d)); d.setDate(d.getDate() - 7); }
+    return out; // [najnowsza … najstarsza]
+  }, []);
+  const [attendanceByMember, setAttendanceByMember] = useState({}); // member_id -> Set(date)
+  const attendanceCount = (memberId) => {
+    const set = attendanceByMember[String(memberId)];
+    return set ? last4Sundays.filter((d) => set.has(d)).length : 0;
+  };
+  const birthdaySoon = (bd) => {
+    if (!bd) return false;
+    const d = new Date(bd); const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let next = new Date(now.getFullYear(), d.getMonth(), d.getDate());
+    if (next < today) next = new Date(now.getFullYear() + 1, d.getMonth(), d.getDate());
+    return (next - today) / 86400000 <= 7;
+  };
+  const fmtBirth = (bd) => {
+    if (!bd) return '';
+    const d = new Date(bd);
+    const age = new Date().getFullYear() - d.getFullYear();
+    return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()} (${age})`;
+  };
+
   // Stan modala
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -113,11 +141,12 @@ export default function Members() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [membersResult, groupsResult, householdsResult, hgmResult] = await Promise.all([
+      const [membersResult, groupsResult, householdsResult, hgmResult, attResult] = await Promise.all([
         withCampusFilter(supabase.from('members').select('*')).order('last_name'),
         supabase.from('home_groups').select('id, name').order('name'),
         supabase.from('households').select('*').order('name'),
         supabase.from('home_group_members').select('email, group_id').then((r) => r, () => ({ data: [] })),
+        supabase.from('attendance').select('member_id, date').eq('present', true).in('date', last4Sundays).then((r) => r, () => ({ data: [] })),
       ]);
 
       if (membersResult.error) throw membersResult.error;
@@ -135,6 +164,14 @@ export default function Members() {
         (map[e] = map[e] || []).push(r.group_id);
       });
       setHgIdsByEmail(map);
+      // Obecność ostatnich 4 niedziel: member_id → zbiór dat.
+      const att = {};
+      (attResult.data || []).forEach((r) => {
+        if (r.member_id == null || !r.date) return;
+        const k = String(r.member_id);
+        (att[k] = att[k] || new Set()).add(String(r.date).slice(0, 10));
+      });
+      setAttendanceByMember(att);
     } catch (error) {
       console.error('Błąd pobierania danych:', error);
     } finally {
@@ -582,6 +619,8 @@ export default function Members() {
                 <th className="p-4">{t('Rodzina')}</th>
                 <th className="p-4">{t('Grupa Domowa')}</th>
                 <th className="p-4">{t('Służby')}</th>
+                <th className="p-4">{t('Data urodzenia')}</th>
+                <th className="p-4">{t('Obecność')}</th>
                 <th className="p-4">{t('Status')}</th>
                 <th className="p-4 pr-6 text-right">{t('Akcje')}</th>
               </tr>
@@ -650,6 +689,31 @@ export default function Members() {
                         <span className="text-gray-400 dark:text-gray-600 text-xs">-</span>
                       )}
                     </div>
+                  </td>
+
+                  <td className="p-4 whitespace-nowrap">
+                    {member.birth_date ? (
+                      <span className={`inline-flex items-center gap-1.5 text-xs ${birthdaySoon(member.birth_date) ? 'text-accent-primary font-semibold' : 'text-gray-600 dark:text-gray-400'}`} title={birthdaySoon(member.birth_date) ? 'Urodziny w ciągu 7 dni' : undefined}>
+                        <Cake size={13} className={birthdaySoon(member.birth_date) ? 'text-accent-primary' : 'text-gray-400'} /> {fmtBirth(member.birth_date)}
+                      </span>
+                    ) : <span className="text-gray-300 dark:text-gray-600 text-xs">—</span>}
+                  </td>
+
+                  <td className="p-4">
+                    {(() => {
+                      const cnt = attendanceCount(member.id);
+                      return (
+                        <div className="flex items-center gap-2" title={`Obecność ostatnie 4 niedziele: ${cnt}/4`}>
+                          <div className="flex gap-0.5">
+                            {[...last4Sundays].reverse().map((d) => {
+                              const on = attendanceByMember[String(member.id)]?.has(d);
+                              return <span key={d} title={d} className={`w-2.5 h-4 rounded-sm ${on ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'}`} />;
+                            })}
+                          </div>
+                          <span className={`text-xs font-medium ${cnt >= 3 ? 'text-green-600 dark:text-green-400' : cnt === 0 ? 'text-gray-400' : 'text-amber-600 dark:text-amber-400'}`}>{cnt * 25}%</span>
+                        </div>
+                      );
+                    })()}
                   </td>
 
                   <td className="p-4">
