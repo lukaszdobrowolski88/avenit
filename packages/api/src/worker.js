@@ -80,6 +80,8 @@ cron.schedule('5 7 * * *', exclusive(() => forEachTenant('finance-recurring', 'f
 cron.schedule('0 10 * * *', exclusive(() => forEachTenant('rsvp-reminders', 'rsvp-reminders')));
 // Serie RSVP: codziennie 06:00 — generuj kolejne wystąpienia cyklicznych kampanii.
 cron.schedule('0 6 * * *', exclusive(() => forEachTenant('rsvp-series', 'rsvp-series')));
+// Przypomnienia urodzinowe: codziennie 08:00 — funkcja sama decyduje wg configu (daily/weekly).
+cron.schedule('0 8 * * *', exclusive(() => forEachTenant('birthday-reminders', 'birthday-reminders')));
 
 cron.schedule('0 8 * * *', exclusive(async () => {
   try {

@@ -105,6 +105,29 @@ export default function Members() {
     return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()} (${age})`;
   };
 
+  // Przypomnienia urodzinowe (konfiguracja + role do wyboru odbiorców).
+  const [showBdayCfg, setShowBdayCfg] = useState(false);
+  const [bdayCfg, setBdayCfg] = useState({ enabled: false, schedule: 'weekly', weekday: 1, days_ahead: 7, channel: 'email', recipients: { roles: [], emails: [] }, message: '' });
+  const [roleList, setRoleList] = useState([]);
+  const [bdayEmail, setBdayEmail] = useState('');
+  const [bdaySaving, setBdaySaving] = useState(false);
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('key', 'birthday_reminders').maybeSingle().then(({ data }) => {
+      if (data?.value) { try { const c = typeof data.value === 'string' ? JSON.parse(data.value) : data.value; setBdayCfg((prev) => ({ ...prev, ...c, recipients: { roles: c?.recipients?.roles || [], emails: c?.recipients?.emails || [] } })); } catch { /* domyślne */ } }
+    }, () => {});
+    supabase.from('app_roles').select('key, label').order('label').then(({ data }) => setRoleList(data || []), () => {});
+  }, []);
+  const saveBdayCfg = async () => {
+    setBdaySaving(true);
+    try {
+      const { error } = await supabase.from('app_settings').upsert({ key: 'birthday_reminders', value: JSON.stringify(bdayCfg) }, { onConflict: 'key' });
+      if (error) throw error;
+      toast.success(tr('Zapisano konfigurację'));
+      setShowBdayCfg(false);
+    } catch (e) { toast.error('Nie udało się zapisać: ' + (e.message || e)); }
+    finally { setBdaySaving(false); }
+  };
+
   // Stan modala
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -585,6 +608,10 @@ export default function Members() {
           </div>
 
           <Can cap="res:members:create">
+          <button onClick={() => setShowBdayCfg(true)} title={tr('Przypomnienia urodzinowe')}
+            className="whitespace-nowrap px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-1.5 text-sm">
+            <Cake size={16} /> {tr('Przypomnienia')}
+          </button>
           <Button data-tour="member-add" onClick={() => openModal()} icon={Plus} className="whitespace-nowrap">
             {t('Dodaj osobę')}
           </Button>
@@ -1074,6 +1101,98 @@ export default function Members() {
           onClose={() => setProfileMember(null)}
           onEdit={(m) => { setProfileMember(null); openModal(m); }}
         />
+      )}
+
+      {/* Konfiguracja przypomnień urodzinowych */}
+      {showBdayCfg && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-700 flex flex-col max-h-[85vh]">
+            <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="font-bold text-lg text-gray-800 dark:text-white flex items-center gap-2"><Cake size={18} className="text-accent-primary" /> {tr('Przypomnienia urodzinowe')}</h3>
+              <button onClick={() => setShowBdayCfg(false)} className="text-gray-400 hover:text-gray-600"><X size={22} /></button>
+            </div>
+            <div className="p-5 space-y-4 overflow-y-auto">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 cursor-pointer">
+                <input type="checkbox" checked={!!bdayCfg.enabled} onChange={(e) => setBdayCfg({ ...bdayCfg, enabled: e.target.checked })} className="w-4 h-4 rounded accent-accent-primary" />
+                {tr('Włącz automatyczne przypomnienia')}
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kiedy wysyłać')}</label>
+                  <CustomSelect value={bdayCfg.schedule} onChange={(v) => setBdayCfg({ ...bdayCfg, schedule: v })}
+                    options={[{ value: 'daily', label: tr('Codziennie') }, { value: 'weekly', label: tr('Raz w tygodniu') }]} />
+                </div>
+                {bdayCfg.schedule === 'weekly' && (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Dzień tygodnia')}</label>
+                    <CustomSelect value={String(bdayCfg.weekday)} onChange={(v) => setBdayCfg({ ...bdayCfg, weekday: parseInt(v, 10) })}
+                      options={[{ value: '1', label: 'Poniedziałek' }, { value: '2', label: 'Wtorek' }, { value: '3', label: 'Środa' }, { value: '4', label: 'Czwartek' }, { value: '5', label: 'Piątek' }, { value: '6', label: 'Sobota' }, { value: '0', label: 'Niedziela' }]} />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Ile dni wcześniej')}</label>
+                  <input type="number" min="0" max="31" value={bdayCfg.days_ahead} onChange={(e) => setBdayCfg({ ...bdayCfg, days_ahead: parseInt(e.target.value || '0', 10) })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+                  <p className="text-[11px] text-gray-400 mt-1 ml-1">0 = tylko w dniu urodzin. Dla „raz w tygodniu" np. 7 = cały tydzień.</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Kanał')}</label>
+                  <CustomSelect value={bdayCfg.channel} onChange={(v) => setBdayCfg({ ...bdayCfg, channel: v })}
+                    options={[{ value: 'email', label: 'E-mail' }, { value: 'push', label: 'Push' }, { value: 'both', label: tr('E-mail + Push') }]} />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Odbiorcy — role')}</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {roleList.length === 0 ? <span className="text-xs text-gray-400">{tr('Brak ról')}</span> : roleList.map((r) => {
+                    const on = (bdayCfg.recipients?.roles || []).includes(r.key);
+                    return (
+                      <button key={r.key} type="button"
+                        onClick={() => setBdayCfg((c) => ({ ...c, recipients: { ...c.recipients, roles: on ? c.recipients.roles.filter((x) => x !== r.key) : [...(c.recipients.roles || []), r.key] } }))}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition ${on ? 'bg-accent-primary text-white border-accent-primary' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}>
+                        {r.label || r.key}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Dodatkowe e-maile')}</label>
+                <div className="flex items-center gap-2">
+                  <input value={bdayEmail} onChange={(e) => setBdayEmail(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && bdayEmail.trim()) { setBdayCfg((c) => ({ ...c, recipients: { ...c.recipients, emails: [...new Set([...(c.recipients.emails || []), bdayEmail.trim()])] } })); setBdayEmail(''); } }}
+                    placeholder="jan@example.com + Enter" className="flex-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm" />
+                </div>
+                {(bdayCfg.recipients?.emails || []).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {bdayCfg.recipients.emails.map((em) => (
+                      <span key={em} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+                        {em}
+                        <button onClick={() => setBdayCfg((c) => ({ ...c, recipients: { ...c.recipients, emails: c.recipients.emails.filter((x) => x !== em) } }))} className="text-gray-400 hover:text-red-500"><X size={12} /></button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">{tr('Treść powiadomienia')}</label>
+                <textarea rows={2} value={bdayCfg.message} onChange={(e) => setBdayCfg({ ...bdayCfg, message: e.target.value })}
+                  placeholder={tr('Pamiętajmy o życzeniach dla najbliższych solenizantów.')}
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm resize-none" />
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <button onClick={() => setShowBdayCfg(false)} className="px-4 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">{tr('Anuluj')}</button>
+              <button onClick={saveBdayCfg} disabled={bdaySaving} className="px-4 py-2 text-sm rounded-xl bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-medium disabled:opacity-60">{bdaySaving ? tr('Zapisywanie…') : tr('Zapisz')}</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
