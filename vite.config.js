@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'icons/*.png'],
+      includeAssets: ['favicon.ico', 'favicon-16.png', 'favicon-32.png', 'favicon-48.png', 'apple-touch-icon-180.png', 'icons/*.png'],
       manifest: {
         name: 'Avenit',
         short_name: 'Avenit',
@@ -18,12 +18,6 @@ export default defineConfig({
         theme_color: '#d97706',
         orientation: 'portrait-primary',
         icons: [
-          {
-            src: '/icons/icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any'
-          },
           {
             src: '/icons/icon-192x192.png',
             sizes: '192x192',
@@ -37,7 +31,7 @@ export default defineConfig({
             purpose: 'any'
           },
           {
-            src: '/icons/icon-512x512.png',
+            src: '/icons/icon-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable'

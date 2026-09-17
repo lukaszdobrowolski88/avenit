@@ -587,6 +587,25 @@ export default function Members() {
       {activeTab === 'members' && (
       <section className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-300">
 
+        {/* Kafelki statystyk (klik = filtr statusu) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {[
+            { key: 'all', label: tr('Wszyscy'), count: members.length, Icon: Users, color: 'text-accent-primary' },
+            { key: 'Członek', label: tr('Członkowie'), count: members.filter((m) => m.status === 'Członek').length, Icon: CheckCircle, color: 'text-green-500' },
+            { key: 'Sympatyk', label: tr('Sympatycy'), count: members.filter((m) => m.status === 'Sympatyk').length, Icon: HeartHandshake, color: 'text-blue-500' },
+            { key: 'Gość', label: tr('Goście'), count: members.filter((m) => m.status === 'Gość').length, Icon: Users, color: 'text-gray-400' },
+          ].map((s) => (
+            <button key={s.key} onClick={() => setStatusFilter(s.key)}
+              className={`text-left rounded-2xl border p-4 transition bg-white dark:bg-gray-800 ${statusFilter === s.key ? 'border-accent-primary ring-2 ring-accent-primary/20' : 'border-gray-200 dark:border-gray-700 hover:border-accent-primary-lighter dark:hover:border-accent-primary-dark'}`}>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{s.label}</span>
+                <s.Icon size={16} className={s.color} />
+              </div>
+              <div className="text-2xl font-bold text-gray-900 dark:text-white mt-1 tabular-nums">{s.count}</div>
+            </button>
+          ))}
+        </div>
+
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
           <div className="flex-1 w-full md:w-auto flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
