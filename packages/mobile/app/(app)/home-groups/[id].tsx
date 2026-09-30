@@ -171,6 +171,8 @@ export default function HomeGroupDetailScreen() {
 
   const group = data?.group ?? null;
   const members = data?.members ?? [];
+  // Kontakty/osoby widoczne tylko dla członków grupy (scoped endpoint ustala po e-mailu).
+  const isMine = data?.is_mine ?? false;
 
   if (!group) {
     return (
@@ -429,7 +431,36 @@ export default function HomeGroupDetailScreen() {
           </View>
         ) : null}
 
-        {members.length > 0 ? (
+        {!isMine ? (
+          <View
+            style={{
+              marginHorizontal: 16,
+              marginTop: 4,
+              borderRadius: 20,
+              backgroundColor: '#fafaf9',
+              borderWidth: 1,
+              borderColor: '#eef0f3',
+              paddingVertical: 20,
+              paddingHorizontal: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <Users size={16} color="#a8a29e" strokeWidth={2.2} />
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 13,
+                color: '#78716c',
+                fontFamily: 'Inter_500Medium',
+                lineHeight: 18,
+              }}
+            >
+              Lista osób i dane kontaktowe są widoczne tylko dla członków tej grupy.
+            </Text>
+          </View>
+        ) : members.length > 0 ? (
           <View
             style={{
               marginHorizontal: 16,
