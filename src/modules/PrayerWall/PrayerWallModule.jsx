@@ -78,13 +78,12 @@ function PrayerRequestCard({
   onPray,
   onEdit,
   onDelete,
-  onMarkAnswered,
-  userAvatars
+  onMarkAnswered
 }) {
   const t = useT();
   const [isPraying, setIsPraying] = useState(false);
-  const isAuthor = request.user_email === currentUserEmail;
-  const hasPrayed = request.praying_users?.includes(currentUserEmail);
+  const isAuthor = request.is_author;
+  const hasPrayed = request.i_am_praying;
   const isAnswered = request.status === 'answered';
 
   const handlePrayClick = async () => {
@@ -96,9 +95,9 @@ function PrayerRequestCard({
 
   const authorName = request.is_anonymous
     ? t('Członek Społeczności')
-    : request.user_name || request.user_email?.split('@')[0];
+    : request.requester_name || request.user_name || t('Członek Społeczności');
 
-  const avatarUrl = !request.is_anonymous && userAvatars[request.user_email];
+  const avatarUrl = !request.is_anonymous && request.avatar_url;
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
@@ -692,7 +691,6 @@ export default function PrayerWallModule() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-  const [userAvatars, setUserAvatars] = useState({});
 
   // Filtry i wyszukiwanie
   const [filter, setFilter] = useState('all'); // all, mine, answered
@@ -736,71 +734,19 @@ export default function PrayerWallModule() {
     try {
       setLoading(true);
       setError(null);
-
-      // Pobierz prośby z licznikiem modlitw
-      let query = supabase
-        .from('prayer_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      // Filtr statusu
-      if (filter === 'answered') {
-        query = query.eq('status', 'answered');
-      } else if (filter !== 'mine') {
-        query = query.neq('status', 'archived');
-      }
-
-      const { data: requestsData, error: requestsError } = await query;
-
-      if (requestsError) throw requestsError;
-
-      // Pobierz interakcje dla wszystkich prośb (tylko jeśli są jakieś prośby)
-      let interactionsData = [];
-      const requestIds = requestsData.map(r => r.id).filter(Boolean);
-      if (requestIds.length > 0) {
-        const { data } = await supabase
-          .from('prayer_interactions')
-          .select('request_id, user_email')
-          .in('request_id', requestIds);
-        interactionsData = data || [];
-      }
-
-      // Połącz dane
-      const requestsWithCounts = requestsData.map(request => {
-        const interactions = interactionsData.filter(i => i.request_id === request.id);
-        return {
-          ...request,
-          prayer_count: interactions.length,
-          praying_users: interactions.map(i => i.user_email)
-        };
-      });
-
-      setRequests(requestsWithCounts);
-
-      // Pobierz avatary użytkowników (tylko jeśli są jakieś emaile)
-      const emails = [...new Set(requestsData.map(r => r.user_email).filter(Boolean))];
-      if (emails.length > 0) {
-        const { data: usersData } = await supabase
-          .from('app_users')
-          .select('email, avatar_url')
-          .in('email', emails);
-
-        if (usersData) {
-          const avatars = {};
-          usersData.forEach(u => {
-            if (u.avatar_url) avatars[u.email] = u.avatar_url;
-          });
-          setUserAvatars(avatars);
-        }
-      }
-
+      // Prywatność: przez scoped endpoint — serwer zwraca dane BEZ e-maili (per wiersz:
+      // is_author, i_am_praying, avatar_url, licznik), a wpisy leaders_only filtruje
+      // serwerowo. Klient dalej filtruje po statusie/kategorii/„moje"/wyszukiwaniu.
+      const { data, error: fnError } = await supabase.functions.invoke('prayer-wall');
+      if (fnError) throw fnError;
+      setRequests(data?.requests ?? []);
     } catch (err) {
       console.error('Błąd pobierania prośb:', err);
       setError(tr('Nie udało się pobrać prośb modlitewnych'));
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, []);
 
   useEffect(() => {
     fetchRequests();
@@ -814,14 +760,14 @@ export default function PrayerWallModule() {
   const filteredRequests = requests.filter(request => {
     // Filtr widoczności leaders_only - tylko liderzy mogą widzieć (lub autor)
     if (request.visibility === 'leaders_only') {
-      const isAuthor = request.user_email === currentUser?.email;
-      if (!isLeader && !isAuthor) {
+      // is_author z serwera (endpoint już filtruje leaders_only, to warstwa zapasowa).
+      if (!isLeader && !request.is_author) {
         return false;
       }
     }
 
     // Filtr "Moje"
-    if (filter === 'mine' && request.user_email !== currentUser?.email) {
+    if (filter === 'mine' && !request.is_author) {
       return false;
     }
 
@@ -844,7 +790,7 @@ export default function PrayerWallModule() {
       const matchesContent = request.content.toLowerCase().includes(search);
       const matchesAuthor = !request.is_anonymous &&
         (request.user_name?.toLowerCase().includes(search) ||
-         request.user_email?.toLowerCase().includes(search));
+         request.requester_name?.toLowerCase().includes(search));
       if (!matchesContent && !matchesAuthor) {
         return false;
       }
@@ -862,17 +808,9 @@ export default function PrayerWallModule() {
       if (req.id !== requestId) return req;
 
       if (alreadyPraying) {
-        return {
-          ...req,
-          prayer_count: Math.max(0, req.prayer_count - 1),
-          praying_users: req.praying_users.filter(e => e !== currentUser.email)
-        };
+        return { ...req, prayer_count: Math.max(0, req.prayer_count - 1), i_am_praying: false };
       } else {
-        return {
-          ...req,
-          prayer_count: req.prayer_count + 1,
-          praying_users: [...req.praying_users, currentUser.email]
-        };
+        return { ...req, prayer_count: req.prayer_count + 1, i_am_praying: true };
       }
     }));
 
@@ -1292,7 +1230,6 @@ export default function PrayerWallModule() {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onMarkAnswered={handleOpenAnsweredModal}
-                    userAvatars={userAvatars}
                   />
                 ))}
               </div>
