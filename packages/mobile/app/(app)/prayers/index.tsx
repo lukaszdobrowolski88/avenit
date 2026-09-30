@@ -15,6 +15,7 @@ import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { GradientIcon } from '../../../src/components/ui/GradientIcon';
 import {
   usePrayerRequests,
+  useMyPrayingIds,
   useTogglePrayer,
   CATEGORY_META,
   type PrayerRequest,
@@ -55,16 +56,18 @@ const Filter = ({
 const PrayerCard = ({
   prayer,
   userEmail,
+  isPraying,
 }: {
   prayer: PrayerRequest;
   userEmail: string | null;
+  isPraying: boolean;
 }) => {
   const meta = CATEGORY_META[prayer.category];
   const toggle = useTogglePrayer(userEmail);
-  const iAmPraying = !!userEmail && prayer.praying_users?.includes(userEmail);
+  const iAmPraying = isPraying;
   const displayName = prayer.is_anonymous
     ? 'Anonimowo'
-    : prayer.requester_name || prayer.user_name || prayer.user_email;
+    : prayer.requester_name || prayer.user_name || 'Ktoś ze wspólnoty';
 
   return (
     <View
@@ -203,6 +206,7 @@ export default function PrayersScreen() {
   const { user } = useAuthSession();
   const [filter, setFilter] = useState<PrayerStatus | 'all'>('active');
   const { data, isLoading, isError, error, refetch, isRefetching } = usePrayerRequests(filter);
+  const prayingIds = useMyPrayingIds(user?.email ?? null).data ?? new Set<string>();
 
   return (
     <>
@@ -306,7 +310,12 @@ export default function PrayersScreen() {
             }
           >
             {data!.map((p: PrayerRequest) => (
-              <PrayerCard key={p.id} prayer={p} userEmail={user?.email ?? null} />
+              <PrayerCard
+                key={p.id}
+                prayer={p}
+                userEmail={user?.email ?? null}
+                isPraying={prayingIds.has(p.id)}
+              />
             ))}
           </ScrollView>
         )}
