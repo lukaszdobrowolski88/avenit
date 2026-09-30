@@ -210,7 +210,7 @@ export const registerPushToken = async (userEmail: string) => {
   // Android emulator z Google Play Services CAN odbierać FCM push.
   // iOS Simulator nie odbiera APNs — pomijamy.
   if (!Device.isDevice && Platform.OS === 'ios') {
-    console.log('[push] iOS simulator — pomijam rejestrację tokenu');
+    if (__DEV__) console.log('[push] iOS simulator — pomijam rejestrację tokenu');
     return;
   }
 
@@ -243,7 +243,7 @@ export const registerPushToken = async (userEmail: string) => {
   try {
     const tokenResult = await Notifications.getExpoPushTokenAsync({ projectId });
     token = tokenResult.data;
-    console.log(`[push] uzyskano token: ${token.substring(0, 30)}...`);
+    if (__DEV__) console.log('[push] token push uzyskany');
   } catch (e: any) {
     console.warn(`[push] getExpoPushTokenAsync failed: ${e?.message}`);
     return;

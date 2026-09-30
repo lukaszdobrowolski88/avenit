@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 import { Audio, type AVPlaybackStatus } from 'expo-av';
 import { Pause, Play } from 'lucide-react-native';
 
@@ -66,6 +66,8 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
       s.setOnPlaybackStatusUpdate(onStatus);
       setSound(s);
       setIsPlaying(true);
+    } catch {
+      Alert.alert('Błąd', 'Nie udało się odtworzyć nagrania. Sprawdź połączenie i spróbuj ponownie.');
     } finally {
       setLoading(false);
     }

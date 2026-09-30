@@ -81,7 +81,7 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={{ alignItems: 'center', marginBottom: 24 }}>
-          <GradientAvatar initial="S" size={80} rounded={false} />
+          <GradientAvatar initial="A" size={80} rounded={false} />
         </View>
 
         <Text
