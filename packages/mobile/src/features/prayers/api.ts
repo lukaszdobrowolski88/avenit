@@ -7,7 +7,8 @@ export type PrayerVisibility = 'public' | 'leaders_only';
 
 export interface PrayerRequest {
   id: string;
-  user_email: string;
+  // user_email USUNIĘTY — widok prayer_requests_with_counts nie wystawia już e-maili
+  // (prywatność, migracja 062). „Czy ja się modlę" liczymy z useMyPrayingIds.
   user_name: string | null;
   requester_name: string | null;
   content: string;
@@ -20,7 +21,6 @@ export interface PrayerRequest {
   created_at: string;
   updated_at: string;
   prayer_count: number;
-  praying_users: string[] | null;
 }
 
 export const usePrayerRequests = (filter: PrayerStatus | 'all' = 'active') =>
@@ -37,6 +37,24 @@ export const usePrayerRequests = (filter: PrayerStatus | 'all' = 'active') =>
       if (error) throw error;
       return (data ?? []) as unknown as PrayerRequest[];
     },
+  });
+
+// Zbiór request_id, które ZALOGOWANY użytkownik oznaczył „modlę się" — z WŁASNYCH
+// wierszy prayer_interactions (.eq user_email = ja zwraca tylko moje). Zastępuje dawną
+// listę praying_users z widoku, która ujawniała cudze e-maile każdemu klientowi.
+export const useMyPrayingIds = (userEmail: string | null) =>
+  useQuery({
+    queryKey: ['prayers', 'mine', userEmail],
+    queryFn: async (): Promise<Set<string>> => {
+      if (!userEmail) return new Set<string>();
+      const { data, error } = await supabase
+        .from('prayer_interactions')
+        .select('request_id')
+        .eq('user_email', userEmail);
+      if (error) return new Set<string>();
+      return new Set<string>((data ?? []).map((r: any) => String(r.request_id)));
+    },
+    enabled: !!userEmail,
   });
 
 export const useTogglePrayer = (userEmail: string | null) => {

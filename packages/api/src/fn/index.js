@@ -29,6 +29,7 @@ const MODULES = [
   'giving-create-payment',
   'my-giving',
   'my-invitations',
+  'my-home-groups',
   'campaign-progress',
   'automation-run',
   'rsvp-send',
