@@ -70,7 +70,13 @@ const fetchPrograms = async (
     .gte('date', fromIso.slice(0, 10))
     .lte('date', toIso.slice(0, 10))
     .order('date', { ascending: true });
-  if (error) throw error;
+  if (error) {
+    // Brak uprawnień / brak tabeli → pokaż CZĘŚĆ kalendarza (jak moduły służb), nie błąd
+    // całości. Prawdziwe awarie (5xx) nadal propagują do widoku błędu z „Spróbuj ponownie".
+    const code = (error as { code?: string }).code;
+    if (code === '403' || code === '42501' || code === '42P01') return [];
+    throw error;
+  }
   return (data ?? []).flatMap((row: any) => {
     // Guard na złą/pustą datę — inaczej format(Invalid Date) rzuca "Invalid time value"
     // i wywala CAŁĄ agendę (kalendarz pokazuje błąd zamiast wydarzeń).
@@ -107,7 +113,13 @@ const fetchGenericEvents = async (
     .gte('date', fromIso.slice(0, 10))
     .lte('date', toIso.slice(0, 10))
     .order('date', { ascending: true });
-  if (error) throw error;
+  if (error) {
+    // Brak uprawnień / brak tabeli → pokaż CZĘŚĆ kalendarza (jak moduły służb), nie błąd
+    // całości. Prawdziwe awarie (5xx) nadal propagują do widoku błędu z „Spróbuj ponownie".
+    const code = (error as { code?: string }).code;
+    if (code === '403' || code === '42501' || code === '42P01') return [];
+    throw error;
+  }
   return (data ?? []).flatMap((row: any) => {
     const time = row.time && /^\d{1,2}:\d{2}/.test(row.time) ? row.time : '00:00';
     const endTime = row.end_time && /^\d{1,2}:\d{2}/.test(row.end_time) ? row.end_time : null;

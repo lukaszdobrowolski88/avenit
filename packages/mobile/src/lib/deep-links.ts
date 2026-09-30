@@ -44,6 +44,13 @@ export const navigateFromDeepLink = (router: Router, link: string | null | undef
     });
     return;
   }
+  // RSVP — powiadomienia o zaproszeniach prowadzą do ekranu „Moje zaproszenia".
+  // Akceptuje /rsvp, /(app)/rsvp, avenit://rsvp (po stripie schematu), /rsvp?token=...
+  const rsvpMatch = path.match(/^\/?(?:\(app\)\/)?rsvp\b/);
+  if (rsvpMatch) {
+    router.push('/(app)/rsvp');
+    return;
+  }
   // Fallback — nie umiemy sparsować, idź do dashboardu.
   router.push('/(app)/dashboard');
 };

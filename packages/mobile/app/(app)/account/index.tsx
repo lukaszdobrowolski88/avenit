@@ -100,10 +100,17 @@ export default function AccountScreen() {
       // pozostaje puste i serwer nie ma dokąd wysłać powiadomień.
       if (user?.email) registerPushToken(user.email).catch(() => undefined);
     } else {
+      // Aplikacja nie może cofnąć zgody systemowej — odznaczamy przełącznik (wcześniej
+      // wracał na ON, bo nic nie zmienialiśmy) i kierujemy do ustawień systemu, gdzie push
+      // można w pełni wyłączyć. „Anuluj" przywraca stan włączony.
+      setPushOn(false);
       Alert.alert(
         'Wyłączyć powiadomienia?',
-        'Powiadomienia możesz w pełni wyłączyć w ustawieniach systemu Twojego urządzenia.',
-        [{ text: 'OK' }],
+        'Aby całkowicie zablokować powiadomienia, wyłącz je w ustawieniach systemu.',
+        [
+          { text: 'Anuluj', style: 'cancel', onPress: () => setPushOn(true) },
+          { text: 'Otwórz ustawienia', onPress: () => Linking.openSettings() },
+        ],
       );
     }
   };

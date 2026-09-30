@@ -134,7 +134,9 @@ export default function NotificationsScreen() {
               </View>
             }
             renderItem={({ item }) => {
-              const meta = TYPE_META[item.type as NotificationType];
+              // Serwer może przysłać typ spoza znanych enumów — fallback na 'system',
+              // inaczej meta === undefined i meta.bg wywala całą listę.
+              const meta = TYPE_META[item.type as NotificationType] ?? TYPE_META.system;
               const Icon = ICONS[item.type as NotificationType] ?? Bell;
               return (
                 <Pressable

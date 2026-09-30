@@ -50,7 +50,10 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
 
   const handleLike = () => {
     if (!myEmail) return;
-    toggleLike.mutate({ postId: post.id, userEmail: myEmail, currentLikes: post.likes });
+    toggleLike.mutate(
+      { postId: post.id, userEmail: myEmail, currentLikes: post.likes },
+      { onError: (err: any) => Alert.alert('Błąd', err?.message ?? 'Nie udało się zapisać reakcji.') },
+    );
   };
 
   const handleAddComment = () => {
@@ -77,7 +80,11 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
       [];
     options.push({
       text: post.pinned ? 'Odepnij' : 'Przypnij',
-      onPress: () => togglePin.mutate({ postId: post.id, pinned: !post.pinned }),
+      onPress: () =>
+        togglePin.mutate(
+          { postId: post.id, pinned: !post.pinned },
+          { onError: (err: any) => Alert.alert('Błąd', err?.message ?? 'Nie udało się zmienić przypięcia.') },
+        ),
     });
     if (isMine) {
       options.push({
@@ -89,7 +96,11 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
             {
               text: 'Usuń',
               style: 'destructive',
-              onPress: () => deletePost.mutate(post.id),
+              onPress: () =>
+                deletePost.mutate(post.id, {
+                  onError: (err: any) =>
+                    Alert.alert('Błąd', err?.message ?? 'Nie udało się usunąć posta.'),
+                }),
             },
           ]);
         },

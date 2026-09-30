@@ -179,6 +179,20 @@ export default function CalendarScreen() {
             >
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
+            <Pressable
+              onPress={() => refetch()}
+              style={{
+                marginTop: 14,
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                borderRadius: 12,
+                backgroundColor: '#ec4899',
+              }}
+            >
+              <Text style={{ color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>
+                Spróbuj ponownie
+              </Text>
+            </Pressable>
           </View>
         ) : view === 'month' ? (
           <MonthView items={items} onPick={setPicked} />
