@@ -34,45 +34,28 @@ export interface MyInvitationsData {
   invitations: Invitation[];
 }
 
-// Wywołanie funkcji backendu Avenit (/api/fn/*) — wzorzec z src/lib/push.ts (callFn).
-const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
-const TENANT = process.env.EXPO_PUBLIC_TENANT || '';
-
 /**
- * Zapis odpowiedzi RSVP przez publiczny endpoint /api/fn/rsvp-respond.
- * Body: { token, answer: 'yes'|'no'|'maybe', guests }. Dołączamy token sesji i X-Tenant
- * (jak callFn w push.ts), choć endpoint jest publiczny (isPublic) i identyfikuje po tokenie.
+ * Zapis odpowiedzi RSVP przez endpoint /api/fn/rsvp-respond.
+ * Body: { token, answer: 'yes'|'no'|'maybe', guests }. Idzie przez shim
+ * (functions.invoke), który dołącza X-Tenant (z SecureStore) i token — surowy fetch
+ * dodawał X-Tenant tylko z pustego EXPO_PUBLIC_TENANT, więc w buildzie uniwersalnym
+ * backend nie rozwiązywał tenanta. Endpoint jest publiczny i identyfikuje po tokenie,
+ * ale tenant (którą bazę pytać) musi znać z nagłówka.
  */
 export const respondToInvitation = async (params: {
   token: string;
   answer: RsvpAnswer;
   guests?: number;
 }): Promise<void> => {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const res = await fetch(`${API_URL}/api/fn/rsvp-respond`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(TENANT ? { 'X-Tenant': TENANT } : {}),
-      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-    },
-    body: JSON.stringify({
+  const { error } = await supabase.functions.invoke('rsvp-respond', {
+    body: {
       token: params.token,
       answer: params.answer,
       guests: Math.max(0, params.guests ?? 0),
-    }),
+    },
   });
-  if (!res.ok) {
-    let msg = 'Nie udało się zapisać odpowiedzi';
-    try {
-      const j = (await res.json()) as { error?: string };
-      if (j?.error) msg = j.error;
-    } catch {
-      // ignore — użyjemy komunikatu domyślnego
-    }
-    throw new Error(msg);
+  if (error) {
+    throw new Error(error.message || 'Nie udało się zapisać odpowiedzi');
   }
 };
 

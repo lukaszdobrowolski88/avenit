@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   Bell,
@@ -19,6 +19,7 @@ import {
   Shield,
   ShieldCheck,
   Smartphone,
+  Trash2,
   Users,
 } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
@@ -35,6 +36,16 @@ import { GradientAvatar } from '../../../src/components/ui/GradientAvatar';
 import { SettingsGroup, SettingsRow } from '../../../src/components/ui/SettingsRow';
 import { CampusSelector } from '../../../src/components/CampusSelector';
 import { useCampus } from '../../../src/contexts/CampusContext';
+import { tenantWebBase } from '../../../src/lib/supabase';
+
+// Otwiera stronę web tenanta (np. politykę prywatności) — host tenanta z getTenant(),
+// z fallbackiem na apex. Wymagane linki prawne + usuwanie konta (wymóg App Store / Play).
+const openWeb = (path: string) => {
+  const base = tenantWebBase() || 'https://avenit.pl';
+  Linking.openURL(`${base}${path}`).catch(() =>
+    Alert.alert('Błąd', 'Nie udało się otworzyć strony.'),
+  );
+};
 
 export default function AccountScreen() {
   const router = useRouter();
@@ -376,9 +387,7 @@ export default function AccountScreen() {
           iconBg="#e2e8f0"
           title="Polityka prywatności"
           description="Otwórz w przeglądarce"
-          onPress={() =>
-            Alert.alert('Wkrótce', 'Link do polityki prywatności pojawi się przy publikacji.')
-          }
+          onPress={() => openWeb('/polityka-prywatnosci')}
         />
         <SettingsRow
           variant="nav"
@@ -386,9 +395,17 @@ export default function AccountScreen() {
           iconTint="#475569"
           iconBg="#e2e8f0"
           title="Regulamin"
-          onPress={() =>
-            Alert.alert('Wkrótce', 'Link do regulaminu pojawi się przy publikacji.')
-          }
+          description="Otwórz w przeglądarce"
+          onPress={() => openWeb('/regulamin')}
+        />
+        <SettingsRow
+          variant="nav"
+          Icon={Trash2}
+          iconTint="#dc2626"
+          iconBg="#fee2e2"
+          title="Usuń konto"
+          description="Trwałe usunięcie konta i danych"
+          onPress={() => openWeb('/usun-konto')}
         />
       </SettingsGroup>
 

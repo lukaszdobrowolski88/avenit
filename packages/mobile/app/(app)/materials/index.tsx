@@ -65,6 +65,7 @@ export default function MaterialsScreen() {
   const path = useFolderPath(folderId);
 
   const isLoading = folders.isLoading || files.isLoading;
+  const isError = folders.isError || files.isError;
   const isRefetching = folders.isRefetching || files.isRefetching;
 
   const onRefresh = () => {
@@ -73,12 +74,16 @@ export default function MaterialsScreen() {
   };
 
   const handleOpenFile = async (file: FileRow) => {
-    const url = await getDownloadUrl(file.storage_path);
-    if (!url) {
-      Alert.alert('Błąd', 'Nie udało się pobrać pliku.');
-      return;
+    try {
+      const url = await getDownloadUrl(file.storage_path);
+      if (!url) {
+        Alert.alert('Błąd', 'Nie udało się otworzyć pliku.');
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Błąd', 'Nie udało się otworzyć pliku.');
     }
-    Linking.openURL(url);
   };
 
   const handleBack = () => {
@@ -176,6 +181,41 @@ export default function MaterialsScreen() {
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator color="#ec4899" />
+          </View>
+        ) : isError ? (
+          <View className="flex-1 items-center justify-center px-8">
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 18,
+                backgroundColor: '#fee2e2',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <FolderOpen size={28} color="#dc2626" />
+            </View>
+            <Text
+              className="text-[16px] text-center"
+              style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+            >
+              Nie udało się wczytać materiałów
+            </Text>
+            <Text
+              className="text-[13px] text-center mt-1"
+              style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+            >
+              Sprawdź połączenie i spróbuj ponownie.
+            </Text>
+            <Pressable
+              onPress={onRefresh}
+              className="mt-4 active:opacity-70"
+              style={{ paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: '#ec4899' }}
+            >
+              <Text style={{ color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>Spróbuj ponownie</Text>
+            </Pressable>
           </View>
         ) : (
           <ScrollView
