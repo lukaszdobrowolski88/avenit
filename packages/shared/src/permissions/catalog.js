@@ -233,7 +233,13 @@ export const MODULES = [
       { key: 'leaders_requests', label: 'Prośby dla Liderów' },
     ],
     actions: [],
-    fields: [],
+    fields: [
+      // E-maile ukryte przed członkiem (prywatność) — jawny deny field:...:read w migracji 063.
+      // Członek nadal może pisać/filtrować (create prośby, toggle „modlę się", self-query
+      // „moje modlitwy"), ale nie odczyta cudzych adresów bezpośrednim zapytaniem API.
+      { resource: 'prayer_requests', column: 'user_email', label: 'E-mail zgłaszającego' },
+      { resource: 'prayer_interactions', column: 'user_email', label: 'E-mail modlącego się' },
+    ],
   },
   {
     key: 'mlodziezowka', label: 'Młodzieżówka',
