@@ -45,7 +45,11 @@ export const EventRow = ({ event, ministry, myEmail, tint, bg }: Props) => {
       {
         text: 'Usuń',
         style: 'destructive',
-        onPress: () => deleteEvent.mutate(event.id),
+        onPress: () =>
+          deleteEvent.mutate(event.id, {
+            onError: (err: any) =>
+              Alert.alert('Błąd', err?.message ?? 'Nie udało się usunąć wydarzenia.'),
+          }),
       },
     ]);
   };

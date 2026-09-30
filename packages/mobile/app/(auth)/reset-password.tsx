@@ -37,6 +37,7 @@ export default function ResetPasswordScreen() {
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
     if (params.access_token && params.refresh_token) {
@@ -46,8 +47,16 @@ export default function ResetPasswordScreen() {
           refresh_token: String(params.refresh_token),
         })
         .then(({ error }) => {
-          if (error) Alert.alert('Błąd', error.message);
-          else setSessionReady(true);
+          // Błędny/wygasły link: ZAWSZE zdejmij spinner (wcześniej bez setSessionReady
+          // ekran wisiał w nieskończoność bez wyjścia) i pokaż ekran z powrotem do logowania.
+          if (error) {
+            setLinkError('Link do zmiany hasła wygasł lub jest nieprawidłowy. Poproś o nowy.');
+          }
+          setSessionReady(true);
+        })
+        .catch(() => {
+          setLinkError('Nie udało się otworzyć linku. Poproś o nowy link do zmiany hasła.');
+          setSessionReady(true);
         });
     } else {
       setSessionReady(true);
@@ -85,6 +94,57 @@ export default function ResetPasswordScreen() {
         }}
       >
         <ActivityIndicator color="#ec4899" />
+      </View>
+    );
+  }
+
+  if (linkError) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#ffffff',
+          paddingHorizontal: 24,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 18,
+            color: '#0c0a09',
+            textAlign: 'center',
+            marginBottom: 8,
+            fontFamily: 'Inter_700Bold',
+          }}
+        >
+          Link nieaktywny
+        </Text>
+        <Text
+          style={{
+            fontSize: 14,
+            color: '#78716c',
+            textAlign: 'center',
+            marginBottom: 22,
+            fontFamily: 'Inter_500Medium',
+          }}
+        >
+          {linkError}
+        </Text>
+        <Pressable
+          onPress={() => router.replace('/(auth)/login')}
+          style={{
+            backgroundColor: '#ec4899',
+            borderRadius: 14,
+            paddingVertical: 14,
+            paddingHorizontal: 28,
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}>
+            Wróć do logowania
+          </Text>
+        </Pressable>
       </View>
     );
   }

@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   Baby,
   Calendar,
+  CalendarPlus,
   Clock,
   ExternalLink,
   Home,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import * as ExpoCalendar from 'expo-calendar';
 import type { AgendaEvent, EventSource } from '../api';
 
 const SOURCE_META: Record<
@@ -73,6 +75,49 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
           params: { id: String(event.programId) },
         });
       }, 220);
+    }
+  };
+
+  const addToCalendar = async () => {
+    try {
+      const { status } = await ExpoCalendar.requestCalendarPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Brak dostępu do kalendarza',
+          'Zezwól na dostęp do kalendarza w ustawieniach, aby zapisać wydarzenie.',
+        );
+        return;
+      }
+      // iOS ma domyślny kalendarz; na Androidzie szukamy pierwszego zapisywalnego.
+      let calendarId: string | null = null;
+      if (Platform.OS === 'ios') {
+        const def = await ExpoCalendar.getDefaultCalendarAsync();
+        calendarId = def?.id ?? null;
+      } else {
+        const cals = await ExpoCalendar.getCalendarsAsync(ExpoCalendar.EntityTypes.EVENT);
+        const writable =
+          cals.find(
+            (c) =>
+              c.accessLevel === ExpoCalendar.CalendarAccessLevel.OWNER && c.allowsModifications,
+          ) ?? cals.find((c) => c.allowsModifications);
+        calendarId = writable?.id ?? null;
+      }
+      if (!calendarId) {
+        Alert.alert('Błąd', 'Nie znaleziono kalendarza, do którego można zapisać wydarzenie.');
+        return;
+      }
+      const endDate = hasTime ? (end ?? new Date(start.getTime() + 60 * 60 * 1000)) : start;
+      await ExpoCalendar.createEventAsync(calendarId, {
+        title: event.title,
+        startDate: start,
+        endDate,
+        location: event.location ?? undefined,
+        notes: event.description ?? undefined,
+        allDay: !hasTime,
+      });
+      Alert.alert('Dodano do kalendarza', 'Wydarzenie zapisano w kalendarzu telefonu.');
+    } catch (err) {
+      Alert.alert('Błąd', (err as Error)?.message ?? 'Nie udało się zapisać wydarzenia.');
     }
   };
 
@@ -156,6 +201,11 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
                 <Text style={styles.primaryBtnText}>Otwórz program</Text>
               </Pressable>
             ) : null}
+
+            <Pressable onPress={addToCalendar} style={styles.secondaryBtn}>
+              <CalendarPlus size={16} color="#be185d" strokeWidth={2.4} />
+              <Text style={styles.secondaryBtnText}>Dodaj do kalendarza</Text>
+            </Pressable>
           </ScrollView>
         </Pressable>
       </Pressable>
@@ -267,6 +317,24 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontSize: 14,
     color: '#ffffff',
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.2,
+  },
+  secondaryBtn: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#fbcfe8',
+    backgroundColor: '#ffffff',
+  },
+  secondaryBtnText: {
+    fontSize: 14,
+    color: '#be185d',
     fontFamily: 'Inter_700Bold',
     letterSpacing: -0.2,
   },

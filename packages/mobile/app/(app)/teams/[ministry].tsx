@@ -126,7 +126,45 @@ export default function TeamDetailScreen() {
   const [postModalOpen, setPostModalOpen] = useState(false);
   const [eventModalOpen, setEventModalOpen] = useState(false);
 
-  if (!isMinistryKey(ministry)) {
+  // Rules of Hooks: wszystkie hooki MUSZĄ być wołane bezwarunkowo, więc guard nieznanego
+  // zespołu jest DOPIERO po nich (niżej). Dla nieznanego parametru używamy placeholdera
+  // 'worship' — ekran i tak zwróci „Nieznany zespół", więc pobrane dane są nieużywane.
+  const valid = isMinistryKey(ministry);
+  const key: MinistryKey = valid ? ministry : 'worship';
+
+  const meta = MINISTRY_META[key];
+  const wall = useWallPosts(key);
+  const events = useMinistryEvents(key, { selectedCampusId, withCampusFilter });
+  const schedule = useTeamSchedule(key);
+  const createPost = useCreateWallPost(key);
+  const createEvent = useCreateMinistryEvent(key, { campusIdForInsert });
+
+  const refetch = () => {
+    wall.refetch();
+    events.refetch();
+    schedule.refetch();
+  };
+  const isRefetching = wall.isRefetching || events.isRefetching || schedule.isRefetching;
+
+  const myEmail = user?.email ?? null;
+  const myName =
+    (user?.user_metadata as { full_name?: string } | null)?.full_name ?? user?.email ?? null;
+
+  const eventTypes = EVENT_TYPES_PER_MINISTRY[key];
+
+  const sortedSchedule = useMemo(() => {
+    const list = (schedule.data ?? []).slice();
+    list.sort((a: ScheduleEntry, b: ScheduleEntry) => {
+      const am = a.assignedEmail === myEmail ? 0 : 1;
+      const bm = b.assignedEmail === myEmail ? 0 : 1;
+      if (am !== bm) return am - bm;
+      return a.programDate.localeCompare(b.programDate);
+    });
+    return list;
+  }, [schedule.data, myEmail]);
+
+  // Guard nieznanego zespołu — DOPIERO po wszystkich hookach (Rules of Hooks).
+  if (!valid) {
     return (
       <View
         style={{
@@ -143,37 +181,6 @@ export default function TeamDetailScreen() {
       </View>
     );
   }
-
-  const meta = MINISTRY_META[ministry];
-  const wall = useWallPosts(ministry);
-  const events = useMinistryEvents(ministry, { selectedCampusId, withCampusFilter });
-  const schedule = useTeamSchedule(ministry);
-  const createPost = useCreateWallPost(ministry);
-  const createEvent = useCreateMinistryEvent(ministry, { campusIdForInsert });
-
-  const refetch = () => {
-    wall.refetch();
-    events.refetch();
-    schedule.refetch();
-  };
-  const isRefetching = wall.isRefetching || events.isRefetching || schedule.isRefetching;
-
-  const myEmail = user?.email ?? null;
-  const myName =
-    (user?.user_metadata as { full_name?: string } | null)?.full_name ?? user?.email ?? null;
-
-  const eventTypes = EVENT_TYPES_PER_MINISTRY[ministry];
-
-  const sortedSchedule = useMemo(() => {
-    const list = (schedule.data ?? []).slice();
-    list.sort((a: ScheduleEntry, b: ScheduleEntry) => {
-      const am = a.assignedEmail === myEmail ? 0 : 1;
-      const bm = b.assignedEmail === myEmail ? 0 : 1;
-      if (am !== bm) return am - bm;
-      return a.programDate.localeCompare(b.programDate);
-    });
-    return list;
-  }, [schedule.data, myEmail]);
 
   const renderHeader = () => (
     <>
@@ -341,7 +348,7 @@ export default function TeamDetailScreen() {
       return (
         <WallPostCard
           post={item}
-          ministry={ministry}
+          ministry={key}
           myEmail={myEmail}
           myName={myName ?? null}
         />
@@ -351,7 +358,7 @@ export default function TeamDetailScreen() {
       return (
         <EventRow
           event={item}
-          ministry={ministry}
+          ministry={key}
           myEmail={myEmail}
           tint={meta.tint}
           bg={meta.bg}

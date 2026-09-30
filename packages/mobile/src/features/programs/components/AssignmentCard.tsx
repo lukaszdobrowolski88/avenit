@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 import { Check, X } from 'lucide-react-native';
 import { useUpdateAssignmentStatus, type MyAssignmentRow } from '../api';
 
@@ -71,7 +71,15 @@ export const AssignmentCard = ({ assignment }: Props) => {
             ) : (
               <>
                 <Pressable
-                  onPress={() => update.mutate({ id: assignment.id, status: 'accepted' })}
+                  onPress={() =>
+                    update.mutate(
+                      { id: assignment.id, status: 'accepted' },
+                      {
+                        onError: (err: any) =>
+                          Alert.alert('Błąd', err?.message ?? 'Nie udało się zapisać odpowiedzi.'),
+                      },
+                    )
+                  }
                   style={{
                     width: 36,
                     height: 36,
@@ -84,7 +92,15 @@ export const AssignmentCard = ({ assignment }: Props) => {
                   <Check color="white" size={18} />
                 </Pressable>
                 <Pressable
-                  onPress={() => update.mutate({ id: assignment.id, status: 'rejected' })}
+                  onPress={() =>
+                    update.mutate(
+                      { id: assignment.id, status: 'rejected' },
+                      {
+                        onError: (err: any) =>
+                          Alert.alert('Błąd', err?.message ?? 'Nie udało się zapisać odpowiedzi.'),
+                      },
+                    )
+                  }
                   style={{
                     width: 36,
                     height: 36,
