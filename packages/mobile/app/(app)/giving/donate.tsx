@@ -14,17 +14,10 @@ import { useRouter } from 'expo-router';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { GradientButton } from '../../../src/components/ui/GradientButton';
 import { useAuthSession } from '../../../src/lib/auth';
-import { supabase } from '../../../src/lib/supabase';
+import { supabase, tenantWebBase } from '../../../src/lib/supabase';
 import { formatMoney } from '../../../src/features/giving/api';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
-const TENANT = process.env.EXPO_PUBLIC_TENANT || '';
 const QUICK = [20, 50, 100, 200, 500];
-
-function webBase(): string {
-  const api = API_URL.replace(/\/$/, '');
-  return api ? api.replace('://api.', TENANT ? `://${TENANT}.` : '://') : '';
-}
 
 interface Fund { id: string; name: string; color?: string | null }
 
@@ -65,30 +58,26 @@ export default function DonateScreen() {
     if (!email) { Alert.alert('E-mail', 'Podaj adres e-mail do potwierdzenia.'); return; }
     setSubmitting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${API_URL}/api/fn/giving-create-payment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(TENANT ? { 'X-Tenant': TENANT } : {}),
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-        },
-        body: JSON.stringify({
+      // Przez shim (functions.invoke) — sam dołącza X-Tenant (z SecureStore) i token.
+      // Wcześniej surowy fetch dodawał X-Tenant tylko z EXPO_PUBLIC_TENANT, które w
+      // buildzie uniwersalnym jest puste → backend odrzucał płatność („Nieznany tenant").
+      const webBase = tenantWebBase();
+      const { data, error } = await supabase.functions.invoke('giving-create-payment', {
+        body: {
           amount: amt,
           email,
-          donor_name: null,
+          donor_name: user?.full_name ?? null,
           fund_id: fundId,
           note: note || null,
-          returnUrl: webBase() ? `${webBase()}/give/success` : undefined,
+          returnUrl: webBase ? `${webBase}/give/success` : undefined,
           recurring,
           frequency: recurring ? 'monthly' : undefined,
-        }),
+        },
       });
-      const json = await res.json();
-      if (!res.ok || !json?.paymentUrl) {
-        throw new Error(json?.error || 'Nie udało się utworzyć płatności');
+      if (error || !data?.paymentUrl) {
+        throw new Error(error?.message || 'Nie udało się utworzyć płatności');
       }
-      await Linking.openURL(json.paymentUrl);
+      await Linking.openURL(data.paymentUrl);
       router.back();
     } catch (err) {
       Alert.alert('Błąd płatności', (err as Error)?.message || 'Spróbuj ponownie.');

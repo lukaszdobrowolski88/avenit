@@ -22,3 +22,19 @@ export const supabase = createSupabaseClient(API_URL, {
 const userHelper = createCachedUserHelper(supabase);
 export const getCachedUser = userHelper.getCachedUser;
 export const clearUserCache = userHelper.clearUserCache;
+
+/**
+ * Bazowy URL webowy tenanta, np. `https://schwro.avenit.pl` — zbudowany z API_URL
+ * przez zamianę subdomeny `api.` na slug tenanta. Tenant bierzemy z klienta
+ * (`getTenant()`, utrwalony w SecureStore po logowaniu), NIE z `EXPO_PUBLIC_TENANT`,
+ * który w buildzie uniwersalnym jest pusty. Używane tam, gdzie potrzebujemy trafić
+ * na subdomenę tenanta (pliki storage, strony prawne, powroty z płatności) — bo
+ * backend rozwiązuje tenant z subdomeny/nagłówka, a apex `api.` go nie niesie.
+ * Zwraca '' gdy nie znamy API_URL.
+ */
+export function tenantWebBase(): string {
+  const api = API_URL.replace(/\/$/, '');
+  if (!api) return '';
+  const tenant = supabase.getTenant() || TENANT || '';
+  return tenant ? api.replace('://api.', `://${tenant}.`) : api.replace('://api.', '://');
+}

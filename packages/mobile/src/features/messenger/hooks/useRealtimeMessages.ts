@@ -32,6 +32,10 @@ export const useRealtimeMessages = (conversationId: string) => {
         },
         (payload) => {
           const msg = payload.new as MessageRow;
+          // Shim realtime IGNORUJE `filter` (conversation_id=eq.X) i dostarcza INSERT-y
+          // ze WSZYSTKICH konwersacji przez wspólne WS. Bez tego guardu wiadomość z innej
+          // rozmowy trafiłaby do otwartego wątku (przeciek treści) — filtrujemy po kliencie.
+          if (msg?.conversation_id !== conversationId) return;
           qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev: MessageRow[] | undefined) => {
             if (!prev) return [msg];
             if (prev.some((m: MessageRow) => m.id === msg.id)) return prev;
@@ -50,6 +54,10 @@ export const useRealtimeMessages = (conversationId: string) => {
         },
         (payload) => {
           const updated = payload.new as MessageRow;
+          // Jak wyżej: filtr jest ignorowany przez shim, więc odrzucamy zdarzenia z
+          // innych konwersacji (tu tylko podmieniamy istniejące wiersze, ale guard
+          // chroni przed zbędną pracą i ewentualnym wstrzyknięciem obcego wiersza).
+          if (updated?.conversation_id !== conversationId) return;
           qc.setQueryData<MessageRow[]>(["messages", conversationId], (prev: MessageRow[] | undefined) => {
             if (!prev) return prev;
             // Soft-deleted (deleted_at is set) — usuwamy z listy.

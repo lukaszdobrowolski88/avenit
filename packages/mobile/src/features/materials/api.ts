@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../../lib/supabase';
+import { supabase, tenantWebBase } from '../../lib/supabase';
 
 export interface FolderRow {
   id: string;
@@ -92,9 +92,12 @@ export const fileIconType = (
 };
 
 export const getDownloadUrl = async (storagePath: string): Promise<string | null> => {
-  const { data, error } = await supabase.storage
-    .from('materials')
-    .createSignedUrl(storagePath, 60 * 60);
-  if (error) return null;
-  return data?.signedUrl ?? null;
+  // Backend serwuje pliki publicznie pod GET /storage/<bucket>/<path>, ale WYŁĄCZNIE na
+  // subdomenie tenanta (rozwiązuje tenant z subdomeny) — nie na api.*. Shim nie ma
+  // `createSignedUrl` (istniał tylko w typach, nie w runtime), więc budujemy publiczny
+  // URL na hoście tenanta — tak jak web (getPublicUrl).
+  const base = tenantWebBase();
+  if (!base) return null;
+  const clean = String(storagePath).replace(/^\//, '');
+  return `${base}/storage/materials/${clean}`;
 };
