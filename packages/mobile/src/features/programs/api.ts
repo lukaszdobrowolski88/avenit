@@ -82,21 +82,6 @@ export interface SongSuggestionRow {
   song: { id: number; title: string; key: string | null } | null;
 }
 
-export const useProgramSuggestions = (programId: string | number) =>
-  useQuery({
-    queryKey: ['programs', 'suggestions', programId],
-    queryFn: async (): Promise<SongSuggestionRow[]> => {
-      const { data, error } = await supabase
-        .from('program_song_suggestions')
-        .select('id, song_id, song_key, note, sort_order, song:songs(id, title, key)')
-        .eq('program_id', programId)
-        .order('sort_order', { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as unknown as SongSuggestionRow[];
-    },
-    enabled: programId != null && programId !== '',
-  });
-
 export interface MyAssignmentRow {
   id: string;
   program_id: number;

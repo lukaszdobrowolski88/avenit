@@ -104,21 +104,6 @@ export const useCreatePrayer = (userEmail: string | null) => {
   });
 };
 
-export const useMarkAnswered = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, testimony }: { id: string; testimony: string }) => {
-      const { error } = await (supabase.from('prayer_requests') as any)
-        .update({ status: 'answered', answered_testimony: testimony })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['prayers'] });
-    },
-  });
-};
-
 export const CATEGORY_META: Record<
   PrayerCategory,
   { label: string; tint: string; bg: string; emoji: string }
