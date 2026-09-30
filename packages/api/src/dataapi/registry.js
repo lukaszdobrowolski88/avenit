@@ -262,6 +262,10 @@ export const REGISTRY = {
   message_read_receipts: T('module:komunikator'),
   pinned_messages: T('module:komunikator'),
   typing_status: T('module:komunikator'),
+  // Ankiety i prośby o modlitwę w czacie (migracja 064). Dostęp jak reszta czatu
+  // (module:komunikator + res:* grant); członek dostaje granty w migracji 065.
+  poll_votes: T('module:komunikator'),
+  prayer_responses: T('module:komunikator'),
   // Młodzieżówka
   mlodziezowka_leaders: T('module:mlodziezowka'),
   mlodziezowka_task_comments: T('module:mlodziezowka'),
