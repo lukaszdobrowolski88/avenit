@@ -31,6 +31,7 @@ const MODULES = [
   'my-invitations',
   'my-home-groups',
   'my-blockouts',
+  'ministry-roster',
   'prayer-wall',
   'campaign-progress',
   'automation-run',

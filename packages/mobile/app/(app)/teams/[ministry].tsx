@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   MessageSquare,
   Plus,
+  Users as UsersIcon,
 } from 'lucide-react-native';
 import { GradientIcon } from '../../../src/components/ui/GradientIcon';
 import { useAuthSession } from '../../../src/lib/auth';
@@ -26,18 +27,21 @@ import {
   useCreateMinistryEvent,
   useCreateWallPost,
   useMinistryEvents,
+  useMinistryRoster,
   useTeamSchedule,
   useWallPosts,
   type MinistryKey,
+  type RosterMember,
   type ScheduleEntry,
 } from '../../../src/features/teams/api';
 import { WallPostCard } from '../../../src/features/teams/components/WallPostCard';
 import { EventRow } from '../../../src/features/teams/components/EventRow';
 import { ScheduleRow } from '../../../src/features/teams/components/ScheduleRow';
+import { RosterRow } from '../../../src/features/teams/components/RosterRow';
 import { NewPostModal } from '../../../src/features/teams/components/NewPostModal';
 import { NewEventModal } from '../../../src/features/teams/components/NewEventModal';
 
-type TabKey = 'wall' | 'events' | 'schedule';
+type TabKey = 'wall' | 'events' | 'schedule' | 'roster';
 
 const EVENT_TYPES_PER_MINISTRY: Record<MinistryKey, { key: string; label: string }[]> = {
   worship: [
@@ -136,6 +140,7 @@ export default function TeamDetailScreen() {
   const wall = useWallPosts(key);
   const events = useMinistryEvents(key, { selectedCampusId, withCampusFilter });
   const schedule = useTeamSchedule(key);
+  const roster = useMinistryRoster(key);
   const createPost = useCreateWallPost(key);
   const createEvent = useCreateMinistryEvent(key, { campusIdForInsert });
 
@@ -143,8 +148,10 @@ export default function TeamDetailScreen() {
     wall.refetch();
     events.refetch();
     schedule.refetch();
+    roster.refetch();
   };
-  const isRefetching = wall.isRefetching || events.isRefetching || schedule.isRefetching;
+  const isRefetching =
+    wall.isRefetching || events.isRefetching || schedule.isRefetching || roster.isRefetching;
 
   const myEmail = user?.email ?? null;
   const myName =
@@ -250,6 +257,12 @@ export default function TeamDetailScreen() {
             label="Grafik"
           />
         ) : null}
+        <Tab
+          active={tab === 'roster'}
+          onPress={() => setTab('roster')}
+          Icon={UsersIcon}
+          label="Skład"
+        />
       </View>
 
       {tab === 'wall' || tab === 'events' ? (
@@ -287,12 +300,15 @@ export default function TeamDetailScreen() {
       ? wall.data ?? []
       : tab === 'events'
         ? events.data ?? []
-        : sortedSchedule;
+        : tab === 'roster'
+          ? roster.data ?? []
+          : sortedSchedule;
 
   const isLoading =
     (tab === 'wall' && wall.isLoading) ||
     (tab === 'events' && events.isLoading) ||
-    (tab === 'schedule' && schedule.isLoading);
+    (tab === 'schedule' && schedule.isLoading) ||
+    (tab === 'roster' && roster.isLoading);
 
   const renderEmpty = () => {
     if (isLoading) {
@@ -322,7 +338,9 @@ export default function TeamDetailScreen() {
             ? 'Brak postów'
             : tab === 'events'
               ? 'Brak wydarzeń'
-              : 'Brak przypisań do grafiku'}
+              : tab === 'roster'
+                ? 'Brak osób w zespole'
+                : 'Brak przypisań do grafiku'}
         </Text>
         <Text
           style={{
@@ -337,7 +355,9 @@ export default function TeamDetailScreen() {
             ? 'Bądź pierwsza/y i napisz coś do zespołu.'
             : tab === 'events'
               ? 'Dodaj próbę, koncert lub spotkanie.'
-              : 'Po dodaniu przypisań w programach zobaczysz je tu.'}
+              : tab === 'roster'
+                ? 'Lider może dodać osoby do tej służby.'
+                : 'Po dodaniu przypisań w programach zobaczysz je tu.'}
         </Text>
       </View>
     );
@@ -364,6 +384,9 @@ export default function TeamDetailScreen() {
           bg={meta.bg}
         />
       );
+    }
+    if (tab === 'roster') {
+      return <RosterRow member={item as RosterMember} tint={meta.tint} />;
     }
     return <ScheduleRow entry={item} highlightMine myEmail={myEmail} />;
   };

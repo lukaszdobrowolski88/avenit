@@ -403,3 +403,27 @@ export const useTeamSchedule = (ministry: MinistryKey) => {
     enabled: !!meta.teamType,
   });
 };
+
+// ── Skład służby (roster) — przez fn ministry-roster (kontakty scoped serwerowo) ──
+export interface RosterMember {
+  user_id: string;
+  name: string;
+  role: string;
+  is_leader: boolean;
+  is_me: boolean;
+  avatar_url: string | null;
+  phone: string | null;
+  email: string | null;
+}
+
+export const useMinistryRoster = (ministry: MinistryKey) =>
+  useQuery({
+    queryKey: ['teams', 'roster', ministry],
+    queryFn: async (): Promise<RosterMember[]> => {
+      const { data, error } = await supabase.functions.invoke('ministry-roster', {
+        body: { ministry_key: ministry },
+      });
+      if (error) throw new Error(error.message || 'Nie udało się pobrać składu zespołu.');
+      return (((data as any)?.members ?? []) as RosterMember[]);
+    },
+  });
