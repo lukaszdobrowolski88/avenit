@@ -202,46 +202,66 @@ export async function toXlsxBlob(model) {
 }
 
 // ── PDF (zrzut sekcji raportu — WYSIWYG, polskie znaki + wykresy) ─────────────
-// Reużywa wzorca html2canvas+jsPDF z src/lib/utils.js (onclone zdejmuje dark mode).
+// Składamy raport BLOK PO BLOKU (każda karta/sekcja = osobny zrzut), przenosząc blok
+// na nową stronę, gdy się nie mieści — żeby granica strony nie przecinała kart.
+// Reużywa wzorca html2canvas (onclone zdejmuje dark mode + ukrywa .pdf-exclude).
 // allowTaint:false + useCORS:true → zdalne logo bez CORS zostanie pominięte, a nie
 // wywali canvas.toDataURL (SecurityError).
+const H2C_OPTS = {
+  scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false,
+  onclone: (clonedDoc) => {
+    clonedDoc.documentElement.classList.remove('dark');
+    clonedDoc.body.classList.remove('dark');
+    clonedDoc.documentElement.style.backgroundColor = '#ffffff';
+    clonedDoc.querySelectorAll('.pdf-exclude').forEach((n) => { n.style.display = 'none'; });
+  },
+};
+
 async function buildReportPdf(el) {
   const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([import('jspdf'), import('html2canvas')]);
-  const canvas = await html2canvas(el, {
-    scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false,
-    onclone: (clonedDoc) => {
-      clonedDoc.documentElement.classList.remove('dark');
-      clonedDoc.body.classList.remove('dark');
-      clonedDoc.documentElement.style.backgroundColor = '#ffffff';
-      // Elementy sterujące (np. ⚙ edycji sald) nie należą do wydruku.
-      clonedDoc.querySelectorAll('.pdf-exclude').forEach((n) => { n.style.display = 'none'; });
-    },
-  });
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
   const M = 10;                                   // margines strony (mm)
   const contentW = pageW - 2 * M;
   const contentH = pageH - 2 * M;
-  const pxPerMm = canvas.width / contentW;
-  const pageHpx = Math.max(1, Math.floor(contentH * pxPerMm));
-  // Tniemy wysoki zrzut na kawałki wielkości strony — każdy kładziemy w obrębie marginesów
-  // (brak „krwawienia" treści w marginesy sąsiednich stron).
-  let offsetY = 0, page = 0;
-  while (offsetY < canvas.height) {
-    const sliceH = Math.min(pageHpx, canvas.height - offsetY);
-    const slice = document.createElement('canvas');
-    slice.width = canvas.width;
-    slice.height = sliceH;
-    const ctx = slice.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, slice.width, slice.height);
-    ctx.drawImage(canvas, 0, offsetY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-    if (page > 0) pdf.addPage();
-    pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', M, M, contentW, sliceH / pxPerMm);
-    offsetY += sliceH;
-    page++;
+  const GAP = 4;                                  // odstęp między blokami (mm)
+
+  const blocks = Array.from(el.children).filter((n) => n.offsetParent !== null || n.getClientRects().length);
+  let cursorY = M;
+
+  for (const block of blocks) {
+    const canvas = await html2canvas(block, H2C_OPTS);
+    if (!canvas.width || !canvas.height) continue;
+    const pxPerMm = canvas.width / contentW;
+    const hmm = canvas.height / pxPerMm;
+
+    if (hmm > contentH) {
+      // Blok wyższy niż strona — ostatecznie tnij sam ten blok na strony.
+      if (cursorY > M) { pdf.addPage(); cursorY = M; }
+      const pageHpx = Math.max(1, Math.floor(contentH * pxPerMm));
+      let offsetY = 0;
+      while (offsetY < canvas.height) {
+        const sliceH = Math.min(pageHpx, canvas.height - offsetY);
+        const slice = document.createElement('canvas');
+        slice.width = canvas.width; slice.height = sliceH;
+        const ctx = slice.getContext('2d');
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, slice.width, slice.height);
+        ctx.drawImage(canvas, 0, offsetY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+        pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', M, M, contentW, sliceH / pxPerMm);
+        offsetY += sliceH;
+        if (offsetY < canvas.height) pdf.addPage();
+      }
+      cursorY = pageH; // następny blok → nowa strona
+      continue;
+    }
+
+    // Nie mieści się na bieżącej stronie → nowa strona.
+    if (cursorY + hmm > pageH - M && cursorY > M) { pdf.addPage(); cursorY = M; }
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', M, cursorY, contentW, hmm);
+    cursorY += hmm + GAP;
   }
+
   // Stopka z numeracją stron (ASCII — bez polskich diakrytyków, których nie ma font jsPDF).
   const total = pdf.internal.getNumberOfPages();
   pdf.setFontSize(8);
