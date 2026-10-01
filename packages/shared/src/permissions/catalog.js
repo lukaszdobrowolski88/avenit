@@ -81,6 +81,7 @@ export const RESOURCE_LABELS = {
   teaching_series: 'Serie nauczań', materials_files: 'Pliki materiałów', materials_folders: 'Foldery materiałów',
   media_tasks: 'Zadania Media', media_task_comments: 'Komentarze zadań Media',
   message_reactions: 'Reakcje na wiadomości', message_read_receipts: 'Potwierdzenia odczytu',
+  poll_votes: 'Głosy w ankietach', prayer_responses: 'Odpowiedzi modlitewne',
   pinned_messages: 'Przypięte wiadomości', typing_status: 'Status pisania',
   mlodziezowka_leaders: 'Liderzy młodzieżówki', mlodziezowka_task_comments: 'Komentarze zadań młodzieżówki',
   prayer_interactions: 'Interakcje modlitewne',
@@ -256,7 +257,7 @@ export const MODULES = [
   },
   {
     key: 'komunikator', label: 'Komunikator',
-    resources: ['conversations', 'conversation_participants', 'messages', 'message_reactions', 'message_read_receipts', 'pinned_messages', 'typing_status'],
+    resources: ['conversations', 'conversation_participants', 'messages', 'message_reactions', 'message_read_receipts', 'pinned_messages', 'typing_status', 'poll_votes', 'prayer_responses'],
     tabs: [
       { key: 'direct', label: 'Rozmowy prywatne' },
       { key: 'groups', label: 'Grupy' },
