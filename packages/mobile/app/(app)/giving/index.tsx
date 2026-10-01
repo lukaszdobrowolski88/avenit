@@ -1,12 +1,13 @@
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StatusBar,
   Text,
   View,
 } from 'react-native';
-import { Gift, Info, Repeat } from 'lucide-react-native';
+import { FileText, Gift, Info, Repeat } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
@@ -16,7 +17,9 @@ import {
   METHOD_LABELS,
   formatMoney,
   useMyGiving,
+  useGivingCampaigns,
   type Donation,
+  type GivingCampaign,
   type GivingFund,
 } from '../../../src/features/giving/api';
 
@@ -121,6 +124,7 @@ export default function GivingScreen() {
   const { data, isLoading, isError, error, refetch, isRefetching } = useMyGiving(
     user?.email ?? null,
   );
+  const campaigns = useGivingCampaigns();
 
   const summary = data ?? {
     memberResolved: false,
@@ -191,7 +195,74 @@ export default function GivingScreen() {
               <View className="mt-4">
                 <GradientButton onPress={() => router.push('/(app)/giving/donate')}>Wesprzyj wspólnotę</GradientButton>
               </View>
+              <Pressable
+                onPress={() => router.push('/(app)/giving/statement')}
+                className="mt-2 flex-row items-center justify-center gap-1.5 active:opacity-70"
+                style={{ paddingVertical: 10 }}
+              >
+                <FileText size={15} color="#047857" />
+                <Text className="text-[13px]" style={{ color: '#047857', fontFamily: 'Inter_700Bold' }}>
+                  Zestawienie roczne (PIT)
+                </Text>
+              </Pressable>
             </View>
+
+            {/* Zbiórki (aktywne kampanie) */}
+            {(campaigns.data?.length ?? 0) > 0 ? (
+              <View className="mb-4">
+                <Text
+                  className="text-[11px] uppercase mb-2 px-1"
+                  style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}
+                >
+                  Zbiórki
+                </Text>
+                {campaigns.data!.map((c: GivingCampaign) => {
+                  const goal = Number(c.goal_amount) || 0;
+                  const raised = Number(c.raised) || 0;
+                  const pct = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0;
+                  return (
+                    <Pressable
+                      key={c.id}
+                      onPress={() => router.push('/(app)/giving/donate')}
+                      className="mb-2 active:opacity-90"
+                      style={{ borderRadius: 18, borderWidth: 1, borderColor: '#eef0f3', backgroundColor: '#ffffff', padding: 14 }}
+                    >
+                      <Text className="text-[15px]" style={{ color: '#0c0a09', fontFamily: 'Inter_700Bold' }} numberOfLines={1}>
+                        {c.name}
+                      </Text>
+                      {c.description ? (
+                        <Text
+                          className="text-[12px] mt-0.5"
+                          style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+                          numberOfLines={2}
+                        >
+                          {c.description}
+                        </Text>
+                      ) : null}
+                      {goal > 0 ? (
+                        <>
+                          <View style={{ height: 7, borderRadius: 4, backgroundColor: '#f1f5f9', overflow: 'hidden', marginTop: 10 }}>
+                            <View style={{ height: '100%', width: `${pct}%`, borderRadius: 4, backgroundColor: '#16a34a' }} />
+                          </View>
+                          <View className="flex-row items-center justify-between mt-1.5">
+                            <Text className="text-[12px]" style={{ color: '#15803d', fontFamily: 'Inter_700Bold' }}>
+                              {formatMoney(raised, summary.currency)}
+                            </Text>
+                            <Text className="text-[12px]" style={{ color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>
+                              z {formatMoney(goal, summary.currency)} · {pct}%
+                            </Text>
+                          </View>
+                        </>
+                      ) : (
+                        <Text className="text-[12px] mt-2" style={{ color: '#16a34a', fontFamily: 'Inter_600SemiBold' }}>
+                          Wesprzyj →
+                        </Text>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
 
             {/* Info, gdy nie ma powiązania konta z członkiem */}
             {!summary.memberResolved ? (

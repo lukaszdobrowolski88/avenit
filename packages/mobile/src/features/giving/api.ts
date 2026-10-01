@@ -66,6 +66,31 @@ export const formatMoney = (amount: number | null | undefined, currency = 'PLN')
   return `${withSep},${dec} ${suffix}`;
 };
 
+export interface GivingCampaign {
+  id: string;
+  name: string;
+  description: string | null;
+  goal_amount: number;
+  raised: number;
+  fund_id: string | null;
+  fund_name: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  image_url: string | null;
+}
+
+// Zbiórki (aktywne kampanie + postęp) — przez fn giving-campaigns (giving_* nie są
+// wystawione przez /api/db; postęp liczony serwerowo bez ujawniania pojedynczych wpłat).
+export const useGivingCampaigns = () =>
+  useQuery({
+    queryKey: ['giving', 'campaigns'],
+    queryFn: async (): Promise<GivingCampaign[]> => {
+      const { data, error } = await supabase.functions.invoke('giving-campaigns', { body: {} });
+      if (error) return [];
+      return (((data as any)?.campaigns ?? []) as GivingCampaign[]);
+    },
+  });
+
 export const useMyGiving = (userEmail: string | null) =>
   useQuery({
     queryKey: ['giving', 'mine', userEmail],

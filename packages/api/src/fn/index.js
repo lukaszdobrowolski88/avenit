@@ -28,6 +28,7 @@ const MODULES = [
   'przelewy24-webhook',
   'giving-create-payment',
   'my-giving',
+  'giving-campaigns',
   'my-invitations',
   'my-home-groups',
   'my-blockouts',
