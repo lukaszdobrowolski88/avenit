@@ -38,6 +38,7 @@ import {
   type PrayerCategory,
 } from '../../../src/features/prayers/api';
 import { useAuthSession } from '../../../src/lib/auth';
+import { useT } from '../../../src/i18n';
 
 type Scope = 'active' | 'answered' | 'mine' | 'all';
 
@@ -112,12 +113,13 @@ const PrayerCard = ({
   onMarkAnswered: (p: PrayerRequest) => void;
   onReopen: (p: PrayerRequest) => void;
 }) => {
+  const t = useT();
   const meta = CATEGORY_META[prayer.category];
   const toggle = useTogglePrayer(userEmail);
   const iAmPraying = prayer.i_am_praying;
   const displayName = prayer.is_anonymous
-    ? 'Anonimowo'
-    : prayer.requester_name || prayer.user_name || 'Ktoś ze wspólnoty';
+    ? t('Anonimowo')
+    : prayer.requester_name || prayer.user_name || t('Ktoś ze wspólnoty');
 
   return (
     <View
@@ -142,7 +144,7 @@ const PrayerCard = ({
               className="text-[11px]"
               style={{ color: meta.tint, fontFamily: 'Inter_700Bold' }}
             >
-              {meta.emoji} {meta.label}
+              {meta.emoji} {t(meta.label)}
             </Text>
           </View>
           <Text
@@ -158,7 +160,7 @@ const PrayerCard = ({
             >
               <Lock size={9} color="#7c3aed" />
               <Text className="text-[10px]" style={{ color: '#6d28d9', fontFamily: 'Inter_700Bold' }}>
-                Liderzy
+                {t('Liderzy')}
               </Text>
             </View>
           )}
@@ -172,7 +174,7 @@ const PrayerCard = ({
                 className="text-[10px]"
                 style={{ color: '#047857', fontFamily: 'Inter_700Bold' }}
               >
-                Wysłuchana
+                {t('Wysłuchana')}
               </Text>
             </View>
           )}
@@ -199,7 +201,7 @@ const PrayerCard = ({
               className="text-[11px] mb-1"
               style={{ color: '#047857', fontFamily: 'Inter_700Bold' }}
             >
-              Świadectwo:
+              {t('Świadectwo:')}
             </Text>
             <Text
               className="text-[13px]"
@@ -223,8 +225,8 @@ const PrayerCard = ({
             style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
           >
             {prayer.prayer_count > 0
-              ? `${prayer.prayer_count} ${prayer.prayer_count === 1 ? 'osoba modli się' : 'osób modli się'}`
-              : 'Bądź pierwszą osobą modlącą się'}
+              ? `${prayer.prayer_count} ${prayer.prayer_count === 1 ? t('osoba modli się') : t('osób modli się')}`
+              : t('Bądź pierwszą osobą modlącą się')}
           </Text>
           <Pressable
             onPress={() =>
@@ -254,7 +256,7 @@ const PrayerCard = ({
                 fontFamily: 'Inter_700Bold',
               }}
             >
-              {iAmPraying ? 'Modlę się' : 'Modlę się też'}
+              {iAmPraying ? t('Modlę się') : t('Modlę się też')}
             </Text>
           </Pressable>
         </View>
@@ -267,20 +269,20 @@ const PrayerCard = ({
             {prayer.status === 'answered' ? (
               <OwnerAction
                 Icon={RotateCcw}
-                label="Przywróć"
+                label={t("Przywróć")}
                 tint="#0e7490"
                 onPress={() => onReopen(prayer)}
               />
             ) : (
               <OwnerAction
                 Icon={CheckCircle2}
-                label="Wysłuchana"
+                label={t("Wysłuchana")}
                 tint="#059669"
                 onPress={() => onMarkAnswered(prayer)}
               />
             )}
-            <OwnerAction Icon={Pencil} label="Edytuj" tint="#57534e" onPress={() => onEdit(prayer)} />
-            <OwnerAction Icon={Trash2} label="Usuń" tint="#dc2626" onPress={() => onDelete(prayer)} />
+            <OwnerAction Icon={Pencil} label={t("Edytuj")} tint="#57534e" onPress={() => onEdit(prayer)} />
+            <OwnerAction Icon={Trash2} label={t("Usuń")} tint="#dc2626" onPress={() => onDelete(prayer)} />
           </View>
         )}
       </View>
@@ -292,6 +294,7 @@ const CATEGORIES: PrayerCategory[] = ['zdrowie', 'rodzina', 'finanse', 'duchowe'
 
 export default function PrayersScreen() {
   const router = useRouter();
+  const t = useT();
   const { user } = useAuthSession();
   const [scope, setScope] = useState<Scope>('active');
   const [category, setCategory] = useState<PrayerCategory | 'all'>('all');
@@ -334,7 +337,7 @@ export default function PrayersScreen() {
   };
 
   const confirmDelete = (p: PrayerRequest) => {
-    Alert.alert('Usunąć intencję?', 'Tej operacji nie można cofnąć.', [
+    Alert.alert(t('Usunąć intencję?'), t('Tej operacji nie można cofnąć.'), [
       { text: 'Anuluj', style: 'cancel' },
       {
         text: 'Usuń',
@@ -342,7 +345,7 @@ export default function PrayersScreen() {
         onPress: () =>
           del.mutate(p.id, {
             onError: (e: any) =>
-              Alert.alert('Błąd', e?.message ?? 'Nie udało się usunąć intencji.'),
+              Alert.alert(t('Błąd'), e?.message ?? t('Nie udało się usunąć intencji.')),
           }),
       },
     ]);
@@ -360,7 +363,7 @@ export default function PrayersScreen() {
       {
         onSuccess: () => setAnsweredFor(null),
         onError: (e: any) =>
-          Alert.alert('Błąd', e?.message ?? 'Nie udało się zapisać.'),
+          Alert.alert(t('Błąd'), e?.message ?? t('Nie udało się zapisać.')),
       }
     );
   };
@@ -369,7 +372,7 @@ export default function PrayersScreen() {
     markAnswered.mutate(
       { id: p.id, answered: false },
       {
-        onError: (e: any) => Alert.alert('Błąd', e?.message ?? 'Nie udało się zapisać.'),
+        onError: (e: any) => Alert.alert(t('Błąd'), e?.message ?? t('Nie udało się zapisać.')),
       }
     );
   };
@@ -379,8 +382,8 @@ export default function PrayersScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
         <PageHeader
-          title="Modlitwy"
-          subtitle="Intencje społeczności"
+          title={t("Modlitwy")}
+          subtitle={t("Intencje społeczności")}
           showBack
           right={
             <Pressable
@@ -400,10 +403,10 @@ export default function PrayersScreen() {
         />
 
         <View className="flex-row gap-2 px-4 pb-2">
-          <Chip label="Aktywne" active={scope === 'active'} onPress={() => setScope('active')} />
-          <Chip label="Wysłuchane" active={scope === 'answered'} onPress={() => setScope('answered')} />
-          <Chip label="Moje" active={scope === 'mine'} onPress={() => setScope('mine')} />
-          <Chip label="Wszystkie" active={scope === 'all'} onPress={() => setScope('all')} />
+          <Chip label={t("Aktywne")} active={scope === 'active'} onPress={() => setScope('active')} />
+          <Chip label={t("Wysłuchane")} active={scope === 'answered'} onPress={() => setScope('answered')} />
+          <Chip label={t("Moje")} active={scope === 'mine'} onPress={() => setScope('mine')} />
+          <Chip label={t("Wszystkie")} active={scope === 'all'} onPress={() => setScope('all')} />
         </View>
 
         <View className="px-4 pb-2">
@@ -426,7 +429,7 @@ export default function PrayersScreen() {
                 fontFamily: 'Inter_400Regular',
                 paddingVertical: 0,
               }}
-              placeholder="Szukaj w intencjach…"
+              placeholder={t("Szukaj w intencjach…")}
               placeholderTextColor="#a8a29e"
               value={search}
               onChangeText={setSearch}
@@ -446,11 +449,11 @@ export default function PrayersScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 16, gap: 8, alignItems: 'center' }}
           >
-            <Chip label="Wszystkie" active={category === 'all'} onPress={() => setCategory('all')} />
+            <Chip label={t("Wszystkie")} active={category === 'all'} onPress={() => setCategory('all')} />
             {CATEGORIES.map((c) => (
               <Chip
                 key={c}
-                label={`${CATEGORY_META[c].emoji} ${CATEGORY_META[c].label}`}
+                label={`${CATEGORY_META[c].emoji} ${t(CATEGORY_META[c].label)}`}
                 active={category === c}
                 onPress={() => setCategory(c)}
               />
@@ -468,7 +471,7 @@ export default function PrayersScreen() {
               className="text-center"
               style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}
             >
-              {(error as Error)?.message ?? 'Błąd'}
+              {(error as Error)?.message ?? t('Błąd')}
             </Text>
           </View>
         ) : list.length === 0 ? (
@@ -500,15 +503,15 @@ export default function PrayersScreen() {
               className="text-[16px]"
               style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
             >
-              {search || category !== 'all' || scope !== 'active' ? 'Brak wyników' : 'Brak intencji'}
+              {search || category !== 'all' || scope !== 'active' ? t('Brak wyników') : t('Brak intencji')}
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
               style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
             >
               {search || category !== 'all' || scope !== 'active'
-                ? 'Zmień filtry lub wyczyść wyszukiwanie.'
-                : 'Bądź pierwszą osobą, która podzieli się intencją.'}
+                ? t('Zmień filtry lub wyczyść wyszukiwanie.')
+                : t('Bądź pierwszą osobą, która podzieli się intencją.')}
             </Text>
           </ScrollView>
         ) : (
@@ -557,13 +560,13 @@ export default function PrayersScreen() {
             <View className="flex-row items-center gap-2 mb-1">
               <Sparkles size={18} color="#059669" />
               <Text style={{ fontSize: 18, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>
-                Modlitwa wysłuchana 🙌
+                {t('Modlitwa wysłuchana 🙌')}
               </Text>
             </View>
             <Text
               style={{ fontSize: 13, color: '#78716c', marginBottom: 14, fontFamily: 'Inter_400Regular' }}
             >
-              Możesz dodać krótkie świadectwo (opcjonalnie) — zbuduje wiarę wspólnoty.
+              {t('Możesz dodać krótkie świadectwo (opcjonalnie) — zbuduje wiarę wspólnoty.')}
             </Text>
             <TextInput
               style={{
@@ -580,7 +583,7 @@ export default function PrayersScreen() {
                 marginBottom: 16,
                 fontFamily: 'Inter_400Regular',
               }}
-              placeholder="Jak Bóg odpowiedział na tę modlitwę?"
+              placeholder={t("Jak Bóg odpowiedział na tę modlitwę?")}
               placeholderTextColor="#a8a29e"
               multiline
               value={testimony}
@@ -588,7 +591,7 @@ export default function PrayersScreen() {
               editable={!markAnswered.isPending}
             />
             <GradientButton onPress={confirmAnswered} loading={markAnswered.isPending}>
-              Oznacz jako wysłuchaną
+              {t('Oznacz jako wysłuchaną')}
             </GradientButton>
           </Pressable>
         </Pressable>
