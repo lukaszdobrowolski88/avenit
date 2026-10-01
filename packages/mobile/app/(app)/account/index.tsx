@@ -15,6 +15,7 @@ import {
   Home,
   KeyRound,
   LogOut,
+  ListTodo,
   Moon,
   Palette,
   Podcast,
@@ -338,6 +339,15 @@ export default function AccountScreen() {
       </SettingsGroup>
 
       <SettingsGroup title="Moduły zespołów">
+        <SettingsRow
+          variant="nav"
+          Icon={ListTodo}
+          iconTint="#0d9488"
+          iconBg="#ccfbf1"
+          title="Moja praca"
+          description="Zadania przypisane do Ciebie na tablicach"
+          onPress={() => router.push('/(app)/work')}
+        />
         <SettingsRow
           variant="nav"
           Icon={Users}
