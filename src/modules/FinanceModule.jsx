@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import EmptyState from '../components/EmptyState';
 import Spinner from '../components/Spinner';
-import { DollarSign, TrendingUp, Receipt, Calendar, Plus, Upload, Download, Printer, Repeat, CheckCircle, XCircle, Clock, Copy, AlertTriangle, Tag, X, FileText, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Users, Building2, Settings, Banknote, CreditCard, FolderOpen } from 'lucide-react';
+import { DollarSign, TrendingUp, Receipt, Calendar, Plus, Upload, Download, Printer, Repeat, CheckCircle, XCircle, Clock, Copy, AlertTriangle, Tag, X, FileText, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Users, Building2, Settings, Banknote, CreditCard, FolderOpen, Mail, CalendarClock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { createPortal } from 'react-dom';
 import { useCampusQuery } from '../hooks/useCampusQuery';
@@ -12,6 +12,9 @@ import PageHeader from '../components/PageHeader';
 import { useT } from '../i18n';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
+import { computeRange, shiftRangeYears, MONTHS_PL, yearOptions } from './finance/reportRange';
+import { buildReportModel, toCsvBlob, toXlsxBlob, reportElToPdfBlob, blobToBase64, download, slugForRange } from './finance/reportExport';
+import { IncomeExpenseBarChart, CashFlowAreaChart, CategoryDonut, YoYBars } from './finance/ReportCharts';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -434,21 +437,144 @@ const FinanceModule = () => {
     try { await supabase.from('finance_vendors').insert([{ name: n }]); fetchVendors(); } catch { /* kolizja = już jest */ }
   };
 
+  // ── Zakres raportu (miesiąc / kwartał / rok / dowolny zakres) ─────────────
+  const reportSectionRef = useRef(null);
+  const now0 = new Date();
+  const [reportMode, setReportMode] = useState('year');
+  const [reportAnchor, setReportAnchor] = useState({
+    year: now0.getFullYear(), month: now0.getMonth(),
+    quarter: Math.floor(now0.getMonth() / 3) + 1, from: '', to: '',
+  });
+  const reportRange = useMemo(() => computeRange(reportMode, reportAnchor), [reportMode, reportAnchor]);
+  const [reportIncome, setReportIncome] = useState([]);
+  const [reportExpense, setReportExpense] = useState([]);
+  const [reportBudget, setReportBudget] = useState([]);
+  const [reportBalances, setReportBalances] = useState({ bank_pln: 0, cash_pln: 0, bank_currency: 0, cash_currency: 0, currency_type: 'EUR' });
+  const [reportPrev, setReportPrev] = useState({ income: [], expense: [] });
+  const [reportLoading, setReportLoading] = useState(false);
+
+  const fetchReportData = async (range) => {
+    setReportLoading(true);
+    try {
+      const prev = shiftRangeYears(range, 1);
+      const [inc, exp, bud, bal, pinc, pexp] = await Promise.all([
+        supabase.from('income_transactions').select('*').gte('date', range.from).lte('date', range.to).order('date', { ascending: false }),
+        supabase.from('expense_transactions').select('*').gte('payment_date', range.from).lte('payment_date', range.to).order('payment_date', { ascending: false }),
+        withCampusFilter(supabase.from('budget_items').select('*')).eq('year', range.year).order('category'),
+        supabase.from('finance_balances').select('*').eq('year', range.year).maybeSingle(),
+        supabase.from('income_transactions').select('amount').gte('date', prev.from).lte('date', prev.to),
+        supabase.from('expense_transactions').select('amount').gte('payment_date', prev.from).lte('payment_date', prev.to),
+      ]);
+      setReportIncome(inc.data || []);
+      setReportExpense(exp.data || []);
+      setReportBudget(bud.data || []);
+      const b = bal.data;
+      setReportBalances(b
+        ? { bank_pln: b.bank_pln || 0, cash_pln: b.cash_pln || 0, bank_currency: b.bank_currency || 0, cash_currency: b.cash_currency || 0, currency_type: b.currency_type || 'EUR' }
+        : { bank_pln: 0, cash_pln: 0, bank_currency: 0, cash_currency: 0, currency_type: 'EUR' });
+      setReportPrev({ income: pinc.data || [], expense: pexp.data || [] });
+    } catch (e) { console.error('Error fetching report data:', e); }
+    finally { setReportLoading(false); }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'reports') fetchReportData(reportRange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, reportRange.from, reportRange.to, reportRange.year, selectedCampusId]);
+
+  const reportModel = useMemo(() => buildReportModel({
+    range: reportRange, income: reportIncome, expense: reportExpense,
+    budget: reportBudget, expenseCategories,
+    prevIncome: reportPrev.income, prevExpense: reportPrev.expense,
+  }), [reportRange, reportIncome, reportExpense, reportBudget, expenseCategories, reportPrev]);
+
+  // ── Pobieranie raportu (CSV / XLSX / PDF) ────────────────────────────────
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const doDownload = async (fmt) => {
+    setShowDownloadMenu(false);
+    const base = `raport-finansowy-${slugForRange(reportRange)}`;
+    try {
+      if (fmt === 'csv') download(toCsvBlob(reportModel), `${base}.csv`);
+      else if (fmt === 'xlsx') download(await toXlsxBlob(reportModel), `${base}.xlsx`);
+      else if (fmt === 'pdf') {
+        if (!reportSectionRef.current) return;
+        setDownloadingPdf(true);
+        download(await reportElToPdfBlob(reportSectionRef.current), `${base}.pdf`);
+      }
+    } catch (e) { toast.error(tr('Błąd eksportu: ') + (e.message || e)); }
+    finally { setDownloadingPdf(false); }
+  };
+
   // ── Raport finansowy mailem (na żądanie) ──────────────────────────────────
   const [showReportEmailModal, setShowReportEmailModal] = useState(false);
   const [reportRecipients, setReportRecipients] = useState('');
+  const [reportAttachments, setReportAttachments] = useState({ pdf: true, xlsx: true, csv: false });
   const [sendingReport, setSendingReport] = useState(false);
   const sendReportEmail = async () => {
     const list = reportRecipients.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
     if (list.length === 0) { toast.error(tr('Podaj adresy e-mail')); return; }
     setSendingReport(true);
     try {
-      const { data, error } = await supabase.functions.invoke('finance-report-email', { body: { year: selectedYear, recipients: list } });
+      const slug = slugForRange(reportRange);
+      const attachments = [];
+      if (reportAttachments.pdf && reportSectionRef.current) {
+        const pdf = await reportElToPdfBlob(reportSectionRef.current);
+        attachments.push({ filename: `raport-${slug}.pdf`, contentBase64: await blobToBase64(pdf), type: 'application/pdf' });
+      }
+      if (reportAttachments.xlsx) {
+        attachments.push({ filename: `raport-${slug}.xlsx`, contentBase64: await blobToBase64(await toXlsxBlob(reportModel)), type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      }
+      if (reportAttachments.csv) {
+        attachments.push({ filename: `raport-${slug}.csv`, contentBase64: await blobToBase64(toCsvBlob(reportModel)), type: 'text/csv' });
+      }
+      const { data, error } = await supabase.functions.invoke('finance-report-email', {
+        body: { from: reportRange.from, to: reportRange.to, periodLabel: reportRange.label, recipients: list, attachments },
+      });
       if (error) throw error;
       toast.success(tr('Raport wysłany') + ` (${data?.sent || list.length})`);
       setShowReportEmailModal(false); setReportRecipients('');
     } catch (e) { toast.error(tr('Błąd wysyłki: ') + (e.message || e)); }
     finally { setSendingReport(false); }
+  };
+
+  // ── Harmonogram automatycznych raportów (finance_report_schedules) ─────────
+  const [schedules, setSchedules] = useState([]);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const emptySchedule = { cadence: 'monthly', recipients: '', include_csv: true, is_active: true };
+  const [scheduleForm, setScheduleForm] = useState(emptySchedule);
+  const [editingScheduleId, setEditingScheduleId] = useState(null);
+  const fetchSchedules = async () => {
+    try { const { data } = await supabase.from('finance_report_schedules').select('*').order('created_at', { ascending: false }); setSchedules(data || []); }
+    catch { setSchedules([]); }
+  };
+  useEffect(() => { fetchSchedules(); /* eslint-disable-next-line */ }, []);
+  const nextRunFor = (cadence) => {
+    const d = new Date();
+    if (cadence === 'monthly') return new Date(d.getFullYear(), d.getMonth() + 1, 1).toISOString().slice(0, 10);
+    if (cadence === 'quarterly') { const q = Math.floor(d.getMonth() / 3) + 1; return new Date(d.getFullYear(), q * 3, 1).toISOString().slice(0, 10); }
+    return new Date(d.getFullYear() + 1, 0, 1).toISOString().slice(0, 10);
+  };
+  const saveSchedule = async () => {
+    const recipients = scheduleForm.recipients.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
+    if (recipients.length === 0) { toast.error(tr('Podaj adresy e-mail')); return; }
+    const payload = {
+      cadence: scheduleForm.cadence, recipients, include_csv: !!scheduleForm.include_csv,
+      is_active: !!scheduleForm.is_active, next_run_date: nextRunFor(scheduleForm.cadence),
+    };
+    try {
+      if (editingScheduleId) await supabase.from('finance_report_schedules').update(payload).eq('id', editingScheduleId);
+      else await supabase.from('finance_report_schedules').insert([{ ...payload, created_by: currentUserEmail || null }]);
+      setShowScheduleModal(false); setScheduleForm(emptySchedule); setEditingScheduleId(null); fetchSchedules();
+      toast.success(tr('Harmonogram zapisany'));
+    } catch (e) { toast.error(tr('Błąd: ') + (e.message || e)); }
+  };
+  const toggleSchedule = async (s) => { try { await supabase.from('finance_report_schedules').update({ is_active: !s.is_active }).eq('id', s.id); fetchSchedules(); } catch (e) { toast.error(e.message); } };
+  const deleteSchedule = async (id) => { if (!confirm(tr('Usunąć ten harmonogram?'))) return; try { await supabase.from('finance_report_schedules').delete().eq('id', id); fetchSchedules(); } catch (e) { toast.error(e.message); } };
+  const openEditSchedule = (s) => {
+    setEditingScheduleId(s.id);
+    setScheduleForm({ cadence: s.cadence || 'monthly', recipients: (s.recipients || []).join(', '), include_csv: s.include_csv !== false, is_active: s.is_active !== false });
+    setShowScheduleModal(true);
   };
 
   // ── Propozycje budżetu od służb ───────────────────────────────────────────
@@ -2010,492 +2136,207 @@ const FinanceModule = () => {
       {/* REPORTS TAB */}
       {activeTab === 'reports' && (
         <section className="space-y-6">
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setShowReportEmailModal(true)} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Wyślij raport mailem')}>
-              <FileText size={16} /> {tr('Wyślij raport')}
-            </button>
-            <button onClick={() => window.print()} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Drukuj / zapisz PDF')}>
-              <Printer size={16} /> {tr('Drukuj / PDF')}
-            </button>
-          </div>
-          {/* Podsumowanie finansowe - kompaktowy widok */}
-          {(() => {
-            const totalIncome = incomeTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
-            const totalExpenses = expenseTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
-            const yearBalance = totalIncome - totalExpenses;
-            const currentBankPln = accountBalances.bank_pln + yearBalance;
-            const currentCashPln = accountBalances.cash_pln;
-            const totalPln = currentBankPln + currentCashPln;
-            const totalPlanned = budgetItems.reduce((sum, item) => sum + (item.planned_amount || 0), 0);
-            const budgetExecution = totalPlanned > 0 ? (totalExpenses / totalPlanned) * 100 : 0;
-
-            return (
-              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                {/* Header z aktualnym saldem */}
-                <div className="bg-gradient-to-r from-accent-primary to-accent-secondary p-6 text-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-accent-primary-lighter text-sm font-medium mb-1">Aktualny stan finansów • {selectedYear}</p>
-                      <p className="text-4xl font-bold">{totalPln.toLocaleString('pl-PL')} zł</p>
-                    </div>
-                    <button
-                      onClick={openBalanceModal}
-                      className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition"
-                      title={t('Edytuj stany początkowe')}
-                    >
-                      <Settings size={20} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Szczegóły w gridzie */}
-                <div className="p-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {/* Rachunek bankowy */}
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2">
-                        <CreditCard size={16} />
-                        <span className="text-xs font-medium uppercase">Bank PLN</span>
-                      </div>
-                      <p className="text-xl font-bold text-gray-900 dark:text-white">{currentBankPln.toLocaleString('pl-PL')} zł</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Start: {accountBalances.bank_pln.toLocaleString('pl-PL')} zł
-                      </p>
-                    </div>
-
-                    {/* Gotówka */}
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2">
-                        <Banknote size={16} />
-                        <span className="text-xs font-medium uppercase">{t('Gotówka')}</span>
-                      </div>
-                      <p className="text-xl font-bold text-gray-900 dark:text-white">{currentCashPln.toLocaleString('pl-PL')} zł</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Start: {accountBalances.cash_pln.toLocaleString('pl-PL')} zł
-                      </p>
-                    </div>
-
-                    {/* Bilans roku */}
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2">
-                        {yearBalance >= 0 ? <ArrowUpRight size={16} className="text-green-500" /> : <ArrowDownRight size={16} className="text-red-500" />}
-                        <span className="text-xs font-medium uppercase">Bilans {selectedYear}</span>
-                      </div>
-                      <p className={`text-xl font-bold ${yearBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {yearBalance >= 0 ? '+' : ''}{yearBalance.toLocaleString('pl-PL')} zł
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        +{totalIncome.toLocaleString('pl-PL')} / -{totalExpenses.toLocaleString('pl-PL')}
-                      </p>
-                    </div>
-
-                    {/* Wykonanie budżetu */}
-                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                      <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2">
-                        <PieChart size={16} />
-                        <span className="text-xs font-medium uppercase">{t('Budżet')}</span>
-                      </div>
-                      <p className="text-xl font-bold text-gray-900 dark:text-white">{budgetExecution.toFixed(1)}%</p>
-                      <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                        <div
-                          className={`h-1.5 rounded-full ${budgetExecution < 80 ? 'bg-green-500' : budgetExecution <= 100 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                          style={{ width: `${Math.min(budgetExecution, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Sekcja walutowa - tylko jeśli jest saldo */}
-                  {(accountBalances.bank_currency > 0 || accountBalances.cash_currency > 0) && (
-                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-3">Waluta ({accountBalances.currency_type})</p>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                          <CreditCard size={18} className="text-amber-600 dark:text-amber-400" />
-                          <div>
-                            <p className="text-xs text-amber-600 dark:text-amber-400">{t('Rachunek')}</p>
-                            <p className="font-bold text-gray-900 dark:text-white">{accountBalances.bank_currency.toLocaleString('pl-PL')} {accountBalances.currency_type}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 p-3 bg-cyan-50 dark:bg-cyan-900/20 rounded-lg">
-                          <Banknote size={18} className="text-cyan-600 dark:text-cyan-400" />
-                          <div>
-                            <p className="text-xs text-cyan-600 dark:text-cyan-400">{t('Gotówka')}</p>
-                            <p className="font-bold text-gray-900 dark:text-white">{accountBalances.cash_currency.toLocaleString('pl-PL')} {accountBalances.currency_type}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+          {/* Pasek: zakres raportu + akcje */}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 print:hidden">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
+                {[['month', tr('Miesiąc')], ['quarter', tr('Kwartał')], ['year', tr('Rok')], ['custom', tr('Zakres')]].map(([m, lbl]) => (
+                  <button key={m} onClick={() => setReportMode(m)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${reportMode === m ? 'bg-white dark:bg-gray-900 shadow text-accent-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>{lbl}</button>
+                ))}
               </div>
-            );
-          })()}
-
-
-          {/* Monthly Chart - Wpływy vs Wydatki */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <BarChart3 size={20} className="text-accent-primary" />
-              {tr('Wpływy vs Wydatki - miesięcznie')}
-            </h3>
-            <div className="space-y-3">
-              {(() => {
-                const months = [tr('Sty'), tr('Lut'), tr('Mar'), tr('Kwi'), tr('Maj'), tr('Cze'), tr('Lip'), tr('Sie'), tr('Wrz'), tr('Paź'), tr('Lis'), tr('Gru')];
-                const monthlyData = months.map((name, idx) => {
-                  const monthNum = String(idx + 1).padStart(2, '0');
-                  const monthStart = `${selectedYear}-${monthNum}-01`;
-                  const monthEnd = `${selectedYear}-${monthNum}-31`;
-
-                  const income = incomeTransactions
-                    .filter(t => t.date >= monthStart && t.date <= monthEnd)
-                    .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-                  const expense = expenseTransactions
-                    .filter(t => t.payment_date >= monthStart && t.payment_date <= monthEnd)
-                    .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-                  return { name, income, expense };
-                });
-
-                const maxValue = Math.max(
-                  ...monthlyData.map(d => Math.max(d.income, d.expense)),
-                  1
-                );
-
-                return (
-                  <div className="grid grid-cols-12 gap-2">
-                    {monthlyData.map((data, idx) => (
-                      <div key={idx} className="flex flex-col items-center">
-                        <div className="h-32 w-full flex items-end justify-center gap-1">
-                          <div
-                            className="w-3 bg-gradient-to-t from-green-500 to-green-400 rounded-t transition-all hover:opacity-80"
-                            style={{ height: `${(data.income / maxValue) * 100}%`, minHeight: data.income > 0 ? '4px' : '0' }}
-                            title={`Wpływy: ${data.income.toLocaleString('pl-PL')} zł`}
-                          />
-                          <div
-                            className="w-3 bg-gradient-to-t from-red-500 to-red-400 rounded-t transition-all hover:opacity-80"
-                            style={{ height: `${(data.expense / maxValue) * 100}%`, minHeight: data.expense > 0 ? '4px' : '0' }}
-                            title={`Wydatki: ${data.expense.toLocaleString('pl-PL')} zł`}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 mt-2">{data.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-              <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+              {reportMode === 'month' && (
+                <>
+                  <CustomSelect value={reportAnchor.month} onChange={(v) => setReportAnchor((a) => ({ ...a, month: parseInt(v) }))} options={MONTHS_PL.map((m, i) => ({ value: i, label: m }))} />
+                  <CustomSelect value={reportAnchor.year} onChange={(v) => setReportAnchor((a) => ({ ...a, year: parseInt(v) }))} options={yearOptions().map((y) => ({ value: y, label: String(y) }))} />
+                </>
+              )}
+              {reportMode === 'quarter' && (
+                <>
+                  <CustomSelect value={reportAnchor.quarter} onChange={(v) => setReportAnchor((a) => ({ ...a, quarter: parseInt(v) }))} options={[1, 2, 3, 4].map((q) => ({ value: q, label: `Q${q}` }))} />
+                  <CustomSelect value={reportAnchor.year} onChange={(v) => setReportAnchor((a) => ({ ...a, year: parseInt(v) }))} options={yearOptions().map((y) => ({ value: y, label: String(y) }))} />
+                </>
+              )}
+              {reportMode === 'year' && (
+                <CustomSelect value={reportAnchor.year} onChange={(v) => setReportAnchor((a) => ({ ...a, year: parseInt(v) }))} options={yearOptions().map((y) => ({ value: y, label: String(y) }))} />
+              )}
+              {reportMode === 'custom' && (
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-green-500" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('Wpływy')}</span>
+                  <input type="date" value={reportAnchor.from || reportRange.from} onChange={(e) => setReportAnchor((a) => ({ ...a, from: e.target.value }))} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200" />
+                  <span className="text-gray-400">–</span>
+                  <input type="date" value={reportAnchor.to || reportRange.to} onChange={(e) => setReportAnchor((a) => ({ ...a, to: e.target.value }))} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-200" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-red-500" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">{t('Wydatki')}</span>
-                </div>
+              )}
+              <span className="text-sm font-semibold text-gray-600 dark:text-gray-300 ml-1">{reportRange.label}</span>
+              {reportLoading && <span className="text-xs text-gray-400">{tr('Ładowanie…')}</span>}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <button onClick={() => setShowDownloadMenu((v) => !v)} disabled={downloadingPdf} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm disabled:opacity-60">
+                  <Download size={16} /> {downloadingPdf ? tr('Generowanie…') : tr('Pobierz')} <ChevronDown size={14} />
+                </button>
+                {showDownloadMenu && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowDownloadMenu(false)} />
+                    <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-20 py-1">
+                      <button onClick={() => doDownload('pdf')} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">PDF</button>
+                      <button onClick={() => doDownload('xlsx')} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">Excel (.xlsx)</button>
+                      <button onClick={() => doDownload('csv')} className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">CSV</button>
+                    </div>
+                  </>
+                )}
               </div>
+              <button onClick={() => setShowReportEmailModal(true)} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Wyślij raport mailem')}>
+                <Mail size={16} /> {tr('Wyślij raport')}
+              </button>
+              <button onClick={() => { setEditingScheduleId(null); setScheduleForm(emptySchedule); setShowScheduleModal(true); }} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Automatyczna wysyłka')}>
+                <CalendarClock size={16} /> {tr('Harmonogram')}{schedules.filter((s) => s.is_active !== false).length > 0 ? ` (${schedules.filter((s) => s.is_active !== false).length})` : ''}
+              </button>
+              <button onClick={() => window.print()} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Drukuj / zapisz PDF')}>
+                <Printer size={16} /> {tr('Drukuj')}
+              </button>
             </div>
           </div>
 
-          {/* Cash-flow: skumulowany bilans w czasie */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <TrendingUp size={20} className="text-accent-primary" />
-              {tr('Przepływ gotówki (skumulowany)')}
-            </h3>
+          {/* Treść raportu (źródło PDF) */}
+          <div ref={reportSectionRef} className="space-y-6">
             {(() => {
-              const months = ['Sty', 'Lut', 'Mar', 'Kwi', 'Maj', 'Cze', 'Lip', 'Sie', 'Wrz', 'Paź', 'Lis', 'Gru'];
-              let run = 0;
-              const pts = months.map((m, idx) => {
-                const mn = String(idx + 1).padStart(2, '0');
-                const s = `${selectedYear}-${mn}-01`, e = `${selectedYear}-${mn}-31`;
-                const inc = incomeTransactions.filter(t => t.date >= s && t.date <= e).reduce((a, t) => a + (t.amount || 0), 0);
-                const exp = expenseTransactions.filter(t => t.payment_date >= s && t.payment_date <= e).reduce((a, t) => a + (t.amount || 0), 0);
-                run += inc - exp;
-                return { m, val: run };
-              });
-              const vals = pts.map(p => p.val);
-              const max = Math.max(...vals, 0), min = Math.min(...vals, 0);
-              const range = (max - min) || 1;
-              const W = 640, H = 160, pad = 10;
-              const x = (i) => pad + (i * (W - 2 * pad)) / (pts.length - 1);
-              const y = (v) => H - pad - ((v - min) / range) * (H - 2 * pad);
-              const line = pts.map((p, i) => `${x(i).toFixed(1)},${y(p.val).toFixed(1)}`).join(' ');
-              const last = vals[vals.length - 1];
+              const fmt = (n) => Number(n || 0).toLocaleString('pl-PL');
+              const { income: tIncome, expense: tExpense, balance: tBalance } = reportModel.totals;
+              const totalPlanned = reportBudget.reduce((s, i) => s + (i.planned_amount || 0), 0);
+              const budgetExec = totalPlanned > 0 ? (tExpense / totalPlanned) * 100 : 0;
               return (
-                <div className="overflow-x-auto">
-                  <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full min-w-[520px]" style={{ height: H }}>
-                    <line x1={pad} y1={y(0)} x2={W - pad} y2={y(0)} stroke="currentColor" className="text-gray-200 dark:text-gray-700" strokeWidth="1" />
-                    <polyline points={line} fill="none" stroke="#6366f1" strokeWidth="2.5" />
-                    {pts.map((p, i) => <circle key={i} cx={x(i)} cy={y(p.val)} r="3" fill="#6366f1" />)}
-                  </svg>
-                  <div className="flex justify-between mt-2 text-[10px] text-gray-400">
-                    {pts.map((p, i) => <span key={i}>{tr(p.m)}</span>)}
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="bg-gradient-to-r from-accent-primary to-accent-secondary p-6 text-white">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-accent-primary-lighter text-sm font-medium mb-1">{tr('Bilans okresu')} • {reportRange.label}</p>
+                        <p className="text-4xl font-bold">{tBalance >= 0 ? '+' : ''}{fmt(tBalance)} zł</p>
+                      </div>
+                      <button onClick={openBalanceModal} className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition print:hidden" title={t('Edytuj stany początkowe')}>
+                        <Settings size={20} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    {tr('Bilans na koniec roku')}: <span className={`font-bold ${last >= 0 ? 'text-green-600' : 'text-red-600'}`}>{last.toLocaleString('pl-PL')} zł</span>
+                  <div className="p-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2"><ArrowUpRight size={16} className="text-green-500" /><span className="text-xs font-medium uppercase">{tr('Wpływy')}</span></div>
+                        <p className="text-xl font-bold text-green-600 dark:text-green-400">{fmt(tIncome)} zł</p>
+                      </div>
+                      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2"><ArrowDownRight size={16} className="text-red-500" /><span className="text-xs font-medium uppercase">{tr('Wydatki')}</span></div>
+                        <p className="text-xl font-bold text-red-600 dark:text-red-400">{fmt(tExpense)} zł</p>
+                      </div>
+                      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2">{tBalance >= 0 ? <TrendingUp size={16} className="text-green-500" /> : <ArrowDownRight size={16} className="text-red-500" />}<span className="text-xs font-medium uppercase">{tr('Bilans')}</span></div>
+                        <p className={`text-xl font-bold ${tBalance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{tBalance >= 0 ? '+' : ''}{fmt(tBalance)} zł</p>
+                      </div>
+                      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-2"><PieChart size={16} /><span className="text-xs font-medium uppercase">{t('Budżet')} {reportRange.year}</span></div>
+                        <p className="text-xl font-bold text-gray-900 dark:text-white">{budgetExec.toFixed(1)}%</p>
+                        <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5"><div className={`h-1.5 rounded-full ${budgetExec < 80 ? 'bg-green-500' : budgetExec <= 100 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${Math.min(budgetExec, 100)}%` }} /></div>
+                      </div>
+                    </div>
+                    {(reportBalances.bank_pln > 0 || reportBalances.cash_pln > 0 || reportBalances.bank_currency > 0 || reportBalances.cash_currency > 0) && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="flex items-center gap-2 text-sm"><CreditCard size={16} className="text-gray-400" /><span className="text-gray-500 dark:text-gray-400">{tr('Bank')} ({reportRange.year}):</span><span className="font-semibold text-gray-900 dark:text-white">{fmt(reportBalances.bank_pln)} zł</span></div>
+                        <div className="flex items-center gap-2 text-sm"><Banknote size={16} className="text-gray-400" /><span className="text-gray-500 dark:text-gray-400">{t('Gotówka')}:</span><span className="font-semibold text-gray-900 dark:text-white">{fmt(reportBalances.cash_pln)} zł</span></div>
+                        {reportBalances.bank_currency > 0 && <div className="flex items-center gap-2 text-sm"><CreditCard size={16} className="text-amber-500" /><span className="text-gray-500 dark:text-gray-400">{tr('Bank')} {reportBalances.currency_type}:</span><span className="font-semibold text-gray-900 dark:text-white">{fmt(reportBalances.bank_currency)}</span></div>}
+                        {reportBalances.cash_currency > 0 && <div className="flex items-center gap-2 text-sm"><Banknote size={16} className="text-cyan-500" /><span className="text-gray-500 dark:text-gray-400">{t('Gotówka')} {reportBalances.currency_type}:</span><span className="font-semibold text-gray-900 dark:text-white">{fmt(reportBalances.cash_currency)}</span></div>}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })()}
-          </div>
 
-          {/* Two columns: Categories & Top Contractors */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Expenses by Category */}
+            {/* Wpływy vs Wydatki */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <PieChart size={20} className="text-accent-primary" />
-                Wydatki wg kategorii
-              </h3>
-              {(() => {
-                const categoryTotals = expenseTransactions.reduce((acc, t) => {
-                  acc[t.category] = (acc[t.category] || 0) + (t.amount || 0);
-                  return acc;
-                }, {});
-
-                const sortedCategories = Object.entries(categoryTotals)
-                  .sort(([,a], [,b]) => b - a);
-
-                const total = sortedCategories.reduce((sum, [,val]) => sum + val, 0);
-                const colors = [
-                  'from-accent-primary-light to-rose-500',
-                  'from-blue-500 to-indigo-500',
-                  'from-green-500 to-emerald-500',
-                  'from-accent-primary to-accent-secondary-light',
-                  'from-purple-500 to-violet-500',
-                  'from-cyan-500 to-teal-500'
-                ];
-
-                return sortedCategories.length > 0 ? (
-                  <div className="space-y-3">
-                    {sortedCategories.map(([category, amount], idx) => {
-                      const percentage = total > 0 ? (amount / total) * 100 : 0;
-                      return (
-                        <div key={category}>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-700 dark:text-gray-300 font-medium">{category}</span>
-                            <span className="text-gray-900 dark:text-white font-bold">{amount.toLocaleString('pl-PL')} zł</span>
-                          </div>
-                          <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5">
-                            <div
-                              className={`h-2.5 rounded-full bg-gradient-to-r ${colors[idx % colors.length]} transition-all`}
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                          <div className="text-right text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {percentage.toFixed(1)}%
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak danych o wydatkach')}</p>
-                );
-              })()}
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><BarChart3 size={20} className="text-accent-primary" />{tr('Wpływy vs Wydatki')}</h3>
+              <IncomeExpenseBarChart buckets={reportModel.buckets} tr={tr} />
             </div>
 
-            {/* Top Contractors */}
+            {/* Przepływ gotówki */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Building2 size={20} className="text-accent-primary" />
-                Top kontrahenci
-              </h3>
-              {(() => {
-                const contractorTotals = expenseTransactions.reduce((acc, t) => {
-                  acc[t.contractor] = (acc[t.contractor] || 0) + (t.amount || 0);
-                  return acc;
-                }, {});
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-accent-primary" />{tr('Przepływ gotówki (skumulowany)')}</h3>
+              <CashFlowAreaChart buckets={reportModel.buckets} tr={tr} />
+              <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">{tr('Saldo na koniec okresu')}: <span className={`font-bold ${reportModel.totals.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>{Number(reportModel.buckets.at(-1)?.cumulative || 0).toLocaleString('pl-PL')} zł</span></div>
+            </div>
 
-                const sortedContractors = Object.entries(contractorTotals)
-                  .sort(([,a], [,b]) => b - a)
-                  .slice(0, 8);
+            {/* Donuty kategorii */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><PieChart size={20} className="text-accent-primary" />{tr('Wydatki wg kategorii kosztu')}</h3>
+                <CategoryDonut data={reportModel.byCostCategory} tr={tr} />
+              </div>
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><PieChart size={20} className="text-accent-primary" />{tr('Wydatki wg służby')}</h3>
+                <CategoryDonut data={reportModel.byServiceCategory} tr={tr} />
+              </div>
+            </div>
 
-                const total = sortedContractors.reduce((sum, [,val]) => sum + val, 0);
-
-                return sortedContractors.length > 0 ? (
+            {/* Wpływy wg typu + Top kontrahenci */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><Users size={20} className="text-accent-primary" />{tr('Wpływy wg typu')}</h3>
+                <CategoryDonut data={reportModel.byIncomeType} tr={tr} />
+              </div>
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><Building2 size={20} className="text-accent-primary" />{tr('Top kontrahenci')}</h3>
+                {reportModel.topContractors.length > 0 ? (
                   <div className="space-y-2">
-                    {sortedContractors.map(([contractor, amount], idx) => {
-                      const percentage = total > 0 ? (amount / total) * 100 : 0;
-                      return (
-                        <div key={contractor} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-sm font-bold">
-                            {idx + 1}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{contractor}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{percentage.toFixed(1)}% całości</p>
-                          </div>
-                          <p className="text-sm font-bold text-gray-900 dark:text-white">{amount.toLocaleString('pl-PL')} zł</p>
-                        </div>
-                      );
-                    })}
+                    {reportModel.topContractors.map((c, idx) => (
+                      <div key={c.name} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-sm font-bold">{idx + 1}</div>
+                        <div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-900 dark:text-white truncate">{c.name}</p><p className="text-xs text-gray-500 dark:text-gray-400">{c.pct.toFixed(1)}% {tr('całości')}</p></div>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{Number(c.amount).toLocaleString('pl-PL')} zł</p>
+                      </div>
+                    ))}
                   </div>
-                ) : (
-                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak danych o kontrahentach')}</p>
-                );
-              })()}
+                ) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak danych o kontrahentach')}</p>}
+              </div>
             </div>
-          </div>
 
-          {/* Budget Execution Table */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <DollarSign size={20} className="text-accent-primary" />
-              {tr('Realizacja budżetu wg służb')}
-            </h3>
-            {budgetItems.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
+            {/* Realizacja budżetu */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><DollarSign size={20} className="text-accent-primary" />{tr('Realizacja budżetu wg służb')} ({reportRange.year})</h3>
+              {reportModel.budgetExecution.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead><tr className="border-b border-gray-200 dark:border-gray-700">
                       <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Służba')}</th>
                       <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Planowany')}</th>
                       <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Zrealizowany')}</th>
                       <th className="text-center py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Realizacja')}</th>
                       <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium text-sm">{t('Pozostało')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      const categoryStats = {};
-                      budgetItems.forEach(item => {
-                        if (!categoryStats[item.category]) {
-                          categoryStats[item.category] = { planned: 0, realized: 0 };
-                        }
-                        categoryStats[item.category].planned += item.planned_amount || 0;
-
-                        const realized = expenseTransactions
-                          .filter(exp => exp.category === item.category && exp.description === item.description)
-                          .reduce((sum, exp) => sum + (exp.amount || 0), 0);
-                        categoryStats[item.category].realized += realized;
-                      });
-
-                      return Object.entries(categoryStats).map(([category, stats]) => {
-                        const percentage = stats.planned > 0 ? (stats.realized / stats.planned) * 100 : 0;
-                        const remaining = stats.planned - stats.realized;
-                        const progressColor = percentage < 80 ? 'from-green-500 to-green-600' : percentage <= 100 ? 'from-yellow-500 to-yellow-600' : 'from-red-500 to-red-600';
-
+                    </tr></thead>
+                    <tbody>
+                      {reportModel.budgetExecution.map((b) => {
+                        const progressColor = b.pct < 80 ? 'from-green-500 to-green-600' : b.pct <= 100 ? 'from-yellow-500 to-yellow-600' : 'from-red-500 to-red-600';
                         return (
-                          <tr key={category} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
-                            <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">{category}</td>
-                            <td className="py-3 px-4 text-right text-gray-700 dark:text-gray-300">{stats.planned.toLocaleString('pl-PL')} zł</td>
-                            <td className="py-3 px-4 text-right text-gray-700 dark:text-gray-300">{stats.realized.toLocaleString('pl-PL')} zł</td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-2">
-                                  <div
-                                    className={`h-2 rounded-full bg-gradient-to-r ${progressColor} transition-all`}
-                                    style={{ width: `${Math.min(percentage, 100)}%` }}
-                                  />
-                                </div>
-                                <span className="text-sm font-bold text-gray-900 dark:text-white w-14 text-right">{percentage.toFixed(0)}%</span>
-                              </div>
-                            </td>
-                            <td className={`py-3 px-4 text-right font-bold ${remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {remaining.toLocaleString('pl-PL')} zł
-                            </td>
+                          <tr key={b.category} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                            <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">{b.category}</td>
+                            <td className="py-3 px-4 text-right text-gray-700 dark:text-gray-300">{Number(b.planned).toLocaleString('pl-PL')} zł</td>
+                            <td className="py-3 px-4 text-right text-gray-700 dark:text-gray-300">{Number(b.realized).toLocaleString('pl-PL')} zł</td>
+                            <td className="py-3 px-4"><div className="flex items-center gap-2"><div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full h-2"><div className={`h-2 rounded-full bg-gradient-to-r ${progressColor}`} style={{ width: `${Math.min(b.pct, 100)}%` }} /></div><span className="text-sm font-bold text-gray-900 dark:text-white w-14 text-right">{b.pct.toFixed(0)}%</span></div></td>
+                            <td className={`py-3 px-4 text-right font-bold ${b.remaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>{Number(b.remaining).toLocaleString('pl-PL')} zł</td>
                           </tr>
                         );
-                      });
-                    })()}
-                  </tbody>
-                </table>
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak pozycji budżetowych')}</p>}
+            </div>
+
+            {/* Porównanie rok do roku */}
+            {reportModel.yoy && (
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><BarChart3 size={20} className="text-accent-primary" />{tr('Porównanie rok do roku')} ({reportRange.year - 1} → {reportRange.year})</h3>
+                <YoYBars yoy={reportModel.yoy} prevLabel={reportRange.year - 1} nowLabel={reportRange.year} tr={tr} />
               </div>
-            ) : (
-              <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak pozycji budżetowych')}</p>
             )}
-          </div>
-
-          {/* Income by Type */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <Users size={20} className="text-accent-primary" />
-              {tr('Wpływy wg typu')}
-            </h3>
-            {(() => {
-              const typeTotals = incomeTransactions.reduce((acc, t) => {
-                acc[t.type] = (acc[t.type] || 0) + (t.amount || 0);
-                return acc;
-              }, {});
-
-              const sortedTypes = Object.entries(typeTotals).sort(([,a], [,b]) => b - a);
-              const total = sortedTypes.reduce((sum, [,val]) => sum + val, 0);
-
-              return sortedTypes.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {sortedTypes.map(([type, amount]) => {
-                    const percentage = total > 0 ? (amount / total) * 100 : 0;
-                    const bgColor = type === 'Kolekta' ? 'from-green-500 to-emerald-600' :
-                                   type === 'Darowizny' ? 'from-blue-500 to-indigo-600' :
-                                   'from-purple-500 to-violet-600';
-                    return (
-                      <div key={type} className={`bg-gradient-to-br ${bgColor} rounded-xl p-4 text-white`}>
-                        <p className="text-white/80 text-sm font-medium">{type}</p>
-                        <p className="text-2xl font-bold mt-1">{amount.toLocaleString('pl-PL')} zł</p>
-                        <p className="text-white/60 text-sm mt-2">{percentage.toFixed(1)}% całości</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak danych o wpływach')}</p>
-              );
-            })()}
-          </div>
-          {/* Wydatki wg kategorii kosztu (własnej) */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><PieChart size={20} className="text-accent-primary" /> {tr('Wydatki wg kategorii kosztu')}</h3>
-            {(() => {
-              const totals = expenseTransactions.reduce((acc, t) => { const k = t.cost_category || tr('Bez kategorii'); acc[k] = (acc[k] || 0) + Number(t.amount || 0); return acc; }, {});
-              const sorted = Object.entries(totals).sort(([, a], [, b]) => b - a);
-              const total = sorted.reduce((s, [, v]) => s + v, 0);
-              if (sorted.length === 0) return <p className="text-center text-gray-400 py-6">{tr('Brak wydatków')}</p>;
-              return (
-                <div className="space-y-2">
-                  {sorted.map(([k, v]) => {
-                    const pct = total > 0 ? (v / total) * 100 : 0;
-                    const col = expenseCategories.find((c) => c.name === k)?.color || '#6366f1';
-                    return (
-                      <div key={k}>
-                        <div className="flex justify-between text-sm mb-1"><span className="text-gray-700 dark:text-gray-300">{k}</span><span className="font-semibold text-gray-900 dark:text-white">{v.toLocaleString('pl-PL')} zł · {pct.toFixed(0)}%</span></div>
-                        <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2"><div className="h-2 rounded-full" style={{ width: `${pct}%`, background: col }} /></div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* Porównanie rok do roku */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><BarChart3 size={20} className="text-accent-primary" /> {tr('Porównanie rok do roku')} ({selectedYear - 1} → {selectedYear})</h3>
-            {(() => {
-              const inNow = incomeTransactions.reduce((s, t) => s + Number(t.amount || 0), 0);
-              const exNow = expenseTransactions.reduce((s, t) => s + Number(t.amount || 0), 0);
-              const chg = (now, prev) => prev > 0 ? ((now - prev) / prev) * 100 : (now > 0 ? 100 : 0);
-              const Row = ({ label, now, prev, good }) => {
-                const c = chg(now, prev); const up = c >= 0;
-                return (
-                  <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-400">{prev.toLocaleString('pl-PL')} → </span>
-                      <span className="font-bold text-gray-900 dark:text-white">{now.toLocaleString('pl-PL')} zł</span>
-                      <span className={`text-xs font-semibold ${((up && good) || (!up && !good)) ? 'text-green-600' : 'text-red-600'}`}>{up ? '▲' : '▼'} {Math.abs(c).toFixed(0)}%</span>
-                    </div>
-                  </div>
-                );
-              };
-              return (<div>
-                <Row label={tr('Przychody')} now={inNow} prev={prevYearTotals.income} good />
-                <Row label={tr('Wydatki')} now={exNow} prev={prevYearTotals.expense} good={false} />
-                <Row label={tr('Bilans')} now={inNow - exNow} prev={prevYearTotals.income - prevYearTotals.expense} good />
-              </div>);
-            })()}
           </div>
         </section>
       )}
@@ -2714,10 +2555,11 @@ const FinanceModule = () => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowReportEmailModal(false)}>
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between mb-4">
-              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{tr('Wyślij raport')} {selectedYear}</h3>
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white">{tr('Wyślij raport')}</h3>
               <button onClick={() => setShowReportEmailModal(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Podsumowanie roku (przychody, wydatki, bilans, budżet, kategorie) trafi na wskazane adresy — z załącznikiem CSV.')}</p>
+            <div className="mb-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2"><Calendar size={15} /> {tr('Zakres')}: <span className="font-semibold text-gray-900 dark:text-white">{reportRange.label}</span></div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{tr('Podsumowanie okresu (przychody, wydatki, bilans, wykresy, kategorie) trafi na wskazane adresy.')}</p>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Adresy e-mail')}</label>
             <textarea
               rows={3}
@@ -2726,9 +2568,68 @@ const FinanceModule = () => {
               placeholder={tr('jan@parafia.pl, skarbnik@parafia.pl (oddziel przecinkiem lub enterem)')}
               className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
             />
-            <div className="flex gap-3 pt-4">
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mt-4 mb-2">{tr('Załączniki')}</label>
+            <div className="flex flex-wrap gap-4">
+              {[['pdf', 'PDF'], ['xlsx', 'Excel (.xlsx)'], ['csv', 'CSV']].map(([k, lbl]) => (
+                <label key={k} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                  <input type="checkbox" checked={!!reportAttachments[k]} onChange={(e) => setReportAttachments((a) => ({ ...a, [k]: e.target.checked }))} className="rounded border-gray-300 text-accent-primary focus:ring-accent-primary" />
+                  {lbl}
+                </label>
+              ))}
+            </div>
+            <div className="flex gap-3 pt-5">
               <button onClick={() => setShowReportEmailModal(false)} className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition">{tr('Anuluj')}</button>
               <button onClick={sendReportEmail} disabled={sendingReport} className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium disabled:opacity-60">{sendingReport ? tr('Wysyłanie…') : tr('Wyślij')}</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showScheduleModal && document.body && createPortal(
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100]" onClick={() => setShowScheduleModal(false)}>
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700 max-h-[85vh] overflow-y-auto custom-scrollbar" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between mb-4">
+              <h3 className="font-bold text-xl text-gray-800 dark:text-white flex items-center gap-2"><CalendarClock size={20} /> {tr('Harmonogram raportów')}</h3>
+              <button onClick={() => setShowScheduleModal(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{tr('Automatyczna wysyłka raportu za zakończony okres na wskazane adresy — 1. dnia nowego okresu.')}</p>
+
+            {schedules.length > 0 && (
+              <div className="space-y-2 mb-5">
+                {schedules.map((s) => (
+                  <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{s.cadence === 'monthly' ? tr('Co miesiąc') : s.cadence === 'quarterly' ? tr('Co kwartał') : tr('Co rok')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{(s.recipients || []).join(', ')}</p>
+                      {s.next_run_date && <p className="text-[11px] text-gray-400">{tr('Następna wysyłka')}: {s.next_run_date}</p>}
+                    </div>
+                    <button onClick={() => toggleSchedule(s)} className={`text-xs px-2 py-1 rounded-lg ${s.is_active !== false ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800'}`}>{s.is_active !== false ? tr('Aktywny') : tr('Wstrzymany')}</button>
+                    <button onClick={() => openEditSchedule(s)} className="text-gray-400 hover:text-accent-primary"><Edit2 size={16} /></button>
+                    <button onClick={() => deleteSchedule(s.id)} className="text-gray-400 hover:text-red-500"><Trash2 size={16} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4">
+              <h4 className="text-sm font-bold text-gray-700 dark:text-gray-200">{editingScheduleId ? tr('Edytuj harmonogram') : tr('Nowy harmonogram')}</h4>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Częstotliwość')}</label>
+                <CustomSelect value={scheduleForm.cadence} onChange={(v) => setScheduleForm((f) => ({ ...f, cadence: v }))} options={[{ value: 'monthly', label: tr('Co miesiąc') }, { value: 'quarterly', label: tr('Co kwartał') }, { value: 'yearly', label: tr('Co rok') }]} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{tr('Adresy e-mail')}</label>
+                <textarea rows={2} value={scheduleForm.recipients} onChange={(e) => setScheduleForm((f) => ({ ...f, recipients: e.target.value }))} placeholder={tr('skarbnik@parafia.pl, zarzad@parafia.pl')} className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none" />
+              </div>
+              <div className="flex items-center gap-5">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"><input type="checkbox" checked={!!scheduleForm.include_csv} onChange={(e) => setScheduleForm((f) => ({ ...f, include_csv: e.target.checked }))} className="rounded border-gray-300 text-accent-primary focus:ring-accent-primary" /> {tr('Załącz CSV')}</label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"><input type="checkbox" checked={!!scheduleForm.is_active} onChange={(e) => setScheduleForm((f) => ({ ...f, is_active: e.target.checked }))} className="rounded border-gray-300 text-accent-primary focus:ring-accent-primary" /> {tr('Aktywny')}</label>
+              </div>
+              <div className="flex gap-3 pt-2">
+                {editingScheduleId && <button onClick={() => { setEditingScheduleId(null); setScheduleForm(emptySchedule); }} className="px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-sm">{tr('Nowy')}</button>}
+                <button onClick={saveSchedule} className="flex-1 px-4 py-3 bg-gradient-to-r from-accent-primary to-accent-secondary text-white rounded-xl hover:shadow-lg transition font-medium">{editingScheduleId ? tr('Zapisz zmiany') : tr('Dodaj harmonogram')}</button>
+              </div>
             </div>
           </div>
         </div>,

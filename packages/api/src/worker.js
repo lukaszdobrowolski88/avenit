@@ -76,6 +76,9 @@ cron.schedule('*/5 * * * *', exclusive(() => forEachTenant('automation', 'automa
 cron.schedule('0 7 * * *', exclusive(() => forEachTenant('giving-recurring', 'giving-recurring')));
 // Finanse cykliczne: codziennie 07:05 — generuj należne wpływy/wydatki i przesuń terminy.
 cron.schedule('5 7 * * *', exclusive(() => forEachTenant('finance-recurring', 'finance-recurring')));
+// Harmonogramy raportów finansowych: 1. dnia miesiąca 07:10 — fn sam wybiera należne
+// harmonogramy (next_run_date), więc jeden cron obsługuje miesiąc/kwartał/rok.
+cron.schedule('10 7 1 * *', exclusive(() => forEachTenant('finance-report', 'finance-report-schedule')));
 // Przypomnienia RSVP: codziennie 10:00 — ponaglenie niepotwierdzonych przed wydarzeniem.
 cron.schedule('0 10 * * *', exclusive(() => forEachTenant('rsvp-reminders', 'rsvp-reminders')));
 // Serie RSVP: codziennie 06:00 — generuj kolejne wystąpienia cyklicznych kampanii.
