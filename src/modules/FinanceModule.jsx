@@ -2223,7 +2223,7 @@ const FinanceModule = () => {
             {/* Nagłówek raportu — tytuł, organizacja, logo, zakres, data wygenerowania */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 px-6 py-5">
               <div className="flex items-center gap-4">
-                {logoUrl && <img src={logoUrl} alt="" className="h-12 w-12 object-contain rounded-lg shrink-0" />}
+                {logoUrl && <img src={logoUrl} alt="" className="h-14 w-auto shrink-0" />}
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{tr('Raport finansowy')}</h2>
                   {orgName && <p className="text-sm text-gray-500 dark:text-gray-400">{orgName}</p>}
@@ -2248,7 +2248,7 @@ const FinanceModule = () => {
                         <p className="text-accent-primary-lighter text-sm font-medium mb-1">{tr('Bilans okresu')} • {reportRange.label}</p>
                         <p className="text-4xl font-bold">{tBalance >= 0 ? '+' : ''}{fmt(tBalance)} zł</p>
                       </div>
-                      <button onClick={openBalanceModal} className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition print:hidden" title={t('Edytuj stany początkowe')}>
+                      <button onClick={openBalanceModal} className="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition print:hidden pdf-exclude" title={t('Edytuj stany początkowe')}>
                         <Settings size={20} />
                       </button>
                     </div>

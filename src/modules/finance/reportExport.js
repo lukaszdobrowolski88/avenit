@@ -213,22 +213,42 @@ async function buildReportPdf(el) {
       clonedDoc.documentElement.classList.remove('dark');
       clonedDoc.body.classList.remove('dark');
       clonedDoc.documentElement.style.backgroundColor = '#ffffff';
+      // Elementy sterujące (np. ⚙ edycji sald) nie należą do wydruku.
+      clonedDoc.querySelectorAll('.pdf-exclude').forEach((n) => { n.style.display = 'none'; });
     },
   });
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
-  const imgData = canvas.toDataURL('image/jpeg', 0.92);
-  const imgH = (canvas.height * pageW) / canvas.width;
-  let heightLeft = imgH;
-  let position = 0;
-  pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
-  heightLeft -= pageH;
-  while (heightLeft > 0) {
-    position -= pageH;
-    pdf.addPage();
-    pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
-    heightLeft -= pageH;
+  const M = 10;                                   // margines strony (mm)
+  const contentW = pageW - 2 * M;
+  const contentH = pageH - 2 * M;
+  const pxPerMm = canvas.width / contentW;
+  const pageHpx = Math.max(1, Math.floor(contentH * pxPerMm));
+  // Tniemy wysoki zrzut na kawałki wielkości strony — każdy kładziemy w obrębie marginesów
+  // (brak „krwawienia" treści w marginesy sąsiednich stron).
+  let offsetY = 0, page = 0;
+  while (offsetY < canvas.height) {
+    const sliceH = Math.min(pageHpx, canvas.height - offsetY);
+    const slice = document.createElement('canvas');
+    slice.width = canvas.width;
+    slice.height = sliceH;
+    const ctx = slice.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, slice.width, slice.height);
+    ctx.drawImage(canvas, 0, offsetY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+    if (page > 0) pdf.addPage();
+    pdf.addImage(slice.toDataURL('image/jpeg', 0.92), 'JPEG', M, M, contentW, sliceH / pxPerMm);
+    offsetY += sliceH;
+    page++;
+  }
+  // Stopka z numeracją stron (ASCII — bez polskich diakrytyków, których nie ma font jsPDF).
+  const total = pdf.internal.getNumberOfPages();
+  pdf.setFontSize(8);
+  pdf.setTextColor(150);
+  for (let i = 1; i <= total; i++) {
+    pdf.setPage(i);
+    pdf.text(`Strona ${i} z ${total}`, pageW / 2, pageH - 4, { align: 'center' });
   }
   return pdf;
 }
