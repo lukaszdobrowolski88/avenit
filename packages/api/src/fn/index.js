@@ -34,6 +34,7 @@ const MODULES = [
   'my-blockouts',
   'ministry-roster',
   'my-shared-materials',
+  'program-songs-preview',
   'prayer-wall',
   'campaign-progress',
   'automation-run',

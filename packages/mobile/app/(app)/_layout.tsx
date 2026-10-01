@@ -127,6 +127,7 @@ export default function AppLayout() {
       <Tabs.Screen name="home-groups" options={{ href: null }} />
       <Tabs.Screen name="serve" options={{ href: null }} />
       <Tabs.Screen name="work" options={{ href: null }} />
+      <Tabs.Screen name="setlist" options={{ href: null }} />
     </Tabs>
   );
 }

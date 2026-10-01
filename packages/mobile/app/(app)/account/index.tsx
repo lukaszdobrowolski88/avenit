@@ -16,6 +16,7 @@ import {
   KeyRound,
   LogOut,
   ListTodo,
+  Music,
   Moon,
   Palette,
   Podcast,
@@ -347,6 +348,15 @@ export default function AccountScreen() {
           title="Moja praca"
           description="Zadania przypisane do Ciebie na tablicach"
           onPress={() => router.push('/(app)/work')}
+        />
+        <SettingsRow
+          variant="nav"
+          Icon={Music}
+          iconTint="#7c3aed"
+          iconBg="#ede9fe"
+          title="Planowane pieśni"
+          description="Setlisty nadchodzących nabożeństw"
+          onPress={() => router.push('/(app)/setlist')}
         />
         <SettingsRow
           variant="nav"
