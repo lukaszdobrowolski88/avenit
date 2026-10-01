@@ -6,6 +6,7 @@ import {
   Bell,
   BookOpen,
   CalendarCheck,
+  CalendarOff,
   ClipboardList,
   Fingerprint,
   FolderOpen,
@@ -14,6 +15,7 @@ import {
   Home,
   KeyRound,
   LogOut,
+  ListTodo,
   Moon,
   Palette,
   Podcast,
@@ -309,6 +311,15 @@ export default function AccountScreen() {
         />
         <SettingsRow
           variant="nav"
+          Icon={CalendarOff}
+          iconTint="#be123c"
+          iconBg="#ffe4e6"
+          title="Moja niedostępność"
+          description="Zgłoś dni, w które nie możesz służyć"
+          onPress={() => router.push('/(app)/serve/availability')}
+        />
+        <SettingsRow
+          variant="nav"
           Icon={Gift}
           iconTint="#059669"
           iconBg="#d1fae5"
@@ -328,6 +339,15 @@ export default function AccountScreen() {
       </SettingsGroup>
 
       <SettingsGroup title="Moduły zespołów">
+        <SettingsRow
+          variant="nav"
+          Icon={ListTodo}
+          iconTint="#0d9488"
+          iconBg="#ccfbf1"
+          title="Moja praca"
+          description="Zadania przypisane do Ciebie na tablicach"
+          onPress={() => router.push('/(app)/work')}
+        />
         <SettingsRow
           variant="nav"
           Icon={Users}
