@@ -104,6 +104,14 @@ export interface AuthClient {
   resetPasswordForEmail(email: string, opts?: Record<string, any>): Promise<{ data: any; error: PostgrestError | null }>;
   loginWithTicket(ticket: string): Promise<AuthResponse>;
   onAuthStateChange(callback: (event: string, session: AuthSession | null) => void): AuthSubscription;
+  getSessions(): Promise<{ sessions: Array<{ id: string | number; user_agent: string | null; created_at: string; current: boolean }> }>;
+  logoutOthers(): Promise<{ ok: boolean }>;
+  twoFactorStatus(): Promise<{ enabled: boolean; required: boolean; verifiedAt: string | null }>;
+  twoFactorSetup(): Promise<{ data: { secret: string; backupCodes: string[]; otpauthUrl: string } | null; error: PostgrestError | null }>;
+  twoFactorEnable(args: { secret: string; code: string; backupCodes: string[] }): Promise<{ error: PostgrestError | null }>;
+  twoFactorDisable(args: { code: string }): Promise<{ error: PostgrestError | null }>;
+  getBackupCodes(): Promise<Array<{ code: string; used: boolean }>>;
+  regenerateBackupCodes(args: { code: string }): Promise<{ data: string[] | null; error: PostgrestError | null }>;
 }
 
 export interface RealtimePayload<T = any> {

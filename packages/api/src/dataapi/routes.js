@@ -107,7 +107,9 @@ export default async function dataApiRoutes(app) {
         // Wyjątki self-service (mimo braku roli): własny profil w app_users,
         // oraz akceptacja/odrzucenie WŁASNEGO zaproszenia do służby.
         const selfAllowed =
-          (await allowSelfUpdate(q, req)) || (await allowAssignmentSelfRespond(q, req));
+          (await allowSelfUpdate(q, req)) ||
+          (await allowAssignmentSelfRespond(q, req)) ||
+          (await allowOwnPrayerWrite(q, req));
         if (!selfAllowed) {
           throw new ApiError(403, access.reason);
         }
@@ -274,6 +276,34 @@ async function allowAssignmentSelfRespond(q, req) {
   const { rows } = await req.db.query(
     `SELECT 1 FROM schedule_assignments
       WHERE id = $1 AND lower(assigned_email) = lower($2)`,
+    [idFilter.value, req.user.email],
+  );
+  return rows.length > 0;
+}
+
+// Edycja / usunięcie / oznaczenie „wysłuchana" WŁASNEJ prośby o modlitwę przez autora,
+// mimo że rola „czlonek" ma tylko res:prayer_requests:read+create (bez update/delete).
+// Wzorzec jak allowAssignmentSelfRespond: filtr musi wskazywać pojedynczy wiersz po id,
+// a wiersz musi należeć do zalogowanego (user_email == email). Przy update dozwolone
+// wyłącznie kolumny treści/statusu — NIGDY user_email (brak przejęcia autorstwa cudzego wpisu).
+async function allowOwnPrayerWrite(q, req) {
+  if (q.table !== 'prayer_requests' || (q.op !== 'update' && q.op !== 'delete')) return false;
+  if (!req.user?.email) return false;
+  // Filtr musi wskazywać dokładnie jeden wiersz po id.
+  const f = q.filters || [];
+  const idFilter = f.find((x) => x.type === 'eq' && x.column === 'id');
+  if (f.length !== 1 || !idFilter) return false;
+  if (q.op === 'update') {
+    const allowedCols = [
+      'content', 'category', 'requester_name', 'is_anonymous', 'visibility',
+      'status', 'answered_testimony', 'is_active', 'updated_at',
+    ];
+    const cols = Object.keys(q.values || {});
+    if (!cols.length || !cols.every((c) => allowedCols.includes(c))) return false;
+  }
+  // Właścicielstwo: wiersz musi należeć do zalogowanego.
+  const { rows } = await req.db.query(
+    `SELECT 1 FROM prayer_requests WHERE id = $1 AND lower(user_email) = lower($2)`,
     [idFilter.value, req.user.email],
   );
   return rows.length > 0;

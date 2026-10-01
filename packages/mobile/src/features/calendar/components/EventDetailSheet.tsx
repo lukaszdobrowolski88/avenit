@@ -1,9 +1,22 @@
+import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import {
   Baby,
   Calendar,
   CalendarPlus,
+  Check,
   Clock,
   ExternalLink,
   Home,
@@ -12,12 +25,27 @@ import {
   MapPin,
   Music,
   Sparkles,
+  Ticket,
+  UserMinus,
+  UserPlus,
+  Users,
   X,
 } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import * as ExpoCalendar from 'expo-calendar';
-import type { AgendaEvent, EventSource } from '../api';
+import {
+  rawEventId,
+  useCancelEvent,
+  useEventRegistrations,
+  useEventRsvpMeta,
+  useSignUpEvent,
+  type AgendaEvent,
+  type EventRegistration,
+  type EventSource,
+} from '../api';
+import { useAuthSession } from '../../../lib/auth';
+import { tenantWebBase } from '../../../lib/supabase';
 
 const SOURCE_META: Record<
   EventSource,
@@ -39,6 +67,24 @@ interface Props {
 
 export const EventDetailSheet = ({ event, onClose }: Props) => {
   const router = useRouter();
+  const { user } = useAuthSession();
+  const userEmail = user?.email ?? null;
+
+  // Hooki muszą być wołane bezwarunkowo (reguły hooków) — enabled wyłącza fetch, gdy brak
+  // wydarzenia/źródło bez RSVP. Program = brak zapisów; event = ogólne (bogaty RSVP przy
+  // registration_required); moduły służb = lekki toggle „Będę".
+  const source = event?.source;
+  const isGeneric = source === 'event';
+  const isMinistry = !!source && source !== 'event' && source !== 'program';
+  const supportsRsvp = isGeneric || isMinistry;
+  const rid = event ? rawEventId(event.id) : null;
+
+  const regsQuery = useEventRegistrations(supportsRsvp ? rid : null);
+  const metaQuery = useEventRsvpMeta(rid, isGeneric);
+  const signUp = useSignUpEvent(rid, userEmail);
+  const cancel = useCancelEvent(rid, userEmail);
+  const [guests, setGuests] = useState(0);
+
   const visible = event != null;
   if (!event) {
     return (
@@ -121,6 +167,45 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
     }
   };
 
+  // ── RSVP / obecność ──
+  const regs: EventRegistration[] = regsQuery.data ?? [];
+  const going = regs.reduce((s: number, r: EventRegistration) => s + 1 + (r.guests_count || 0), 0);
+  const myReg = userEmail
+    ? regs.find(
+        (r: EventRegistration) => (r.user_email || '').toLowerCase() === userEmail.toLowerCase(),
+      ) ?? null
+    : null;
+  const rsvpMeta = metaQuery.data ?? null;
+  const cap = rsvpMeta?.max_participants ?? null;
+  const isFull = cap != null ? going >= cap : false;
+  const paidWeb = isGeneric && !!rsvpMeta?.is_paid && !!rsvpMeta?.registration_required;
+  // Panel: moduły — zawsze; ogólne — gdy registration_required (jak web); płatne → na web.
+  const showRsvp =
+    !paidWeb &&
+    supportsRsvp &&
+    rid != null &&
+    (isMinistry || (isGeneric && !!rsvpMeta?.registration_required));
+  const rsvpBusy = signUp.isPending || cancel.isPending;
+
+  const openPaidWeb = () => {
+    const base = tenantWebBase();
+    if (!base) {
+      Alert.alert('Niedostępne', 'Nie udało się ustalić adresu strony wydarzenia.');
+      return;
+    }
+    Linking.openURL(`${base}/wydarzenie/${rid}`);
+  };
+  const doSignUp = (g: number) =>
+    signUp.mutate(
+      { guests: g, fullName: user?.full_name ?? '' },
+      { onError: (e: any) => Alert.alert('Błąd', e?.message ?? 'Nie udało się zapisać.') },
+    );
+  const doCancel = () =>
+    cancel.mutate(undefined, {
+      onError: (e: any) => Alert.alert('Błąd', e?.message ?? 'Nie udało się wypisać.'),
+    });
+  const toggleMinistry = () => (myReg ? doCancel() : doSignUp(0));
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
@@ -200,6 +285,131 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
                 <ExternalLink size={16} color="#ffffff" strokeWidth={2.4} />
                 <Text style={styles.primaryBtnText}>Otwórz program</Text>
               </Pressable>
+            ) : null}
+
+            {paidWeb ? (
+              <Pressable onPress={openPaidWeb} style={styles.primaryBtn}>
+                <Ticket size={16} color="#ffffff" strokeWidth={2.4} />
+                <Text style={styles.primaryBtnText}>Zapisy i płatność</Text>
+              </Pressable>
+            ) : null}
+
+            {showRsvp ? (
+              <View style={styles.rsvpBox}>
+                <View style={styles.rsvpHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Users size={15} color="#be185d" />
+                    <Text style={styles.rsvpCount}>
+                      {isMinistry
+                        ? `Potwierdzeni: ${regs.length}`
+                        : `Zapisani: ${going}${cap != null ? ` / ${cap}` : ''}`}
+                    </Text>
+                  </View>
+                  {isFull && !myReg ? (
+                    <View style={styles.fullBadge}>
+                      <Text style={styles.fullBadgeText}>Brak miejsc</Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                {cap != null ? (
+                  <View style={styles.capBarBg}>
+                    <View
+                      style={[
+                        styles.capBarFill,
+                        {
+                          width: `${Math.min(100, Math.round((going / cap) * 100))}%`,
+                          backgroundColor: isFull ? '#ef4444' : '#ec4899',
+                        },
+                      ]}
+                    />
+                  </View>
+                ) : null}
+
+                {regsQuery.isLoading ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 }}>
+                    <ActivityIndicator size="small" color="#ec4899" />
+                    <Text style={styles.rsvpMuted}>Ładowanie…</Text>
+                  </View>
+                ) : !userEmail ? (
+                  <Text style={styles.rsvpMuted}>Zaloguj się, aby się zapisać.</Text>
+                ) : isMinistry ? (
+                  <Pressable
+                    onPress={toggleMinistry}
+                    disabled={rsvpBusy}
+                    style={[styles.rsvpToggle, { backgroundColor: myReg ? '#16a34a' : '#f5f5f4' }]}
+                  >
+                    {rsvpBusy ? (
+                      <ActivityIndicator size="small" color={myReg ? '#ffffff' : '#57534e'} />
+                    ) : (
+                      <>
+                        {myReg ? <Check size={15} color="#ffffff" /> : <Users size={15} color="#57534e" />}
+                        <Text style={[styles.rsvpToggleText, { color: myReg ? '#ffffff' : '#57534e' }]}>
+                          {myReg ? 'Będę' : 'Potwierdź obecność'}
+                        </Text>
+                      </>
+                    )}
+                  </Pressable>
+                ) : myReg ? (
+                  <View style={styles.rsvpSignedRow}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                      <Check size={16} color="#16a34a" />
+                      <Text style={styles.rsvpSignedText}>
+                        Jesteś zapisany/a{myReg.guests_count ? ` (+${myReg.guests_count})` : ''}
+                      </Text>
+                    </View>
+                    <Pressable onPress={doCancel} disabled={rsvpBusy} style={styles.rsvpCancelBtn}>
+                      {rsvpBusy ? (
+                        <ActivityIndicator size="small" color="#dc2626" />
+                      ) : (
+                        <UserMinus size={15} color="#dc2626" />
+                      )}
+                      <Text style={styles.rsvpCancelText}>Wypisz się</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <View>
+                    <Text style={styles.rsvpMuted}>Osoby towarzyszące</Text>
+                    <View style={{ flexDirection: 'row', gap: 6, marginTop: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+                      {[0, 1, 2, 3, 4, 5].map((n) => (
+                        <Pressable
+                          key={n}
+                          onPress={() => setGuests(n)}
+                          style={[
+                            styles.guestChip,
+                            {
+                              backgroundColor: guests === n ? '#0c0a09' : '#fafaf9',
+                              borderColor: guests === n ? '#0c0a09' : '#eef0f3',
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              color: guests === n ? '#ffffff' : '#1c1917',
+                              fontFamily: 'Inter_600SemiBold',
+                            }}
+                          >
+                            {n === 0 ? 'Sam/a' : `+${n}`}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                    <Pressable
+                      onPress={() => doSignUp(guests)}
+                      disabled={rsvpBusy || isFull}
+                      style={[styles.primaryBtn, { marginTop: 0, opacity: isFull ? 0.5 : 1 }]}
+                    >
+                      {rsvpBusy ? (
+                        <ActivityIndicator size="small" color="#ffffff" />
+                      ) : (
+                        <UserPlus size={16} color="#ffffff" strokeWidth={2.4} />
+                      )}
+                      <Text style={styles.primaryBtnText}>{isFull ? 'Brak miejsc' : 'Zapisz się'}</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
             ) : null}
 
             <Pressable onPress={addToCalendar} style={styles.secondaryBtn}>
@@ -337,5 +547,63 @@ const styles = StyleSheet.create({
     color: '#be185d',
     fontFamily: 'Inter_700Bold',
     letterSpacing: -0.2,
+  },
+  rsvpBox: {
+    marginTop: 18,
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: '#fafaf9',
+    borderWidth: 1,
+    borderColor: '#eef0f3',
+  },
+  rsvpHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  rsvpCount: { fontSize: 13, color: '#1c1917', fontFamily: 'Inter_700Bold' },
+  fullBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: '#fee2e2',
+  },
+  fullBadgeText: { fontSize: 11, color: '#dc2626', fontFamily: 'Inter_700Bold' },
+  capBarBg: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#e7e5e4',
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  capBarFill: { height: '100%', borderRadius: 3 },
+  rsvpMuted: { fontSize: 13, color: '#78716c', fontFamily: 'Inter_400Regular' },
+  rsvpToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  rsvpToggleText: { fontSize: 14, fontFamily: 'Inter_700Bold', letterSpacing: -0.2 },
+  rsvpSignedRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  rsvpSignedText: { fontSize: 14, color: '#15803d', fontFamily: 'Inter_600SemiBold' },
+  rsvpCancelBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#fef2f2',
+  },
+  rsvpCancelText: { fontSize: 13, color: '#dc2626', fontFamily: 'Inter_700Bold' },
+  guestChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
   },
 });
