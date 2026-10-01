@@ -1,17 +1,16 @@
 import {
   ActivityIndicator,
-  Linking,
-  Pressable,
   ScrollView,
   StatusBar,
   Text,
   View,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { PlaySquare, Quote, User } from 'lucide-react-native';
+import { Quote, User } from 'lucide-react-native';
 import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { SermonAudioPlayer } from '../../../src/features/sermons/components/SermonAudioPlayer';
+import { SermonVideo } from '../../../src/features/sermons/components/SermonVideo';
 import { useSermon } from '../../../src/features/sermons/api';
 
 export default function SermonDetailScreen() {
@@ -129,22 +128,7 @@ export default function SermonDetailScreen() {
             </View>
           ) : null}
 
-          {sermon.video_url ? (
-            <Pressable
-              onPress={() => Linking.openURL(sermon.video_url!)}
-              className="flex-row items-center justify-center gap-2 mb-4 active:opacity-80"
-              style={{
-                paddingVertical: 12,
-                borderRadius: 14,
-                backgroundColor: '#fee2e2',
-              }}
-            >
-              <PlaySquare size={18} color="#dc2626" />
-              <Text className="text-[14px]" style={{ color: '#dc2626', fontFamily: 'Inter_700Bold' }}>
-                Obejrzyj wideo
-              </Text>
-            </Pressable>
-          ) : null}
+          {sermon.video_url ? <SermonVideo url={sermon.video_url} /> : null}
 
           {sermon.description ? (
             <Text
