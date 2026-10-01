@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from "react-native";
 import {
   BarChart3,
+  Calendar,
   Camera,
   CornerUpLeft,
   Image as ImageIcon,
@@ -33,6 +34,7 @@ interface Props {
   // Kanał ogłoszeń (spec §5) + kompozytor ankiety (spec §2).
   canPost?: boolean;
   onCreatePoll?: () => void;
+  onShareEvent?: () => void;
 }
 
 export const ComposerBar = ({
@@ -52,6 +54,7 @@ export const ComposerBar = ({
   onSendVoice,
   canPost = true,
   onCreatePoll,
+  onShareEvent,
 }: Props) => {
   // Kanał ogłoszeń: bez prawa pisania — ukryj kompozytor, pokaż info (spec §5).
   if (!canPost) {
@@ -278,6 +281,24 @@ export const ComposerBar = ({
                 }}
               >
                 <BarChart3 size={18} color="#57534e" />
+              </Pressable>
+            ) : null}
+            {onShareEvent ? (
+              <Pressable
+                onPress={onShareEvent}
+                disabled={uploading}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: "#fafaf9",
+                  borderWidth: 1,
+                  borderColor: "#eef0f3",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Calendar size={18} color="#57534e" />
               </Pressable>
             ) : null}
           </>
