@@ -40,6 +40,7 @@ import {
   type MessageRow,
   type ReadReceiptRow,
   type PollMetadata,
+  type EventMetadata,
 } from "../../../src/features/messenger/api";
 import { usePresence } from "../../../src/lib/presence";
 import {
@@ -52,6 +53,7 @@ import { useRealtimeMessages } from "../../../src/features/messenger/hooks/useRe
 import { MessageBubble } from "../../../src/features/messenger/components/MessageBubble";
 import { ComposerBar } from "../../../src/features/messenger/components/ComposerBar";
 import { PollComposerModal } from "../../../src/features/messenger/components/PollComposerModal";
+import { EventShareModal } from "../../../src/features/messenger/components/EventShareModal";
 import { ConversationHeader } from "../../../src/features/messenger/components/ConversationHeader";
 import { DateSeparator } from "../../../src/features/messenger/components/DateSeparator";
 import { MessageActionsSheet } from "../../../src/features/messenger/components/MessageActionsSheet";
@@ -120,6 +122,7 @@ export default function ConversationScreen() {
   const [text, setText] = useState("");
   const [pendingAttachment, setPendingAttachment] = useState<MessageAttachment | null>(null);
   const [pollOpen, setPollOpen] = useState(false);
+  const [eventShareOpen, setEventShareOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [replyTo, setReplyTo] = useState<MessageRow | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -250,6 +253,15 @@ export default function ConversationScreen() {
       await sendMutation.mutateAsync({ content: question, messageType: "poll", metadata });
     } catch (e: any) {
       Alert.alert("Błąd", e?.message ?? "Nie udało się utworzyć ankiety.");
+    }
+  };
+
+  const handleShareEvent = async (title: string, metadata: EventMetadata) => {
+    setEventShareOpen(false);
+    try {
+      await sendMutation.mutateAsync({ content: title, messageType: "event", metadata });
+    } catch (e: any) {
+      Alert.alert("Błąd", e?.message ?? "Nie udało się udostępnić wydarzenia.");
     }
   };
 
@@ -501,6 +513,7 @@ export default function ConversationScreen() {
             onSendVoice={handleSendVoice}
             canPost={canPost}
             onCreatePoll={() => setPollOpen(true)}
+            onShareEvent={() => setEventShareOpen(true)}
           />
         </View>
       </KeyboardAvoidingView>
@@ -509,6 +522,12 @@ export default function ConversationScreen() {
         visible={pollOpen}
         onClose={() => setPollOpen(false)}
         onCreate={handleCreatePoll}
+      />
+
+      <EventShareModal
+        visible={eventShareOpen}
+        onClose={() => setEventShareOpen(false)}
+        onShare={handleShareEvent}
       />
 
       <MessageActionsSheet

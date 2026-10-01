@@ -853,6 +853,43 @@ export const useTogglePinConversation = (userEmail: string | null) => {
   });
 };
 
+// Nadchodzące wydarzenia do udostępnienia w czacie (spec §2 — snapshot + event_id).
+export interface ShareableEvent {
+  id: string;
+  title: string;
+  date: string | null;
+  time: string | null;
+  location: string | null;
+  description: string | null;
+  max_participants: number | null;
+}
+
+export const useUpcomingEvents = () =>
+  useQuery({
+    queryKey: ["shareableEvents"],
+    queryFn: async (): Promise<ShareableEvent[]> => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data, error } = await supabase
+        .from("events")
+        .select("id, title, date, time, location, description, max_participants")
+        .gte("date", today)
+        .order("date", { ascending: true })
+        .limit(50);
+      if (error) return [];
+      return ((data ?? []) as any[])
+        .filter((e) => e.title)
+        .map((e) => ({
+          id: String(e.id),
+          title: e.title,
+          date: e.date ?? null,
+          time: e.time ? String(e.time).slice(0, 5) : null,
+          location: e.location ?? null,
+          description: e.description ?? null,
+          max_participants: e.max_participants ?? null,
+        }));
+    },
+  });
+
 // =====================================================================
 // Pinned messages
 // =====================================================================
