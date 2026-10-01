@@ -35,6 +35,7 @@ import {
   usePrayerResponses,
   useTogglePrayerResponse,
   deliveryStatusFor,
+  extractMentions,
   type MessageAttachment,
   type MessageRow,
   type ReadReceiptRow,
@@ -50,6 +51,7 @@ import {
 import { useRealtimeMessages } from "../../../src/features/messenger/hooks/useRealtimeMessages";
 import { MessageBubble } from "../../../src/features/messenger/components/MessageBubble";
 import { ComposerBar } from "../../../src/features/messenger/components/ComposerBar";
+import { PollComposerModal } from "../../../src/features/messenger/components/PollComposerModal";
 import { ConversationHeader } from "../../../src/features/messenger/components/ConversationHeader";
 import { DateSeparator } from "../../../src/features/messenger/components/DateSeparator";
 import { MessageActionsSheet } from "../../../src/features/messenger/components/MessageActionsSheet";
@@ -117,6 +119,7 @@ export default function ConversationScreen() {
 
   const [text, setText] = useState("");
   const [pendingAttachment, setPendingAttachment] = useState<MessageAttachment | null>(null);
+  const [pollOpen, setPollOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [replyTo, setReplyTo] = useState<MessageRow | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -236,6 +239,20 @@ export default function ConversationScreen() {
     setEditingId(null);
   };
 
+  const details = detailsQuery.data;
+  // Kanał ogłoszeń (spec §5): piszą tylko admini; reszta ma ukryty kompozytor.
+  const canPost =
+    !details || details.posting_policy !== "admins" || details.my_role === "admin";
+
+  const handleCreatePoll = async (question: string, metadata: PollMetadata) => {
+    setPollOpen(false);
+    try {
+      await sendMutation.mutateAsync({ content: question, messageType: "poll", metadata });
+    } catch (e: any) {
+      Alert.alert("Błąd", e?.message ?? "Nie udało się utworzyć ankiety.");
+    }
+  };
+
   const handleSend = async () => {
     if (editingId) {
       const t = text.trim();
@@ -258,6 +275,7 @@ export default function ConversationScreen() {
         content: snapshot.text,
         attachments: snapshot.att ? [snapshot.att] : undefined,
         replyToId: snapshot.reply?.id ?? null,
+        mentions: extractMentions(snapshot.text, members),
       });
     } catch (e: any) {
       setText(snapshot.text);
@@ -481,9 +499,17 @@ export default function ConversationScreen() {
             editing={!!editingId}
             members={members}
             onSendVoice={handleSendVoice}
+            canPost={canPost}
+            onCreatePoll={() => setPollOpen(true)}
           />
         </View>
       </KeyboardAvoidingView>
+
+      <PollComposerModal
+        visible={pollOpen}
+        onClose={() => setPollOpen(false)}
+        onCreate={handleCreatePoll}
+      />
 
       <MessageActionsSheet
         visible={!!actionTarget}

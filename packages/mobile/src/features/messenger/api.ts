@@ -520,13 +520,16 @@ export const useToggleMuted = (userEmail: string | null) => {
 
 export interface ConversationDetails {
   id: string;
-  type: "direct" | "group" | "ministry";
+  type: "direct" | "group" | "ministry" | "announcement";
   name: string | null;
   ministry_key: string | null;
   avatar_url: string | null;
   participant_emails: string[];
   my_muted: boolean;
   my_starred: boolean;
+  // Kanały ogłoszeń (spec §5): kto może pisać + moja rola w rozmowie.
+  posting_policy: "everyone" | "admins";
+  my_role: string | null;
 }
 
 export const useConversationDetails = (
@@ -539,19 +542,20 @@ export const useConversationDetails = (
       if (!conversationId) return null;
       const { data: conv, error } = await supabase
         .from("conversations")
-        .select("id, type, name, ministry_key, avatar_url")
+        .select("id, type, name, ministry_key, avatar_url, posting_policy")
         .eq("id", conversationId)
         .maybeSingle();
       if (error) throw error;
       if (!conv) return null;
       const { data: parts } = await supabase
         .from("conversation_participants")
-        .select("user_email, muted, starred")
+        .select("user_email, muted, starred, role")
         .eq("conversation_id", conversationId);
       const participants = (parts ?? []) as Array<{
         user_email: string;
         muted: boolean | null;
         starred: boolean | null;
+        role: string | null;
       }>;
       const me = participants.find((p) => p.user_email === userEmail);
       return {
@@ -563,10 +567,34 @@ export const useConversationDetails = (
         participant_emails: participants.map((p) => p.user_email),
         my_muted: !!me?.muted,
         my_starred: !!me?.starred,
+        posting_policy: ((conv as any).posting_policy as "everyone" | "admins") ?? "everyone",
+        my_role: me?.role ?? null,
       };
     },
     enabled: !!conversationId,
   });
+
+/**
+ * Wykryj @wzmianki w treści → e-maile uczestników (spec §3). Dopasowanie po
+ * wyświetlanej nazwie i imieniu (case-insensitive). Zapisywane do messages.mentions;
+ * trigger DB tworzy wspomnianym powiadomienie 'mention' + push niezależnie od obecności.
+ */
+export const extractMentions = (text: string, members: MemberMap): string[] => {
+  if (!text || !text.includes("@")) return [];
+  const lower = text.toLowerCase();
+  const out = new Set<string>();
+  for (const email of Object.keys(members)) {
+    const name = memberDisplayName(members, email);
+    const first = (members[email]?.firstName || name.split(" ")[0] || "").trim();
+    for (const cand of [name, first].filter(Boolean)) {
+      if (lower.includes("@" + cand.toLowerCase())) {
+        out.add(email);
+        break;
+      }
+    }
+  }
+  return Array.from(out);
+};
 
 // =====================================================================
 // Reactions
