@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as DocumentPicker from 'expo-document-picker';
 import { supabase, tenantWebBase } from '../../lib/supabase';
 
 export interface FolderRow {
@@ -73,6 +74,28 @@ export const useFolderPath = (folderId: string | null) =>
     enabled: !!folderId,
   });
 
+export interface SharedFile {
+  id: string;
+  name: string;
+  storage_path: string;
+  mime_type: string;
+  file_size: number;
+  folder_id: string | null;
+  created_at: string | null;
+  shared_label: string | null;
+}
+
+// „Udostępnione mi" — przez fn my-shared-materials (przynależności i dopasowanie serwerowo).
+export const useSharedMaterials = () =>
+  useQuery({
+    queryKey: ['materials', 'shared'],
+    queryFn: async (): Promise<SharedFile[]> => {
+      const { data, error } = await supabase.functions.invoke('my-shared-materials', { body: {} });
+      if (error) throw new Error(error.message || 'Nie udało się pobrać udostępnionych plików.');
+      return (((data as any)?.files ?? []) as SharedFile[]);
+    },
+  });
+
 export const formatBytes = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -89,6 +112,54 @@ export const fileIconType = (
   if (mime === 'application/pdf') return 'pdf';
   if (mime.includes('word') || mime.includes('document') || mime.includes('text')) return 'doc';
   return 'other';
+};
+
+// Wybór dowolnego pliku z telefonu (obraz/PDF/dokument).
+export const pickDocument = async (): Promise<DocumentPicker.DocumentPickerAsset | null> => {
+  const res = await DocumentPicker.getDocumentAsync({
+    type: '*/*',
+    copyToCacheDirectory: true,
+    multiple: false,
+  });
+  if (res.canceled || !res.assets?.length) return null;
+  return res.assets[0];
+};
+
+// Upload pliku do bieżącego folderu Materiałów. Storage: bucket `materials` (zapis =
+// requireUser, więc członek może), metadane: materials_files (T(null)). Ścieżka i pola
+// jak web (useMaterials): global/<ts>_<rand>_<nazwa>, team_type null = plik globalny.
+export const useUploadMaterial = (folderId: string | null, userEmail: string | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (asset: DocumentPicker.DocumentPickerAsset) => {
+      const name = asset.name || `plik-${Date.now()}`;
+      const mime = asset.mimeType || 'application/octet-stream';
+      const sanitized = name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const storagePath = `global/${Date.now()}_${Math.random().toString(36).slice(2, 11)}_${sanitized}`;
+
+      const response = await fetch(asset.uri);
+      const arrayBuffer = await response.arrayBuffer();
+      const size = asset.size ?? arrayBuffer.byteLength;
+      if (size > 50 * 1024 * 1024) throw new Error('Plik przekracza limit 50 MB.');
+
+      const { error: upErr } = await supabase.storage
+        .from('materials')
+        .upload(storagePath, arrayBuffer, { contentType: mime });
+      if (upErr) throw new Error(upErr.message || 'Nie udało się wysłać pliku.');
+
+      const { error: insErr } = await (supabase.from('materials_files') as any).insert({
+        name,
+        storage_path: storagePath,
+        file_size: size,
+        mime_type: mime,
+        folder_id: folderId,
+        team_type: null,
+        uploaded_by: userEmail,
+      });
+      if (insErr) throw new Error(insErr.message || 'Nie udało się zapisać pliku.');
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['materials', 'files', folderId] }),
+  });
 };
 
 export const getDownloadUrl = async (storagePath: string): Promise<string | null> => {

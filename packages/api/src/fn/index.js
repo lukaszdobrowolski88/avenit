@@ -32,6 +32,7 @@ const MODULES = [
   'my-home-groups',
   'my-blockouts',
   'ministry-roster',
+  'my-shared-materials',
   'prayer-wall',
   'campaign-progress',
   'automation-run',

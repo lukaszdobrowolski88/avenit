@@ -20,17 +20,23 @@ import {
   Folder,
   FolderOpen,
   Image as ImageIcon,
+  Share2,
+  Upload,
 } from 'lucide-react-native';
 import {
   useFolders,
   useFiles,
   useFolderPath,
+  useUploadMaterial,
+  pickDocument,
   formatBytes,
   fileIconType,
   getDownloadUrl,
   type FileRow,
   type FolderRow,
 } from '../../../src/features/materials/api';
+import { useAuthSession } from '../../../src/lib/auth';
+import { GradientIcon } from '../../../src/components/ui/GradientIcon';
 
 const ICON_BY_TYPE = {
   pdf: { Icon: FileText, tint: '#dc2626', bg: '#fee2e2' },
@@ -59,10 +65,23 @@ const itemBorderStyle = {
 
 export default function MaterialsScreen() {
   const router = useRouter();
+  const { user } = useAuthSession();
   const [folderId, setFolderId] = useState<string | null>(null);
   const folders = useFolders(folderId);
   const files = useFiles(folderId);
   const path = useFolderPath(folderId);
+  const upload = useUploadMaterial(folderId, user?.email ?? null);
+
+  const handleUpload = async () => {
+    try {
+      const asset = await pickDocument();
+      if (!asset) return;
+      await upload.mutateAsync(asset);
+      Alert.alert('Wysłano', 'Plik został dodany do materiałów.');
+    } catch (e: any) {
+      Alert.alert('Błąd', e?.message ?? 'Nie udało się wysłać pliku.');
+    }
+  };
 
   const isLoading = folders.isLoading || files.isLoading;
   const isError = folders.isError || files.isError;
@@ -136,6 +155,24 @@ export default function MaterialsScreen() {
               Materiały
             </Text>
           </View>
+          <Pressable onPress={handleUpload} disabled={upload.isPending} className="active:opacity-80">
+            {upload.isPending ? (
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: '#ec4899',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ActivityIndicator color="#ffffff" />
+              </View>
+            ) : (
+              <GradientIcon Icon={Upload} size={40} iconSize={19} from="#f97316" to="#ec4899" rounded />
+            )}
+          </Pressable>
         </View>
 
         {(path.data?.length ?? 0) > 0 && (
@@ -228,6 +265,38 @@ export default function MaterialsScreen() {
               />
             }
           >
+            {folderId === null ? (
+              <Pressable
+                onPress={() => router.push('/(app)/materials/shared')}
+                className="mb-3 active:opacity-80"
+                style={itemCardStyle}
+              >
+                <View className="flex-row items-center gap-3 p-3.5" style={itemBorderStyle}>
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 12,
+                      backgroundColor: '#cffafe',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Share2 size={19} color="#0891b2" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text className="text-[15px]" style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                      Udostępnione mi
+                    </Text>
+                    <Text className="text-[12px] mt-0.5" style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}>
+                      Pliki udostępnione Tobie i Twoim grupom
+                    </Text>
+                  </View>
+                  <ChevronRight size={18} color="#a8a29e" />
+                </View>
+              </Pressable>
+            ) : null}
+
             {(folders.data?.length ?? 0) > 0 && (
               <View className="mb-3">
                 <Text

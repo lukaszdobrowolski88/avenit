@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -5,10 +6,11 @@ import {
   ScrollView,
   StatusBar,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronRight, Headphones, Podcast, PlaySquare, Quote, User } from 'lucide-react-native';
+import { ChevronRight, Headphones, Podcast, PlaySquare, Quote, Search, User, X } from 'lucide-react-native';
 import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { useSermons, type Sermon } from '../../../src/features/sermons/api';
@@ -112,6 +114,25 @@ const SermonCard = ({ sermon, onPress }: { sermon: Sermon; onPress: () => void }
   );
 };
 
+const SeriesChip = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
+  <Pressable
+    onPress={onPress}
+    className="active:opacity-80"
+    style={{
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 999,
+      backgroundColor: active ? '#7c3aed' : '#faf5ff',
+      borderWidth: 1,
+      borderColor: active ? '#7c3aed' : '#ede9fe',
+    }}
+  >
+    <Text className="text-[13px]" style={{ color: active ? '#ffffff' : '#6d28d9', fontFamily: 'Inter_600SemiBold' }}>
+      {label}
+    </Text>
+  </Pressable>
+);
+
 export default function SermonsScreen() {
   const router = useRouter();
   const { selectedCampusId, withCampusFilter } = useCampusQuery();
@@ -120,11 +141,84 @@ export default function SermonsScreen() {
     withCampusFilter,
   });
 
+  const [search, setSearch] = useState('');
+  const [series, setSeries] = useState<string | null>(null);
+
+  const allSeries = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of (data ?? []) as Sermon[]) if (s.series) set.add(s.series);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pl'));
+  }, [data]);
+
+  const list = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return ((data ?? []) as Sermon[]).filter((s) => {
+      if (series && s.series !== series) return false;
+      if (!q) return true;
+      const hay = `${s.title ?? ''} ${s.speaker ?? ''} ${s.scripture_ref ?? ''} ${s.series ?? ''}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [data, search, series]);
+
+  const hasFilters = !!search.trim() || series != null;
+
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
         <PageHeader title="Kazania" subtitle="Posłuchaj Słowa" Icon={Podcast} showBack />
+
+        {!isLoading && !isError && (data ?? []).length > 0 ? (
+          <>
+            <View className="px-4 pb-2">
+              <View
+                className="flex-row items-center gap-2 px-3"
+                style={{
+                  borderRadius: 999,
+                  backgroundColor: '#fafaf9',
+                  borderWidth: 1,
+                  borderColor: '#eef0f3',
+                  height: 40,
+                }}
+              >
+                <Search size={16} color="#a8a29e" />
+                <TextInput
+                  style={{
+                    flex: 1,
+                    fontSize: 14,
+                    color: '#0c0a09',
+                    fontFamily: 'Inter_400Regular',
+                    paddingVertical: 0,
+                  }}
+                  placeholder="Szukaj: tytuł, mówca, werset…"
+                  placeholderTextColor="#a8a29e"
+                  value={search}
+                  onChangeText={setSearch}
+                  returnKeyType="search"
+                />
+                {search.length > 0 ? (
+                  <Pressable onPress={() => setSearch('')} hitSlop={8}>
+                    <X size={15} color="#a8a29e" />
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+            {allSeries.length > 0 ? (
+              <View style={{ maxHeight: 44 }} className="pb-2">
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 16, gap: 8, alignItems: 'center' }}
+                >
+                  <SeriesChip label="Wszystkie" active={series === null} onPress={() => setSeries(null)} />
+                  {allSeries.map((s) => (
+                    <SeriesChip key={s} label={s} active={series === s} onPress={() => setSeries(s)} />
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
+          </>
+        ) : null}
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
@@ -177,6 +271,44 @@ export default function SermonsScreen() {
               Opublikowane kazania pojawią się tutaj.
             </Text>
           </ScrollView>
+        ) : list.length === 0 ? (
+          <ScrollView
+            contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
+            refreshControl={
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+            }
+          >
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 18,
+                backgroundColor: '#f3e8ff',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <Search size={26} color="#7c3aed" />
+            </View>
+            <Text className="text-[16px]" style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+              Brak wyników
+            </Text>
+            <Text className="text-[13px] text-center mt-1" style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}>
+              Zmień wyszukiwanie lub wybraną serię.
+            </Text>
+            {hasFilters ? (
+              <Pressable
+                onPress={() => {
+                  setSearch('');
+                  setSeries(null);
+                }}
+                style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, backgroundColor: '#f3e8ff' }}
+              >
+                <Text style={{ fontSize: 13, color: '#7c3aed', fontFamily: 'Inter_700Bold' }}>Wyczyść filtry</Text>
+              </Pressable>
+            ) : null}
+          </ScrollView>
         ) : (
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
@@ -184,7 +316,7 @@ export default function SermonsScreen() {
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
             }
           >
-            {data!.map((s: any) => (
+            {list.map((s: Sermon) => (
               <SermonCard
                 key={s.id}
                 sermon={s}
