@@ -30,9 +30,16 @@ import {
   markConversationRead,
   markMessagesAsRead,
   canEditMessage,
+  usePollVotes,
+  useTogglePollVote,
+  usePrayerResponses,
+  useTogglePrayerResponse,
+  deliveryStatusFor,
+  extractMentions,
   type MessageAttachment,
   type MessageRow,
   type ReadReceiptRow,
+  type PollMetadata,
 } from "../../../src/features/messenger/api";
 import { usePresence } from "../../../src/lib/presence";
 import {
@@ -44,6 +51,7 @@ import {
 import { useRealtimeMessages } from "../../../src/features/messenger/hooks/useRealtimeMessages";
 import { MessageBubble } from "../../../src/features/messenger/components/MessageBubble";
 import { ComposerBar } from "../../../src/features/messenger/components/ComposerBar";
+import { PollComposerModal } from "../../../src/features/messenger/components/PollComposerModal";
 import { ConversationHeader } from "../../../src/features/messenger/components/ConversationHeader";
 import { DateSeparator } from "../../../src/features/messenger/components/DateSeparator";
 import { MessageActionsSheet } from "../../../src/features/messenger/components/MessageActionsSheet";
@@ -78,6 +86,10 @@ export default function ConversationScreen() {
   const pinMutation = useTogglePin(cid, user?.email ?? null);
   const forwardMutation = useForwardMessage(user?.email ?? null);
   const readReceiptsQuery = useReadReceipts(cid);
+  const pollVotesQuery = usePollVotes(cid, user?.email ?? null);
+  const prayerQuery = usePrayerResponses(cid, user?.email ?? null);
+  const pollVoteMutation = useTogglePollVote(cid, user?.email ?? null);
+  const prayerMutation = useTogglePrayerResponse(cid, user?.email ?? null);
   useRealtimeMessages(cid);
 
   const memberEmails = useMemo(() => {
@@ -107,6 +119,7 @@ export default function ConversationScreen() {
 
   const [text, setText] = useState("");
   const [pendingAttachment, setPendingAttachment] = useState<MessageAttachment | null>(null);
+  const [pollOpen, setPollOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [replyTo, setReplyTo] = useState<MessageRow | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -226,6 +239,20 @@ export default function ConversationScreen() {
     setEditingId(null);
   };
 
+  const details = detailsQuery.data;
+  // Kanał ogłoszeń (spec §5): piszą tylko admini; reszta ma ukryty kompozytor.
+  const canPost =
+    !details || details.posting_policy !== "admins" || details.my_role === "admin";
+
+  const handleCreatePoll = async (question: string, metadata: PollMetadata) => {
+    setPollOpen(false);
+    try {
+      await sendMutation.mutateAsync({ content: question, messageType: "poll", metadata });
+    } catch (e: any) {
+      Alert.alert("Błąd", e?.message ?? "Nie udało się utworzyć ankiety.");
+    }
+  };
+
   const handleSend = async () => {
     if (editingId) {
       const t = text.trim();
@@ -248,6 +275,7 @@ export default function ConversationScreen() {
         content: snapshot.text,
         attachments: snapshot.att ? [snapshot.att] : undefined,
         replyToId: snapshot.reply?.id ?? null,
+        mentions: extractMentions(snapshot.text, members),
       });
     } catch (e: any) {
       setText(snapshot.text);
@@ -422,6 +450,7 @@ export default function ConversationScreen() {
               const readByCount = mine
                 ? receipts.filter((r: ReadReceiptRow) => r.user_email !== m.sender_email).length
                 : 0;
+              const prayer = prayerQuery.data?.[m.id];
               return (
                 <MessageBubble
                   message={m}
@@ -432,6 +461,19 @@ export default function ConversationScreen() {
                   reactions={reactionsQuery.data?.[m.id]}
                   pinned={pinnedIds.has(m.id)}
                   readByCount={readByCount}
+                  currentUserEmail={user?.email ?? null}
+                  deliveryStatus={mine ? deliveryStatusFor(receipts, m.sender_email) : undefined}
+                  pollVotes={pollVotesQuery.data?.[m.id]}
+                  onVote={(optionId) =>
+                    pollVoteMutation.mutate({
+                      messageId: m.id,
+                      optionId,
+                      multiple: !!(m.metadata as PollMetadata | null)?.multiple,
+                    })
+                  }
+                  prayerCount={prayer?.count ?? 0}
+                  prayerMine={!!prayer?.mine}
+                  onPray={() => prayerMutation.mutate({ messageId: m.id, responding: !!prayer?.mine })}
                   senderStatus={mine ? undefined : getStatus(m.sender_email)}
                   onLongPress={() => handleLongPress(m)}
                   onToggleReaction={(emoji) => handleToggleReactionFromBubble(m.id, emoji)}
@@ -457,9 +499,17 @@ export default function ConversationScreen() {
             editing={!!editingId}
             members={members}
             onSendVoice={handleSendVoice}
+            canPost={canPost}
+            onCreatePoll={() => setPollOpen(true)}
           />
         </View>
       </KeyboardAvoidingView>
+
+      <PollComposerModal
+        visible={pollOpen}
+        onClose={() => setPollOpen(false)}
+        onCreate={handleCreatePoll}
+      />
 
       <MessageActionsSheet
         visible={!!actionTarget}

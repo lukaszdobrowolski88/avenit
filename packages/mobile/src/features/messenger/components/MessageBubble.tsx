@@ -7,6 +7,23 @@ import { isVoiceAttachment } from "../attachments";
 import { PresenceDot } from "./PresenceDot";
 import { AudioPlayer } from "./AudioPlayer";
 import { type PresenceStatus } from "../../../lib/presence";
+import { PollCard } from "./PollCard";
+import { PrayerCard } from "./PrayerCard";
+import { EventCard } from "./EventCard";
+import type { PollMetadata, PrayerMetadata, EventMetadata, DeliveryStatus } from "../api";
+
+// Pogrubia tokeny @wzmianek w treści (spec §3).
+const MENTION_RE = /(@[\p{L}][\p{L}\d._-]*)/u;
+const renderWithMentions = (text: string, accent: string) =>
+  text.split(MENTION_RE).map((part, i) =>
+    part.startsWith("@") ? (
+      <Text key={i} style={{ fontFamily: "Inter_700Bold", color: accent }}>
+        {part}
+      </Text>
+    ) : (
+      part
+    ),
+  );
 
 interface Props {
   message: MessageRow;
@@ -22,6 +39,14 @@ interface Props {
   senderStatus?: PresenceStatus;
   onLongPress?: () => void;
   onToggleReaction?: (emoji: string) => void;
+  // Komunikator „WhatsApp": bogate typy, wzmianki, ptaszki (spec §2–4).
+  currentUserEmail?: string | null;
+  deliveryStatus?: DeliveryStatus;
+  pollVotes?: Record<string, { count: number; mine: boolean }>;
+  onVote?: (optionId: string) => void;
+  prayerCount?: number;
+  prayerMine?: boolean;
+  onPray?: () => void;
 }
 
 const Avatar = ({
@@ -77,6 +102,13 @@ export const MessageBubble = ({
   senderStatus,
   onLongPress,
   onToggleReaction,
+  currentUserEmail,
+  deliveryStatus,
+  pollVotes,
+  onVote,
+  prayerCount,
+  prayerMine,
+  onPray,
 }: Props) => {
   // API zwraca puste załączniki jako {} (obiekt), nie []. Bez tego guardu
   // {}.map(...) rzuca "undefined is not a function" i wywala całą rozmowę.
@@ -86,6 +118,38 @@ export const MessageBubble = ({
     ? memberDisplayName(members, replyTo.sender_email)
     : null;
   const time = format(new Date(message.created_at), "HH:mm");
+  const mentionsMe =
+    !!currentUserEmail &&
+    Array.isArray(message.mentions) &&
+    message.mentions.includes(currentUserEmail);
+
+  // Wiadomość systemowa — wyśrodkowana pastylka (spec §2).
+  if (message.message_type === "system") {
+    return (
+      <View style={{ alignItems: "center", marginVertical: 6 }}>
+        <View
+          style={{
+            backgroundColor: "#eef0f3",
+            borderRadius: 999,
+            paddingHorizontal: 12,
+            paddingVertical: 5,
+            maxWidth: "85%",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 12,
+              color: "#78716c",
+              fontFamily: "Inter_500Medium",
+              textAlign: "center",
+            }}
+          >
+            {message.content}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -262,7 +326,43 @@ export const MessageBubble = ({
           );
         })}
 
-        {message.content ? (
+        {mentionsMe ? (
+          <Text
+            style={{
+              fontSize: 10,
+              color: mine ? "#fde68a" : "#be185d",
+              fontFamily: "Inter_700Bold",
+              marginBottom: 2,
+            }}
+          >
+            @ wspomniano Cię
+          </Text>
+        ) : null}
+
+        {message.message_type === "poll" ? (
+          <PollCard
+            metadata={message.metadata as PollMetadata}
+            content={message.content}
+            votes={pollVotes ?? {}}
+            onVote={(o) => onVote?.(o)}
+            mine={mine}
+          />
+        ) : message.message_type === "prayer" ? (
+          <PrayerCard
+            metadata={message.metadata as PrayerMetadata}
+            content={message.content}
+            count={prayerCount ?? 0}
+            mine={!!prayerMine}
+            bubbleMine={mine}
+            onToggle={() => onPray?.()}
+          />
+        ) : message.message_type === "event" ? (
+          <EventCard
+            metadata={message.metadata as EventMetadata}
+            content={message.content}
+            bubbleMine={mine}
+          />
+        ) : message.content ? (
           <Text
             style={{
               fontSize: 15,
@@ -271,7 +371,7 @@ export const MessageBubble = ({
               fontFamily: "Inter_400Regular",
             }}
           >
-            {message.content}
+            {renderWithMentions(message.content, mine ? "#fde68a" : "#be185d")}
           </Text>
         ) : null}
 
@@ -305,13 +405,18 @@ export const MessageBubble = ({
           >
             {time}
           </Text>
-          {mine ? (
-            (readByCount ?? 0) > 0 ? (
-              <CheckCheck size={12} color="#fce7f3" strokeWidth={2.4} />
-            ) : (
-              <Check size={12} color="#fbcfe8" strokeWidth={2.4} />
-            )
-          ) : null}
+          {mine
+            ? (() => {
+                // Ptaszki (spec §4): read=✓✓ jasne, delivered=✓✓ przygaszone, sent=✓.
+                const st: DeliveryStatus =
+                  deliveryStatus ?? ((readByCount ?? 0) > 0 ? "read" : "sent");
+                if (st === "read")
+                  return <CheckCheck size={12} color="#ffffff" strokeWidth={2.4} />;
+                if (st === "delivered")
+                  return <CheckCheck size={12} color="#fbcfe8" strokeWidth={2.4} />;
+                return <Check size={12} color="#fbcfe8" strokeWidth={2.4} />;
+              })()
+            : null}
         </View>
       </Pressable>
 

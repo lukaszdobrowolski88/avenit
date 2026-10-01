@@ -15,6 +15,7 @@ import { Link } from "expo-router";
 import {
   Archive,
   ArchiveRestore,
+  Pin,
   Hash,
   MessageCircle,
   Search,
@@ -29,6 +30,7 @@ import {
   useConversations,
   useToggleStarred,
   useToggleArchived,
+  useTogglePinConversation,
   useMembersByEmails,
   memberDisplayName,
   memberInitials,
@@ -140,6 +142,7 @@ export default function MessengerScreen() {
   );
   const toggleStar = useToggleStarred(user?.email ?? null);
   const toggleArchive = useToggleArchived(user?.email ?? null);
+  const togglePin = useTogglePinConversation(user?.email ?? null);
   useRealtimeConversations(user?.email ?? null);
 
   // Lookup memberów po peer_email (drugi uczestnik direct) + sender_email z ostatnich wiadomości.
@@ -515,12 +518,28 @@ export default function MessengerScreen() {
                   <Pressable
                     hitSlop={10}
                     onPress={() =>
+                      togglePin.mutate({
+                        conversationId: item.id,
+                        pinned: !item.pinned,
+                      })
+                    }
+                    style={{ marginLeft: 6, padding: 6 }}
+                  >
+                    <Pin
+                      size={18}
+                      color={item.pinned ? "#ec4899" : "#cbd5e1"}
+                      fill={item.pinned ? "#ec4899" : "none"}
+                    />
+                  </Pressable>
+                  <Pressable
+                    hitSlop={10}
+                    onPress={() =>
                       toggleStar.mutate({
                         conversationId: item.id,
                         starred: !item.starred,
                       })
                     }
-                    style={{ marginLeft: 6, padding: 6 }}
+                    style={{ marginLeft: 2, padding: 6 }}
                   >
                     <Star
                       size={18}

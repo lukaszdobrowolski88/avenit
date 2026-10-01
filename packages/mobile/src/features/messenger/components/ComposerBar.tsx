@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from "react-native";
 import {
+  BarChart3,
   Camera,
   CornerUpLeft,
   Image as ImageIcon,
@@ -29,6 +30,9 @@ interface Props {
   editing: boolean;
   members: MemberMap;
   onSendVoice?: (uri: string, mime: string, durationMs: number) => Promise<void>;
+  // Kanał ogłoszeń (spec §5) + kompozytor ankiety (spec §2).
+  canPost?: boolean;
+  onCreatePoll?: () => void;
 }
 
 export const ComposerBar = ({
@@ -46,7 +50,27 @@ export const ComposerBar = ({
   editing,
   members,
   onSendVoice,
+  canPost = true,
+  onCreatePoll,
 }: Props) => {
+  // Kanał ogłoszeń: bez prawa pisania — ukryj kompozytor, pokaż info (spec §5).
+  if (!canPost) {
+    return (
+      <View
+        style={{
+          backgroundColor: "#ffffff",
+          borderTopWidth: 1,
+          borderTopColor: "#eef0f3",
+          padding: 16,
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ fontSize: 13, color: "#78716c", fontFamily: "Inter_500Medium", textAlign: "center" }}>
+          📢 Tylko administratorzy mogą pisać w tym kanale.
+        </Text>
+      </View>
+    );
+  }
   const canSend = !!text.trim() || !!pendingAttachment;
   const [recording, setRecording] = useState(false);
 
@@ -238,6 +262,24 @@ export const ComposerBar = ({
             >
               <Camera size={18} color="#57534e" />
             </Pressable>
+            {onCreatePoll ? (
+              <Pressable
+                onPress={onCreatePoll}
+                disabled={uploading}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: "#fafaf9",
+                  borderWidth: 1,
+                  borderColor: "#eef0f3",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <BarChart3 size={18} color="#57534e" />
+              </Pressable>
+            ) : null}
           </>
         ) : null}
         <TextInput
