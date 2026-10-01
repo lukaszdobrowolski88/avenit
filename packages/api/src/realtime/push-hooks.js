@@ -3,7 +3,7 @@
 // ani opóźnić zapisu. Wszystko owinięte w try/catch, błędy tylko logowane.
 //
 // Obsługiwane inserty:
-//   - messages              → push do uczestników rozmowy (poza nadawcą, nie wyciszonych)
+//   - messages              → push do uczestników (nie wyciszonych); @wzmianki → push 'mention' zawsze
 //   - schedule_assignments  → push do zaproszonego do służby (status 'pending')
 import { sendPushCore } from '../fn/send-push.js';
 
@@ -27,38 +27,56 @@ async function notifyNewMessage(pool, msg, actingUserEmail) {
   const senderEmail = msg.sender_email || actingUserEmail;
   if (!conversationId || !senderEmail) return;
 
-  // Odbiorcy: uczestnicy rozmowy poza nadawcą, którzy nie wyciszyli rozmowy.
-  const { rows: recipients } = await pool.query(
-    `SELECT user_email FROM conversation_participants
-      WHERE conversation_id = $1
-        AND lower(user_email) <> lower($2)
-        AND COALESCE(muted, false) = false`,
+  // Wzmianki (@) z messages.mentions — wspomniani dostają osobny push 'mention' ZAWSZE
+  // (nawet przy wyciszeniu); reszta — zwykły push wiadomości, o ile nie wyciszyli rozmowy.
+  const mentioned = new Set(parseMentions(msg.mentions).map((e) => String(e).toLowerCase()));
+
+  const { rows: parts } = await pool.query(
+    `SELECT user_email, COALESCE(muted, false) AS muted
+       FROM conversation_participants
+      WHERE conversation_id = $1 AND lower(user_email) <> lower($2)`,
     [conversationId, senderEmail],
   );
-  if (!recipients.length) return;
+  if (!parts.length) return;
 
   const { rows: sender } = await pool.query(
     `SELECT COALESCE(NULLIF(full_name, ''), NULLIF(name, ''), email) AS display
        FROM app_users WHERE lower(email) = lower($1) LIMIT 1`,
     [senderEmail],
   );
-  const title = sender[0]?.display || senderEmail;
+  const senderName = sender[0]?.display || senderEmail;
   const body = messagePreview(msg);
   const link = `/messenger/${conversationId}`;
 
-  for (const r of recipients) {
-    await sendPushCore(pool, {
-      user_email: r.user_email,
-      title,
-      body,
-      link,
-      data: { type: 'message', conversation_id: conversationId },
-    });
+  for (const p of parts) {
+    const isMentioned = mentioned.has(String(p.user_email).toLowerCase());
+    if (isMentioned) {
+      await sendPushCore(pool, {
+        user_email: p.user_email,
+        title: `${senderName} wspomniał(a) Cię`,
+        body,
+        link,
+        data: { type: 'mention', conversation_id: conversationId },
+      });
+    } else if (!p.muted) {
+      await sendPushCore(pool, {
+        user_email: p.user_email,
+        title: senderName,
+        body,
+        link,
+        data: { type: 'message', conversation_id: conversationId },
+      });
+    }
   }
 }
 
 function messagePreview(msg) {
   const text = typeof msg.content === 'string' ? msg.content.trim() : '';
+  const short = text.length > 100 ? `${text.slice(0, 99)}…` : text;
+  // Podglądy bogatych typów (spec §7).
+  if (msg.message_type === 'poll') return `📊 ${short || 'Ankieta'}`;
+  if (msg.message_type === 'prayer') return '🙏 Prośba o modlitwę';
+  if (msg.message_type === 'event') return `📅 ${short || 'Wydarzenie'}`;
   if (text) return text.length > 140 ? `${text.slice(0, 139)}…` : text;
   const attachments = msg.attachments;
   const hasAttachment = Array.isArray(attachments)
@@ -67,6 +85,21 @@ function messagePreview(msg) {
       ? attachments !== '[]' && attachments !== ''
       : Boolean(attachments);
   return hasAttachment ? '📎 Załącznik' : 'Nowa wiadomość';
+}
+
+// messages.mentions bywa tablicą (JSONB) albo stringiem (serializacja) — oba na tablicę e-maili.
+function parseMentions(m) {
+  if (!m) return [];
+  if (Array.isArray(m)) return m.filter((x) => typeof x === 'string');
+  if (typeof m === 'string') {
+    try {
+      const a = JSON.parse(m);
+      return Array.isArray(a) ? a.filter((x) => typeof x === 'string') : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
 
 // ── Zaproszenie do służby ─────────────────────────────────────────────────────

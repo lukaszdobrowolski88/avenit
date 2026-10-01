@@ -91,9 +91,25 @@ export const useRealtimeMessages = (conversationId: string) => {
       )
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "message_read_receipts" },
+        { event: "*", schema: "public", table: "message_read_receipts" },
         () => {
           qc.invalidateQueries({ queryKey: ["readReceipts", conversationId] });
+        },
+      )
+      // Ankiety/modlitwy — serwer emituje zmiany generycznie (/api/db → emitChange);
+      // filtr i tak ignorowany przez shim, więc po prostu invaliduj agregaty.
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "poll_votes" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["pollVotes", conversationId] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "prayer_responses" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["prayerResponses", conversationId] });
         },
       )
       .subscribe();
