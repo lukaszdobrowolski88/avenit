@@ -12,6 +12,7 @@ import Toast from 'react-native-toast-message';
 import { ThemeProvider, useTheme } from '../src/contexts/ThemeContext';
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { CampusProvider } from '../src/contexts/CampusContext';
+import { I18nProvider } from '../src/i18n';
 import { ErrorBoundary } from '../src/components/shared/ErrorBoundary';
 import { queryClient, queryPersister } from '../src/lib/query-client';
 import { useAppFonts } from '../src/lib/fonts';
@@ -173,13 +174,15 @@ export default function RootLayout() {
             client={queryClient}
             persistOptions={{ persister: queryPersister, maxAge: 1000 * 60 * 60 * 24 * 7 }}
           >
-            <ThemeProvider>
-              <AuthProvider>
-                <CampusProvider>
-                  <RootNavigator />
-                </CampusProvider>
-              </AuthProvider>
-            </ThemeProvider>
+            <I18nProvider>
+              <ThemeProvider>
+                <AuthProvider>
+                  <CampusProvider>
+                    <RootNavigator />
+                  </CampusProvider>
+                </AuthProvider>
+              </ThemeProvider>
+            </I18nProvider>
           </PersistQueryClientProvider>
         </ErrorBoundary>
       </SafeAreaProvider>

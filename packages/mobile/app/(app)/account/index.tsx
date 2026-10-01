@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Linking, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
@@ -7,6 +7,7 @@ import {
   BookOpen,
   CalendarCheck,
   CalendarOff,
+  Check,
   ClipboardList,
   Fingerprint,
   FolderOpen,
@@ -43,6 +44,7 @@ import { CampusSelector } from '../../../src/components/CampusSelector';
 import { useCampus } from '../../../src/contexts/CampusContext';
 import { tenantWebBase } from '../../../src/lib/supabase';
 import { useMyProfile, use2FAStatus } from '../../../src/features/account/api';
+import { useT, useLang } from '../../../src/i18n';
 
 // Otwiera stronę web tenanta (np. politykę prywatności) — host tenanta z getTenant(),
 // z fallbackiem na apex. Wymagane linki prawne + usuwanie konta (wymóg App Store / Play).
@@ -60,6 +62,8 @@ export default function AccountScreen() {
   const { campuses } = useCampus();
   const profile = useMyProfile(user?.email ?? null);
   const twoFa = use2FAStatus();
+  const t = useT();
+  const { lang, setLang, languages } = useLang();
 
   const [biometricSupported, setBiometricSupported] = useState(false);
   const [biometricOn, setBiometricOn] = useState(false);
@@ -124,7 +128,7 @@ export default function AccountScreen() {
   };
 
   const handleSignOut = async () => {
-    Alert.alert('Wylogować?', 'Konto zostanie odłączone od urządzenia.', [
+    Alert.alert(t('Wylogować?'), t('Konto zostanie odłączone od urządzenia.'), [
       { text: 'Anuluj', style: 'cancel' },
       {
         text: 'Wyloguj',
@@ -176,18 +180,18 @@ export default function AccountScreen() {
           className="text-[12px] mt-1"
           style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
         >
-          {fullName ? email : 'Konto'}
+          {fullName ? email : t('Konto')}
         </Text>
       </View>
 
-      <SettingsGroup title="Profil">
+      <SettingsGroup title={t("Profil")}>
         <SettingsRow
           variant="nav"
           Icon={UserCog}
           iconTint="#be185d"
           iconBg="#fce7f3"
-          title="Edytuj profil"
-          description="Zmień imię i zdjęcie profilowe"
+          title={t("Edytuj profil")}
+          description={t("Zmień imię i zdjęcie profilowe")}
           onPress={() => router.push('/(app)/account/edit-profile')}
         />
       </SettingsGroup>
@@ -202,7 +206,7 @@ export default function AccountScreen() {
               fontFamily: 'Inter_700Bold',
             }}
           >
-            Lokalizacja
+            {t('Lokalizacja')}
           </Text>
           <View className="mx-4">
             <CampusSelector />
@@ -215,19 +219,19 @@ export default function AccountScreen() {
               lineHeight: 16,
             }}
           >
-            Filtruje członków, programy i kalendarz po wybranej lokalizacji.
+            {t('Filtruje członków, programy i kalendarz po wybranej lokalizacji.')}
           </Text>
         </View>
       ) : null}
 
-      <SettingsGroup title="Wygląd">
+      <SettingsGroup title={t("Wygląd")}>
         <SettingsRow
           variant="toggle"
           Icon={Moon}
           iconTint="#7c3aed"
           iconBg="#ede9fe"
-          title="Tryb ciemny"
-          description={isDark ? 'Włączony' : 'Zgodny z systemem'}
+          title={t("Tryb ciemny")}
+          description={isDark ? t('Włączony') : t('Zgodny z systemem')}
           value={isDark}
           onValueChange={(v) => setColorScheme(v ? 'dark' : 'light')}
         />
@@ -236,23 +240,70 @@ export default function AccountScreen() {
           Icon={Palette}
           iconTint="#0891b2"
           iconBg="#cffafe"
-          title="Motyw systemowy"
-          description="Dopasuj automatycznie do urządzenia"
+          title={t("Motyw systemowy")}
+          description={t("Dopasuj automatycznie do urządzenia")}
           onPress={() => setColorScheme('system')}
         />
       </SettingsGroup>
 
-      <SettingsGroup title="Bezpieczeństwo">
+      <View className="mb-4">
+        <Text
+          className="text-[11px] uppercase mx-5 mb-2"
+          style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}
+        >
+          {t('Język')}
+        </Text>
+        <View
+          className="mx-4"
+          style={{ borderRadius: 16, borderWidth: 1, borderColor: '#eef0f3', overflow: 'hidden' }}
+        >
+          {languages.map((l, idx) => {
+            const active = lang === l.code;
+            return (
+              <Pressable
+                key={l.code}
+                onPress={() => setLang(l.code)}
+                className="active:opacity-80"
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  borderTopWidth: idx === 0 ? 0 : 1,
+                  borderTopColor: '#f5f5f4',
+                  backgroundColor: active ? '#fdf2f8' : '#ffffff',
+                }}
+              >
+                <Text style={{ fontSize: 20 }}>{l.flag}</Text>
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: 15,
+                    color: '#0c0a09',
+                    fontFamily: active ? 'Inter_700Bold' : 'Inter_500Medium',
+                  }}
+                >
+                  {l.label}
+                </Text>
+                {active ? <Check size={18} color="#ec4899" /> : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <SettingsGroup title={t("Bezpieczeństwo")}>
         <SettingsRow
           variant="toggle"
           Icon={Fingerprint}
           iconTint="#059669"
           iconBg="#d1fae5"
-          title="Logowanie biometryczne"
+          title={t("Logowanie biometryczne")}
           description={
             biometricSupported
-              ? 'Odblokuj aplikację Face ID / odciskiem palca'
-              : 'Niedostępne na tym urządzeniu'
+              ? t('Odblokuj aplikację Face ID / odciskiem palca')
+              : t('Niedostępne na tym urządzeniu')
           }
           value={biometricOn}
           onValueChange={handleBiometricToggle}
@@ -263,8 +314,8 @@ export default function AccountScreen() {
           Icon={ShieldCheck}
           iconTint="#0891b2"
           iconBg="#cffafe"
-          title="Weryfikacja dwustopniowa"
-          description={twoFa.data?.enabled ? 'Włączona — zarządzaj' : 'Wyłączona — włącz zabezpieczenie'}
+          title={t("Weryfikacja dwustopniowa")}
+          description={twoFa.data?.enabled ? t('Włączona — zarządzaj') : t('Wyłączona — włącz zabezpieczenie')}
           onPress={() => router.push('/(app)/account/two-factor')}
         />
         <SettingsRow
@@ -272,20 +323,20 @@ export default function AccountScreen() {
           Icon={KeyRound}
           iconTint="#d97706"
           iconBg="#fef3c7"
-          title="Zmień hasło"
-          description="Wprowadź nowe hasło dla zalogowanego konta"
+          title={t("Zmień hasło")}
+          description={t("Wprowadź nowe hasło dla zalogowanego konta")}
           onPress={() => router.push('/(auth)/reset-password')}
         />
       </SettingsGroup>
 
-      <SettingsGroup title="Powiadomienia">
+      <SettingsGroup title={t("Powiadomienia")}>
         <SettingsRow
           variant="toggle"
           Icon={Bell}
           iconTint="#ec4899"
           iconBg="#fce7f3"
-          title="Powiadomienia push"
-          description={pushOn ? 'Włączone' : 'Wyłączone'}
+          title={t("Powiadomienia push")}
+          description={pushOn ? t('Włączone') : t('Wyłączone')}
           value={pushOn}
           onValueChange={handlePushToggle}
         />
@@ -294,20 +345,20 @@ export default function AccountScreen() {
           Icon={Smartphone}
           iconTint="#2563eb"
           iconBg="#dbeafe"
-          title="Aktywne sesje"
-          description="Zalogowane urządzenia i wylogowanie zdalne"
+          title={t("Aktywne sesje")}
+          description={t("Zalogowane urządzenia i wylogowanie zdalne")}
           onPress={() => router.push('/(app)/account/sessions')}
         />
       </SettingsGroup>
 
-      <SettingsGroup title="Dla Ciebie">
+      <SettingsGroup title={t("Dla Ciebie")}>
         <SettingsRow
           variant="nav"
           Icon={CalendarCheck}
           iconTint="#db2777"
           iconBg="#fce7f3"
-          title="Moje zaproszenia"
-          description="Potwierdź obecność na wydarzeniach"
+          title={t("Moje zaproszenia")}
+          description={t("Potwierdź obecność na wydarzeniach")}
           onPress={() => router.push('/(app)/rsvp')}
         />
         <SettingsRow
@@ -315,8 +366,8 @@ export default function AccountScreen() {
           Icon={CalendarOff}
           iconTint="#be123c"
           iconBg="#ffe4e6"
-          title="Moja niedostępność"
-          description="Zgłoś dni, w które nie możesz służyć"
+          title={t("Moja niedostępność")}
+          description={t("Zgłoś dni, w które nie możesz służyć")}
           onPress={() => router.push('/(app)/serve/availability')}
         />
         <SettingsRow
@@ -324,8 +375,8 @@ export default function AccountScreen() {
           Icon={Gift}
           iconTint="#059669"
           iconBg="#d1fae5"
-          title="Dawanie"
-          description="Twoje darowizny i wsparcie wspólnoty"
+          title={t("Dawanie")}
+          description={t("Twoje darowizny i wsparcie wspólnoty")}
           onPress={() => router.push('/(app)/giving')}
         />
         <SettingsRow
@@ -333,20 +384,20 @@ export default function AccountScreen() {
           Icon={Podcast}
           iconTint="#7c3aed"
           iconBg="#ede9fe"
-          title="Kazania"
-          description="Posłuchaj lub obejrzyj kazania"
+          title={t("Kazania")}
+          description={t("Posłuchaj lub obejrzyj kazania")}
           onPress={() => router.push('/(app)/sermons')}
         />
       </SettingsGroup>
 
-      <SettingsGroup title="Moduły zespołów">
+      <SettingsGroup title={t("Moduły zespołów")}>
         <SettingsRow
           variant="nav"
           Icon={ListTodo}
           iconTint="#0d9488"
           iconBg="#ccfbf1"
-          title="Moja praca"
-          description="Zadania przypisane do Ciebie na tablicach"
+          title={t("Moja praca")}
+          description={t("Zadania przypisane do Ciebie na tablicach")}
           onPress={() => router.push('/(app)/work')}
         />
         <SettingsRow
@@ -354,8 +405,8 @@ export default function AccountScreen() {
           Icon={Music}
           iconTint="#7c3aed"
           iconBg="#ede9fe"
-          title="Planowane pieśni"
-          description="Setlisty nadchodzących nabożeństw"
+          title={t("Planowane pieśni")}
+          description={t("Setlisty nadchodzących nabożeństw")}
           onPress={() => router.push('/(app)/setlist')}
         />
         <SettingsRow
@@ -363,8 +414,8 @@ export default function AccountScreen() {
           Icon={Users}
           iconTint="#be185d"
           iconBg="#fce7f3"
-          title="Zespoły"
-          description="Worship, Media, Atmosfera, Kids, Młodzieżówka"
+          title={t("Zespoły")}
+          description={t("Worship, Media, Atmosfera, Kids, Młodzieżówka")}
           onPress={() => router.push('/(app)/teams')}
         />
         <SettingsRow
@@ -372,8 +423,8 @@ export default function AccountScreen() {
           Icon={Home}
           iconTint="#1d4ed8"
           iconBg="#dbeafe"
-          title="Grupy domowe"
-          description="Lista grup, członkowie, spotkania"
+          title={t("Grupy domowe")}
+          description={t("Lista grup, członkowie, spotkania")}
           onPress={() => router.push('/(app)/home-groups')}
         />
         <SettingsRow
@@ -381,8 +432,8 @@ export default function AccountScreen() {
           Icon={Heart}
           iconTint="#be185d"
           iconBg="#fce7f3"
-          title="Ściana modlitwy"
-          description="Intencje wspólnoty"
+          title={t("Ściana modlitwy")}
+          description={t("Intencje wspólnoty")}
           onPress={() => router.push('/(app)/prayers')}
         />
         {staff ? (
@@ -391,8 +442,8 @@ export default function AccountScreen() {
             Icon={Users}
             iconTint="#0e7490"
             iconBg="#cffafe"
-            title="Członkowie"
-            description="Lista członków wspólnoty"
+            title={t("Członkowie")}
+            description={t("Lista członków wspólnoty")}
             onPress={() => router.push('/(app)/members')}
           />
         ) : null}
@@ -401,8 +452,8 @@ export default function AccountScreen() {
           Icon={BookOpen}
           iconTint="#6d28d9"
           iconBg="#ede9fe"
-          title="Nauczania"
-          description="Kazania i serie tematyczne"
+          title={t("Nauczania")}
+          description={t("Kazania i serie tematyczne")}
           onPress={() => router.push('/(app)/teachings')}
         />
         <SettingsRow
@@ -410,8 +461,8 @@ export default function AccountScreen() {
           Icon={FolderOpen}
           iconTint="#0e7490"
           iconBg="#cffafe"
-          title="Materiały"
-          description="Pliki i dokumenty"
+          title={t("Materiały")}
+          description={t("Pliki i dokumenty")}
           onPress={() => router.push('/(app)/materials')}
         />
         {staff ? (
@@ -420,8 +471,8 @@ export default function AccountScreen() {
             Icon={ClipboardList}
             iconTint="#047857"
             iconBg="#d1fae5"
-            title="Formularze"
-            description="Aktywne formularze i ankiety"
+            title={t("Formularze")}
+            description={t("Aktywne formularze i ankiety")}
             onPress={() => router.push('/(app)/forms')}
           />
         ) : null}
@@ -430,20 +481,20 @@ export default function AccountScreen() {
           Icon={Bell}
           iconTint="#ec4899"
           iconBg="#fce7f3"
-          title="Powiadomienia"
-          description="Centrum powiadomień"
+          title={t("Powiadomienia")}
+          description={t("Centrum powiadomień")}
           onPress={() => router.push('/(app)/notifications')}
         />
       </SettingsGroup>
 
-      <SettingsGroup title="Prywatność">
+      <SettingsGroup title={t("Prywatność")}>
         <SettingsRow
           variant="nav"
           Icon={Shield}
           iconTint="#475569"
           iconBg="#e2e8f0"
-          title="Polityka prywatności"
-          description="Otwórz w przeglądarce"
+          title={t("Polityka prywatności")}
+          description={t("Otwórz w przeglądarce")}
           onPress={() => openWeb('/polityka-prywatnosci')}
         />
         <SettingsRow
@@ -451,8 +502,8 @@ export default function AccountScreen() {
           Icon={Shield}
           iconTint="#475569"
           iconBg="#e2e8f0"
-          title="Regulamin"
-          description="Otwórz w przeglądarce"
+          title={t("Regulamin")}
+          description={t("Otwórz w przeglądarce")}
           onPress={() => openWeb('/regulamin')}
         />
         <SettingsRow
@@ -460,8 +511,8 @@ export default function AccountScreen() {
           Icon={Trash2}
           iconTint="#dc2626"
           iconBg="#fee2e2"
-          title="Usuń konto"
-          description="Trwałe usunięcie konta i danych"
+          title={t("Usuń konto")}
+          description={t("Trwałe usunięcie konta i danych")}
           onPress={() => openWeb('/usun-konto')}
         />
       </SettingsGroup>
@@ -471,7 +522,7 @@ export default function AccountScreen() {
           variant="action"
           Icon={LogOut}
           destructive
-          title="Wyloguj"
+          title={t("Wyloguj")}
           onPress={handleSignOut}
         />
       </SettingsGroup>
