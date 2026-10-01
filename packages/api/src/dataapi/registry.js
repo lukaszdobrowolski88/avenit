@@ -151,6 +151,7 @@ export const REGISTRY = {
   finance_tags: T('module:finance'),
   finance_recurring: T('module:finance'),
   finance_vendors: T('module:finance'),
+  finance_report_schedules: T('module:finance'),
   budget_audit: T('module:finance'),
   budget_versions: T('module:finance'),
   // Propozycje budżetu: każdy zalogowany może ZGŁOSIĆ (lider służby bez dostępu do
