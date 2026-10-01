@@ -71,6 +71,11 @@ export default async function handler(req, reply) {
 
     const requests = visible.map((r) => {
       const isAnon = !!r.is_anonymous;
+      const mine = lc(r.user_email) === email;
+      // Anonimowość ukrywa tożsamość tylko przed INNYMI — autor widzi własne dane
+      // (potrzebne do bezstratnej edycji wpisu anonimowego). To nie jest wyciek:
+      // dla cudzych klientów is_author=false => poniżej zwracamy null.
+      const hideIdentity = isAnon && !mine;
       return {
         id: r.id,
         content: r.content,
@@ -82,13 +87,14 @@ export default async function handler(req, reply) {
         answered_testimony: r.answered_testimony,
         created_at: r.created_at,
         updated_at: r.updated_at,
-        // Tożsamość — tylko dla nie-anonimowych; NIGDY e-mail.
-        user_name: isAnon ? null : (r.user_name ?? null),
-        requester_name: isAnon ? null : (r.requester_name ?? null),
+        // Tożsamość — ukryta przed innymi dla anonimowych; NIGDY e-mail.
+        user_name: hideIdentity ? null : (r.user_name ?? null),
+        requester_name: hideIdentity ? null : (r.requester_name ?? null),
+        // Avatar to sygnał tożsamości — chowamy dla każdego wpisu anonimowego (także autorowi).
         avatar_url: isAnon ? null : (avatarMap.get(lc(r.user_email)) ?? null),
         prayer_count: countMap.get(String(r.id)) ?? 0,
         i_am_praying: mineSet.has(String(r.id)),
-        is_author: lc(r.user_email) === email,
+        is_author: mine,
       };
     });
 

@@ -11,13 +11,15 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { ChevronLeft, Globe, Lock } from 'lucide-react-native';
 import { useAuthSession } from '../../../src/lib/auth';
 import {
   CATEGORY_META,
   useCreatePrayer,
+  useEditPrayer,
   type PrayerCategory,
+  type PrayerVisibility,
 } from '../../../src/features/prayers/api';
 import { GradientButton } from '../../../src/components/ui/GradientButton';
 
@@ -48,12 +50,32 @@ const inputStyle = {
 export default function NewPrayerScreen() {
   const router = useRouter();
   const { user } = useAuthSession();
-  const create = useCreatePrayer(user?.email ?? null);
+  const params = useLocalSearchParams<{
+    id?: string;
+    content?: string;
+    category?: string;
+    requester_name?: string;
+    is_anonymous?: string;
+    visibility?: string;
+  }>();
+  const editId = params.id ? String(params.id) : null;
+  const isEditing = !!editId;
 
-  const [content, setContent] = useState('');
-  const [category, setCategory] = useState<PrayerCategory>('inne');
-  const [requesterName, setRequesterName] = useState('');
-  const [anonymous, setAnonymous] = useState(false);
+  const create = useCreatePrayer(user?.email ?? null);
+  const edit = useEditPrayer();
+  const busy = create.isPending || edit.isPending;
+
+  const [content, setContent] = useState(params.content ? String(params.content) : '');
+  const [category, setCategory] = useState<PrayerCategory>(
+    (params.category as PrayerCategory) || 'inne'
+  );
+  const [requesterName, setRequesterName] = useState(
+    params.requester_name ? String(params.requester_name) : ''
+  );
+  const [anonymous, setAnonymous] = useState(params.is_anonymous === 'true');
+  const [visibility, setVisibility] = useState<PrayerVisibility>(
+    params.visibility === 'leaders_only' ? 'leaders_only' : 'public'
+  );
 
   const handleSubmit = async () => {
     if (!content.trim()) {
@@ -61,15 +83,27 @@ export default function NewPrayerScreen() {
       return;
     }
     try {
-      await create.mutateAsync({
-        content: content.trim(),
-        category,
-        requester_name: requesterName.trim() || null,
-        is_anonymous: anonymous,
-      });
+      if (isEditing) {
+        await edit.mutateAsync({
+          id: editId!,
+          content: content.trim(),
+          category,
+          requester_name: requesterName.trim() || null,
+          is_anonymous: anonymous,
+          visibility,
+        });
+      } else {
+        await create.mutateAsync({
+          content: content.trim(),
+          category,
+          requester_name: requesterName.trim() || null,
+          is_anonymous: anonymous,
+          visibility,
+        });
+      }
       router.back();
     } catch (e: any) {
-      Alert.alert('Błąd', e?.message ?? 'Nie udało się dodać intencji.');
+      Alert.alert('Błąd', e?.message ?? 'Nie udało się zapisać intencji.');
     }
   };
 
@@ -108,7 +142,7 @@ export default function NewPrayerScreen() {
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
-              Nowa intencja
+              {isEditing ? 'Edycja intencji' : 'Nowa intencja'}
             </Text>
             <Text
               style={{
@@ -136,7 +170,7 @@ export default function NewPrayerScreen() {
             multiline
             value={content}
             onChangeText={setContent}
-            editable={!create.isPending}
+            editable={!busy}
           />
 
           <Text style={labelStyle}>Kategoria</Text>
@@ -182,8 +216,48 @@ export default function NewPrayerScreen() {
             placeholderTextColor="#a8a29e"
             value={requesterName}
             onChangeText={setRequesterName}
-            editable={!create.isPending}
+            editable={!busy}
           />
+
+          <Text style={labelStyle}>Kto widzi tę intencję</Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+            {([
+              { key: 'public', label: 'Cała wspólnota', Icon: Globe },
+              { key: 'leaders_only', label: 'Tylko liderzy', Icon: Lock },
+            ] as const).map(({ key, label, Icon }) => {
+              const active = visibility === key;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => setVisibility(key)}
+                  disabled={busy}
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 7,
+                    paddingVertical: 12,
+                    borderRadius: 14,
+                    backgroundColor: active ? '#0c0a09' : '#fafaf9',
+                    borderWidth: 1,
+                    borderColor: active ? '#0c0a09' : '#eef0f3',
+                  }}
+                >
+                  <Icon size={15} color={active ? '#ffffff' : '#78716c'} />
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: active ? '#ffffff' : '#1c1917',
+                      fontFamily: 'Inter_600SemiBold',
+                    }}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
           <View
             style={{
@@ -230,8 +304,8 @@ export default function NewPrayerScreen() {
             />
           </View>
 
-          <GradientButton onPress={handleSubmit} loading={create.isPending}>
-            Podziel się intencją
+          <GradientButton onPress={handleSubmit} loading={busy}>
+            {isEditing ? 'Zapisz zmiany' : 'Podziel się intencją'}
           </GradientButton>
         </ScrollView>
       </KeyboardAvoidingView>

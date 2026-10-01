@@ -7,8 +7,8 @@ export type PrayerVisibility = 'public' | 'leaders_only';
 
 export interface PrayerRequest {
   id: string;
-  // user_email USUNIĘTY — widok prayer_requests_with_counts nie wystawia już e-maili
-  // (prywatność, migracja 062). „Czy ja się modlę" liczymy z useMyPrayingIds.
+  // user_email NIE jest wystawiany (prywatność, migracja 062/063). Listę czytamy z fn
+  // `prayer-wall`, która liczy flagi serwerowo i zwraca je per wiersz — bez e-maili.
   user_name: string | null;
   requester_name: string | null;
   content: string;
@@ -21,40 +21,24 @@ export interface PrayerRequest {
   created_at: string;
   updated_at: string;
   prayer_count: number;
+  // Flagi liczone serwerowo przez fn prayer-wall:
+  i_am_praying: boolean; // czy JA kliknąłem „modlę się"
+  is_author: boolean; // czy JA jestem autorem (akcje edytuj/usuń/wysłuchana)
+  avatar_url: string | null; // avatar autora (tylko nie-anonimowi)
 }
 
-export const usePrayerRequests = (filter: PrayerStatus | 'all' = 'active') =>
+// Lista modlitw przez fn `prayer-wall` (ta sama, której używa web). Zwraca prośby BEZ
+// e-maili, z flagami i_am_praying / is_author / prayer_count policzonymi serwerowo oraz
+// filtrem leaders_only po stronie serwera. Pobieramy całość (bez archived, poza moimi);
+// filtrowanie po statusie/kategorii/„moje"/szukaniu robimy po stronie klienta.
+export const usePrayerRequests = () =>
   useQuery({
-    queryKey: ['prayers', filter],
+    queryKey: ['prayers', 'wall'],
     queryFn: async (): Promise<PrayerRequest[]> => {
-      let q = supabase
-        .from('prayer_requests_with_counts')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      if (filter !== 'all') q = q.eq('status', filter);
-      const { data, error } = await q;
+      const { data, error } = await supabase.functions.invoke('prayer-wall');
       if (error) throw error;
-      return (data ?? []) as unknown as PrayerRequest[];
+      return (((data as any)?.requests ?? []) as PrayerRequest[]);
     },
-  });
-
-// Zbiór request_id, które ZALOGOWANY użytkownik oznaczył „modlę się" — z WŁASNYCH
-// wierszy prayer_interactions (.eq user_email = ja zwraca tylko moje). Zastępuje dawną
-// listę praying_users z widoku, która ujawniała cudze e-maile każdemu klientowi.
-export const useMyPrayingIds = (userEmail: string | null) =>
-  useQuery({
-    queryKey: ['prayers', 'mine', userEmail],
-    queryFn: async (): Promise<Set<string>> => {
-      if (!userEmail) return new Set<string>();
-      const { data, error } = await supabase
-        .from('prayer_interactions')
-        .select('request_id')
-        .eq('user_email', userEmail);
-      if (error) return new Set<string>();
-      return new Set<string>((data ?? []).map((r: any) => String(r.request_id)));
-    },
-    enabled: !!userEmail,
   });
 
 export const useTogglePrayer = (userEmail: string | null) => {
@@ -113,6 +97,83 @@ export const useCreatePrayer = (userEmail: string | null) => {
         status: 'active',
         is_active: true,
       });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['prayers'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+};
+
+export interface EditPrayerInput {
+  id: string;
+  content: string;
+  category: PrayerCategory;
+  requester_name?: string | null;
+  is_anonymous?: boolean;
+  visibility?: PrayerVisibility;
+}
+
+// Edycja WŁASNEJ modlitwy. Zapis wprost do prayer_requests; serwer (allowOwnPrayerWrite)
+// przepuszcza update tylko dla autora i tylko na dozwolonych kolumnach — mimo że rola
+// „czlonek" nie ma ogólnego res:prayer_requests:update.
+export const useEditPrayer = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: EditPrayerInput) => {
+      const { error } = await (supabase.from('prayer_requests') as any)
+        .update({
+          content: input.content,
+          category: input.category,
+          requester_name: input.requester_name ?? null,
+          is_anonymous: input.is_anonymous ?? false,
+          visibility: input.visibility ?? 'public',
+        })
+        .eq('id', input.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['prayers'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+};
+
+// Oznaczenie modlitwy jako „wysłuchana" (+ świadectwo) lub cofnięcie do „aktywna".
+export const useMarkAnswered = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      answered = true,
+      testimony,
+    }: {
+      id: string;
+      answered?: boolean;
+      testimony?: string | null;
+    }) => {
+      const { error } = await (supabase.from('prayer_requests') as any)
+        .update({
+          status: answered ? 'answered' : 'active',
+          answered_testimony: answered ? (testimony?.trim() || null) : null,
+        })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['prayers'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+};
+
+// Usunięcie WŁASNEJ modlitwy (serwer wymusza właścicielstwo).
+export const useDeletePrayer = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('prayer_requests').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
