@@ -31,6 +31,7 @@ const MODULES = [
   'giving-campaigns',
   'my-invitations',
   'my-home-groups',
+  'home-groups-map',
   'my-blockouts',
   'ministry-roster',
   'my-shared-materials',
