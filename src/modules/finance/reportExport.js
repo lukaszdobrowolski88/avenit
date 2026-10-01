@@ -56,14 +56,50 @@ export function buildReportModel({ range, income = [], expense = [], budget = []
     remaining: s.planned - s.realized,
   }));
 
+  // Największe pojedyncze wydatki (zastępuje raport kontrahentów).
+  const topExpenses = expense
+    .map((e) => ({ date: e.payment_date, contractor: e.contractor || '—', category: e.cost_category || e.category || '—', description: e.description || '', amount: num(e.amount) }))
+    .sort((a, b) => b.amount - a.amount).slice(0, 8);
+
+  // Status wydatków (workflow akceptacji/płatności).
+  const STATUS_ORDER = ['draft', 'submitted', 'approved', 'rejected', 'paid'];
+  const statusMap = {};
+  expense.forEach((e) => { const s = e.status || 'approved'; (statusMap[s] = statusMap[s] || { amount: 0, count: 0 }).amount += num(e.amount); statusMap[s].count++; });
+  const expenseStatus = Object.entries(statusMap)
+    .map(([status, v]) => ({ status, amount: v.amount, count: v.count }))
+    .sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
+
+  // Nieopłacone zobowiązania (faktury do zapłaty), rosnąco wg terminu.
+  const unpaidInvoices = expense
+    .filter((e) => e.is_paid === false)
+    .map((e) => ({ contractor: e.contractor || '—', description: e.description || '', amount: num(e.amount), due_date: e.due_date || null, invoice_number: e.invoice_number || null }))
+    .sort((a, b) => String(a.due_date || '9999-99-99').localeCompare(String(b.due_date || '9999-99-99')));
+
+  const byCostCategory = groupSorted(expense, (e) => e.cost_category || 'Bez kategorii', colorFor);
+
+  const kpis = {
+    incomeCount: income.length,
+    expenseCount: expense.length,
+    avgIncome: income.length ? totalIncome / income.length : 0,
+    avgExpense: expense.length ? totalExpense / expense.length : 0,
+    topCategory: byCostCategory[0] || null,
+    biggestExpense: topExpenses[0] || null,
+    unpaidTotal: unpaidInvoices.reduce((a, e) => a + e.amount, 0),
+    unpaidCount: unpaidInvoices.length,
+  };
+
   const model = {
     range,
     totals: { income: totalIncome, expense: totalExpense, balance: totalIncome - totalExpense },
+    kpis,
     buckets,
-    byCostCategory: groupSorted(expense, (e) => e.cost_category || 'Bez kategorii', colorFor),
+    byCostCategory,
     byServiceCategory: groupSorted(expense, (e) => e.category),
     byIncomeType: groupSorted(income, (i) => i.type),
-    topContractors: groupSorted(expense, (e) => e.contractor).slice(0, 10),
+    byIncomeSource: groupSorted(income, (i) => i.source),
+    topExpenses,
+    expenseStatus,
+    unpaidInvoices,
     budgetExecution,
     raw: { income, expense, budget },
   };
@@ -102,7 +138,15 @@ export function csvString(model) {
   section('Wydatki wg kategorii kosztu', model.byCostCategory, [{ h: 'Kwota', v: (x) => x.amount }, { h: '%', v: (x) => x.pct.toFixed(1) }]);
   section('Wydatki wg służby', model.byServiceCategory, [{ h: 'Kwota', v: (x) => x.amount }, { h: '%', v: (x) => x.pct.toFixed(1) }]);
   section('Wpływy wg typu', model.byIncomeType, [{ h: 'Kwota', v: (x) => x.amount }, { h: '%', v: (x) => x.pct.toFixed(1) }]);
-  section('Top kontrahenci', model.topContractors, [{ h: 'Kwota', v: (x) => x.amount }, { h: '%', v: (x) => x.pct.toFixed(1) }]);
+  section('Wpływy wg źródła', model.byIncomeSource, [{ h: 'Kwota', v: (x) => x.amount }, { h: '%', v: (x) => x.pct.toFixed(1) }]);
+  if (model.topExpenses.length) {
+    row(''); row('Największe wydatki', 'Data', 'Kontrahent', 'Kategoria', 'Opis', 'Kwota');
+    model.topExpenses.forEach((e) => row('', e.date, e.contractor, e.category, e.description, e.amount));
+  }
+  if (model.unpaidInvoices.length) {
+    row(''); row('Nieopłacone', 'Kontrahent', 'Opis', 'Termin', 'Nr faktury', 'Kwota');
+    model.unpaidInvoices.forEach((e) => row('', e.contractor, e.description, e.due_date || '', e.invoice_number || '', e.amount));
+  }
   if (model.budgetExecution.length) {
     row(''); row('Realizacja budżetu', 'Planowane', 'Zrealizowane', 'Realizacja %', 'Pozostało');
     model.budgetExecution.forEach((b) => row(b.category, b.planned, b.realized, b.pct.toFixed(0), b.remaining));
@@ -159,10 +203,12 @@ export async function toXlsxBlob(model) {
 
 // ── PDF (zrzut sekcji raportu — WYSIWYG, polskie znaki + wykresy) ─────────────
 // Reużywa wzorca html2canvas+jsPDF z src/lib/utils.js (onclone zdejmuje dark mode).
-export async function reportElToPdfBlob(el) {
+// allowTaint:false + useCORS:true → zdalne logo bez CORS zostanie pominięte, a nie
+// wywali canvas.toDataURL (SecurityError).
+async function buildReportPdf(el) {
   const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([import('jspdf'), import('html2canvas')]);
   const canvas = await html2canvas(el, {
-    scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false,
+    scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false,
     onclone: (clonedDoc) => {
       clonedDoc.documentElement.classList.remove('dark');
       clonedDoc.body.classList.remove('dark');
@@ -172,7 +218,7 @@ export async function reportElToPdfBlob(el) {
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
-  const imgData = canvas.toDataURL('image/jpeg', 0.9);
+  const imgData = canvas.toDataURL('image/jpeg', 0.92);
   const imgH = (canvas.height * pageW) / canvas.width;
   let heightLeft = imgH;
   let position = 0;
@@ -184,7 +230,20 @@ export async function reportElToPdfBlob(el) {
     pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
     heightLeft -= pageH;
   }
-  return pdf.output('blob');
+  return pdf;
+}
+
+export async function reportElToPdfBlob(el) {
+  return (await buildReportPdf(el)).output('blob');
+}
+
+/** Buduje PDF i otwiera okno druku (autoPrint). Fallback: pobranie pliku, gdy popup zablokowany. */
+export async function printReportEl(el, filename = 'raport.pdf') {
+  const pdf = await buildReportPdf(el);
+  pdf.autoPrint();
+  const url = pdf.output('bloburl');
+  const win = window.open(url, '_blank');
+  if (!win) saveAs(pdf.output('blob'), filename);
 }
 
 // ── Pomocnicze ────────────────────────────────────────────────────────────────

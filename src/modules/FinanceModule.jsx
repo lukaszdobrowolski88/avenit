@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import EmptyState from '../components/EmptyState';
 import Spinner from '../components/Spinner';
-import { DollarSign, TrendingUp, Receipt, Calendar, Plus, Upload, Download, Printer, Repeat, CheckCircle, XCircle, Clock, Copy, AlertTriangle, Tag, X, FileText, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Users, Building2, Settings, Banknote, CreditCard, FolderOpen, Mail, CalendarClock } from 'lucide-react';
+import { DollarSign, TrendingUp, Receipt, Calendar, Plus, Upload, Download, Printer, Repeat, CheckCircle, XCircle, Clock, Copy, AlertTriangle, Tag, X, FileText, Trash2, Edit2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, BarChart3, PieChart, ArrowUpRight, ArrowDownRight, Users, Settings, Banknote, CreditCard, FolderOpen, Mail, CalendarClock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { createPortal } from 'react-dom';
 import { useCampusQuery } from '../hooks/useCampusQuery';
@@ -13,8 +13,9 @@ import { useT } from '../i18n';
 import { tr } from '../i18n';
 import { toast } from '../lib/toast';
 import { computeRange, shiftRangeYears, MONTHS_PL, yearOptions } from './finance/reportRange';
-import { buildReportModel, toCsvBlob, toXlsxBlob, reportElToPdfBlob, blobToBase64, download, slugForRange } from './finance/reportExport';
+import { buildReportModel, toCsvBlob, toXlsxBlob, reportElToPdfBlob, printReportEl, blobToBase64, download, slugForRange } from './finance/reportExport';
 import { IncomeExpenseBarChart, CashFlowAreaChart, CategoryDonut, YoYBars } from './finance/ReportCharts';
+import { usePermissions } from '../contexts/PermissionsContext';
 
 // Hook to calculate dropdown position with smart positioning (up/down)
 function useDropdownPosition(triggerRef, isOpen) {
@@ -236,6 +237,7 @@ const SYSTEM_MODULE_KEYS = new Set([
 const FinanceModule = () => {
   const t = useT();
   const { withCampusFilter, selectedCampusId, campusIdForInsert } = useCampusQuery();
+  const { logoUrl } = usePermissions();
   const [activeTab, setActiveTab] = useState('budget');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [budgetItems, setBudgetItems] = useState([]);
@@ -439,6 +441,16 @@ const FinanceModule = () => {
 
   // ── Zakres raportu (miesiąc / kwartał / rok / dowolny zakres) ─────────────
   const reportSectionRef = useRef(null);
+  const [orgName, setOrgName] = useState('');
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from('app_settings').select('key, value').in('key', ['org_name', 'organization_name', 'church_name', 'app_name']);
+        const found = (data || []).find((s) => s.value);
+        if (found) setOrgName(found.value);
+      } catch { /* brak nazwy — pominie */ }
+    })();
+  }, []);
   const now0 = new Date();
   const [reportMode, setReportMode] = useState('year');
   const [reportAnchor, setReportAnchor] = useState({
@@ -504,6 +516,14 @@ const FinanceModule = () => {
       }
     } catch (e) { toast.error(tr('Błąd eksportu: ') + (e.message || e)); }
     finally { setDownloadingPdf(false); }
+  };
+  const [printing, setPrinting] = useState(false);
+  const doPrint = async () => {
+    if (!reportSectionRef.current) return;
+    setPrinting(true);
+    try { await printReportEl(reportSectionRef.current, `raport-finansowy-${slugForRange(reportRange)}.pdf`); }
+    catch (e) { toast.error(tr('Błąd druku: ') + (e.message || e)); }
+    finally { setPrinting(false); }
   };
 
   // ── Raport finansowy mailem (na żądanie) ──────────────────────────────────
@@ -2192,14 +2212,29 @@ const FinanceModule = () => {
               <button onClick={() => { setEditingScheduleId(null); setScheduleForm(emptySchedule); setShowScheduleModal(true); }} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Automatyczna wysyłka')}>
                 <CalendarClock size={16} /> {tr('Harmonogram')}{schedules.filter((s) => s.is_active !== false).length > 0 ? ` (${schedules.filter((s) => s.is_active !== false).length})` : ''}
               </button>
-              <button onClick={() => window.print()} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm" title={tr('Drukuj / zapisz PDF')}>
-                <Printer size={16} /> {tr('Drukuj')}
+              <button onClick={doPrint} disabled={printing} className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center gap-1.5 text-sm disabled:opacity-60" title={tr('Drukuj / zapisz PDF')}>
+                <Printer size={16} /> {printing ? tr('Przygotowuję…') : tr('Drukuj')}
               </button>
             </div>
           </div>
 
           {/* Treść raportu (źródło PDF) */}
-          <div ref={reportSectionRef} className="space-y-6">
+          <div ref={reportSectionRef} className="space-y-6 bg-gray-50 dark:bg-gray-950 rounded-2xl p-1">
+            {/* Nagłówek raportu — tytuł, organizacja, logo, zakres, data wygenerowania */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 px-6 py-5">
+              <div className="flex items-center gap-4">
+                {logoUrl && <img src={logoUrl} alt="" className="h-12 w-12 object-contain rounded-lg shrink-0" />}
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">{tr('Raport finansowy')}</h2>
+                  {orgName && <p className="text-sm text-gray-500 dark:text-gray-400">{orgName}</p>}
+                </div>
+              </div>
+              <div className="sm:text-right text-sm">
+                <p className="font-semibold text-gray-900 dark:text-white">{reportRange.label}</p>
+                <p className="text-gray-500 dark:text-gray-400 tabular-nums">{reportRange.from} – {reportRange.to}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{tr('Wygenerowano')}: {new Date().toLocaleString('pl-PL', { dateStyle: 'short', timeStyle: 'short' })}</p>
+              </div>
+            </div>
             {(() => {
               const fmt = (n) => Number(n || 0).toLocaleString('pl-PL');
               const { income: tIncome, expense: tExpense, balance: tBalance } = reportModel.totals;
@@ -2251,6 +2286,27 @@ const FinanceModule = () => {
               );
             })()}
 
+            {/* KPI — szybkie wskaźniki okresu */}
+            {(() => {
+              const k = reportModel.kpis;
+              const fmt = (n) => Number(n || 0).toLocaleString('pl-PL');
+              const Tile = ({ icon, label, value, sub, tone }) => (
+                <div className={`rounded-2xl border p-4 ${tone === 'warn' ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900'}`}>
+                  <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-1.5">{icon}<span className="text-xs font-medium uppercase">{label}</span></div>
+                  <p className={`text-lg font-bold ${tone === 'warn' ? 'text-amber-700 dark:text-amber-300' : 'text-gray-900 dark:text-white'}`}>{value}</p>
+                  {sub && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{sub}</p>}
+                </div>
+              );
+              return (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Tile icon={<ArrowUpRight size={15} className="text-green-500" />} label={tr('Śr. wpływ')} value={`${fmt(Math.round(k.avgIncome))} zł`} sub={`${k.incomeCount} ${tr('transakcji')}`} />
+                  <Tile icon={<ArrowDownRight size={15} className="text-red-500" />} label={tr('Śr. wydatek')} value={`${fmt(Math.round(k.avgExpense))} zł`} sub={`${k.expenseCount} ${tr('transakcji')}`} />
+                  <Tile icon={<PieChart size={15} className="text-accent-primary" />} label={tr('Największa kategoria')} value={k.topCategory ? `${fmt(Math.round(k.topCategory.amount))} zł` : '—'} sub={k.topCategory?.name || ''} />
+                  <Tile icon={<AlertTriangle size={15} className={k.unpaidCount ? 'text-amber-500' : 'text-gray-400'} />} label={tr('Do zapłaty')} value={`${fmt(k.unpaidTotal)} zł`} sub={`${k.unpaidCount} ${tr('nieopłaconych')}`} tone={k.unpaidCount ? 'warn' : undefined} />
+                </div>
+              );
+            })()}
+
             {/* Wpływy vs Wydatki */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><BarChart3 size={20} className="text-accent-primary" />{tr('Wpływy vs Wydatki')}</h3>
@@ -2276,25 +2332,57 @@ const FinanceModule = () => {
               </div>
             </div>
 
-            {/* Wpływy wg typu + Top kontrahenci */}
+            {/* Wpływy wg typu + Wpływy wg źródła */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><Users size={20} className="text-accent-primary" />{tr('Wpływy wg typu')}</h3>
                 <CategoryDonut data={reportModel.byIncomeType} tr={tr} />
               </div>
               <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><Building2 size={20} className="text-accent-primary" />{tr('Top kontrahenci')}</h3>
-                {reportModel.topContractors.length > 0 ? (
-                  <div className="space-y-2">
-                    {reportModel.topContractors.map((c, idx) => (
-                      <div key={c.name} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light flex items-center justify-center text-white text-sm font-bold">{idx + 1}</div>
-                        <div className="flex-1 min-w-0"><p className="text-sm font-medium text-gray-900 dark:text-white truncate">{c.name}</p><p className="text-xs text-gray-500 dark:text-gray-400">{c.pct.toFixed(1)}% {tr('całości')}</p></div>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">{Number(c.amount).toLocaleString('pl-PL')} zł</p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><TrendingUp size={20} className="text-accent-primary" />{tr('Wpływy wg źródła')}</h3>
+                <CategoryDonut data={reportModel.byIncomeSource} tr={tr} />
+              </div>
+            </div>
+
+            {/* Największe wydatki + Status wydatków */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><Receipt size={20} className="text-accent-primary" />{tr('Największe wydatki')}</h3>
+                {reportModel.topExpenses.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {reportModel.topExpenses.map((e, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition">
+                        <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xs font-bold text-gray-500 dark:text-gray-400 shrink-0">{idx + 1}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{e.description || e.contractor}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{e.contractor} · {e.category} · {e.date}</p>
+                        </div>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">{Number(e.amount).toLocaleString('pl-PL')} zł</p>
                       </div>
                     ))}
                   </div>
-                ) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak danych o kontrahentach')}</p>}
+                ) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak danych o wydatkach')}</p>}
+              </div>
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><CheckCircle size={20} className="text-accent-primary" />{tr('Status wydatków')}</h3>
+                {reportModel.expenseStatus.length > 0 ? (
+                  <div className="space-y-3">
+                    {(() => {
+                      const STc = { draft: ['Szkic', '#9ca3af'], submitted: ['Do akceptacji', '#eda100'], approved: ['Zatwierdzone', '#2a78d6'], rejected: ['Odrzucone', '#e34948'], paid: ['Opłacone', '#0ca30c'] };
+                      const total = reportModel.expenseStatus.reduce((a, s) => a + s.amount, 0) || 1;
+                      return reportModel.expenseStatus.map((s) => {
+                        const [lbl, col] = STc[s.status] || [s.status, '#6366f1'];
+                        const pct = (s.amount / total) * 100;
+                        return (
+                          <div key={s.status}>
+                            <div className="flex justify-between text-sm mb-1"><span className="text-gray-700 dark:text-gray-300">{tr(lbl)} <span className="text-gray-400">({s.count})</span></span><span className="font-semibold text-gray-900 dark:text-white">{Number(s.amount).toLocaleString('pl-PL')} zł</span></div>
+                            <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2"><div className="h-2 rounded-full" style={{ width: `${pct}%`, background: col }} /></div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                ) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak danych o wydatkach')}</p>}
               </div>
             </div>
 
@@ -2329,6 +2417,38 @@ const FinanceModule = () => {
                 </div>
               ) : <p className="text-center text-gray-500 dark:text-gray-400 py-8">{t('Brak pozycji budżetowych')}</p>}
             </div>
+
+            {/* Nieopłacone zobowiązania / faktury */}
+            {reportModel.unpaidInvoices.length > 0 && (
+              <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><AlertTriangle size={20} className="text-amber-500" />{tr('Nieopłacone zobowiązania')} <span className="text-sm font-normal text-gray-400">({reportModel.unpaidInvoices.length})</span></h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead><tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="text-left py-2.5 px-3 text-gray-600 dark:text-gray-400 font-medium text-sm">{tr('Kontrahent')}</th>
+                      <th className="text-left py-2.5 px-3 text-gray-600 dark:text-gray-400 font-medium text-sm">{tr('Opis')}</th>
+                      <th className="text-left py-2.5 px-3 text-gray-600 dark:text-gray-400 font-medium text-sm">{tr('Nr faktury')}</th>
+                      <th className="text-left py-2.5 px-3 text-gray-600 dark:text-gray-400 font-medium text-sm">{tr('Termin')}</th>
+                      <th className="text-right py-2.5 px-3 text-gray-600 dark:text-gray-400 font-medium text-sm">{tr('Kwota')}</th>
+                    </tr></thead>
+                    <tbody>
+                      {reportModel.unpaidInvoices.map((e, idx) => {
+                        const overdue = e.due_date && e.due_date < new Date().toISOString().slice(0, 10);
+                        return (
+                          <tr key={idx} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                            <td className="py-2.5 px-3 font-medium text-gray-900 dark:text-white">{e.contractor}</td>
+                            <td className="py-2.5 px-3 text-gray-600 dark:text-gray-300 truncate max-w-[220px]">{e.description}</td>
+                            <td className="py-2.5 px-3 text-gray-500 dark:text-gray-400">{e.invoice_number || '—'}</td>
+                            <td className={`py-2.5 px-3 ${overdue ? 'text-red-600 font-semibold' : 'text-gray-600 dark:text-gray-300'}`}>{e.due_date || '—'}{overdue ? ' ⚠' : ''}</td>
+                            <td className="py-2.5 px-3 text-right font-bold text-gray-900 dark:text-white whitespace-nowrap">{Number(e.amount).toLocaleString('pl-PL')} zł</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* Porównanie rok do roku */}
             {reportModel.yoy && (
