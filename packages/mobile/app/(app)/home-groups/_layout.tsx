@@ -5,6 +5,7 @@ export default function HomeGroupsLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="[id]" />
+      <Stack.Screen name="map" />
     </Stack>
   );
 }

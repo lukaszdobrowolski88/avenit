@@ -44,6 +44,12 @@ const config: ExpoConfig = {
     // pl.avenit.app w Firebase i pobierz nowy plik.
     googleServicesFile: './google-services.json',
     permissions: ['android.permission.RECORD_AUDIO'],
+    // Mapa grup (react-native-maps). Android wymaga klucza Google Maps — podaj go
+    // przez env GOOGLE_MAPS_ANDROID_KEY (w profilu EAS). iOS używa Apple Maps bez klucza.
+    // Bez klucza mapa na Androidzie będzie pusta; reszta apki działa normalnie.
+    config: {
+      googleMaps: { apiKey: process.env.GOOGLE_MAPS_ANDROID_KEY },
+    },
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#d97706',

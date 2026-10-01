@@ -7,8 +7,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Link } from 'expo-router';
-import { Calendar, ChevronRight, Home, MapPin, Users } from 'lucide-react-native';
+import { Link, useRouter } from 'expo-router';
+import { Calendar, ChevronRight, Home, Map as MapIcon, MapPin, Users } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { CampusBadge, useCampusBadge } from '../../../src/components/CampusBadge';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
@@ -137,6 +137,7 @@ const Card = ({ group }: { group: HomeGroup }) => {
 };
 
 export default function HomeGroupsListScreen() {
+  const router = useRouter();
   const { selectedCampusId, withCampusFilter } = useCampusQuery();
   const { data, isLoading, isError, error, refetch, isRefetching } = useHomeGroups({
     selectedCampusId,
@@ -147,7 +148,31 @@ export default function HomeGroupsListScreen() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
-        <PageHeader title="Grupy domowe" subtitle="Lista grup zboru" Icon={Home} showBack />
+        <PageHeader
+          title="Grupy domowe"
+          subtitle="Lista grup zboru"
+          Icon={Home}
+          showBack
+          right={
+            <Pressable
+              onPress={() => router.push('/(app)/home-groups/map')}
+              hitSlop={8}
+              className="active:opacity-70"
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 5,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 999,
+                backgroundColor: '#dbeafe',
+              }}
+            >
+              <MapIcon size={15} color="#1d4ed8" />
+              <Text style={{ fontSize: 13, color: '#1d4ed8', fontFamily: 'Inter_700Bold' }}>Mapa</Text>
+            </Pressable>
+          }
+        />
 
         {isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
