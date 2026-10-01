@@ -1,58 +1,114 @@
 import React, { useState, useRef, forwardRef, useImperativeHandle, useEffect } from 'react';
-import { Send, Paperclip, X, Image, FileText, Loader, Reply, Mic } from 'lucide-react';
+import { Send, Paperclip, X, FileText, Loader, Reply, Mic, Plus, BarChart3, Calendar, Lock, Smile, HeartHandshake } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { formatFileSize, isImageFile } from '../utils/messageHelpers';
 import AudioRecorder from './AudioRecorder';
+import EmojiPicker from './EmojiPicker';
 import { useT } from '../../../i18n';
 import { tr } from '../../../i18n';
 import { toast } from '../../../lib/toast';
 
-const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabled = false, placeholder = tr('Napisz wiadomość...'), replyingTo = null, onCancelReply }, ref) {
+const DRAFT_PREFIX = 'komunikator_draft_';
+
+const MessageInput = forwardRef(function MessageInput({
+  onSend,
+  onTyping,
+  disabled = false,
+  placeholder = tr('Napisz wiadomość...'),
+  replyingTo = null,
+  onCancelReply,
+  conversationId = null,
+  participants = [],
+  currentUserEmail = null,
+  canPost = true,
+  onOpenPoll,
+  onOpenEventShare
+}, ref) {
   const t = useT();
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [composerMode, setComposerMode] = useState('text'); // 'text' | 'prayer'
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [mention, setMention] = useState({ open: false, query: '', start: 0 });
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
+  const attachMenuRef = useRef(null);
+  const mentionMapRef = useRef(new Map()); // fullName -> email
 
-  // Wysłanie wiadomości głosowej
+  // Wczytaj wersję roboczą (draft) przy zmianie konwersacji
+  useEffect(() => {
+    if (!conversationId) return;
+    try {
+      const draft = localStorage.getItem(`${DRAFT_PREFIX}${conversationId}`);
+      setContent(draft || '');
+    } catch { setContent(''); }
+    setComposerMode('text');
+    setShowAttachMenu(false);
+    mentionMapRef.current.clear();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
+
+  // Zapisz draft
+  useEffect(() => {
+    if (!conversationId) return;
+    try {
+      if (content) localStorage.setItem(`${DRAFT_PREFIX}${conversationId}`, content);
+      else localStorage.removeItem(`${DRAFT_PREFIX}${conversationId}`);
+    } catch { /* ignoruj */ }
+  }, [content, conversationId]);
+
+  // Zamknij menu załączników po kliknięciu poza
+  useEffect(() => {
+    const handler = (e) => {
+      if (attachMenuRef.current && !attachMenuRef.current.contains(e.target)) {
+        setShowAttachMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const clearDraft = () => {
+    if (conversationId) {
+      try { localStorage.removeItem(`${DRAFT_PREFIX}${conversationId}`); } catch { /* ignoruj */ }
+    }
+  };
+
+  // Rozwiąż wzmianki @ z treści na listę e-maili
+  const resolveMentions = (text) => {
+    const emails = [];
+    mentionMapRef.current.forEach((email, name) => {
+      if (text.includes(`@${name}`)) emails.push(email);
+    });
+    return [...new Set(emails)];
+  };
+
   const handleSendVoiceMessage = async (audioBlob, duration) => {
     try {
       setUploading(true);
-
-      // Określ rozszerzenie na podstawie MIME type
       const mimeType = audioBlob.type || 'audio/webm';
       const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
       const fileName = `voice-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${extension}`;
       const filePath = `voice-messages/${fileName}`;
 
-      // Upload do storage
       const { error: uploadError } = await supabase.storage
         .from('messenger-attachments')
-        .upload(filePath, audioBlob, {
-          contentType: mimeType
-        });
+        .upload(filePath, audioBlob, { contentType: mimeType });
+      if (uploadError) throw uploadError;
 
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('messenger-attachments')
-        .getPublicUrl(filePath);
-
-      // Wyślij jako wiadomość z załącznikiem audio
+      const { data: urlData } = supabase.storage.from('messenger-attachments').getPublicUrl(filePath);
       const voiceAttachment = {
         url: urlData.publicUrl,
         name: t('Wiadomość głosowa'),
         type: mimeType,
         size: audioBlob.size,
-        duration: duration,
+        duration,
         isVoiceMessage: true
       };
-
       await onSend('', [voiceAttachment], replyingTo?.id || null);
       setIsRecordingVoice(false);
     } catch (err) {
@@ -63,60 +119,33 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
     }
   };
 
-  // Funkcja do uploadu plików (używana przez handleFileSelect i addFilesFromDrop)
   const uploadFiles = async (files) => {
     const fileArray = Array.from(files);
     if (fileArray.length === 0) return;
-
-    // Limit 10 plików
     if (attachments.length + fileArray.length > 10) {
       toast.error(t('Maksymalnie 10 załączników na wiadomość'));
       return;
     }
-
     setUploading(true);
     setUploadProgress(0);
-
     try {
       const uploadedFiles = [];
       const totalFiles = fileArray.length;
-
       for (let i = 0; i < fileArray.length; i++) {
         const file = fileArray[i];
-
-        // Limit 10MB
         if (file.size > 10 * 1024 * 1024) {
           toast.error(`Plik "${file.name}" przekracza limit 10MB`);
           continue;
         }
-
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
         const filePath = `attachments/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('messenger-attachments')
-          .upload(filePath, file);
-
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          continue;
-        }
-
-        const { data: urlData } = supabase.storage
-          .from('messenger-attachments')
-          .getPublicUrl(filePath);
-
-        uploadedFiles.push({
-          url: urlData.publicUrl,
-          name: file.name,
-          type: file.type,
-          size: file.size
-        });
-
+        const { error: uploadError } = await supabase.storage.from('messenger-attachments').upload(filePath, file);
+        if (uploadError) { console.error('Upload error:', uploadError); continue; }
+        const { data: urlData } = supabase.storage.from('messenger-attachments').getPublicUrl(filePath);
+        uploadedFiles.push({ url: urlData.publicUrl, name: file.name, type: file.type, size: file.size });
         setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
       }
-
       setAttachments(prev => [...prev, ...uploadedFiles]);
     } catch (err) {
       console.error('Error uploading files:', err);
@@ -127,37 +156,41 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
     }
   };
 
-  // Expose addFilesFromDrop method via ref for drag & drop
   useImperativeHandle(ref, () => ({
-    addFilesFromDrop: (files) => {
-      uploadFiles(files);
-    }
+    addFilesFromDrop: (files) => { uploadFiles(files); }
   }));
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if ((!content.trim() && attachments.length === 0) || disabled || uploading) return;
 
     try {
-      await onSend(content.trim(), attachments, replyingTo?.id || null);
+      if (composerMode === 'prayer') {
+        // Prośba o modlitwę – treść pola staje się tytułem
+        await onSend(content.trim(), [], null, {
+          messageType: 'prayer',
+          metadata: { title: content.trim() }
+        });
+        setComposerMode('text');
+      } else {
+        const mentions = resolveMentions(content);
+        await onSend(content.trim(), attachments, replyingTo?.id || null, { mentions });
+      }
       setContent('');
       setAttachments([]);
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
+      clearDraft();
+      if (textareaRef.current) textareaRef.current.style.height = 'auto';
     } catch (err) {
       console.error('Error sending message:', err);
     }
   };
 
-  // Focus textarea when replying
   useEffect(() => {
-    if (replyingTo && textareaRef.current) {
-      textareaRef.current.focus();
-    }
+    if (replyingTo && textareaRef.current) textareaRef.current.focus();
   }, [replyingTo]);
 
   const handleKeyDown = (e) => {
+    if (mention.open && e.key === 'Escape') { setMention({ open: false, query: '', start: 0 }); return; }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -166,45 +199,100 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
 
   const handleFileSelect = async (e) => {
     await uploadFiles(e.target.files);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const removeAttachment = (index) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
+  const removeAttachment = (index) => setAttachments(prev => prev.filter((_, i) => i !== index));
+
+  // Wykryj wzmiankę @ w trakcie pisania
+  const detectMention = (value, caret) => {
+    const uptoCaret = value.slice(0, caret);
+    const match = uptoCaret.match(/(?:^|\s)@([\p{L}0-9._-]*)$/u);
+    if (match) {
+      setMention({ open: true, query: match[1].toLowerCase(), start: caret - match[1].length });
+    } else if (mention.open) {
+      setMention({ open: false, query: '', start: 0 });
+    }
   };
 
   const handleTextareaChange = (e) => {
-    setContent(e.target.value);
-    // Auto-resize - zaczynamy od 44px (h-11), rośnie do max 150px
+    const value = e.target.value;
+    setContent(value);
     e.target.style.height = '44px';
     e.target.style.height = Math.min(Math.max(e.target.scrollHeight, 44), 150) + 'px';
-    // Wyślij status pisania
-    if (e.target.value.trim()) {
-      onTyping?.();
-    }
+    if (value.trim()) onTyping?.();
+    detectMention(value, e.target.selectionStart);
   };
 
+  const insertMention = (user) => {
+    const name = user.full_name || user.user_email?.split('@')[0] || '';
+    mentionMapRef.current.set(name, user.user_email);
+    // Zamień wpisywany fragment "@query" na "@name "
+    const before = content.slice(0, mention.start - 1); // -1 aby usunąć '@'
+    const after = content.slice(mention.start + mention.query.length);
+    const next = `${before}@${name} ${after}`;
+    setContent(next);
+    setMention({ open: false, query: '', start: 0 });
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  const insertEmoji = (emoji) => {
+    setContent(prev => prev + emoji);
+    setShowEmoji(false);
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  // Lista podpowiedzi wzmianek
+  const mentionCandidates = mention.open
+    ? participants
+        .filter(p => p.user_email !== currentUserEmail)
+        .filter(p => {
+          const name = (p.full_name || p.user_email || '').toLowerCase();
+          return name.includes(mention.query);
+        })
+        .slice(0, 6)
+    : [];
+
+  // Kanał ogłoszeń – brak uprawnień do pisania
+  if (!canPost) {
+    return (
+      <div className="border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+        <div className="flex items-center justify-center gap-2 py-2 text-sm text-gray-500 dark:text-gray-400">
+          <Lock size={16} />
+          {tr('Tylko administratorzy mogą pisać w tym kanale')}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+    <form onSubmit={handleSubmit} className="relative border-t border-gray-200/50 dark:border-gray-700/50 p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+      {/* Banner trybu prośby o modlitwę */}
+      {composerMode === 'prayer' && (
+        <div className="flex items-center gap-2 mb-3 p-3 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl border-l-4 border-accent-primary-light">
+          <span className="text-lg">🙏</span>
+          <p className="flex-1 text-xs font-semibold text-accent-primary dark:text-accent-primary-light">
+            {tr('Prośba o modlitwę – wpisz treść i wyślij')}
+          </p>
+          <button type="button" onClick={() => setComposerMode('text')} className="p-1.5 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition">
+            <X size={16} className="text-gray-500" />
+          </button>
+        </div>
+      )}
+
       {/* Pasek odpowiedzi */}
-      {replyingTo && (
+      {replyingTo && composerMode === 'text' && (
         <div className="flex items-center gap-3 mb-3 p-3 bg-gradient-to-r from-accent-primary-lightest to-accent-secondary-lightest dark:from-accent-primary-darkest/20 dark:to-accent-secondary-darkest/20 rounded-xl border-l-4 border-accent-primary-light">
           <Reply size={18} className="text-accent-primary-light flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-accent-primary dark:text-accent-primary-light">
-              Odpowiadasz na wiadomość od {replyingTo.sender?.full_name || replyingTo.sender_email}
+              {tr('Odpowiadasz na wiadomość od')} {replyingTo.sender?.full_name || replyingTo.sender_email}
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
               {replyingTo.content || (replyingTo.attachments?.length > 0 ? tr('📎 Załącznik') : '')}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onCancelReply}
-            className="p-1.5 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-all duration-200"
-          >
+          <button type="button" onClick={onCancelReply} className="p-1.5 hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg transition-all duration-200">
             <X size={16} className="text-gray-500" />
           </button>
         </div>
@@ -214,10 +302,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
           {attachments.map((att, idx) => (
-            <div
-              key={idx}
-              className="relative group flex items-center gap-2 px-3 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50"
-            >
+            <div key={idx} className="relative group flex items-center gap-2 px-3 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50">
               {isImageFile(att.type) ? (
                 <img src={att.url} alt={att.name} className="w-10 h-10 object-cover rounded-lg" />
               ) : (
@@ -229,11 +314,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
                 <p className="text-xs font-medium truncate text-gray-700 dark:text-gray-300">{att.name}</p>
                 <p className="text-[10px] text-gray-500">{formatFileSize(att.size)}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => removeAttachment(idx)}
-                className="absolute -top-1.5 -right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
-              >
+              <button type="button" onClick={() => removeAttachment(idx)} className="absolute -top-1.5 -right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm">
                 <X size={10} />
               </button>
             </div>
@@ -246,56 +327,99 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
         <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <Loader size={16} className="animate-spin text-accent-primary-light" />
-            <span>Przesyłanie... {uploadProgress}%</span>
+            <span>{tr('Przesyłanie...')} {uploadProgress}%</span>
           </div>
           <div className="mt-2 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-accent-primary-light to-accent-secondary-light transition-all duration-300 rounded-full"
-              style={{ width: `${uploadProgress}%` }}
-            />
+            <div className="h-full bg-gradient-to-r from-accent-primary-light to-accent-secondary-light transition-all duration-300 rounded-full" style={{ width: `${uploadProgress}%` }} />
           </div>
         </div>
       )}
 
-      {/* Tryb nagrywania głosowego */}
+      {/* Popup wzmianek @ */}
+      {mention.open && mentionCandidates.length > 0 && (
+        <div className="absolute bottom-full left-4 right-4 mb-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-2xl shadow-xl py-1.5 z-30 max-h-56 overflow-y-auto custom-scrollbar">
+          {mentionCandidates.map(p => (
+            <button
+              key={p.user_email}
+              type="button"
+              onClick={() => insertMention(p)}
+              className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 transition text-left"
+            >
+              <span className="w-7 h-7 rounded-full bg-gradient-to-br from-accent-primary-light to-accent-secondary-light text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                {(p.full_name || p.user_email)?.[0]?.toUpperCase()}
+              </span>
+              <span className="truncate">{p.full_name || p.user_email}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Emoji picker */}
+      {showEmoji && (
+        <div className="absolute bottom-full left-4 mb-2 z-30">
+          <EmojiPicker onSelect={insertEmoji} onClose={() => setShowEmoji(false)} />
+        </div>
+      )}
+
+      {/* Menu załączników (+) */}
+      {showAttachMenu && (
+        <div ref={attachMenuRef} className="absolute bottom-full left-4 mb-2 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-2xl shadow-xl py-1.5 z-30 min-w-[200px]">
+          <button type="button" onClick={() => { setShowAttachMenu(false); fileInputRef.current?.click(); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left">
+            <Paperclip size={18} className="text-accent-primary-light" /> {tr('Zdjęcie lub plik')}
+          </button>
+          <button type="button" onClick={() => { setShowAttachMenu(false); onOpenPoll?.(); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left">
+            <BarChart3 size={18} className="text-accent-primary-light" /> {tr('Ankieta')}
+          </button>
+          <button type="button" onClick={() => { setShowAttachMenu(false); onOpenEventShare?.(); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left">
+            <Calendar size={18} className="text-accent-primary-light" /> {tr('Wydarzenie')}
+          </button>
+          <button type="button" onClick={() => { setShowAttachMenu(false); setComposerMode('prayer'); textareaRef.current?.focus(); }} className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left">
+            <HeartHandshake size={18} className="text-accent-primary-light" /> {tr('Prośba o modlitwę')}
+          </button>
+        </div>
+      )}
+
       {isRecordingVoice ? (
-        <AudioRecorder
-          onSend={handleSendVoiceMessage}
-          onCancel={() => setIsRecordingVoice(false)}
-          disabled={disabled || uploading}
-        />
+        <AudioRecorder onSend={handleSendVoiceMessage} onCancel={() => setIsRecordingVoice(false)} disabled={disabled || uploading} />
       ) : (
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Przycisk załącznika */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
+        <div className="flex items-end gap-1.5 sm:gap-2">
+          <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" onChange={handleFileSelect} className="hidden" />
+
+          {/* Przycisk menu załączników (+) */}
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => { setShowAttachMenu(v => !v); setShowEmoji(false); }}
             disabled={uploading || disabled}
-            className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center text-gray-500 hover:text-accent-primary bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
+            className={`w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0 ${showAttachMenu ? 'bg-accent-primary text-white rotate-45' : 'text-gray-500 hover:text-accent-primary bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+            title={t('Załącz')}
           >
-            <Paperclip size={18} className="sm:w-5 sm:h-5" />
+            <Plus size={20} />
           </button>
 
-          {/* Przycisk mikrofonu */}
+          {/* Emoji */}
           <button
             type="button"
-            onClick={() => setIsRecordingVoice(true)}
+            onClick={() => { setShowEmoji(v => !v); setShowAttachMenu(false); }}
             disabled={uploading || disabled}
-            className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center text-gray-500 hover:text-accent-primary bg-gray-100 dark:bg-gray-800 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
-            title={t('Nagraj wiadomość głosową')}
+            className="hidden sm:flex w-11 h-11 items-center justify-center text-gray-500 hover:text-accent-primary bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
+            title={t('Emoji')}
           >
-            <Mic size={18} className="sm:w-5 sm:h-5" />
+            <Smile size={20} />
           </button>
 
-          {/* Pole tekstowe */}
+          {/* Mikrofon (tylko tryb tekstowy) */}
+          {composerMode === 'text' && (
+            <button
+              type="button"
+              onClick={() => setIsRecordingVoice(true)}
+              disabled={uploading || disabled}
+              className="w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center text-gray-500 hover:text-accent-primary bg-gray-100 dark:bg-gray-800 hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/20 rounded-xl transition-all duration-200 disabled:opacity-50 flex-shrink-0"
+              title={t('Nagraj wiadomość głosową')}
+            >
+              <Mic size={18} className="sm:w-5 sm:h-5" />
+            </button>
+          )}
+
           <div className="flex-1 relative min-w-0">
             <textarea
               data-tour="komunikator-message"
@@ -303,7 +427,7 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
               value={content}
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
-              placeholder={t(placeholder)}
+              placeholder={composerMode === 'prayer' ? t('Treść prośby o modlitwę...') : t(placeholder)}
               disabled={disabled || uploading}
               rows={1}
               className="w-full px-3 sm:px-4 py-2 h-9 sm:h-11 bg-gray-100 dark:bg-gray-800 border border-gray-200/50 dark:border-gray-700/50 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-accent-primary-light/50 focus:border-accent-primary-light/50 text-gray-900 dark:text-gray-100 placeholder-gray-500 disabled:opacity-50 transition-all duration-200 leading-5 sm:leading-6 text-sm sm:text-base"
@@ -311,7 +435,6 @@ const MessageInput = forwardRef(function MessageInput({ onSend, onTyping, disabl
             />
           </div>
 
-          {/* Przycisk wyślij */}
           <button
             data-tour="komunikator-send"
             type="submit"

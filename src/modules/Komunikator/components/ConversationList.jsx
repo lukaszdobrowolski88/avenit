@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, MessageSquare, Users, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Star, Archive, Filter } from 'lucide-react';
+import { Search, Plus, MessageSquare, Users, Music, Heart, Baby, Zap, UserCheck, Home, Shield, Sparkles, Star, Archive, Filter, Pin, Megaphone } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import { formatMessageDate, truncateText, getMinistryName } from '../utils/messageHelpers';
 import { usePresence } from '../../../hooks/usePresence';
@@ -26,6 +26,7 @@ export default function ConversationList({
   onNewConversation,
   onToggleStar,
   onToggleArchive,
+  onTogglePin,
   loading,
   currentUserEmail
 }) {
@@ -70,10 +71,12 @@ export default function ConversationList({
     });
   }, [conversations, activeFilter, searchQuery]);
 
-  // Grupuj konwersacje po typie
-  const directConversations = filteredConversations.filter(c => c.type === 'direct');
-  const groupConversations = filteredConversations.filter(c => c.type === 'group');
-  const ministryConversations = filteredConversations.filter(c => c.type === 'ministry');
+  // Grupuj konwersacje po typie (przypięte osobno, na górze)
+  const pinnedConversations = filteredConversations.filter(c => c.pinned);
+  const directConversations = filteredConversations.filter(c => c.type === 'direct' && !c.pinned);
+  const groupConversations = filteredConversations.filter(c => c.type === 'group' && !c.pinned);
+  const announcementConversations = filteredConversations.filter(c => c.type === 'announcement' && !c.pinned);
+  const ministryConversations = filteredConversations.filter(c => c.type === 'ministry' && !c.pinned);
 
   const handleStarClick = (e, convId) => {
     e.stopPropagation();
@@ -83,6 +86,11 @@ export default function ConversationList({
   const handleArchiveClick = (e, convId) => {
     e.stopPropagation();
     onToggleArchive?.(convId);
+  };
+
+  const handlePinClick = (e, convId) => {
+    e.stopPropagation();
+    onTogglePin?.(convId);
   };
 
   const renderConversationItem = (conv) => {
@@ -109,6 +117,14 @@ export default function ConversationList({
         return (
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-accent-primary-light flex items-center justify-center text-white">
             <IconComponent size={20} />
+          </div>
+        );
+      }
+
+      if (conv.type === 'announcement') {
+        return (
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center text-white">
+            <Megaphone size={20} />
           </div>
         );
       }
@@ -156,6 +172,9 @@ export default function ConversationList({
               <span className={`font-medium truncate transition-colors ${hasUnread ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                 {displayName}
               </span>
+              {conv.pinned && (
+                <Pin size={12} className="text-accent-primary fill-accent-primary flex-shrink-0" />
+              )}
               {conv.starred && (
                 <Star size={12} className="text-yellow-500 fill-yellow-500 flex-shrink-0 drop-shadow-sm" />
               )}
@@ -183,6 +202,15 @@ export default function ConversationList({
 
         {/* Akcje - widoczne przy hover */}
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-200 flex-shrink-0">
+          <button
+            onClick={(e) => handlePinClick(e, conv.id)}
+            className={`p-1.5 rounded-lg hover:bg-accent-primary-lightest dark:hover:bg-accent-primary-darkest/30 transition-all duration-200 ${
+              conv.pinned ? 'text-accent-primary' : 'text-gray-400 hover:text-accent-primary'
+            }`}
+            title={conv.pinned ? t('Odepnij') : t('Przypnij rozmowę')}
+          >
+            <Pin size={14} className={conv.pinned ? 'fill-current' : ''} />
+          </button>
           <button
             onClick={(e) => handleStarClick(e, conv.id)}
             className={`p-1.5 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-all duration-200 ${
@@ -337,6 +365,8 @@ export default function ConversationList({
           </div>
         ) : (
           <>
+            {renderSection(t('Przypięte'), pinnedConversations)}
+            {renderSection(t('Ogłoszenia'), announcementConversations)}
             {renderSection(t('Prywatne'), directConversations)}
             {renderSection(t('Grupy'), groupConversations)}
             {renderSection(t('Kanały służb'), ministryConversations)}
