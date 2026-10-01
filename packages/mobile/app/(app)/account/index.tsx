@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Linking, ScrollView, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
   Bell,
@@ -20,6 +21,7 @@ import {
   ShieldCheck,
   Smartphone,
   Trash2,
+  UserCog,
   Users,
 } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
@@ -37,6 +39,7 @@ import { SettingsGroup, SettingsRow } from '../../../src/components/ui/SettingsR
 import { CampusSelector } from '../../../src/components/CampusSelector';
 import { useCampus } from '../../../src/contexts/CampusContext';
 import { tenantWebBase } from '../../../src/lib/supabase';
+import { useMyProfile, use2FAStatus } from '../../../src/features/account/api';
 
 // Otwiera stronę web tenanta (np. politykę prywatności) — host tenanta z getTenant(),
 // z fallbackiem na apex. Wymagane linki prawne + usuwanie konta (wymóg App Store / Play).
@@ -52,6 +55,8 @@ export default function AccountScreen() {
   const { user } = useAuthSession();
   const { colorScheme, setColorScheme } = useColorScheme();
   const { campuses } = useCampus();
+  const profile = useMyProfile(user?.email ?? null);
+  const twoFa = use2FAStatus();
 
   const [biometricSupported, setBiometricSupported] = useState(false);
   const [biometricOn, setBiometricOn] = useState(false);
@@ -130,7 +135,9 @@ export default function AccountScreen() {
   };
 
   const email = user?.email ?? '—';
-  const initial = email.charAt(0).toUpperCase();
+  const fullName = profile.data?.full_name?.trim() || (user?.full_name as string | undefined)?.trim() || '';
+  const avatarUrl = profile.data?.avatar_url ?? null;
+  const initial = (fullName || email).charAt(0).toUpperCase();
   const isDark = colorScheme === 'dark';
   const showCampusSection = campuses.length > 0;
   // Treści „służbowe" — zwykły członek ich nie widzi (Formularze, katalog Członków).
@@ -143,7 +150,15 @@ export default function AccountScreen() {
       contentContainerStyle={{ paddingBottom: 120 }}
     >
       <View className="items-center pt-12 pb-8 px-4">
-        <GradientAvatar initial={initial} size={88} />
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#f5f5f4' }}
+            contentFit="cover"
+          />
+        ) : (
+          <GradientAvatar initial={initial} size={88} />
+        )}
         <Text
           className="mt-4 text-[18px]"
           style={{
@@ -152,15 +167,27 @@ export default function AccountScreen() {
             fontFamily: 'Inter_700Bold',
           }}
         >
-          {email}
+          {fullName || email}
         </Text>
         <Text
           className="text-[12px] mt-1"
           style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
         >
-          Konto
+          {fullName ? email : 'Konto'}
         </Text>
       </View>
+
+      <SettingsGroup title="Profil">
+        <SettingsRow
+          variant="nav"
+          Icon={UserCog}
+          iconTint="#be185d"
+          iconBg="#fce7f3"
+          title="Edytuj profil"
+          description="Zmień imię i zdjęcie profilowe"
+          onPress={() => router.push('/(app)/account/edit-profile')}
+        />
+      </SettingsGroup>
 
       {showCampusSection ? (
         <View className="mb-4">
@@ -234,13 +261,8 @@ export default function AccountScreen() {
           iconTint="#0891b2"
           iconBg="#cffafe"
           title="Weryfikacja dwustopniowa"
-          description="Zarządzanie 2FA — w aplikacji webowej"
-          onPress={() =>
-            Alert.alert(
-              'Weryfikacja dwustopniowa',
-              'Konfiguracja 2FA jest dostępna w aplikacji webowej. Tu używasz kodów do logowania.',
-            )
-          }
+          description={twoFa.data?.enabled ? 'Włączona — zarządzaj' : 'Wyłączona — włącz zabezpieczenie'}
+          onPress={() => router.push('/(app)/account/two-factor')}
         />
         <SettingsRow
           variant="nav"
@@ -269,11 +291,9 @@ export default function AccountScreen() {
           Icon={Smartphone}
           iconTint="#2563eb"
           iconBg="#dbeafe"
-          title="Moje urządzenia"
-          description="Zarejestrowane tokeny push"
-          onPress={() =>
-            Alert.alert('Wkrótce', 'Lista zarejestrowanych urządzeń pojawi się w kolejnej wersji.')
-          }
+          title="Aktywne sesje"
+          description="Zalogowane urządzenia i wylogowanie zdalne"
+          onPress={() => router.push('/(app)/account/sessions')}
         />
       </SettingsGroup>
 

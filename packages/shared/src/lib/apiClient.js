@@ -160,6 +160,22 @@ export function createApiClient({
     return { res, payload };
   }
 
+  // Dociąga świeżego usera z /api/auth/me i zapisuje w sesji (np. po włączeniu/wyłączeniu
+  // 2FA — totp_enabled zmienia się serwerowo, a lokalny session.user byłby nieaktualny).
+  async function refreshSessionUser() {
+    try {
+      await loadSession();
+      if (!session) return;
+      const res = await request('/api/auth/me');
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.user) await saveSession({ ...session, user: data.user }, 'USER_UPDATED');
+      }
+    } catch {
+      /* brak sieci — zostaw dotychczasowego usera */
+    }
+  }
+
   // ── Query builder ──────────────────────────────────────────────────────
   class QueryBuilder {
     constructor(table) {
@@ -348,6 +364,46 @@ export function createApiClient({
       await loadSession();
       const { res } = await requestJson('/api/auth/logout-others', { refresh_token: session?.refresh_token });
       return { ok: res.ok };
+    },
+
+    // ── 2FA (TOTP) — zarządzanie przez zalogowanego użytkownika ──────────────
+    async twoFactorStatus() {
+      const { res, payload } = await requestJson('/api/auth/2fa-status', {});
+      if (!res.ok) return { enabled: false, required: false, verifiedAt: null };
+      return payload || { enabled: false, required: false, verifiedAt: null };
+    },
+    // Start konfiguracji: zwraca sekret + otpauthUrl (do QR) + propozycję kodów zapasowych.
+    // Sekret zapisujemy dopiero po weryfikacji pierwszym kodem (twoFactorEnable).
+    async twoFactorSetup() {
+      const { res, payload } = await requestJson('/api/auth/2fa/setup', {});
+      if (!res.ok) return { data: null, error: { message: payload?.error || 'Błąd' } };
+      return { data: payload, error: null };
+    },
+    async twoFactorEnable({ secret, code, backupCodes }) {
+      const { res, payload } = await requestJson('/api/auth/2fa/enable', { secret, code, backupCodes });
+      if (!res.ok) return { error: { message: payload?.error || 'Nieprawidłowy kod' } };
+      await refreshSessionUser();
+      return { error: null };
+    },
+    async twoFactorDisable({ code }) {
+      const { res, payload } = await requestJson('/api/auth/2fa/disable', { code });
+      if (!res.ok) return { error: { message: payload?.error || 'Nieprawidłowy kod' } };
+      await refreshSessionUser();
+      return { error: null };
+    },
+    async getBackupCodes() {
+      try {
+        const res = await request('/api/auth/2fa/backup-codes');
+        const payload = await res.json().catch(() => ({ codes: [] }));
+        return payload?.codes || [];
+      } catch {
+        return [];
+      }
+    },
+    async regenerateBackupCodes({ code }) {
+      const { res, payload } = await requestJson('/api/auth/2fa/backup-codes', { code });
+      if (!res.ok) return { data: null, error: { message: payload?.error || 'Nieprawidłowy kod' } };
+      return { data: payload?.codes || [], error: null };
     },
 
     async signOut() {
