@@ -30,9 +30,15 @@ import {
   markConversationRead,
   markMessagesAsRead,
   canEditMessage,
+  usePollVotes,
+  useTogglePollVote,
+  usePrayerResponses,
+  useTogglePrayerResponse,
+  deliveryStatusFor,
   type MessageAttachment,
   type MessageRow,
   type ReadReceiptRow,
+  type PollMetadata,
 } from "../../../src/features/messenger/api";
 import { usePresence } from "../../../src/lib/presence";
 import {
@@ -78,6 +84,10 @@ export default function ConversationScreen() {
   const pinMutation = useTogglePin(cid, user?.email ?? null);
   const forwardMutation = useForwardMessage(user?.email ?? null);
   const readReceiptsQuery = useReadReceipts(cid);
+  const pollVotesQuery = usePollVotes(cid, user?.email ?? null);
+  const prayerQuery = usePrayerResponses(cid, user?.email ?? null);
+  const pollVoteMutation = useTogglePollVote(cid, user?.email ?? null);
+  const prayerMutation = useTogglePrayerResponse(cid, user?.email ?? null);
   useRealtimeMessages(cid);
 
   const memberEmails = useMemo(() => {
@@ -422,6 +432,7 @@ export default function ConversationScreen() {
               const readByCount = mine
                 ? receipts.filter((r: ReadReceiptRow) => r.user_email !== m.sender_email).length
                 : 0;
+              const prayer = prayerQuery.data?.[m.id];
               return (
                 <MessageBubble
                   message={m}
@@ -432,6 +443,19 @@ export default function ConversationScreen() {
                   reactions={reactionsQuery.data?.[m.id]}
                   pinned={pinnedIds.has(m.id)}
                   readByCount={readByCount}
+                  currentUserEmail={user?.email ?? null}
+                  deliveryStatus={mine ? deliveryStatusFor(receipts, m.sender_email) : undefined}
+                  pollVotes={pollVotesQuery.data?.[m.id]}
+                  onVote={(optionId) =>
+                    pollVoteMutation.mutate({
+                      messageId: m.id,
+                      optionId,
+                      multiple: !!(m.metadata as PollMetadata | null)?.multiple,
+                    })
+                  }
+                  prayerCount={prayer?.count ?? 0}
+                  prayerMine={!!prayer?.mine}
+                  onPray={() => prayerMutation.mutate({ messageId: m.id, responding: !!prayer?.mine })}
                   senderStatus={mine ? undefined : getStatus(m.sender_email)}
                   onLongPress={() => handleLongPress(m)}
                   onToggleReaction={(emoji) => handleToggleReactionFromBubble(m.id, emoji)}
