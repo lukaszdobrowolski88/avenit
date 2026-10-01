@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -6,13 +7,33 @@ import {
   ScrollView,
   StatusBar,
   Text,
+  TextInput,
   View,
 } from 'react-native';
-import { BookOpen, Headphones, PlaySquare, Quote, User } from 'lucide-react-native';
+import { BookOpen, ChevronDown, FileText, Headphones, PlaySquare, Quote, Search, User, X } from 'lucide-react-native';
 import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { useTeachings, type ProgramTeaching } from '../../../src/features/teachings/api';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
+
+const SeriesChip = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
+  <Pressable
+    onPress={onPress}
+    className="active:opacity-80"
+    style={{
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 999,
+      backgroundColor: active ? '#7c3aed' : '#faf5ff',
+      borderWidth: 1,
+      borderColor: active ? '#7c3aed' : '#ede9fe',
+    }}
+  >
+    <Text className="text-[13px]" style={{ color: active ? '#ffffff' : '#6d28d9', fontFamily: 'Inter_600SemiBold' }}>
+      {label}
+    </Text>
+  </Pressable>
+);
 
 const MediaButton = ({
   Icon,
@@ -48,6 +69,7 @@ const MediaButton = ({
 };
 
 const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
+  const [notesOpen, setNotesOpen] = useState(false);
   return (
     <View
       className="mb-3"
@@ -163,6 +185,34 @@ const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
             />
           </View>
         )}
+
+        {teaching.notes ? (
+          <View className="pt-2 mt-1" style={{ borderTopWidth: 1, borderTopColor: '#f5f5f4' }}>
+            <Pressable
+              onPress={() => setNotesOpen((v) => !v)}
+              className="flex-row items-center gap-1.5 active:opacity-70"
+              style={{ paddingVertical: 4 }}
+            >
+              <FileText size={14} color="#7c3aed" />
+              <Text className="text-[13px]" style={{ color: '#6d28d9', fontFamily: 'Inter_700Bold' }}>
+                {notesOpen ? 'Ukryj notatki' : 'Pokaż notatki'}
+              </Text>
+              <ChevronDown
+                size={15}
+                color="#7c3aed"
+                style={{ transform: [{ rotate: notesOpen ? '180deg' : '0deg' }] }}
+              />
+            </Pressable>
+            {notesOpen ? (
+              <Text
+                className="text-[14px] mt-1"
+                style={{ color: '#1c1917', fontFamily: 'Inter_400Regular', lineHeight: 21 }}
+              >
+                {teaching.notes}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -175,11 +225,78 @@ export default function TeachingsScreen() {
     withCampusFilter,
   });
 
+  const [search, setSearch] = useState('');
+  const [series, setSeries] = useState<string | null>(null);
+
+  const allSeries = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of (data ?? []) as ProgramTeaching[]) if (t.series?.name) set.add(t.series.name);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'pl'));
+  }, [data]);
+
+  const list = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return ((data ?? []) as ProgramTeaching[]).filter((t) => {
+      if (series && t.series?.name !== series) return false;
+      if (!q) return true;
+      const hay = `${t.title ?? ''} ${t.speaker?.name ?? ''} ${t.series?.name ?? ''} ${t.scripture ?? ''} ${t.mainPoint ?? ''}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [data, search, series]);
+
+  const hasFilters = !!search.trim() || series != null;
+
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
         <PageHeader title="Nauczania" subtitle="Słowo z nabożeństw" Icon={BookOpen} showBack />
+
+        {!isLoading && !isError && (data ?? []).length > 0 ? (
+          <>
+            <View className="px-4 pb-2">
+              <View
+                className="flex-row items-center gap-2 px-3"
+                style={{
+                  borderRadius: 999,
+                  backgroundColor: '#fafaf9',
+                  borderWidth: 1,
+                  borderColor: '#eef0f3',
+                  height: 40,
+                }}
+              >
+                <Search size={16} color="#a8a29e" />
+                <TextInput
+                  style={{ flex: 1, fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_400Regular', paddingVertical: 0 }}
+                  placeholder="Szukaj: tytuł, mówca, werset…"
+                  placeholderTextColor="#a8a29e"
+                  value={search}
+                  onChangeText={setSearch}
+                  returnKeyType="search"
+                />
+                {search.length > 0 ? (
+                  <Pressable onPress={() => setSearch('')} hitSlop={8}>
+                    <X size={15} color="#a8a29e" />
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+            {allSeries.length > 0 ? (
+              <View style={{ maxHeight: 44 }} className="pb-2">
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 16, gap: 8, alignItems: 'center' }}
+                >
+                  <SeriesChip label="Wszystkie" active={series === null} onPress={() => setSeries(null)} />
+                  {allSeries.map((s) => (
+                    <SeriesChip key={s} label={s} active={series === s} onPress={() => setSeries(s)} />
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
+          </>
+        ) : null}
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
@@ -232,6 +349,44 @@ export default function TeachingsScreen() {
               Nauczania pojawią się po nabożeństwach.
             </Text>
           </ScrollView>
+        ) : list.length === 0 ? (
+          <ScrollView
+            contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
+            refreshControl={
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+            }
+          >
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 18,
+                backgroundColor: '#f3e8ff',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <Search size={26} color="#7c3aed" />
+            </View>
+            <Text className="text-[16px]" style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+              Brak wyników
+            </Text>
+            <Text className="text-[13px] text-center mt-1" style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}>
+              Zmień wyszukiwanie lub wybraną serię.
+            </Text>
+            {hasFilters ? (
+              <Pressable
+                onPress={() => {
+                  setSearch('');
+                  setSeries(null);
+                }}
+                style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, backgroundColor: '#f3e8ff' }}
+              >
+                <Text style={{ fontSize: 13, color: '#7c3aed', fontFamily: 'Inter_700Bold' }}>Wyczyść filtry</Text>
+              </Pressable>
+            ) : null}
+          </ScrollView>
         ) : (
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
@@ -239,7 +394,7 @@ export default function TeachingsScreen() {
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
             }
           >
-            {data!.map((t: ProgramTeaching) => (
+            {list.map((t: ProgramTeaching) => (
               <TeachingCard key={t.programId} teaching={t} />
             ))}
           </ScrollView>
