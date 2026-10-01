@@ -38,10 +38,12 @@ export default function KomunikatorModule() {
     refetch,
     createDirectConversation,
     createGroupConversation,
+    createAnnouncementChannel,
     markAsRead,
     deleteConversation,
     toggleStar,
-    toggleArchive
+    toggleArchive,
+    togglePin
   } = useConversations(userEmail);
 
   // Hook powiadomień - używamy wspólnego kontekstu
@@ -175,6 +177,16 @@ export default function KomunikatorModule() {
     }
   };
 
+  // Utwórz kanał ogłoszeń
+  const handleCreateAnnouncement = async (name, emails) => {
+    const convId = await createAnnouncementChannel(name, emails);
+    await refetch();
+    const conv = conversations.find(c => c.id === convId);
+    if (conv) {
+      handleSelectConversation(conv);
+    }
+  };
+
   // Po aktualizacji ustawień grupy
   const handleSettingsUpdate = async () => {
     await refetch();
@@ -209,6 +221,7 @@ export default function KomunikatorModule() {
           onNewConversation={() => setShowNewModal(true)}
           onToggleStar={toggleStar}
           onToggleArchive={toggleArchive}
+          onTogglePin={togglePin}
           loading={loading}
           currentUserEmail={userEmail}
         />
@@ -239,6 +252,7 @@ export default function KomunikatorModule() {
         onClose={() => setShowNewModal(false)}
         onCreateDirect={handleCreateDirect}
         onCreateGroup={handleCreateGroup}
+        onCreateAnnouncement={handleCreateAnnouncement}
         currentUserEmail={userEmail}
       />
 

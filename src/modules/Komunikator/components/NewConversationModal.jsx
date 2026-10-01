@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, User, Users, Check, Loader } from 'lucide-react';
+import { X, Search, User, Users, Check, Loader, Megaphone } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import UserAvatar from './UserAvatar';
 import { useT } from '../../../i18n';
@@ -11,10 +11,11 @@ export default function NewConversationModal({
   onClose,
   onCreateDirect,
   onCreateGroup,
+  onCreateAnnouncement,
   currentUserEmail
 }) {
   const t = useT();
-  const [mode, setMode] = useState('direct'); // 'direct' | 'group'
+  const [mode, setMode] = useState('direct'); // 'direct' | 'group' | 'announcement'
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -98,18 +99,22 @@ export default function NewConversationModal({
     }
   };
 
-  // Utwórz grupę
+  // Utwórz grupę lub kanał ogłoszeń
   const handleCreateGroup = async () => {
     if (!groupName.trim() || selectedUsers.length === 0) return;
 
     setCreating(true);
     try {
       const emails = selectedUsers.map(u => u.email);
-      await onCreateGroup(groupName.trim(), emails);
+      if (mode === 'announcement') {
+        await onCreateAnnouncement(groupName.trim(), emails);
+      } else {
+        await onCreateGroup(groupName.trim(), emails);
+      }
       onClose();
     } catch (err) {
       console.error('Error creating group:', err);
-      toast.error(t('Nie udało się utworzyć grupy'));
+      toast.error(mode === 'announcement' ? t('Nie udało się utworzyć kanału') : t('Nie udało się utworzyć grupy'));
     } finally {
       setCreating(false);
     }
@@ -157,18 +162,36 @@ export default function NewConversationModal({
             `}
           >
             <Users size={18} />
-            Grupa
+            {tr('Grupa')}
+          </button>
+          <button
+            onClick={() => setMode('announcement')}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition
+              ${mode === 'announcement'
+                ? 'text-accent-primary border-b-2 border-accent-primary'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+              }
+            `}
+          >
+            <Megaphone size={18} />
+            {tr('Ogłoszenia')}
           </button>
         </div>
 
-        {/* Group name input */}
-        {mode === 'group' && (
+        {/* Nazwa grupy / kanału */}
+        {mode !== 'direct' && (
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            {mode === 'announcement' && (
+              <p className="mb-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                <Megaphone size={13} className="text-amber-500" />
+                {tr('W kanale ogłoszeń piszą tylko administratorzy. Pozostali czytają i reagują.')}
+              </p>
+            )}
             <input
               type="text"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
-              placeholder={t('Nazwa grupy...')}
+              placeholder={mode === 'announcement' ? t('Nazwa kanału ogłoszeń...') : t('Nazwa grupy...')}
               className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary-light text-gray-900 dark:text-gray-100 placeholder-gray-500"
             />
 
@@ -245,7 +268,7 @@ export default function NewConversationModal({
                         {user.email}
                       </p>
                     </div>
-                    {mode === 'group' && isSelected && (
+                    {mode !== 'direct' && isSelected && (
                       <div className="w-5 h-5 bg-accent-primary rounded-full flex items-center justify-center">
                         <Check size={14} className="text-white" />
                       </div>
@@ -257,8 +280,8 @@ export default function NewConversationModal({
           )}
         </div>
 
-        {/* Footer - tylko dla grupy */}
-        {mode === 'group' && (
+        {/* Footer - dla grupy i kanału ogłoszeń */}
+        {mode !== 'direct' && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={handleCreateGroup}
@@ -268,12 +291,12 @@ export default function NewConversationModal({
               {creating ? (
                 <>
                   <Loader size={18} className="animate-spin" />
-                  Tworzenie...
+                  {tr('Tworzenie...')}
                 </>
               ) : (
                 <>
-                  <Users size={18} />
-                  Utwórz grupę ({selectedUsers.length} {selectedUsers.length === 1 ? 'osoba' : selectedUsers.length < 5 ? 'osoby' : tr('osób')})
+                  {mode === 'announcement' ? <Megaphone size={18} /> : <Users size={18} />}
+                  {mode === 'announcement' ? tr('Utwórz kanał') : tr('Utwórz grupę')} ({selectedUsers.length} {selectedUsers.length === 1 ? tr('osoba') : selectedUsers.length < 5 ? tr('osoby') : tr('osób')})
                 </>
               )}
             </button>

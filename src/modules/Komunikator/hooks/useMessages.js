@@ -7,47 +7,10 @@ const usersCache = new Map();
 // Cache wiadomości per konwersacja
 const messagesCache = new Map();
 
-// Wyślij push notifications do uczestników konwersacji (w tle)
-async function sendPushToParticipants(conversationId, senderEmail, senderData, content) {
-  try {
-    // Pobierz uczestników konwersacji (oprócz nadawcy)
-    const { data: participants } = await supabase
-      .from('conversation_participants')
-      .select('user_email')
-      .eq('conversation_id', conversationId)
-      .neq('user_email', senderEmail);
-
-    if (!participants || participants.length === 0) return;
-
-    // Pobierz nazwę konwersacji
-    const { data: conversation } = await supabase
-      .from('conversations')
-      .select('name')
-      .eq('id', conversationId)
-      .single();
-
-    const senderName = senderData?.full_name || senderEmail;
-    const convName = conversation?.name || senderName;
-    const messagePreview = content.length > 100 ? content.substring(0, 100) + '...' : content;
-
-    // Wyślij push do każdego uczestnika (w tle, bez czekania)
-    for (const p of participants) {
-      supabase.functions.invoke('send-push', {
-        body: {
-          user_email: p.user_email,
-          title: convName,
-          body: `${senderName}: ${messagePreview}`,
-          link: `/komunikator?conversation=${conversationId}`,
-          tag: `message-${conversationId}`
-        }
-      }).catch(() => {
-        // Ignoruj błędy - push jest opcjonalny
-      });
-    }
-  } catch {
-    // Ignoruj błędy - push jest opcjonalny, nie powinien blokować wysyłania wiadomości
-  }
-}
+// Uwaga: push + powiadomienia obsługuje SERWER (VPS Data API → push-hooks.notifyOnWrite):
+// po insertcie do `messages` uczestnicy dostają push wiadomości, a osoby wspomniane (@,
+// z messages.mentions) push 'mention' zawsze. Klient NIE wysyła już pushy (dublowałyby się,
+// a dla zwykłego członka i tak kończyły się 403 na action:push_campaigns:send).
 
 export default function useMessages(conversationId, userEmail) {
   // Inicjalizuj z cache jeśli dostępny
@@ -135,8 +98,9 @@ export default function useMessages(conversationId, userEmail) {
     }
   }, [conversationId]);
 
-  // Wyślij wiadomość
-  const sendMessage = async (content, attachments = [], replyToId = null) => {
+  // Wyślij wiadomość.
+  // extra: { messageType, metadata, mentions } – dla ankiet/modlitw/wydarzeń oraz @wzmianek
+  const sendMessage = async (content, attachments = [], replyToId = null, extra = {}) => {
     if (!conversationId || !userEmail) return null;
 
     try {
@@ -150,6 +114,19 @@ export default function useMessages(conversationId, userEmail) {
       // Dodaj reply_to_id jeśli istnieje
       if (replyToId) {
         messageData.reply_to_id = replyToId;
+      }
+
+      // Typ wiadomości + metadane (ankieta / modlitwa / wydarzenie)
+      if (extra.messageType && extra.messageType !== 'text') {
+        messageData.message_type = extra.messageType;
+      }
+      if (extra.metadata) {
+        messageData.metadata = extra.metadata;
+      }
+      // Wzmianki @ (lista e-maili) – do podświetlenia i powiadomień
+      const mentions = Array.isArray(extra.mentions) ? extra.mentions.filter(Boolean) : [];
+      if (mentions.length > 0) {
+        messageData.mentions = mentions;
       }
 
       const { data, error: sendError } = await supabase
@@ -185,10 +162,7 @@ export default function useMessages(conversationId, userEmail) {
         return updated;
       });
 
-      // Powiadomienia w bazie są tworzone przez trigger (trigger_message_notification)
-      // Push notifications wysyłamy z klienta dla niezawodności
-      sendPushToParticipants(conversationId, userEmail, userData, content);
-
+      // Push + powiadomienia (w tym 'mention') wysyła serwer po insertcie (push-hooks).
       return data;
     } catch (err) {
       console.error('Error sending message:', err);

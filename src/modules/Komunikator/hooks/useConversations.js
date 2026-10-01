@@ -4,6 +4,17 @@ import { supabase } from '../../../lib/supabase';
 // Cache konwersacji na poziomie modułu
 const CACHE_KEY = 'komunikator_conversations_cache';
 
+// Sortowanie: przypięte > ulubione > nieprzeczytane > po dacie
+function sortConversations(a, b) {
+  if (a.pinned && !b.pinned) return -1;
+  if (!a.pinned && b.pinned) return 1;
+  if (a.starred && !b.starred) return -1;
+  if (!a.starred && b.starred) return 1;
+  if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
+  if (a.unreadCount === 0 && b.unreadCount > 0) return 1;
+  return new Date(b.updated_at) - new Date(a.updated_at);
+}
+
 export default function useConversations(userEmail) {
   // Inicjalizuj z cache
   const [conversations, setConversations] = useState(() => {
@@ -30,7 +41,7 @@ export default function useConversations(userEmail) {
       // Pobierz konwersacje użytkownika z uczestnikami i ostatnią wiadomością
       const { data: participantData, error: participantError } = await supabase
         .from('conversation_participants')
-        .select('conversation_id, last_read_at, muted, role, starred, archived')
+        .select('conversation_id, last_read_at, muted, role, starred, archived, pinned')
         .eq('user_email', userEmail);
 
       if (participantError) throw participantError;
@@ -145,21 +156,13 @@ export default function useConversations(userEmail) {
           muted: myParticipation?.muted || false,
           starred: myParticipation?.starred || false,
           archived: myParticipation?.archived || false,
+          pinned: myParticipation?.pinned || false,
+          lastReadAt: myParticipation?.last_read_at || null,
           myRole: myParticipation?.role || 'member'
         };
       });
 
-      // Sortuj - gwiazdki na górze, potem nieprzeczytane, potem po updated_at
-      conversationsWithMessages.sort((a, b) => {
-        // Gwiazdki zawsze na górze
-        if (a.starred && !b.starred) return -1;
-        if (!a.starred && b.starred) return 1;
-        // Potem nieprzeczytane
-        if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
-        if (a.unreadCount === 0 && b.unreadCount > 0) return 1;
-        // Na końcu po dacie
-        return new Date(b.updated_at) - new Date(a.updated_at);
-      });
+      conversationsWithMessages.sort(sortConversations);
 
       setConversations(conversationsWithMessages);
 
@@ -220,16 +223,21 @@ export default function useConversations(userEmail) {
     }
   };
 
-  // Tworzenie konwersacji grupowej
-  const createGroupConversation = async (name, participantEmails) => {
+  // Tworzenie konwersacji grupowej.
+  // opts: { type: 'group'|'announcement', posting_policy: 'everyone'|'admins', description }
+  const createGroupConversation = async (name, participantEmails, opts = {}) => {
     try {
+      const insertData = {
+        type: opts.type === 'announcement' ? 'announcement' : 'group',
+        name,
+        created_by: userEmail
+      };
+      if (opts.posting_policy) insertData.posting_policy = opts.posting_policy;
+      if (opts.description) insertData.description = opts.description;
+
       const { data: conv, error: convError } = await supabase
         .from('conversations')
-        .insert({
-          type: 'group',
-          name,
-          created_by: userEmail
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -259,6 +267,15 @@ export default function useConversations(userEmail) {
       console.error('Error creating group conversation:', err);
       throw err;
     }
+  };
+
+  // Tworzenie kanału ogłoszeń (broadcast) – tylko admini piszą, reszta czyta
+  const createAnnouncementChannel = async (name, participantEmails, description = null) => {
+    return createGroupConversation(name, participantEmails, {
+      type: 'announcement',
+      posting_policy: 'admins',
+      description
+    });
   };
 
   // Oznacz konwersację jako przeczytaną
@@ -295,16 +312,32 @@ export default function useConversations(userEmail) {
       setConversations(prev =>
         prev.map(c =>
           c.id === conversationId ? { ...c, starred: newStarred } : c
-        ).sort((a, b) => {
-          if (a.starred && !b.starred) return -1;
-          if (!a.starred && b.starred) return 1;
-          if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
-          if (a.unreadCount === 0 && b.unreadCount > 0) return 1;
-          return new Date(b.updated_at) - new Date(a.updated_at);
-        })
+        ).sort(sortConversations)
       );
     } catch (err) {
       console.error('Error toggling star:', err);
+    }
+  };
+
+  // Przypnij / odepnij rozmowę (na górze listy)
+  const togglePin = async (conversationId) => {
+    try {
+      const current = conversations.find(c => c.id === conversationId);
+      const newPinned = !current?.pinned;
+
+      await supabase
+        .from('conversation_participants')
+        .update({ pinned: newPinned })
+        .eq('conversation_id', conversationId)
+        .eq('user_email', userEmail);
+
+      setConversations(prev =>
+        prev.map(c =>
+          c.id === conversationId ? { ...c, pinned: newPinned } : c
+        ).sort(sortConversations)
+      );
+    } catch (err) {
+      console.error('Error toggling pin:', err);
     }
   };
 
@@ -392,7 +425,18 @@ export default function useConversations(userEmail) {
         event: 'INSERT',
         schema: 'public',
         table: 'messages'
-      }, () => {
+      }, (payload) => {
+        // Oznacz jako "doręczone" wiadomości od innych (apka jest otwarta gdziekolwiek)
+        const msg = payload.new;
+        if (msg && msg.sender_email !== userEmail) {
+          supabase
+            .from('message_read_receipts')
+            .upsert(
+              { message_id: msg.id, user_email: userEmail, delivered_at: new Date().toISOString(), read_at: null },
+              { onConflict: 'message_id,user_email', ignoreDuplicates: true }
+            )
+            .then(() => {}, () => {});
+        }
         // Odśwież konwersacje przy nowej wiadomości (z debounce)
         debouncedRefresh();
       })
@@ -417,9 +461,11 @@ export default function useConversations(userEmail) {
     refetch: fetchConversations,
     createDirectConversation,
     createGroupConversation,
+    createAnnouncementChannel,
     markAsRead,
     deleteConversation,
     toggleStar,
-    toggleArchive
+    toggleArchive,
+    togglePin
   };
 }
