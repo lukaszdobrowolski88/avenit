@@ -1,6 +1,8 @@
 import {
   ActivityIndicator,
+  Alert,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -15,9 +17,26 @@ import {
   Home,
   Mail,
   MapPin,
+  Navigation,
   Phone,
   Users,
 } from 'lucide-react-native';
+
+// Otwiera natywną aplikację map z zapytaniem po adresie (bez współrzędnych — grupy ich
+// nie mają). iOS → Apple Maps, pozostałe → geo:/Google Maps. Keyless, bez nowej zależności.
+const openMaps = (query: string) => {
+  const q = encodeURIComponent(query);
+  const url = Platform.select({
+    ios: `http://maps.apple.com/?q=${q}`,
+    android: `geo:0,0?q=${q}`,
+    default: `https://www.google.com/maps/search/?api=1&query=${q}`,
+  })!;
+  Linking.openURL(url).catch(() =>
+    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${q}`).catch(() =>
+      Alert.alert('Nie udało się otworzyć map', query),
+    ),
+  );
+};
 import {
   formatMeetingDay,
   formatMeetingTime,
@@ -315,7 +334,15 @@ export default function HomeGroupDetailScreen() {
                 Spotkania
               </Text>
               <InfoLine Icon={Calendar} text={meetingLine} />
-              <InfoLine Icon={MapPin} text={group.location || group.address || ''} />
+              <InfoLine
+                Icon={MapPin}
+                text={group.location || group.address || ''}
+                onPress={
+                  group.address || group.location
+                    ? () => openMaps(group.address || group.location || '')
+                    : undefined
+                }
+              />
               <InfoLine
                 Icon={Phone}
                 text={group.phone || ''}
@@ -328,6 +355,30 @@ export default function HomeGroupDetailScreen() {
                   group.email ? () => Linking.openURL(`mailto:${group.email}`) : undefined
                 }
               />
+
+              {group.address || group.location ? (
+                <Pressable
+                  onPress={() => openMaps(group.address || group.location || '')}
+                  className="active:opacity-80"
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    marginTop: 10,
+                    paddingVertical: 12,
+                    borderRadius: 14,
+                    backgroundColor: '#eff6ff',
+                    borderWidth: 1,
+                    borderColor: '#bfdbfe',
+                  }}
+                >
+                  <Navigation size={16} color="#1d4ed8" strokeWidth={2.4} />
+                  <Text style={{ fontSize: 14, color: '#1d4ed8', fontFamily: 'Inter_700Bold' }}>
+                    Nawiguj do grupy
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           </View>
         )}
