@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { supabase } from '../../lib/supabase';
@@ -234,6 +234,116 @@ export const useAgenda = (
       }
       all.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
       return all;
+    },
+  });
+};
+
+// ── Zapisy na wydarzenia (RSVP / obecność) ─────────────────────────────────
+// event_registrations = T(null): każdy zalogowany czyta/pisze (jak prayer_interactions).
+// JEDNA tabela obsługuje wydarzenia ogólne (events) i modułów (module_events) — event_id
+// to surowe id wydarzenia (web robi tak samo: EventRSVP + EventsTab). „Surowe id" z agendy
+// wyciągamy z klucza „<source>-<n>".
+export const rawEventId = (agendaId: string): number | null => {
+  const n = Number(String(agendaId).split('-').pop());
+  return Number.isFinite(n) ? n : null;
+};
+
+export interface EventRegistration {
+  id: number;
+  user_email: string;
+  full_name: string | null;
+  guests_count: number;
+  status: string;
+}
+
+// Rejestracje danego wydarzenia (bez „not_going"). Błędy braku prawa/tabeli → pusto
+// (panel RSVP po prostu zniknie), prawdziwe awarie propagują.
+export const useEventRegistrations = (eventId: number | null) =>
+  useQuery({
+    queryKey: ['event-rsvp', eventId],
+    enabled: eventId != null && Number.isFinite(eventId),
+    queryFn: async (): Promise<EventRegistration[]> => {
+      const { data, error } = await supabase
+        .from('event_registrations')
+        .select('id, user_email, full_name, guests_count, status')
+        .eq('event_id', eventId)
+        .order('created_at', { ascending: true });
+      if (error) {
+        const code = (error as { code?: string }).code;
+        if (code === '403' || code === '42501' || code === '42P01') return [];
+        throw error;
+      }
+      return ((data ?? []) as unknown as EventRegistration[]).filter(
+        (r) => r.status !== 'not_going',
+      );
+    },
+  });
+
+// Flagi rejestracji wydarzenia ogólnego (events). Ładowane leniwie — brak kolumny na
+// danym tenancie degraduje tylko panel RSVP, nie całą agendę (schema-truth).
+export interface EventRsvpMeta {
+  registration_required: boolean;
+  max_participants: number | null;
+  is_paid: boolean;
+}
+export const useEventRsvpMeta = (eventId: number | null, isGenericEvent: boolean) =>
+  useQuery({
+    queryKey: ['event-rsvp-meta', eventId],
+    enabled: isGenericEvent && eventId != null && Number.isFinite(eventId),
+    queryFn: async (): Promise<EventRsvpMeta | null> => {
+      const { data, error } = await supabase
+        .from('events')
+        .select('registration_required, max_participants, is_paid')
+        .eq('id', eventId)
+        .maybeSingle();
+      if (error || !data) return null;
+      const row = data as any;
+      return {
+        registration_required: !!row.registration_required,
+        max_participants: row.max_participants ?? null,
+        is_paid: !!row.is_paid,
+      };
+    },
+  });
+
+export const useSignUpEvent = (eventId: number | null, userEmail: string | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ guests, fullName }: { guests: number; fullName: string }) => {
+      if (eventId == null || !userEmail) throw new Error('Brak danych do zapisu');
+      const { error } = await (supabase.from('event_registrations') as any).insert([
+        {
+          event_id: eventId,
+          user_email: userEmail,
+          full_name: fullName || userEmail.split('@')[0],
+          guests_count: Math.max(0, guests),
+          status: 'going',
+        },
+      ]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['event-rsvp', eventId] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+};
+
+export const useCancelEvent = (eventId: number | null, userEmail: string | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (eventId == null || !userEmail) throw new Error('Brak danych');
+      const { error } = await supabase
+        .from('event_registrations')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('user_email', userEmail);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['event-rsvp', eventId] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 };
