@@ -66,9 +66,11 @@
     "react-dom": "^18.2.0",
     "react-native": "0.76.9",
     "react-router-dom": "^6.20.0",
+    "recharts": "^2.15.4",
     "soundtouch-ts": "^1.1.1",
     "soundtouchjs": "^0.2.1",
-    "tailwind-merge": "^2.6.0"
+    "tailwind-merge": "^2.6.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",
