@@ -6,6 +6,7 @@ import {
   Bell,
   BookOpen,
   CalendarCheck,
+  CalendarOff,
   ClipboardList,
   Fingerprint,
   FolderOpen,
@@ -306,6 +307,15 @@ export default function AccountScreen() {
           title="Moje zaproszenia"
           description="Potwierdź obecność na wydarzeniach"
           onPress={() => router.push('/(app)/rsvp')}
+        />
+        <SettingsRow
+          variant="nav"
+          Icon={CalendarOff}
+          iconTint="#be123c"
+          iconBg="#ffe4e6"
+          title="Moja niedostępność"
+          description="Zgłoś dni, w które nie możesz służyć"
+          onPress={() => router.push('/(app)/serve/availability')}
         />
         <SettingsRow
           variant="nav"

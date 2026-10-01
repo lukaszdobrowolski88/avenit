@@ -30,6 +30,7 @@ const MODULES = [
   'my-giving',
   'my-invitations',
   'my-home-groups',
+  'my-blockouts',
   'prayer-wall',
   'campaign-progress',
   'automation-run',
