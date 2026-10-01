@@ -3,7 +3,7 @@ import { supabase } from "../../lib/supabase";
 
 export interface ConversationListItem {
   id: string;
-  type: "direct" | "group" | "ministry";
+  type: "direct" | "group" | "ministry" | "announcement";
   name: string | null;
   ministry_key: string | null;
   avatar_url: string | null;
@@ -12,6 +12,9 @@ export interface ConversationListItem {
   starred?: boolean;
   archived?: boolean;
   muted?: boolean;
+  pinned?: boolean;
+  posting_policy?: "everyone" | "admins";
+  description?: string | null;
   unread_count?: number;
   participants_count?: number;
   /** Dla type='direct' — email drugiego uczestnika (nie mój). */
@@ -178,6 +181,26 @@ export interface MessageAttachment {
   size?: number;
 }
 
+export type MessageType = "text" | "poll" | "prayer" | "event" | "system";
+
+export interface PollOption { id: string; text: string }
+export interface PollMetadata {
+  question: string;
+  options: PollOption[];
+  multiple?: boolean;
+  closes_at?: string | null;
+}
+export interface PrayerMetadata { title: string }
+export interface EventMetadata {
+  event_id?: string;
+  title: string;
+  date?: string;
+  time?: string;
+  location?: string;
+  max_participants?: number;
+  description?: string;
+}
+
 export interface MessageRow {
   id: string;
   conversation_id: string;
@@ -188,6 +211,10 @@ export interface MessageRow {
   edited_at: string | null;
   deleted_at: string | null;
   created_at: string;
+  // Komunikator „WhatsApp" (migracja 064): bogate typy + metadane + wzmianki (@).
+  message_type?: MessageType;
+  metadata?: Record<string, any> | null;
+  mentions?: string[] | null;
 }
 
 export const EDIT_WINDOW_MINUTES = 5;
@@ -207,7 +234,7 @@ export const useConversations = (userEmail: string | null) =>
       // Konwersacje, w których jestem uczestnikiem (z metadata: starred/archived/muted).
       const { data: parts, error: partsErr } = await supabase
         .from("conversation_participants")
-        .select("conversation_id, last_read_at, starred, archived, muted")
+        .select("conversation_id, last_read_at, starred, archived, muted, pinned")
         .eq("user_email", userEmail);
       if (partsErr) throw partsErr;
       const ids = (parts ?? []).map((p: any) => p.conversation_id);
@@ -216,7 +243,7 @@ export const useConversations = (userEmail: string | null) =>
       );
       const flagsByConv = new Map<
         string,
-        { starred: boolean; archived: boolean; muted: boolean }
+        { starred: boolean; archived: boolean; muted: boolean; pinned: boolean }
       >(
         (parts ?? []).map((p: any) => [
           p.conversation_id,
@@ -224,6 +251,7 @@ export const useConversations = (userEmail: string | null) =>
             starred: !!p.starred,
             archived: !!p.archived,
             muted: !!p.muted,
+            pinned: !!p.pinned,
           },
         ]),
       );
@@ -231,7 +259,7 @@ export const useConversations = (userEmail: string | null) =>
 
       const { data: convs, error: convErr } = await supabase
         .from("conversations")
-        .select("id, type, name, ministry_key, avatar_url, updated_at")
+        .select("id, type, name, ministry_key, avatar_url, updated_at, description, posting_policy")
         .in("id", ids)
         .order("updated_at", { ascending: false });
       if (convErr) throw convErr;
@@ -291,11 +319,12 @@ export const useConversations = (userEmail: string | null) =>
         }
       }
 
-      return visible.map((c: any) => {
+      const result: ConversationListItem[] = visible.map((c: any) => {
         const flags = flagsByConv.get(c.id) ?? {
           starred: false,
           archived: false,
           muted: false,
+          pinned: false,
         };
         return {
           id: c.id,
@@ -308,11 +337,22 @@ export const useConversations = (userEmail: string | null) =>
           starred: flags.starred,
           archived: flags.archived,
           muted: flags.muted,
+          pinned: flags.pinned,
+          posting_policy: (c.posting_policy as "everyone" | "admins") ?? "everyone",
+          description: c.description ?? null,
           unread_count: unreadByConv.get(c.id) ?? 0,
           participants_count: partsCountByConv.get(c.id) ?? 0,
           peer_email: c.type === "direct" ? peerByConv.get(c.id) ?? null : null,
           last_message: lastByConv.get(c.id) ?? null,
         };
+      });
+      // Spec §6: przypięte → ulubione → nieprzeczytane → po dacie.
+      const rank = (x: ConversationListItem) =>
+        (x.pinned ? 8 : 0) + (x.starred ? 4 : 0) + ((x.unread_count ?? 0) > 0 ? 2 : 0);
+      return result.sort((a, b) => {
+        const r = rank(b) - rank(a);
+        if (r !== 0) return r;
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
       });
     },
     enabled: !!userEmail,
@@ -342,6 +382,10 @@ export interface SendMessageInput {
   content: string;
   attachments?: MessageAttachment[];
   replyToId?: string | null;
+  // Bogate typy (spec §2) + wzmianki (@, spec §3). 4. argument wstecznie zgodny.
+  messageType?: MessageType;
+  metadata?: Record<string, any>;
+  mentions?: string[];
 }
 
 export const useSendMessage = (conversationId: string, senderEmail: string | null) => {
@@ -349,16 +393,17 @@ export const useSendMessage = (conversationId: string, senderEmail: string | nul
   return useMutation({
     mutationFn: async (input: SendMessageInput | string) => {
       if (!senderEmail) throw new Error("Brak zalogowanego użytkownika");
-      const data =
-        typeof input === "string"
-          ? { content: input, attachments: undefined, replyToId: undefined }
-          : input;
+      const data: SendMessageInput =
+        typeof input === "string" ? { content: input } : input;
       const { error } = await (supabase.from("messages") as any).insert({
         conversation_id: conversationId,
         sender_email: senderEmail,
         content: data.content,
         attachments: data.attachments ?? [],
         reply_to_id: data.replyToId ?? null,
+        message_type: data.messageType ?? "text",
+        metadata: data.metadata ?? {},
+        mentions: data.mentions ?? [],
       });
       if (error) throw error;
     },
@@ -635,6 +680,152 @@ export const useToggleReaction = (
 };
 
 // =====================================================================
+// Ankiety (poll) i prośby o modlitwę (prayer) — spec §2
+// =====================================================================
+
+/** Record<messageId, Record<optionId, { count, mine }>> — agregacja głosów. */
+export const usePollVotes = (conversationId: string, userEmail: string | null) =>
+  useQuery({
+    queryKey: ["pollVotes", conversationId, userEmail],
+    queryFn: async (): Promise<Record<string, Record<string, { count: number; mine: boolean }>>> => {
+      if (!conversationId) return {};
+      const { data: msgs } = await supabase
+        .from("messages")
+        .select("id")
+        .eq("conversation_id", conversationId)
+        .eq("message_type", "poll");
+      const ids = (msgs ?? []).map((m: any) => m.id);
+      if (ids.length === 0) return {};
+      const { data, error } = await supabase
+        .from("poll_votes")
+        .select("message_id, option_id, user_email")
+        .in("message_id", ids);
+      if (error) return {};
+      const out: Record<string, Record<string, { count: number; mine: boolean }>> = {};
+      for (const v of (data ?? []) as any[]) {
+        const m = (out[v.message_id] ??= {});
+        const o = (m[v.option_id] ??= { count: 0, mine: false });
+        o.count += 1;
+        if (v.user_email === userEmail) o.mine = true;
+      }
+      return out;
+    },
+    enabled: !!conversationId,
+  });
+
+export const useTogglePollVote = (conversationId: string, userEmail: string | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      messageId,
+      optionId,
+      multiple,
+    }: {
+      messageId: string;
+      optionId: string;
+      multiple?: boolean;
+    }) => {
+      if (!userEmail) throw new Error("Brak zalogowanego");
+      const { data: existing } = await supabase
+        .from("poll_votes")
+        .select("id")
+        .eq("message_id", messageId)
+        .eq("option_id", optionId)
+        .eq("user_email", userEmail)
+        .maybeSingle();
+      if ((existing as { id?: string } | null)?.id) {
+        // Ponowny klik w wybraną opcję = wycofanie głosu (spec §2).
+        await supabase.from("poll_votes").delete().eq("id", (existing as any).id);
+        return;
+      }
+      // Jednokrotny wybór → usuń wcześniejsze głosy usera w tej ankiecie.
+      if (!multiple) {
+        await supabase
+          .from("poll_votes")
+          .delete()
+          .eq("message_id", messageId)
+          .eq("user_email", userEmail);
+      }
+      const { error } = await (supabase.from("poll_votes") as any).insert({
+        message_id: messageId,
+        option_id: optionId,
+        user_email: userEmail,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["pollVotes", conversationId] }),
+  });
+};
+
+/** Record<messageId, { count, mine }> — odpowiedzi „🙏 Modlę się". */
+export const usePrayerResponses = (conversationId: string, userEmail: string | null) =>
+  useQuery({
+    queryKey: ["prayerResponses", conversationId, userEmail],
+    queryFn: async (): Promise<Record<string, { count: number; mine: boolean }>> => {
+      if (!conversationId) return {};
+      const { data: msgs } = await supabase
+        .from("messages")
+        .select("id")
+        .eq("conversation_id", conversationId)
+        .eq("message_type", "prayer");
+      const ids = (msgs ?? []).map((m: any) => m.id);
+      if (ids.length === 0) return {};
+      const { data, error } = await supabase
+        .from("prayer_responses")
+        .select("message_id, user_email")
+        .in("message_id", ids);
+      if (error) return {};
+      const out: Record<string, { count: number; mine: boolean }> = {};
+      for (const r of (data ?? []) as any[]) {
+        const o = (out[r.message_id] ??= { count: 0, mine: false });
+        o.count += 1;
+        if (r.user_email === userEmail) o.mine = true;
+      }
+      return out;
+    },
+    enabled: !!conversationId,
+  });
+
+export const useTogglePrayerResponse = (conversationId: string, userEmail: string | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ messageId, responding }: { messageId: string; responding: boolean }) => {
+      if (!userEmail) throw new Error("Brak zalogowanego");
+      if (responding) {
+        await supabase
+          .from("prayer_responses")
+          .delete()
+          .eq("message_id", messageId)
+          .eq("user_email", userEmail);
+      } else {
+        const { error } = await (supabase.from("prayer_responses") as any).insert({
+          message_id: messageId,
+          user_email: userEmail,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["prayerResponses", conversationId] }),
+  });
+};
+
+/** Przypięcie/odpięcie rozmowy (conversation_participants.pinned, per user) — spec §6. */
+export const useTogglePinConversation = (userEmail: string | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ conversationId, pinned }: { conversationId: string; pinned: boolean }) => {
+      if (!userEmail) throw new Error("Brak zalogowanego");
+      const { error } = await (supabase.from("conversation_participants") as any)
+        .update({ pinned })
+        .eq("conversation_id", conversationId)
+        .eq("user_email", userEmail);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["conversations"] }),
+  });
+};
+
+// =====================================================================
 // Pinned messages
 // =====================================================================
 
@@ -740,7 +931,8 @@ export const useSearchMessages = (
 export interface ReadReceiptRow {
   message_id: string;
   user_email: string;
-  read_at: string;
+  read_at: string | null;
+  delivered_at?: string | null;
 }
 
 /**
@@ -762,7 +954,7 @@ export const useReadReceipts = (conversationId: string) =>
       if (ids.length === 0) return {};
       const { data, error } = await supabase
         .from("message_read_receipts")
-        .select("message_id, user_email, read_at")
+        .select("message_id, user_email, read_at, delivered_at")
         .in("message_id", ids);
       if (error) {
         // Brak tabeli (42P01) lub brak grantu (403) — bez potwierdzeń odczytu.
@@ -782,18 +974,56 @@ export const markMessagesAsRead = async (
   userEmail: string,
 ): Promise<void> => {
   if (messageIds.length === 0) return;
+  const now = new Date().toISOString();
   const rows = messageIds.map((id) => ({
     message_id: id,
     user_email: userEmail,
-    read_at: new Date().toISOString(),
+    read_at: now,
+    delivered_at: now,
+  }));
+  // ignoreDuplicates:false — przeczytanie MUSI nadpisać ewentualny wiersz „tylko doręczone".
+  const { error } = await (supabase.from("message_read_receipts") as any).upsert(
+    rows,
+    { onConflict: "message_id,user_email", ignoreDuplicates: false },
+  );
+  if (error && (error as any).code !== "42P01") {
+    if (__DEV__) console.warn("[messenger] markMessagesAsRead failed:", error.message);
+  }
+};
+
+/** Oznacz cudze wiadomości jako DORĘCZONE (ptaszki) — nie nadpisuje „przeczytane". */
+export const markMessagesDelivered = async (
+  messageIds: string[],
+  userEmail: string,
+): Promise<void> => {
+  if (messageIds.length === 0) return;
+  const now = new Date().toISOString();
+  const rows = messageIds.map((id) => ({
+    message_id: id,
+    user_email: userEmail,
+    delivered_at: now,
+    read_at: null,
   }));
   const { error } = await (supabase.from("message_read_receipts") as any).upsert(
     rows,
     { onConflict: "message_id,user_email", ignoreDuplicates: true },
   );
   if (error && (error as any).code !== "42P01") {
-    if (__DEV__) console.warn("[messenger] markMessagesAsRead failed:", error.message);
+    if (__DEV__) console.warn("[messenger] markMessagesDelivered failed:", error.message);
   }
+};
+
+export type DeliveryStatus = "sent" | "delivered" | "read";
+
+/** Status własnej wiadomości z wierszy innych niż nadawca (spec §4): read > delivered > sent. */
+export const deliveryStatusFor = (
+  receipts: ReadReceiptRow[] | undefined,
+  senderEmail: string,
+): DeliveryStatus => {
+  const others = (receipts ?? []).filter((r) => r.user_email !== senderEmail);
+  if (others.some((r) => r.read_at)) return "read";
+  if (others.some((r) => r.delivered_at)) return "delivered";
+  return "sent";
 };
 
 // =====================================================================
