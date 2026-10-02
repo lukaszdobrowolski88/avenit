@@ -529,11 +529,12 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
     scripture: '',
     start_date: '',
     end_date: '',
-    graphics: []
+    graphics: [],
+    is_active: true
   });
 
   const openAdd = () => {
-    setForm({ name: '', description: '', scripture: '', start_date: '', end_date: '', graphics: [] });
+    setForm({ name: '', description: '', scripture: '', start_date: '', end_date: '', graphics: [], is_active: true });
     setEditingSeries(null);
     setShowModal(true);
   };
@@ -546,7 +547,8 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
       scripture: s.scripture || '',
       start_date: s.start_date || '',
       end_date: s.end_date || '',
-      graphics: s.graphics || []
+      graphics: s.graphics || [],
+      is_active: s.is_active !== false
     });
     setEditingSeries(s);
     setShowModal(true);
@@ -811,6 +813,10 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                     <p className="text-accent-primary-lighter text-sm truncate">{s.scripture}</p>
                   )}
                 </div>
+                {/* Status aktywności */}
+                <span className={`absolute top-2 left-2 text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm ${s.is_active !== false ? 'bg-green-500/90 text-white' : 'bg-gray-600/80 text-white'}`}>
+                  {s.is_active !== false ? tr('Aktywna') : tr('Nieaktywna')}
+                </span>
                 {/* Action buttons */}
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
@@ -920,6 +926,18 @@ function SeriesSection({ series, programs, speakers, onAdd, onEdit, onDelete }) 
                   onChange={(val) => setForm({ ...form, end_date: val })}
                 />
               </div>
+
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                  className="w-4 h-4 rounded border-gray-300 text-accent-primary focus:ring-accent-primary"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {tr('Seria aktywna')} <span className="text-gray-400">({tr('do wyboru przy kazaniu')})</span>
+                </span>
+              </label>
 
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">

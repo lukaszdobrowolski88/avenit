@@ -18,6 +18,7 @@ export default function SermonsModule({ embedded = false }) {
   const { withCampusFilter, campusIdForInsert, selectedCampusId } = useCampusQuery();
 
   const [sermons, setSermons] = useState([]);
+  const [teachingSeries, setTeachingSeries] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadSermons = useCallback(async () => {
@@ -36,9 +37,19 @@ export default function SermonsModule({ embedded = false }) {
     }
   }, [withCampusFilter]);
 
-  useEffect(() => { loadSermons(); }, [loadSermons, selectedCampusId]);
+  // Serie nauczania (do wyboru przy kazaniu). Filtr aktywnych robimy po stronie klienta,
+  // żeby nie wykluczyć starych wierszy z is_active = NULL.
+  const loadSeries = useCallback(async () => {
+    try {
+      const { data } = await supabase.from('teaching_series').select('id, name, is_active').order('name');
+      setTeachingSeries(data || []);
+    } catch { setTeachingSeries([]); }
+  }, []);
 
-  const shared = { sermons, loading, campusIdForInsert, withCampusFilter, refresh: loadSermons };
+  useEffect(() => { loadSermons(); }, [loadSermons, selectedCampusId]);
+  useEffect(() => { loadSeries(); }, [loadSeries]);
+
+  const shared = { sermons, loading, campusIdForInsert, withCampusFilter, refresh: loadSermons, teachingSeries };
 
   return (
     <div className={embedded ? 'space-y-6' : 'max-w-7xl mx-auto space-y-6'}>
