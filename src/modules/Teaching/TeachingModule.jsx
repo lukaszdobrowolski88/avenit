@@ -1041,14 +1041,20 @@ export default function TeachingModule() {
   };
 
   // SERIES CRUD
+  // Puste daty z formularza ('') → null (kolumny date nie przyjmują pustego stringa).
+  const cleanSeries = (data) => ({
+    ...data,
+    start_date: data.start_date || null,
+    end_date: data.end_date || null,
+  });
   const addSeries = async (data) => {
-    const { error } = await supabase.from('teaching_series').insert([data]);
+    const { error } = await supabase.from('teaching_series').insert([cleanSeries(data)]);
     if (error) { toast.error(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
 
   const editSeries = async (id, data) => {
-    const { error } = await supabase.from('teaching_series').update(data).eq('id', id);
+    const { error } = await supabase.from('teaching_series').update(cleanSeries(data)).eq('id', id);
     if (error) { toast.error(tr('Błąd: ') + error.message); return; }
     fetchData();
   };
