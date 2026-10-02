@@ -14,7 +14,7 @@ const emptyForm = {
   slug: '', is_published: false,
 };
 
-export default function SermonsTab({ sermons, loading, campusIdForInsert, refresh }) {
+export default function SermonsTab({ sermons, loading, campusIdForInsert, refresh, teachingSeries = [] }) {
   const [search, setSearch] = useState('');
   const [seriesFilter, setSeriesFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -42,6 +42,17 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
     { value: 'published', label: 'Opublikowane' },
     { value: 'draft', label: 'Szkice' },
   ];
+
+  // Wybór serii na kazaniu = aktywne serie nauczania (is_active !== false).
+  // Jeśli edytowane kazanie ma serię spoza listy aktywnych, dopisujemy ją (oznaczoną).
+  const seriesSelectOptions = useMemo(() => {
+    const activeNames = (teachingSeries || []).filter(s => s.is_active !== false).map(s => s.name).filter(Boolean);
+    const opts = [{ value: '', label: '— brak serii —' }, ...[...new Set(activeNames)].sort().map(n => ({ value: n, label: n }))];
+    if (form.series && !activeNames.includes(form.series)) {
+      opts.push({ value: form.series, label: `${form.series} (nieaktywna)` });
+    }
+    return opts;
+  }, [teachingSeries, form.series]);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -253,7 +264,7 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1 ml-1">Seria</label>
-                  <input value={form.series} onChange={e => setForm(f => ({ ...f, series: e.target.value }))} placeholder="np. List do Rzymian" className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100" />
+                  <CustomSelect value={form.series || ''} onChange={(val) => setForm(f => ({ ...f, series: val }))} options={seriesSelectOptions} />
                 </div>
               </div>
 
