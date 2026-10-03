@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ChevronRight,
   File as FileIcon,
@@ -66,6 +67,7 @@ const itemBorderStyle = {
 export default function MaterialsScreen() {
   const router = useRouter();
   const { user } = useAuthSession();
+  const insets = useSafeAreaInsets();
   const [folderId, setFolderId] = useState<string | null>(null);
   const folders = useFolders(folderId);
   const files = useFiles(folderId);
@@ -117,7 +119,7 @@ export default function MaterialsScreen() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
-        <View className="px-5 pt-12 pb-3 flex-row items-center gap-3">
+        <View className="px-5 pb-3 flex-row items-center gap-3" style={{ paddingTop: insets.top + 10 }}>
           <Pressable
             onPress={handleBack}
             className="active:opacity-60"

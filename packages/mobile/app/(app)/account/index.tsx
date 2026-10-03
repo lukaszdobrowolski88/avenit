@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
@@ -64,6 +65,7 @@ export default function AccountScreen() {
   const twoFa = use2FAStatus();
   const t = useT();
   const { lang, setLang, languages } = useLang();
+  const insets = useSafeAreaInsets();
 
   const [biometricSupported, setBiometricSupported] = useState(false);
   const [biometricOn, setBiometricOn] = useState(false);
@@ -156,7 +158,7 @@ export default function AccountScreen() {
       style={{ backgroundColor: '#ffffff' }}
       contentContainerStyle={{ paddingBottom: 120 }}
     >
-      <View className="items-center pt-12 pb-8 px-4">
+      <View className="items-center pb-8 px-4" style={{ paddingTop: insets.top + 16 }}>
         {avatarUrl ? (
           <Image
             source={{ uri: avatarUrl }}

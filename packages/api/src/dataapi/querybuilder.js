@@ -267,14 +267,14 @@ export function buildQuery(q) {
         WHERE seg->>'type' = 'everyone'
           OR (seg->>'type' = 'owner' AND ${alias}.created_by = $${pEmail})
           OR (seg->>'type' = 'role' AND jsonb_exists(seg->'values', $${pRole}))
-          OR (seg->>'type' = 'campus' AND $${pCampus} IS NOT NULL AND jsonb_exists(seg->'values', $${pCampus}))
+          OR (seg->>'type' = 'campus' AND $${pCampus}::text IS NOT NULL AND jsonb_exists(seg->'values', $${pCampus}::text))
           OR (seg->>'type' = 'home_group' AND jsonb_exists_any(seg->'values', $${pHome}::text[]))
           OR (seg->>'type' = 'home_group_member' AND $${pHasHome}::boolean)
           OR (seg->>'type' = 'home_group_leader' AND (CASE
                 WHEN seg->'values' IS NULL OR jsonb_array_length(seg->'values') = 0 THEN ($${pHasLeader}::boolean OR $${pIsCoord}::boolean)
                 ELSE (jsonb_exists_any(seg->'values', $${pLeadGroups}::text[]) OR $${pIsCoord}::boolean) END))
           OR (seg->>'type' = 'home_group_coordinator' AND $${pIsCoord}::boolean)
-          OR (seg->>'type' = 'member' AND $${pMemberTxt} IS NOT NULL AND jsonb_exists(seg->'values', $${pMemberTxt}))
+          OR (seg->>'type' = 'member' AND $${pMemberTxt}::text IS NOT NULL AND jsonb_exists(seg->'values', $${pMemberTxt}::text))
           OR (seg->>'type' = 'ministry' AND jsonb_exists_any(seg->'values', $${pMin}::text[]))
           OR (seg->>'type' = 'tag' AND jsonb_exists_any(seg->'values', $${pTags}::text[]))
           OR (seg->>'type' = 'invited' AND EXISTS (

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, type LucideIcon } from 'lucide-react-native';
 import { GradientIcon } from './GradientIcon';
 
@@ -14,9 +15,13 @@ interface Props {
 
 export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: Props) => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View className="px-5 pt-12 pb-4 flex-row items-center gap-3">
+    <View
+      className="px-5 pb-4 flex-row items-center gap-3"
+      style={{ paddingTop: insets.top + 10 }}
+    >
       {showBack ? (
         <Pressable
           onPress={() => router.back()}

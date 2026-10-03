@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { Link } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bell, Calendar, CheckSquare, Heart } from 'lucide-react-native';
 
 interface Props {
@@ -59,9 +60,10 @@ export const Greeting = ({
 }: Props) => {
   const name = firstNameFromEmail(email);
   const initial = name.charAt(0).toUpperCase();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View className="px-5 pt-12 pb-3">
+    <View className="px-5 pb-3" style={{ paddingTop: insets.top + 10 }}>
       <View className="flex-row items-start justify-between">
         <View className="flex-row items-center gap-3 flex-1">
           <View
