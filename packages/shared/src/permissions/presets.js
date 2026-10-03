@@ -49,6 +49,12 @@ export const ROLE_PRESETS = {
   // czlonek: minimum — kalendarz/programy (odczyt), modlitwa, komunikator, RSVP, własne zadania.
   czlonek: [
     allow('module:calendar'), allow('module:programs'), allow('module:prayer'), allow('module:komunikator'),
+    // Treści dla członków (migracje 011 + 070): Nauczanie, Grupy domowe, Kazania, Materiały — odczyt.
+    allow('module:teaching'), allow('module:homegroups'), allow('module:sermons'),
+    allow('res:teachings:read'), allow('res:teaching_speakers:read'), allow('res:teaching_series:read'),
+    allow('res:home_groups:read'), allow('res:home_group_members:read'), allow('res:home_group_leaders:read'),
+    allow('res:homegroups_events:read'),
+    allow('res:materials_files:read'), allow('res:materials_folders:read'),
     allow('res:events:read'), allow('res:ministry_events:read'),
     allow('res:programs:read'), allow('res:program_songs:read'), allow('res:schedule_assignments:read'),
     allow('res:tasks:read'), allow('res:tasks:update'),
