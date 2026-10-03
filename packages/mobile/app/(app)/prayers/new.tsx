@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, Globe, Lock } from 'lucide-react-native';
 import { useAuthSession } from '../../../src/lib/auth';
 import {
@@ -49,6 +50,7 @@ const inputStyle = {
 
 export default function NewPrayerScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuthSession();
   const params = useLocalSearchParams<{
     id?: string;
@@ -117,7 +119,7 @@ export default function NewPrayerScreen() {
         <View
           style={{
             paddingHorizontal: 20,
-            paddingTop: 48,
+            paddingTop: insets.top + 6,
             paddingBottom: 8,
             flexDirection: 'row',
             alignItems: 'center',

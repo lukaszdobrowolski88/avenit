@@ -95,7 +95,7 @@ export const useMembersByEmails = (emails: string[]) => {
         // (dozwolone dla każdego zalogowanego), inaczej czat pokazuje same e-maile.
         const { data: membersRows } = await supabase
           .from("members")
-          .select("id, email, first_name, last_name, photo_url")
+          .select("id, email, first_name, last_name")
           .in("email", missing);
         for (const row of (membersRows ?? []) as any[]) {
           if (row.email) {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StatusBar, Text, View, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CalendarPlus, ChevronLeft } from 'lucide-react-native';
 import { useSongDetail } from '../../../src/features/songs/api';
 import { TransposeControl } from '../../../src/features/songs/components/TransposeControl';
@@ -11,6 +12,7 @@ import { useAuthSession } from '../../../src/lib/auth';
 export default function SongDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuthSession();
   const { data: song, isLoading, isError, error } = useSongDetail(id ?? '');
   const [targetKey, setTargetKey] = useState<string | null>(null);
@@ -81,7 +83,7 @@ export default function SongDetailScreen() {
         <View
           style={{
             paddingHorizontal: 20,
-            paddingTop: 48,
+            paddingTop: insets.top + 6,
             paddingBottom: 12,
             flexDirection: 'row',
             alignItems: 'center',

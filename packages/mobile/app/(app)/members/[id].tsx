@@ -1,5 +1,6 @@
 import { ActivityIndicator, Linking, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Cake,
   ChevronLeft,
@@ -132,6 +133,7 @@ const InfoRow = ({
 
 export default function MemberDetailScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { selectedCampusId } = useCampusQuery();
   const { data: member, isLoading } = useMember(id ?? '', selectedCampusId);
@@ -182,7 +184,7 @@ export default function MemberDetailScreen() {
         <View
           style={{
             paddingHorizontal: 20,
-            paddingTop: 48,
+            paddingTop: insets.top + 6,
             paddingBottom: 8,
           }}
         >

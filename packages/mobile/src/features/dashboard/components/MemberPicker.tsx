@@ -31,7 +31,7 @@ const useMembersWithEmail = () =>
     queryFn: async (): Promise<PickerMember[]> => {
       const { data, error } = await supabase
         .from('members')
-        .select('id, email, first_name, last_name, photo_url')
+        .select('id, email, first_name, last_name')
         .not('email', 'is', null)
         .order('last_name', { ascending: true });
       if (error) throw error;

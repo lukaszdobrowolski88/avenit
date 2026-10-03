@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ChevronLeft,
   ExternalLink,
@@ -132,6 +133,7 @@ const TEAM_LABELS: Record<
 export default function ProgramDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuthSession();
   const programQuery = useProgramDetail(id ?? '');
   const assignmentsQuery = useMyAssignments(id ?? '', user?.email ?? null);
@@ -212,7 +214,7 @@ export default function ProgramDetailScreen() {
       <View
         style={{
           paddingHorizontal: 20,
-          paddingTop: 48,
+          paddingTop: insets.top + 6,
           paddingBottom: 14,
           borderBottomWidth: 1,
           borderBottomColor: '#eef0f3',

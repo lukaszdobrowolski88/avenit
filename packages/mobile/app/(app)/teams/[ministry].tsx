@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Calendar,
   CalendarDays,
@@ -123,6 +124,7 @@ const isMinistryKey = (s: string | undefined): s is MinistryKey =>
 
 export default function TeamDetailScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { ministry } = useLocalSearchParams<{ ministry: string }>();
   const { user } = useAuthSession();
   const { selectedCampusId, withCampusFilter, campusIdForInsert } = useCampusQuery();
@@ -398,7 +400,7 @@ export default function TeamDetailScreen() {
         <View
           style={{
             paddingHorizontal: 16,
-            paddingTop: 48,
+            paddingTop: insets.top + 6,
             paddingBottom: 4,
             flexDirection: 'row',
             alignItems: 'center',
