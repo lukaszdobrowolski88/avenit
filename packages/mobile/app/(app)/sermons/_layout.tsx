@@ -1,10 +1,13 @@
 import { Stack } from 'expo-router';
+import { ModuleGate } from '../../../src/components/ModuleGate';
 
 export default function SermonsLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="[id]" />
-    </Stack>
+    <ModuleGate moduleKey="sermons">
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="[id]" />
+      </Stack>
+    </ModuleGate>
   );
 }

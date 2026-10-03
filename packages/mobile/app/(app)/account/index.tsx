@@ -5,33 +5,22 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
   Bell,
-  BookOpen,
-  CalendarCheck,
-  CalendarOff,
   Check,
-  ClipboardList,
   Fingerprint,
-  FolderOpen,
-  Gift,
-  Heart,
-  Home,
   KeyRound,
+  LayoutGrid,
   LogOut,
-  ListTodo,
-  Music,
   Moon,
   Palette,
-  Podcast,
   Shield,
   ShieldCheck,
   Smartphone,
   Trash2,
   UserCog,
-  Users,
 } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
 import { useColorScheme } from 'nativewind';
-import { useAuthSession, signOut, isStaffUser } from '../../../src/lib/auth';
+import { useAuthSession, signOut } from '../../../src/lib/auth';
 import { registerPushToken } from '../../../src/lib/push';
 import {
   isBiometricEnabled,
@@ -149,8 +138,6 @@ export default function AccountScreen() {
   const initial = (fullName || email).charAt(0).toUpperCase();
   const isDark = colorScheme === 'dark';
   const showCampusSection = campuses.length > 0;
-  // Treści „służbowe" — zwykły członek ich nie widzi (Formularze, katalog Członków).
-  const staff = isStaffUser(user);
 
   return (
     <ScrollView
@@ -353,131 +340,16 @@ export default function AccountScreen() {
         />
       </SettingsGroup>
 
-      <SettingsGroup title={t("Dla Ciebie")}>
+      <SettingsGroup title={t("Aplikacja")}>
         <SettingsRow
           variant="nav"
-          Icon={CalendarCheck}
-          iconTint="#db2777"
-          iconBg="#fce7f3"
-          title={t("Moje zaproszenia")}
-          description={t("Potwierdź obecność na wydarzeniach")}
-          onPress={() => router.push('/(app)/rsvp')}
-        />
-        <SettingsRow
-          variant="nav"
-          Icon={CalendarOff}
-          iconTint="#be123c"
-          iconBg="#ffe4e6"
-          title={t("Moja niedostępność")}
-          description={t("Zgłoś dni, w które nie możesz służyć")}
-          onPress={() => router.push('/(app)/serve/availability')}
-        />
-        <SettingsRow
-          variant="nav"
-          Icon={Gift}
-          iconTint="#059669"
-          iconBg="#d1fae5"
-          title={t("Dawanie")}
-          description={t("Twoje darowizny i wsparcie wspólnoty")}
-          onPress={() => router.push('/(app)/giving')}
-        />
-        <SettingsRow
-          variant="nav"
-          Icon={Podcast}
-          iconTint="#7c3aed"
-          iconBg="#ede9fe"
-          title={t("Kazania")}
-          description={t("Posłuchaj lub obejrzyj kazania")}
-          onPress={() => router.push('/(app)/sermons')}
-        />
-      </SettingsGroup>
-
-      <SettingsGroup title={t("Moduły zespołów")}>
-        <SettingsRow
-          variant="nav"
-          Icon={ListTodo}
-          iconTint="#0d9488"
-          iconBg="#ccfbf1"
-          title={t("Moja praca")}
-          description={t("Zadania przypisane do Ciebie na tablicach")}
-          onPress={() => router.push('/(app)/work')}
-        />
-        <SettingsRow
-          variant="nav"
-          Icon={Music}
-          iconTint="#7c3aed"
-          iconBg="#ede9fe"
-          title={t("Planowane pieśni")}
-          description={t("Setlisty nadchodzących nabożeństw")}
-          onPress={() => router.push('/(app)/setlist')}
-        />
-        <SettingsRow
-          variant="nav"
-          Icon={Users}
+          Icon={LayoutGrid}
           iconTint="#be185d"
           iconBg="#fce7f3"
-          title={t("Zespoły")}
-          description={t("Worship, Media, Atmosfera, Kids, Młodzieżówka")}
-          onPress={() => router.push('/(app)/teams')}
+          title={t("Wszystkie moduły")}
+          description={t("Zespoły, grupy, materiały i reszta — według Twoich uprawnień")}
+          onPress={() => router.push('/(app)/modules')}
         />
-        <SettingsRow
-          variant="nav"
-          Icon={Home}
-          iconTint="#1d4ed8"
-          iconBg="#dbeafe"
-          title={t("Grupy domowe")}
-          description={t("Lista grup, członkowie, spotkania")}
-          onPress={() => router.push('/(app)/home-groups')}
-        />
-        <SettingsRow
-          variant="nav"
-          Icon={Heart}
-          iconTint="#be185d"
-          iconBg="#fce7f3"
-          title={t("Ściana modlitwy")}
-          description={t("Intencje wspólnoty")}
-          onPress={() => router.push('/(app)/prayers')}
-        />
-        {staff ? (
-          <SettingsRow
-            variant="nav"
-            Icon={Users}
-            iconTint="#0e7490"
-            iconBg="#cffafe"
-            title={t("Członkowie")}
-            description={t("Lista członków wspólnoty")}
-            onPress={() => router.push('/(app)/members')}
-          />
-        ) : null}
-        <SettingsRow
-          variant="nav"
-          Icon={BookOpen}
-          iconTint="#6d28d9"
-          iconBg="#ede9fe"
-          title={t("Nauczania")}
-          description={t("Kazania i serie tematyczne")}
-          onPress={() => router.push('/(app)/teachings')}
-        />
-        <SettingsRow
-          variant="nav"
-          Icon={FolderOpen}
-          iconTint="#0e7490"
-          iconBg="#cffafe"
-          title={t("Materiały")}
-          description={t("Pliki i dokumenty")}
-          onPress={() => router.push('/(app)/materials')}
-        />
-        {staff ? (
-          <SettingsRow
-            variant="nav"
-            Icon={ClipboardList}
-            iconTint="#047857"
-            iconBg="#d1fae5"
-            title={t("Formularze")}
-            description={t("Aktywne formularze i ankiety")}
-            onPress={() => router.push('/(app)/forms')}
-          />
-        ) : null}
         <SettingsRow
           variant="nav"
           Icon={Bell}

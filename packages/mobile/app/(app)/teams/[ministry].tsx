@@ -21,6 +21,8 @@ import {
 } from 'lucide-react-native';
 import { GradientIcon } from '../../../src/components/ui/GradientIcon';
 import { useAuthSession } from '../../../src/lib/auth';
+import { usePermissions } from '../../../src/lib/permissions';
+import { NoModuleAccess } from '../../../src/components/ModuleGate';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import {
   ALL_MINISTRIES,
@@ -145,6 +147,11 @@ export default function TeamDetailScreen() {
   const roster = useMinistryRoster(key);
   const createPost = useCreateWallPost(key);
   const createEvent = useCreateMinistryEvent(key, { campusIdForInsert });
+  // Uprawnienia jak na webie: moduł zespołu (module:<key>) i zakładka składu
+  // (tab:<key>:members — na webie zakładka „Członkowie” z kontaktami).
+  const perms = usePermissions();
+  const canRoster = perms.tabVisible(key, 'members');
+  const teamLabel = perms.modules.find((m) => m.key === key)?.label || meta.label;
 
   const refetch = () => {
     wall.refetch();
@@ -191,6 +198,15 @@ export default function TeamDetailScreen() {
     );
   }
 
+  if (!perms.ready) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
+        <ActivityIndicator color="#ec4899" />
+      </View>
+    );
+  }
+  if (!perms.moduleVisible(key)) return <NoModuleAccess />;
+
   const renderHeader = () => (
     <>
       <View
@@ -224,7 +240,7 @@ export default function TeamDetailScreen() {
               fontFamily: 'Inter_700Bold',
             }}
           >
-            {meta.label}
+            {teamLabel}
           </Text>
         </View>
       </View>
@@ -259,12 +275,14 @@ export default function TeamDetailScreen() {
             label="Grafik"
           />
         ) : null}
-        <Tab
-          active={tab === 'roster'}
-          onPress={() => setTab('roster')}
-          Icon={UsersIcon}
-          label="Skład"
-        />
+        {canRoster ? (
+          <Tab
+            active={tab === 'roster'}
+            onPress={() => setTab('roster')}
+            Icon={UsersIcon}
+            label="Skład"
+          />
+        ) : null}
       </View>
 
       {tab === 'wall' || tab === 'events' ? (

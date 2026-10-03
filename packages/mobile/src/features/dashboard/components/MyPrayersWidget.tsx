@@ -22,6 +22,8 @@ export const MyPrayersWidget = ({ items }: { items: RecentPrayer[] }) => {
     <WidgetCard
       title="Moje Modlitwy"
       Icon={Heart}
+      iconTint="#c2410c"
+      iconBg="#ffedd5"
       badge={items.length > 0 ? String(items.length) : undefined}
     >
       {items.length === 0 ? (

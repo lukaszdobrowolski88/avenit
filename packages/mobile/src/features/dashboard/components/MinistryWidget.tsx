@@ -12,7 +12,6 @@ interface Props {
   ministry: UpcomingMinistryItem[];
   suggestions: UpcomingMinistryItem[];
   history: UpcomingMinistryItem[];
-  programs: UpcomingProgramItem[];
 }
 
 const StatusPill = ({ status }: { status: 'pending' | 'accepted' | 'rejected' }) => {
@@ -234,7 +233,7 @@ export const MinistryWidget = ({ ministry, suggestions, history }: Props) => {
   const [tab, setTab] = useState<TabKey>('upcoming');
 
   return (
-    <WidgetCard title="Moja Służba" Icon={Calendar}>
+    <WidgetCard title="Moja Służba" Icon={Calendar} iconTint="#be185d" iconBg="#fce7f3">
       <View style={{ paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8 }}>
         <View
           style={{
