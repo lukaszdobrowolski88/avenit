@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Calendar,
   ChevronLeft,
@@ -170,6 +171,7 @@ const InfoLine = ({
 
 export default function HomeGroupDetailScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading } = useHomeGroupDetail(String(id ?? ''));
 
@@ -225,7 +227,7 @@ export default function HomeGroupDetailScreen() {
         <View
           style={{
             paddingHorizontal: 20,
-            paddingTop: 48,
+            paddingTop: insets.top + 6,
             paddingBottom: 8,
             flexDirection: 'row',
             alignItems: 'center',
