@@ -6,7 +6,7 @@ export interface FolderRow {
   id: string;
   name: string;
   parent_id: string | null;
-  ministry_key: string | null;
+  team_type: string | null;
 }
 
 export interface FileRow {
@@ -16,20 +16,29 @@ export interface FileRow {
   file_size: number;
   mime_type: string;
   folder_id: string | null;
-  ministry_key: string | null;
+  team_type: string | null;
   description: string | null;
   download_count: number;
   created_at: string;
 }
 
-export const useFolders = (parentId: string | null) =>
+// Przestrzeń plików jak na webie: kolumna team_type = klucz modułu zespołu ('worship',
+// 'media', 'homegroups'…), null = pliki ogólne. (Wcześniej mobile pytał o nieistniejącą
+// kolumnę ministry_key → błąd 42703 i pusty ekran.)
+const scopeTeam = (q: any, teamType: string | null) =>
+  teamType ? q.eq('team_type', teamType) : q.is('team_type', null);
+
+export const useFolders = (parentId: string | null, teamType: string | null = null) =>
   useQuery({
-    queryKey: ['materials', 'folders', parentId],
+    queryKey: ['materials', 'folders', teamType, parentId],
     queryFn: async (): Promise<FolderRow[]> => {
-      let q = supabase
-        .from('materials_folders')
-        .select('id, name, parent_id, ministry_key')
-        .order('name', { ascending: true });
+      let q = scopeTeam(
+        supabase
+          .from('materials_folders')
+          .select('id, name, parent_id, team_type')
+          .order('name', { ascending: true }),
+        teamType,
+      );
       if (parentId === null) q = q.is('parent_id', null);
       else q = q.eq('parent_id', parentId);
       const { data, error } = await q;
@@ -38,11 +47,14 @@ export const useFolders = (parentId: string | null) =>
     },
   });
 
-export const useFiles = (folderId: string | null) =>
+export const useFiles = (folderId: string | null, teamType: string | null = null) =>
   useQuery({
-    queryKey: ['materials', 'files', folderId],
+    queryKey: ['materials', 'files', teamType, folderId],
     queryFn: async (): Promise<FileRow[]> => {
-      let q = supabase.from('materials_files').select('*').order('name', { ascending: true });
+      let q = scopeTeam(
+        supabase.from('materials_files').select('*').order('name', { ascending: true }),
+        teamType,
+      );
       if (folderId === null) q = q.is('folder_id', null);
       else q = q.eq('folder_id', folderId);
       const { data, error } = await q;
@@ -61,7 +73,7 @@ export const useFolderPath = (folderId: string | null) =>
       for (let i = 0; i < 10 && cur; i++) {
         const result = await supabase
           .from('materials_folders')
-          .select('id, name, parent_id, ministry_key')
+          .select('id, name, parent_id, team_type')
           .eq('id', cur)
           .maybeSingle();
         const row = result.data as FolderRow | null;
@@ -128,14 +140,18 @@ export const pickDocument = async (): Promise<DocumentPicker.DocumentPickerAsset
 // Upload pliku do bieżącego folderu Materiałów. Storage: bucket `materials` (zapis =
 // requireUser, więc członek może), metadane: materials_files (T(null)). Ścieżka i pola
 // jak web (useMaterials): global/<ts>_<rand>_<nazwa>, team_type null = plik globalny.
-export const useUploadMaterial = (folderId: string | null, userEmail: string | null) => {
+export const useUploadMaterial = (
+  folderId: string | null,
+  userEmail: string | null,
+  teamType: string | null = null,
+) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (asset: DocumentPicker.DocumentPickerAsset) => {
       const name = asset.name || `plik-${Date.now()}`;
       const mime = asset.mimeType || 'application/octet-stream';
       const sanitized = name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const storagePath = `global/${Date.now()}_${Math.random().toString(36).slice(2, 11)}_${sanitized}`;
+      const storagePath = `${teamType ?? 'global'}/${Date.now()}_${Math.random().toString(36).slice(2, 11)}_${sanitized}`;
 
       const response = await fetch(asset.uri);
       const arrayBuffer = await response.arrayBuffer();
@@ -153,12 +169,12 @@ export const useUploadMaterial = (folderId: string | null, userEmail: string | n
         file_size: size,
         mime_type: mime,
         folder_id: folderId,
-        team_type: null,
+        team_type: teamType,
         uploaded_by: userEmail,
       });
       if (insErr) throw new Error(insErr.message || 'Nie udało się zapisać pliku.');
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['materials', 'files', folderId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['materials', 'files', teamType, folderId] }),
   });
 };
 
