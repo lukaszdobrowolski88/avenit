@@ -164,47 +164,64 @@ export const MonthView = ({ items, onPick }: Props) => {
       </View>
 
       <View style={styles.dayPanel}>
-        <Text style={styles.dayPanelTitle}>
-          {(() => {
-            const out = format(selected, 'EEEE, d MMMM', { locale: pl });
-            return out.charAt(0).toUpperCase() + out.slice(1);
-          })()}
-        </Text>
+        <View style={styles.dayPanelHead}>
+          <Text style={styles.dayPanelTitle}>
+            {(() => {
+              const out = format(selected, 'EEEE, d MMMM', { locale: pl });
+              return out.charAt(0).toUpperCase() + out.slice(1);
+            })()}
+          </Text>
+          {dayItems.length > 0 ? (
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>{dayItems.length}</Text>
+            </View>
+          ) : null}
+        </View>
         {dayItems.length === 0 ? (
-          <Text style={styles.emptyText}>Brak wydarzeń tego dnia.</Text>
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyEmoji}>🗓️</Text>
+            <Text style={styles.emptyText}>Brak wydarzeń tego dnia</Text>
+          </View>
         ) : (
           dayItems.map((evt) => {
             const start = toDate(evt.startsAt);
             const hasTime = start.getHours() !== 0 || start.getMinutes() !== 0;
             const time = hasTime ? format(start, 'HH:mm') : 'Cały dzień';
+            const color = SOURCE_DOT[evt.source];
             return (
               <Pressable
                 key={evt.id}
                 onPress={() => onPick(evt)}
-                style={({ pressed }) => [
-                  styles.dayRow,
-                  evt.isMine && styles.dayRowMine,
-                  pressed && { opacity: 0.85 },
-                ]}
+                className="active:opacity-70"
+                style={{ marginBottom: 6 }}
               >
-                <View style={[styles.dayDot, { backgroundColor: SOURCE_DOT[evt.source] }]} />
-                <View style={styles.dayTimeBox}>
-                  <Text style={styles.dayTime}>{time}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text numberOfLines={1} style={styles.dayTitle}>
-                    {evt.title}
-                  </Text>
-                  <Text numberOfLines={1} style={styles.daySub}>
-                    {SOURCE_LABEL[evt.source]}
-                    {evt.location ? ` · ${evt.location}` : ''}
-                  </Text>
-                </View>
-                {evt.isMine ? (
-                  <View style={styles.minePill}>
-                    <Text style={styles.minePillText}>MOJE</Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    borderRadius: 14,
+                    backgroundColor: evt.isMine ? '#fdf2f8' : '#f6f6f5',
+                  }}
+                >
+                  <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: color }} />
+                  <View style={{ flex: 1 }}>
+                    <Text numberOfLines={1} style={styles.dayTitle}>
+                      {evt.title}
+                    </Text>
+                    <Text numberOfLines={1} style={styles.daySub}>
+                      {time} · {SOURCE_LABEL[evt.source]}
+                      {evt.location ? ` · ${evt.location}` : ''}
+                    </Text>
                   </View>
-                ) : null}
+                  {evt.isMine ? (
+                    <View style={styles.minePill}>
+                      <Text style={styles.minePillText}>MOJE</Text>
+                    </View>
+                  ) : null}
+                </View>
               </Pressable>
             );
           })
@@ -272,54 +289,57 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   dayPanel: {
-    marginTop: 12,
+    marginTop: 16,
     paddingHorizontal: 16,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#eef0f3',
   },
+  dayPanelHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
   dayPanelTitle: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#0c0a09',
     fontFamily: 'Inter_700Bold',
-    letterSpacing: -0.2,
-    marginBottom: 10,
+    letterSpacing: -0.3,
   },
+  countBadge: {
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: '#f5f5f4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countBadgeText: {
+    fontSize: 11,
+    color: '#78716c',
+    fontFamily: 'Inter_700Bold',
+  },
+  emptyWrap: {
+    paddingVertical: 32,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyEmoji: { fontSize: 28, opacity: 0.55 },
   emptyText: {
-    paddingVertical: 24,
     textAlign: 'center',
     color: '#a8a29e',
     fontFamily: 'Inter_500Medium',
     fontSize: 13,
   },
-  dayRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    marginBottom: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#eef0f3',
-    backgroundColor: '#ffffff',
-  },
-  dayRowMine: { borderColor: '#fbcfe8', backgroundColor: '#fef3f2' },
-  dayDot: { width: 6, height: 6, borderRadius: 3 },
-  dayTimeBox: { minWidth: 56, alignItems: 'flex-start' },
-  dayTime: {
-    fontSize: 12,
-    color: '#57534e',
-    fontFamily: 'Inter_700Bold',
-    letterSpacing: 0.2,
-  },
   dayTitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#0c0a09',
     fontFamily: 'Inter_600SemiBold',
     letterSpacing: -0.2,
   },
-  daySub: { fontSize: 11, color: '#78716c', fontFamily: 'Inter_500Medium', marginTop: 2 },
+  daySub: { fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium', marginTop: 2 },
   minePill: {
     paddingHorizontal: 7,
     paddingVertical: 2,

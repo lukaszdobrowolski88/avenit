@@ -24,7 +24,9 @@ const config: ExpoConfig = {
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
-    backgroundColor: '#d97706',
+    // Białe tło (jak ekran logowania) — splash-icon jest 512×512 bez alfy (logo na bieli),
+    // więc na pomarańczowym tle dawał białą płytę + pomarańczowe pasy. Na bieli = czysto.
+    backgroundColor: '#ffffff',
   },
   ios: {
     bundleIdentifier: baseId + suffix,

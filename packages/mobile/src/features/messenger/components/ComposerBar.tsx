@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ActivityIndicator, Image, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, Modal, Pressable, Text, TextInput, View } from "react-native";
 import {
   BarChart3,
   Calendar,
@@ -8,6 +8,7 @@ import {
   Image as ImageIcon,
   Mic,
   Pencil,
+  Plus,
   Send,
   X,
 } from "lucide-react-native";
@@ -76,6 +77,19 @@ export const ComposerBar = ({
   }
   const canSend = !!text.trim() || !!pendingAttachment;
   const [recording, setRecording] = useState(false);
+  const [showActions, setShowActions] = useState(false);
+
+  // Akcje załączników schowane pod „+" — pole tekstowe dostaje całą szerokość.
+  const actions: { key: string; label: string; Icon: typeof ImageIcon; tint: string; bg: string; onPress: () => void }[] = [
+    { key: "image", label: "Zdjęcie", Icon: ImageIcon, tint: "#2563eb", bg: "#dbeafe", onPress: onPickImage },
+    { key: "camera", label: "Aparat", Icon: Camera, tint: "#0e7490", bg: "#cffafe", onPress: onTakePhoto },
+    ...(onCreatePoll ? [{ key: "poll", label: "Ankieta", Icon: BarChart3, tint: "#7c3aed", bg: "#ede9fe", onPress: onCreatePoll }] : []),
+    ...(onShareEvent ? [{ key: "event", label: "Wydarzenie", Icon: Calendar, tint: "#be185d", bg: "#fce7f3", onPress: onShareEvent }] : []),
+  ];
+  const runAction = (fn: () => void) => {
+    setShowActions(false);
+    fn();
+  };
 
   if (recording && onSendVoice) {
     return (
@@ -232,85 +246,37 @@ export const ComposerBar = ({
         }}
       >
         {!editing ? (
-          <>
-            <Pressable
-              onPress={onPickImage}
-              disabled={uploading}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#fafaf9",
-                borderWidth: 1,
-                borderColor: "#eef0f3",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <ImageIcon size={18} color="#57534e" />
-            </Pressable>
-            <Pressable
-              onPress={onTakePhoto}
-              disabled={uploading}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "#fafaf9",
-                borderWidth: 1,
-                borderColor: "#eef0f3",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Camera size={18} color="#57534e" />
-            </Pressable>
-            {onCreatePoll ? (
-              <Pressable
-                onPress={onCreatePoll}
-                disabled={uploading}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: "#fafaf9",
-                  borderWidth: 1,
-                  borderColor: "#eef0f3",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <BarChart3 size={18} color="#57534e" />
-              </Pressable>
-            ) : null}
-            {onShareEvent ? (
-              <Pressable
-                onPress={onShareEvent}
-                disabled={uploading}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: "#fafaf9",
-                  borderWidth: 1,
-                  borderColor: "#eef0f3",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Calendar size={18} color="#57534e" />
-              </Pressable>
-            ) : null}
-          </>
+          <Pressable
+            onPress={() => setShowActions(true)}
+            disabled={uploading}
+            hitSlop={6}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: "#fafaf9",
+              borderWidth: 1,
+              borderColor: "#eef0f3",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: uploading ? 0.5 : 1,
+            }}
+          >
+            {uploading ? (
+              <ActivityIndicator size="small" color="#a8a29e" />
+            ) : (
+              <Plus size={22} color="#57534e" strokeWidth={2.2} />
+            )}
+          </Pressable>
         ) : null}
         <TextInput
           style={{
             flex: 1,
             maxHeight: 130,
-            minHeight: 40,
-            borderRadius: 20,
-            paddingHorizontal: 16,
-            paddingVertical: 10,
+            minHeight: 44,
+            borderRadius: 22,
+            paddingHorizontal: 18,
+            paddingVertical: 11,
             backgroundColor: "#fafaf9",
             borderWidth: 1,
             borderColor: "#eef0f3",
@@ -330,9 +296,9 @@ export const ComposerBar = ({
             onPress={() => setRecording(true)}
             disabled={sending || uploading}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
+              width: 44,
+              height: 44,
+              borderRadius: 22,
               backgroundColor: "#ec4899",
               alignItems: "center",
               justifyContent: "center",
@@ -343,7 +309,7 @@ export const ComposerBar = ({
               elevation: 4,
             }}
           >
-            <Mic size={18} color="#ffffff" strokeWidth={2.4} />
+            <Mic size={19} color="#ffffff" strokeWidth={2.4} />
           </Pressable>
         ) : (
           <Pressable
@@ -354,9 +320,9 @@ export const ComposerBar = ({
             {sending || uploading ? (
               <View
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
                   backgroundColor: "#ec4899",
                   alignItems: "center",
                   justifyContent: "center",
@@ -367,8 +333,8 @@ export const ComposerBar = ({
             ) : (
               <GradientIcon
                 Icon={Send}
-                size={40}
-                iconSize={18}
+                size={44}
+                iconSize={19}
                 from="#f97316"
                 to="#ec4899"
                 rounded
@@ -377,6 +343,86 @@ export const ComposerBar = ({
           </Pressable>
         )}
       </View>
+
+      <Modal
+        visible={showActions}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowActions(false)}
+      >
+        <Pressable
+          onPress={() => setShowActions(false)}
+          style={{ flex: 1, backgroundColor: "rgba(12,10,9,0.35)", justifyContent: "flex-end" }}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "#ffffff",
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              paddingHorizontal: 16,
+              paddingTop: 10,
+              paddingBottom: 34,
+            }}
+          >
+            <View
+              style={{
+                alignSelf: "center",
+                width: 40,
+                height: 5,
+                borderRadius: 3,
+                backgroundColor: "#e7e5e4",
+                marginBottom: 14,
+              }}
+            />
+            {actions.map(({ key, label, Icon, tint, bg, onPress }) => (
+              <Pressable
+                key={key}
+                onPress={() => runAction(onPress)}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 14,
+                  paddingVertical: 12,
+                  paddingHorizontal: 6,
+                }}
+              >
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: bg,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon size={21} color={tint} strokeWidth={2.1} />
+                </View>
+                <Text style={{ fontSize: 16, color: "#1c1917", fontFamily: "Inter_600SemiBold" }}>
+                  {label}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable
+              onPress={() => setShowActions(false)}
+              style={{
+                marginTop: 8,
+                paddingVertical: 13,
+                borderRadius: 14,
+                backgroundColor: "#fafaf9",
+                borderWidth: 1,
+                borderColor: "#eef0f3",
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ fontSize: 15, color: "#78716c", fontFamily: "Inter_600SemiBold" }}>
+                Anuluj
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 };

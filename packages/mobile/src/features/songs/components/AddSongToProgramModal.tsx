@@ -98,11 +98,8 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
       <Pressable
         disabled={alreadyAdded}
         onPress={() => setSelectedProgramId(item.id)}
-        style={({ pressed }) => [
-          styles.programCardShadow,
-          alreadyAdded && { opacity: 0.55 },
-          pressed && !alreadyAdded && { opacity: 0.85 },
-        ]}
+        className="active:opacity-70"
+        style={[styles.programCardShadow, alreadyAdded && { opacity: 0.55 }]}
       >
         <View style={[styles.programCardInner, isSelected && styles.programCardInnerSelected]}>
           <View style={[styles.programIcon, isSelected && styles.programIconSelected]}>
