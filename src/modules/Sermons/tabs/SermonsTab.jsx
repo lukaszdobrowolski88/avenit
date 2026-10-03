@@ -32,10 +32,14 @@ export default function SermonsTab({ sermons, loading, campusIdForInsert, refres
     }
   }, [form.title, slugTouched]);
 
+  // Opcje filtra serii = aktywne serie nauczania + serie już przypisane do kazań
+  // (żeby filtr działał nawet dla serii bez kazań oraz dla starych/nieaktywnych).
   const seriesOptions = useMemo(() => {
-    const set = new Set((sermons || []).map(s => s.series).filter(Boolean));
+    const fromSermons = (sermons || []).map(s => s.series).filter(Boolean);
+    const fromSeries = (teachingSeries || []).filter(s => s.is_active !== false).map(s => s.name).filter(Boolean);
+    const set = new Set([...fromSeries, ...fromSermons]);
     return [{ value: '', label: 'Wszystkie serie' }, ...[...set].sort().map(s => ({ value: s, label: s }))];
-  }, [sermons]);
+  }, [sermons, teachingSeries]);
 
   const statusOptions = [
     { value: '', label: 'Wszystkie statusy' },
