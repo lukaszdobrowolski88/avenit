@@ -1,4 +1,5 @@
 import { Image, Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
   ChevronLeft,
@@ -44,12 +45,13 @@ export const ConversationHeader = ({
   peerStatus,
 }: Props) => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   if (!details) {
     return (
       <View
         style={{
           backgroundColor: "#ffffff",
-          paddingTop: 48,
+          paddingTop: insets.top + 6,
           paddingBottom: 12,
           paddingHorizontal: 12,
           flexDirection: "row",
@@ -178,7 +180,7 @@ export const ConversationHeader = ({
     <View
       style={{
         backgroundColor: "#ffffff",
-        paddingTop: 48,
+        paddingTop: insets.top + 6,
         paddingBottom: 12,
         paddingHorizontal: 12,
         flexDirection: "row",
