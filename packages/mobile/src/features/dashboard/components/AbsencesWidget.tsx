@@ -325,6 +325,8 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
       <WidgetCard
         title="Moje Nieobecności"
         Icon={CalendarX}
+        iconTint="#6d28d9"
+        iconBg="#ede9fe"
         badge={items.length > 0 ? String(items.length) : undefined}
       >
         <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>

@@ -11,7 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import {
   Archive,
   ArchiveRestore,
@@ -19,6 +19,7 @@ import {
   Hash,
   MessageCircle,
   Search,
+  SquarePen,
   Star,
   Users as UsersIcon,
   VolumeX,
@@ -134,6 +135,7 @@ const ConversationAvatar = ({
 };
 
 export default function MessengerScreen() {
+  const router = useRouter();
   const { user } = useAuthSession();
   const [filter, setFilter] = useState<ConversationFilter>("all");
   const [search, setSearch] = useState("");
@@ -226,6 +228,24 @@ export default function MessengerScreen() {
             totalUnread > 0 ? `${totalUnread} nieprzeczytanych` : "Komunikator zboru"
           }
           Icon={MessageCircle}
+          right={
+            <Pressable
+              onPress={() => router.push("/(app)/messenger/new")}
+              accessibilityLabel="Nowa rozmowa"
+              hitSlop={8}
+              className="active:opacity-70"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "#0c0a09",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <SquarePen size={18} color="#ffffff" strokeWidth={2.2} />
+            </Pressable>
+          }
         />
 
         <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>

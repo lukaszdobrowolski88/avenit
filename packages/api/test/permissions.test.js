@@ -73,6 +73,13 @@ test('preset czlonek: tylko minimum', () => {
   assert.equal(can(g, sub, 'res:prayer_requests:create'), true);
   assert.equal(can(g, sub, 'res:members:read'), false);
   assert.equal(can(g, sub, 'module:finance'), false);
+  // Treści dla członków (migracja 070): moduły widoczne, zapis zablokowany.
+  assert.equal(can(g, sub, 'module:teaching'), true);
+  assert.equal(can(g, sub, 'module:homegroups'), true);
+  assert.equal(can(g, sub, 'module:sermons'), true);
+  assert.equal(can(g, sub, 'res:home_group_members:read'), true);
+  assert.equal(can(g, sub, 'res:home_group_members:create'), false);
+  assert.equal(can(g, sub, 'module:media'), false);
 });
 
 test('rada_starszych preset: pełny dostęp przez *', () => {

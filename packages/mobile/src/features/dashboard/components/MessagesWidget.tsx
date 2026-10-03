@@ -15,6 +15,8 @@ export const MessagesWidget = ({ conversations, totalUnread }: Props) => {
     <WidgetCard
       title="Nieprzeczytane"
       Icon={MessageCircle}
+      iconTint="#1d4ed8"
+      iconBg="#dbeafe"
       badge={totalUnread > 0 ? String(totalUnread) : undefined}
     >
       {conversations.length === 0 ? (

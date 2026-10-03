@@ -1,15 +1,13 @@
 import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import type { LucideIcon } from 'lucide-react-native';
-import { GradientIcon } from '../../../components/ui/GradientIcon';
 
 interface Props {
   title: string;
   Icon: LucideIcon;
+  // Kolor widżetu: ikona w miękkim kwadracie (bez gradientów i pasków).
   iconTint?: string;
   iconBg?: string;
-  iconFrom?: string;
-  iconTo?: string;
   badge?: string;
   badgeBg?: string;
   badgeColor?: string;
@@ -17,57 +15,76 @@ interface Props {
   children: ReactNode;
 }
 
-export const WidgetCard = ({ title, Icon, badge, badgeBg, badgeColor, action, children }: Props) => {
-  return (
+// Karta pulpitu: biała na ciepłoszarym tle strony. Oddziela ją tło, nie ramka ani cień.
+export const WidgetCard = ({
+  title,
+  Icon,
+  iconTint = '#be185d',
+  iconBg = '#fce7f3',
+  badge,
+  badgeBg,
+  badgeColor,
+  action,
+  children,
+}: Props) => (
+  <View
+    style={{
+      marginHorizontal: 16,
+      marginBottom: 14,
+      borderRadius: 22,
+      backgroundColor: '#ffffff',
+      overflow: 'hidden',
+    }}
+  >
     <View
-      className="mx-4 mb-3"
       style={{
-        borderRadius: 20,
-        backgroundColor: '#ffffff',
-        shadowColor: '#0f172a',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingHorizontal: 16,
+        paddingTop: 15,
+        paddingBottom: 10,
       }}
     >
       <View
-        className="overflow-hidden"
         style={{
-          borderRadius: 20,
-          borderWidth: 1,
-          borderColor: '#eef0f3',
+          width: 30,
+          height: 30,
+          borderRadius: 10,
+          backgroundColor: iconBg,
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <View className="flex-row items-center gap-3 px-4 pt-4 pb-3">
-          <GradientIcon Icon={Icon} size={36} iconSize={18} from="#f97316" to="#ec4899" />
-          <Text
-            className="flex-1 text-[16px]"
-            style={{
-              color: '#0c0a09',
-              letterSpacing: -0.3,
-              fontFamily: 'Inter_600SemiBold',
-            }}
-          >
-            {title}
-          </Text>
-          {action ? action : null}
-          {badge ? (
-            <View
-              className="px-2 py-0.5 rounded-md"
-              style={{ backgroundColor: badgeBg ?? '#f5f5f4' }}
-            >
-              <Text
-                className="text-[11px]"
-                style={{ color: badgeColor ?? '#1c1917', fontFamily: 'Inter_700Bold' }}
-              >
-                {badge}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-        <View>{children}</View>
+        <Icon size={16} color={iconTint} strokeWidth={2.3} />
       </View>
+      <Text
+        style={{
+          flex: 1,
+          fontSize: 16,
+          color: '#0c0a09',
+          letterSpacing: -0.3,
+          fontFamily: 'Inter_700Bold',
+        }}
+      >
+        {title}
+      </Text>
+      {action ? action : null}
+      {badge ? (
+        <View
+          style={{
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 999,
+            backgroundColor: badgeBg ?? '#f5f5f4',
+          }}
+        >
+          <Text style={{ fontSize: 11, color: badgeColor ?? '#1c1917', fontFamily: 'Inter_700Bold' }}>
+            {badge}
+          </Text>
+        </View>
+      ) : null}
     </View>
-  );
-};
+    <View>{children}</View>
+  </View>
+);

@@ -153,10 +153,8 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
                   return (
                     <Pressable
                       onPress={() => setSelectedProgram(item)}
-                      style={({ pressed }) => [
-                        styles.programCardShadow,
-                        pressed && { opacity: 0.85 },
-                      ]}
+                      className="active:opacity-70"
+                      style={styles.programCardShadow}
                     >
                       <View style={styles.programCardInner}>
                         <View style={styles.programIcon}>
@@ -524,11 +522,8 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
               key={s.id}
               disabled={disabled}
               onPress={() => onPick(s)}
-              style={({ pressed }) => [
-                styles.pickerRow,
-                pressed && { backgroundColor: '#fdf2f8' },
-                disabled && { opacity: 0.5 },
-              ]}
+              className="active:opacity-70"
+              style={[styles.pickerRow, disabled && { opacity: 0.5 }]}
             >
               <View style={styles.pickerIcon}>
                 <Music size={14} color="#ec4899" strokeWidth={2.2} />

@@ -1,7 +1,8 @@
 import { Tabs, Redirect } from 'expo-router';
 import { ActivityIndicator, Platform, View } from 'react-native';
-import { Calendar, Home, MessageCircle, Music, ListChecks, User } from 'lucide-react-native';
-import { useAuthSession, isStaffUser } from '../../src/lib/auth';
+import { Calendar, Home, LayoutGrid, MessageCircle, User } from 'lucide-react-native';
+import { useAuthSession } from '../../src/lib/auth';
+import { usePermissions } from '../../src/lib/permissions';
 import { useT } from '../../src/i18n';
 
 // Eksportowany — żeby ekrany detail (np. wątek czatu) mogły same przywrócić styl po ukryciu.
@@ -20,11 +21,13 @@ export const APP_TAB_BAR_STYLE = {
 };
 
 export default function AppLayout() {
-  const { session, user, loading } = useAuthSession();
+  const { session, loading } = useAuthSession();
   const t = useT();
-  // Pieśni to treść „służbowa" — zwykły członek jej nie widzi (ukrywamy zakładkę,
-  // by nie trafiał na pustą listę). Liderzy/koordynatorzy/admin widzą normalnie.
-  const staff = isStaffUser(user);
+  // Zakładki według uprawnień jak na webie. Do pierwszego wczytania pokazujemy
+  // Kalendarz i Czat (ma je prawie każdy), żeby pasek nie migał przy starcie.
+  const perms = usePermissions();
+  const tabHref = (moduleKey: string) =>
+    !perms.ready || perms.moduleVisible(moduleKey) ? undefined : null;
 
   if (loading) {
     return (
@@ -70,29 +73,10 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="programs"
-        options={{
-          title: t('Programy'),
-          tabBarIcon: ({ color, focused }) => (
-            <ListChecks color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="songs"
-        options={{
-          title: t('Pieśni'),
-          // Ukryta dla zwykłego członka (href:null) — widoczna od roli lidera wzwyż.
-          href: staff ? undefined : null,
-          tabBarIcon: ({ color, focused }) => (
-            <Music color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="calendar"
         options={{
           title: t('Kalendarz'),
+          href: tabHref('calendar'),
           tabBarIcon: ({ color, focused }) => (
             <Calendar color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
           ),
@@ -102,8 +86,18 @@ export default function AppLayout() {
         name="messenger"
         options={{
           title: t('Czat'),
+          href: tabHref('komunikator'),
           tabBarIcon: ({ color, focused }) => (
             <MessageCircle color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="modules"
+        options={{
+          title: t('Moduły'),
+          tabBarIcon: ({ color, focused }) => (
+            <LayoutGrid color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
           ),
         }}
       />
@@ -116,6 +110,8 @@ export default function AppLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="programs" options={{ href: null }} />
+      <Tabs.Screen name="songs" options={{ href: null }} />
       <Tabs.Screen name="prayers" options={{ href: null }} />
       <Tabs.Screen name="giving" options={{ href: null }} />
       <Tabs.Screen name="rsvp" options={{ href: null }} />

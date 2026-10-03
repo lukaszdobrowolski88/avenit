@@ -5,28 +5,11 @@ import { canAccess, getTableRule, invalidatePermissions, requireCapability, load
 import { fieldColumns, crudCapability } from '@avenit/shared/src/permissions/catalog.js';
 import { emitChange } from '../realtime/hub.js';
 import { notifyOnWrite } from '../realtime/push-hooks.js';
-import { platformPool } from '../db.js';
+import { platformDisabledModules } from '../lib/platform-modules.js';
 
 // Tabele, których insert wyzwala automatyczny push (patrz push-hooks.js).
 // Push wysyłamy wsadowo (fn send-assignment-invites), nie na każdy insert przypisania.
 const PUSH_ON_INSERT = new Set(['messages']);
-
-// Cache modułów wyłączonych na poziomie platformy per tenant (60 s).
-const disabledModulesCache = new Map(); // tenantId -> { set, at }
-async function platformDisabledModules(tenantId) {
-  const cached = disabledModulesCache.get(tenantId);
-  if (cached && Date.now() - cached.at < 60_000) return cached.set;
-  let set = new Set();
-  try {
-    const { rows } = await platformPool.query(
-      `SELECT module_key FROM tenant_modules WHERE tenant_id = $1 AND is_enabled = false`,
-      [tenantId]
-    );
-    set = new Set(rows.map((r) => r.module_key));
-  } catch { /* brak tabeli/bazy — nic nie wyłączamy */ }
-  disabledModulesCache.set(tenantId, { set, at: Date.now() });
-  return set;
-}
 
 export default async function dataApiRoutes(app) {
   app.post('/api/db', { preHandler: [app.requireUser, app.block2FAPending] }, async (req, reply) => {

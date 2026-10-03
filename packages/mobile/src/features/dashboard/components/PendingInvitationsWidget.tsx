@@ -2,7 +2,6 @@ import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Bell, Check, Clock, X } from 'lucide-react-native';
 import { formatDate } from '../../../lib/domain';
-import { GradientIcon } from '../../../components/ui/GradientIcon';
 import { useUpdateAssignmentStatus } from '../../programs/api';
 import type { PendingInvitation } from '../api';
 
@@ -180,24 +179,12 @@ export const PendingInvitationsWidget = ({
     <View
       style={{
         marginHorizontal: 16,
-        marginBottom: 12,
-        borderRadius: 20,
+        marginBottom: 14,
+        borderRadius: 22,
         backgroundColor: '#ffffff',
-        shadowColor: '#0f172a',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
       }}
     >
-      <View
-        style={{
-          borderRadius: 20,
-          borderWidth: 1,
-          borderColor: '#eef0f3',
-          overflow: 'hidden',
-        }}
-      >
+      <View style={{ borderRadius: 22, overflow: 'hidden' }}>
         <View
           style={{
             flexDirection: 'row',
@@ -208,7 +195,18 @@ export const PendingInvitationsWidget = ({
             paddingBottom: 12,
           }}
         >
-          <GradientIcon Icon={Bell} size={36} iconSize={18} from="#f97316" to="#ec4899" />
+          <View
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 10,
+              backgroundColor: '#fce7f3',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Bell size={16} color="#be185d" strokeWidth={2.3} />
+          </View>
           <View style={{ flex: 1 }}>
             <Text
               style={{

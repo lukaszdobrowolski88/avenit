@@ -36,15 +36,8 @@ export interface DashboardStats {
   upcomingPrograms: UpcomingProgramItem[];
   unreadConversations: UnreadConversation[];
   totalUnreadMessages: number;
-  prayerCount: number;
-  membersCount: number;
-  songsCount: number;
-  programsThisMonth: number;
-  birthdaysThisWeek: BirthdayItem[];
-  recentPrayers: RecentPrayer[];
   myPrayers: RecentPrayer[];
   myTasks: TaskItem[];
-  onlineUsersCount: number;
   offlineUsersCount: number;
   onlineUsers: OnlineUser[];
   pendingInvitations: PendingInvitation[];
@@ -58,14 +51,6 @@ export interface OnlineUser {
   memberId: number | string | null;
   firstName: string | null;
   lastName: string | null;
-}
-
-export interface BirthdayItem {
-  id: number | string;
-  first_name: string | null;
-  last_name: string | null;
-  birth_date: string;
-  daysUntil: number;
 }
 
 export interface RecentPrayer {
@@ -141,15 +126,8 @@ export const useDashboard = (
           upcomingPrograms: [],
           unreadConversations: [],
           totalUnreadMessages: 0,
-          prayerCount: 0,
-          membersCount: 0,
-          songsCount: 0,
-          programsThisMonth: 0,
-          birthdaysThisWeek: [],
-          recentPrayers: [],
           myPrayers: [],
           myTasks: [],
-          onlineUsersCount: 0,
           offlineUsersCount: 0,
           onlineUsers: [],
           pendingInvitations: [],
@@ -181,32 +159,7 @@ export const useDashboard = (
         .select('conversation_id, last_read_at')
         .eq('user_email', userEmail);
 
-      const prayers = supabase
-        .from('prayer_requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'active');
-
-      const monthStart = new Date();
-      monthStart.setDate(1);
-      const monthEnd = new Date(monthStart);
-      monthEnd.setMonth(monthEnd.getMonth() + 1);
-
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-
-      const membersCountBase = supabase
-        .from('members')
-        .select('id', { count: 'exact', head: true });
-      const membersCountP = scope.withCampusFilter(membersCountBase);
-
-      const songsCountP = supabase.from('songs').select('id', { count: 'exact', head: true });
-
-      const programsThisMonthBase = supabase
-        .from('programs')
-        .select('id', { count: 'exact', head: true });
-      const programsThisMonthP = scope
-        .withCampusFilter(programsThisMonthBase)
-        .gte('date', monthStart.toISOString().slice(0, 10))
-        .lt('date', monthEnd.toISOString().slice(0, 10));
 
       const onlineListP = supabase
         .from('user_presence')
@@ -216,21 +169,6 @@ export const useDashboard = (
         .neq('user_email', userEmail)
         .order('last_seen', { ascending: false })
         .limit(12);
-
-      const birthdaysBase = supabase
-        .from('members')
-        .select('id, first_name, last_name, birth_date')
-        .not('birth_date', 'is', null);
-      const birthdaysP = scope.withCampusFilter(birthdaysBase);
-
-      const recentPrayersP = supabase
-        .from('prayer_requests_with_counts')
-        .select(
-          'id, content, category, prayer_count, is_anonymous, user_name, user_email, created_at',
-        )
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(3);
 
       const myTasksP = supabase
         .from('user_tasks')
@@ -294,13 +232,7 @@ export const useDashboard = (
         { data: assignments, error: assignErr },
         { data: programs, error: progErr },
         { data: parts },
-        { count: prayerCount },
-        { count: membersCount },
-        { count: songsCount },
-        { count: programsThisMonth },
         { data: onlineRows },
-        { data: birthdayRows },
-        { data: recentPrayerRows, error: rpErr },
         { data: taskRows, error: tasksErr },
         { data: inviteRows, error: invitesErr },
         { data: absenceRows, error: absencesErr },
@@ -311,13 +243,7 @@ export const useDashboard = (
         myAssignments,
         upcoming,
         myConversations,
-        prayers,
-        membersCountP,
-        songsCountP,
-        programsThisMonthP,
         onlineListP,
-        birthdaysP,
-        recentPrayersP,
         myTasksP,
         pendingInvitesP,
         absencesP,
@@ -327,7 +253,6 @@ export const useDashboard = (
       ]);
       if (mpErr) console.warn('[dashboard] my prayers:', mpErr.message);
       if (historyErr) console.warn('[dashboard] history:', historyErr.message);
-      if (rpErr) console.warn('[dashboard] recent prayers:', rpErr.message);
       if (tasksErr) console.warn('[dashboard] tasks:', tasksErr.message);
       if (invitesErr) console.warn('[dashboard] invites:', invitesErr.message);
       if (absencesErr) console.warn('[dashboard] absences:', absencesErr.message);
@@ -396,31 +321,6 @@ export const useDashboard = (
           } satisfies OnlineUser;
         });
       }
-      const onlineUsersCount = ((onlineRows ?? []) as any[]).filter(
-        (r) => r.status === 'online',
-      ).length;
-
-      const now = new Date();
-      const todayMD = now.getMonth() * 100 + now.getDate();
-      const birthdaysThisWeek: BirthdayItem[] = [];
-      for (const m of (birthdayRows ?? []) as any[]) {
-        if (!m.birth_date) continue;
-        const bd = new Date(m.birth_date);
-        const md = bd.getMonth() * 100 + bd.getDate();
-        let days = md - todayMD;
-        if (days < 0) days += 365;
-        if (days <= 7) {
-          birthdaysThisWeek.push({
-            id: m.id,
-            first_name: m.first_name,
-            last_name: m.last_name,
-            birth_date: m.birth_date,
-            daysUntil: days,
-          });
-        }
-      }
-      birthdaysThisWeek.sort((a, b) => a.daysUntil - b.daysUntil);
-
       if (assignErr) console.warn('[dashboard] assignments:', assignErr.message);
       if (progErr) console.warn('[dashboard] programs:', progErr.message);
 
@@ -549,12 +449,6 @@ export const useDashboard = (
         upcomingPrograms,
         unreadConversations,
         totalUnreadMessages,
-        prayerCount: prayerCount ?? 0,
-        membersCount: membersCount ?? 0,
-        songsCount: songsCount ?? 0,
-        programsThisMonth: programsThisMonth ?? 0,
-        birthdaysThisWeek,
-        recentPrayers: (recentPrayerRows ?? []) as unknown as RecentPrayer[],
         myPrayers: (myPrayerRows ?? []) as unknown as RecentPrayer[],
         myTasks: ((taskRows ?? []) as any[]).map((r) => ({
           id: r.id,
@@ -568,7 +462,6 @@ export const useDashboard = (
           assigned_to_name: r.assigned_to_name ?? null,
           attachments: Array.isArray(r.attachments) ? r.attachments : [],
         })) as TaskItem[],
-        onlineUsersCount,
         offlineUsersCount: offlineUsersCount ?? 0,
         onlineUsers,
         pendingInvitations,

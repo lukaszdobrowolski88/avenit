@@ -1,5 +1,7 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Link } from 'expo-router';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Link, useRouter } from 'expo-router';
+import { useAuthSession } from '../../../lib/auth';
+import { findOrCreateDirect } from '../../messenger/start';
 import { MessageCircle, Users, UserX } from 'lucide-react-native';
 import { WidgetCard } from './WidgetCard';
 import type { OnlineUser } from '../api';
@@ -22,7 +24,7 @@ const displayName = (u: OnlineUser): string => {
   return u.email.split('@')[0];
 };
 
-const UserAvatar = ({ user }: { user: OnlineUser }) => {
+const UserAvatar = ({ user, onPress }: { user: OnlineUser; onPress: () => void }) => {
   const isOnline = user.status === 'online';
   const content = (
     <View style={{ alignItems: 'center', width: 64 }}>
@@ -69,25 +71,31 @@ const UserAvatar = ({ user }: { user: OnlineUser }) => {
       </Text>
     </View>
   );
-  if (user.memberId) {
-    return (
-      <Link
-        href={{ pathname: '/(app)/members/[id]', params: { id: String(user.memberId) } }}
-        asChild
-      >
-        <Pressable className="active:opacity-70">{content}</Pressable>
-      </Link>
-    );
-  }
-  return content;
+  // Jak na webie: stuknięcie osoby otwiera (lub zakłada) rozmowę 1:1.
+  return (
+    <Pressable onPress={onPress} className="active:opacity-70" accessibilityLabel={`Napisz do: ${displayName(user)}`}>
+      {content}
+    </Pressable>
+  );
 };
 
 export const OnlineUsersWidget = ({ users, offlineCount }: Props) => {
+  const router = useRouter();
+  const { user: me } = useAuthSession();
+  const startChat = async (email: string) => {
+    if (!me?.email) return;
+    try {
+      const id = await findOrCreateDirect(me.email, email);
+      router.push({ pathname: '/(app)/messenger/[conversationId]', params: { conversationId: id } });
+    } catch (e: any) {
+      Alert.alert('Nie udało się otworzyć rozmowy', e?.message ?? 'Spróbuj ponownie.');
+    }
+  };
   const onlineCount = users.filter((u) => u.status === 'online').length;
   const hasUsers = users.length > 0;
 
   return (
-    <WidgetCard title="Kto jest online" Icon={Users}>
+    <WidgetCard title="Kto jest online" Icon={Users} iconTint="#15803d" iconBg="#dcfce7">
       <View
         style={{
           flexDirection: 'row',
@@ -111,7 +119,7 @@ export const OnlineUsersWidget = ({ users, offlineCount }: Props) => {
           contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 10, gap: 4 }}
         >
           {users.map((u) => (
-            <UserAvatar key={u.email} user={u} />
+            <UserAvatar key={u.email} user={u} onPress={() => startChat(u.email)} />
           ))}
         </ScrollView>
       ) : (

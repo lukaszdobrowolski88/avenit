@@ -910,6 +910,8 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
       <WidgetCard
         title="Moje Zadania"
         Icon={CheckSquare}
+        iconTint="#0f766e"
+        iconBg="#ccfbf1"
         action={
           <Pressable
             onPress={openNew}

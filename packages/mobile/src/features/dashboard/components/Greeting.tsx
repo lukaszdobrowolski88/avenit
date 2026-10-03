@@ -1,7 +1,12 @@
 import { Pressable, Text, View } from 'react-native';
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bell, Calendar, CheckSquare, Heart } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import { format } from 'date-fns';
+import { pl } from 'date-fns/locale';
+import { Bell, Calendar, CheckSquare, Heart, MessageCircle } from 'lucide-react-native';
+import { useMyProfile } from '../../account/api';
+import { useUnreadNotificationsCount } from '../../notifications/api';
 
 interface Props {
   email: string | null | undefined;
@@ -9,46 +14,60 @@ interface Props {
   ministryCount?: number;
   prayersCount?: number;
   pendingInvitations?: number;
+  unreadMessages?: number;
 }
 
 const greeting = () => {
   const h = new Date().getHours();
+  if (h < 5) return 'Dobranoc';
   if (h < 12) return 'Dzień dobry';
   if (h < 18) return 'Witaj';
   return 'Dobry wieczór';
 };
 
-const firstNameFromEmail = (email: string | null | undefined): string => {
-  if (!email) return 'Użytkowniku';
-  const local = email.split('@')[0] ?? '';
-  const first = local.split('.')[0] ?? local;
-  return first.charAt(0).toUpperCase() + first.slice(1);
+// Polska odmiana liczebników: 1 zadanie, 2–4 zadania (poza 12–14), 5+ zadań.
+export const plural = (n: number, one: string, few: string, many: string) => {
+  if (n === 1) return one;
+  const d = n % 10;
+  const t = n % 100;
+  return d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many;
 };
 
-const StatPill = ({
+const firstName = (fullName: string | null | undefined, email: string | null | undefined) => {
+  const fromName = (fullName ?? '').trim().split(/\s+/)[0];
+  if (fromName) return fromName;
+  const local = (email ?? '').split('@')[0]?.split('.')[0] ?? '';
+  return local ? local.charAt(0).toUpperCase() + local.slice(1) : '';
+};
+
+const Chip = ({
   Icon,
-  count,
-  label,
+  text,
+  tint,
+  onPress,
 }: {
   Icon: typeof CheckSquare;
-  count: number;
-  label: string;
+  text: string;
+  tint: string;
+  onPress?: () => void;
 }) => (
-  <View
-    className="flex-row items-center gap-1.5 px-3 py-1.5"
+  <Pressable
+    onPress={onPress}
+    disabled={!onPress}
+    className="active:opacity-70"
     style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 11,
+      paddingVertical: 7,
       borderRadius: 999,
-      backgroundColor: '#fafaf9',
-      borderWidth: 1,
-      borderColor: '#eef0f3',
+      backgroundColor: '#ffffff',
     }}
   >
-    <Icon size={12} color="#57534e" strokeWidth={2.4} />
-    <Text className="text-[12px]" style={{ color: '#1c1917', fontFamily: 'Inter_700Bold' }}>
-      {count}{' '}
-      <Text style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}>{label}</Text>
-    </Text>
-  </View>
+    <Icon size={13} color={tint} strokeWidth={2.4} />
+    <Text style={{ fontSize: 12, color: '#1c1917', fontFamily: 'Inter_600SemiBold' }}>{text}</Text>
+  </Pressable>
 );
 
 export const Greeting = ({
@@ -57,105 +76,168 @@ export const Greeting = ({
   ministryCount = 0,
   prayersCount = 0,
   pendingInvitations = 0,
+  unreadMessages = 0,
 }: Props) => {
-  const name = firstNameFromEmail(email);
-  const initial = name.charAt(0).toUpperCase();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const profile = useMyProfile(email ?? null);
+  const unread = useUnreadNotificationsCount(email ?? null);
+  const unreadCount = unread.data ?? 0;
+
+  const name = firstName(profile.data?.full_name || profile.data?.name, email);
+  const avatarUrl = profile.data?.avatar_url ?? null;
+  const today = format(new Date(), 'EEEE, d MMMM', { locale: pl });
+
+  const chips = [
+    pendingInvitations > 0 && {
+      key: 'inv',
+      Icon: Bell,
+      tint: '#be185d',
+      text: `${pendingInvitations} ${plural(pendingInvitations, 'zaproszenie', 'zaproszenia', 'zaproszeń')}`,
+    },
+    unreadMessages > 0 && {
+      key: 'msg',
+      Icon: MessageCircle,
+      tint: '#1d4ed8',
+      text: `${unreadMessages} ${plural(unreadMessages, 'wiadomość', 'wiadomości', 'wiadomości')}`,
+      onPress: () => router.push('/(app)/messenger'),
+    },
+    ministryCount > 0 && {
+      key: 'min',
+      Icon: Calendar,
+      tint: '#6d28d9',
+      text: `${ministryCount} ${plural(ministryCount, 'służba', 'służby', 'służb')}`,
+    },
+    tasksCount > 0 && {
+      key: 'task',
+      Icon: CheckSquare,
+      tint: '#0f766e',
+      text: `${tasksCount} ${plural(tasksCount, 'zadanie', 'zadania', 'zadań')}`,
+    },
+    prayersCount > 0 && {
+      key: 'pray',
+      Icon: Heart,
+      tint: '#c2410c',
+      text: `${prayersCount} ${plural(prayersCount, 'modlitwa', 'modlitwy', 'modlitw')}`,
+      onPress: () => router.push('/(app)/prayers'),
+    },
+  ].filter(Boolean) as {
+    key: string;
+    Icon: typeof Bell;
+    tint: string;
+    text: string;
+    onPress?: () => void;
+  }[];
 
   return (
-    <View className="px-5 pb-3" style={{ paddingTop: insets.top + 10 }}>
-      <View className="flex-row items-start justify-between">
-        <View className="flex-row items-center gap-3 flex-1">
-          <View
+    <View style={{ paddingHorizontal: 20, paddingTop: insets.top + 12, paddingBottom: 16 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+        <View style={{ flex: 1 }}>
+          <Text
             style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: '#1c1917',
-              alignItems: 'center',
-              justifyContent: 'center',
+              fontSize: 12,
+              color: '#78716c',
+              letterSpacing: 0.6,
+              textTransform: 'uppercase',
+              fontFamily: 'Inter_600SemiBold',
             }}
           >
-            <Text className="text-base font-bold text-white">{initial}</Text>
-          </View>
-          <View className="flex-1">
-            <Text
-              className="text-[13px]"
-              style={{
-                color: '#78716c',
-                letterSpacing: -0.1,
-                fontFamily: 'Inter_500Medium',
-              }}
-            >
-              {greeting()}
-            </Text>
-            <Text
-              className="text-[24px] mt-0.5"
-              style={{
-                color: '#0c0a09',
-                letterSpacing: -0.7,
-                fontFamily: 'Inter_700Bold',
-              }}
-              numberOfLines={1}
-            >
-              {name}
-            </Text>
-          </View>
+            {today}
+          </Text>
+          <Text
+            numberOfLines={2}
+            style={{
+              marginTop: 4,
+              fontSize: 27,
+              lineHeight: 32,
+              color: '#0c0a09',
+              letterSpacing: -0.8,
+              fontFamily: 'Inter_700Bold',
+            }}
+          >
+            {greeting()}
+            {name ? `, ${name}` : ''}
+          </Text>
         </View>
-        <Link href="/(app)/notifications" asChild>
-          <Pressable
-            className="active:opacity-60"
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#fafaf9',
-              borderWidth: 1,
-              borderColor: '#e7e5e4',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Bell size={18} color="#1c1917" strokeWidth={2} />
-          </Pressable>
-        </Link>
+
+        <Pressable
+          onPress={() => router.push('/(app)/notifications')}
+          accessibilityLabel={unreadCount ? `Powiadomienia, ${unreadCount} nieprzeczytanych` : 'Powiadomienia'}
+          hitSlop={6}
+          className="active:opacity-70"
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 21,
+            backgroundColor: '#ffffff',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Bell size={19} color="#1c1917" strokeWidth={2.1} />
+          {unreadCount > 0 ? (
+            <View
+              style={{
+                position: 'absolute',
+                top: -2,
+                right: -2,
+                minWidth: 19,
+                height: 19,
+                paddingHorizontal: 5,
+                borderRadius: 10,
+                borderWidth: 2,
+                borderColor: '#f6f5f3',
+                backgroundColor: '#ec4899',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ fontSize: 10, color: '#ffffff', fontFamily: 'Inter_700Bold' }}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Text>
+            </View>
+          ) : null}
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push('/(app)/account')}
+          accessibilityLabel="Twoje konto"
+          hitSlop={6}
+          className="active:opacity-70"
+          style={{ }}
+        >
+          {avatarUrl ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: '#e7e5e4' }}
+              contentFit="cover"
+            />
+          ) : (
+            <View
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 21,
+                backgroundColor: '#1c1917',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}>
+                {(name || email || '?').charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
+        </Pressable>
       </View>
 
-      {(tasksCount > 0 ||
-        ministryCount > 0 ||
-        prayersCount > 0 ||
-        pendingInvitations > 0) && (
-        <View className="flex-row flex-wrap gap-2 mt-4">
-          {pendingInvitations > 0 && (
-            <StatPill
-              Icon={Bell}
-              count={pendingInvitations}
-              label={pendingInvitations === 1 ? 'zaproszenie' : 'zaproszeń'}
-            />
-          )}
-          {tasksCount > 0 && (
-            <StatPill
-              Icon={CheckSquare}
-              count={tasksCount}
-              label={tasksCount === 1 ? 'zadanie' : 'zadań'}
-            />
-          )}
-          {ministryCount > 0 && (
-            <StatPill
-              Icon={Calendar}
-              count={ministryCount}
-              label={ministryCount === 1 ? 'służba' : 'służb'}
-            />
-          )}
-          {prayersCount > 0 && (
-            <StatPill
-              Icon={Heart}
-              count={prayersCount}
-              label={prayersCount === 1 ? 'modlitwa' : 'modlitw'}
-            />
-          )}
+      {chips.length > 0 ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+          {chips.map((c) => (
+            <Chip key={c.key} Icon={c.Icon} text={c.text} tint={c.tint} onPress={c.onPress} />
+          ))}
         </View>
-      )}
+      ) : null}
     </View>
   );
 };

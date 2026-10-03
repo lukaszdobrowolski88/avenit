@@ -150,7 +150,8 @@ export const AgendaList = ({ items, onPick }: Props) => {
                 <Pressable
                   key={evt.id}
                   onPress={() => onPick(evt)}
-                  style={({ pressed }) => [styles.cardShadow, pressed && { opacity: 0.85 }]}
+                  className="active:opacity-70"
+                  style={styles.cardShadow}
                 >
                   <View style={[styles.cardInner, evt.isMine && styles.cardInnerMine]}>
                     <View style={[styles.icon, { backgroundColor: meta.bg }]}>
