@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Gift, Lock } from 'lucide-react-native';
+import { Check, Gift, Lock, Pencil } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { B } from '../../../src/components/ui/brand';
 import { useAuthSession } from '../../../src/lib/auth';
@@ -21,9 +21,9 @@ import { supabase, tenantWebBase } from '../../../src/lib/supabase';
 import { formatMoney } from '../../../src/features/giving/api';
 import { goBack } from '../../../src/lib/navigation';
 
-// Darowizna online (Przelewy24): kwota na ciemnej karcie, częstotliwość, e-mail i notatka
-// (bez wyboru celu — cel/intencję wpisuje się w notatce); przycisk płatności przyklejony
-// nad paskiem zakładek, zawsze widoczny.
+// Darowizna online (Przelewy24): kwota na ciemnej karcie (szybkie kwoty albo „Inna”),
+// częstotliwość, opcjonalny cel (fundusz), e-mail i notatka; przycisk płatności
+// przyklejony nad paskiem zakładek, zawsze widoczny.
 
 const F = {
   medium: 'Manrope_500Medium',
@@ -33,6 +33,11 @@ const F = {
 } as const;
 
 const QUICK = [20, 50, 100, 200, 500];
+
+interface Fund {
+  id: string;
+  name: string;
+}
 
 const SectionLabel = ({ children }: { children: string }) => (
   <Text style={{ marginTop: 22, marginBottom: 10, marginLeft: 4, fontSize: 12, letterSpacing: 1.3, textTransform: 'uppercase', color: B.gold, fontFamily: F.bold }}>
@@ -54,16 +59,37 @@ export default function DonateScreen() {
   const { user } = useAuthSession();
   const amountRef = useRef<TextInput>(null);
   const [amount, setAmount] = useState('');
+  const [funds, setFunds] = useState<Fund[]>([]);
+  // Cel opcjonalny — bez wyboru darowizna jest ogólna (fund_id null).
+  const [fundId, setFundId] = useState<string | null>(null);
   const [email, setEmail] = useState(user?.email ?? '');
   const [note, setNote] = useState('');
   const [recurring, setRecurring] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [amountFocused, setAmountFocused] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from('giving_funds').select('id, name').eq('is_active', true).order('sort_order');
+        setFunds((data ?? []) as Fund[]);
+      } catch {
+        // cele opcjonalne
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (user?.email && !email) setEmail(user.email);
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const amt = Number(String(amount).replace(',', '.'));
+  // „Inna” — kwota wpisana ręcznie (spoza szybkich) albo pole w trakcie wpisywania.
+  const custom = amountFocused || (amt > 0 && !QUICK.includes(amt));
+  const typeOwn = () => {
+    if (QUICK.includes(amt)) setAmount('');
+    amountRef.current?.focus();
+  };
   const ready = amt > 0 && !!email.trim();
 
   const submit = async () => {
@@ -86,8 +112,7 @@ export default function DonateScreen() {
           amount: amt,
           email: email.trim(),
           donor_name: user?.full_name ?? null,
-          // Bez wyboru celu — darowizna ogólna; ewentualny cel/intencja w notatce.
-          fund_id: null,
+          fund_id: fundId,
           note: note.trim() || null,
           returnUrl: webBase ? `${webBase}/give/success` : undefined,
           recurring,
@@ -109,7 +134,8 @@ export default function DonateScreen() {
   // Przycisk płatności nad pływającym paskiem zakładek (ten sam odstęp co FloatingTabBar).
   const tabBarBottom = insets.bottom > 0 ? Math.max(insets.bottom - 10, 16) : 12;
   const footerBottom = tabBarBottom + 60 + 10;
-  const summary = recurring ? 'Wpłata co miesiąc' : 'Wpłata jednorazowa';
+  const fundName = funds.find((f) => f.id === fundId)?.name ?? null;
+  const summary = [recurring ? 'Wpłata co miesiąc' : 'Wpłata jednorazowa', fundName].filter(Boolean).join(' · ');
 
   return (
     <>
@@ -126,11 +152,13 @@ export default function DonateScreen() {
           {/* Kwota */}
           <Pressable onPress={() => amountRef.current?.focus()} style={{ backgroundColor: B.ink, borderRadius: 28, padding: 20, paddingBottom: 18 }}>
             <Text style={{ fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: B.kurkuma, fontFamily: F.bold }}>Kwota</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 8, marginTop: 10, marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 8, marginTop: 10, marginBottom: 12 }}>
               <TextInput
                 ref={amountRef}
                 value={amount}
                 onChangeText={(t) => setAmount(cleanAmount(t))}
+                onFocus={() => setAmountFocused(true)}
+                onBlur={() => setAmountFocused(false)}
                 keyboardType="decimal-pad"
                 placeholder="0"
                 placeholderTextColor="rgba(246,244,238,0.3)"
@@ -150,9 +178,15 @@ export default function DonateScreen() {
               />
               <Text style={{ fontSize: 26, color: B.onDarkMuted, fontFamily: F.bold }}>zł</Text>
             </View>
+            <Pressable onPress={typeOwn} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: -6, marginBottom: 16 }}>
+              <Pencil size={13} color={amountFocused ? B.kurkuma : B.onDarkMuted} />
+              <Text style={{ fontSize: 13, color: amountFocused ? B.kurkuma : B.onDarkMuted, fontFamily: F.semibold }}>
+                {amountFocused ? 'Wpisz kwotę na klawiaturze' : 'Stuknij, aby wpisać dowolną kwotę'}
+              </Text>
+            </Pressable>
             <View style={{ flexDirection: 'row', gap: 6 }}>
               {QUICK.map((q) => {
-                const on = amt === q;
+                const on = amt === q && !amountFocused;
                 return (
                   <Pressable
                     key={q}
@@ -171,6 +205,21 @@ export default function DonateScreen() {
                   </Pressable>
                 );
               })}
+              <Pressable
+                onPress={typeOwn}
+                className="active:opacity-80"
+                accessibilityLabel="Inna kwota"
+                style={{
+                  flex: 1.2,
+                  height: 40,
+                  borderRadius: 999,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: custom ? B.kurkuma : 'rgba(246,244,238,0.1)',
+                }}
+              >
+                <Text style={{ fontSize: 14, color: custom ? B.ink : B.onDark, fontFamily: F.bold }}>Inna</Text>
+              </Pressable>
             </View>
           </Pressable>
 
@@ -199,6 +248,42 @@ export default function DonateScreen() {
             </Text>
           ) : null}
 
+          {/* Cel (opcjonalny) — stuknięcie zaznacza, ponowne odznacza */}
+          {funds.length > 0 ? (
+            <>
+              <SectionLabel>Cel (opcjonalnie)</SectionLabel>
+              <View style={{ backgroundColor: B.card, borderRadius: 22, overflow: 'hidden' }}>
+                {funds.map((f, i) => {
+                  const on = fundId === f.id;
+                  return (
+                    <Pressable
+                      key={f.id}
+                      onPress={() => setFundId(on ? null : f.id)}
+                      className="active:opacity-70"
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: i ? 1 : 0, borderTopColor: B.line }}
+                    >
+                      <Text style={{ flex: 1, fontSize: 15, color: B.ink, fontFamily: on ? F.bold : F.semibold }}>{f.name}</Text>
+                      <View
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: 12,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: on ? B.kurkuma : 'transparent',
+                          borderWidth: on ? 0 : 2,
+                          borderColor: '#D9D2C2',
+                        }}
+                      >
+                        {on ? <Check size={14} color={B.ink} strokeWidth={3} /> : null}
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
+
           {/* Dane */}
           <SectionLabel>Szczegóły</SectionLabel>
           <View style={{ backgroundColor: B.card, borderRadius: 22, overflow: 'hidden' }}>
@@ -221,7 +306,7 @@ export default function DonateScreen() {
               <TextInput
                 value={note}
                 onChangeText={setNote}
-                placeholder="np. na misje, intencja, podziękowanie…"
+                placeholder="np. intencja, podziękowanie…"
                 placeholderTextColor={B.ink4}
                 multiline
                 style={{ marginTop: 2, paddingVertical: 4, minHeight: 44, fontSize: 15, color: B.ink, fontFamily: F.medium, textAlignVertical: 'top' }}
