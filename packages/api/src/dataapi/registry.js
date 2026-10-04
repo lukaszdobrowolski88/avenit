@@ -254,7 +254,15 @@ export const REGISTRY = {
   }),
   push_campaign_recipients: T('module:push_campaigns'),
   push_campaign_events: T('module:push_campaigns'),
-  sms_campaigns: T('module:sms_campaigns'),
+  sms_campaigns: T('module:sms_campaigns', {
+    // CAMPAIGN_SELECT w useSmsCampaigns — bez tego lista kampanii SMS zawsze 400.
+    // created_by to e-mail (insert z user.email), stąd creator po app_users.email.
+    relationships: {
+      segments: { table: 'sms_campaign_segments', column: 'campaign_id', type: 'many' },
+      ab_variants: { table: 'sms_campaign_ab_variants', column: 'campaign_id', type: 'many' },
+      creator: { table: 'app_users', column: 'created_by', references: 'email', type: 'one' },
+    },
+  }),
   sms_campaign_recipients: T('module:sms_campaigns'),
   sms_incoming: T('module:sms_campaigns'),
 

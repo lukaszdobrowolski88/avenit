@@ -183,9 +183,10 @@ function buildEmbed(parentTable, embed, parentAlias, params) {
   const jsonObject = buildJsonRow(rel.table, childParsed, childAlias);
 
   if (rel.type === 'one') {
+    // `references` = kolumna w tabeli docelowej (domyślnie id), np. created_by trzymające e-mail.
     return `(SELECT ${jsonObject}
        FROM ${quoteIdent(rel.table)} ${childAlias}
-      WHERE ${childAlias}."id" = ${parentAlias}.${quoteIdent(rel.column)}
+      WHERE ${childAlias}.${quoteIdent(rel.references || 'id')} = ${parentAlias}.${quoteIdent(rel.column)}
       LIMIT 1)`;
   }
   // to-many
