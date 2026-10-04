@@ -25,7 +25,7 @@ export const UpcomingEventsWidget = ({ events }: { events: UpcomingEvent[] }) =>
           return (
             <Pressable
               key={ev.id}
-              onPress={() => goToTab(router, 'calendar')}
+              onPress={() => router.push({ pathname: '/(app)/events/[id]', params: { id: ev.id } })}
               className="active:opacity-70"
               style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 8 }}
             >

@@ -3,27 +3,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import type { AgendaEvent, EventSource } from '../api';
-
-const SOURCE_DOT: Record<EventSource, string> = {
-  program: '#8A6606',
-  event: '#2A2312',
-  worship: '#6B6557',
-  media: '#FFBE0B',
-  atmosfera: '#6B6557',
-  kids: '#FFBE0B',
-  homegroups: '#6B6557',
-};
-
-const SOURCE_LABEL: Record<EventSource, string> = {
-  program: 'Program',
-  event: 'Wydarzenie',
-  worship: 'Zespół Uwielbienia',
-  media: 'Media Team',
-  atmosfera: 'Atmosfera Team',
-  kids: 'Dzieci',
-  homegroups: 'Grupy Domowe',
-};
+import type { AgendaEvent } from '../api';
+import { timeRange, useCalendarLabel } from '../meta';
 
 const WEEKDAYS = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'];
 
@@ -58,6 +39,7 @@ interface Props {
 }
 
 export const MonthView = ({ items, onPick }: Props) => {
+  const calendarLabel = useCalendarLabel();
   const today = useMemo(() => startOfDay(new Date()), []);
   const [anchor, setAnchor] = useState<Date>(today);
   const [selected, setSelected] = useState<Date>(today);
@@ -119,8 +101,8 @@ export const MonthView = ({ items, onPick }: Props) => {
           const isToday = isoKey(d) === isoKey(today);
           const isSelected = isoKey(d) === isoKey(selected);
           const dayEvents = eventsByDay.get(isoKey(d)) ?? [];
-          const sources = Array.from(new Set(dayEvents.map((e) => e.source))).slice(0, 3);
-          const hasMine = dayEvents.some((e) => e.isMine);
+          // Kropka = wydarzenie (do 3), kurkuma = moja służba.
+          const dots = dayEvents.slice(0, 3);
 
           return (
             <Pressable
@@ -143,20 +125,15 @@ export const MonthView = ({ items, onPick }: Props) => {
                 {d.getDate()}
               </Text>
               <View style={styles.dotsRow}>
-                {sources.map((s) => (
+                {dots.map((e) => (
                   <View
-                    key={s}
+                    key={e.id}
                     style={[
                       styles.dot,
-                      { backgroundColor: isSelected ? '#F6F4EE' : SOURCE_DOT[s] },
+                      { backgroundColor: isSelected ? '#F6F4EE' : e.isMine ? '#FFBE0B' : '#6B6557' },
                     ]}
                   />
                 ))}
-                {hasMine ? (
-                  <View
-                    style={[styles.dotRing, isSelected && { borderColor: '#ffffff' }]}
-                  />
-                ) : null}
               </View>
             </Pressable>
           );
@@ -184,10 +161,8 @@ export const MonthView = ({ items, onPick }: Props) => {
           </View>
         ) : (
           dayItems.map((evt) => {
-            const start = toDate(evt.startsAt);
-            const hasTime = start.getHours() !== 0 || start.getMinutes() !== 0;
-            const time = hasTime ? format(start, 'HH:mm') : 'Cały dzień';
-            const color = SOURCE_DOT[evt.source];
+            const time = timeRange(evt);
+            const color = evt.isMine ? '#FFBE0B' : '#6B6557';
             return (
               <Pressable
                 key={evt.id}
@@ -212,13 +187,13 @@ export const MonthView = ({ items, onPick }: Props) => {
                       {evt.title}
                     </Text>
                     <Text numberOfLines={1} style={styles.daySub}>
-                      {time} · {SOURCE_LABEL[evt.source]}
+                      {time} · {calendarLabel(evt.moduleKey)}
                       {evt.location ? ` · ${evt.location}` : ''}
                     </Text>
                   </View>
                   {evt.isMine ? (
                     <View style={styles.minePill}>
-                      <Text style={styles.minePillText}>MOJE</Text>
+                      <Text numberOfLines={1} style={styles.minePillText}>{(evt.myRole ?? 'Służysz').toUpperCase()}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -340,14 +315,15 @@ const styles = StyleSheet.create({
   },
   daySub: { fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium', marginTop: 2 },
   minePill: {
+    maxWidth: 120,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: '#2A2312',
+    backgroundColor: '#FFBE0B',
   },
   minePillText: {
     fontSize: 9,
-    color: '#ffffff',
+    color: '#2A2312',
     letterSpacing: 0.4,
     fontFamily: 'Manrope_700Bold',
   },

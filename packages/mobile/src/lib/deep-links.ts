@@ -20,6 +20,15 @@ export const navigateFromDeepLink = (router: Router, link: string | null | undef
     });
     return;
   }
+  // Wydarzenie: web /wydarzenie/<id>, aplikacja /events/<id>.
+  const eventMatch = path.match(/^\/?(?:\(app\)\/)?(?:events?|wydarzenie)\/(\d+)/);
+  if (eventMatch) {
+    router.push({
+      pathname: '/(app)/events/[id]',
+      params: { id: eventMatch[1] },
+    });
+    return;
+  }
   const messageMatch = path.match(/^\/?(?:\(app\)\/)?(?:messenger|messages?)\/([^/?#]+)/);
   if (messageMatch) {
     router.push({

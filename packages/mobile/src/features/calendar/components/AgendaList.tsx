@@ -1,214 +1,257 @@
-import { Fragment, useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState, type ReactElement } from 'react';
+import { Pressable, ScrollView, Text, View, type RefreshControlProps } from 'react-native';
+import { ChevronRight, History, MapPin } from 'lucide-react-native';
+import { B } from '../../../components/ui/brand';
+import type { AgendaEvent } from '../api';
 import {
-  Baby,
-  Calendar,
-  Home,
-  Image as ImageIcon,
-  ListChecks,
-  Music,
-  Sparkles,
-  ChevronRight,
-} from 'lucide-react-native';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
-import { InfoBlock } from '../../../components/ui/brand';
-import type { AgendaEvent, EventSource } from '../api';
+  dayDiff,
+  endTime,
+  isOngoing,
+  isOver,
+  longDay,
+  monthLabel,
+  relativeDay,
+  startTime,
+  useCalendarLabel,
+} from '../meta';
 
-const SOURCE_META: Record<
-  EventSource,
-  { label: string; tint: string; bg: string; Icon: typeof Calendar }
-> = {
-  program: { label: 'Program', tint: '#8A6606', bg: '#FFF1C2', Icon: ListChecks },
-  event: { label: 'Wydarzenie', tint: '#2A2312', bg: '#ECE8DE', Icon: Calendar },
-  worship: { label: 'Zespół Uwielbienia', tint: '#9d174d', bg: '#FFF1C2', Icon: Music },
-  media: { label: 'Media Team', tint: '#2A2312', bg: '#ECE8DE', Icon: ImageIcon },
-  atmosfera: { label: 'Atmosfera Team', tint: '#8A6606', bg: '#FFF1C2', Icon: Sparkles },
-  kids: { label: 'Dzieci', tint: '#2A2312', bg: '#ECE8DE', Icon: Baby },
-  homegroups: { label: 'Grupy Domowe', tint: '#2A2312', bg: '#ECE8DE', Icon: Home },
-};
+// Agenda: dni jako przyklejone nagłówki (pełna data + „Dziś / Jutro / Za 3 dni”), separatory
+// miesięcy, w karcie dnia kolumna godzin (początek/koniec) i treść. Minione dni schowane
+// pod przyciskiem — lista zaczyna się od dziś.
 
-const toDate = (v: Date | string): Date => (v instanceof Date ? v : new Date(v));
+const F = {
+  medium: 'Manrope_500Medium',
+  semibold: 'Manrope_600SemiBold',
+  bold: 'Manrope_700Bold',
+  xbold: 'Manrope_800ExtraBold',
+} as const;
 
-const startOfDay = (d: Date) => {
-  const c = new Date(d);
-  c.setHours(0, 0, 0, 0);
-  return c;
-};
+const dayKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-const sameDay = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() &&
-  a.getMonth() === b.getMonth() &&
-  a.getDate() === b.getDate();
+interface Day {
+  key: string;
+  date: Date;
+  items: AgendaEvent[];
+}
 
-const groupByDate = (items: AgendaEvent[]): { date: Date; items: AgendaEvent[] }[] => {
-  const map = new Map<string, AgendaEvent[]>();
+const groupDays = (items: AgendaEvent[]): Day[] => {
+  const map = new Map<string, Day>();
   for (const it of items) {
-    const d = toDate(it.startsAt);
-    // Klucz dnia w LOKALNEJ strefie — toISOString() zwraca UTC i w PL (UTC+1/+2)
-    // wydarzenia o północy trafiłyby do poprzedniego dnia (niedziela pod sobotę).
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-      d.getDate(),
-    ).padStart(2, '0')}`;
-    const arr = map.get(key) ?? [];
-    arr.push(it);
-    map.set(key, arr);
+    const k = dayKey(it.startsAt);
+    const day = map.get(k) ?? { key: k, date: new Date(it.startsAt.getFullYear(), it.startsAt.getMonth(), it.startsAt.getDate()), items: [] };
+    day.items.push(it);
+    map.set(k, day);
   }
-  return Array.from(map.entries())
-    .map(([k, v]) => ({ date: new Date(k + 'T00:00:00'), items: v }))
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
-};
-
-const formatHourMinute = (d: Date): string =>
-  d.getHours() === 0 && d.getMinutes() === 0
-    ? ''
-    : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-
-const groupHeaderLabel = (date: Date, today: Date, tomorrow: Date) => {
-  if (sameDay(date, today)) return 'Dziś';
-  if (sameDay(date, tomorrow)) return 'Jutro';
-  const out = format(date, 'EEEE, d MMMM', { locale: pl });
-  return out.charAt(0).toUpperCase() + out.slice(1);
+  return [...map.values()].sort((a, b) => a.date.getTime() - b.date.getTime());
 };
 
 interface Props {
   items: AgendaEvent[];
   onPick: (evt: AgendaEvent) => void;
+  refreshControl?: ReactElement<RefreshControlProps>;
 }
 
-export const AgendaList = ({ items, onPick }: Props) => {
-  const groups = useMemo(() => groupByDate(items), [items]);
-  const today = useMemo(() => startOfDay(new Date()), []);
-  const tomorrow = useMemo(() => {
-    const t = startOfDay(new Date());
-    t.setDate(t.getDate() + 1);
-    return t;
-  }, []);
+export const AgendaList = ({ items, onPick, refreshControl }: Props) => {
+  const calendarLabel = useCalendarLabel();
+  const [showPast, setShowPast] = useState(false);
+  const today = new Date();
+  const todayKey = dayKey(today);
 
-  if (groups.length === 0) {
-    return (
-      <Text
-        style={{
-          textAlign: 'center',
-          paddingVertical: 48,
-          color: '#6B6557',
-          fontFamily: 'Manrope_500Medium',
-        }}
-      >
-        Brak wydarzeń.
-      </Text>
+  const { past, upcoming } = useMemo(() => {
+    const days = groupDays(items);
+    return {
+      past: days.filter((d) => d.key < todayKey),
+      upcoming: days.filter((d) => d.key >= todayKey),
+    };
+  }, [items, todayKey]);
+
+  // Dziś zawsze widoczne (nawet puste), żeby było wiadomo, gdzie jesteśmy.
+  const visible: Day[] = [
+    ...(showPast ? past : []),
+    ...(upcoming[0]?.key === todayKey
+      ? []
+      : [{ key: todayKey, date: new Date(today.getFullYear(), today.getMonth(), today.getDate()), items: [] }]),
+    ...upcoming,
+  ];
+
+  const children: ReactElement[] = [];
+  const sticky: number[] = [];
+  if (past.length) {
+    children.push(
+      <View key="past" style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 6, flexDirection: 'row' }}>
+        <Pressable
+          onPress={() => setShowPast((v) => !v)}
+          className="active:opacity-70"
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: B.paper2 }}
+        >
+          <History size={14} color={B.ink3} />
+          <Text style={{ fontSize: 13, color: B.ink2, fontFamily: F.semibold }}>
+            {showPast ? 'Ukryj minione' : `Pokaż minione (${past.reduce((n, d) => n + d.items.length, 0)})`}
+          </Text>
+        </Pressable>
+      </View>,
+    );
+  }
+
+  let lastMonth = '';
+  for (const day of visible) {
+    const month = `${day.date.getFullYear()}-${day.date.getMonth()}`;
+    if (month !== lastMonth) {
+      lastMonth = month;
+      children.push(
+        <Text
+          key={`m-${month}`}
+          style={{
+            paddingHorizontal: 20,
+            paddingTop: children.length ? 18 : 6,
+            paddingBottom: 2,
+            fontSize: 12,
+            letterSpacing: 1.4,
+            textTransform: 'uppercase',
+            color: B.gold,
+            fontFamily: F.bold,
+          }}
+        >
+          {monthLabel(day.date)}
+        </Text>,
+      );
+    }
+    sticky.push(children.length);
+    children.push(<DayHeader key={`h-${day.key}`} date={day.date} count={day.items.length} />);
+    children.push(
+      <View key={`d-${day.key}`} style={{ paddingHorizontal: 16, paddingBottom: 8, opacity: day.key < todayKey ? 0.6 : 1 }}>
+        <View style={{ backgroundColor: B.card, borderRadius: 22, overflow: 'hidden' }}>
+          {day.items.length === 0 ? (
+            <Text style={{ paddingHorizontal: 16, paddingVertical: 15, fontSize: 14, color: B.ink4, fontFamily: F.medium }}>
+              Nic zaplanowanego na dziś
+            </Text>
+          ) : (
+            day.items.map((evt, i) => (
+              <EventRow key={evt.id} evt={evt} first={i === 0} calendar={calendarLabel(evt.moduleKey)} onPress={() => onPick(evt)} />
+            ))
+          )}
+        </View>
+      </View>,
     );
   }
 
   return (
-    <View style={styles.container}>
-      {groups.map(({ date, items: groupItems }) => {
-        const dayNum = format(date, 'd', { locale: pl });
-        const monthShort = format(date, 'MMM', { locale: pl }).toUpperCase();
-        const isToday = sameDay(date, today);
-        const isPast = date.getTime() < today.getTime();
+    <ScrollView stickyHeaderIndices={sticky} contentContainerStyle={{ paddingBottom: 130 }} refreshControl={refreshControl}>
+      {children}
+    </ScrollView>
+  );
+};
 
-        return (
-          <Fragment key={date.toISOString()}>
-            <View style={styles.dayHeader}>
-              <View
-                style={[
-                  styles.dayBadge,
-                  isToday && styles.dayBadgeToday,
-                  isPast && !isToday && styles.dayBadgePast,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.dayBadgeMonth,
-                    isToday && { color: '#CFC8B6' },
-                    isPast && !isToday && { color: '#857F70' },
-                  ]}
-                >
-                  {monthShort}
-                </Text>
-                <Text
-                  style={[
-                    styles.dayBadgeNum,
-                    isToday && { color: '#FFBE0B' },
-                    isPast && !isToday && { color: '#857F70' },
-                  ]}
-                >
-                  {dayNum}
-                </Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.dayLabel}>{groupHeaderLabel(date, today, tomorrow)}</Text>
-                <Text style={styles.dayCount}>
-                  {groupItems.length} {groupItems.length === 1 ? 'wydarzenie' : 'wydarzeń'}
-                </Text>
-              </View>
-            </View>
+const plEvents = (n: number) => (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'wydarzenia' : 'wydarzeń');
 
-            {/* Wydarzenia dnia w jednej białej karcie; na początku godzina (moje — słód z kurkumą). */}
-            <View style={styles.dayCard}>
-              {groupItems.map((evt, idx) => {
-                const meta = SOURCE_META[evt.source];
-                const time = formatHourMinute(toDate(evt.startsAt));
-                return (
-                  <Pressable key={evt.id} onPress={() => onPick(evt)} className="active:opacity-70" style={styles.row}>
-                    <InfoBlock top={time || 'cały'} bottom={time ? null : 'dzień'} dark={evt.isMine} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.kind}>{evt.isMine ? `Moje · ${meta.label}` : meta.label}</Text>
-                      <Text numberOfLines={1} style={styles.title}>
-                        {evt.title}
-                      </Text>
-                      {evt.location ? (
-                        <Text numberOfLines={1} style={styles.metaText}>
-                          {evt.location}
-                        </Text>
-                      ) : null}
-                    </View>
-                    <ChevronRight size={18} color="#857F70" />
-                    {idx < groupItems.length - 1 ? <View style={styles.divider} /> : null}
-                  </Pressable>
-                );
-              })}
-            </View>
-          </Fragment>
-        );
-      })}
+// Nagłówek dnia (przyklejony): duża liczba dnia, dzień tygodnia + data, odległość od dziś.
+const DayHeader = ({ date, count }: { date: Date; count: number }) => {
+  const n = dayDiff(date);
+  const [weekday, ...rest] = longDay(date).split(', ');
+  return (
+    <View style={{ backgroundColor: B.paper, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 8 }}>
+      <Text
+        style={{
+          width: 38,
+          fontSize: 26,
+          lineHeight: 30,
+          color: n < 0 ? B.ink4 : B.ink,
+          fontFamily: F.xbold,
+          letterSpacing: -1,
+          fontVariant: ['tabular-nums'],
+        }}
+      >
+        {date.getDate()}
+      </Text>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 15, color: B.ink, fontFamily: F.bold, letterSpacing: -0.2 }}>{weekday}</Text>
+        <Text style={{ fontSize: 12, color: B.ink3, fontFamily: F.medium }}>
+          {rest.join(', ')}
+          {count > 1 ? ` · ${count} ${plEvents(count)}` : ''}
+        </Text>
+      </View>
+      <View
+        style={{
+          paddingHorizontal: 10,
+          paddingVertical: 4,
+          borderRadius: 999,
+          backgroundColor: n === 0 ? B.kurkuma : n === 1 ? B.kurkumaSoft : 'transparent',
+        }}
+      >
+        <Text style={{ fontSize: 12, color: n === 0 ? B.ink : n === 1 ? B.goldDeep : B.ink3, fontFamily: F.bold }}>
+          {relativeDay(date)}
+        </Text>
+      </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingBottom: 16 },
-  dayHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18, marginBottom: 10 },
-  dayBadge: {
-    width: 44,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: '#ECE8DE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayBadgeToday: { backgroundColor: '#2A2312' },
-  dayBadgePast: { opacity: 0.55 },
-  dayBadgeMonth: { fontSize: 9, color: '#6B6557', fontFamily: 'Manrope_700Bold', letterSpacing: 0.6 },
-  dayBadgeNum: {
-    fontSize: 18,
-    color: '#2A2312',
-    fontFamily: 'Manrope_700Bold',
-    letterSpacing: -0.4,
-    marginTop: 1,
-  },
-  dayLabel: { fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_700Bold', letterSpacing: -0.3 },
-  dayCount: { fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium', marginTop: 2 },
-  dayCard: { borderRadius: 22, backgroundColor: '#FFFFFF', overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 14 },
-  divider: { position: 'absolute', left: 82, right: 0, bottom: 0, height: 1, backgroundColor: '#ECE8DE' },
-  kind: { fontSize: 11, color: '#8A6606', letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 2 },
-  title: {
-    fontSize: 16,
-    color: '#2A2312',
-    fontFamily: 'Manrope_600SemiBold',
-    letterSpacing: -0.3,
-  },
-  metaText: { fontSize: 13, color: '#6B6557', fontFamily: 'Manrope_500Medium', marginTop: 2 },
-});
+const EventRow = ({
+  evt,
+  first,
+  calendar,
+  onPress,
+}: {
+  evt: AgendaEvent;
+  first: boolean;
+  calendar: string;
+  onPress: () => void;
+}) => {
+  const now = new Date();
+  const live = isOngoing(evt, now);
+  const over = !live && dayDiff(evt.startsAt, now) === 0 && isOver(evt, now);
+  const start = startTime(evt);
+  const end = endTime(evt);
+  return (
+    <Pressable
+      onPress={onPress}
+      className="active:opacity-70"
+      style={{ flexDirection: 'row', gap: 12, paddingLeft: 16, paddingRight: 12, paddingVertical: 14, opacity: over ? 0.55 : 1 }}
+    >
+      {!first ? <View style={{ position: 'absolute', top: 0, left: 82, right: 0, height: 1, backgroundColor: B.line }} /> : null}
+      <View style={{ width: 54 }}>
+        {start ? (
+          <>
+            <Text style={{ fontSize: 16, color: B.ink, fontFamily: F.bold, fontVariant: ['tabular-nums'], letterSpacing: -0.3 }}>
+              {start}
+            </Text>
+            {live ? (
+              <Text style={{ marginTop: 2, fontSize: 12, color: B.gold, fontFamily: F.bold }}>Teraz</Text>
+            ) : end ? (
+              <Text style={{ marginTop: 2, fontSize: 12, color: B.ink4, fontFamily: F.medium, fontVariant: ['tabular-nums'] }}>
+                {end}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <Text style={{ fontSize: 12, lineHeight: 16, color: B.ink3, fontFamily: F.bold }}>Cały{'\n'}dzień</Text>
+        )}
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text numberOfLines={2} style={{ fontSize: 16, lineHeight: 21, color: B.ink, fontFamily: F.semibold, letterSpacing: -0.3 }}>
+          {evt.title}
+        </Text>
+        {evt.location ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+            <MapPin size={12} color={B.ink3} />
+            <Text numberOfLines={1} style={{ flex: 1, fontSize: 13, color: B.ink3, fontFamily: F.medium }}>
+              {evt.location}
+            </Text>
+          </View>
+        ) : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+          {evt.isMine ? (
+            <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: B.kurkuma }}>
+              <Text numberOfLines={1} style={{ fontSize: 11, color: B.ink, fontFamily: F.bold }}>
+                Służysz · {evt.myRole ?? 'grafik'}
+              </Text>
+            </View>
+          ) : null}
+          <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.semibold }}>{calendar}</Text>
+        </View>
+      </View>
+      <ChevronRight size={17} color={B.ink4} style={{ alignSelf: 'center' }} />
+    </Pressable>
+  );
+};

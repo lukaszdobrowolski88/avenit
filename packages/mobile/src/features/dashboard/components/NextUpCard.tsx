@@ -5,7 +5,6 @@ import { pl } from 'date-fns/locale';
 import { ArrowUpRight, MapPin } from 'lucide-react-native';
 import { D, F } from '../theme';
 import type { UpcomingEvent } from '../extras';
-import { goToTab } from '../../../lib/navigation';
 
 const parseLocal = (ymd: string) => {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -36,7 +35,7 @@ export const NextUpCard = ({ event, myRole }: Props) => {
 
   return (
     <Pressable
-      onPress={() => goToTab(router, 'calendar')}
+      onPress={() => router.push({ pathname: '/(app)/events/[id]', params: { id: event.id } })}
       accessibilityLabel={`Najbliższe: ${event.title}, ${when}`}
       className="active:opacity-80"
       style={{ marginHorizontal: 16, marginBottom: 28, borderRadius: 28, minHeight: 176, backgroundColor: D.accentSoft }}

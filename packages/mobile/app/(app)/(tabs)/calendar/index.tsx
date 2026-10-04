@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Pressable,
@@ -11,46 +12,36 @@ import {
 } from 'react-native';
 import { Calendar, CalendarDays, List, Plus } from 'lucide-react-native';
 import { PageHeader } from '../../../../src/components/ui/PageHeader';
-import {
-  useAgenda,
-  type AgendaEvent,
-  type EventSource,
-} from '../../../../src/features/calendar/api';
+import { useAgenda, type AgendaEvent } from '../../../../src/features/calendar/api';
+import { useCalendarLabel } from '../../../../src/features/calendar/meta';
+import { useMyProfile } from '../../../../src/features/account/api';
 import { AgendaList } from '../../../../src/features/calendar/components/AgendaList';
 import { MonthView } from '../../../../src/features/calendar/components/MonthView';
-import { EventDetailSheet } from '../../../../src/features/calendar/components/EventDetailSheet';
 import { useAuthSession } from '../../../../src/lib/auth';
 import { useCampusQuery } from '../../../../src/hooks/useCampusQuery';
 import { usePermissions } from '../../../../src/lib/permissions';
 import { NewCalendarEventModal } from '../../../../src/features/calendar/components/NewCalendarEventModal';
 
-const SOURCE_FILTERS: { key: EventSource | 'all' | 'mine'; label: string; color: string }[] = [
-  { key: 'all', label: 'Wszystkie', color: '#4A463E' },
-  { key: 'mine', label: 'Moje', color: '#8A6606' },
-  { key: 'program', label: 'Programy', color: '#8A6606' },
-  { key: 'worship', label: 'Zespół Uwielbienia', color: '#6B6557' },
-  { key: 'media', label: 'Media Team', color: '#FFBE0B' },
-  { key: 'atmosfera', label: 'Atmosfera Team', color: '#6B6557' },
-  { key: 'kids', label: 'Dzieci', color: '#FFBE0B' },
-  { key: 'homegroups', label: 'Grupy Domowe', color: '#6B6557' },
-  { key: 'event', label: 'Inne', color: '#2A2312' },
-];
-
 type ViewMode = 'agenda' | 'month';
 
 export default function CalendarScreen() {
+  const router = useRouter();
   const { user } = useAuthSession();
+  const profile = useMyProfile(user?.email ?? null);
+  const calendarLabel = useCalendarLabel();
   const { selectedCampusId, withCampusFilter, campusIdForInsert } = useCampusQuery();
   const perms = usePermissions();
   // Jak serwer: dodawać może rola z res:events:create (członek tylko czyta).
   const canCreate = perms.can('res:events:create');
   const [creating, setCreating] = useState(false);
-  const [filter, setFilter] = useState<EventSource | 'all' | 'mine'>('all');
+  const [filter, setFilter] = useState<string>('all');
   const [view, setView] = useState<ViewMode>('agenda');
-  const [picked, setPicked] = useState<AgendaEvent | null>(null);
+  const openEvent = (e: AgendaEvent) =>
+    router.push({ pathname: '/(app)/events/[id]', params: { id: String(e.eventId) } });
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useAgenda({
     userEmail: user?.email ?? null,
+    userName: profile.data?.full_name || profile.data?.name || user?.full_name || null,
     selectedCampusId,
     withCampusFilter,
   });
@@ -61,15 +52,22 @@ export default function CalendarScreen() {
     return e.source === filter;
   });
 
-  const filterCounts: Record<string, number> = {
-    all: data?.length ?? 0,
-    mine: (data ?? []).filter((e: AgendaEvent) => e.isMine).length,
-  };
-  for (const f of SOURCE_FILTERS) {
-    if (f.key !== 'all' && f.key !== 'mine') {
-      filterCounts[f.key] = (data ?? []).filter((e: AgendaEvent) => e.source === f.key).length;
-    }
-  }
+  // Filtry z danych: Wszystkie, Moje (służby z grafiku) i kalendarze, w których coś jest
+  // (liczone nadchodzące — minione są schowane).
+  const filters = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcoming = (data ?? []).filter((e: AgendaEvent) => e.startsAt >= today);
+    const bySource = new Map<string, number>();
+    for (const e of upcoming) bySource.set(e.source, (bySource.get(e.source) ?? 0) + 1);
+    return [
+      { key: 'all', label: 'Wszystkie', count: upcoming.length },
+      { key: 'mine', label: 'Moje służby', count: upcoming.filter((e: AgendaEvent) => e.isMine).length },
+      ...[...bySource.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([key, count]) => ({ key, label: calendarLabel(key), count })),
+    ];
+  }, [data, calendarLabel]);
 
   return (
     <>
@@ -77,7 +75,7 @@ export default function CalendarScreen() {
       <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title="Kalendarz"
-          subtitle="Wszystkie wydarzenia"
+          subtitle="Wydarzenia"
           Icon={Calendar}
           right={
             <View style={styles.viewToggle}>
@@ -132,10 +130,8 @@ export default function CalendarScreen() {
               alignItems: 'center',
             }}
           >
-            {SOURCE_FILTERS.map((f) => {
+            {filters.map((f) => {
               const active = filter === f.key;
-              const count = filterCounts[f.key] ?? 0;
-              if (count === 0 && f.key !== 'all' && f.key !== 'mine') return null;
               return (
                 <Pressable
                   key={f.key}
@@ -145,27 +141,23 @@ export default function CalendarScreen() {
                     paddingHorizontal: 12,
                     paddingVertical: 7,
                     borderRadius: 999,
-                    // Aktywny zawsze słód (kolor kategorii tylko w kropce) — inaczej np. biały
-                    // tekst na kurkumie byłby nieczytelny.
                     backgroundColor: active ? '#2A2312' : '#ECE8DE',
                   }}
                 >
-                  <View
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: 4,
-                      backgroundColor: active ? '#FFBE0B' : f.color,
-                    }}
-                  />
+                  {f.key === 'mine' ? (
+                    <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#FFBE0B' }} />
+                  ) : null}
                   <Text
                     className="text-[13px]"
-                    style={{
-                      color: active ? '#ffffff' : '#2A2312',
-                      fontFamily: 'Manrope_600SemiBold',
-                    }}
+                    style={{ color: active ? '#ffffff' : '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
                   >
-                    {f.label} · {count}
+                    {f.label}
+                  </Text>
+                  <Text
+                    className="text-[12px]"
+                    style={{ color: active ? '#CFC8B6' : '#857F70', fontFamily: 'Manrope_600SemiBold' }}
+                  >
+                    {f.count}
                   </Text>
                 </Pressable>
               );
@@ -201,7 +193,7 @@ export default function CalendarScreen() {
             </Pressable>
           </View>
         ) : view === 'month' ? (
-          <MonthView items={items} onPick={setPicked} />
+          <MonthView items={items} onPick={openEvent} />
         ) : items.length === 0 ? (
           <ScrollView
             contentContainerStyle={{
@@ -243,19 +235,16 @@ export default function CalendarScreen() {
             </Text>
           </ScrollView>
         ) : (
-          <ScrollView
-            className="flex-1"
-            contentContainerStyle={{ paddingBottom: 120 }}
+          <AgendaList
+            items={items}
+            onPick={openEvent}
             refreshControl={
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
-          >
-            <AgendaList items={items} onPick={setPicked} />
-          </ScrollView>
+          />
         )}
       </View>
 
-      <EventDetailSheet event={picked} onClose={() => setPicked(null)} />
       {canCreate ? (
         <Pressable
           onPress={() => setCreating(true)}
