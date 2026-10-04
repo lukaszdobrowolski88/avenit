@@ -44,6 +44,7 @@ import {
   useHomeGroupDetail,
   type HomeGroupMember,
 } from '../../../src/features/home-groups/api';
+import { goBack } from '../../../src/lib/navigation';
 
 const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolean }) => {
   const initials = member.full_name
@@ -235,7 +236,7 @@ export default function HomeGroupDetailScreen() {
           }}
         >
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBack(router)}
             hitSlop={10}
             style={{
               width: 42,

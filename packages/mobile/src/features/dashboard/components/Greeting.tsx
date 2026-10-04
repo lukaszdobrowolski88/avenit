@@ -8,6 +8,7 @@ import { Bell } from 'lucide-react-native';
 import { useMyProfile } from '../../account/api';
 import { useUnreadNotificationsCount } from '../../notifications/api';
 import { D, F } from '../theme';
+import { goToTab } from '../../../lib/navigation';
 
 interface Props {
   email: string | null | undefined;
@@ -110,7 +111,7 @@ export const Greeting = (props: Props) => {
           ) : null}
         </Pressable>
         <Pressable
-          onPress={() => router.push('/(app)/account')}
+          onPress={() => goToTab(router, 'account')}
           accessibilityLabel="Twoje konto"
           hitSlop={6}
           className="active:opacity-70"

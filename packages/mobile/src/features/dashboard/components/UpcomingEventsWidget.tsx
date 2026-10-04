@@ -6,6 +6,7 @@ import { WidgetCard } from './WidgetCard';
 import { dayLabel } from './NextUpCard';
 import { D, F } from '../theme';
 import type { UpcomingEvent } from '../extras';
+import { goToTab } from '../../../lib/navigation';
 
 const parseLocal = (ymd: string) => {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -17,14 +18,14 @@ export const UpcomingEventsWidget = ({ events }: { events: UpcomingEvent[] }) =>
   const router = useRouter();
   if (events.length === 0) return null;
   return (
-    <WidgetCard title="Wydarzenia" actionLabel="Kalendarz" onAction={() => router.push('/(app)/calendar')}>
+    <WidgetCard title="Wydarzenia" actionLabel="Kalendarz" onAction={() => goToTab(router, 'calendar')}>
       <View style={{ padding: 8 }}>
         {events.map((ev) => {
           const date = parseLocal(ev.date);
           return (
             <Pressable
               key={ev.id}
-              onPress={() => router.push('/(app)/calendar')}
+              onPress={() => goToTab(router, 'calendar')}
               className="active:opacity-70"
               style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 8 }}
             >

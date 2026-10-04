@@ -1,7 +1,7 @@
 import { ActivityIndicator, RefreshControl, ScrollView, StatusBar, View } from 'react-native';
-import { useAuthSession } from '../../../src/lib/auth';
-import { usePermissions } from '../../../src/lib/permissions';
-import { useDashboard, type UpcomingMinistryItem } from '../../../src/features/dashboard/api';
+import { useAuthSession } from '../../../../src/lib/auth';
+import { usePermissions } from '../../../../src/lib/permissions';
+import { useDashboard, type UpcomingMinistryItem } from '../../../../src/features/dashboard/api';
 import {
   useAttendanceRecent,
   useBirthdays,
@@ -9,24 +9,24 @@ import {
   useRsvpSummary,
   useUpcomingEvents,
   type UpcomingEvent,
-} from '../../../src/features/dashboard/extras';
-import { Greeting } from '../../../src/features/dashboard/components/Greeting';
-import { NextUpCard } from '../../../src/features/dashboard/components/NextUpCard';
-import { ForYouStrip } from '../../../src/features/dashboard/components/ForYouStrip';
-import { QuickAccess } from '../../../src/features/dashboard/components/QuickAccess';
-import { UpcomingEventsWidget } from '../../../src/features/dashboard/components/UpcomingEventsWidget';
-import { BirthdaysWidget } from '../../../src/features/dashboard/components/BirthdaysWidget';
-import { LeaderOverviewWidget } from '../../../src/features/dashboard/components/LeaderOverviewWidget';
-import { MinistryWidget } from '../../../src/features/dashboard/components/MinistryWidget';
-import { MessagesWidget } from '../../../src/features/dashboard/components/MessagesWidget';
-import { MyPrayersWidget } from '../../../src/features/dashboard/components/MyPrayersWidget';
-import { TasksWidget } from '../../../src/features/dashboard/components/TasksWidget';
-import { OnlineUsersWidget } from '../../../src/features/dashboard/components/OnlineUsersWidget';
-import { PendingInvitationsWidget } from '../../../src/features/dashboard/components/PendingInvitationsWidget';
-import { PendingAccountsCard } from '../../../src/features/dashboard/components/PendingAccountsCard';
-import { AbsencesWidget } from '../../../src/features/dashboard/components/AbsencesWidget';
-import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
-import { D } from '../../../src/features/dashboard/theme';
+} from '../../../../src/features/dashboard/extras';
+import { Greeting } from '../../../../src/features/dashboard/components/Greeting';
+import { NextUpCard } from '../../../../src/features/dashboard/components/NextUpCard';
+import { ForYouStrip } from '../../../../src/features/dashboard/components/ForYouStrip';
+import { QuickAccess } from '../../../../src/features/dashboard/components/QuickAccess';
+import { UpcomingEventsWidget } from '../../../../src/features/dashboard/components/UpcomingEventsWidget';
+import { BirthdaysWidget } from '../../../../src/features/dashboard/components/BirthdaysWidget';
+import { LeaderOverviewWidget } from '../../../../src/features/dashboard/components/LeaderOverviewWidget';
+import { MinistryWidget } from '../../../../src/features/dashboard/components/MinistryWidget';
+import { MessagesWidget } from '../../../../src/features/dashboard/components/MessagesWidget';
+import { MyPrayersWidget } from '../../../../src/features/dashboard/components/MyPrayersWidget';
+import { TasksWidget } from '../../../../src/features/dashboard/components/TasksWidget';
+import { OnlineUsersWidget } from '../../../../src/features/dashboard/components/OnlineUsersWidget';
+import { PendingInvitationsWidget } from '../../../../src/features/dashboard/components/PendingInvitationsWidget';
+import { PendingAccountsCard } from '../../../../src/features/dashboard/components/PendingAccountsCard';
+import { AbsencesWidget } from '../../../../src/features/dashboard/components/AbsencesWidget';
+import { useCampusQuery } from '../../../../src/hooks/useCampusQuery';
+import { D } from '../../../../src/features/dashboard/theme';
 
 // Tło strony pulpitu — białe karty odcinają się od niego bez ramek i cieni.
 const PAGE_BG = D.page;

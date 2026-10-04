@@ -23,6 +23,7 @@ import {
   type PrayerVisibility,
 } from '../../../src/features/prayers/api';
 import { GradientButton } from '../../../src/components/ui/GradientButton';
+import { goBack } from '../../../src/lib/navigation';
 
 const CATEGORIES: PrayerCategory[] = ['zdrowie', 'rodzina', 'finanse', 'duchowe', 'inne'];
 
@@ -103,7 +104,7 @@ export default function NewPrayerScreen() {
           visibility,
         });
       }
-      router.back();
+      goBack(router);
     } catch (e: any) {
       Alert.alert('Błąd', e?.message ?? 'Nie udało się zapisać intencji.');
     }
@@ -127,7 +128,7 @@ export default function NewPrayerScreen() {
           }}
         >
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBack(router)}
             hitSlop={10}
             style={{
               width: 42,

@@ -13,6 +13,7 @@ import {
   type ModuleSection,
   type PersonalEntry,
 } from './registry';
+import { goToTab, type TabName } from '../../lib/navigation';
 
 export interface ModuleItem extends ModuleEntry {
   isWeb: boolean;
@@ -99,6 +100,9 @@ export const openModule = (
   item: Pick<ModuleItem, 'route' | 'webPath'>,
   router: ReturnType<typeof useRouter>,
 ) => {
-  if (item.route) router.push(item.route as never);
+  // Moduły będące zakładkami (Wydarzenia, Komunikator) — przejście do zakładki, nie push na stos.
+  const tab = item.route?.match(/^\/\(app\)\/(calendar|messenger)$/)?.[1] as TabName | undefined;
+  if (tab) goToTab(router, tab);
+  else if (item.route) router.push(item.route as never);
   else void openOnWeb(item.webPath);
 };

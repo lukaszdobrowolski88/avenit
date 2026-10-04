@@ -17,6 +17,7 @@ import {
   type CheckMember,
 } from '../../../src/features/attendance/api';
 import { Loading, dayLabel } from '../../../src/features/teams/tabs/ui';
+import { goBack } from '../../../src/lib/navigation';
 
 export default function AttendanceSessionScreen() {
   const router = useRouter();
@@ -76,7 +77,7 @@ export default function AttendanceSessionScreen() {
         style: 'destructive',
         onPress: () =>
           del.mutate(sessionId, {
-            onSuccess: () => router.back(),
+            onSuccess: () => goBack(router),
             onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? ''),
           }),
       },

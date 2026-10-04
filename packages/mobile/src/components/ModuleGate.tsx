@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Lock } from 'lucide-react-native';
 import { usePermissions } from '../lib/permissions';
+import { goToTab } from '../lib/navigation';
 
 // Bramka modułu jak ProtectedRoute na webie: bez module:<key> (lub gdy kościół wyłączył
 // moduł) ekran pokazuje komunikat zamiast pustej listy. Dotyczy też wejść z deep linków
@@ -48,7 +49,7 @@ export const NoModuleAccess = ({ message }: { message?: string }) => {
           'Nie masz uprawnień do tego modułu albo kościół go wyłączył. Jeśli powinieneś go widzieć, poproś administratora o dostęp w Ustawienia → Uprawnienia.'}
       </Text>
       <Pressable
-        onPress={() => (router.canGoBack() ? router.back() : router.replace('/(app)/modules' as never))}
+        onPress={() => (router.canGoBack() ? router.back() : goToTab(router, 'modules'))}
         className="active:opacity-70"
         style={{
           marginTop: 8,

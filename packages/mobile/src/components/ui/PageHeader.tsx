@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, type LucideIcon } from 'lucide-react-native';
 import { GradientIcon } from './GradientIcon';
+import { goBack } from '../../lib/navigation';
 
 interface Props {
   title: string;
@@ -26,7 +27,7 @@ export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: P
     >
       {showBack ? (
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack(router)}
           className="active:opacity-60"
           hitSlop={10}
           style={{

@@ -19,6 +19,7 @@ import { GradientButton } from '../../../src/components/ui/GradientButton';
 import { GradientAvatar } from '../../../src/components/ui/GradientAvatar';
 import { useAuthSession } from '../../../src/lib/auth';
 import { useMyProfile, useUpdateProfile, pickAvatar, uploadAvatar } from '../../../src/features/account/api';
+import { goBack } from '../../../src/lib/navigation';
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -67,7 +68,7 @@ export default function EditProfileScreen() {
     try {
       // name = zgodność wstecz (część kodu czyta app_users.name).
       await update.mutateAsync({ full_name: name, name });
-      router.back();
+      goBack(router);
     } catch (e: any) {
       Alert.alert('Błąd', e?.message ?? 'Nie udało się zapisać profilu.');
     }

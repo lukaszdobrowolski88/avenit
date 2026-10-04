@@ -1,17 +1,40 @@
 import { useEffect, useState } from 'react';
-import { Keyboard, Platform, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Keyboard, Platform, Pressable, View } from 'react-native';
+import { useRootNavigationState, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { Calendar, Home, LayoutGrid, MessageCircle, type LucideIcon } from 'lucide-react-native';
+import { usePermissions } from '../../lib/permissions';
+import { useT } from '../../i18n';
+import { goToTab, readTabsState, setOnTabs, type TabName } from '../../lib/navigation';
+import { AccountTabIcon } from './AccountTabIcon';
 
 // Kolory marki: słód (ikony) i kurkuma (aktywna zakładka).
 const INK = '#2A2312';
 const KURKUMA = '#FFBE0B';
 
-// Pływający pasek zakładek (pigułka nad krawędzią ekranu, same ikony).
-// Zajmuje ~84 pt od dołu na iPhonie z paskiem domowym — mieści się w odstępie, który
-// ekrany rezerwują pod pasek (czat: composerBottomPad = 88).
-export const FloatingTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
+const TABS: { name: TabName; label: string; Icon?: LucideIcon; module?: string }[] = [
+  { name: 'dashboard', label: 'Start', Icon: Home },
+  { name: 'calendar', label: 'Kalendarz', Icon: Calendar, module: 'calendar' },
+  { name: 'messenger', label: 'Czat', Icon: MessageCircle, module: 'komunikator' },
+  { name: 'modules', label: 'Moduły', Icon: LayoutGrid },
+  { name: 'account', label: 'Konto' },
+];
+
+// Pływający pasek zakładek (pigułka nad krawędzią ekranu, same ikony) — nakładka nad całym
+// stosem (app), więc widoczny także na ekranach otwartych nad zakładkami. Aktywna zakładka =
+// ta pod spodem (z niej zaczęła się ścieżka). Stuknięcie zamyka otwarte ekrany i przechodzi
+// do zakładki. Zajmuje ~84 pt od dołu na iPhonie z paskiem domowym — mieści się w odstępie,
+// który ekrany rezerwują pod pasek (czat: composerBottomPad = 88).
+export const FloatingTabBar = () => {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useT();
+  const perms = usePermissions();
+  const { onTabs, active } = readTabsState(useRootNavigationState() as never);
+  useEffect(() => {
+    setOnTabs(onTabs);
+  }, [onTabs]);
+
   // Android z adjustResize podniósłby pasek nad klawiaturę — chowamy go wtedy.
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   useEffect(() => {
@@ -23,15 +46,10 @@ export const FloatingTabBar = ({ state, descriptors, navigation }: BottomTabBarP
       hide.remove();
     };
   }, []);
+  if (keyboardOpen) return null;
 
-  const focusedKey = state.routes[state.index].key;
-  const hidden = (style: unknown) => (StyleSheet.flatten(style as ViewStyle) as ViewStyle | undefined)?.display === 'none';
-  if (keyboardOpen || hidden(descriptors[focusedKey].options.tabBarStyle)) {
-    return null;
-  }
-
-  // Ekrany z `href: null` (expo-router) mają tabBarItemStyle display:none — nie są zakładkami.
-  const routes = state.routes.filter((r) => !hidden(descriptors[r.key].options.tabBarItemStyle));
+  // Zakładki według uprawnień jak na webie; do pierwszego wczytania wszystkie (bez migania).
+  const tabs = TABS.filter((tab) => !tab.module || !perms.ready || perms.moduleVisible(tab.module));
   const bottom = insets.bottom > 0 ? Math.max(insets.bottom - 10, 16) : 12;
 
   return (
@@ -51,21 +69,19 @@ export const FloatingTabBar = ({ state, descriptors, navigation }: BottomTabBarP
           elevation: 14,
         }}
       >
-        {routes.map((route) => {
-          const { options } = descriptors[route.key];
-          const focused = route.key === focusedKey;
-          const onPress = () => {
-            const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-            if (!focused && !event.defaultPrevented) navigation.navigate(route.name, route.params);
-          };
+        {tabs.map(({ name, label, Icon }) => {
+          const focused = name === active;
           return (
             <Pressable
-              key={route.key}
-              onPress={onPress}
-              onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
+              key={name}
+              onPress={() => {
+                // Na tej samej zakładce bez nic otwartego nad nią — nic do zrobienia.
+                if (focused && onTabs) return;
+                goToTab(router, name);
+              }}
               accessibilityRole="tab"
               accessibilityState={{ selected: focused }}
-              accessibilityLabel={options.tabBarAccessibilityLabel ?? options.title}
+              accessibilityLabel={t(label)}
               style={{
                 flex: 1,
                 height: 48,
@@ -75,7 +91,11 @@ export const FloatingTabBar = ({ state, descriptors, navigation }: BottomTabBarP
                 backgroundColor: focused ? KURKUMA : 'transparent',
               }}
             >
-              {options.tabBarIcon?.({ focused, color: INK, size: 24 })}
+              {Icon ? (
+                <Icon color={INK} size={24} strokeWidth={focused ? 2.4 : 1.8} />
+              ) : (
+                <AccountTabIcon color={INK} focused={focused} />
+              )}
             </Pressable>
           );
         })}

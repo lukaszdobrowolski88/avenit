@@ -25,6 +25,7 @@ import {
 import { ScheduleList } from '../../../src/features/programs/components/ScheduleList';
 import { AssignmentCard } from '../../../src/features/programs/components/AssignmentCard';
 import { useAuthSession } from '../../../src/lib/auth';
+import { goBack } from '../../../src/lib/navigation';
 
 type TabKey = 'schedule' | 'team' | 'notes';
 
@@ -222,7 +223,7 @@ export default function ProgramDetailScreen() {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBack(router)}
             hitSlop={10}
             style={{
               width: 42,

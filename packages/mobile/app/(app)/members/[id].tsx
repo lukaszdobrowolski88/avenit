@@ -30,6 +30,7 @@ import { EditMemberModal } from '../../../src/features/members/components/EditMe
 import { usePermissions } from '../../../src/lib/permissions';
 import { useAuthSession } from '../../../src/lib/auth';
 import { Monogram } from '../../../src/components/ui/brand';
+import { goBack } from '../../../src/lib/navigation';
 
 const SectionCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View
@@ -200,7 +201,7 @@ export default function MemberDetailScreen() {
           }}
         >
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBack(router)}
             hitSlop={10}
             style={{
               width: 42,

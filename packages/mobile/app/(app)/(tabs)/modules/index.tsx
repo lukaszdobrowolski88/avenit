@@ -13,11 +13,11 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowUpRight, Search, UserCheck, X } from 'lucide-react-native';
-import { openModule, useModules, type ModuleItem } from '../../../src/features/modules/useModules';
-import { useAuthSession } from '../../../src/lib/auth';
-import { useUnreadNotificationsCount } from '../../../src/features/notifications/api';
-import { usePendingAccounts } from '../../../src/features/admin/approvals';
-import { B, FeatureCard, IconWell, ListCard, ListRow, SectionLabel } from '../../../src/components/ui/brand';
+import { openModule, useModules, type ModuleItem } from '../../../../src/features/modules/useModules';
+import { useAuthSession } from '../../../../src/lib/auth';
+import { useUnreadNotificationsCount } from '../../../../src/features/notifications/api';
+import { usePendingAccounts } from '../../../../src/features/admin/approvals';
+import { B, FeatureCard, IconWell, ListCard, ListRow, SectionLabel } from '../../../../src/components/ui/brand';
 
 const GAP = 10;
 const SIDE = 16;

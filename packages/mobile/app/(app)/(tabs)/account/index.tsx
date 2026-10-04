@@ -20,21 +20,22 @@ import {
 } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
 import { useColorScheme } from 'nativewind';
-import { useAuthSession, signOut } from '../../../src/lib/auth';
-import { registerPushToken } from '../../../src/lib/push';
+import { useAuthSession, signOut } from '../../../../src/lib/auth';
+import { registerPushToken } from '../../../../src/lib/push';
 import {
   isBiometricEnabled,
   setBiometricEnabled,
   authenticateWithBiometric,
   getBiometricCapability,
-} from '../../../src/lib/biometric';
-import { GradientAvatar } from '../../../src/components/ui/GradientAvatar';
-import { SettingsGroup, SettingsRow } from '../../../src/components/ui/SettingsRow';
-import { CampusSelector } from '../../../src/components/CampusSelector';
-import { useCampus } from '../../../src/contexts/CampusContext';
-import { tenantWebBase } from '../../../src/lib/supabase';
-import { useMyProfile, use2FAStatus } from '../../../src/features/account/api';
-import { useT, useLang } from '../../../src/i18n';
+} from '../../../../src/lib/biometric';
+import { GradientAvatar } from '../../../../src/components/ui/GradientAvatar';
+import { SettingsGroup, SettingsRow } from '../../../../src/components/ui/SettingsRow';
+import { CampusSelector } from '../../../../src/components/CampusSelector';
+import { useCampus } from '../../../../src/contexts/CampusContext';
+import { tenantWebBase } from '../../../../src/lib/supabase';
+import { useMyProfile, use2FAStatus } from '../../../../src/features/account/api';
+import { useT, useLang } from '../../../../src/i18n';
+import { goToTab } from '../../../../src/lib/navigation';
 
 // Otwiera stronę web tenanta (np. politykę prywatności) — host tenanta z getTenant(),
 // z fallbackiem na apex. Wymagane linki prawne + usuwanie konta (wymóg App Store / Play).
@@ -348,7 +349,7 @@ export default function AccountScreen() {
           iconBg="#ECE8DE"
           title={t("Wszystkie moduły")}
           description={t("Zespoły, grupy, materiały i reszta — według Twoich uprawnień")}
-          onPress={() => router.push('/(app)/modules')}
+          onPress={() => goToTab(router, 'modules')}
         />
         <SettingsRow
           variant="nav"

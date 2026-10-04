@@ -5,6 +5,7 @@ import { ArrowUpRight } from 'lucide-react-native';
 import { openModule, useModules, type ModuleItem } from '../../modules/useModules';
 import { SectionHeading } from './WidgetCard';
 import { D, F } from '../theme';
+import { goToTab } from '../../../lib/navigation';
 
 // Kolejność skrótów: najpierw służby, do których należę, potem to, co członek otwiera
 // najczęściej. Kalendarz i Czat są na dolnym pasku, więc ich tu nie dublujemy.
@@ -112,7 +113,7 @@ export const QuickAccess = () => {
         title="Twoje moduły"
         count={items.length}
         actionLabel="Wszystkie"
-        onAction={() => router.push('/(app)/modules')}
+        onAction={() => goToTab(router, 'modules')}
       />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 16 }}>
         {picks.map((it) => (

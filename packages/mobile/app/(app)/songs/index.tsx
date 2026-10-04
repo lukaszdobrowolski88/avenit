@@ -46,6 +46,7 @@ export default function SongsScreen() {
           title="Pieśni"
           subtitle="Repertuar zespołu"
           Icon={Music}
+          showBack
           right={
             <Pressable
               onPress={() => setProgramsVisible(true)}

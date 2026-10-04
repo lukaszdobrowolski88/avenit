@@ -5,6 +5,7 @@ import { D, F } from '../theme';
 import { formatRelative } from '../../../lib/domain';
 import { EmptyRow, WidgetCard } from './WidgetCard';
 import type { UnreadConversation } from '../api';
+import { goToTab } from '../../../lib/navigation';
 
 interface Props {
   conversations: UnreadConversation[];
@@ -18,10 +19,10 @@ export const MessagesWidget = ({ conversations, totalUnread }: Props) => {
       title="Wiadomości"
       count={totalUnread}
       actionLabel="Czat"
-      onAction={() => router.push('/(app)/messenger')}
+      onAction={() => goToTab(router, 'messenger')}
     >
       {conversations.length === 0 ? (
-        <EmptyRow text="Wszystko przeczytane" actionLabel="Otwórz czat" onAction={() => router.push('/(app)/messenger')} />
+        <EmptyRow text="Wszystko przeczytane" actionLabel="Otwórz czat" onAction={() => goToTab(router, 'messenger')} />
       ) : (
         conversations.slice(0, 4).map((c, idx, arr) => {
           const Icon = c.type === 'ministry' ? Hash : MessageCircle;

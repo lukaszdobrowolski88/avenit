@@ -48,6 +48,7 @@ import { usePermissions } from '../../../src/lib/permissions';
 import { PromptModal } from '../../../src/components/ui/PromptModal';
 import { GradientIcon } from '../../../src/components/ui/GradientIcon';
 import { IconWell, ListCard, ListRow, SectionLabel, Tile } from '../../../src/components/ui/brand';
+import { goBack } from '../../../src/lib/navigation';
 
 const ICON_BY_TYPE = {
   pdf: { Icon: FileText, tint: '#dc2626', bg: '#fee2e2' },
@@ -176,7 +177,7 @@ export default function MaterialsScreen() {
     if (folderId === null) {
       // Z przestrzeni wróć do wyboru (chyba że weszliśmy z zakładki zespołu).
       if (space !== undefined && !team) setSpace(undefined);
-      else router.back();
+      else goBack(router);
     } else {
       const parent = path.data?.[path.data.length - 2];
       setFolderId(parent?.id ?? null);

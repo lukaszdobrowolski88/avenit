@@ -10,19 +10,19 @@ import {
   View,
 } from 'react-native';
 import { Calendar, CalendarDays, List, Plus } from 'lucide-react-native';
-import { PageHeader } from '../../../src/components/ui/PageHeader';
+import { PageHeader } from '../../../../src/components/ui/PageHeader';
 import {
   useAgenda,
   type AgendaEvent,
   type EventSource,
-} from '../../../src/features/calendar/api';
-import { AgendaList } from '../../../src/features/calendar/components/AgendaList';
-import { MonthView } from '../../../src/features/calendar/components/MonthView';
-import { EventDetailSheet } from '../../../src/features/calendar/components/EventDetailSheet';
-import { useAuthSession } from '../../../src/lib/auth';
-import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
-import { usePermissions } from '../../../src/lib/permissions';
-import { NewCalendarEventModal } from '../../../src/features/calendar/components/NewCalendarEventModal';
+} from '../../../../src/features/calendar/api';
+import { AgendaList } from '../../../../src/features/calendar/components/AgendaList';
+import { MonthView } from '../../../../src/features/calendar/components/MonthView';
+import { EventDetailSheet } from '../../../../src/features/calendar/components/EventDetailSheet';
+import { useAuthSession } from '../../../../src/lib/auth';
+import { useCampusQuery } from '../../../../src/hooks/useCampusQuery';
+import { usePermissions } from '../../../../src/lib/permissions';
+import { NewCalendarEventModal } from '../../../../src/features/calendar/components/NewCalendarEventModal';
 
 const SOURCE_FILTERS: { key: EventSource | 'all' | 'mine'; label: string; color: string }[] = [
   { key: 'all', label: 'Wszystkie', color: '#4A463E' },

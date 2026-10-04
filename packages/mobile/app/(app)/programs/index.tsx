@@ -203,7 +203,7 @@ export default function ProgramsScreen() {
           />
         }
       >
-        <PageHeader title="Programy" subtitle="Nadchodzące nabożeństwa" Icon={CalendarIcon} />
+        <PageHeader title="Programy" subtitle="Nadchodzące nabożeństwa" Icon={CalendarIcon} showBack />
         {grouped.length === 0 ? (
           <View className="items-center px-8 py-16">
             <View

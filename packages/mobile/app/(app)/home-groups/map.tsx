@@ -200,7 +200,7 @@ export default function HomeGroupsMapScreen() {
             ) : null}
 
             <Pressable
-              onPress={() => router.push('/(app)/home-groups')}
+              onPress={() => router.dismissTo('/(app)/home-groups')}
               style={{ marginTop: 10, alignItems: 'center', paddingVertical: 12 }}
             >
               <Text style={{ fontSize: 13, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Otwórz listę grup</Text>

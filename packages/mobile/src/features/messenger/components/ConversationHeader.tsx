@@ -21,6 +21,7 @@ import {
 } from "../api";
 import { PresenceDot } from "./PresenceDot";
 import { PRESENCE_LABELS, type PresenceStatus } from "../../../lib/presence";
+import { goBack } from '../../../lib/navigation';
 
 interface Props {
   details: ConversationDetails | null;
@@ -62,7 +63,7 @@ export const ConversationHeader = ({
         }}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack(router)}
           hitSlop={10}
           style={{
             width: 36,
@@ -191,7 +192,7 @@ export const ConversationHeader = ({
       }}
     >
       <Pressable
-        onPress={() => router.back()}
+        onPress={() => goBack(router)}
         hitSlop={10}
         style={{
           width: 36,

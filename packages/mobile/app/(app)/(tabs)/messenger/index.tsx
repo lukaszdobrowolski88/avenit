@@ -25,8 +25,8 @@ import {
   VolumeX,
   X,
 } from "lucide-react-native";
-import { formatRelative } from "../../../src/lib/domain";
-import { PageHeader } from "../../../src/components/ui/PageHeader";
+import { formatRelative } from "../../../../src/lib/domain";
+import { PageHeader } from "../../../../src/components/ui/PageHeader";
 import {
   useConversations,
   useToggleStarred,
@@ -40,11 +40,11 @@ import {
   type ConversationFilter,
   type ConversationListItem,
   type MemberLite, type MemberMap,
-} from "../../../src/features/messenger/api";
-import { useRealtimeConversations } from "../../../src/features/messenger/hooks/useRealtimeMessages";
-import { useAuthSession } from "../../../src/lib/auth";
-import { usePresence, type PresenceStatus } from "../../../src/lib/presence";
-import { PresenceDot } from "../../../src/features/messenger/components/PresenceDot";
+} from "../../../../src/features/messenger/api";
+import { useRealtimeConversations } from "../../../../src/features/messenger/hooks/useRealtimeMessages";
+import { useAuthSession } from "../../../../src/lib/auth";
+import { usePresence, type PresenceStatus } from "../../../../src/lib/presence";
+import { PresenceDot } from "../../../../src/features/messenger/components/PresenceDot";
 
 const FILTERS: { key: ConversationFilter; label: string }[] = [
   { key: "all", label: "Wszystkie" },

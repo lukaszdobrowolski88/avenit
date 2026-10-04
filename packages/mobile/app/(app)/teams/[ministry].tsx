@@ -23,6 +23,7 @@ import { TasksTab } from '../../../src/features/teams/tabs/TasksTab';
 import { KidsTodayTab } from '../../../src/features/teams/tabs/KidsTodayTab';
 import { AddButton, Empty, Loading } from '../../../src/features/teams/tabs/ui';
 import { useMyProfile } from '../../../src/features/account/api';
+import { goBack } from '../../../src/lib/navigation';
 
 // Wygląd nagłówka; Grupy domowe nie są w MINISTRY_META (to moduł wspólnoty).
 const LOOK = {
@@ -176,7 +177,7 @@ export default function TeamDetailScreen() {
           }}
         >
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBack(router)}
             hitSlop={10}
             className="active:opacity-60"
             style={{

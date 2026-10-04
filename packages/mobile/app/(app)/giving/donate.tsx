@@ -16,6 +16,7 @@ import { GradientButton } from '../../../src/components/ui/GradientButton';
 import { useAuthSession } from '../../../src/lib/auth';
 import { supabase, tenantWebBase } from '../../../src/lib/supabase';
 import { formatMoney } from '../../../src/features/giving/api';
+import { goBack } from '../../../src/lib/navigation';
 
 const QUICK = [20, 50, 100, 200, 500];
 
@@ -78,7 +79,7 @@ export default function DonateScreen() {
         throw new Error(error?.message || 'Nie udało się utworzyć płatności');
       }
       await Linking.openURL(data.paymentUrl);
-      router.back();
+      goBack(router);
     } catch (err) {
       Alert.alert('Błąd płatności', (err as Error)?.message || 'Spróbuj ponownie.');
     } finally {

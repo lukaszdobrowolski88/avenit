@@ -8,6 +8,7 @@ import { TransposeControl } from '../../../src/features/songs/components/Transpo
 import { LyricsView } from '../../../src/features/songs/components/LyricsView';
 import { AddSongToProgramModal } from '../../../src/features/songs/components/AddSongToProgramModal';
 import { useAuthSession } from '../../../src/lib/auth';
+import { goBack } from '../../../src/lib/navigation';
 
 export default function SongDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -91,7 +92,7 @@ export default function SongDetailScreen() {
           }}
         >
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBack(router)}
             hitSlop={10}
             style={{
               width: 42,

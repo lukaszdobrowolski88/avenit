@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { ModuleGate } from '../../../src/components/ModuleGate';
+import { ModuleGate } from '../../../../src/components/ModuleGate';
 
 export default function CalendarLayout() {
   return (

@@ -5,6 +5,7 @@ import { findOrCreateDirect } from '../../messenger/start';
 import { D, F } from '../theme';
 import { WidgetCard } from './WidgetCard';
 import type { OnlineUser } from '../api';
+import { goToTab } from '../../../lib/navigation';
 
 interface Props {
   users: OnlineUser[];
@@ -99,7 +100,7 @@ export const OnlineUsersWidget = ({ users, offlineCount }: Props) => {
       title="Kto jest online"
       count={onlineCount}
       actionLabel="Czat"
-      onAction={() => router.push('/(app)/messenger')}
+      onAction={() => goToTab(router, 'messenger')}
     >
       <ScrollView
         horizontal
