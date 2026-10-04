@@ -1,7 +1,7 @@
 // Testy budowniczego SQL Data API — kontrakt filtrów, selectów, izolacji operacji.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildQuery, ApiError } from '../src/dataapi/querybuilder.js';
+import { buildQuery, ApiError, embeddedTablePairs } from '../src/dataapi/querybuilder.js';
 import { parseSelect } from '../src/dataapi/selectparser.js';
 
 test('parseSelect: proste kolumny', () => {
@@ -128,4 +128,35 @@ test('widoczność: __visibilityScope ignorowany dla tabel innych niż events', 
     __visibilityScope: { role: 'lider', email: 'a@b.pl', memberId: 5, ministries: [], tags: [] },
   });
   assert.ok(!sql.includes('visibility_segments'), 'widoczność tylko dla events');
+});
+
+// ── Złączenia: lista dociąganych tabel (podstawa kontroli dostępu w routes.js) ──
+test('embeddedTablePairs: brak złączeń → pusta lista', () => {
+  assert.deepEqual(embeddedTablePairs('checkins', '*'), []);
+  assert.deepEqual(embeddedTablePairs('checkins', 'id, security_code'), []);
+});
+
+test('embeddedTablePairs: relacje z registry i alias po FK', () => {
+  assert.deepEqual(embeddedTablePairs('checkins', '*, kids_students(*), households(*)'), [
+    ['checkins', 'kids_students'],
+    ['checkins', 'households'],
+  ]);
+  // alias:kolumna_fk → tabela o nazwie aliasu (fallback resolveRelationship)
+  assert.deepEqual(embeddedTablePairs('programs', 'id, type:program_types(name)'), [['programs', 'program_types']]);
+});
+
+test('embeddedTablePairs: zagnieżdżenie jest przechodzone rekurencyjnie', () => {
+  assert.deepEqual(embeddedTablePairs('households', '*, kids_students(*), parent_contacts(id)'), [
+    ['households', 'kids_students'],
+    ['households', 'parent_contacts'],
+  ]);
+});
+
+test('parseSelect: podpowiedzi PostgREST po „!” są odcinane z aliasu i celu', () => {
+  const a = parseSelect('id, conversation_participants!inner (user_email)').embeds[0];
+  assert.equal(a.alias, 'conversation_participants');
+  assert.equal(a.target, 'conversation_participants');
+  const b = parseSelect('*, creator:app_users!email_templates_created_by_fkey(full_name)').embeds[0];
+  assert.equal(b.alias, 'creator');
+  assert.equal(b.target, 'app_users');
 });

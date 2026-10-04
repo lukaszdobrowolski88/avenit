@@ -110,6 +110,7 @@ export const REGISTRY = {
     relationships: {
       parent_contacts: { table: 'parent_contacts', column: 'household_id', type: 'many' },
       kids_students: { table: 'kids_students', column: 'household_id', type: 'many' },
+      members: { table: 'members', column: 'household_id', type: 'many' },
     },
   }),
   parent_contacts: T('module:members'),
@@ -202,7 +203,11 @@ export const REGISTRY = {
   custom_mc_members: T('module:mlodziezowka'),
 
   // ── Komunikator ─────────────────────────────────────────────────────────
-  conversations: T('module:komunikator'),
+  conversations: T('module:komunikator', {
+    relationships: {
+      conversation_participants: { table: 'conversation_participants', column: 'conversation_id', type: 'many' },
+    },
+  }),
   conversation_participants: T('module:komunikator', {
     relationships: {
       users: { table: 'app_users', column: 'user_id', type: 'one' },
@@ -263,10 +268,17 @@ export const REGISTRY = {
   income_transactions: T('module:finance'),
   expense_transactions: T('module:finance'),
   // Mailing (kampanie e-mail)
-  email_campaigns: T('module:mailing'),
+  email_campaigns: T('module:mailing', {
+    relationships: {
+      template: { table: 'email_templates', column: 'template_id', type: 'one' },
+      creator: { table: 'app_users', column: 'created_by', type: 'one' },
+    },
+  }),
   email_campaign_recipients: T('module:mailing'),
   email_recipient_segments: T('module:mailing'),
-  email_templates: T('module:mailing'),
+  email_templates: T('module:mailing', {
+    relationships: { creator: { table: 'app_users', column: 'created_by', type: 'one' } },
+  }),
   email_unsubscribes: T('module:mailing'),
   // Poczta (klient)
   mail_folders: T('module:mail'),
@@ -290,7 +302,9 @@ export const REGISTRY = {
   // Komunikator (interakcje)
   message_reactions: T('module:komunikator'),
   message_read_receipts: T('module:komunikator'),
-  pinned_messages: T('module:komunikator'),
+  pinned_messages: T('module:komunikator', {
+    relationships: { messages: { table: 'messages', column: 'message_id', type: 'one' } },
+  }),
   typing_status: T('module:komunikator'),
   // Ankiety i prośby o modlitwę w czacie (migracja 064). Dostęp jak reszta czatu
   // (module:komunikator + res:* grant); członek dostaje granty w migracji 065.

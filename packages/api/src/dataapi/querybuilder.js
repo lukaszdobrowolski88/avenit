@@ -138,8 +138,11 @@ function buildSelectColumns(table, parsed, alias, params) {
 function resolveRelationship(table, embed) {
   const rule = getTableRule(table);
   const rels = rule?.relationships || {};
-  const key = embed.alias.trim();
-  const target = embed.target.trim();
+  // Podpowiedzi PostgREST po '!' (np. `!inner`, `!tabela_kolumna_fkey`) nie wpływają na
+  // wybór relacji — bez obcięcia `conversation_participants!inner(...)` czy
+  // `creator:app_users!..._fkey(...)` kończyły się 400 „Nieznana relacja”.
+  const key = embed.alias.trim().split('!')[0];
+  const target = embed.target.trim().split('!')[0];
   // 1) jawny wpis pod aliasem lub targetem
   const rel = rels[key] || rels[target];
   if (rel) return rel;
@@ -151,6 +154,22 @@ function resolveRelationship(table, embed) {
     400,
     `Nieznana relacja '${key}' dla tabeli '${table}' — dodaj ją do relationships w registry.js`
   );
+}
+
+// Pary [tabela nadrzędna, tabela dociągana] ze wszystkich złączeń w select (rekurencyjnie).
+// Do kontroli dostępu w routes.js — buildQuery sprawdza tylko, czy tabela jest w REGISTRY.
+export function embeddedTablePairs(table, select) {
+  if (!select || typeof select !== 'string' || !select.includes('(')) return [];
+  const out = [];
+  const walk = (parent, embeds) => {
+    for (const e of embeds || []) {
+      const rel = resolveRelationship(parent, e);
+      out.push([parent, rel.table]);
+      walk(rel.table, e.embeds);
+    }
+  };
+  walk(table, parseSelect(select).embeds);
+  return out;
 }
 
 function buildEmbed(parentTable, embed, parentAlias, params) {
