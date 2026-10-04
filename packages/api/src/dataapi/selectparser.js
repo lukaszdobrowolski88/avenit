@@ -47,6 +47,10 @@ function parseList(src) {
       alias = head.slice(0, colon).trim();
       target = head.slice(colon + 1).trim();
     }
+    // Podpowiedzi PostgREST po '!' (`!inner`, `!..._fkey`) odcinamy: klucz w wyniku to sama
+    // nazwa (web czyta `conv.conversation_participants`), a relację wybiera registry.
+    alias = alias.split('!')[0].trim();
+    target = target.split('!')[0].trim();
     const nested = parseList(inner);
     embeds.push({ alias, target, columns: nested.columns, embeds: nested.embeds });
   }

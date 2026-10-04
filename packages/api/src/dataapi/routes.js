@@ -1,11 +1,18 @@
 // POST /api/db — pojedynczy endpoint zapytań (odpowiednik PostgREST dla klienta
 // zgodnego z supabase-js). Autoryzacja per tabela/rola w registry.js.
-import { buildQuery, buildWhere, ApiError, quoteIdent } from './querybuilder.js';
+import { buildQuery, buildWhere, ApiError, quoteIdent, embeddedTablePairs } from './querybuilder.js';
 import { canAccess, getTableRule, invalidatePermissions, requireCapability, loadGrants } from './registry.js';
 import { fieldColumns, crudCapability } from '@avenit/shared/src/permissions/catalog.js';
+import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { emitChange } from '../realtime/hub.js';
 import { notifyOnWrite } from '../realtime/push-hooks.js';
 import { platformDisabledModules } from '../lib/platform-modules.js';
+
+// Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
+// świadome wyjątki operacyjne. Klucz: '<tabela nadrzędna>><tabela dociągana>'.
+//   checkins>households — obsługa Dzieci widzi rodzinę zameldowanego dziecka (odbiór,
+//   kontakt z rodzicem), choć gospodarstwa należą do modułu Członkowie.
+const EMBED_CROSS_MODULE_ALLOW = new Set(['checkins>households']);
 
 // Tabele, których insert wyzwala automatyczny push (patrz push-hooks.js).
 // Push wysyłamy wsadowo (fn send-assignment-invites), nie na każdy insert przypisania.
@@ -28,7 +35,7 @@ export default async function dataApiRoutes(app) {
       // Twarda izolacja kampusów (Faza 4): osoba z przypisanym kampusem i BEZ roli admina
       // widzi/edytuje tylko dane swojego kampusu (albo bez kampusu). Uśpione, gdy campus_id
       // = null (obecnie wszyscy) → q.__campusScope niedodawany → SQL bez zmian.
-      const { adminRoles } = await loadGrants(req.db, req.tenant.db_name);
+      const { adminRoles, grants: allGrants } = await loadGrants(req.db, req.tenant.db_name);
       const isAdmin = user.is_super_admin || adminRoles.has(user.role);
       if (!isAdmin && user.campus_id != null) q.__campusScope = { campusId: user.campus_id };
 
@@ -108,6 +115,33 @@ export default async function dataApiRoutes(app) {
         !access.resolver.can('action:finance:approve')
       ) {
         throw new ApiError(403, 'Decyzje o budżecie wymagają uprawnienia do zatwierdzania finansów');
+      }
+
+      // Złączenia (embed) nie mogą omijać uprawnień: tabela dociągana wymaga dostępu do
+      // SWOJEGO modułu (i floorów readRoles), jak tabela główna. Wcześniej sprawdzano tylko
+      // obecność w REGISTRY, więc np. dostęp do checkins dawał przez złączenie dane z modułu
+      // Członkowie. Celowo bez CRUD per zasób — złączenia w obrębie modułu (programs →
+      // program_types) działają jak dotąd. Admin i tryb legacy (grants null) bez zmian.
+      if (q.select && !isAdmin && allGrants !== null) {
+        const pairs = embeddedTablePairs(q.table, q.select);
+        if (pairs.length) {
+          const embedResolver = makeResolver(allGrants, { role: user.role, userId: user.id, isAdmin: false });
+          for (const [parent, child] of pairs) {
+            const rule = getTableRule(child);
+            if (!rule) continue; // buildQuery odrzuci nieznaną tabelę
+            if (rule.readRoles && !rule.readRoles.includes(user.role)) {
+              throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu`);
+            }
+            if (
+              typeof rule.resource === 'string' &&
+              rule.resource.startsWith('module:') &&
+              !EMBED_CROSS_MODULE_ALLOW.has(`${parent}>${child}`) &&
+              !embedResolver.can(rule.resource)
+            ) {
+              throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu (${rule.resource})`);
+            }
+          }
+        }
       }
 
       // Materiały to tabele T(null) (czyta i dodaje każdy zalogowany), ale zmiana nazwy
