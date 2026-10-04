@@ -28,11 +28,11 @@ import {
 
 const ICON_BY_TYPE = {
   pdf: { Icon: FileText, tint: '#dc2626', bg: '#fee2e2' },
-  image: { Icon: ImageIcon, tint: '#2563eb', bg: '#dbeafe' },
-  audio: { Icon: FileAudio, tint: '#16a34a', bg: '#dcfce7' },
-  video: { Icon: FileVideo, tint: '#7c3aed', bg: '#ede9fe' },
-  doc: { Icon: FileText, tint: '#0891b2', bg: '#cffafe' },
-  other: { Icon: FileIcon, tint: '#7A7466', bg: '#E3DDD0' },
+  image: { Icon: ImageIcon, tint: '#2A2312', bg: '#ECE8DE' },
+  audio: { Icon: FileAudio, tint: '#2A2312', bg: '#ECE8DE' },
+  video: { Icon: FileVideo, tint: '#2A2312', bg: '#ECE8DE' },
+  doc: { Icon: FileText, tint: '#2A2312', bg: '#ECE8DE' },
+  other: { Icon: FileIcon, tint: '#6B6557', bg: '#E3DDD0' },
 } as const;
 
 export default function SharedMaterialsScreen() {
@@ -78,19 +78,19 @@ export default function SharedMaterialsScreen() {
                 width: 64,
                 height: 64,
                 borderRadius: 18,
-                backgroundColor: '#ecfeff',
+                backgroundColor: '#F1EEE6',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,
               }}
             >
-              <Share2 size={28} color="#0891b2" />
+              <Share2 size={28} color="#2A2312" />
             </View>
             <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
               Nic tu jeszcze nie ma
             </Text>
             <Text
-              style={{ fontSize: 13, color: '#7A7466', textAlign: 'center', marginTop: 4, fontFamily: 'Manrope_400Regular' }}
+              style={{ fontSize: 13, color: '#6B6557', textAlign: 'center', marginTop: 4, fontFamily: 'Manrope_400Regular' }}
             >
               Gdy ktoś udostępni Ci plik, pojawi się tutaj.
             </Text>
@@ -135,7 +135,7 @@ export default function SharedMaterialsScreen() {
                     <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }} numberOfLines={2}>
                       {f.name}
                     </Text>
-                    <Text style={{ fontSize: 12, color: '#A8A59E', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
+                    <Text style={{ fontSize: 12, color: '#857F70', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                       {formatBytes(f.file_size || 0)}
                       {f.shared_label && f.shared_label !== 'folder' ? ` · ${f.shared_label}` : ''}
                     </Text>

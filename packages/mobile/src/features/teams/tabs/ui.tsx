@@ -24,7 +24,7 @@ export const dayLabel = (ymd: string) => {
   return w.charAt(0).toUpperCase() + w.slice(1);
 };
 
-export const DateBlock = ({ ymd, tint = '#0e7490', bg = '#f0fdff' }: { ymd: string; tint?: string; bg?: string }) => {
+export const DateBlock = ({ ymd, tint = '#2A2312', bg = '#F1EEE6' }: { ymd: string; tint?: string; bg?: string }) => {
   const date = ymd ? parseYmd(ymd) : null;
   return (
     <View
@@ -68,7 +68,7 @@ export const Pill = ({ text, tint, bg }: { text: string; tint: string; bg: strin
 
 export const STATUS_PILL: Record<string, { text: string; tint: string; bg: string }> = {
   accepted: { text: 'Potwierdzone', tint: '#15803d', bg: '#dcfce7' },
-  pending: { text: 'Czeka', tint: '#a16207', bg: '#fef3c7' },
+  pending: { text: 'Czeka', tint: '#8A6606', bg: '#FFF1C2' },
   rejected: { text: 'Odrzucone', tint: '#b91c1c', bg: '#fee2e2' },
 };
 
@@ -85,7 +85,7 @@ export const Empty = ({ Icon, title, hint }: { Icon: LucideIcon; title: string; 
         marginBottom: 12,
       }}
     >
-      <Icon size={24} color="#A8A59E" />
+      <Icon size={24} color="#857F70" />
     </View>
     <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold', textAlign: 'center' }}>{title}</Text>
     {hint ? (
@@ -93,7 +93,7 @@ export const Empty = ({ Icon, title, hint }: { Icon: LucideIcon; title: string; 
         style={{
           fontSize: 13,
           lineHeight: 18,
-          color: '#7A7466',
+          color: '#6B6557',
           marginTop: 4,
           textAlign: 'center',
           fontFamily: 'Manrope_400Regular',

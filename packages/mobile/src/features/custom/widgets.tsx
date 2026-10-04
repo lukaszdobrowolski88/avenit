@@ -108,12 +108,12 @@ export const AnnouncementsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
       {canAdd && !adding ? <AddButton label="Nowe ogłoszenie" onPress={() => setAdding(true)} /> : null}
       {adding ? (
         <Card>
-          <TextInput value={title} onChangeText={setTitle} placeholder="Tytuł" placeholderTextColor="#A8A59E" style={[inputStyle, { backgroundColor: '#F6F4EE' }]} />
+          <TextInput value={title} onChangeText={setTitle} placeholder="Tytuł" placeholderTextColor="#857F70" style={[inputStyle, { backgroundColor: '#F6F4EE' }]} />
           <TextInput
             value={body}
             onChangeText={setBody}
             placeholder="Treść"
-            placeholderTextColor="#A8A59E"
+            placeholderTextColor="#857F70"
             multiline
             style={[inputStyle, { backgroundColor: '#F6F4EE', height: 90, paddingTop: 12, marginTop: 8, textAlignVertical: 'top' as const }]}
           />
@@ -145,7 +145,7 @@ export const AnnouncementsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
                 hitSlop={8}
                 className="active:opacity-60"
               >
-                <Trash2 size={15} color="#A8A59E" />
+                <Trash2 size={15} color="#857F70" />
               </Pressable>
             ) : null}
           </View>
@@ -153,7 +153,7 @@ export const AnnouncementsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
             <Text style={{ fontSize: 14, lineHeight: 20, color: '#3A3427', marginTop: 6, fontFamily: 'Manrope_400Regular' }}>{r.data.body}</Text>
           ) : null}
           {r.data.date || r.createdAt ? (
-            <Text style={{ fontSize: 11, color: '#A8A59E', marginTop: 8, fontFamily: 'Manrope_500Medium' }}>
+            <Text style={{ fontSize: 11, color: '#857F70', marginTop: 8, fontFamily: 'Manrope_500Medium' }}>
               {formatDate(String(r.data.date || r.createdAt), 'd MMMM yyyy')}
             </Text>
           ) : null}
@@ -176,14 +176,14 @@ export const LinksWidget = ({ ctx }: { ctx: WidgetCtx }) => {
       {list.map((r) => (
         <Card key={r.id} onPress={r.data.url ? () => openUrl(String(r.data.url)) : undefined}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Link2 size={18} color="#2563eb" />
+            <Link2 size={18} color="#2A2312" />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{r.data.label || r.data.url}</Text>
               {r.data.description ? (
-                <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>{r.data.description}</Text>
+                <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>{r.data.description}</Text>
               ) : null}
             </View>
-            <ArrowUpRight size={16} color="#A8A59E" />
+            <ArrowUpRight size={16} color="#857F70" />
           </View>
         </Card>
       ))}
@@ -206,7 +206,7 @@ export const ContactsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{r.data.name || '—'}</Text>
-              {r.data.role ? <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>{r.data.role}</Text> : null}
+              {r.data.role ? <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>{r.data.role}</Text> : null}
             </View>
             {r.data.phone ? (
               <Pressable onPress={() => openUrl(`tel:${r.data.phone}`)} hitSlop={6} className="active:opacity-60" style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: '#F6F4EE', alignItems: 'center', justifyContent: 'center' }}>
@@ -242,7 +242,7 @@ export const FaqWidget = ({ ctx }: { ctx: WidgetCtx }) => {
           <Card key={r.id} onPress={() => setOpen(on ? null : r.id)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <Text style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{r.data.question}</Text>
-              {on ? <ChevronDown size={16} color="#A8A59E" /> : <ChevronRight size={16} color="#A8A59E" />}
+              {on ? <ChevronDown size={16} color="#857F70" /> : <ChevronRight size={16} color="#857F70" />}
             </View>
             {on && r.data.answer ? (
               <Text style={{ fontSize: 14, lineHeight: 20, color: '#3A3427', marginTop: 8, fontFamily: 'Manrope_400Regular' }}>{r.data.answer}</Text>
@@ -306,7 +306,7 @@ export const PollWidget = ({ ctx }: { ctx: WidgetCtx }) => {
                 </Pressable>
               );
             })}
-            <Text style={{ fontSize: 11, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
+            <Text style={{ fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
               {total} {total === 1 ? 'głos' : 'głosów'}
               {r.data.closed ? ' · zamknięta' : mine ? ' · możesz zmienić głos' : ''}
             </Text>
@@ -328,7 +328,7 @@ export const CustomTasksWidget = ({ ctx }: { ctx: WidgetCtx }) => {
   const list = ((tasks.data ?? []) as CustomTask[]).filter((t) => (filter === 'open' ? t.status !== 'Gotowe' : true));
   const next = (s: CustomTaskStatus): CustomTaskStatus =>
     CUSTOM_TASK_STATUSES[(CUSTOM_TASK_STATUSES.indexOf(s) + 1) % CUSTOM_TASK_STATUSES.length];
-  const tint: Record<CustomTaskStatus, string> = { 'Do zrobienia': '#4A463E', 'W trakcie': '#a16207', Gotowe: '#15803d' };
+  const tint: Record<CustomTaskStatus, string> = { 'Do zrobienia': '#4A463E', 'W trakcie': '#8A6606', Gotowe: '#15803d' };
 
   return (
     <View>
@@ -337,7 +337,7 @@ export const CustomTasksWidget = ({ ctx }: { ctx: WidgetCtx }) => {
           value={draft}
           onChangeText={setDraft}
           placeholder="Nowe zadanie…"
-          placeholderTextColor="#A8A59E"
+          placeholderTextColor="#857F70"
           onSubmitEditing={() => draft.trim() && add.mutate(draft.trim(), { onSuccess: () => setDraft('') })}
           style={[inputStyle, { flex: 1 }]}
         />
@@ -358,7 +358,7 @@ export const CustomTasksWidget = ({ ctx }: { ctx: WidgetCtx }) => {
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{t.title}</Text>
               {[t.assignee, t.dueDate].filter(Boolean).length ? (
-                <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
+                <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                   {[t.assignee, t.dueDate].filter(Boolean).join(' · ')}
                 </Text>
               ) : null}
@@ -405,7 +405,7 @@ export const ModuleBoardsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: b.color ?? '#A8A59E' }} />
             <Text style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{b.name}</Text>
-            <ChevronRight size={16} color="#A8A59E" />
+            <ChevronRight size={16} color="#857F70" />
           </View>
         </Card>
       ))}
@@ -479,10 +479,10 @@ export const LayoutWidget = ({
       case 'alert':
       case 'verse':
         return (
-          <View key={key} style={{ borderRadius: 14, backgroundColor: el.type === 'alert' ? '#fef3c7' : '#EFEBE2', padding: 12, marginBottom: 8 }}>
+          <View key={key} style={{ borderRadius: 14, backgroundColor: el.type === 'alert' ? '#FFF1C2' : '#EFEBE2', padding: 12, marginBottom: 8 }}>
             <Text style={{ fontSize: 14, lineHeight: 20, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}>{stripHtml(p.text ?? p.html ?? p.content)}</Text>
             {p.reference || p.author ? (
-              <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 4, fontFamily: 'Manrope_600SemiBold' }}>{p.reference || p.author}</Text>
+              <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 4, fontFamily: 'Manrope_600SemiBold' }}>{p.reference || p.author}</Text>
             ) : null}
           </View>
         );

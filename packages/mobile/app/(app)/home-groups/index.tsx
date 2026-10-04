@@ -55,12 +55,12 @@ const Card = ({ group }: { group: HomeGroup }) => {
               width: 44,
               height: 44,
               borderRadius: 12,
-              backgroundColor: '#dbeafe',
+              backgroundColor: '#ECE8DE',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Home size={20} color="#1d4ed8" strokeWidth={2.2} />
+            <Home size={20} color="#2A2312" strokeWidth={2.2} />
           </View>
           <View style={{ flex: 1 }}>
             <Text
@@ -79,7 +79,7 @@ const Card = ({ group }: { group: HomeGroup }) => {
                 numberOfLines={1}
                 style={{
                   fontSize: 12,
-                  color: '#7A7466',
+                  color: '#6B6557',
                   marginTop: 2,
                   fontFamily: 'Manrope_500Medium',
                 }}
@@ -98,9 +98,9 @@ const Card = ({ group }: { group: HomeGroup }) => {
             >
               {day || time ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Calendar size={11} color="#A8A59E" />
+                  <Calendar size={11} color="#857F70" />
                   <Text
-                    style={{ fontSize: 11, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
+                    style={{ fontSize: 11, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
                   >
                     {day}
                     {day && time ? ' · ' : ''}
@@ -110,18 +110,18 @@ const Card = ({ group }: { group: HomeGroup }) => {
               ) : null}
               {group.location ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <MapPin size={11} color="#A8A59E" />
+                  <MapPin size={11} color="#857F70" />
                   <Text
-                    style={{ fontSize: 11, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
+                    style={{ fontSize: 11, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
                   >
                     {group.location}
                   </Text>
                 </View>
               ) : null}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Users size={11} color="#A8A59E" />
+                <Users size={11} color="#857F70" />
                 <Text
-                  style={{ fontSize: 11, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
+                  style={{ fontSize: 11, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
                 >
                   {group.members_count} {group.members_count === 1 ? 'osoba' : 'osób'}
                 </Text>
@@ -129,7 +129,7 @@ const Card = ({ group }: { group: HomeGroup }) => {
               {campus ? <CampusBadge campus={campus} /> : null}
             </View>
           </View>
-          <ChevronRight size={16} color="#A8A59E" />
+          <ChevronRight size={16} color="#857F70" />
         </View>
       </Pressable>
     </Link>
@@ -165,11 +165,11 @@ export default function HomeGroupsListScreen() {
                 paddingHorizontal: 12,
                 paddingVertical: 8,
                 borderRadius: 999,
-                backgroundColor: '#dbeafe',
+                backgroundColor: '#ECE8DE',
               }}
             >
-              <MapIcon size={15} color="#1d4ed8" />
-              <Text style={{ fontSize: 13, color: '#1d4ed8', fontFamily: 'Manrope_700Bold' }}>Mapa</Text>
+              <MapIcon size={15} color="#2A2312" />
+              <Text style={{ fontSize: 13, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Mapa</Text>
             </Pressable>
           }
         />
@@ -187,7 +187,7 @@ export default function HomeGroupsListScreen() {
             gap: 12,
             padding: 14,
             borderRadius: 18,
-            backgroundColor: '#f0fdf4',
+            backgroundColor: '#F1EEE6',
           }}
         >
           <View
@@ -195,12 +195,12 @@ export default function HomeGroupsListScreen() {
               width: 40,
               height: 40,
               borderRadius: 12,
-              backgroundColor: '#dcfce7',
+              backgroundColor: '#ECE8DE',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Briefcase size={18} color="#15803d" />
+            <Briefcase size={18} color="#2A2312" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>Panel służby grup</Text>
@@ -208,7 +208,7 @@ export default function HomeGroupsListScreen() {
               Wydarzenia, zadania, liderzy i materiały
             </Text>
           </View>
-          <ChevronRight size={18} color="#86a598" />
+          <ChevronRight size={18} color="#857F70" />
         </Pressable>
 
         {isLoading ? (
@@ -246,13 +246,13 @@ export default function HomeGroupsListScreen() {
                     width: 64,
                     height: 64,
                     borderRadius: 18,
-                    backgroundColor: '#dbeafe',
+                    backgroundColor: '#ECE8DE',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 12,
                   }}
                 >
-                  <Home size={28} color="#1d4ed8" />
+                  <Home size={28} color="#2A2312" />
                 </View>
                 <Text
                   style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
@@ -262,7 +262,7 @@ export default function HomeGroupsListScreen() {
                 <Text
                   style={{
                     fontSize: 13,
-                    color: '#7A7466',
+                    color: '#6B6557',
                     marginTop: 4,
                     textAlign: 'center',
                     fontFamily: 'Manrope_400Regular',

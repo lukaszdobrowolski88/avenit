@@ -55,7 +55,7 @@ const DonationCard = ({
         <View className="flex-1">
           <Text
             className="text-[11px] uppercase mb-1"
-            style={{ color: '#7A7466', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
+            style={{ color: '#6B6557', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
           >
             {formatDate(donation.donation_date, 'd MMM yyyy')}
           </Text>
@@ -66,7 +66,7 @@ const DonationCard = ({
                   width: 8,
                   height: 8,
                   borderRadius: 4,
-                  backgroundColor: fund.color ?? '#10b981',
+                  backgroundColor: fund.color ?? '#2A2312',
                 }}
               />
             ) : null}
@@ -94,12 +94,12 @@ const DonationCard = ({
             {donation.is_recurring ? (
               <View
                 className="flex-row items-center gap-1 px-2 py-0.5"
-                style={{ borderRadius: 999, backgroundColor: '#dcfce7' }}
+                style={{ borderRadius: 999, backgroundColor: '#ECE8DE' }}
               >
-                <Repeat size={10} color="#16a34a" />
+                <Repeat size={10} color="#2A2312" />
                 <Text
                   className="text-[11px]"
-                  style={{ color: '#16a34a', fontFamily: 'Manrope_600SemiBold' }}
+                  style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
                 >
                   Cykliczna
                 </Text>
@@ -109,7 +109,7 @@ const DonationCard = ({
         </View>
         <Text
           className="text-[16px]"
-          style={{ color: '#059669', letterSpacing: -0.4, fontFamily: 'Manrope_700Bold' }}
+          style={{ color: '#2A2312', letterSpacing: -0.4, fontFamily: 'Manrope_700Bold' }}
         >
           {formatMoney(donation.amount, donation.currency ?? currency)}
         </Text>
@@ -167,27 +167,27 @@ export default function GivingScreen() {
               className="mb-4 p-5"
               style={{
                 borderRadius: 24,
-                backgroundColor: '#ecfdf5',
+                backgroundColor: '#F1EEE6',
                 borderWidth: 1,
-                borderColor: '#bbf7d0',
+                borderColor: '#E3DDD0',
               }}
             >
               <Text
                 className="text-[12px]"
-                style={{ color: '#047857', fontFamily: 'Manrope_600SemiBold' }}
+                style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
               >
                 Twoje dawanie w {summary.year}
               </Text>
               <Text
                 className="text-[34px] mt-1"
-                style={{ color: '#065f46', letterSpacing: -1, fontFamily: 'Manrope_700Bold' }}
+                style={{ color: '#2A2312', letterSpacing: -1, fontFamily: 'Manrope_700Bold' }}
               >
                 {formatMoney(summary.yearTotal, summary.currency)}
               </Text>
               {summary.allTimeTotal > summary.yearTotal ? (
                 <Text
                   className="text-[12px] mt-1"
-                  style={{ color: '#059669', fontFamily: 'Manrope_500Medium' }}
+                  style={{ color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
                 >
                   Łącznie: {formatMoney(summary.allTimeTotal, summary.currency)}
                 </Text>
@@ -200,8 +200,8 @@ export default function GivingScreen() {
                 className="mt-2 flex-row items-center justify-center gap-1.5 active:opacity-70"
                 style={{ paddingVertical: 10 }}
               >
-                <FileText size={15} color="#047857" />
-                <Text className="text-[13px]" style={{ color: '#047857', fontFamily: 'Manrope_700Bold' }}>
+                <FileText size={15} color="#2A2312" />
+                <Text className="text-[13px]" style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                   Zestawienie roczne (PIT)
                 </Text>
               </Pressable>
@@ -212,7 +212,7 @@ export default function GivingScreen() {
               <View className="mb-4">
                 <Text
                   className="text-[11px] uppercase mb-2 px-1"
-                  style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
+                  style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Zbiórki
                 </Text>
@@ -233,7 +233,7 @@ export default function GivingScreen() {
                       {c.description ? (
                         <Text
                           className="text-[12px] mt-0.5"
-                          style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+                          style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                           numberOfLines={2}
                         >
                           {c.description}
@@ -242,19 +242,19 @@ export default function GivingScreen() {
                       {goal > 0 ? (
                         <>
                           <View style={{ height: 7, borderRadius: 4, backgroundColor: '#ECE8DE', overflow: 'hidden', marginTop: 10 }}>
-                            <View style={{ height: '100%', width: `${pct}%`, borderRadius: 4, backgroundColor: '#16a34a' }} />
+                            <View style={{ height: '100%', width: `${pct}%`, borderRadius: 4, backgroundColor: '#2A2312' }} />
                           </View>
                           <View className="flex-row items-center justify-between mt-1.5">
-                            <Text className="text-[12px]" style={{ color: '#15803d', fontFamily: 'Manrope_700Bold' }}>
+                            <Text className="text-[12px]" style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                               {formatMoney(raised, summary.currency)}
                             </Text>
-                            <Text className="text-[12px]" style={{ color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
+                            <Text className="text-[12px]" style={{ color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
                               z {formatMoney(goal, summary.currency)} · {pct}%
                             </Text>
                           </View>
                         </>
                       ) : (
-                        <Text className="text-[12px] mt-2" style={{ color: '#16a34a', fontFamily: 'Manrope_600SemiBold' }}>
+                        <Text className="text-[12px] mt-2" style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                           Wesprzyj →
                         </Text>
                       )}
@@ -270,15 +270,15 @@ export default function GivingScreen() {
                 className="mb-4 p-4 flex-row items-start gap-3"
                 style={{
                   borderRadius: 20,
-                  backgroundColor: '#fffbeb',
+                  backgroundColor: '#FFF8E1',
                   borderWidth: 1,
-                  borderColor: '#fde68a',
+                  borderColor: '#F3E3B0',
                 }}
               >
-                <Info size={18} color="#d97706" style={{ marginTop: 1 }} />
+                <Info size={18} color="#8A6606" style={{ marginTop: 1 }} />
                 <Text
                   className="flex-1 text-[13px]"
-                  style={{ color: '#92400e', fontFamily: 'Manrope_400Regular', lineHeight: 19 }}
+                  style={{ color: '#8A6606', fontFamily: 'Manrope_400Regular', lineHeight: 19 }}
                 >
                   Nie znaleźliśmy historii darowizn powiązanej z Twoim kontem. Jeśli wspierasz
                   wspólnotę, poproś koordynatora o powiązanie konta z Twoim profilem członka. Nadal
@@ -295,13 +295,13 @@ export default function GivingScreen() {
                     width: 64,
                     height: 64,
                     borderRadius: 18,
-                    backgroundColor: '#d1fae5',
+                    backgroundColor: '#ECE8DE',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 12,
                   }}
                 >
-                  <Gift size={28} color="#059669" />
+                  <Gift size={28} color="#2A2312" />
                 </View>
                 <Text
                   className="text-[16px]"
@@ -311,7 +311,7 @@ export default function GivingScreen() {
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+                  style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                 >
                   Twoje darowizny pojawią się tutaj po zarejestrowaniu.
                 </Text>
@@ -320,7 +320,7 @@ export default function GivingScreen() {
               <>
                 <Text
                   className="text-[11px] uppercase mb-2 mx-1"
-                  style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
+                  style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Historia
                 </Text>

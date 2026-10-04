@@ -14,7 +14,7 @@ interface Props {
 export const EventCard = ({ metadata, content, bubbleMine }: Props) => {
   const title = metadata?.title || content || "Wydarzenie";
   const fg = bubbleMine ? "#ffffff" : "#2A2312";
-  const sub = bubbleMine ? "#FFF1C2" : "#0e7490";
+  const sub = bubbleMine ? "#FFF1C2" : "#2A2312";
   const line = bubbleMine ? "#F3E3B0" : "#4A463E";
 
   const dateLine = [metadata?.date, metadata?.time].filter(Boolean).join(" · ");
@@ -88,10 +88,10 @@ export const EventCard = ({ metadata, content, bubbleMine }: Props) => {
           paddingVertical: 8,
           borderRadius: 10,
           alignItems: "center",
-          backgroundColor: bubbleMine ? "rgba(255,255,255,0.2)" : "#cffafe",
+          backgroundColor: bubbleMine ? "rgba(255,255,255,0.2)" : "#ECE8DE",
         }}
       >
-        <Text style={{ fontSize: 13, color: bubbleMine ? "#ffffff" : "#0e7490", fontFamily: "Manrope_700Bold" }}>
+        <Text style={{ fontSize: 13, color: bubbleMine ? "#ffffff" : "#2A2312", fontFamily: "Manrope_700Bold" }}>
           Dodaj do kalendarza
         </Text>
       </Pressable>

@@ -113,7 +113,7 @@ export const NewCalendarEventModal = ({
         </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <Label>Tytuł</Label>
-          <TextInput value={title} onChangeText={setTitle} placeholder="np. Spotkanie liderów" placeholderTextColor="#A8A59E" style={inputStyle} />
+          <TextInput value={title} onChangeText={setTitle} placeholder="np. Spotkanie liderów" placeholderTextColor="#857F70" style={inputStyle} />
 
           <Label>Kalendarz</Label>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -147,9 +147,9 @@ export const NewCalendarEventModal = ({
           </View>
 
           <Label>Miejsce</Label>
-          <TextInput value={location} onChangeText={setLocation} placeholder="np. Sala główna" placeholderTextColor="#A8A59E" style={inputStyle} />
+          <TextInput value={location} onChangeText={setLocation} placeholder="np. Sala główna" placeholderTextColor="#857F70" style={inputStyle} />
 
-          <Text style={{ fontSize: 12, lineHeight: 17, color: '#A8A59E', marginTop: 14, fontFamily: 'Manrope_400Regular' }}>
+          <Text style={{ fontSize: 12, lineHeight: 17, color: '#857F70', marginTop: 14, fontFamily: 'Manrope_400Regular' }}>
             Opis, zapisy, płatności i widoczność ustawisz na webie na stronie wydarzenia.
           </Text>
 

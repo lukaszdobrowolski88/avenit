@@ -84,15 +84,15 @@ export const EventsTab = ({ cfg, scope, campusIdForInsert, myEmail }: Props) => 
                 <Text numberOfLines={2} style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                   {ev.title}
                 </Text>
-                <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+                <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
                   {dayLabel(ev.date)}
                   {ev.time ? ` · ${ev.time}` : ''}
                   {ev.endTime ? `–${ev.endTime}` : ''}
                 </Text>
                 {ev.location ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <MapPin size={11} color="#A8A59E" />
-                    <Text numberOfLines={1} style={{ fontSize: 12, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
+                    <MapPin size={11} color="#857F70" />
+                    <Text numberOfLines={1} style={{ fontSize: 12, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
                       {ev.location}
                     </Text>
                   </View>
@@ -131,7 +131,7 @@ export const EventsTab = ({ cfg, scope, campusIdForInsert, myEmail }: Props) => 
               ) : null}
               {myEmail && ev.createdBy === myEmail ? (
                 <Pressable onPress={() => confirmDelete(ev.id, ev.title)} hitSlop={8} className="active:opacity-60">
-                  <Trash2 size={16} color="#A8A59E" />
+                  <Trash2 size={16} color="#857F70" />
                 </Pressable>
               ) : null}
             </View>

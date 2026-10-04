@@ -58,7 +58,7 @@ const ProgramTab = ({
     <Text
       style={{
         fontSize: 13,
-        color: active ? '#8A6606' : '#7A7466',
+        color: active ? '#8A6606' : '#6B6557',
         fontFamily: 'Manrope_600SemiBold',
       }}
     >
@@ -81,36 +81,36 @@ const TEAM_LABELS: Record<
   },
   media: {
     label: 'MediaTeam',
-    tint: '#9a3412',
-    bg: '#ffedd5',
+    tint: '#8A6606',
+    bg: '#FFF1C2',
     gradFrom: '#FFBE0B',
-    gradTo: '#facc15',
+    gradTo: '#FFBE0B',
   },
   produkcja: {
     label: 'MediaTeam',
-    tint: '#9a3412',
-    bg: '#ffedd5',
+    tint: '#8A6606',
+    bg: '#FFF1C2',
     gradFrom: '#FFBE0B',
-    gradTo: '#facc15',
+    gradTo: '#FFBE0B',
   },
   atmosfera: {
     label: 'Atmosfera Team',
-    tint: '#0f766e',
-    bg: '#ccfbf1',
-    gradFrom: '#14b8a6',
-    gradTo: '#06b6d4',
+    tint: '#2A2312',
+    bg: '#ECE8DE',
+    gradFrom: '#6B6557',
+    gradTo: '#6B6557',
   },
   atmosfera_team: {
     label: 'Atmosfera Team',
-    tint: '#0f766e',
-    bg: '#ccfbf1',
-    gradFrom: '#14b8a6',
-    gradTo: '#06b6d4',
+    tint: '#2A2312',
+    bg: '#ECE8DE',
+    gradFrom: '#6B6557',
+    gradTo: '#6B6557',
   },
   scena: {
     label: 'Scena',
     tint: '#7c2d12',
-    bg: '#fed7aa',
+    bg: '#F3E3B0',
     gradFrom: '#8A6606',
     gradTo: '#f43f5e',
   },
@@ -119,14 +119,14 @@ const TEAM_LABELS: Record<
     tint: '#9d174d',
     bg: '#FFF1C2',
     gradFrom: '#8A6606',
-    gradTo: '#a855f7',
+    gradTo: '#6B6557',
   },
   kids: {
     label: 'Dzieci',
-    tint: '#854d0e',
-    bg: '#fef3c7',
-    gradFrom: '#eab308',
-    gradTo: '#f59e0b',
+    tint: '#6B4F05',
+    bg: '#FFF1C2',
+    gradFrom: '#FFBE0B',
+    gradTo: '#FFBE0B',
   },
 };
 
@@ -193,7 +193,7 @@ export default function ProgramDetailScreen() {
           paddingHorizontal: 24,
         }}
       >
-        <Text style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+        <Text style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
           Program nie istnieje.
         </Text>
       </View>
@@ -252,7 +252,7 @@ export default function ProgramDetailScreen() {
             <Text
               style={{
                 fontSize: 12,
-                color: '#7A7466',
+                color: '#6B6557',
                 marginTop: 3,
                 letterSpacing: -0.1,
                 fontFamily: 'Manrope_500Medium',
@@ -279,7 +279,7 @@ export default function ProgramDetailScreen() {
             <Text
               style={{
                 fontSize: 11,
-                color: '#7A7466',
+                color: '#6B6557',
                 marginBottom: 8,
                 letterSpacing: 0.6,
                 textTransform: 'uppercase',
@@ -347,7 +347,7 @@ export default function ProgramDetailScreen() {
                 >
                   <UsersIcon size={24} color="#8A6606" />
                 </View>
-                <Text style={{ fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+                <Text style={{ fontSize: 13, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
                   Brak przypisanego zespołu.
                 </Text>
               </View>
@@ -456,7 +456,7 @@ export default function ProgramDetailScreen() {
                               </Text>
                               <Text
                                 className="text-[12px] mt-0.5"
-                                style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
+                                style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
                               >
                                 {m.role_key}
                               </Text>
@@ -470,7 +470,7 @@ export default function ProgramDetailScreen() {
                                     ? '#d1fae5'
                                     : m.status === 'rejected'
                                       ? '#ffe4e6'
-                                      : '#fef3c7',
+                                      : '#FFF1C2',
                               }}
                             >
                               <Text
@@ -481,7 +481,7 @@ export default function ProgramDetailScreen() {
                                       ? '#047857'
                                       : m.status === 'rejected'
                                         ? '#be123c'
-                                        : '#b45309',
+                                        : '#8A6606',
                                   fontFamily: 'Manrope_700Bold',
                                 }}
                               >
@@ -531,7 +531,7 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
         </Text>
         <Text
           className="text-[13px] text-center mt-1"
-          style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+          style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
         >
           Notatki i pliki dodajesz w aplikacji webowej.
         </Text>
@@ -565,7 +565,7 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
             <Text
               className="text-[11px] uppercase mb-1"
               style={{
-                color: '#7A7466',
+                color: '#6B6557',
                 letterSpacing: 0.4,
                 fontFamily: 'Manrope_600SemiBold',
               }}
@@ -636,7 +636,7 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
                     >
                       {a.name}
                     </Text>
-                    <ExternalLink size={14} color="#A8A59E" />
+                    <ExternalLink size={14} color="#857F70" />
                   </Pressable>
                 ))}
               </View>

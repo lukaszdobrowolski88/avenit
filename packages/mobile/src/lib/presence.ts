@@ -165,7 +165,7 @@ export const usePresence = (userEmails: string[]) => {
 
 export const PRESENCE_COLORS: Record<PresenceStatus, string> = {
   online: '#22c55e',
-  away: '#eab308',
+  away: '#FFBE0B',
   offline: '#A8A59E',
 };
 

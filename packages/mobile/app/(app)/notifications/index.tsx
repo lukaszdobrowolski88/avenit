@@ -127,7 +127,7 @@ export default function NotificationsScreen() {
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+                  style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                 >
                   Powiadomienia o wiadomościach, zadaniach i wydarzeniach pojawią się tutaj.
                 </Text>
@@ -147,9 +147,9 @@ export default function NotificationsScreen() {
                   className="flex-row items-start gap-3 p-3.5 active:opacity-80"
                   style={{
                     borderRadius: 16,
-                    backgroundColor: item.read ? '#F6F4EE' : '#fffbeb',
+                    backgroundColor: item.read ? '#F6F4EE' : '#FFF8E1',
                     borderWidth: 1,
-                    borderColor: item.read ? '#E6E1D5' : '#fde68a',
+                    borderColor: item.read ? '#E6E1D5' : '#F3E3B0',
                     shadowColor: '#2A2312',
                     shadowOffset: { width: 0, height: 3 },
                     shadowOpacity: item.read ? 0.04 : 0.06,
@@ -184,7 +184,7 @@ export default function NotificationsScreen() {
                       </Text>
                       <Text
                         className="text-[10px]"
-                        style={{ color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}
+                        style={{ color: '#857F70', fontFamily: 'Manrope_500Medium' }}
                       >
                         {formatRelative(item.created_at)}
                       </Text>
@@ -192,7 +192,7 @@ export default function NotificationsScreen() {
                     {item.body ? (
                       <Text
                         className="text-[12px] mt-0.5"
-                        style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+                        style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                         numberOfLines={2}
                       >
                         {item.body}

@@ -53,13 +53,13 @@ export default function FormsScreen() {
                 width: 64,
                 height: 64,
                 borderRadius: 18,
-                backgroundColor: '#ecfdf5',
+                backgroundColor: '#ECE8DE',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,
               }}
             >
-              <ClipboardList size={28} color="#059669" />
+              <ClipboardList size={28} color="#2A2312" />
             </View>
             <Text
               className="text-[16px]"
@@ -69,7 +69,7 @@ export default function FormsScreen() {
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+              style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
             >
               Formularze pojawią się tu kiedy administrator je opublikuje.
             </Text>
@@ -112,15 +112,15 @@ export default function FormsScreen() {
                           width: 36,
                           height: 36,
                           borderRadius: 10,
-                          backgroundColor: closed ? '#ECE8DE' : '#ecfdf5',
+                          backgroundColor: '#ECE8DE',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
                         {closed ? (
-                          <Lock size={16} color="#7A7466" strokeWidth={2.2} />
+                          <Lock size={16} color="#6B6557" strokeWidth={2.2} />
                         ) : (
-                          <ClipboardList size={16} color="#059669" strokeWidth={2.2} />
+                          <ClipboardList size={16} color="#2A2312" strokeWidth={2.2} />
                         )}
                       </View>
                       <Text
@@ -133,7 +133,7 @@ export default function FormsScreen() {
                       >
                         {form.title}
                       </Text>
-                      {!closed ? <ExternalLink size={14} color="#A8A59E" /> : null}
+                      {!closed ? <ExternalLink size={14} color="#857F70" /> : null}
                     </View>
                     {form.description ? (
                       <Text
@@ -154,10 +154,10 @@ export default function FormsScreen() {
                     >
                       {closesSoon ? (
                         <View className="flex-row items-center gap-1">
-                          <Clock size={11} color="#d97706" />
+                          <Clock size={11} color="#8A6606" />
                           <Text
                             className="text-[11px]"
-                            style={{ color: '#b45309', fontFamily: 'Manrope_600SemiBold' }}
+                            style={{ color: '#8A6606', fontFamily: 'Manrope_600SemiBold' }}
                           >
                             Zamykany {formatRelative(form.closes_at!)}
                           </Text>
@@ -166,14 +166,14 @@ export default function FormsScreen() {
                       {closed ? (
                         <Text
                           className="text-[11px]"
-                          style={{ color: '#7A7466', fontFamily: 'Manrope_600SemiBold' }}
+                          style={{ color: '#6B6557', fontFamily: 'Manrope_600SemiBold' }}
                         >
                           Zamknięty
                         </Text>
                       ) : null}
                       <Text
                         className="text-[11px] ml-auto"
-                        style={{ color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}
+                        style={{ color: '#857F70', fontFamily: 'Manrope_500Medium' }}
                       >
                         {form.response_count} odpowiedzi
                       </Text>

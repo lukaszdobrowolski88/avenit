@@ -36,7 +36,7 @@ export const PromptModal = ({
             value={value}
             onChangeText={setValue}
             placeholder={placeholder}
-            placeholderTextColor="#A8A59E"
+            placeholderTextColor="#857F70"
             autoFocus
             selectTextOnFocus
             style={{

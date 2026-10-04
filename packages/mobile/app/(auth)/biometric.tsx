@@ -89,7 +89,7 @@ export default function BiometricScreen() {
       <Text
         style={{
           fontSize: 14,
-          color: '#7A7466',
+          color: '#6B6557',
           textAlign: 'center',
           marginBottom: 28,
           lineHeight: 20,
@@ -116,7 +116,7 @@ export default function BiometricScreen() {
           style={{
             textAlign: 'center',
             fontSize: 13,
-            color: '#7A7466',
+            color: '#6B6557',
             fontFamily: 'Manrope_500Medium',
           }}
         >

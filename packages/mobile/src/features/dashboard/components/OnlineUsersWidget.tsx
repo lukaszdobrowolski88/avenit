@@ -53,7 +53,7 @@ const UserAvatar = ({ user, onPress }: { user: OnlineUser; onPress: () => void }
             borderRadius: 7,
             borderWidth: 2,
             borderColor: '#ffffff',
-            backgroundColor: isOnline ? '#10b981' : '#f59e0b',
+            backgroundColor: isOnline ? '#10b981' : '#FFBE0B',
           }}
         />
       </View>

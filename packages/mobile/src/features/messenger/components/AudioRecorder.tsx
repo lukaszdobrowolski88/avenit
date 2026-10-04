@@ -271,7 +271,7 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
               width: 8,
               height: 8,
               borderRadius: 4,
-              backgroundColor: isPaused ? "#eab308" : "#ef4444",
+              backgroundColor: isPaused ? "#FFBE0B" : "#ef4444",
             }}
           />
           <Text
@@ -410,7 +410,7 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
           <Text
             style={{
               fontSize: 11,
-              color: "#A8A59E",
+              color: "#857F70",
               fontFamily: "Manrope_500Medium",
               fontVariant: ["tabular-nums"],
             }}

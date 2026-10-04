@@ -70,7 +70,7 @@ export const ModuleTile = ({
       </Text>
       {isWeb ? (
         <View style={{ position: 'absolute', top: 8, right: 8 }}>
-          <ArrowUpRight size={14} color="#A8A59E" strokeWidth={2.2} />
+          <ArrowUpRight size={14} color="#857F70" strokeWidth={2.2} />
         </View>
       ) : null}
       {badge ? (

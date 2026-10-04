@@ -6,7 +6,7 @@ import type { TeamKey } from '../config';
 import { useTeamGrafik, type GrafikPerson, type GrafikRow } from '../data';
 import { Card, DateBlock, Empty, Loading, SegmentChips, dayLabel } from './ui';
 
-const STATUS_DOT: Record<string, string> = { accepted: '#16a34a', pending: '#d97706', rejected: '#dc2626' };
+const STATUS_DOT: Record<string, string> = { accepted: '#16a34a', pending: '#8A6606', rejected: '#dc2626' };
 
 const PersonChip = ({ p }: { p: GrafikPerson }) => (
   <View
@@ -72,12 +72,12 @@ export const GrafikTab = ({ teamKey, me }: { teamKey: TeamKey; me: { email: stri
           }
         >
           <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-            <DateBlock ymd={row.date} tint={row.involvesMe ? '#8A6606' : '#0e7490'} bg={row.involvesMe ? '#FFF8E1' : '#f0fdff'} />
+            <DateBlock ymd={row.date} tint={row.involvesMe ? '#8A6606' : '#2A2312'} bg={row.involvesMe ? '#FFF8E1' : '#F1EEE6'} />
             <View style={{ flex: 1 }}>
               <Text numberOfLines={2} style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                 {row.title}
               </Text>
-              <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium', marginTop: 2 }}>
+              <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium', marginTop: 2 }}>
                 {dayLabel(row.date)}
                 {row.time ? ` · ${row.time}` : ''}
               </Text>
@@ -91,7 +91,7 @@ export const GrafikTab = ({ teamKey, me }: { teamKey: TeamKey; me: { email: stri
                   <Text
                     style={{
                       fontSize: 11,
-                      color: '#7A7466',
+                      color: '#6B6557',
                       letterSpacing: 0.4,
                       textTransform: 'uppercase',
                       fontFamily: 'Manrope_600SemiBold',
@@ -108,7 +108,7 @@ export const GrafikTab = ({ teamKey, me }: { teamKey: TeamKey; me: { email: stri
               ))}
             </View>
           ) : (
-            <Text style={{ marginTop: 8, fontSize: 12, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
+            <Text style={{ marginTop: 8, fontSize: 12, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
               Nikt jeszcze nie jest przypisany.
             </Text>
           )}

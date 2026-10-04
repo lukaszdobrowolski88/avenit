@@ -143,7 +143,7 @@ export default function NewPrayerScreen() {
             <ChevronLeft size={20} color="#2A2312" strokeWidth={2.2} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+            <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
               {isEditing ? 'Edycja intencji' : 'Nowa intencja'}
             </Text>
             <Text
@@ -168,7 +168,7 @@ export default function NewPrayerScreen() {
           <TextInput
             style={[inputStyle, { minHeight: 120, textAlignVertical: 'top' as const }]}
             placeholder="O co chciałabyś/chciałbyś prosić w modlitwie?"
-            placeholderTextColor="#A8A59E"
+            placeholderTextColor="#857F70"
             multiline
             value={content}
             onChangeText={setContent}
@@ -196,7 +196,6 @@ export default function NewPrayerScreen() {
                     backgroundColor: active ? meta.tint : meta.bg,
                   }}
                 >
-                  <Text style={{ fontSize: 12 }}>{meta.emoji}</Text>
                   <Text
                     style={{
                       fontSize: 13,
@@ -215,7 +214,7 @@ export default function NewPrayerScreen() {
           <TextInput
             style={inputStyle}
             placeholder="np. Anna, mama Marka..."
-            placeholderTextColor="#A8A59E"
+            placeholderTextColor="#857F70"
             value={requesterName}
             onChangeText={setRequesterName}
             editable={!busy}
@@ -289,7 +288,7 @@ export default function NewPrayerScreen() {
               <Text
                 style={{
                   fontSize: 12,
-                  color: '#7A7466',
+                  color: '#6B6557',
                   marginTop: 2,
                   fontFamily: 'Manrope_400Regular',
                 }}

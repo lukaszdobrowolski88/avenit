@@ -24,12 +24,12 @@ const SeriesChip = ({ label, active, onPress }: { label: string; active: boolean
       paddingHorizontal: 14,
       paddingVertical: 7,
       borderRadius: 999,
-      backgroundColor: active ? '#7c3aed' : '#faf5ff',
+      backgroundColor: active ? '#2A2312' : '#F1EEE6',
       borderWidth: 1,
-      borderColor: active ? '#7c3aed' : '#ede9fe',
+      borderColor: active ? '#2A2312' : '#ECE8DE',
     }}
   >
-    <Text className="text-[13px]" style={{ color: active ? '#ffffff' : '#6d28d9', fontFamily: 'Manrope_600SemiBold' }}>
+    <Text className="text-[13px]" style={{ color: active ? '#ffffff' : '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
       {label}
     </Text>
   </Pressable>
@@ -89,18 +89,18 @@ const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
       >
         <Text
           className="text-[11px] uppercase mb-1"
-          style={{ color: '#7A7466', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
+          style={{ color: '#6B6557', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
         >
           {formatDate(teaching.date, 'EEEE, d MMM yyyy')}
         </Text>
         {teaching.series ? (
           <View
             className="self-start px-2 py-0.5 mb-2"
-            style={{ borderRadius: 999, backgroundColor: '#f3e8ff' }}
+            style={{ borderRadius: 999, backgroundColor: '#ECE8DE' }}
           >
             <Text
               className="text-[11px]"
-              style={{ color: '#7c3aed', fontFamily: 'Manrope_700Bold' }}
+              style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}
             >
               {teaching.series.name}
             </Text>
@@ -115,7 +115,7 @@ const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
 
         {teaching.scripture ? (
           <View className="flex-row items-start gap-2 mb-2">
-            <Quote size={14} color="#A8A59E" style={{ marginTop: 3 }} />
+            <Quote size={14} color="#857F70" style={{ marginTop: 3 }} />
             <Text
               className="flex-1 text-[13px] italic"
               style={{ color: '#4A463E', fontFamily: 'Manrope_400Regular', lineHeight: 19 }}
@@ -141,12 +141,12 @@ const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
                 width: 24,
                 height: 24,
                 borderRadius: 12,
-                backgroundColor: '#f3e8ff',
+                backgroundColor: '#ECE8DE',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <User size={12} color="#7c3aed" />
+              <User size={12} color="#2A2312" />
             </View>
             <Text
               className="text-[13px]"
@@ -173,15 +173,15 @@ const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
               Icon={Headphones}
               label="Spotify"
               url={teaching.spotifyUrl}
-              tint="#16a34a"
-              bg="#dcfce7"
+              tint="#2A2312"
+              bg="#ECE8DE"
             />
             <MediaButton
               Icon={Headphones}
               label="Audio"
               url={teaching.audioUrl}
-              tint="#0891b2"
-              bg="#cffafe"
+              tint="#2A2312"
+              bg="#ECE8DE"
             />
           </View>
         )}
@@ -193,13 +193,13 @@ const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
               className="flex-row items-center gap-1.5 active:opacity-70"
               style={{ paddingVertical: 4 }}
             >
-              <FileText size={14} color="#7c3aed" />
-              <Text className="text-[13px]" style={{ color: '#6d28d9', fontFamily: 'Manrope_700Bold' }}>
+              <FileText size={14} color="#2A2312" />
+              <Text className="text-[13px]" style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                 {notesOpen ? 'Ukryj notatki' : 'Pokaż notatki'}
               </Text>
               <ChevronDown
                 size={15}
-                color="#7c3aed"
+                color="#2A2312"
                 style={{ transform: [{ rotate: notesOpen ? '180deg' : '0deg' }] }}
               />
             </Pressable>
@@ -265,18 +265,18 @@ export default function TeachingsScreen() {
                   height: 40,
                 }}
               >
-                <Search size={16} color="#A8A59E" />
+                <Search size={16} color="#857F70" />
                 <TextInput
                   style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_400Regular', paddingVertical: 0 }}
                   placeholder="Szukaj: tytuł, mówca, werset…"
-                  placeholderTextColor="#A8A59E"
+                  placeholderTextColor="#857F70"
                   value={search}
                   onChangeText={setSearch}
                   returnKeyType="search"
                 />
                 {search.length > 0 ? (
                   <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                    <X size={15} color="#A8A59E" />
+                    <X size={15} color="#857F70" />
                   </Pressable>
                 ) : null}
               </View>
@@ -328,13 +328,13 @@ export default function TeachingsScreen() {
                 width: 64,
                 height: 64,
                 borderRadius: 18,
-                backgroundColor: '#f3e8ff',
+                backgroundColor: '#ECE8DE',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,
               }}
             >
-              <BookOpen size={28} color="#7c3aed" />
+              <BookOpen size={28} color="#2A2312" />
             </View>
             <Text
               className="text-[16px]"
@@ -344,7 +344,7 @@ export default function TeachingsScreen() {
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+              style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
             >
               Nauczania pojawią się po nabożeństwach.
             </Text>
@@ -361,18 +361,18 @@ export default function TeachingsScreen() {
                 width: 64,
                 height: 64,
                 borderRadius: 18,
-                backgroundColor: '#f3e8ff',
+                backgroundColor: '#ECE8DE',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,
               }}
             >
-              <Search size={26} color="#7c3aed" />
+              <Search size={26} color="#2A2312" />
             </View>
             <Text className="text-[16px]" style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
               Brak wyników
             </Text>
-            <Text className="text-[13px] text-center mt-1" style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}>
+            <Text className="text-[13px] text-center mt-1" style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}>
               Zmień wyszukiwanie lub wybraną serię.
             </Text>
             {hasFilters ? (
@@ -381,9 +381,9 @@ export default function TeachingsScreen() {
                   setSearch('');
                   setSeries(null);
                 }}
-                style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, backgroundColor: '#f3e8ff' }}
+                style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, backgroundColor: '#ECE8DE' }}
               >
-                <Text style={{ fontSize: 13, color: '#7c3aed', fontFamily: 'Manrope_700Bold' }}>Wyczyść filtry</Text>
+                <Text style={{ fontSize: 13, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Wyczyść filtry</Text>
               </Pressable>
             ) : null}
           </ScrollView>

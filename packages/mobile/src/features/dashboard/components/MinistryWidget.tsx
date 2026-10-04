@@ -65,11 +65,11 @@ const StatusPill = ({ status }: { status: 'pending' | 'accepted' | 'rejected' })
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 999,
-        backgroundColor: '#fef3c7',
+        backgroundColor: '#FFF1C2',
       }}
     >
-      <Clock size={10} color="#b45309" />
-      <Text style={{ fontSize: 10, color: '#b45309', fontFamily: F.bold }}>Oczekuje</Text>
+      <Clock size={10} color="#8A6606" />
+      <Text style={{ fontSize: 10, color: '#8A6606', fontFamily: F.bold }}>Oczekuje</Text>
     </View>
   );
 };

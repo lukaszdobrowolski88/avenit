@@ -83,7 +83,7 @@ export const SearchModal = ({
               borderColor: "#E6E1D5",
             }}
           >
-            <Search size={16} color="#A8A59E" />
+            <Search size={16} color="#857F70" />
             <TextInput
               style={{
                 flex: 1,
@@ -92,7 +92,7 @@ export const SearchModal = ({
                 fontFamily: "Manrope_500Medium",
               }}
               placeholder="Szukaj wiadomości…"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               value={query}
               onChangeText={setQuery}
               autoFocus
@@ -100,7 +100,7 @@ export const SearchModal = ({
             />
             {query ? (
               <Pressable onPress={() => setQuery("")} hitSlop={8}>
-                <X size={14} color="#A8A59E" />
+                <X size={14} color="#857F70" />
               </Pressable>
             ) : null}
           </View>
@@ -142,7 +142,7 @@ export const SearchModal = ({
               style={{
                 textAlign: "center",
                 fontSize: 13,
-                color: "#7A7466",
+                color: "#6B6557",
                 fontFamily: "Manrope_500Medium",
               }}
             >
@@ -166,7 +166,7 @@ export const SearchModal = ({
                 style={{
                   textAlign: "center",
                   marginTop: 48,
-                  color: "#7A7466",
+                  color: "#6B6557",
                   fontFamily: "Manrope_500Medium",
                 }}
               >
@@ -206,7 +206,7 @@ export const SearchModal = ({
                     <Text
                       style={{
                         fontSize: 11,
-                        color: "#A8A59E",
+                        color: "#857F70",
                         fontFamily: "Manrope_500Medium",
                       }}
                     >

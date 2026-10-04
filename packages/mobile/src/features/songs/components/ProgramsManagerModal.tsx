@@ -116,18 +116,18 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
 
             <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
               <View style={styles.searchBox}>
-                <Search size={16} color="#A8A59E" />
+                <Search size={16} color="#857F70" />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Szukaj programu…"
-                  placeholderTextColor="#A8A59E"
+                  placeholderTextColor="#857F70"
                   value={search}
                   onChangeText={setSearch}
                   autoCapitalize="none"
                 />
                 {search ? (
                   <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                    <X size={14} color="#A8A59E" />
+                    <X size={14} color="#857F70" />
                   </Pressable>
                 ) : null}
               </View>
@@ -144,7 +144,7 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
                 contentContainerStyle={{ padding: 16, gap: 8 }}
                 ListEmptyComponent={
                   <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-                    <Calendar size={28} color="#D3CCBC" />
+                    <Calendar size={28} color="#9A9586" />
                     <Text style={styles.emptyText}>Brak nadchodzących programów.</Text>
                   </View>
                 }
@@ -178,7 +178,7 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
                             </View>
                           </View>
                         </View>
-                        <ChevronRight size={18} color="#D3CCBC" />
+                        <ChevronRight size={18} color="#9A9586" />
                       </View>
                     </Pressable>
                   );
@@ -312,7 +312,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
           </View>
         ) : rows.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Music size={28} color="#D3CCBC" />
+            <Music size={28} color="#9A9586" />
             <Text style={styles.emptyText}>Brak pieśni przypisanych do tego programu.</Text>
           </View>
         ) : (
@@ -416,7 +416,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
                       <TextInput
                         style={styles.noteInput}
                         placeholder="Np. fragment, zwrotka, kiedy zaśpiewać…"
-                        placeholderTextColor="#A8A59E"
+                        placeholderTextColor="#857F70"
                         value={draftNote}
                         onChangeText={setDraftNote}
                         multiline
@@ -486,15 +486,15 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
       >
         <Text style={styles.section}>WYBIERZ PIEŚŃ</Text>
         <Pressable onPress={onCancel} hitSlop={8}>
-          <X size={16} color="#A8A59E" />
+          <X size={16} color="#857F70" />
         </Pressable>
       </View>
       <View style={styles.searchBox}>
-        <Search size={16} color="#A8A59E" />
+        <Search size={16} color="#857F70" />
         <TextInput
           style={styles.searchInput}
           placeholder="Szukaj po tytule…"
-          placeholderTextColor="#A8A59E"
+          placeholderTextColor="#857F70"
           value={query}
           onChangeText={setQuery}
           autoCapitalize="none"
@@ -509,7 +509,7 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
           style={{
             paddingVertical: 16,
             textAlign: 'center',
-            color: '#A8A59E',
+            color: '#857F70',
             fontFamily: 'Manrope_500Medium',
           }}
         >
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#7A7466',
+    color: '#6B6557',
     fontFamily: 'Manrope_500Medium',
     marginTop: 4,
     lineHeight: 17,
@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
   },
   programMetaText: {
     fontSize: 12,
-    color: '#7A7466',
+    color: '#6B6557',
     fontFamily: 'Manrope_500Medium',
   },
   countPill: {
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: 8,
-    color: '#7A7466',
+    color: '#6B6557',
     fontFamily: 'Manrope_500Medium',
     textAlign: 'center',
   },
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
   },
   editorSubtitle: {
     fontSize: 12,
-    color: '#7A7466',
+    color: '#6B6557',
     fontFamily: 'Manrope_500Medium',
     marginTop: 1,
   },
@@ -782,7 +782,7 @@ const styles = StyleSheet.create({
   section: {
     fontSize: 11,
     letterSpacing: 1.0,
-    color: '#7A7466',
+    color: '#6B6557',
     fontFamily: 'Manrope_700Bold',
     marginBottom: 8,
   },

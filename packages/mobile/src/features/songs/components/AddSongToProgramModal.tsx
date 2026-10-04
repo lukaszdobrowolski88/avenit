@@ -125,7 +125,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
           </View>
           {alreadyAdded ? (
             <View style={styles.addedBadge}>
-              <Check size={11} color="#A8A59E" strokeWidth={2.6} />
+              <Check size={11} color="#857F70" strokeWidth={2.6} />
               <Text style={styles.addedBadgeText}>DODANA</Text>
             </View>
           ) : isSelected ? (
@@ -177,18 +177,18 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
         <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }}>
           <Text style={styles.section}>WYBIERZ PROGRAM (od dzisiaj)</Text>
           <View style={styles.searchBox}>
-            <Search size={16} color="#A8A59E" />
+            <Search size={16} color="#857F70" />
             <TextInput
               style={styles.searchInput}
               placeholder="Szukaj programu…"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search ? (
               <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                <X size={14} color="#A8A59E" />
+                <X size={14} color="#857F70" />
               </Pressable>
             ) : null}
           </View>
@@ -199,11 +199,11 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
             </View>
           ) : filtered.length === 0 ? (
             <View style={{ paddingVertical: 32, paddingHorizontal: 16, alignItems: 'center' }}>
-              <Calendar size={28} color="#D3CCBC" />
+              <Calendar size={28} color="#9A9586" />
               <Text
                 style={{
                   marginTop: 8,
-                  color: '#7A7466',
+                  color: '#6B6557',
                   fontFamily: 'Manrope_500Medium',
                   textAlign: 'center',
                 }}
@@ -247,7 +247,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
             <TextInput
               style={styles.noteInput}
               placeholder="Opcjonalna notatka, np. fragment, zwrotka, kiedy zaśpiewać…"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               value={note}
               onChangeText={setNote}
               multiline
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     flex: 1,
     fontSize: 12,
-    color: '#7A7466',
+    color: '#6B6557',
     fontFamily: 'Manrope_500Medium',
   },
   saveBtn: {
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   section: {
     fontSize: 11,
     letterSpacing: 1.2,
-    color: '#7A7466',
+    color: '#6B6557',
     fontFamily: 'Manrope_700Bold',
     marginHorizontal: 16,
     marginTop: 16,
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
   },
   programMetaText: {
     fontSize: 12,
-    color: '#7A7466',
+    color: '#6B6557',
     fontFamily: 'Manrope_500Medium',
   },
   countPill: {
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
   addedBadgeText: {
     fontSize: 9,
     letterSpacing: 0.6,
-    color: '#7A7466',
+    color: '#6B6557',
     fontFamily: 'Manrope_700Bold',
   },
   keysGrid: {

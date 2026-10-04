@@ -56,7 +56,7 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
               📅 Udostępnij wydarzenie
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color="#7A7466" />
+              <X size={20} color="#6B6557" />
             </Pressable>
           </View>
 
@@ -66,12 +66,12 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
             </View>
           ) : events.length === 0 ? (
             <View style={{ paddingVertical: 40, alignItems: "center", paddingHorizontal: 24 }}>
-              <Calendar size={28} color="#D3CCBC" />
+              <Calendar size={28} color="#9A9586" />
               <Text
                 style={{
                   marginTop: 8,
                   fontSize: 14,
-                  color: "#7A7466",
+                  color: "#6B6557",
                   fontFamily: "Manrope_500Medium",
                   textAlign: "center",
                 }}
@@ -104,12 +104,12 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
                         width: 40,
                         height: 40,
                         borderRadius: 12,
-                        backgroundColor: "#cffafe",
+                        backgroundColor: "#ECE8DE",
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      <Calendar size={18} color="#0e7490" />
+                      <Calendar size={18} color="#2A2312" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text
@@ -119,15 +119,15 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
                         {e.title}
                       </Text>
                       {dateLine ? (
-                        <Text style={{ fontSize: 12, color: "#7A7466", fontFamily: "Manrope_500Medium" }}>
+                        <Text style={{ fontSize: 12, color: "#6B6557", fontFamily: "Manrope_500Medium" }}>
                           {dateLine}
                         </Text>
                       ) : null}
                       {e.location ? (
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 1 }}>
-                          <MapPin size={11} color="#A8A59E" />
+                          <MapPin size={11} color="#857F70" />
                           <Text
-                            style={{ fontSize: 12, color: "#A8A59E", fontFamily: "Manrope_400Regular" }}
+                            style={{ fontSize: 12, color: "#857F70", fontFamily: "Manrope_400Regular" }}
                             numberOfLines={1}
                           >
                             {e.location}
@@ -135,7 +135,7 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
                         </View>
                       ) : null}
                     </View>
-                    <ChevronRight size={18} color="#D3CCBC" />
+                    <ChevronRight size={18} color="#9A9586" />
                   </Pressable>
                 );
               })}

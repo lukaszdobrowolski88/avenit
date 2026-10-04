@@ -55,7 +55,7 @@ export default function TotpScreen() {
       <Text
         style={{
           fontSize: 14,
-          color: '#7A7466',
+          color: '#6B6557',
           marginBottom: 24,
           fontFamily: 'Manrope_500Medium',
         }}
@@ -82,7 +82,7 @@ export default function TotpScreen() {
         maxLength={8}
         autoFocus
         placeholder="123456"
-        placeholderTextColor="#A8A59E"
+        placeholderTextColor="#857F70"
         value={code}
         onChangeText={setCode}
         editable={!loading}
@@ -114,7 +114,7 @@ export default function TotpScreen() {
           style={{
             textAlign: 'center',
             fontSize: 13,
-            color: '#7A7466',
+            color: '#6B6557',
             fontFamily: 'Manrope_500Medium',
           }}
         >

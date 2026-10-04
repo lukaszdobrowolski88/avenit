@@ -52,12 +52,12 @@ const SOURCE_META: Record<
   { label: string; tint: string; bg: string; Icon: typeof Calendar }
 > = {
   program: { label: 'Program', tint: '#8A6606', bg: '#FFF1C2', Icon: ListChecks },
-  event: { label: 'Wydarzenie', tint: '#0e7490', bg: '#cffafe', Icon: Calendar },
+  event: { label: 'Wydarzenie', tint: '#2A2312', bg: '#ECE8DE', Icon: Calendar },
   worship: { label: 'Zespół Uwielbienia', tint: '#9d174d', bg: '#FFF1C2', Icon: Music },
-  media: { label: 'Media Team', tint: '#1d4ed8', bg: '#dbeafe', Icon: ImageIcon },
-  atmosfera: { label: 'Atmosfera Team', tint: '#b45309', bg: '#fef3c7', Icon: Sparkles },
-  kids: { label: 'Dzieci', tint: '#047857', bg: '#d1fae5', Icon: Baby },
-  homegroups: { label: 'Grupy Domowe', tint: '#6d28d9', bg: '#ede9fe', Icon: Home },
+  media: { label: 'Media Team', tint: '#2A2312', bg: '#ECE8DE', Icon: ImageIcon },
+  atmosfera: { label: 'Atmosfera Team', tint: '#8A6606', bg: '#FFF1C2', Icon: Sparkles },
+  kids: { label: 'Dzieci', tint: '#2A2312', bg: '#ECE8DE', Icon: Baby },
+  homegroups: { label: 'Grupy Domowe', tint: '#2A2312', bg: '#ECE8DE', Icon: Home },
 };
 
 interface Props {
@@ -237,7 +237,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
           >
             <View style={styles.row}>
               <View style={styles.iconSm}>
-                <Calendar size={16} color="#7A7466" strokeWidth={2.2} />
+                <Calendar size={16} color="#6B6557" strokeWidth={2.2} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowLabel}>DATA</Text>
@@ -247,7 +247,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
 
             <View style={styles.row}>
               <View style={styles.iconSm}>
-                <Clock size={16} color="#7A7466" strokeWidth={2.2} />
+                <Clock size={16} color="#6B6557" strokeWidth={2.2} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowLabel}>GODZINA</Text>
@@ -258,7 +258,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
             {event.location ? (
               <View style={styles.row}>
                 <View style={styles.iconSm}>
-                  <MapPin size={16} color="#7A7466" strokeWidth={2.2} />
+                  <MapPin size={16} color="#6B6557" strokeWidth={2.2} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rowLabel}>LOKALIZACJA</Text>
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontSize: 10,
     letterSpacing: 0.8,
-    color: '#7A7466',
+    color: '#6B6557',
     fontFamily: 'Manrope_700Bold',
     marginBottom: 2,
   },
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   capBarFill: { height: '100%', borderRadius: 3 },
-  rsvpMuted: { fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_400Regular' },
+  rsvpMuted: { fontSize: 13, color: '#6B6557', fontFamily: 'Manrope_400Regular' },
   rsvpToggle: {
     flexDirection: 'row',
     alignItems: 'center',

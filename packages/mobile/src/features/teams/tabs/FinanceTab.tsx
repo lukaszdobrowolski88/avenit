@@ -132,14 +132,14 @@ export const FinanceTab = ({
       {data ? (
         <>
           <Card>
-            <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_600SemiBold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+            <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_600SemiBold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
               Budżet {data.year}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 4, marginBottom: 8 }}>
               <Text style={{ fontSize: 24, color: '#2A2312', fontFamily: 'Manrope_700Bold', letterSpacing: -0.6 }}>
                 {money(data.spent)}
               </Text>
-              <Text style={{ fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+              <Text style={{ fontSize: 13, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
                 z {money(data.planned)}
               </Text>
             </View>
@@ -167,7 +167,7 @@ export const FinanceTab = ({
           <Text
             style={{
               fontSize: 13,
-              color: '#7A7466',
+              color: '#6B6557',
               letterSpacing: 0.5,
               textTransform: 'uppercase',
               fontFamily: 'Manrope_700Bold',
@@ -178,7 +178,7 @@ export const FinanceTab = ({
             Wydatki
           </Text>
           {data.expenses.length === 0 ? (
-            <Text style={{ fontSize: 13, color: '#A8A59E', fontFamily: 'Manrope_500Medium', marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, color: '#857F70', fontFamily: 'Manrope_500Medium', marginBottom: 12 }}>
               Brak wydatków w tym roku.
             </Text>
           ) : null}
@@ -189,11 +189,11 @@ export const FinanceTab = ({
                   <Text numberOfLines={1} style={{ fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                     {e.contractor || e.description || 'Wydatek'}
                   </Text>
-                  <Text numberOfLines={1} style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+                  <Text numberOfLines={1} style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
                     {[e.date, e.description && e.contractor ? e.description : null].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
-                {e.hasDocuments ? <Paperclip size={14} color="#A8A59E" /> : null}
+                {e.hasDocuments ? <Paperclip size={14} color="#857F70" /> : null}
                 <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{money(e.amount)}</Text>
               </View>
             </Card>
@@ -211,13 +211,13 @@ export const FinanceTab = ({
           </View>
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
             <Label>Kwota (zł)</Label>
-            <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor="#A8A59E" style={inputStyle} />
+            <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor="#857F70" style={inputStyle} />
 
             <Label>Data płatności</Label>
-            <TextInput value={date} onChangeText={setDate} placeholder="RRRR-MM-DD" placeholderTextColor="#A8A59E" style={inputStyle} />
+            <TextInput value={date} onChangeText={setDate} placeholder="RRRR-MM-DD" placeholderTextColor="#857F70" style={inputStyle} />
 
             <Label>Kontrahent</Label>
-            <TextInput value={contractor} onChangeText={setContractor} placeholder="np. Thomann, Media Expert" placeholderTextColor="#A8A59E" style={inputStyle} />
+            <TextInput value={contractor} onChangeText={setContractor} placeholder="np. Thomann, Media Expert" placeholderTextColor="#857F70" style={inputStyle} />
 
             {(data?.lines.length ?? 0) > 0 ? (
               <>
@@ -245,7 +245,7 @@ export const FinanceTab = ({
               value={details}
               onChangeText={setDetails}
               placeholder="Na co był wydatek?"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               multiline
               style={[inputStyle, { height: 90, paddingTop: 12, textAlignVertical: 'top' as const }]}
             />

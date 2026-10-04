@@ -7,12 +7,12 @@ import type { AgendaEvent, EventSource } from '../api';
 
 const SOURCE_DOT: Record<EventSource, string> = {
   program: '#8A6606',
-  event: '#0891b2',
-  worship: '#a855f7',
+  event: '#2A2312',
+  worship: '#6B6557',
   media: '#FFBE0B',
-  atmosfera: '#14b8a6',
-  kids: '#eab308',
-  homegroups: '#3b82f6',
+  atmosfera: '#6B6557',
+  kids: '#FFBE0B',
+  homegroups: '#6B6557',
 };
 
 const SOURCE_LABEL: Record<EventSource, string> = {
@@ -135,7 +135,7 @@ export const MonthView = ({ items, onPick }: Props) => {
               <Text
                 style={[
                   styles.cellNum,
-                  !sameMonth && { color: '#D3CCBC' },
+                  !sameMonth && { color: '#9A9586' },
                   isSelected && { color: '#ffffff' },
                   isToday && !isSelected && { color: '#8A6606' },
                 ]}
@@ -256,13 +256,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.4,
   },
-  monthSub: { fontSize: 11, color: '#A8A59E', fontFamily: 'Manrope_500Medium', marginTop: 1 },
+  monthSub: { fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium', marginTop: 1 },
   weekdayRow: { flexDirection: 'row', paddingHorizontal: 12, marginBottom: 4 },
   weekdayCell: {
     flex: 1,
     textAlign: 'center',
     fontSize: 11,
-    color: '#A8A59E',
+    color: '#857F70',
     fontFamily: 'Manrope_700Bold',
     letterSpacing: 0.6,
   },
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   countBadgeText: {
     fontSize: 11,
-    color: '#7A7466',
+    color: '#6B6557',
     fontFamily: 'Manrope_700Bold',
   },
   emptyWrap: {
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 28, opacity: 0.55 },
   emptyText: {
     textAlign: 'center',
-    color: '#A8A59E',
+    color: '#857F70',
     fontFamily: 'Manrope_500Medium',
     fontSize: 13,
   },
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_600SemiBold',
     letterSpacing: -0.2,
   },
-  daySub: { fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium', marginTop: 2 },
+  daySub: { fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium', marginTop: 2 },
   minePill: {
     paddingHorizontal: 7,
     paddingVertical: 2,

@@ -140,7 +140,7 @@ export default function RoomsScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: r.color ?? '#A8A59E' }} />
                   <Text style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{r.name}</Text>
-                  {r.capacity ? <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>{r.capacity} os.</Text> : null}
+                  {r.capacity ? <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>{r.capacity} os.</Text> : null}
                 </View>
                 {own.length === 0 ? (
                   <Text style={{ fontSize: 13, color: '#15803d', fontFamily: 'Manrope_600SemiBold' }}>Wolna cały dzień</Text>
@@ -154,11 +154,11 @@ export default function RoomsScreen() {
                         </Text>
                         <View style={{ flex: 1 }}>
                           <Text numberOfLines={1} style={{ fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{b.title}</Text>
-                          {b.bookedBy ? <Text numberOfLines={1} style={{ fontSize: 11, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>{mine ? 'Twoja rezerwacja' : b.bookedBy}</Text> : null}
+                          {b.bookedBy ? <Text numberOfLines={1} style={{ fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>{mine ? 'Twoja rezerwacja' : b.bookedBy}</Text> : null}
                         </View>
                         {mine || canDeleteAny ? (
                           <Pressable onPress={() => confirmCancel(b)} hitSlop={8} className="active:opacity-60">
-                            <Trash2 size={15} color="#A8A59E" />
+                            <Trash2 size={15} color="#857F70" />
                           </Pressable>
                         ) : null}
                       </View>
@@ -192,7 +192,7 @@ export default function RoomsScreen() {
               })}
             </View>
             <Label>Tytuł</Label>
-            <TextInput value={title} onChangeText={setTitle} placeholder="np. Próba zespołu" placeholderTextColor="#A8A59E" style={{ height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#ECE8DE', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }} />
+            <TextInput value={title} onChangeText={setTitle} placeholder="np. Próba zespołu" placeholderTextColor="#857F70" style={{ height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#ECE8DE', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }} />
             <Label>Data</Label>
             <DateField value={date} onChange={setDate} />
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -206,7 +206,7 @@ export default function RoomsScreen() {
               </View>
             </View>
             <Label>Notatka</Label>
-            <TextInput value={note} onChangeText={setNote} placeholder="opcjonalnie" placeholderTextColor="#A8A59E" style={{ height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#ECE8DE', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }} />
+            <TextInput value={note} onChangeText={setNote} placeholder="opcjonalnie" placeholderTextColor="#857F70" style={{ height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#ECE8DE', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }} />
             <Pressable
               onPress={save}
               disabled={create.isPending}

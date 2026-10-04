@@ -26,7 +26,7 @@ const SectionTitle = ({ children }: { children: string }) => (
   <Text
     style={{
       fontSize: 13,
-      color: '#7A7466',
+      color: '#6B6557',
       fontFamily: 'Manrope_700Bold',
       letterSpacing: 0.4,
       textTransform: 'uppercase',
@@ -92,18 +92,18 @@ export default function ModulesScreen() {
               height: 44,
             }}
           >
-            <Search size={18} color="#A8A59E" />
+            <Search size={18} color="#857F70" />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder="Szukaj modułu…"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               autoCorrect={false}
               style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}
             />
             {query ? (
               <Pressable onPress={() => setQuery('')} hitSlop={10}>
-                <X size={16} color="#A8A59E" />
+                <X size={16} color="#857F70" />
               </Pressable>
             ) : null}
           </View>
@@ -172,7 +172,7 @@ export default function ModulesScreen() {
               style={{
                 marginTop: 32,
                 textAlign: 'center',
-                color: '#A8A59E',
+                color: '#857F70',
                 fontFamily: 'Manrope_500Medium',
               }}
             >
@@ -186,7 +186,7 @@ export default function ModulesScreen() {
                 marginTop: 26,
                 fontSize: 12,
                 lineHeight: 17,
-                color: '#A8A59E',
+                color: '#857F70',
                 fontFamily: 'Manrope_500Medium',
               }}
             >

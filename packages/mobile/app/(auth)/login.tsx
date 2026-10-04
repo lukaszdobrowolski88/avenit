@@ -92,7 +92,7 @@ export default function LoginScreen() {
         <Text
           style={{
             fontSize: 14,
-            color: '#7A7466',
+            color: '#6B6557',
             textAlign: 'center',
             marginBottom: 28,
             fontFamily: 'Manrope_500Medium',
@@ -138,7 +138,7 @@ export default function LoginScreen() {
                 style={{
                   textAlign: 'center',
                   fontSize: 13,
-                  color: '#7A7466',
+                  color: '#6B6557',
                   fontFamily: 'Manrope_500Medium',
                 }}
               >
@@ -198,7 +198,7 @@ export default function LoginScreen() {
               keyboardType="email-address"
               textContentType="emailAddress"
               placeholder="ty@avenit.pl"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               value={email}
               onChangeText={setEmail}
               editable={!loading}
@@ -234,7 +234,7 @@ export default function LoginScreen() {
               textContentType="password"
               secureTextEntry
               placeholder="••••••••"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               value={password}
               onChangeText={setPassword}
               editable={!loading}

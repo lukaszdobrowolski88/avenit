@@ -66,7 +66,7 @@ export default function SongDetailScreen() {
           paddingHorizontal: 24,
         }}
       >
-        <Text style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+        <Text style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
           Pieśń nie istnieje.
         </Text>
       </View>
@@ -110,7 +110,7 @@ export default function SongDetailScreen() {
             <Text
               style={{
                 fontSize: 12,
-                color: '#7A7466',
+                color: '#6B6557',
                 fontFamily: 'Manrope_500Medium',
                 letterSpacing: -0.1,
               }}
@@ -173,7 +173,7 @@ export default function SongDetailScreen() {
               paddingHorizontal: 16,
               paddingVertical: 32,
               textAlign: 'center',
-              color: '#7A7466',
+              color: '#6B6557',
               fontFamily: 'Manrope_500Medium',
             }}
           >

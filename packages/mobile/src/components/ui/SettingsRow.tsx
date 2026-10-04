@@ -65,7 +65,7 @@ const Body = ({
       {description ? (
         <Text
           className="text-[12px] mt-0.5"
-          style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+          style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
         >
           {description}
         </Text>
@@ -101,7 +101,7 @@ export const SettingsRow = (props: Props) => {
         style={{ borderBottomWidth: 1, borderBottomColor: '#ECE8DE' }}
       >
         <Body {...props} />
-        {props.rightElement ?? <ChevronRight size={18} color="#A8A59E" />}
+        {props.rightElement ?? <ChevronRight size={18} color="#857F70" />}
       </Pressable>
     );
   }
@@ -131,7 +131,7 @@ export const SettingsGroup = ({
       <Text
         className="text-[11px] uppercase mx-5 mb-2"
         style={{
-          color: '#7A7466',
+          color: '#6B6557',
           letterSpacing: 0.6,
           fontFamily: 'Manrope_700Bold',
         }}

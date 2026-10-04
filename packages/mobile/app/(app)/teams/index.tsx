@@ -29,7 +29,7 @@ export default function TeamsListScreen() {
               style={{
                 paddingVertical: 40,
                 textAlign: 'center',
-                color: '#A8A59E',
+                color: '#857F70',
                 fontFamily: 'Manrope_500Medium',
               }}
             >
@@ -89,7 +89,7 @@ export default function TeamsListScreen() {
                     <Text
                       style={{
                         fontSize: 12,
-                        color: '#7A7466',
+                        color: '#6B6557',
                         marginTop: 2,
                         fontFamily: 'Manrope_500Medium',
                       }}
@@ -100,9 +100,9 @@ export default function TeamsListScreen() {
                     </Text>
                   </View>
                   {t.isWeb ? (
-                    <ArrowUpRight size={18} color="#A8A59E" strokeWidth={2.2} />
+                    <ArrowUpRight size={18} color="#857F70" strokeWidth={2.2} />
                   ) : (
-                    <ChevronRight size={18} color="#A8A59E" strokeWidth={2.2} />
+                    <ChevronRight size={18} color="#857F70" strokeWidth={2.2} />
                   )}
                 </View>
               </Pressable>

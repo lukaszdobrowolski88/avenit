@@ -29,7 +29,7 @@ export const TransposeControl = ({ value, onChange, originalKey }: Props) => {
         <Text
           style={{
             fontSize: 11,
-            color: '#7A7466',
+            color: '#6B6557',
             letterSpacing: 0.4,
             textTransform: 'uppercase',
             fontFamily: 'Manrope_700Bold',

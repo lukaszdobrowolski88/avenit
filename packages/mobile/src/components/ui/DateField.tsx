@@ -91,7 +91,7 @@ export const DateField = ({ value, onChange }: { value: string; onChange: (ymd: 
             </View>
             <View style={{ flexDirection: 'row' }}>
               {WEEK.map((w) => (
-                <Text key={w} style={{ flex: 1, textAlign: 'center', fontSize: 11, color: '#A8A59E', fontFamily: 'Manrope_700Bold' }}>
+                <Text key={w} style={{ flex: 1, textAlign: 'center', fontSize: 11, color: '#857F70', fontFamily: 'Manrope_700Bold' }}>
                   {w}
                 </Text>
               ))}
@@ -124,7 +124,7 @@ export const DateField = ({ value, onChange }: { value: string; onChange: (ymd: 
                         style={{
                           fontSize: 14,
                           fontFamily: 'Manrope_600SemiBold',
-                          color: isSel ? '#ffffff' : !inMonth ? '#D3CCBC' : isToday ? '#8A6606' : '#2A2312',
+                          color: isSel ? '#ffffff' : !inMonth ? '#9A9586' : isToday ? '#8A6606' : '#2A2312',
                         }}
                       >
                         {d.getDate()}
@@ -160,7 +160,7 @@ export const TimeField = ({
         onChange(digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits);
       }}
       placeholder={placeholder}
-      placeholderTextColor="#A8A59E"
+      placeholderTextColor="#857F70"
       keyboardType="number-pad"
       maxLength={5}
       style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}

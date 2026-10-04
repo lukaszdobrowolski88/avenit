@@ -262,7 +262,7 @@ export default function MessengerScreen() {
               borderColor: "#E6E1D5",
             }}
           >
-            <Search size={16} color="#A8A59E" />
+            <Search size={16} color="#857F70" />
             <TextInput
               style={{
                 flex: 1,
@@ -271,14 +271,14 @@ export default function MessengerScreen() {
                 fontFamily: "Manrope_500Medium",
               }}
               placeholder="Szukaj rozmów…"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search ? (
               <Pressable onPress={() => setSearch("")} hitSlop={8}>
-                <X size={14} color="#A8A59E" />
+                <X size={14} color="#857F70" />
               </Pressable>
             ) : null}
           </View>
@@ -368,7 +368,7 @@ export default function MessengerScreen() {
               <Text
                 style={{
                   fontSize: 11,
-                  color: "#7A7466",
+                  color: "#6B6557",
                   letterSpacing: 1.4,
                   fontFamily: "Manrope_700Bold",
                   marginTop: 14,
@@ -383,7 +383,7 @@ export default function MessengerScreen() {
                 style={{
                   textAlign: "center",
                   marginTop: 48,
-                  color: "#7A7466",
+                  color: "#6B6557",
                   fontFamily: "Manrope_500Medium",
                 }}
               >
@@ -465,12 +465,12 @@ export default function MessengerScreen() {
                           >
                             {displayTitle}
                           </Text>
-                          {item.muted ? <VolumeX size={12} color="#A8A59E" /> : null}
+                          {item.muted ? <VolumeX size={12} color="#857F70" /> : null}
                           {last ? (
                             <Text
                               style={{
                                 fontSize: 11,
-                                color: unread ? "#8A6606" : "#A8A59E",
+                                color: unread ? "#8A6606" : "#857F70",
                                 fontFamily: unread
                                   ? "Manrope_700Bold"
                                   : "Manrope_500Medium",
@@ -486,7 +486,7 @@ export default function MessengerScreen() {
                             style={{
                               fontSize: 13,
                               marginTop: 2,
-                              color: unread ? "#2A2312" : "#7A7466",
+                              color: unread ? "#2A2312" : "#6B6557",
                               fontFamily: unread
                                 ? "Manrope_500Medium"
                                 : "Manrope_400Regular",
@@ -501,7 +501,7 @@ export default function MessengerScreen() {
                             style={{
                               fontSize: 13,
                               marginTop: 2,
-                              color: "#A8A59E",
+                              color: "#857F70",
                               fontStyle: "italic",
                               fontFamily: "Manrope_400Regular",
                             }}
@@ -547,7 +547,7 @@ export default function MessengerScreen() {
                   >
                     <Pin
                       size={18}
-                      color={item.pinned ? "#8A6606" : "#D3CCBC"}
+                      color={item.pinned ? "#8A6606" : "#9A9586"}
                       fill={item.pinned ? "#8A6606" : "none"}
                     />
                   </Pressable>
@@ -563,8 +563,8 @@ export default function MessengerScreen() {
                   >
                     <Star
                       size={18}
-                      color={item.starred ? "#f59e0b" : "#D3CCBC"}
-                      fill={item.starred ? "#f59e0b" : "none"}
+                      color={item.starred ? "#FFBE0B" : "#9A9586"}
+                      fill={item.starred ? "#FFBE0B" : "none"}
                     />
                   </Pressable>
                   <Pressable
@@ -578,9 +578,9 @@ export default function MessengerScreen() {
                     style={{ marginLeft: 2, padding: 6 }}
                   >
                     {item.archived ? (
-                      <ArchiveRestore size={18} color="#0ea5e9" />
+                      <ArchiveRestore size={18} color="#6B6557" />
                     ) : (
-                      <Archive size={18} color="#D3CCBC" />
+                      <Archive size={18} color="#9A9586" />
                     )}
                   </Pressable>
                 </View>

@@ -31,9 +31,9 @@ import {
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
   yes: { label: 'Będę', color: '#16a34a', bg: '#dcfce7' },
-  maybe: { label: 'Może', color: '#d97706', bg: '#fef3c7' },
+  maybe: { label: 'Może', color: '#8A6606', bg: '#FFF1C2' },
   no: { label: 'Nie będę', color: '#e11d48', bg: '#fee2e2' },
-  pending: { label: 'Bez odpowiedzi', color: '#7A7466', bg: '#ECE8DE' },
+  pending: { label: 'Bez odpowiedzi', color: '#6B6557', bg: '#ECE8DE' },
 };
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -46,7 +46,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 
 const ANSWERS: { key: RsvpAnswer; label: string; color: string; bg: string }[] = [
   { key: 'yes', label: 'Będę', color: '#16a34a', bg: '#dcfce7' },
-  { key: 'maybe', label: 'Może', color: '#d97706', bg: '#fef3c7' },
+  { key: 'maybe', label: 'Może', color: '#8A6606', bg: '#FFF1C2' },
   { key: 'no', label: 'Nie będę', color: '#e11d48', bg: '#fee2e2' },
 ];
 
@@ -101,7 +101,7 @@ const InvitationCard = ({
             {eventTypeLabel ? (
               <Text
                 className="text-[11px] uppercase mb-1"
-                style={{ color: '#7A7466', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
+                style={{ color: '#6B6557', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
               >
                 {eventTypeLabel}
               </Text>
@@ -126,7 +126,7 @@ const InvitationCard = ({
         <View className="mt-3 gap-1.5">
           {camp?.event_date ? (
             <View className="flex-row items-center gap-2">
-              <CalendarCheck size={14} color="#7A7466" />
+              <CalendarCheck size={14} color="#6B6557" />
               <Text
                 className="text-[13px]"
                 style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium' }}
@@ -137,7 +137,7 @@ const InvitationCard = ({
             </View>
           ) : camp?.event_time ? (
             <View className="flex-row items-center gap-2">
-              <Clock size={14} color="#7A7466" />
+              <Clock size={14} color="#6B6557" />
               <Text
                 className="text-[13px]"
                 style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium' }}
@@ -148,7 +148,7 @@ const InvitationCard = ({
           ) : null}
           {camp?.location ? (
             <View className="flex-row items-center gap-2">
-              <MapPin size={14} color="#7A7466" />
+              <MapPin size={14} color="#6B6557" />
               <Text
                 className="text-[13px]"
                 style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium' }}
@@ -166,7 +166,7 @@ const InvitationCard = ({
             style={{ borderRadius: 14, backgroundColor: '#f8fafc' }}
           >
             <View className="flex-row items-center gap-2 flex-1">
-              <Users size={16} color="#7A7466" />
+              <Users size={16} color="#6B6557" />
               <Text
                 className="text-[13px]"
                 style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium' }}
@@ -331,7 +331,7 @@ export default function RsvpScreen() {
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+                  style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                 >
                   {summary.memberResolved
                     ? 'Nie masz teraz żadnych nadchodzących zaproszeń.'
@@ -345,15 +345,15 @@ export default function RsvpScreen() {
                     className="mb-4 p-4 flex-row items-start gap-3"
                     style={{
                       borderRadius: 20,
-                      backgroundColor: '#fffbeb',
+                      backgroundColor: '#FFF8E1',
                       borderWidth: 1,
-                      borderColor: '#fde68a',
+                      borderColor: '#F3E3B0',
                     }}
                   >
-                    <Info size={18} color="#d97706" style={{ marginTop: 1 }} />
+                    <Info size={18} color="#8A6606" style={{ marginTop: 1 }} />
                     <Text
                       className="flex-1 text-[13px]"
-                      style={{ color: '#92400e', fontFamily: 'Manrope_400Regular', lineHeight: 19 }}
+                      style={{ color: '#8A6606', fontFamily: 'Manrope_400Regular', lineHeight: 19 }}
                     >
                       Poniższe zaproszenia dopasowaliśmy po Twoim adresie e-mail. Aby zawsze widzieć
                       wszystkie, poproś koordynatora o powiązanie konta z profilem członka.
@@ -362,7 +362,7 @@ export default function RsvpScreen() {
                 ) : null}
                 <Text
                   className="text-[11px] uppercase mb-2 mx-1"
-                  style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
+                  style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Nadchodzące
                 </Text>

@@ -28,12 +28,12 @@ const SOURCE_FILTERS: { key: EventSource | 'all' | 'mine'; label: string; color:
   { key: 'all', label: 'Wszystkie', color: '#4A463E' },
   { key: 'mine', label: 'Moje', color: '#8A6606' },
   { key: 'program', label: 'Programy', color: '#8A6606' },
-  { key: 'worship', label: 'Zespół Uwielbienia', color: '#a855f7' },
+  { key: 'worship', label: 'Zespół Uwielbienia', color: '#6B6557' },
   { key: 'media', label: 'Media Team', color: '#FFBE0B' },
-  { key: 'atmosfera', label: 'Atmosfera Team', color: '#14b8a6' },
-  { key: 'kids', label: 'Dzieci', color: '#eab308' },
-  { key: 'homegroups', label: 'Grupy Domowe', color: '#3b82f6' },
-  { key: 'event', label: 'Inne', color: '#0891b2' },
+  { key: 'atmosfera', label: 'Atmosfera Team', color: '#6B6557' },
+  { key: 'kids', label: 'Dzieci', color: '#FFBE0B' },
+  { key: 'homegroups', label: 'Grupy Domowe', color: '#6B6557' },
+  { key: 'event', label: 'Inne', color: '#2A2312' },
 ];
 
 type ViewMode = 'agenda' | 'month';
@@ -235,7 +235,7 @@ export default function CalendarScreen() {
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+              style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
             >
               {filter !== 'all'
                 ? 'Spróbuj wybrać inny filtr.'

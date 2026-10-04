@@ -144,22 +144,22 @@ const PrayerCard = ({
               className="text-[11px]"
               style={{ color: meta.tint, fontFamily: 'Manrope_700Bold' }}
             >
-              {meta.emoji} {t(meta.label)}
+              {t(meta.label)}
             </Text>
           </View>
           <Text
             className="text-[11px]"
-            style={{ color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}
+            style={{ color: '#857F70', fontFamily: 'Manrope_500Medium' }}
           >
             {formatRelative(prayer.created_at)}
           </Text>
           {prayer.visibility === 'leaders_only' && (
             <View
               className="flex-row items-center gap-1 px-2 py-0.5"
-              style={{ borderRadius: 999, backgroundColor: '#ede9fe' }}
+              style={{ borderRadius: 999, backgroundColor: '#ECE8DE' }}
             >
-              <Lock size={9} color="#7c3aed" />
-              <Text className="text-[10px]" style={{ color: '#6d28d9', fontFamily: 'Manrope_700Bold' }}>
+              <Lock size={9} color="#2A2312" />
+              <Text className="text-[10px]" style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                 {t('Liderzy')}
               </Text>
             </View>
@@ -212,7 +212,7 @@ const PrayerCard = ({
 
         <Text
           className="text-[12px] mb-3"
-          style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
+          style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
         >
           {displayName}
         </Text>
@@ -220,7 +220,7 @@ const PrayerCard = ({
         <View className="flex-row items-center justify-between">
           <Text
             className="text-[12px]"
-            style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+            style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
           >
             {prayer.prayer_count > 0
               ? `${prayer.prayer_count} ${prayer.prayer_count === 1 ? t('osoba modli się') : t('osób modli się')}`
@@ -268,7 +268,7 @@ const PrayerCard = ({
               <OwnerAction
                 Icon={RotateCcw}
                 label={t("Przywróć")}
-                tint="#0e7490"
+                tint="#2A2312"
                 onPress={() => onReopen(prayer)}
               />
             ) : (
@@ -416,7 +416,7 @@ export default function PrayersScreen() {
               height: 40,
             }}
           >
-            <Search size={16} color="#A8A59E" />
+            <Search size={16} color="#857F70" />
             <TextInput
               style={{
                 flex: 1,
@@ -426,14 +426,14 @@ export default function PrayersScreen() {
                 paddingVertical: 0,
               }}
               placeholder={t("Szukaj w intencjach…")}
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               value={search}
               onChangeText={setSearch}
               returnKeyType="search"
             />
             {search.length > 0 && (
               <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                <X size={15} color="#A8A59E" />
+                <X size={15} color="#857F70" />
               </Pressable>
             )}
           </View>
@@ -449,7 +449,7 @@ export default function PrayersScreen() {
             {CATEGORIES.map((c) => (
               <Chip
                 key={c}
-                label={`${CATEGORY_META[c].emoji} ${t(CATEGORY_META[c].label)}`}
+                label={t(CATEGORY_META[c].label)}
                 active={category === c}
                 onPress={() => setCategory(c)}
               />
@@ -503,7 +503,7 @@ export default function PrayersScreen() {
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+              style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
             >
               {search || category !== 'all' || scope !== 'active'
                 ? t('Zmień filtry lub wyczyść wyszukiwanie.')
@@ -560,7 +560,7 @@ export default function PrayersScreen() {
               </Text>
             </View>
             <Text
-              style={{ fontSize: 13, color: '#7A7466', marginBottom: 14, fontFamily: 'Manrope_400Regular' }}
+              style={{ fontSize: 13, color: '#6B6557', marginBottom: 14, fontFamily: 'Manrope_400Regular' }}
             >
               {t('Możesz dodać krótkie świadectwo (opcjonalnie) — zbuduje wiarę wspólnoty.')}
             </Text>
@@ -580,7 +580,7 @@ export default function PrayersScreen() {
                 fontFamily: 'Manrope_400Regular',
               }}
               placeholder={t("Jak Bóg odpowiedział na tę modlitwę?")}
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               multiline
               value={testimony}
               onChangeText={setTestimony}

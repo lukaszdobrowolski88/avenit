@@ -87,19 +87,19 @@ export default function SongsScreen() {
               borderColor: '#E6E1D5',
             }}
           >
-            <Search size={18} color="#A8A59E" />
+            <Search size={18} color="#857F70" />
             <TextInput
               className="flex-1 text-base"
               style={{ color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
               placeholder="Szukaj pieśni…"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search ? (
               <Pressable onPress={() => setSearch('')} hitSlop={10}>
-                <X size={16} color="#A8A59E" />
+                <X size={16} color="#857F70" />
               </Pressable>
             ) : null}
           </View>
@@ -179,7 +179,7 @@ export default function SongsScreen() {
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+                  style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                 >
                   {search || activeTag
                     ? 'Spróbuj zmienić filtr lub wyszukiwanie.'
@@ -240,7 +240,7 @@ export default function SongsScreen() {
                         {item.key ? (
                           <Text
                             className="text-[12px]"
-                            style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
+                            style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
                           >
                             {item.key}
                           </Text>
@@ -248,7 +248,7 @@ export default function SongsScreen() {
                         {item.tempo ? (
                           <Text
                             className="text-[12px]"
-                            style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
+                            style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
                           >
                             {item.tempo} BPM
                           </Text>

@@ -123,7 +123,7 @@ export default function ResetPasswordScreen() {
         <Text
           style={{
             fontSize: 14,
-            color: '#7A7466',
+            color: '#6B6557',
             textAlign: 'center',
             marginBottom: 22,
             fontFamily: 'Manrope_500Medium',
@@ -172,7 +172,7 @@ export default function ResetPasswordScreen() {
       <Text
         style={{
           fontSize: 14,
-          color: '#7A7466',
+          color: '#6B6557',
           marginBottom: 24,
           fontFamily: 'Manrope_500Medium',
         }}
@@ -185,7 +185,7 @@ export default function ResetPasswordScreen() {
         style={inputStyle}
         secureTextEntry
         placeholder="••••••••"
-        placeholderTextColor="#A8A59E"
+        placeholderTextColor="#857F70"
         value={password}
         onChangeText={setPassword}
         editable={!loading}
@@ -196,7 +196,7 @@ export default function ResetPasswordScreen() {
         style={[inputStyle, { marginBottom: 22 }]}
         secureTextEntry
         placeholder="••••••••"
-        placeholderTextColor="#A8A59E"
+        placeholderTextColor="#857F70"
         value={confirm}
         onChangeText={setConfirm}
         editable={!loading}

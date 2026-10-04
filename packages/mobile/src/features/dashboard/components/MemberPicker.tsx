@@ -108,7 +108,7 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
               Przypisz osobę
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color="#7A7466" />
+              <X size={20} color="#6B6557" />
             </Pressable>
           </View>
 
@@ -126,12 +126,12 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                 borderColor: '#E6E1D5',
               }}
             >
-              <Search size={16} color="#A8A59E" />
+              <Search size={16} color="#857F70" />
               <TextInput
                 value={search}
                 onChangeText={setSearch}
                 placeholder="Szukaj po imieniu lub email…"
-                placeholderTextColor="#A8A59E"
+                placeholderTextColor="#857F70"
                 style={{
                   flex: 1,
                   fontSize: 14,
@@ -168,7 +168,7 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                 justifyContent: 'center',
               }}
             >
-              <UserX size={16} color="#7A7466" />
+              <UserX size={16} color="#6B6557" />
             </View>
             <Text
               style={{
@@ -197,7 +197,7 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                   style={{
                     textAlign: 'center',
                     paddingVertical: 32,
-                    color: '#7A7466',
+                    color: '#6B6557',
                     fontFamily: 'Manrope_500Medium',
                   }}
                 >
@@ -254,7 +254,7 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                           numberOfLines={1}
                           style={{
                             fontSize: 12,
-                            color: '#7A7466',
+                            color: '#6B6557',
                             marginTop: 2,
                             fontFamily: 'Manrope_500Medium',
                           }}

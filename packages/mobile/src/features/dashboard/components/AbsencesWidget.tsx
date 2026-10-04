@@ -22,7 +22,7 @@ const STATUS_META: Record<
   AbsenceItem['status'],
   { label: string; tint: string; bg: string; Icon: typeof Check }
 > = {
-  pending: { label: 'Oczekuje', tint: '#b45309', bg: '#fef3c7', Icon: Clock },
+  pending: { label: 'Oczekuje', tint: '#8A6606', bg: '#FFF1C2', Icon: Clock },
   approved: { label: 'Zatwierdzona', tint: '#047857', bg: '#d1fae5', Icon: Check },
   rejected: { label: 'Odrzucona', tint: '#be123c', bg: '#ffe4e6', Icon: X },
 };
@@ -136,14 +136,14 @@ const ReportModal = ({
               Zgłoś nieobecność
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color="#7A7466" />
+              <X size={20} color="#6B6557" />
             </Pressable>
           </View>
 
           <Text
             style={{
               fontSize: 11,
-              color: '#7A7466',
+              color: '#6B6557',
               marginBottom: 8,
               letterSpacing: 0.4,
               textTransform: 'uppercase',
@@ -157,7 +157,7 @@ const ReportModal = ({
               <Text
                 style={{
                   fontSize: 13,
-                  color: '#7A7466',
+                  color: '#6B6557',
                   paddingHorizontal: 8,
                   paddingVertical: 12,
                   fontFamily: 'Manrope_500Medium',
@@ -196,7 +196,7 @@ const ReportModal = ({
                       <Text
                         style={{
                           fontSize: 11,
-                          color: '#7A7466',
+                          color: '#6B6557',
                           letterSpacing: 0.4,
                           textTransform: 'uppercase',
                           fontFamily: 'Manrope_600SemiBold',
@@ -226,7 +226,7 @@ const ReportModal = ({
           <Text
             style={{
               fontSize: 11,
-              color: '#7A7466',
+              color: '#6B6557',
               marginBottom: 8,
               letterSpacing: 0.4,
               textTransform: 'uppercase',
@@ -239,7 +239,7 @@ const ReportModal = ({
             value={note}
             onChangeText={setNote}
             placeholder="np. wyjazd, choroba..."
-            placeholderTextColor="#A8A59E"
+            placeholderTextColor="#857F70"
             multiline
             numberOfLines={2}
             style={{
@@ -339,7 +339,7 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
               borderColor: '#E3DDD0',
             }}
           >
-            <Plus size={14} color="#7A7466" />
+            <Plus size={14} color="#6B6557" />
             <Text style={{ fontSize: 13, color: '#4A463E', fontFamily: 'Manrope_600SemiBold' }}>
               Zgłoś nieobecność
             </Text>
@@ -365,12 +365,12 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    backgroundColor: '#ffedd5',
+                    backgroundColor: '#FFF1C2',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <CalendarX size={16} color="#c2410c" />
+                  <CalendarX size={16} color="#8A6606" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
@@ -436,7 +436,7 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
                         numberOfLines={1}
                         style={{
                           fontSize: 12,
-                          color: '#7A7466',
+                          color: '#6B6557',
                           marginTop: 2,
                           fontFamily: 'Manrope_400Regular',
                         }}
@@ -466,7 +466,7 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
                     className="active:opacity-50"
                     style={{ padding: 6 }}
                   >
-                    <Trash2 size={15} color="#A8A59E" />
+                    <Trash2 size={15} color="#857F70" />
                   </Pressable>
                 </View>
               );

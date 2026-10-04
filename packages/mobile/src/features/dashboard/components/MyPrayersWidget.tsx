@@ -8,10 +8,10 @@ import type { RecentPrayer } from '../api';
 
 const CATEGORY_LABELS: Record<string, { label: string; bg: string; tint: string }> = {
   health: { label: 'Zdrowie', bg: '#fee2e2', tint: '#b91c1c' },
-  family: { label: 'Rodzina', bg: '#dbeafe', tint: '#1d4ed8' },
-  work: { label: 'Praca', bg: '#fef3c7', tint: '#b45309' },
-  finances: { label: 'Finanse', bg: '#d1fae5', tint: '#047857' },
-  spiritual: { label: 'Duchowe', bg: '#ede9fe', tint: '#6d28d9' },
+  family: { label: 'Rodzina', bg: '#ECE8DE', tint: '#2A2312' },
+  work: { label: 'Praca', bg: '#FFF1C2', tint: '#8A6606' },
+  finances: { label: 'Finanse', bg: '#ECE8DE', tint: '#2A2312' },
+  spiritual: { label: 'Duchowe', bg: '#ECE8DE', tint: '#2A2312' },
   other: { label: 'Inne', bg: '#ECE8DE', tint: D.ink2 },
 };
 

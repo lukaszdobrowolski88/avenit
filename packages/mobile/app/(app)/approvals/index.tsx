@@ -33,7 +33,7 @@ export default function ApprovalsScreen() {
     <View style={{ borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14, marginBottom: 10, gap: 10 }}>
       <View>
         <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{a.name}</Text>
-        <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
+        <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
           {a.email}
           {a.createdAt ? ` · ${formatDate(a.createdAt, 'd MMM, HH:mm')}` : ''}
         </Text>
@@ -77,7 +77,7 @@ export default function ApprovalsScreen() {
 
           {toApprove.length ? (
             <>
-              <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
+              <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
                 Czekają na zatwierdzenie
               </Text>
               {toApprove.map((a) => (
@@ -89,8 +89,8 @@ export default function ApprovalsScreen() {
           {unverified.length ? (
             <>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, marginBottom: 8 }}>
-                <Mail size={13} color="#7A7466" />
-                <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold' }}>
+                <Mail size={13} color="#6B6557" />
+                <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold' }}>
                   Nie potwierdzili e-maila
                 </Text>
               </View>

@@ -13,13 +13,13 @@ const MONTHS = ['S', 'L', 'M', 'K', 'M', 'C', 'L', 'S', 'W', 'P', 'L', 'G'];
 
 const Kpi = ({ label, value }: { label: string; value: string }) => (
   <View style={{ flexBasis: '47%', flexGrow: 1, borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14 }}>
-    <Text style={{ fontSize: 11, color: '#7A7466', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</Text>
+    <Text style={{ fontSize: 11, color: '#6B6557', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</Text>
     <Text style={{ fontSize: 22, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginTop: 2, letterSpacing: -0.5 }}>{value}</Text>
   </View>
 );
 
 const SectionTitle = ({ children }: { children: string }) => (
-  <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginTop: 20, marginBottom: 10 }}>
+  <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginTop: 20, marginBottom: 10 }}>
     {children}
   </Text>
 );
@@ -73,10 +73,10 @@ export default function GivingAdminScreen() {
                         width: '100%',
                         height: Math.max(3, Math.round((v / maxMonth) * 50)),
                         borderRadius: 4,
-                        backgroundColor: i === currentMonth ? '#be123c' : '#fecdd3',
+                        backgroundColor: i === currentMonth ? '#FFBE0B' : '#F3E3B0',
                       }}
                     />
-                    <Text style={{ fontSize: 9, color: '#A8A59E', fontFamily: 'Manrope_600SemiBold' }}>{MONTHS[i]}</Text>
+                    <Text style={{ fontSize: 9, color: '#857F70', fontFamily: 'Manrope_600SemiBold' }}>{MONTHS[i]}</Text>
                   </View>
                 ))}
               </View>
@@ -93,7 +93,7 @@ export default function GivingAdminScreen() {
                         </Text>
                       </View>
                       <View style={{ height: 6, borderRadius: 3, backgroundColor: '#E6E1D5', overflow: 'hidden' }}>
-                        <View style={{ width: `${f.pct}%`, height: 6, backgroundColor: f.color ?? '#be123c' }} />
+                        <View style={{ width: `${f.pct}%`, height: 6, backgroundColor: f.color ?? '#FFBE0B' }} />
                       </View>
                     </View>
                   ))}
@@ -120,13 +120,13 @@ export default function GivingAdminScreen() {
 
               <SectionTitle>Ostatnie wpłaty</SectionTitle>
               {d.recent.length === 0 ? (
-                <Text style={{ fontSize: 13, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>Brak wpłat w tym roku.</Text>
+                <Text style={{ fontSize: 13, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>Brak wpłat w tym roku.</Text>
               ) : null}
               {d.recent.map((r) => (
                 <View key={r.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#E9E4D8' }}>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{r.who}</Text>
-                    <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>{[r.date, r.fund].filter(Boolean).join(' · ')}</Text>
+                    <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>{[r.date, r.fund].filter(Boolean).join(' · ')}</Text>
                   </View>
                   <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{money(r.amount)}</Text>
                 </View>

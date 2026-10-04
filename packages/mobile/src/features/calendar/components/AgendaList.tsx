@@ -18,12 +18,12 @@ const SOURCE_META: Record<
   { label: string; tint: string; bg: string; Icon: typeof Calendar }
 > = {
   program: { label: 'Program', tint: '#8A6606', bg: '#FFF1C2', Icon: ListChecks },
-  event: { label: 'Wydarzenie', tint: '#0e7490', bg: '#cffafe', Icon: Calendar },
+  event: { label: 'Wydarzenie', tint: '#2A2312', bg: '#ECE8DE', Icon: Calendar },
   worship: { label: 'Zespół Uwielbienia', tint: '#9d174d', bg: '#FFF1C2', Icon: Music },
-  media: { label: 'Media Team', tint: '#1d4ed8', bg: '#dbeafe', Icon: ImageIcon },
-  atmosfera: { label: 'Atmosfera Team', tint: '#b45309', bg: '#fef3c7', Icon: Sparkles },
-  kids: { label: 'Dzieci', tint: '#047857', bg: '#d1fae5', Icon: Baby },
-  homegroups: { label: 'Grupy Domowe', tint: '#6d28d9', bg: '#ede9fe', Icon: Home },
+  media: { label: 'Media Team', tint: '#2A2312', bg: '#ECE8DE', Icon: ImageIcon },
+  atmosfera: { label: 'Atmosfera Team', tint: '#8A6606', bg: '#FFF1C2', Icon: Sparkles },
+  kids: { label: 'Dzieci', tint: '#2A2312', bg: '#ECE8DE', Icon: Baby },
+  homegroups: { label: 'Grupy Domowe', tint: '#2A2312', bg: '#ECE8DE', Icon: Home },
 };
 
 const toDate = (v: Date | string): Date => (v instanceof Date ? v : new Date(v));
@@ -89,7 +89,7 @@ export const AgendaList = ({ items, onPick }: Props) => {
         style={{
           textAlign: 'center',
           paddingVertical: 48,
-          color: '#7A7466',
+          color: '#6B6557',
           fontFamily: 'Manrope_500Medium',
         }}
       >
@@ -120,7 +120,7 @@ export const AgendaList = ({ items, onPick }: Props) => {
                   style={[
                     styles.dayBadgeMonth,
                     isToday && { color: '#ffffff' },
-                    isPast && !isToday && { color: '#A8A59E' },
+                    isPast && !isToday && { color: '#857F70' },
                   ]}
                 >
                   {monthShort}
@@ -129,7 +129,7 @@ export const AgendaList = ({ items, onPick }: Props) => {
                   style={[
                     styles.dayBadgeNum,
                     isToday && { color: '#ffffff' },
-                    isPast && !isToday && { color: '#A8A59E' },
+                    isPast && !isToday && { color: '#857F70' },
                   ]}
                 >
                   {dayNum}
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   },
   dayBadgeToday: { backgroundColor: '#2A2312', borderColor: '#FFBE0B' },
   dayBadgePast: { opacity: 0.55 },
-  dayBadgeMonth: { fontSize: 9, color: '#7A7466', fontFamily: 'Manrope_700Bold', letterSpacing: 0.6 },
+  dayBadgeMonth: { fontSize: 9, color: '#6B6557', fontFamily: 'Manrope_700Bold', letterSpacing: 0.6 },
   dayBadgeNum: {
     fontSize: 18,
     color: '#2A2312',
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   dayLabel: { fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_700Bold', letterSpacing: -0.3 },
-  dayCount: { fontSize: 11, color: '#A8A59E', fontFamily: 'Manrope_500Medium', marginTop: 2 },
+  dayCount: { fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium', marginTop: 2 },
   cardShadow: {
     borderRadius: 16,
     backgroundColor: '#F6F4EE',
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   tagPill: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   tagPillText: { fontSize: 10, fontFamily: 'Manrope_700Bold', letterSpacing: 0.2 },
-  metaText: { fontSize: 11, color: '#7A7466', fontFamily: 'Manrope_500Medium' },
+  metaText: { fontSize: 11, color: '#6B6557', fontFamily: 'Manrope_500Medium' },
   minePill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: '#2A2312' },
   minePillText: {
     fontSize: 9,

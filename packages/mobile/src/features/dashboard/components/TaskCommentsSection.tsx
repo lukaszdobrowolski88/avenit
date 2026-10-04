@@ -75,12 +75,12 @@ const CommentItem = ({
           >
             {author}
           </Text>
-          <Text style={{ fontSize: 10, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
+          <Text style={{ fontSize: 10, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
             {relTime(comment.created_at)}
           </Text>
           {canDelete ? (
             <Pressable onPress={onDelete} hitSlop={6} style={{ marginLeft: 4 }}>
-              <Trash2 size={12} color="#A8A59E" />
+              <Trash2 size={12} color="#857F70" />
             </Pressable>
           ) : null}
         </View>
@@ -122,7 +122,7 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
         <Text
           style={{
             fontSize: 12,
-            color: '#7A7466',
+            color: '#6B6557',
             textAlign: 'center',
             fontFamily: 'Manrope_500Medium',
           }}
@@ -151,11 +151,11 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
   return (
     <View style={{ marginBottom: 14 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-        <MessageCircle size={11} color="#7A7466" strokeWidth={2.4} />
+        <MessageCircle size={11} color="#6B6557" strokeWidth={2.4} />
         <Text
           style={{
             fontSize: 11,
-            color: '#7A7466',
+            color: '#6B6557',
             letterSpacing: 0.4,
             textTransform: 'uppercase',
             fontFamily: 'Manrope_700Bold',
@@ -173,7 +173,7 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
         <Text
           style={{
             fontSize: 13,
-            color: '#A8A59E',
+            color: '#857F70',
             textAlign: 'center',
             paddingVertical: 12,
             fontStyle: 'italic',
@@ -214,7 +214,7 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
             value={text}
             onChangeText={setText}
             placeholder="Napisz komentarz…"
-            placeholderTextColor="#A8A59E"
+            placeholderTextColor="#857F70"
             multiline
             style={{
               flex: 1,

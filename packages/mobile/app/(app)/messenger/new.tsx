@@ -162,7 +162,7 @@ export default function NewConversationScreen() {
                   <Text
                     style={{
                       fontSize: 13,
-                      color: active ? "#2A2312" : "#7A7466",
+                      color: active ? "#2A2312" : "#6B6557",
                       fontFamily: "Manrope_600SemiBold",
                     }}
                   >
@@ -178,7 +178,7 @@ export default function NewConversationScreen() {
               value={groupName}
               onChangeText={setGroupName}
               placeholder="Nazwa grupy, np. Zespół na Wielkanoc"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               style={{
                 height: 46,
                 borderRadius: 14,
@@ -228,12 +228,12 @@ export default function NewConversationScreen() {
               backgroundColor: "#ECE8DE",
             }}
           >
-            <Search size={16} color="#A8A59E" />
+            <Search size={16} color="#857F70" />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder="Szukaj po imieniu lub e-mailu"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               autoCorrect={false}
               autoCapitalize="none"
               style={{ flex: 1, fontSize: 14, color: "#2A2312", fontFamily: "Manrope_400Regular" }}
@@ -253,7 +253,7 @@ export default function NewConversationScreen() {
             contentContainerStyle={{ paddingHorizontal: 8, paddingTop: 8, paddingBottom: 160 }}
             ListEmptyComponent={
               <Text
-                style={{ textAlign: "center", marginTop: 32, color: "#A8A59E", fontFamily: "Manrope_500Medium" }}
+                style={{ textAlign: "center", marginTop: 32, color: "#857F70", fontFamily: "Manrope_500Medium" }}
               >
                 {query ? "Nikogo nie znaleziono" : "Brak innych osób z kontem"}
               </Text>
@@ -285,7 +285,7 @@ export default function NewConversationScreen() {
                     </Text>
                     <Text
                       numberOfLines={1}
-                      style={{ fontSize: 12, color: "#7A7466", fontFamily: "Manrope_400Regular", marginTop: 1 }}
+                      style={{ fontSize: 12, color: "#6B6557", fontFamily: "Manrope_400Regular", marginTop: 1 }}
                     >
                       {item.email}
                     </Text>

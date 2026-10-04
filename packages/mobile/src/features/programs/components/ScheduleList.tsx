@@ -8,9 +8,9 @@ import {
 
 const TYPE_META: Record<ScheduleItemType, { Icon: typeof Music; tint: string; bg: string }> = {
   item: { Icon: TypeIcon, tint: '#4A463E', bg: '#ECE8DE' },
-  header: { Icon: MoreHorizontal, tint: '#b45309', bg: '#fef3c7' },
+  header: { Icon: MoreHorizontal, tint: '#8A6606', bg: '#FFF1C2' },
   song: { Icon: Music, tint: '#9d174d', bg: '#FFF1C2' },
-  media: { Icon: ImageIcon, tint: '#1d4ed8', bg: '#dbeafe' },
+  media: { Icon: ImageIcon, tint: '#2A2312', bg: '#ECE8DE' },
 };
 
 interface Props {
@@ -24,7 +24,7 @@ export const ScheduleList = ({ schedule }: Props) => {
         style={{
           textAlign: 'center',
           paddingVertical: 24,
-          color: '#7A7466',
+          color: '#6B6557',
           fontFamily: 'Manrope_500Medium',
         }}
       >
@@ -119,7 +119,7 @@ export const ScheduleList = ({ schedule }: Props) => {
                   numberOfLines={2}
                   style={{
                     fontSize: 12,
-                    color: '#7A7466',
+                    color: '#6B6557',
                     marginTop: 2,
                     fontFamily: 'Manrope_400Regular',
                   }}
@@ -131,7 +131,7 @@ export const ScheduleList = ({ schedule }: Props) => {
             <Text
               style={{
                 fontSize: 12,
-                color: '#7A7466',
+                color: '#6B6557',
                 fontVariant: ['tabular-nums'],
                 fontFamily: 'Manrope_500Medium',
               }}

@@ -126,8 +126,8 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
         style={{
           borderRadius: 18,
           borderWidth: 1,
-          borderColor: post.pinned ? '#fde68a' : '#E6E1D5',
-          backgroundColor: post.pinned ? '#fffbeb' : '#F6F4EE',
+          borderColor: post.pinned ? '#F3E3B0' : '#E6E1D5',
+          backgroundColor: post.pinned ? '#FFF8E1' : '#F6F4EE',
           padding: 14,
         }}
       >
@@ -164,14 +164,14 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                     paddingHorizontal: 6,
                     paddingVertical: 1,
                     borderRadius: 6,
-                    backgroundColor: '#fef3c7',
+                    backgroundColor: '#FFF1C2',
                   }}
                 >
-                  <Pin size={9} color="#b45309" strokeWidth={2.4} />
+                  <Pin size={9} color="#8A6606" strokeWidth={2.4} />
                   <Text
                     style={{
                       fontSize: 9,
-                      color: '#b45309',
+                      color: '#8A6606',
                       letterSpacing: 0.4,
                       textTransform: 'uppercase',
                       fontFamily: 'Manrope_700Bold',
@@ -185,7 +185,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
             <Text
               style={{
                 fontSize: 11,
-                color: '#7A7466',
+                color: '#6B6557',
                 marginTop: 1,
                 fontFamily: 'Manrope_500Medium',
               }}
@@ -194,7 +194,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
             </Text>
           </View>
           <Pressable onPress={handleMore} hitSlop={8} style={{ padding: 4 }}>
-            <MoreVertical size={18} color="#A8A59E" />
+            <MoreVertical size={18} color="#857F70" />
           </Pressable>
         </View>
 
@@ -243,13 +243,13 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
           >
             <Heart
               size={16}
-              color={liked ? '#8A6606' : '#7A7466'}
+              color={liked ? '#8A6606' : '#6B6557'}
               fill={liked ? '#8A6606' : 'none'}
             />
             <Text
               style={{
                 fontSize: 12,
-                color: liked ? '#8A6606' : '#7A7466',
+                color: liked ? '#8A6606' : '#6B6557',
                 fontFamily: liked ? 'Manrope_700Bold' : 'Manrope_500Medium',
               }}
             >
@@ -261,8 +261,8 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
             hitSlop={6}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
           >
-            <MessageCircle size={16} color="#7A7466" />
-            <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+            <MessageCircle size={16} color="#6B6557" />
+            <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
               {post.comments.length}{' '}
               {post.comments.length === 1 ? 'komentarz' : 'komentarzy'}
             </Text>
@@ -317,7 +317,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                       <Text
                         style={{
                           fontSize: 10,
-                          color: '#A8A59E',
+                          color: '#857F70',
                           fontFamily: 'Manrope_500Medium',
                         }}
                       >
@@ -348,7 +348,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                   value={commentText}
                   onChangeText={setCommentText}
                   placeholder="Napisz komentarz…"
-                  placeholderTextColor="#A8A59E"
+                  placeholderTextColor="#857F70"
                   multiline
                   style={{
                     flex: 1,

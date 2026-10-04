@@ -14,7 +14,7 @@ const formatRole = (a: MyAssignmentRow): string => {
 const STATUS_META = {
   accepted: { color: '#047857', label: 'Potwierdzone' },
   rejected: { color: '#be123c', label: 'Odrzucone' },
-  pending: { color: '#b45309', label: 'Oczekuje na potwierdzenie' },
+  pending: { color: '#8A6606', label: 'Oczekuje na potwierdzenie' },
 } as const;
 
 export const AssignmentCard = ({ assignment }: Props) => {

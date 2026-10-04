@@ -75,14 +75,14 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
               Nowy post
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color="#7A7466" />
+              <X size={20} color="#6B6557" />
             </Pressable>
           </View>
 
           <Text
             style={{
               fontSize: 11,
-              color: '#7A7466',
+              color: '#6B6557',
               marginBottom: 6,
               letterSpacing: 0.4,
               textTransform: 'uppercase',
@@ -95,7 +95,7 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
             value={title}
             onChangeText={setTitle}
             placeholder="np. Próba w piątek"
-            placeholderTextColor="#A8A59E"
+            placeholderTextColor="#857F70"
             style={{
               borderWidth: 1,
               borderColor: '#E6E1D5',
@@ -113,7 +113,7 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
           <Text
             style={{
               fontSize: 11,
-              color: '#7A7466',
+              color: '#6B6557',
               marginBottom: 6,
               letterSpacing: 0.4,
               textTransform: 'uppercase',
@@ -126,7 +126,7 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
             value={content}
             onChangeText={setContent}
             placeholder="Napisz coś do zespołu…"
-            placeholderTextColor="#A8A59E"
+            placeholderTextColor="#857F70"
             multiline
             style={{
               borderWidth: 1,

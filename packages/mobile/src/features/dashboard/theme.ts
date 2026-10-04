@@ -9,9 +9,9 @@ export const D = {
   well: '#F6F4EE',
   ink: '#2A2312', // słód
   // Meta (godzina, miejsce, liczniki).
-  ink2: '#7A7466',
+  ink2: '#6B6557',
   // Podpisy, nieaktywne zakładki.
-  ink3: '#A8A59E',
+  ink3: '#857F70',
   hair: '#ECE8DE',
   accent: '#FFBE0B', // kurkuma
   accentSoft: '#FFF1C2',

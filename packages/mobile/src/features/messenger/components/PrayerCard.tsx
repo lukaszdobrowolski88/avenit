@@ -14,7 +14,7 @@ interface Props {
 export const PrayerCard = ({ metadata, content, count, mine, bubbleMine, onToggle }: Props) => {
   const title = metadata?.title || "Prośba o modlitwę";
   const fg = bubbleMine ? "#ffffff" : "#2A2312";
-  const sub = bubbleMine ? "#FFF1C2" : "#7c3aed";
+  const sub = bubbleMine ? "#FFF1C2" : "#2A2312";
   return (
     <View style={{ minWidth: 220, maxWidth: 300 }}>
       <Text style={{ fontSize: 12, color: sub, fontFamily: "Manrope_700Bold", marginBottom: 2 }}>
@@ -37,10 +37,10 @@ export const PrayerCard = ({ metadata, content, count, mine, bubbleMine, onToggl
           gap: 6,
           paddingVertical: 9,
           borderRadius: 12,
-          backgroundColor: mine ? "#7c3aed" : bubbleMine ? "rgba(255,255,255,0.2)" : "#ede9fe",
+          backgroundColor: mine ? "#2A2312" : bubbleMine ? "rgba(255,255,255,0.2)" : "#ECE8DE",
         }}
       >
-        <Text style={{ fontSize: 14, color: mine ? "#ffffff" : bubbleMine ? "#ffffff" : "#6d28d9", fontFamily: "Manrope_700Bold" }}>
+        <Text style={{ fontSize: 14, color: mine ? "#ffffff" : bubbleMine ? "#ffffff" : "#2A2312", fontFamily: "Manrope_700Bold" }}>
           🙏 Modlę się{count > 0 ? ` · ${count}` : ""}
         </Text>
       </Pressable>

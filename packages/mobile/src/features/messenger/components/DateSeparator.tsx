@@ -23,7 +23,7 @@ export const DateSeparator = ({ date }: { date: string | Date }) => {
       <Text
         style={{
           fontSize: 11,
-          color: "#7A7466",
+          color: "#6B6557",
           fontFamily: "Manrope_700Bold",
           textTransform: "capitalize",
           letterSpacing: 0.4,

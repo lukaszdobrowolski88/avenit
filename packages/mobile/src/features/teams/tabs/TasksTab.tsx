@@ -94,7 +94,7 @@ export const TasksTab = ({
           value={draft}
           onChangeText={setDraft}
           placeholder="Nowe zadanie…"
-          placeholderTextColor="#A8A59E"
+          placeholderTextColor="#857F70"
           returnKeyType="done"
           onSubmitEditing={submit}
           style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
@@ -143,19 +143,19 @@ export const TasksTab = ({
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
                   {t.date ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Calendar size={11} color="#A8A59E" />
-                      <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>{t.date}</Text>
+                      <Calendar size={11} color="#857F70" />
+                      <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>{t.date}</Text>
                     </View>
                   ) : null}
                   {t.people.length ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Users size={11} color="#A8A59E" />
-                      <Text numberOfLines={1} style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+                      <Users size={11} color="#857F70" />
+                      <Text numberOfLines={1} style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
                         {t.people.join(', ')}
                       </Text>
                     </View>
                   ) : null}
-                  {t.groupName ? <Text style={{ fontSize: 12, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>{t.groupName}</Text> : null}
+                  {t.groupName ? <Text style={{ fontSize: 12, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>{t.groupName}</Text> : null}
                 </View>
               </View>
               <Pressable

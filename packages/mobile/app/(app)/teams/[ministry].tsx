@@ -29,7 +29,7 @@ const LOOK = {
   ...Object.fromEntries(
     Object.values(MINISTRY_META).map((m) => [m.key, { Icon: m.Icon, from: m.gradFrom, to: m.gradTo, label: m.label }]),
   ),
-  homegroups: { Icon: Home, from: '#22c55e', to: '#14b8a6', label: 'Grupy domowe' },
+  homegroups: { Icon: Home, from: '#22c55e', to: '#6B6557', label: 'Grupy domowe' },
 } as Record<string, { Icon: typeof Home; from: string; to: string; label: string }>;
 
 // Zakładki prowadzące do osobnych ekranów zamiast treści w miejscu.
@@ -189,7 +189,7 @@ export default function TeamDetailScreen() {
           </Pressable>
           <GradientIcon Icon={look.Icon} size={44} iconSize={20} />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+            <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
               {cfg.key === 'homegroups' ? 'Panel służby' : 'Zespół'}
             </Text>
             <Text

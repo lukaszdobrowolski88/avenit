@@ -12,7 +12,7 @@ interface Props {
 
 const labelStyle = {
   fontSize: 11,
-  color: "#7A7466",
+  color: "#6B6557",
   fontFamily: "Manrope_700Bold",
   textTransform: "uppercase" as const,
   letterSpacing: 0.4,
@@ -94,7 +94,7 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
               📊 Nowa ankieta
             </Text>
             <Pressable onPress={close} hitSlop={10}>
-              <X size={20} color="#7A7466" />
+              <X size={20} color="#6B6557" />
             </Pressable>
           </View>
 
@@ -105,7 +105,7 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
               value={question}
               onChangeText={setQuestion}
               placeholder="O co pytasz?"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
             />
 
             <Text style={labelStyle}>Opcje</Text>
@@ -115,14 +115,14 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
                   style={[inputStyle, { flex: 1, marginBottom: 0 }]}
                   value={o}
                   placeholder={`Opcja ${i + 1}`}
-                  placeholderTextColor="#A8A59E"
+                  placeholderTextColor="#857F70"
                   onChangeText={(t) =>
                     setOptions((prev) => prev.map((x, j) => (j === i ? t : x)))
                   }
                 />
                 {options.length > 2 ? (
                   <Pressable onPress={() => setOptions((prev) => prev.filter((_, j) => j !== i))} hitSlop={8}>
-                    <X size={18} color="#A8A59E" />
+                    <X size={18} color="#857F70" />
                   </Pressable>
                 ) : null}
               </View>

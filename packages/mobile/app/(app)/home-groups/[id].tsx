@@ -69,14 +69,14 @@ const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolea
           width: 36,
           height: 36,
           borderRadius: 18,
-          backgroundColor: member.is_leader ? '#fef3c7' : '#FFF8E1',
+          backgroundColor: member.is_leader ? '#FFF1C2' : '#FFF8E1',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
         <Text
           style={{
-            color: member.is_leader ? '#b45309' : '#8A6606',
+            color: member.is_leader ? '#8A6606' : '#8A6606',
             fontFamily: 'Manrope_700Bold',
             fontSize: 13,
           }}
@@ -96,14 +96,14 @@ const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolea
           >
             {member.full_name}
           </Text>
-          {member.is_leader ? <Crown size={12} color="#b45309" strokeWidth={2.4} /> : null}
+          {member.is_leader ? <Crown size={12} color="#8A6606" strokeWidth={2.4} /> : null}
         </View>
         {member.email || member.phone ? (
           <Text
             numberOfLines={1}
             style={{
               fontSize: 12,
-              color: '#7A7466',
+              color: '#6B6557',
               marginTop: 2,
               fontFamily: 'Manrope_500Medium',
             }}
@@ -155,7 +155,7 @@ const InfoLine = ({
         paddingVertical: 6,
       }}
     >
-      <Icon size={14} color="#7A7466" strokeWidth={2.2} />
+      <Icon size={14} color="#6B6557" strokeWidth={2.2} />
       <Text
         style={{
           fontSize: 14,
@@ -206,7 +206,7 @@ export default function HomeGroupDetailScreen() {
           paddingHorizontal: 24,
         }}
       >
-        <Text style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+        <Text style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
           Grupa nie istnieje.
         </Text>
       </View>
@@ -265,13 +265,13 @@ export default function HomeGroupDetailScreen() {
               width: 80,
               height: 80,
               borderRadius: 22,
-              backgroundColor: '#dbeafe',
+              backgroundColor: '#ECE8DE',
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: 12,
             }}
           >
-            <Home size={36} color="#1d4ed8" strokeWidth={2} />
+            <Home size={36} color="#2A2312" strokeWidth={2} />
           </View>
           <Text
             style={{
@@ -288,7 +288,7 @@ export default function HomeGroupDetailScreen() {
             <Text
               style={{
                 fontSize: 13,
-                color: '#7A7466',
+                color: '#6B6557',
                 textAlign: 'center',
                 marginTop: 6,
                 lineHeight: 19,
@@ -326,7 +326,7 @@ export default function HomeGroupDetailScreen() {
               <Text
                 style={{
                   fontSize: 11,
-                  color: '#7A7466',
+                  color: '#6B6557',
                   marginBottom: 4,
                   letterSpacing: 0.6,
                   textTransform: 'uppercase',
@@ -370,13 +370,13 @@ export default function HomeGroupDetailScreen() {
                     marginTop: 10,
                     paddingVertical: 12,
                     borderRadius: 14,
-                    backgroundColor: '#eff6ff',
+                    backgroundColor: '#F1EEE6',
                     borderWidth: 1,
-                    borderColor: '#bfdbfe',
+                    borderColor: '#E3DDD0',
                   }}
                 >
-                  <Navigation size={16} color="#1d4ed8" strokeWidth={2.4} />
-                  <Text style={{ fontSize: 14, color: '#1d4ed8', fontFamily: 'Manrope_700Bold' }}>
+                  <Navigation size={16} color="#2A2312" strokeWidth={2.4} />
+                  <Text style={{ fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                     Nawiguj do grupy
                   </Text>
                 </Pressable>
@@ -411,7 +411,7 @@ export default function HomeGroupDetailScreen() {
               <Text
                 style={{
                   fontSize: 11,
-                  color: '#7A7466',
+                  color: '#6B6557',
                   marginBottom: 8,
                   letterSpacing: 0.6,
                   textTransform: 'uppercase',
@@ -426,12 +426,12 @@ export default function HomeGroupDetailScreen() {
                     width: 40,
                     height: 40,
                     borderRadius: 20,
-                    backgroundColor: '#fef3c7',
+                    backgroundColor: '#FFF1C2',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Crown size={18} color="#b45309" strokeWidth={2.2} />
+                  <Crown size={18} color="#8A6606" strokeWidth={2.2} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
@@ -500,12 +500,12 @@ export default function HomeGroupDetailScreen() {
               gap: 10,
             }}
           >
-            <Users size={16} color="#A8A59E" strokeWidth={2.2} />
+            <Users size={16} color="#857F70" strokeWidth={2.2} />
             <Text
               style={{
                 flex: 1,
                 fontSize: 13,
-                color: '#7A7466',
+                color: '#6B6557',
                 fontFamily: 'Manrope_500Medium',
                 lineHeight: 18,
               }}
@@ -544,11 +544,11 @@ export default function HomeGroupDetailScreen() {
                   paddingBottom: 8,
                 }}
               >
-                <Users size={14} color="#7A7466" strokeWidth={2.4} />
+                <Users size={14} color="#6B6557" strokeWidth={2.4} />
                 <Text
                   style={{
                     fontSize: 11,
-                    color: '#7A7466',
+                    color: '#6B6557',
                     letterSpacing: 0.6,
                     textTransform: 'uppercase',
                     fontFamily: 'Manrope_700Bold',

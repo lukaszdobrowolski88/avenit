@@ -215,7 +215,7 @@ export const ForwardMessageModal = ({
             <Text
               style={{
                 fontSize: 13,
-                color: selected.size > 0 ? "#ffffff" : "#A8A59E",
+                color: selected.size > 0 ? "#ffffff" : "#857F70",
                 fontFamily: "Manrope_700Bold",
               }}
             >
@@ -238,7 +238,7 @@ export const ForwardMessageModal = ({
               borderColor: "#E6E1D5",
             }}
           >
-            <Search size={16} color="#A8A59E" />
+            <Search size={16} color="#857F70" />
             <TextInput
               style={{
                 flex: 1,
@@ -247,7 +247,7 @@ export const ForwardMessageModal = ({
                 fontFamily: "Manrope_500Medium",
               }}
               placeholder="Szukaj rozmowy…"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
@@ -272,7 +272,7 @@ export const ForwardMessageModal = ({
                 style={{
                   textAlign: "center",
                   marginTop: 48,
-                  color: "#7A7466",
+                  color: "#6B6557",
                   fontFamily: "Manrope_500Medium",
                 }}
               >

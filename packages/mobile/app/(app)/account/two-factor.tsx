@@ -187,7 +187,7 @@ export default function TwoFactorScreen() {
                   <Text
                     style={{
                       fontSize: 13,
-                      color: '#7A7466',
+                      color: '#6B6557',
                       textAlign: 'center',
                       marginTop: 4,
                       fontFamily: 'Manrope_400Regular',
@@ -227,14 +227,14 @@ export default function TwoFactorScreen() {
                   <Text selectable style={styles.secretText}>
                     {setupData.secret}
                   </Text>
-                  <Copy size={15} color="#A8A59E" />
+                  <Copy size={15} color="#857F70" />
                 </View>
 
                 <Text style={[styles.sectionTitle, { marginTop: 18 }]}>3. Wpisz kod z aplikacji</Text>
                 <TextInput
                   style={styles.codeInput}
                   placeholder="000000"
-                  placeholderTextColor="#D3CCBC"
+                  placeholderTextColor="#9A9586"
                   keyboardType="number-pad"
                   maxLength={6}
                   value={code}
@@ -253,7 +253,7 @@ export default function TwoFactorScreen() {
                   }}
                   style={{ marginTop: 12, alignItems: 'center' }}
                 >
-                  <Text style={{ fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_600SemiBold' }}>
+                  <Text style={{ fontSize: 13, color: '#6B6557', fontFamily: 'Manrope_600SemiBold' }}>
                     Anuluj
                   </Text>
                 </Pressable>
@@ -273,7 +273,7 @@ export default function TwoFactorScreen() {
                 </View>
 
                 <View style={styles.infoRow}>
-                  <KeyRound size={16} color="#7A7466" />
+                  <KeyRound size={16} color="#6B6557" />
                   <Text style={styles.infoText}>
                     Kody zapasowe: {unusedBackup} nieużytych
                   </Text>
@@ -303,13 +303,13 @@ export default function TwoFactorScreen() {
               </View>
             ) : (
               <View>
-                <View style={[styles.statusCard, { backgroundColor: '#fff7ed', borderColor: '#fed7aa' }]}>
-                  <ShieldOff size={22} color="#ea580c" />
+                <View style={[styles.statusCard, { backgroundColor: '#FFF8E1', borderColor: '#F3E3B0' }]}>
+                  <ShieldOff size={22} color="#8A6606" />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, color: '#9a3412', fontFamily: 'Manrope_700Bold' }}>
+                    <Text style={{ fontSize: 15, color: '#8A6606', fontFamily: 'Manrope_700Bold' }}>
                       2FA jest wyłączone
                     </Text>
-                    <Text style={{ fontSize: 12, color: '#c2410c', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>
+                    <Text style={{ fontSize: 12, color: '#8A6606', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>
                       Włącz dodatkowe zabezpieczenie, by chronić swoje konto.
                     </Text>
                   </View>
@@ -348,13 +348,13 @@ export default function TwoFactorScreen() {
             <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginBottom: 4 }}>
               {promptFor === 'disable' ? 'Wyłącz 2FA' : 'Nowe kody zapasowe'}
             </Text>
-            <Text style={{ fontSize: 13, color: '#7A7466', marginBottom: 14, fontFamily: 'Manrope_400Regular' }}>
+            <Text style={{ fontSize: 13, color: '#6B6557', marginBottom: 14, fontFamily: 'Manrope_400Regular' }}>
               Potwierdź 6-cyfrowym kodem z aplikacji uwierzytelniającej.
             </Text>
             <TextInput
               style={styles.codeInput}
               placeholder="000000"
-              placeholderTextColor="#D3CCBC"
+              placeholderTextColor="#9A9586"
               keyboardType="number-pad"
               maxLength={6}
               value={promptCode}
@@ -368,7 +368,7 @@ export default function TwoFactorScreen() {
               </GradientButton>
             </View>
             <Pressable onPress={() => setPromptFor(null)} style={{ marginTop: 12, alignItems: 'center' }}>
-              <Text style={{ fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_600SemiBold' }}>Anuluj</Text>
+              <Text style={{ fontSize: 13, color: '#6B6557', fontFamily: 'Manrope_600SemiBold' }}>Anuluj</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -384,7 +384,7 @@ const styles = {
     fontFamily: 'Manrope_700Bold',
     marginBottom: 4,
   } as const,
-  help: { fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_400Regular', lineHeight: 19 } as const,
+  help: { fontSize: 13, color: '#6B6557', fontFamily: 'Manrope_400Regular', lineHeight: 19 } as const,
   secondaryBtn: {
     marginTop: 10,
     flexDirection: 'row',

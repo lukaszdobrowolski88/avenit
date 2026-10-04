@@ -78,19 +78,19 @@ export default function MembersScreen() {
               borderColor: '#E6E1D5',
             }}
           >
-            <Search size={18} color="#A8A59E" />
+            <Search size={18} color="#857F70" />
             <TextInput
               className="flex-1 text-base"
               style={{ color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
               placeholder="Szukaj po imieniu lub email…"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search ? (
               <Pressable onPress={() => setSearch('')} hitSlop={10}>
-                <X size={16} color="#A8A59E" />
+                <X size={16} color="#857F70" />
               </Pressable>
             ) : null}
           </View>
@@ -152,7 +152,7 @@ export default function MembersScreen() {
             >
               <Text
                 className="text-[12px] mr-1 self-center"
-                style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
+                style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
               >
                 Służba:
               </Text>
@@ -256,7 +256,7 @@ export default function MembersScreen() {
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+                  style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                 >
                   Spróbuj innego filtru.
                 </Text>
@@ -325,7 +325,7 @@ export default function MembersScreen() {
                           {item.email ? (
                             <Text
                               className="text-[12px]"
-                              style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+                              style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                               numberOfLines={1}
                             >
                               {item.email}

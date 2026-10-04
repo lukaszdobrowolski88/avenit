@@ -30,7 +30,7 @@ export const NoModuleAccess = ({ message }: { message?: string }) => {
           justifyContent: 'center',
         }}
       >
-        <Lock size={24} color="#7A7466" />
+        <Lock size={24} color="#6B6557" />
       </View>
       <Text style={{ fontSize: 18, color: '#2A2312', fontFamily: 'Manrope_700Bold', letterSpacing: -0.3 }}>
         Brak dostępu
@@ -39,7 +39,7 @@ export const NoModuleAccess = ({ message }: { message?: string }) => {
         style={{
           fontSize: 14,
           lineHeight: 20,
-          color: '#7A7466',
+          color: '#6B6557',
           textAlign: 'center',
           fontFamily: 'Manrope_400Regular',
         }}

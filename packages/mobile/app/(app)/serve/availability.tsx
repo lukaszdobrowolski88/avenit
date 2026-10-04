@@ -140,7 +140,7 @@ export default function AvailabilityScreen() {
           >
             {!memberResolved ? (
               <View style={infoBox}>
-                <Text style={{ fontSize: 13, color: '#9a3412', fontFamily: 'Manrope_500Medium', lineHeight: 19 }}>
+                <Text style={{ fontSize: 13, color: '#8A6606', fontFamily: 'Manrope_500Medium', lineHeight: 19 }}>
                   Twoje konto nie jest jeszcze powiązane z profilem członka. Skontaktuj się z liderem,
                   aby móc zgłaszać niedostępność.
                 </Text>
@@ -158,13 +158,13 @@ export default function AvailabilityScreen() {
                     marginBottom: 12,
                   }}
                 >
-                  <CalendarOff size={28} color="#A8A59E" />
+                  <CalendarOff size={28} color="#857F70" />
                 </View>
                 <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                   {onlyUpcoming ? 'Brak nadchodzących' : 'Brak zgłoszeń'}
                 </Text>
                 <Text
-                  style={{ fontSize: 13, color: '#7A7466', textAlign: 'center', marginTop: 4, fontFamily: 'Manrope_400Regular' }}
+                  style={{ fontSize: 13, color: '#6B6557', textAlign: 'center', marginTop: 4, fontFamily: 'Manrope_400Regular' }}
                 >
                   Dodaj dni, w które nie możesz służyć — lider zobaczy to w grafiku.
                 </Text>
@@ -202,7 +202,7 @@ export default function AvailabilityScreen() {
                       {b.start_date === b.end_date ? fmt(b.start_date) : `${fmt(b.start_date)} – ${fmt(b.end_date)}`}
                     </Text>
                     {b.reason ? (
-                      <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>
+                      <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>
                         {b.reason}
                       </Text>
                     ) : null}
@@ -242,20 +242,20 @@ export default function AvailabilityScreen() {
                   Nowa niedostępność
                 </Text>
                 <Pressable onPress={() => setModalOpen(false)} hitSlop={10}>
-                  <X size={20} color="#7A7466" />
+                  <X size={20} color="#6B6557" />
                 </Pressable>
               </View>
 
               <Text style={label}>Od</Text>
               <Pressable onPress={() => setPicker('start')} style={dateField}>
                 <Text style={dateFieldText}>{fmt(startDate)}</Text>
-                <ChevronRight size={16} color="#A8A59E" />
+                <ChevronRight size={16} color="#857F70" />
               </Pressable>
 
               <Text style={label}>Do</Text>
               <Pressable onPress={() => setPicker('end')} style={dateField}>
                 <Text style={dateFieldText}>{fmt(endDate)}</Text>
-                <ChevronRight size={16} color="#A8A59E" />
+                <ChevronRight size={16} color="#857F70" />
               </Pressable>
 
               <Text style={label}>Powód (opcjonalnie)</Text>
@@ -275,7 +275,7 @@ export default function AvailabilityScreen() {
                   fontFamily: 'Manrope_400Regular',
                 }}
                 placeholder="np. urlop, wyjazd, choroba"
-                placeholderTextColor="#A8A59E"
+                placeholderTextColor="#857F70"
                 multiline
                 value={reason}
                 onChangeText={setReason}
@@ -347,7 +347,7 @@ const dateFieldText = { fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500
 const infoBox = {
   padding: 14,
   borderRadius: 14,
-  backgroundColor: '#fff7ed',
+  backgroundColor: '#FFF8E1',
   borderWidth: 1,
-  borderColor: '#fed7aa',
+  borderColor: '#F3E3B0',
 } as const;

@@ -154,8 +154,8 @@ export const KidsTodayTab = ({ myEmail, canCreateSession }: { myEmail: string | 
   return (
     <View>
       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
-        <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#fef9c3', padding: 14 }}>
-          <Text style={{ fontSize: 11, color: '#854d0e', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>W salach</Text>
+        <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#FFF1C2', padding: 14 }}>
+          <Text style={{ fontSize: 11, color: '#6B4F05', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>W salach</Text>
           <Text style={{ fontSize: 28, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{present}</Text>
         </View>
         <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14 }}>
@@ -175,7 +175,7 @@ export const KidsTodayTab = ({ myEmail, canCreateSession }: { myEmail: string | 
             onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 4))}
             keyboardType="number-pad"
             placeholder="Kod rodzica (4 cyfry)"
-            placeholderTextColor="#A8A59E"
+            placeholderTextColor="#857F70"
             style={{ flex: 1, height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#F6F4EE', fontSize: 18, letterSpacing: 4, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}
           />
           <Pressable
@@ -191,7 +191,7 @@ export const KidsTodayTab = ({ myEmail, canCreateSession }: { myEmail: string | 
       {!checkins.length ? <Empty Icon={Baby} title="Nikt jeszcze nie jest zameldowany" /> : null}
       {byRoom.map(([room, list]) => (
         <View key={room} style={{ marginBottom: 8 }}>
-          <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginVertical: 8 }}>
+          <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginVertical: 8 }}>
             {room} · {list.filter((c) => !c.outAt).length}
           </Text>
           {list.map((c) => (
@@ -200,15 +200,15 @@ export const KidsTodayTab = ({ myEmail, canCreateSession }: { myEmail: string | 
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                     {c.child}
-                    {c.birthYear ? <Text style={{ color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>{`  ${new Date().getFullYear() - c.birthYear} l.`}</Text> : null}
+                    {c.birthYear ? <Text style={{ color: '#857F70', fontFamily: 'Manrope_500Medium' }}>{`  ${new Date().getFullYear() - c.birthYear} l.`}</Text> : null}
                   </Text>
-                  <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+                  <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
                     {c.inAt ? `od ${format(new Date(c.inAt), 'HH:mm')}` : ''}
                     {c.outAt ? ` · odebrane ${format(new Date(c.outAt), 'HH:mm')}` : ''}
                   </Text>
                 </View>
                 {c.allergies ? <Pill text={`Alergia: ${c.allergies}`} tint="#b91c1c" bg="#fee2e2" /> : null}
-                {c.guest ? <Pill text="Gość" tint="#a16207" bg="#fef3c7" /> : null}
+                {c.guest ? <Pill text="Gość" tint="#8A6606" bg="#FFF1C2" /> : null}
               </View>
             </Card>
           ))}

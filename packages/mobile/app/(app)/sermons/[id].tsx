@@ -53,7 +53,7 @@ export default function SermonDetailScreen() {
       <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Kazanie" showBack />
         <View className="flex-1 items-center justify-center px-6">
-          <Text style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+          <Text style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
             Kazanie nie istnieje.
           </Text>
         </View>
@@ -71,7 +71,7 @@ export default function SermonDetailScreen() {
           {sermon.sermon_date ? (
             <Text
               className="text-[11px] uppercase mb-1"
-              style={{ color: '#7A7466', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
+              style={{ color: '#6B6557', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
             >
               {formatDate(sermon.sermon_date, 'EEEE, d MMM yyyy')}
             </Text>
@@ -91,12 +91,12 @@ export default function SermonDetailScreen() {
                   width: 28,
                   height: 28,
                   borderRadius: 14,
-                  backgroundColor: '#f3e8ff',
+                  backgroundColor: '#ECE8DE',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <User size={14} color="#7c3aed" />
+                <User size={14} color="#2A2312" />
               </View>
               <Text
                 className="text-[14px]"
@@ -112,7 +112,7 @@ export default function SermonDetailScreen() {
               className="flex-row items-start gap-2 mb-4 p-3"
               style={{ borderRadius: 14, backgroundColor: '#ECE8DE' }}
             >
-              <Quote size={16} color="#A8A59E" style={{ marginTop: 2 }} />
+              <Quote size={16} color="#857F70" style={{ marginTop: 2 }} />
               <Text
                 className="flex-1 text-[14px] italic"
                 style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}
@@ -146,7 +146,7 @@ export default function SermonDetailScreen() {
             >
               <Text
                 className="text-[11px] uppercase mb-2"
-                style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
+                style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
               >
                 Notatki
               </Text>
@@ -162,7 +162,7 @@ export default function SermonDetailScreen() {
           {!sermon.audio_url && !sermon.video_url ? (
             <Text
               className="text-[13px] text-center mt-2"
-              style={{ color: '#A8A59E', fontFamily: 'Manrope_400Regular' }}
+              style={{ color: '#857F70', fontFamily: 'Manrope_400Regular' }}
             >
               Brak dostępnego nagrania dla tego kazania.
             </Text>

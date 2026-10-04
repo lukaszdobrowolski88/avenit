@@ -122,22 +122,22 @@ export default function AttendanceScreen() {
               className="active:opacity-70"
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 18, backgroundColor: '#EFEBE2', marginBottom: 10 }}
             >
-              <DateBlock ymd={s.date} tint="#0f766e" bg="#f0fdfa" />
+              <DateBlock ymd={s.date} tint="#2A2312" bg="#F1EEE6" />
               <View style={{ flex: 1 }}>
                 <Text numberOfLines={1} style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                   {s.title || TYPE_LABEL[s.type] || 'Sesja'}
                 </Text>
-                <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
+                <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                   {dayLabel(s.date)} · {TYPE_LABEL[s.type] ?? s.type}
                 </Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={{ fontSize: 20, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{s.count}</Text>
-                <Text style={{ fontSize: 10, color: '#A8A59E', fontFamily: 'Manrope_600SemiBold' }}>
+                <Text style={{ fontSize: 10, color: '#857F70', fontFamily: 'Manrope_600SemiBold' }}>
                   {s.estimated ? 'szacunkowo' : 'obecnych'}
                 </Text>
               </View>
-              <ChevronRight size={16} color="#A8A59E" />
+              <ChevronRight size={16} color="#857F70" />
             </Pressable>
           ))}
         </ScrollView>
@@ -169,7 +169,7 @@ export default function AttendanceScreen() {
               })}
             </View>
             <Label>Nazwa (opcjonalnie)</Label>
-            <TextInput value={title} onChangeText={setTitle} placeholder="np. Nabożeństwo niedzielne" placeholderTextColor="#A8A59E" style={inputStyle} />
+            <TextInput value={title} onChangeText={setTitle} placeholder="np. Nabożeństwo niedzielne" placeholderTextColor="#857F70" style={inputStyle} />
             <Label>Data</Label>
             <DateField value={date} onChange={setDate} />
             <Label>Liczba osób (szacunkowo, opcjonalnie)</Label>
@@ -178,10 +178,10 @@ export default function AttendanceScreen() {
               onChangeText={(t) => setHeadcount(t.replace(/\D/g, ''))}
               keyboardType="number-pad"
               placeholder="np. 85"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               style={inputStyle}
             />
-            <Text style={{ fontSize: 12, lineHeight: 17, color: '#A8A59E', marginTop: 10, fontFamily: 'Manrope_400Regular' }}>
+            <Text style={{ fontSize: 12, lineHeight: 17, color: '#857F70', marginTop: 10, fontFamily: 'Manrope_400Regular' }}>
               Po utworzeniu odhaczysz obecnych z listy członków i dopiszesz gości.
             </Text>
             <Pressable

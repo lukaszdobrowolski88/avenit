@@ -30,9 +30,9 @@ const fmtDue = (iso: string) => {
 type BucketKey = 'overdue' | 'today' | 'upcoming' | 'nodate';
 const BUCKETS: { key: BucketKey; label: string; tint: string }[] = [
   { key: 'overdue', label: 'Zaległe', tint: '#dc2626' },
-  { key: 'today', label: 'Dziś', tint: '#ea580c' },
-  { key: 'upcoming', label: 'Nadchodzące', tint: '#0e7490' },
-  { key: 'nodate', label: 'Bez terminu', tint: '#7A7466' },
+  { key: 'today', label: 'Dziś', tint: '#8A6606' },
+  { key: 'upcoming', label: 'Nadchodzące', tint: '#2A2312' },
+  { key: 'nodate', label: 'Bez terminu', tint: '#6B6557' },
 ];
 
 // Miękka karta (bez paska-akcentu); kolor tablicy pokazuje kropka przy jej nazwie.
@@ -64,12 +64,12 @@ const ItemCard = ({ item, onStatus }: { item: WorkItem; onStatus: (item: WorkIte
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.boardColor }} />
-          <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+          <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
             {item.boardName}
           </Text>
         </View>
         {item.due ? (
-          <Text style={{ fontSize: 12, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
+          <Text style={{ fontSize: 12, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
             · {fmtDue(item.due)}
           </Text>
         ) : null}
@@ -208,19 +208,19 @@ export default function MyWorkScreen() {
                     width: 64,
                     height: 64,
                     borderRadius: 18,
-                    backgroundColor: '#ecfdf5',
+                    backgroundColor: '#F1EEE6',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 12,
                   }}
                 >
-                  <ListTodo size={28} color="#10b981" />
+                  <ListTodo size={28} color="#2A2312" />
                 </View>
                 <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                   {total === 0 ? 'Nic do zrobienia' : 'Wszystko zrobione 🎉'}
                 </Text>
                 <Text
-                  style={{ fontSize: 13, color: '#7A7466', textAlign: 'center', marginTop: 4, fontFamily: 'Manrope_400Regular' }}
+                  style={{ fontSize: 13, color: '#6B6557', textAlign: 'center', marginTop: 4, fontFamily: 'Manrope_400Regular' }}
                 >
                   Nie masz teraz przypisanych zadań na tablicach.
                 </Text>

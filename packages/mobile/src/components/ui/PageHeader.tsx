@@ -49,7 +49,7 @@ export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: P
           <Text
             className="text-[12px]"
             style={{
-              color: '#7A7466',
+              color: '#6B6557',
               fontFamily: 'Manrope_500Medium',
               letterSpacing: -0.1,
             }}

@@ -166,11 +166,11 @@ export const MINISTRY_CHANNEL_META: Record<
   string,
   { label: string; tint: string; bg: string }
 > = {
-  worship: { label: "Worship", tint: "#a855f7", bg: "#f3e8ff" },
-  media: { label: "Media", tint: "#FFBE0B", bg: "#ffedd5" },
-  atmosfera: { label: "Atmosfera", tint: "#14b8a6", bg: "#ccfbf1" },
-  kids: { label: "Dzieci", tint: "#eab308", bg: "#fef3c7" },
-  groups: { label: "Grupy domowe", tint: "#3b82f6", bg: "#dbeafe" },
+  worship: { label: "Worship", tint: "#6B6557", bg: "#ECE8DE" },
+  media: { label: "Media", tint: "#FFBE0B", bg: "#FFF1C2" },
+  atmosfera: { label: "Atmosfera", tint: "#6B6557", bg: "#ECE8DE" },
+  kids: { label: "Dzieci", tint: "#FFBE0B", bg: "#FFF1C2" },
+  groups: { label: "Grupy domowe", tint: "#6B6557", bg: "#ECE8DE" },
   mlodziezowka: { label: "Młodzieżówka", tint: "#f43f5e", bg: "#ffe4e6" },
 };
 

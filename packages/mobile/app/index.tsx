@@ -77,7 +77,7 @@ export default function Index() {
         <Text
           style={{
             fontSize: 13,
-            color: '#7A7466',
+            color: '#6B6557',
             textAlign: 'center',
             marginBottom: 20,
             fontFamily: 'Manrope_500Medium',
@@ -108,7 +108,7 @@ export default function Index() {
           }}
           style={{ marginTop: 12, paddingHorizontal: 24, paddingVertical: 10 }}
         >
-          <Text style={{ fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+          <Text style={{ fontSize: 13, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
             Wyloguj
           </Text>
         </Pressable>

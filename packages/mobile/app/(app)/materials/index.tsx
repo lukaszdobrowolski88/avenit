@@ -49,11 +49,11 @@ import { GradientIcon } from '../../../src/components/ui/GradientIcon';
 
 const ICON_BY_TYPE = {
   pdf: { Icon: FileText, tint: '#dc2626', bg: '#fee2e2' },
-  image: { Icon: ImageIcon, tint: '#2563eb', bg: '#dbeafe' },
-  audio: { Icon: FileAudio, tint: '#16a34a', bg: '#dcfce7' },
-  video: { Icon: FileVideo, tint: '#7c3aed', bg: '#ede9fe' },
-  doc: { Icon: FileText, tint: '#0891b2', bg: '#cffafe' },
-  other: { Icon: FileIcon, tint: '#7A7466', bg: '#E3DDD0' },
+  image: { Icon: ImageIcon, tint: '#2A2312', bg: '#ECE8DE' },
+  audio: { Icon: FileAudio, tint: '#2A2312', bg: '#ECE8DE' },
+  video: { Icon: FileVideo, tint: '#2A2312', bg: '#ECE8DE' },
+  doc: { Icon: FileText, tint: '#2A2312', bg: '#ECE8DE' },
+  other: { Icon: FileIcon, tint: '#6B6557', bg: '#E3DDD0' },
 };
 
 const itemCardStyle = {
@@ -222,7 +222,7 @@ export default function MaterialsScreen() {
           <View className="flex-1">
             <Text
               className="text-[12px]"
-              style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
+              style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
             >
               {space === undefined ? 'Pliki i dokumenty' : 'Materiały'}
             </Text>
@@ -272,7 +272,7 @@ export default function MaterialsScreen() {
               onPress={() => setFolderId(null)}
               className="flex-row items-center gap-1"
             >
-              <Folder size={12} color="#7A7466" />
+              <Folder size={12} color="#6B6557" />
               <Text
                 className="text-[12px]"
                 style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium' }}
@@ -282,7 +282,7 @@ export default function MaterialsScreen() {
             </Pressable>
             {path.data!.map((p: FolderRow) => (
               <View key={p.id} className="flex-row items-center gap-1">
-                <ChevronRight size={12} color="#A8A59E" />
+                <ChevronRight size={12} color="#857F70" />
                 <Pressable onPress={() => setFolderId(p.id)}>
                   <Text
                     className="text-[12px]"
@@ -299,8 +299,8 @@ export default function MaterialsScreen() {
         {space === undefined ? (
           <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}>
             {[
-              { key: '__shared', label: 'Udostępnione mi', sub: 'Pliki udostępnione Tobie i Twoim grupom', Icon: Share2, tint: '#0891b2', bg: '#cffafe' },
-              { key: '__general', label: 'Ogólne', sub: 'Pliki wspólne kościoła', Icon: FolderOpen, tint: '#d97706', bg: '#fef3c7' },
+              { key: '__shared', label: 'Udostępnione mi', sub: 'Pliki udostępnione Tobie i Twoim grupom', Icon: Share2, tint: '#2A2312', bg: '#ECE8DE' },
+              { key: '__general', label: 'Ogólne', sub: 'Pliki wspólne kościoła', Icon: FolderOpen, tint: '#2A2312', bg: '#ECE8DE' },
               ...spaces.map((x) => ({ ...x, sub: 'Pliki zespołu' })),
             ].map((x) => (
               <Pressable
@@ -332,11 +332,11 @@ export default function MaterialsScreen() {
                     <Text className="text-[15px]" style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                       {x.label}
                     </Text>
-                    <Text className="text-[12px] mt-0.5" style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}>
+                    <Text className="text-[12px] mt-0.5" style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}>
                       {x.sub}
                     </Text>
                   </View>
-                  <ChevronRight size={18} color="#A8A59E" />
+                  <ChevronRight size={18} color="#857F70" />
                 </View>
               </Pressable>
             ))}
@@ -368,7 +368,7 @@ export default function MaterialsScreen() {
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+              style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
             >
               Sprawdź połączenie i spróbuj ponownie.
             </Text>
@@ -396,7 +396,7 @@ export default function MaterialsScreen() {
               <View className="mb-3">
                 <Text
                   className="text-[11px] uppercase mb-2 px-1"
-                  style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
+                  style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Foldery
                 </Text>
@@ -416,12 +416,12 @@ export default function MaterialsScreen() {
                           width: 40,
                           height: 40,
                           borderRadius: 12,
-                          backgroundColor: '#fef3c7',
+                          backgroundColor: '#ECE8DE',
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        <FolderOpen size={18} color="#d97706" />
+                        <FolderOpen size={18} color="#2A2312" />
                       </View>
                       <Text
                         className="flex-1 text-[15px]"
@@ -434,7 +434,7 @@ export default function MaterialsScreen() {
                       >
                         {f.name}
                       </Text>
-                      <ChevronRight size={16} color="#A8A59E" />
+                      <ChevronRight size={16} color="#857F70" />
                     </View>
                   </Pressable>
                 ))}
@@ -445,7 +445,7 @@ export default function MaterialsScreen() {
               <View>
                 <Text
                   className="text-[11px] uppercase mb-2 px-1"
-                  style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
+                  style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Pliki
                 </Text>
@@ -489,7 +489,7 @@ export default function MaterialsScreen() {
                           </Text>
                           <Text
                             className="text-[12px] mt-0.5"
-                            style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+                            style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                           >
                             {formatBytes(file.file_size)}
                             {file.download_count > 0
@@ -504,7 +504,7 @@ export default function MaterialsScreen() {
                           className="active:opacity-60"
                           style={{ padding: 4 }}
                         >
-                          <MoreHorizontal size={18} color="#A8A59E" />
+                          <MoreHorizontal size={18} color="#857F70" />
                         </Pressable>
                       </View>
                     </Pressable>
@@ -520,13 +520,13 @@ export default function MaterialsScreen() {
                     width: 64,
                     height: 64,
                     borderRadius: 18,
-                    backgroundColor: '#cffafe',
+                    backgroundColor: '#ECE8DE',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 12,
                   }}
                 >
-                  <FolderOpen size={28} color="#0891b2" />
+                  <FolderOpen size={28} color="#2A2312" />
                 </View>
                 <Text
                   className="text-[16px]"
@@ -536,7 +536,7 @@ export default function MaterialsScreen() {
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+                  style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                 >
                   Brak plików i podfolderów.
                 </Text>

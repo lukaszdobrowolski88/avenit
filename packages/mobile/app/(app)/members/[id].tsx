@@ -56,7 +56,7 @@ const SectionCard = ({ title, children }: { title: string; children: React.React
       <Text
         style={{
           fontSize: 11,
-          color: '#7A7466',
+          color: '#6B6557',
           paddingHorizontal: 16,
           paddingTop: 12,
           paddingBottom: 4,
@@ -116,7 +116,7 @@ const InfoRow = ({
         <Text
           style={{
             fontSize: 11,
-            color: '#7A7466',
+            color: '#6B6557',
             letterSpacing: 0.4,
             textTransform: 'uppercase',
             fontFamily: 'Manrope_600SemiBold',
@@ -182,7 +182,7 @@ export default function MemberDetailScreen() {
           paddingHorizontal: 24,
         }}
       >
-        <Text style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+        <Text style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
           Osoba nie istnieje.
         </Text>
       </View>
@@ -376,7 +376,7 @@ export default function MemberDetailScreen() {
                 <Text
                   style={{
                     fontSize: 11,
-                    color: '#7A7466',
+                    color: '#6B6557',
                     letterSpacing: 0.6,
                     textTransform: 'uppercase',
                     fontFamily: 'Manrope_700Bold',
@@ -449,7 +449,7 @@ export default function MemberDetailScreen() {
               <Text
                 style={{
                   fontSize: 11,
-                  color: '#7A7466',
+                  color: '#6B6557',
                   marginBottom: 6,
                   letterSpacing: 0.6,
                   textTransform: 'uppercase',
@@ -477,7 +477,7 @@ export default function MemberDetailScreen() {
             <Text
               style={{
                 fontSize: 11,
-                color: '#7A7466',
+                color: '#6B6557',
                 letterSpacing: 0.6,
                 textTransform: 'uppercase',
                 fontFamily: 'Manrope_700Bold',
@@ -490,7 +490,7 @@ export default function MemberDetailScreen() {
                 value={noteDraft}
                 onChangeText={setNoteDraft}
                 placeholder="Dodaj notatkę (widzą ją osoby z dostępem do Opieki)"
-                placeholderTextColor="#A8A59E"
+                placeholderTextColor="#857F70"
                 multiline
                 style={{
                   flex: 1,
@@ -532,7 +532,7 @@ export default function MemberDetailScreen() {
             {((notes.data ?? []) as MemberNote[]).map((n) => (
               <View key={n.id} style={{ borderRadius: 14, backgroundColor: '#F6F4EE', padding: 12, gap: 4 }}>
                 <Text style={{ fontSize: 14, lineHeight: 20, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}>{n.body}</Text>
-                <Text style={{ fontSize: 11, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
+                <Text style={{ fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
                   {[n.author, n.createdAt ? formatDate(n.createdAt, 'd MMM yyyy, HH:mm') : null].filter(Boolean).join(' · ')}
                 </Text>
               </View>

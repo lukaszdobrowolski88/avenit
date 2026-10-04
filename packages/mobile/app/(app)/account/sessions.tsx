@@ -141,7 +141,7 @@ export default function SessionsScreen() {
                         </View>
                       ) : null}
                     </View>
-                    <Text style={{ fontSize: 12, color: '#A8A59E', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>
+                    <Text style={{ fontSize: 12, color: '#857F70', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>
                       Zalogowano {format(new Date(s.created_at), 'd MMM yyyy, HH:mm', { locale: pl })}
                     </Text>
                   </View>
@@ -181,7 +181,7 @@ export default function SessionsScreen() {
                   textAlign: 'center',
                   marginTop: 8,
                   fontSize: 13,
-                  color: '#A8A59E',
+                  color: '#857F70',
                   fontFamily: 'Manrope_400Regular',
                 }}
               >

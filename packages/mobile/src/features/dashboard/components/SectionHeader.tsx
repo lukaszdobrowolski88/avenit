@@ -10,7 +10,7 @@ export const SectionHeader = ({ title, subtitle }: Props) => (
     <Text
       className="text-[11px]"
       style={{
-        color: '#A8A59E',
+        color: '#857F70',
         letterSpacing: 1.2,
         textTransform: 'uppercase',
         fontFamily: 'Manrope_700Bold',

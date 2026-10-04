@@ -444,7 +444,7 @@ export default function ConversationScreen() {
                 <Text
                   style={{
                     fontSize: 14,
-                    color: "#7A7466",
+                    color: "#6B6557",
                     fontFamily: "Manrope_500Medium",
                   }}
                 >

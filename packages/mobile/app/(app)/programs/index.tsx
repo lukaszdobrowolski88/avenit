@@ -65,7 +65,7 @@ const ProgramCard = ({ program }: { program: ProgramListItem }) => {
               <Text
                 className="text-[11px] uppercase"
                 style={{
-                  color: '#7A7466',
+                  color: '#6B6557',
                   letterSpacing: 0.4,
                   fontFamily: 'Manrope_600SemiBold',
                 }}
@@ -85,13 +85,13 @@ const ProgramCard = ({ program }: { program: ProgramListItem }) => {
               {title}
             </Text>
             <View className="flex-row items-center gap-2 mt-0.5">
-              <Text className="text-[12px]" style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+              <Text className="text-[12px]" style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
                 {itemsLabel(itemsCount)}
               </Text>
               {programCampus ? <CampusBadge campus={programCampus} /> : null}
             </View>
           </View>
-          <ChevronRight size={18} color="#A8A59E" strokeWidth={2.2} />
+          <ChevronRight size={18} color="#857F70" strokeWidth={2.2} />
         </View>
       </Pressable>
     </Link>
@@ -106,7 +106,7 @@ const TypeSection = ({
   programs: ProgramListItem[];
 }) => {
   if (programs.length === 0) return null;
-  const color = type?.color || '#A8A59E';
+  const color = type?.color || '#857F70';
   const name = type?.name || 'Inne';
   return (
     <View className="mb-4">
@@ -122,7 +122,7 @@ const TypeSection = ({
         >
           {name}
         </Text>
-        <Text className="text-[11px]" style={{ color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
+        <Text className="text-[11px]" style={{ color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
           {programs.length}
         </Text>
       </View>
@@ -231,7 +231,7 @@ export default function ProgramsScreen() {
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
+              style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
             >
               Pociągnij w dół, aby odświeżyć.
             </Text>

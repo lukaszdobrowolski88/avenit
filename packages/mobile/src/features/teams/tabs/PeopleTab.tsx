@@ -68,12 +68,12 @@ export const PeopleTab = ({
             marginBottom: 12,
           }}
         >
-          <Search size={16} color="#A8A59E" />
+          <Search size={16} color="#857F70" />
           <TextInput
             value={q}
             onChangeText={setQ}
             placeholder="Szukaj osoby"
-            placeholderTextColor="#A8A59E"
+            placeholderTextColor="#857F70"
             style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}
           />
         </View>
@@ -93,12 +93,12 @@ export const PeopleTab = ({
                 width: 40,
                 height: 40,
                 borderRadius: 20,
-                backgroundColor: p.isLeader ? '#fef3c7' : '#FFF1C2',
+                backgroundColor: p.isLeader ? '#FFF1C2' : '#FFF1C2',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontSize: 13, color: p.isLeader ? '#a16207' : '#8A6606', fontFamily: 'Manrope_700Bold' }}>
+              <Text style={{ fontSize: 13, color: p.isLeader ? '#8A6606' : '#8A6606', fontFamily: 'Manrope_700Bold' }}>
                 {initials(p.name) || '?'}
               </Text>
             </View>
@@ -107,10 +107,10 @@ export const PeopleTab = ({
                 <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                   {p.name}
                 </Text>
-                {p.isLeader ? <Star size={12} color="#d97706" fill="#d97706" /> : null}
+                {p.isLeader ? <Star size={12} color="#8A6606" fill="#8A6606" /> : null}
               </View>
               {[p.roles.length ? p.roles.join(', ') : p.role, p.groupName].filter(Boolean).length ? (
-                <Text numberOfLines={1} style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+                <Text numberOfLines={1} style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
                   {[p.roles.length ? p.roles.join(', ') : p.role, p.groupName].filter(Boolean).join(' · ')}
                 </Text>
               ) : null}
@@ -141,7 +141,7 @@ export const RolesTab = ({ teamKey, memberTable }: { teamKey: TeamKey; memberTab
         <Card key={r.id}>
           <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{r.name}</Text>
           {r.description ? (
-            <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>{r.description}</Text>
+            <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>{r.description}</Text>
           ) : null}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
             {r.people.length ? (
@@ -151,7 +151,7 @@ export const RolesTab = ({ teamKey, memberTable }: { teamKey: TeamKey; memberTab
                 </View>
               ))
             ) : (
-              <Text style={{ fontSize: 12, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>Nikt nie jest przypisany</Text>
+              <Text style={{ fontSize: 12, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>Nikt nie jest przypisany</Text>
             )}
           </View>
         </Card>

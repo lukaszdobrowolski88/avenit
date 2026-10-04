@@ -221,7 +221,7 @@ export const ConversationHeader = ({
             numberOfLines={1}
             style={{
               fontSize: 12,
-              color: "#7A7466",
+              color: "#6B6557",
               fontFamily: "Manrope_500Medium",
               marginTop: 1,
             }}
@@ -274,16 +274,16 @@ export const ConversationHeader = ({
           width: 36,
           height: 36,
           borderRadius: 18,
-          backgroundColor: details.my_muted ? "#fef3c7" : "#F1EEE6",
+          backgroundColor: details.my_muted ? "#FFF1C2" : "#F1EEE6",
           borderWidth: 1,
-          borderColor: details.my_muted ? "#fde68a" : "#E6E1D5",
+          borderColor: details.my_muted ? "#F3E3B0" : "#E6E1D5",
           alignItems: "center",
           justifyContent: "center",
           opacity: muteBusy ? 0.5 : 1,
         }}
       >
         {details.my_muted ? (
-          <VolumeX size={16} color="#92400e" strokeWidth={2.2} />
+          <VolumeX size={16} color="#8A6606" strokeWidth={2.2} />
         ) : (
           <Volume2 size={16} color="#4A463E" strokeWidth={2.2} />
         )}

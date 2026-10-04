@@ -93,7 +93,7 @@ export default function AttendanceSessionScreen() {
           right={
             canDeleteSession && session ? (
               <Pressable onPress={confirmDelete} hitSlop={10} className="active:opacity-60" accessibilityLabel="Usuń sesję">
-                <Trash2 size={20} color="#A8A59E" />
+                <Trash2 size={20} color="#857F70" />
               </Pressable>
             ) : undefined
           }
@@ -103,8 +103,8 @@ export default function AttendanceSessionScreen() {
         {session ? (
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130 }} keyboardShouldPersistTaps="handled">
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
-              <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#f0fdfa', padding: 14 }}>
-                <Text style={{ fontSize: 11, color: '#0f766e', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+              <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#F1EEE6', padding: 14 }}>
+                <Text style={{ fontSize: 11, color: '#2A2312', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
                   Obecni imiennie
                 </Text>
                 <Text style={{ fontSize: 28, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginTop: 2 }}>{presentCount}</Text>
@@ -137,7 +137,7 @@ export default function AttendanceSessionScreen() {
               </View>
             </View>
 
-            <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
               Goście
             </Text>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
@@ -145,7 +145,7 @@ export default function AttendanceSessionScreen() {
                 value={guest}
                 onChangeText={setGuest}
                 placeholder="Imię gościa"
-                placeholderTextColor="#A8A59E"
+                placeholderTextColor="#857F70"
                 returnKeyType="done"
                 onSubmitEditing={() => {
                   if (guest.trim()) addGuest.mutate(guest.trim(), { onSuccess: () => setGuest('') });
@@ -164,27 +164,27 @@ export default function AttendanceSessionScreen() {
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
               {guests.map((g) => (
-                <View key={g.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 10, paddingRight: 6, paddingVertical: 5, borderRadius: 999, backgroundColor: '#fef3c7' }}>
-                  <Text style={{ fontSize: 13, color: '#92400e', fontFamily: 'Manrope_600SemiBold' }}>{g.guestName}</Text>
+                <View key={g.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 10, paddingRight: 6, paddingVertical: 5, borderRadius: 999, backgroundColor: '#FFF1C2' }}>
+                  <Text style={{ fontSize: 13, color: '#8A6606', fontFamily: 'Manrope_600SemiBold' }}>{g.guestName}</Text>
                   {canUncheck ? (
                     <Pressable onPress={() => removeRecord.mutate(g.id)} hitSlop={8} className="active:opacity-60">
-                      <X size={13} color="#92400e" />
+                      <X size={13} color="#8A6606" />
                     </Pressable>
                   ) : null}
                 </View>
               ))}
             </View>
 
-            <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
               Członkowie
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, paddingHorizontal: 12, borderRadius: 14, backgroundColor: '#ECE8DE', marginBottom: 10 }}>
-              <Search size={16} color="#A8A59E" />
+              <Search size={16} color="#857F70" />
               <TextInput
                 value={q}
                 onChangeText={setQ}
                 placeholder="Szukaj osoby"
-                placeholderTextColor="#A8A59E"
+                placeholderTextColor="#857F70"
                 style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}
               />
             </View>
@@ -195,7 +195,7 @@ export default function AttendanceSessionScreen() {
                   key={m.id}
                   onPress={() => onToggle(m)}
                   className="active:opacity-70"
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, backgroundColor: on ? '#f0fdfa' : 'transparent' }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, backgroundColor: on ? '#F1EEE6' : 'transparent' }}
                 >
                   <View
                     style={{
@@ -204,7 +204,7 @@ export default function AttendanceSessionScreen() {
                       borderRadius: 13,
                       borderWidth: on ? 0 : 2,
                       borderColor: '#D3CCBC',
-                      backgroundColor: on ? '#0f766e' : 'transparent',
+                      backgroundColor: on ? '#2A2312' : 'transparent',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
@@ -216,7 +216,7 @@ export default function AttendanceSessionScreen() {
               );
             })}
             {members.length === 0 ? (
-              <Text style={{ fontSize: 13, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
+              <Text style={{ fontSize: 13, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
                 Brak dostępu do listy członków — możesz dopisać gości i liczbę szacunkową.
               </Text>
             ) : null}

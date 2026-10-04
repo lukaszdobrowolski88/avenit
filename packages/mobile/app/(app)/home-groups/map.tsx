@@ -94,21 +94,21 @@ export default function HomeGroupsMapScreen() {
       }}
     >
       <View
-        style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: '#dbeafe', alignItems: 'center', justifyContent: 'center' }}
+        style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: '#ECE8DE', alignItems: 'center', justifyContent: 'center' }}
       >
-        <MapPin size={18} color="#1d4ed8" />
+        <MapPin size={18} color="#2A2312" />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }} numberOfLines={1}>
           {g.name}
         </Text>
         {g.location || g.address ? (
-          <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 1, fontFamily: 'Manrope_400Regular' }} numberOfLines={1}>
+          <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 1, fontFamily: 'Manrope_400Regular' }} numberOfLines={1}>
             {g.location || g.address}
           </Text>
         ) : null}
       </View>
-      <Navigation size={16} color="#1d4ed8" />
+      <Navigation size={16} color="#2A2312" />
     </Pressable>
   );
 
@@ -147,7 +147,7 @@ export default function HomeGroupsMapScreen() {
                             {g.location || g.address}
                           </Text>
                         ) : null}
-                        <Text style={{ fontSize: 12, color: '#1d4ed8', marginTop: 4, fontFamily: 'Manrope_700Bold' }}>
+                        <Text style={{ fontSize: 12, color: '#2A2312', marginTop: 4, fontFamily: 'Manrope_700Bold' }}>
                           Dotknij, aby nawigować →
                         </Text>
                       </View>
@@ -158,7 +158,7 @@ export default function HomeGroupsMapScreen() {
             </MapView>
             {unpinned.length > 0 ? (
               <View style={{ paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#E6E1D5' }}>
-                <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
+                <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
                   {unpinned.length} {unpinned.length === 1 ? 'grupa' : 'grup'} bez lokalizacji na mapie — otwórz listę grup, by nawigować po adresie.
                 </Text>
               </View>
@@ -174,13 +174,13 @@ export default function HomeGroupsMapScreen() {
                 gap: 10,
                 padding: 14,
                 borderRadius: 14,
-                backgroundColor: '#eff6ff',
+                backgroundColor: '#F1EEE6',
                 borderWidth: 1,
-                borderColor: '#bfdbfe',
+                borderColor: '#E3DDD0',
                 marginBottom: 14,
               }}
             >
-              <MapPin size={16} color="#1d4ed8" style={{ marginTop: 1 }} />
+              <MapPin size={16} color="#2A2312" style={{ marginTop: 1 }} />
               <Text style={{ flex: 1, fontSize: 13, color: '#1e3a8a', fontFamily: 'Manrope_500Medium', lineHeight: 18 }}>
                 {!mapsAvailable
                   ? 'Mapa pojawi się po aktualizacji aplikacji. Na razie nawiguj do grup z listy poniżej.'
@@ -193,7 +193,7 @@ export default function HomeGroupsMapScreen() {
             ))}
 
             {groups.length === 0 ? (
-              <Text style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: '#A8A59E', fontFamily: 'Manrope_400Regular' }}>
+              <Text style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: '#857F70', fontFamily: 'Manrope_400Regular' }}>
                 Brak grup domowych do pokazania.
               </Text>
             ) : null}
@@ -202,7 +202,7 @@ export default function HomeGroupsMapScreen() {
               onPress={() => router.push('/(app)/home-groups')}
               style={{ marginTop: 10, alignItems: 'center', paddingVertical: 12 }}
             >
-              <Text style={{ fontSize: 13, color: '#1d4ed8', fontFamily: 'Manrope_700Bold' }}>Otwórz listę grup</Text>
+              <Text style={{ fontSize: 13, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Otwórz listę grup</Text>
             </Pressable>
           </ScrollView>
         )}

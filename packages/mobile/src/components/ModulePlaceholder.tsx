@@ -30,7 +30,7 @@ export function ModulePlaceholder({ title, subtitle, Icon, showBack }: Props) {
         </Text>
         <Text
           style={{
-            color: '#7A7466',
+            color: '#6B6557',
             fontSize: 13,
             lineHeight: 18,
             fontFamily: 'Manrope_400Regular',

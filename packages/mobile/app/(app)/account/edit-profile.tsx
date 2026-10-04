@@ -121,7 +121,7 @@ export default function EditProfileScreen() {
                   )}
                 </View>
               </Pressable>
-              <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 10, fontFamily: 'Manrope_500Medium' }}>
+              <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 10, fontFamily: 'Manrope_500Medium' }}>
                 Dotknij, aby zmienić zdjęcie
               </Text>
             </View>
@@ -130,7 +130,7 @@ export default function EditProfileScreen() {
             <TextInput
               style={styles.input}
               placeholder="np. Anna Kowalska"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               value={fullName}
               onChangeText={setFullName}
               editable={!update.isPending}
@@ -138,11 +138,11 @@ export default function EditProfileScreen() {
 
             <Text style={styles.label}>E-mail</Text>
             <View style={[styles.input, { justifyContent: 'center', backgroundColor: '#ECE8DE' }]}>
-              <Text style={{ fontSize: 15, color: '#7A7466', fontFamily: 'Manrope_400Regular' }}>
+              <Text style={{ fontSize: 15, color: '#6B6557', fontFamily: 'Manrope_400Regular' }}>
                 {email ?? '—'}
               </Text>
             </View>
-            <Text style={{ fontSize: 12, color: '#A8A59E', marginTop: -8, marginBottom: 16, fontFamily: 'Manrope_400Regular' }}>
+            <Text style={{ fontSize: 12, color: '#857F70', marginTop: -8, marginBottom: 16, fontFamily: 'Manrope_400Regular' }}>
               E-maila nie można zmienić w aplikacji.
             </Text>
 

@@ -150,7 +150,7 @@ export const LeaderOverviewWidget = ({ giving, attendance, rsvp }: Props) => {
                 </Text>
               </Text>
               <Text style={{ fontSize: 12, color: '#15803d', fontFamily: F.bold }}>{c.yes} tak</Text>
-              <Text style={{ fontSize: 12, color: '#a16207', fontFamily: F.semibold }}>
+              <Text style={{ fontSize: 12, color: '#8A6606', fontFamily: F.semibold }}>
                 {c.pending} czeka
               </Text>
             </View>

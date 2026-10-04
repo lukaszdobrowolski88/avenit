@@ -74,7 +74,7 @@ export default function FinanceScreen() {
           ) : null}
 
           {proposals.length ? (
-            <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
               Propozycje do budżetu
             </Text>
           ) : null}
@@ -83,7 +83,7 @@ export default function FinanceScreen() {
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{p.description || 'Propozycja'}</Text>
-                  <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
+                  <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                     {[p.teamType, p.kind === 'income' ? 'przychód' : 'wydatek', String(p.year), p.submittedBy].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
@@ -99,7 +99,7 @@ export default function FinanceScreen() {
           ))}
 
           {expenses.length ? (
-            <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginTop: 10, marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginTop: 10, marginBottom: 8 }}>
               Wydatki do akceptacji
             </Text>
           ) : null}
@@ -108,7 +108,7 @@ export default function FinanceScreen() {
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{e.contractor || e.description || 'Wydatek'}</Text>
-                  <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
+                  <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                     {[e.teamType, e.date, e.submittedBy].filter(Boolean).join(' · ')}
                   </Text>
                 </View>

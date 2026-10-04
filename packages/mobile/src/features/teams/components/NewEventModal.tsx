@@ -79,7 +79,7 @@ export const NewEventModal = ({
 
   const labelStyle = {
     fontSize: 11,
-    color: '#7A7466',
+    color: '#6B6557',
     marginBottom: 6,
     letterSpacing: 0.4,
     textTransform: 'uppercase' as const,
@@ -137,7 +137,7 @@ export const NewEventModal = ({
               Nowe wydarzenie
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color="#7A7466" />
+              <X size={20} color="#6B6557" />
             </Pressable>
           </View>
 
@@ -147,7 +147,7 @@ export const NewEventModal = ({
               value={title}
               onChangeText={setTitle}
               placeholder="np. Próba przed niedzielą"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               style={inputStyle}
             />
 
@@ -191,7 +191,7 @@ export const NewEventModal = ({
                   value={dateStr}
                   onChangeText={setDateStr}
                   placeholder="2026-05-10"
-                  placeholderTextColor="#A8A59E"
+                  placeholderTextColor="#857F70"
                   style={inputStyle}
                 />
               </View>
@@ -201,7 +201,7 @@ export const NewEventModal = ({
                   value={timeStr}
                   onChangeText={setTimeStr}
                   placeholder="19:00"
-                  placeholderTextColor="#A8A59E"
+                  placeholderTextColor="#857F70"
                   style={inputStyle}
                 />
               </View>
@@ -212,7 +212,7 @@ export const NewEventModal = ({
               value={location}
               onChangeText={setLocation}
               placeholder="np. Sala główna"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               style={inputStyle}
             />
 
@@ -221,7 +221,7 @@ export const NewEventModal = ({
               value={description}
               onChangeText={setDescription}
               placeholder="Dodatkowe info dla zespołu…"
-              placeholderTextColor="#A8A59E"
+              placeholderTextColor="#857F70"
               multiline
               style={[inputStyle, { minHeight: 80, textAlignVertical: 'top' as const }]}
             />

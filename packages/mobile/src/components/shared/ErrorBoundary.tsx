@@ -49,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <Text
             style={{
               fontSize: 14,
-              color: '#7A7466',
+              color: '#6B6557',
               marginBottom: 20,
               fontFamily: 'Manrope_500Medium',
             }}

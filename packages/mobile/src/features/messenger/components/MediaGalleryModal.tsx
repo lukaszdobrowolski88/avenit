@@ -99,7 +99,7 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
         <Text
           style={{
             fontSize: 11,
-            color: "#A8A59E",
+            color: "#857F70",
             fontFamily: "Manrope_500Medium",
             marginTop: 2,
           }}
@@ -204,7 +204,7 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
                 style={{
                   textAlign: "center",
                   marginTop: 48,
-                  color: "#7A7466",
+                  color: "#6B6557",
                   fontFamily: "Manrope_500Medium",
                 }}
               >
@@ -222,7 +222,7 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
                 style={{
                   textAlign: "center",
                   marginTop: 48,
-                  color: "#7A7466",
+                  color: "#6B6557",
                   fontFamily: "Manrope_500Medium",
                 }}
               >

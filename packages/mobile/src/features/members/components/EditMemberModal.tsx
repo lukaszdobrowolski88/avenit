@@ -31,7 +31,7 @@ const Label = ({ children, locked }: { children: string; locked?: boolean }) => 
     <Text style={{ fontSize: 12, color: '#4A463E', fontFamily: 'Manrope_700Bold', letterSpacing: 0.4, textTransform: 'uppercase' }}>
       {children}
     </Text>
-    {locked ? <Lock size={11} color="#A8A59E" /> : null}
+    {locked ? <Lock size={11} color="#857F70" /> : null}
   </View>
 );
 
@@ -115,14 +115,14 @@ export const EditMemberModal = ({
           onChangeText={set(key)}
           editable={!locked}
           placeholder={opts.placeholder}
-          placeholderTextColor="#A8A59E"
+          placeholderTextColor="#857F70"
           keyboardType={opts.keyboard}
           autoCapitalize={opts.keyboard === 'email-address' ? 'none' : 'sentences'}
           multiline={opts.multiline}
           style={[
             inputStyle,
             opts.multiline ? { height: 96, paddingTop: 12, textAlignVertical: 'top' as const } : null,
-            locked ? { color: '#A8A59E' } : null,
+            locked ? { color: '#857F70' } : null,
           ]}
         />
       </>

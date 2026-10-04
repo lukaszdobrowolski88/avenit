@@ -94,7 +94,7 @@ export default function DonateScreen() {
 
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}>
           {/* Szybkie kwoty */}
-          <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
+          <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
             Kwota
           </Text>
           <View className="flex-row flex-wrap gap-2 mb-3">
@@ -104,7 +104,7 @@ export default function DonateScreen() {
                 <Pressable key={q} onPress={() => setAmount(String(q))}
                   style={{
                     paddingHorizontal: 18, paddingVertical: 12, borderRadius: 14, borderWidth: 1,
-                    borderColor: active ? '#059669' : '#e5e7eb', backgroundColor: active ? '#059669' : '#ffffff',
+                    borderColor: active ? '#2A2312' : '#e5e7eb', backgroundColor: active ? '#2A2312' : '#ffffff',
                   }}>
                   <Text style={{ color: active ? '#ffffff' : '#3A3427', fontFamily: 'Manrope_600SemiBold' }}>{q} zł</Text>
                 </Pressable>
@@ -120,7 +120,7 @@ export default function DonateScreen() {
           {/* Fundusze */}
           {funds.length > 0 && (
             <>
-              <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
+              <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
                 Cel
               </Text>
               <View className="flex-row flex-wrap gap-2 mb-4">
@@ -130,9 +130,9 @@ export default function DonateScreen() {
                     <Pressable key={f.id} onPress={() => setFundId(active ? null : f.id)}
                       style={{
                         paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1,
-                        borderColor: active ? '#059669' : '#e5e7eb', backgroundColor: active ? '#ecfdf5' : '#ffffff',
+                        borderColor: active ? '#2A2312' : '#e5e7eb', backgroundColor: active ? '#F1EEE6' : '#ffffff',
                       }}>
-                      <Text style={{ color: active ? '#047857' : '#3A3427', fontFamily: 'Manrope_500Medium', fontSize: 13 }}>{f.name}</Text>
+                      <Text style={{ color: active ? '#2A2312' : '#3A3427', fontFamily: 'Manrope_500Medium', fontSize: 13 }}>{f.name}</Text>
                     </Pressable>
                   );
                 })}
@@ -141,7 +141,7 @@ export default function DonateScreen() {
           )}
 
           {/* E-mail */}
-          <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
+          <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
             E-mail (potwierdzenie)
           </Text>
           <TextInput
@@ -159,9 +159,9 @@ export default function DonateScreen() {
 
           <Pressable
             onPress={() => setRecurring((v) => !v)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: recurring ? '#059669' : '#e5e7eb', backgroundColor: recurring ? '#ecfdf5' : '#ffffff', marginBottom: 16 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: recurring ? '#2A2312' : '#e5e7eb', backgroundColor: recurring ? '#F1EEE6' : '#ffffff', marginBottom: 16 }}
           >
-            <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: recurring ? '#059669' : '#D3CCBC', backgroundColor: recurring ? '#059669' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: recurring ? '#2A2312' : '#D3CCBC', backgroundColor: recurring ? '#2A2312' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
               {recurring ? <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>✓</Text> : null}
             </View>
             <Text style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium', fontSize: 14 }}>Chcę wspierać co miesiąc</Text>

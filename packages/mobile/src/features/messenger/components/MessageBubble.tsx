@@ -139,7 +139,7 @@ export const MessageBubble = ({
           <Text
             style={{
               fontSize: 12,
-              color: "#7A7466",
+              color: "#6B6557",
               fontFamily: "Manrope_500Medium",
               textAlign: "center",
             }}
@@ -183,11 +183,11 @@ export const MessageBubble = ({
               paddingHorizontal: 4,
             }}
           >
-            <Pin size={10} color="#A8A59E" />
+            <Pin size={10} color="#857F70" />
             <Text
               style={{
                 fontSize: 10,
-                color: "#A8A59E",
+                color: "#857F70",
                 fontFamily: "Manrope_600SemiBold",
                 letterSpacing: -0.1,
               }}
@@ -219,7 +219,7 @@ export const MessageBubble = ({
           <Text
             style={{
               fontSize: 11,
-              color: "#7A7466",
+              color: "#6B6557",
               fontFamily: "Manrope_700Bold",
               marginBottom: 2,
             }}
@@ -254,7 +254,7 @@ export const MessageBubble = ({
               numberOfLines={1}
               style={{
                 fontSize: 12,
-                color: mine ? "#F3E3B0" : "#7A7466",
+                color: mine ? "#F3E3B0" : "#6B6557",
                 fontFamily: "Manrope_400Regular",
               }}
             >
@@ -330,7 +330,7 @@ export const MessageBubble = ({
           <Text
             style={{
               fontSize: 10,
-              color: mine ? "#fde68a" : "#8A6606",
+              color: mine ? "#F3E3B0" : "#8A6606",
               fontFamily: "Manrope_700Bold",
               marginBottom: 2,
             }}
@@ -371,7 +371,7 @@ export const MessageBubble = ({
               fontFamily: "Manrope_400Regular",
             }}
           >
-            {renderWithMentions(message.content, mine ? "#fde68a" : "#8A6606")}
+            {renderWithMentions(message.content, mine ? "#F3E3B0" : "#8A6606")}
           </Text>
         ) : null}
 
@@ -388,7 +388,7 @@ export const MessageBubble = ({
             <Text
               style={{
                 fontSize: 10,
-                color: mine ? "#FFF1C2" : "#A8A59E",
+                color: mine ? "#FFF1C2" : "#857F70",
                 fontStyle: "italic",
                 fontFamily: "Manrope_400Regular",
               }}
@@ -399,7 +399,7 @@ export const MessageBubble = ({
           <Text
             style={{
               fontSize: 10,
-              color: mine ? "#FFF1C2" : "#A8A59E",
+              color: mine ? "#FFF1C2" : "#857F70",
               fontFamily: "Manrope_500Medium",
             }}
           >

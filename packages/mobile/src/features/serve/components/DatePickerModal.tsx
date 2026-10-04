@@ -75,7 +75,7 @@ export const DatePickerModal = ({ visible, value, minDate, title, onSelect, onCl
             {WEEKDAYS.map((w) => (
               <Text
                 key={w}
-                style={{ flex: 1, textAlign: 'center', fontSize: 11, color: '#A8A59E', fontFamily: 'Manrope_600SemiBold' }}
+                style={{ flex: 1, textAlign: 'center', fontSize: 11, color: '#857F70', fontFamily: 'Manrope_600SemiBold' }}
               >
                 {w}
               </Text>

@@ -83,9 +83,9 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
         gap: 12,
         padding: 12,
         borderRadius: 18,
-        backgroundColor: '#faf5ff',
+        backgroundColor: '#F1EEE6',
         borderWidth: 1,
-        borderColor: '#e9d5ff',
+        borderColor: '#E3DDD0',
       }}
     >
       <Pressable
@@ -95,7 +95,7 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
           width: 48,
           height: 48,
           borderRadius: 24,
-          backgroundColor: '#7c3aed',
+          backgroundColor: '#2A2312',
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -114,7 +114,7 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
           style={{
             height: 6,
             borderRadius: 3,
-            backgroundColor: '#e9d5ff',
+            backgroundColor: '#E3DDD0',
             overflow: 'hidden',
           }}
         >
@@ -123,7 +123,7 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
               width: `${progress * 100}%`,
               height: 6,
               borderRadius: 3,
-              backgroundColor: '#7c3aed',
+              backgroundColor: '#2A2312',
             }}
           />
         </View>
@@ -131,7 +131,7 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
           <Text
             style={{
               fontSize: 11,
-              color: '#6d28d9',
+              color: '#2A2312',
               fontFamily: 'Manrope_600SemiBold',
               fontVariant: ['tabular-nums'],
             }}
@@ -141,7 +141,7 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
           <Text
             style={{
               fontSize: 11,
-              color: '#a78bda',
+              color: '#6B6557',
               fontFamily: 'Manrope_600SemiBold',
               fontVariant: ['tabular-nums'],
             }}
