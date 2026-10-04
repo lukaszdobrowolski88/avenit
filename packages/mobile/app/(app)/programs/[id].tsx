@@ -201,6 +201,8 @@ export default function ProgramDetailScreen() {
   const canLinkEvents = perms.can('res:events:update');
   const canSaveTemplate = perms.can('res:program_templates:create');
   const canDeleteTemplate = perms.can('res:program_templates:delete');
+  // Serwer pilnuje tego samego (FN_CAPABILITY: send-program-email → action:programs:send_email).
+  const canSendEmail = perms.can('action:programs:send_email');
 
   const schedule = (programQuery.data?.schedule ?? []) as PlanItem[];
   const songTitles = useSongTitles(schedule.filter((it) => it?.type === 'song' && it?.songId != null).map((it) => it.songId as number));
@@ -266,7 +268,7 @@ export default function ProgramDetailScreen() {
     ...(canCreate ? [{ label: 'Duplikuj program', run: () => setDuplicating(true) }] : []),
     ...(canSaveTemplate && schedule.length ? [{ label: 'Zapisz plan jako szablon', run: () => setSavingTemplate(true) }] : []),
     ...(canEdit ? [{ label: 'Wczytaj szablon', run: () => setLoadingTemplate(true) }] : []),
-    ...(canEdit ? [{ label: 'Wyślij e-mailem', run: () => setEmailing(true) }] : []),
+    ...(canSendEmail ? [{ label: 'Wyślij e-mailem', run: () => setEmailing(true) }] : []),
   ];
   const openMenu = () => {
     if (Platform.OS === 'ios') {
@@ -651,7 +653,7 @@ export default function ProgramDetailScreen() {
           }}
         />
       ) : null}
-      {canEdit ? (
+      {canSendEmail ? (
         <SendEmailSheet
           visible={emailing}
           programId={programId}
