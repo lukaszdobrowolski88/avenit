@@ -14,7 +14,7 @@
 //     grants: [{ role, user_id, capability, allowed }],   // do makeResolver po stronie klienta
 //     ministries: [{ ministry_key, role, campus_id }],
 //     modules: [{ key, label, icon, path, resource_key, is_system, display_order, visible }],
-//     tabs: [{ module_key, key, label, display_order, visible }] }
+//     tabs: [{ id, module_key, key, label, component_type, display_order, visible }] }
 //
 // Brak wpisu w FN_CAPABILITY => preHandler = requireUser (każdy zalogowany, widzi tylko swoje).
 import { loadGrants } from '../dataapi/registry.js';
@@ -79,6 +79,7 @@ export default async function handler(req, reply) {
           moduleIdToKey.set(m.id, m.key);
           const cap = m.resource_key || `module:${m.key}`;
           return {
+            id: m.id,
             key: m.key,
             label: m.label,
             icon: m.icon ?? null,
@@ -120,16 +121,18 @@ export default async function handler(req, reply) {
     let tabs = [];
     try {
       const { rows } = await req.db.query(
-        `SELECT module_id, key, label, display_order FROM app_module_tabs ORDER BY display_order NULLS LAST, key`
+        `SELECT id, module_id, key, label, display_order, component_type FROM app_module_tabs ORDER BY display_order NULLS LAST, key`
       );
       const visibleMods = new Set(modules.filter((m) => m.visible).map((m) => m.key));
       tabs = rows
         .map((t) => ({ ...t, module_key: moduleIdToKey.get(t.module_id) }))
         .filter((t) => t.module_key)
         .map((t) => ({
+          id: t.id,
           module_key: t.module_key,
           key: t.key,
           label: t.label,
+          component_type: t.component_type || 'empty',
           display_order: t.display_order ?? null,
           visible: visibleMods.has(t.module_key) && canCap(`tab:${t.module_key}:${t.key}`),
         }));

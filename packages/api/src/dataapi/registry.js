@@ -104,7 +104,14 @@ export const REGISTRY = {
   // ── Członkowie ──────────────────────────────────────────────────────────
   members: T('module:members'),
   attendance: T('module:members'),
-  households: T('module:members'),
+  // Relacje dla check-inu Dzieci (web: households.select('*, parent_contacts(*), kids_students(*)')).
+  // Bez nich zapytanie dostawało 400 „Nieznana relacja” — wyszukiwanie rodziny po telefonie nie działało.
+  households: T('module:members', {
+    relationships: {
+      parent_contacts: { table: 'parent_contacts', column: 'household_id', type: 'many' },
+      kids_students: { table: 'kids_students', column: 'household_id', type: 'many' },
+    },
+  }),
   parent_contacts: T('module:members'),
   groups: T('module:members'),
   group_members: T('module:members'),
@@ -142,7 +149,14 @@ export const REGISTRY = {
   kids_events: T('module:kids'),
   checkin_locations: T('module:kids'),
   checkin_sessions: T('module:kids'),
-  checkins: T('module:kids'),
+  // web: checkins.select('*, kids_students(*), checkin_locations(*), households(*)') — to-one po FK.
+  checkins: T('module:kids', {
+    relationships: {
+      kids_students: { table: 'kids_students', column: 'student_id', type: 'one' },
+      checkin_locations: { table: 'checkin_locations', column: 'location_id', type: 'one' },
+      households: { table: 'households', column: 'household_id', type: 'one' },
+    },
+  }),
   kids_parent_notifications: T('module:kids'),
 
   // ── Grupy domowe ────────────────────────────────────────────────────────

@@ -98,6 +98,18 @@ export default async function dataApiRoutes(app) {
         }
       }
 
+      // Propozycje budżetu (T(null)): składa je każdy (liderzy z zakładki Finanse zespołu),
+      // ale decyzję (zmiana statusu / usunięcie) podejmuje tylko action:finance:approve.
+      if (
+        access.ok &&
+        q.table === 'budget_proposals' &&
+        (q.op === 'update' || q.op === 'delete') &&
+        access.resolver &&
+        !access.resolver.can('action:finance:approve')
+      ) {
+        throw new ApiError(403, 'Decyzje o budżecie wymagają uprawnienia do zatwierdzania finansów');
+      }
+
       // Materiały to tabele T(null) (czyta i dodaje każdy zalogowany), ale zmiana nazwy
       // i usuwanie cudzych plików wymaga uprawnienia z roli — inaczej tylko własne.
       if (access.ok && !(await allowMaterialsWrite(q, req, access))) {
