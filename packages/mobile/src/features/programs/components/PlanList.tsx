@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
 import { B } from '../../../components/ui/brand';
-import { KIND_META, fmtDuration, type PlanItem, type ScheduleKind } from '../schedule';
+import { KIND_META, MEDIA_TYPES, fmtDuration, type PlanItem, type ScheduleKind } from '../schedule';
 
 // Plan programu w karcie: nagłówki sekcji jako pasy kurkumy, elementy z osobą, tonacją,
 // momentem (przed/po) i czasem trwania. W trybie edycji wiersz otwiera edytor elementu.
@@ -42,9 +42,11 @@ export const PlanList = ({
       const title = it.title || song?.title || (kind === 'song' ? 'Pieśń' : 'Element');
       const key = it.songKey || song?.key;
       const sub = [
+        kind === 'media' ? MEDIA_TYPES.find((m) => m.value === (it.mediaType ?? 'video'))?.label : null,
         it.person,
         key ? `tonacja ${key}` : null,
         it.timing === 'before' ? 'przed' : it.timing === 'after' ? 'po' : null,
+        Array.isArray(it.customAttachments) && it.customAttachments.length ? `PDF: ${it.customAttachments.length}` : null,
       ]
         .filter(Boolean)
         .join(' · ');

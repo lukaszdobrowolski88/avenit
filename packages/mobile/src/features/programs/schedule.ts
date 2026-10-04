@@ -11,7 +11,16 @@ export type PlanItem = ProgramScheduleItem & {
   songKey?: string | null;
   timing?: 'before' | 'during' | 'after' | null;
   teamAssignments?: Record<string, string>;
+  mediaType?: 'video' | 'presentation' | 'image' | 'countdown' | null;
+  mediaUrl?: string | null;
 };
+
+export const MEDIA_TYPES: { value: 'video' | 'presentation' | 'image' | 'countdown'; label: string }[] = [
+  { value: 'video', label: 'Wideo' },
+  { value: 'presentation', label: 'Prezentacja' },
+  { value: 'image', label: 'Obraz' },
+  { value: 'countdown', label: 'Odliczanie' },
+];
 
 export const KIND_META: Record<ScheduleKind, { label: string; Icon: LucideIcon }> = {
   item: { label: 'Element', Icon: TypeIcon },

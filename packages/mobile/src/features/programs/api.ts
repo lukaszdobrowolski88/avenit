@@ -50,6 +50,7 @@ export const useProgramTypes = () =>
         .from('program_types')
         .select('id, name, color, icon, sort_order')
         .order('sort_order', { ascending: true, nullsFirst: false });
+      // Typ „wirtualny” z weba (gdy tabela pusta) nie istnieje w bazie — zwracamy tylko realne.
       if (error) throw error;
       return (data ?? []) as ProgramTypeRow[];
     },
@@ -380,3 +381,145 @@ export const useSongTitles = (ids: (number | string)[]) => {
     },
   });
 };
+
+// ── Notatki ogólne, duplikowanie, szablony, typy, zespół (jak web) ────────────
+
+export const useUpdateProgramNotes = (programId: number) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (notes: string) => {
+      const { error } = await (supabase.from('programs') as any).update({ notes }).eq('id', programId);
+      if (error) throw new Error(error.message || 'Nie udało się zapisać notatek.');
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['programs', 'detail'] }),
+  });
+};
+
+// Kopia programu (wszystkie kolumny poza id/datami utworzenia) na wybrany dzień — jak
+// „Duplikuj” na liście programów na webie. Wydarzeń nie podpinamy (kopia jest „luźna”).
+export const useDuplicateProgram = (campusIdForInsert: number | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ programId, date }: { programId: number; date: string }): Promise<number> => {
+      const { data: src, error: readErr } = await supabase.from('programs').select('*').eq('id', programId).maybeSingle();
+      if (readErr || !src) throw new Error(readErr?.message || 'Nie znaleziono programu.');
+      const { id: _id, created_at: _c, updated_at: _u, ...rest } = src as any;
+      const { data, error } = await (supabase.from('programs') as any)
+        .insert([{ ...rest, date, campus_id: campusIdForInsert ?? rest.campus_id ?? null }])
+        .select('id')
+        .single();
+      if (error) throw new Error(error.message || 'Nie udało się zduplikować programu.');
+      return Number((data as any).id);
+    },
+    onSuccess: () => invalidatePrograms(qc),
+  });
+};
+
+export interface ProgramTemplate {
+  id: number | string;
+  name: string;
+  schedule: ProgramScheduleItem[];
+  created_at: string | null;
+}
+
+export const useProgramTemplates = (enabled: boolean) =>
+  useQuery({
+    queryKey: ['programs', 'templates'],
+    enabled,
+    queryFn: async (): Promise<ProgramTemplate[]> => {
+      const { data, error } = await supabase.from('program_templates').select('*').order('created_at', { ascending: false });
+      if (error) {
+        if ((error as any).code === '42P01') return [];
+        throw error;
+      }
+      return ((data ?? []) as any[]).map((t) => ({
+        id: t.id,
+        name: String(t.name ?? 'Szablon'),
+        schedule: asSchedule(t.schedule),
+        created_at: t.created_at ?? null,
+      }));
+    },
+  });
+
+// Zapis planu jako szablonu — bez id elementów (jak web; przy wczytaniu dostają nowe).
+export const useSaveTemplate = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ name, schedule }: { name: string; schedule: ProgramScheduleItem[] }) => {
+      const { error } = await (supabase.from('program_templates') as any).insert([
+        {
+          name,
+          schedule: schedule.map(({ id: _id, ...rest }) => rest),
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      if (error) throw new Error(error.message || 'Nie udało się zapisać szablonu.');
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['programs', 'templates'] }),
+  });
+};
+
+export const useDeleteTemplate = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number | string) => {
+      const { error } = await supabase.from('program_templates').delete().eq('id', id);
+      if (error) throw new Error(error.message || 'Nie udało się usunąć szablonu.');
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['programs', 'templates'] }),
+  });
+};
+
+// Typy programów. Sekcje zespołów (visible_sections) zostają na webie — przy edycji ich
+// nie ruszamy, nowy typ dostaje wszystkie (jak domyślnie na webie).
+const ALL_SECTIONS = ['zespol', 'produkcja', 'atmosfera_team', 'scena', 'szkolka'];
+
+export const useSaveProgramType = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (t: { id?: number | null; name: string; icon: string; color: string; sortOrder?: number }) => {
+      const res = t.id
+        ? await (supabase.from('program_types') as any).update({ name: t.name, icon: t.icon, color: t.color }).eq('id', t.id)
+        : await (supabase.from('program_types') as any).insert({
+            name: t.name,
+            icon: t.icon,
+            color: t.color,
+            visible_sections: ALL_SECTIONS,
+            is_active: true,
+            sort_order: t.sortOrder ?? 0,
+          });
+      if (res.error) throw new Error(res.error.message || 'Nie udało się zapisać typu.');
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['program_types'] });
+      qc.invalidateQueries({ queryKey: ['programs'] });
+    },
+  });
+};
+
+export const useDeleteProgramType = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase.from('program_types').delete().eq('id', id);
+      if (error) throw new Error(error.message || 'Nie udało się usunąć typu.');
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['program_types'] });
+      qc.invalidateQueries({ queryKey: ['programs'] });
+    },
+  });
+};
+
+// Podpowiedzi osób (jak PersonCombobox na webie — członkowie zespołu uwielbienia).
+export const useWorshipTeamNames = (enabled: boolean) =>
+  useQuery({
+    queryKey: ['programs', 'worship-team-names'],
+    enabled,
+    staleTime: 10 * 60_000,
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await supabase.from('worship_team').select('full_name').order('full_name', { ascending: true });
+      if (error) return [];
+      return Array.from(new Set(((data ?? []) as any[]).map((m) => String(m.full_name ?? '').trim()).filter(Boolean)));
+    },
+  });

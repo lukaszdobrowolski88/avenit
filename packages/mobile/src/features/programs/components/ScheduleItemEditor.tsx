@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Linking,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -9,11 +12,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { ArrowDown, ArrowUp, Copy, Minus, Music, Plus, Search, Trash2, X } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, Copy, FileText, Minus, Music, Paperclip, Plus, Search, Trash2, X } from 'lucide-react-native';
 import { B } from '../../../components/ui/brand';
 import { useProgramSongs, useSongsList, type ProgramSuggestionRow } from '../../songs/api';
 import type { Song } from '../../../lib/domain';
-import { KIND_META, MUSICAL_KEYS, TIMING, fmtDuration, type PlanItem, type ScheduleKind } from '../schedule';
+import { KIND_META, MEDIA_TYPES, MUSICAL_KEYS, TIMING, fmtDuration, type PlanItem, type ScheduleKind } from '../schedule';
+import { useWorshipTeamNames } from '../api';
+import { AttachmentTooLarge, pickAndUploadPdf, type PlanAttachment } from '../attachments';
 
 // Arkusz edycji jednego elementu planu (jak panel elementu w edytorze programu na webie):
 // rodzaj, pieśń z biblioteki (najpierw propozycje zespołu) + tonacja, tytuł, osoba,
@@ -90,6 +95,9 @@ export const ScheduleItemEditor = ({
   const [draft, setDraft] = useState<PlanItem | null>(item);
   const [picking, setPicking] = useState(false);
   const [search, setSearch] = useState('');
+  const [personFocus, setPersonFocus] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const team = useWorshipTeamNames(visible);
 
   useEffect(() => {
     if (!visible) return;
@@ -109,6 +117,22 @@ export const ScheduleItemEditor = ({
   );
 
   if (!draft) return null;
+  const personQuery = String(draft.person ?? '').trim().toLowerCase();
+  const personHints = personFocus
+    ? (team.data ?? []).filter((n: string) => n.toLowerCase() !== personQuery && (!personQuery || n.toLowerCase().includes(personQuery))).slice(0, 8)
+    : [];
+  const attachments = (Array.isArray(draft.customAttachments) ? draft.customAttachments : []) as PlanAttachment[];
+  const addPdf = async () => {
+    setUploading(true);
+    try {
+      const att = await pickAndUploadPdf();
+      if (att) set({ customAttachments: [...attachments, att] as never });
+    } catch (e: any) {
+      Alert.alert(e instanceof AttachmentTooLarge ? 'Za duży plik' : 'Nie udało się dodać pliku', e?.message ?? 'Spróbuj ponownie.');
+    } finally {
+      setUploading(false);
+    }
+  };
   const set = (patch: Partial<PlanItem>) => setDraft((d) => (d ? { ...d, ...patch } : d));
   const kind = (draft.type as ScheduleKind) ?? 'item';
   const minutes = Math.floor((Number(draft.duration) || 0) / 60);
@@ -226,8 +250,62 @@ export const ScheduleItemEditor = ({
                       <Chip key={k} label={k} on={draft.songKey === k} onPress={() => set({ songKey: k })} />
                     ))}
                   </View>
+
+                  <Label>Załączniki PDF</Label>
+                  <View style={{ gap: 6 }}>
+                    {attachments.map((att, i) => (
+                      <View key={`${att.url}-${i}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, paddingLeft: 12, borderRadius: 14, backgroundColor: B.card }}>
+                        <FileText size={16} color={B.gold} />
+                        <Text
+                          numberOfLines={1}
+                          onPress={() => Linking.openURL(att.url).catch(() => undefined)}
+                          style={{ flex: 1, fontSize: 14, color: B.ink, fontFamily: F.semibold }}
+                        >
+                          {att.name}
+                        </Text>
+                        <Pressable
+                          onPress={() => set({ customAttachments: attachments.filter((_, j) => j !== i) as never })}
+                          hitSlop={8}
+                          accessibilityLabel="Usuń załącznik"
+                        >
+                          <X size={16} color={B.ink4} />
+                        </Pressable>
+                      </View>
+                    ))}
+                    <Pressable
+                      onPress={addPdf}
+                      disabled={uploading}
+                      className="active:opacity-70"
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#D9D2C2' }}
+                    >
+                      {uploading ? <ActivityIndicator size="small" color={B.ink} /> : <Paperclip size={16} color={B.ink2} />}
+                      <Text style={{ fontSize: 14, color: B.ink2, fontFamily: F.semibold }}>{uploading ? 'Wysyłanie…' : 'Dodaj PDF (maks. 10 MB)'}</Text>
+                    </Pressable>
+                  </View>
                 </>
               ) : null}
+            </>
+          ) : null}
+
+          {kind === 'media' ? (
+            <>
+              <Label>Rodzaj mediów</Label>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {MEDIA_TYPES.map((m) => (
+                  <Chip key={m.value} label={m.label} on={(draft.mediaType ?? 'video') === m.value} onPress={() => set({ mediaType: m.value })} />
+                ))}
+              </View>
+              <Label>Adres pliku</Label>
+              <TextInput
+                value={String(draft.mediaUrl ?? '')}
+                onChangeText={(t) => set({ mediaUrl: t })}
+                placeholder="https://… albo ścieżka do pliku"
+                placeholderTextColor={B.ink4}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                style={inputStyle}
+              />
             </>
           ) : null}
 
@@ -246,10 +324,27 @@ export const ScheduleItemEditor = ({
               <TextInput
                 value={String(draft.person ?? '')}
                 onChangeText={(t) => set({ person: t })}
+                onFocus={() => setPersonFocus(true)}
+                onBlur={() => setTimeout(() => setPersonFocus(false), 150)}
                 placeholder="Kto prowadzi ten punkt?"
                 placeholderTextColor={B.ink4}
                 style={inputStyle}
               />
+              {personHints.length ? (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                  {personHints.map((n: string) => (
+                    <Chip
+                      key={n}
+                      label={n}
+                      on={false}
+                      onPress={() => {
+                        set({ person: n });
+                        setPersonFocus(false);
+                      }}
+                    />
+                  ))}
+                </View>
+              ) : null}
 
               <Label>Czas trwania</Label>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

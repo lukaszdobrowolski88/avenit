@@ -24,6 +24,7 @@ import {
   type ProgramTypeRow,
 } from '../../../src/features/programs/api';
 import { ProgramFormModal } from '../../../src/features/programs/components/ProgramFormModal';
+import { ProgramTypesSheet } from '../../../src/features/programs/components/ProgramTypesSheet';
 import { usePermissions } from '../../../src/lib/permissions';
 import { useAuthSession } from '../../../src/lib/auth';
 import { toYmd } from '../../../src/components/ui/DateField';
@@ -152,6 +153,8 @@ export default function ProgramsScreen() {
   const canCreate = perms.can('res:programs:create');
   const [scope, setScope] = useState<Scope>('upcoming');
   const [creating, setCreating] = useState(false);
+  const [managingTypes, setManagingTypes] = useState(false);
+  const canManageTypes = perms.can('res:program_types:update') || perms.can('res:program_types:create');
   const { selectedCampusId, withCampusFilter, campusIdForInsert } = useCampusQuery();
   const upcomingQuery = useUpcomingPrograms({ selectedCampusId, withCampusFilter });
   const pastQuery = usePastPrograms({ selectedCampusId, withCampusFilter }, scope === 'past');
@@ -228,7 +231,23 @@ export default function ProgramsScreen() {
           />
         }
       >
-        <PageHeader title="Programy" subtitle="Plany nabożeństw" Icon={CalendarIcon} showBack />
+        <PageHeader
+          title="Programy"
+          subtitle="Plany nabożeństw"
+          Icon={CalendarIcon}
+          showBack
+          right={
+            canManageTypes ? (
+              <Pressable
+                onPress={() => setManagingTypes(true)}
+                className="active:opacity-70"
+                style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, backgroundColor: '#FFFFFF' }}
+              >
+                <Text style={{ fontSize: 13, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Typy</Text>
+              </Pressable>
+            ) : undefined
+          }
+        />
         <View style={{ flexDirection: 'row', gap: 6, paddingHorizontal: 16, marginBottom: 14 }}>
           {(
             [
@@ -314,6 +333,15 @@ export default function ProgramsScreen() {
         >
           <Plus size={24} color="#ffffff" strokeWidth={2.4} />
         </Pressable>
+      ) : null}
+      {canManageTypes ? (
+        <ProgramTypesSheet
+          visible={managingTypes}
+          onClose={() => setManagingTypes(false)}
+          canCreate={perms.can('res:program_types:create')}
+          canUpdate={perms.can('res:program_types:update')}
+          canDelete={perms.can('res:program_types:delete')}
+        />
       ) : null}
       {canCreate ? (
         <ProgramFormModal

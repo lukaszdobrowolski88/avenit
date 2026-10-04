@@ -1,5 +1,16 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  ActionSheetIOS,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -8,7 +19,7 @@ import {
   ClipboardList,
   ExternalLink,
   FileText,
-  Pencil,
+  MoreHorizontal,
   Plus,
   StickyNote,
   Users as UsersIcon,
@@ -22,6 +33,7 @@ import {
   useProgramTeam,
   useSaveSchedule,
   useSongTitles,
+  useUpdateProgramNotes,
   type LinkedEvent,
   type MyAssignmentRow,
   type ProgramTeamMember,
@@ -31,6 +43,13 @@ import { PlanList } from '../../../src/features/programs/components/PlanList';
 import { ScheduleItemEditor } from '../../../src/features/programs/components/ScheduleItemEditor';
 import { ProgramFormModal } from '../../../src/features/programs/components/ProgramFormModal';
 import { EventPickerSheet } from '../../../src/features/programs/components/LinkPickers';
+import { PlanReorder } from '../../../src/features/programs/components/PlanReorder';
+import {
+  DuplicateProgramModal,
+  SaveTemplateModal,
+  SendEmailSheet,
+  TemplatesSheet,
+} from '../../../src/features/programs/components/ProgramTools';
 import {
   KIND_META,
   fmtDuration,
@@ -169,9 +188,19 @@ export default function ProgramDetailScreen() {
   // Edytor elementu: indeks istniejącego albo nowy element (dodawany na końcu).
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [newItem, setNewItem] = useState<PlanItem | null>(null);
+  // Narzędzia z menu „⋯”.
+  const [reorder, setReorder] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+  const [duplicating, setDuplicating] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
+  const [emailing, setEmailing] = useState(false);
 
   const canEdit = perms.can('res:programs:update');
+  const canCreate = perms.can('res:programs:create');
   const canLinkEvents = perms.can('res:events:update');
+  const canSaveTemplate = perms.can('res:program_templates:create');
+  const canDeleteTemplate = perms.can('res:program_templates:delete');
 
   const schedule = (programQuery.data?.schedule ?? []) as PlanItem[];
   const songTitles = useSongTitles(schedule.filter((it) => it?.type === 'song' && it?.songId != null).map((it) => it.songId as number));
@@ -221,9 +250,37 @@ export default function ProgramDetailScreen() {
       (it.notes && it.notes.trim().length > 0) ||
       (Array.isArray(it.customAttachments) && it.customAttachments.length > 0),
   );
-  const notesCount = itemsWithNotes.length;
+  const notesCount = itemsWithNotes.length + (String((program as any).notes ?? '').trim() ? 1 : 0);
   const programDate = String(program.date).slice(0, 10);
   const linked = (links.data ?? []).filter((e: LinkedEvent) => e.programId === programId);
+  const programTitle = (program.title && String(program.title).trim()) || 'Nabożeństwo';
+  const dateLabel = (() => {
+    const out = formatDate(program.date, 'EEEE, d MMMM yyyy');
+    return out.charAt(0).toUpperCase() + out.slice(1);
+  })();
+
+  // Menu „⋯” — akcje jak pasek narzędzi edytora programu na webie (bez eksportów).
+  const actions: { label: string; run: () => void; destructive?: boolean }[] = [
+    ...(canEdit ? [{ label: 'Edytuj nazwę, datę i typ', run: () => setEditingHeader(true) }] : []),
+    ...(canEdit && schedule.length > 1 ? [{ label: 'Zmień kolejność planu', run: () => { setTab('schedule'); setReorder(true); } }] : []),
+    ...(canCreate ? [{ label: 'Duplikuj program', run: () => setDuplicating(true) }] : []),
+    ...(canSaveTemplate && schedule.length ? [{ label: 'Zapisz plan jako szablon', run: () => setSavingTemplate(true) }] : []),
+    ...(canEdit ? [{ label: 'Wczytaj szablon', run: () => setLoadingTemplate(true) }] : []),
+    ...(canEdit ? [{ label: 'Wyślij e-mailem', run: () => setEmailing(true) }] : []),
+  ];
+  const openMenu = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: [...actions.map((a) => a.label), 'Anuluj'], cancelButtonIndex: actions.length, title: programTitle },
+        (i) => actions[i]?.run(),
+      );
+    } else {
+      Alert.alert(programTitle, undefined, [
+        ...actions.map((a) => ({ text: a.label, onPress: a.run })),
+        { text: 'Anuluj', style: 'cancel' as const },
+      ]);
+    }
+  };
 
   // ── Zmiany planu: zapis od razu (optymistycznie) ──
   const persist = (next: PlanItem[]) =>
@@ -318,24 +375,21 @@ export default function ProgramDetailScreen() {
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 11, color: '#8A6606', fontFamily: 'Manrope_700Bold', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-              {(() => {
-                const out = formatDate(program.date, 'EEEE, d MMMM yyyy');
-                return out.charAt(0).toUpperCase() + out.slice(1);
-              })()}
+              {dateLabel}
             </Text>
             <Text numberOfLines={2} style={{ marginTop: 2, fontSize: 22, lineHeight: 27, color: '#2A2312', letterSpacing: -0.5, fontFamily: 'Manrope_700Bold' }}>
-              {(program.title && String(program.title).trim()) || 'Nabożeństwo'}
+              {programTitle}
             </Text>
           </View>
-          {canEdit ? (
+          {actions.length ? (
             <Pressable
-              onPress={() => setEditingHeader(true)}
+              onPress={openMenu}
               hitSlop={10}
-              accessibilityLabel="Edytuj program"
+              accessibilityLabel="Więcej akcji"
               className="active:opacity-60"
               style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}
             >
-              <Pencil size={18} color="#2A2312" />
+              <MoreHorizontal size={20} color="#2A2312" />
             </Pressable>
           ) : null}
         </View>
@@ -390,8 +444,19 @@ export default function ProgramDetailScreen() {
         <ProgramTab label="Notatki" active={tab === 'notes'} onPress={() => setTab('notes')} count={notesCount} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 130 }}>
-        {tab === 'schedule' && (
+      <ScrollView scrollEnabled={scrollEnabled} contentContainerStyle={{ padding: 16, paddingBottom: 130 }}>
+        {tab === 'schedule' && reorder && (
+          <PlanReorder
+            items={schedule}
+            setScrollEnabled={setScrollEnabled}
+            onCancel={() => setReorder(false)}
+            onDone={(next) => {
+              persist(next);
+              setReorder(false);
+            }}
+          />
+        )}
+        {tab === 'schedule' && !reorder && (
           <View>
             {schedule.length ? (
               <>
@@ -401,6 +466,11 @@ export default function ProgramDetailScreen() {
                     .join(' · ')}
                   {saveSchedule.isPending ? ' · zapisywanie…' : ''}
                 </Text>
+                {canEdit && schedule.length > 1 ? (
+                  <Pressable onPress={() => setReorder(true)} hitSlop={8} style={{ position: 'absolute', right: 4, top: 0 }}>
+                    <Text style={{ fontSize: 13, color: '#8A6606', fontFamily: 'Manrope_700Bold' }}>Zmień kolejność</Text>
+                  </Pressable>
+                ) : null}
                 <PlanList items={schedule} songs={songTitles.data} onPressItem={canEdit ? (i) => setEditIndex(i) : undefined} />
               </>
             ) : (
@@ -523,7 +593,12 @@ export default function ProgramDetailScreen() {
           </View>
         )}
 
-        {tab === 'notes' && <NotesView items={itemsWithNotes} />}
+        {tab === 'notes' && (
+          <View>
+            <ProgramNotes programId={programId} initial={String((program as any).notes ?? '')} editable={canEdit} />
+            <NotesView items={itemsWithNotes} />
+          </View>
+        )}
       </ScrollView>
 
       <ScheduleItemEditor
@@ -550,6 +625,46 @@ export default function ProgramDetailScreen() {
           onDeleted={() => goBack(router)}
         />
       ) : null}
+      {canCreate ? (
+        <DuplicateProgramModal
+          visible={duplicating}
+          programId={programId}
+          programDate={programDate}
+          campusIdForInsert={campusIdForInsert}
+          onClose={() => setDuplicating(false)}
+          onDone={(id) => router.push({ pathname: '/(app)/programs/[id]', params: { id: String(id) } })}
+        />
+      ) : null}
+      {canSaveTemplate ? (
+        <SaveTemplateModal visible={savingTemplate} defaultName={programTitle} schedule={schedule} onClose={() => setSavingTemplate(false)} />
+      ) : null}
+      {canEdit ? (
+        <TemplatesSheet
+          visible={loadingTemplate}
+          currentCount={schedule.length}
+          canDelete={canDeleteTemplate}
+          onClose={() => setLoadingTemplate(false)}
+          onApply={(items, mode) => {
+            persist(mode === 'replace' ? items : [...schedule, ...items]);
+            setLoadingTemplate(false);
+            setTab('schedule');
+          }}
+        />
+      ) : null}
+      {canEdit ? (
+        <SendEmailSheet
+          visible={emailing}
+          programId={programId}
+          title={programTitle}
+          dateLabel={dateLabel}
+          schedule={schedule}
+          songs={songTitles.data}
+          notes={((program as any).notes as string | null) || null}
+          eventIds={linked.map((e: LinkedEvent) => e.id)}
+          programZespol={((program as any).zespol as Record<string, unknown> | null) ?? null}
+          onClose={() => setEmailing(false)}
+        />
+      ) : null}
       {canLinkEvents ? (
         <EventPickerSheet
           visible={pickingEvent}
@@ -562,6 +677,55 @@ export default function ProgramDetailScreen() {
     </View>
   );
 }
+
+// Notatki ogólne programu (kolumna programs.notes — „Notatki ogólne” na webie).
+const ProgramNotes = ({ programId, initial, editable }: { programId: number; initial: string; editable: boolean }) => {
+  const save = useUpdateProgramNotes(programId);
+  const [text, setText] = useState(initial);
+  const [lastSaved, setLastSaved] = useState(initial);
+  const dirty = text !== lastSaved;
+  if (!editable && !initial.trim()) return null;
+  return (
+    <View style={{ marginBottom: 16, padding: 16, borderRadius: 20, backgroundColor: '#FFFFFF' }}>
+      <Text style={{ fontSize: 11, color: '#8A6606', marginBottom: 8, letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold' }}>
+        Notatki ogólne
+      </Text>
+      {editable ? (
+        <>
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            placeholder="Informacje dla wszystkich: próba, ubiór, uwagi techniczne…"
+            placeholderTextColor="#857F70"
+            multiline
+            style={{ minHeight: 90, fontSize: 15, lineHeight: 21, color: '#2A2312', fontFamily: 'Manrope_500Medium', textAlignVertical: 'top' }}
+          />
+          {dirty ? (
+            <Pressable
+              onPress={() =>
+                save.mutate(text, {
+                  onSuccess: () => setLastSaved(text),
+                  onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.'),
+                })
+              }
+              disabled={save.isPending}
+              className="active:opacity-80"
+              style={{ alignSelf: 'flex-end', marginTop: 10, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 999, backgroundColor: '#FFBE0B' }}
+            >
+              {save.isPending ? (
+                <ActivityIndicator size="small" color="#2A2312" />
+              ) : (
+                <Text style={{ fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Zapisz notatki</Text>
+              )}
+            </Pressable>
+          ) : null}
+        </>
+      ) : (
+        <Text style={{ fontSize: 15, lineHeight: 21, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}>{initial}</Text>
+      )}
+    </View>
+  );
+};
 
 const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
   if (items.length === 0) {
@@ -587,7 +751,7 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
           className="text-[13px] text-center mt-1"
           style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
         >
-          Notatki i pliki dodajesz w aplikacji webowej.
+          Notatki i PDF-y dodajesz w edycji punktu planu.
         </Text>
       </View>
     );
