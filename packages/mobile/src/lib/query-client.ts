@@ -13,6 +13,10 @@ export const queryClient = new QueryClient({
   },
 });
 
+// Wersja zapisanego cache: zmień przy niekompatybilnej zmianie kształtu danych zapytań —
+// po aktualizacji apki stary cache z dysku zostanie odrzucony zamiast wysypać nowy kod.
+export const QUERY_CACHE_BUSTER = '2026-10-04-kalendarz';
+
 export const queryPersister = createAsyncStoragePersister({
   storage: AsyncStorage,
   key: 'avenit.query-cache.v1',

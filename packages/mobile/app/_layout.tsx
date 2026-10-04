@@ -14,7 +14,7 @@ import { AuthProvider } from '../src/contexts/AuthContext';
 import { CampusProvider } from '../src/contexts/CampusContext';
 import { I18nProvider } from '../src/i18n';
 import { ErrorBoundary } from '../src/components/shared/ErrorBoundary';
-import { queryClient, queryPersister } from '../src/lib/query-client';
+import { QUERY_CACHE_BUSTER, queryClient, queryPersister } from '../src/lib/query-client';
 import { useAppFonts } from '../src/lib/fonts';
 import { supabase } from '../src/lib/supabase';
 import {
@@ -172,7 +172,7 @@ export default function RootLayout() {
         <ErrorBoundary>
           <PersistQueryClientProvider
             client={queryClient}
-            persistOptions={{ persister: queryPersister, maxAge: 1000 * 60 * 60 * 24 * 7 }}
+            persistOptions={{ persister: queryPersister, maxAge: 1000 * 60 * 60 * 24 * 7, buster: QUERY_CACHE_BUSTER }}
           >
             <I18nProvider>
               <ThemeProvider>

@@ -14,7 +14,26 @@ import {
 import { X } from 'lucide-react-native';
 import { DateField, TimeField, isValidTime, toYmd } from '../../../components/ui/DateField';
 import { useModules } from '../../modules/useModules';
-import { useCreateCalendarEvent, useEventCalendarKeys } from '../create';
+import {
+  useCreateCalendarEvent,
+  useDeleteCalendarEvent,
+  useEventCalendarKeys,
+  useUpdateCalendarEvent,
+} from '../create';
+
+// Wydarzenie do edycji (ten sam formularz co „Nowe wydarzenie”).
+export interface EditableEvent {
+  id: number;
+  title: string;
+  moduleKey: string | null;
+  date: string;
+  time: string | null;
+  endTime: string | null;
+  location: string | null;
+  description: string | null;
+  // Opis sformatowany na webie (details_html) — wtedy opisu nie zmieniamy z telefonu.
+  hasDetailsHtml: boolean;
+}
 
 const Label = ({ children }: { children: string }) => (
   <Text
@@ -47,13 +66,22 @@ export const NewCalendarEventModal = ({
   onClose,
   userEmail,
   campusIdForInsert,
+  editing,
+  canDelete,
+  onDeleted,
 }: {
   visible: boolean;
   onClose: () => void;
   userEmail: string | null;
   campusIdForInsert: number | null;
+  editing?: EditableEvent | null;
+  canDelete?: boolean;
+  onDeleted?: () => void;
 }) => {
   const create = useCreateCalendarEvent(userEmail, campusIdForInsert);
+  const update = useUpdateCalendarEvent(editing?.id ?? -1);
+  const remove = useDeleteCalendarEvent(editing?.id ?? -1);
+  const busy = create.isPending || update.isPending;
   const calendars = useEventCalendarKeys();
   const { items } = useModules();
   const [title, setTitle] = useState('');
@@ -62,52 +90,79 @@ export const NewCalendarEventModal = ({
   const [endTime, setEndTime] = useState('');
   const [location, setLocation] = useState('');
   const [moduleKey, setModuleKey] = useState<string | null>(null);
+  const [description, setDescription] = useState('');
 
   useEffect(() => {
-    if (visible) {
-      setTitle('');
-      setDate(toYmd(new Date()));
-      setTime('');
-      setEndTime('');
-      setLocation('');
-      setModuleKey(null);
-    }
-  }, [visible]);
+    if (!visible) return;
+    setTitle(editing?.title ?? '');
+    setDate(editing?.date ?? toYmd(new Date()));
+    setTime(editing?.time ?? '');
+    setEndTime(editing?.endTime ?? '');
+    setLocation(editing?.location ?? '');
+    setModuleKey(editing?.moduleKey ?? null);
+    setDescription(editing?.description ?? '');
+  }, [visible, editing]);
 
   // Kalendarze modułów, które kościół ma w event_calendars i do których mam dostęp.
   const options = useMemo(() => {
     const keys: string[] = calendars.data ?? [];
-    return [
+    const out = [
       { key: null as string | null, label: 'Ogólne' },
       ...items.filter((m) => keys.includes(m.key)).map((m) => ({ key: m.key as string | null, label: m.label })),
     ];
-  }, [calendars.data, items]);
+    // Edytowane wydarzenie z kalendarza spoza listy — zostaw je wybieralne.
+    if (editing?.moduleKey && !out.some((o) => o.key === editing.moduleKey)) {
+      out.push({ key: editing.moduleKey, label: items.find((m) => m.key === editing.moduleKey)?.label ?? editing.moduleKey });
+    }
+    return out;
+  }, [calendars.data, items, editing]);
 
   const save = async () => {
     if (!title.trim()) return Alert.alert('Podaj tytuł', 'Tytuł wydarzenia jest wymagany.');
     if (time && !isValidTime(time)) return Alert.alert('Błędna godzina', 'Wybierz godzinę początku.');
     if (endTime && !isValidTime(endTime)) return Alert.alert('Błędna godzina końca', 'Wybierz godzinę końca.');
     if (time && endTime && endTime <= time) return Alert.alert('Koniec przed początkiem', 'Godzina końca musi być późniejsza niż początek.');
+    const payload = {
+      title: title.trim(),
+      moduleKey,
+      date,
+      time: time || null,
+      endTime: (time && endTime) || null,
+      location: location.trim() || null,
+      ...(editing?.hasDetailsHtml ? {} : { description: description.trim() || null }),
+    };
     try {
-      await create.mutateAsync({
-        title: title.trim(),
-        moduleKey,
-        date,
-        time: time || null,
-        endTime: endTime || null,
-        location: location.trim() || null,
-      });
+      if (editing) await update.mutateAsync(payload);
+      else await create.mutateAsync(payload);
       onClose();
     } catch (e: any) {
-      Alert.alert('Nie udało się dodać', e?.message ?? 'Spróbuj ponownie.');
+      Alert.alert(editing ? 'Nie udało się zapisać' : 'Nie udało się dodać', e?.message ?? 'Spróbuj ponownie.');
     }
   };
+
+  const confirmDelete = () =>
+    Alert.alert('Usunąć wydarzenie?', `„${editing?.title ?? ''}” zniknie z kalendarza u wszystkich.`, [
+      { text: 'Anuluj', style: 'cancel' },
+      {
+        text: 'Usuń',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await remove.mutateAsync();
+            onClose();
+            onDeleted?.();
+          } catch (e: any) {
+            Alert.alert('Nie udało się usunąć', e?.message ?? 'Spróbuj ponownie.');
+          }
+        },
+      },
+    ]);
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 4 }}>
-          <Text style={{ flex: 1, fontSize: 20, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Nowe wydarzenie</Text>
+          <Text style={{ flex: 1, fontSize: 20, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{editing ? 'Edytuj wydarzenie' : 'Nowe wydarzenie'}</Text>
           <Pressable onPress={onClose} hitSlop={10} className="active:opacity-60">
             <X size={22} color="#4A463E" />
           </Pressable>
@@ -150,13 +205,29 @@ export const NewCalendarEventModal = ({
           <Label>Miejsce</Label>
           <TextInput value={location} onChangeText={setLocation} placeholder="np. Sala główna" placeholderTextColor="#857F70" style={inputStyle} />
 
+          <Label>Opis</Label>
+          {editing?.hasDetailsHtml ? (
+            <Text style={{ fontSize: 13, lineHeight: 18, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
+              Opis ma formatowanie z weba — zmienisz go na stronie wydarzenia w przeglądarce.
+            </Text>
+          ) : (
+            <TextInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Co warto wiedzieć? (opcjonalnie)"
+              placeholderTextColor="#857F70"
+              multiline
+              style={[inputStyle, { height: 96, paddingTop: 12, textAlignVertical: 'top' as const }]}
+            />
+          )}
+
           <Text style={{ fontSize: 12, lineHeight: 17, color: '#857F70', marginTop: 14, fontFamily: 'Manrope_400Regular' }}>
-            Opis, zapisy, płatności i widoczność ustawisz na webie na stronie wydarzenia.
+            Program, służby, zapisy, płatności i widoczność ustawisz na webie na stronie wydarzenia.
           </Text>
 
           <Pressable
             onPress={save}
-            disabled={create.isPending}
+            disabled={busy}
             className="active:opacity-80"
             style={{
               marginTop: 20,
@@ -165,15 +236,31 @@ export const NewCalendarEventModal = ({
               backgroundColor: '#2A2312',
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: create.isPending ? 0.6 : 1,
+              opacity: busy ? 0.6 : 1,
             }}
           >
-            {create.isPending ? (
+            {busy ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={{ fontSize: 15, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>Dodaj wydarzenie</Text>
+              <Text style={{ fontSize: 15, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>
+                {editing ? 'Zapisz zmiany' : 'Dodaj wydarzenie'}
+              </Text>
             )}
           </Pressable>
+          {editing && canDelete ? (
+            <Pressable
+              onPress={confirmDelete}
+              disabled={remove.isPending}
+              className="active:opacity-70"
+              style={{ marginTop: 10, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
+            >
+              {remove.isPending ? (
+                <ActivityIndicator color="#B42318" />
+              ) : (
+                <Text style={{ fontSize: 15, color: '#B42318', fontFamily: 'Manrope_600SemiBold' }}>Usuń wydarzenie</Text>
+              )}
+            </Pressable>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </Modal>

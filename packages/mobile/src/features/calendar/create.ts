@@ -31,6 +31,7 @@ export interface NewCalendarEvent {
   time: string | null;
   endTime: string | null;
   location: string | null;
+  description?: string | null;
 }
 
 export const useCreateCalendarEvent = (userEmail: string | null, campusIdForInsert: number | null) => {
@@ -45,6 +46,7 @@ export const useCreateCalendarEvent = (userEmail: string | null, campusIdForInse
           time: e.time,
           end_time: e.endTime,
           location: e.location,
+          description: e.description ?? null,
           created_by: userEmail,
           campus_id: campusIdForInsert,
         },
@@ -56,5 +58,45 @@ export const useCreateCalendarEvent = (userEmail: string | null, campusIdForInse
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       qc.invalidateQueries({ queryKey: ['team'] });
     },
+  });
+};
+
+const invalidateEvents = (qc: ReturnType<typeof useQueryClient>) => {
+  qc.invalidateQueries({ queryKey: ['agenda'] });
+  qc.invalidateQueries({ queryKey: ['dashboard'] });
+  qc.invalidateQueries({ queryKey: ['team'] });
+  qc.invalidateQueries({ queryKey: ['event-detail'] });
+};
+
+// Edycja podstawowych pól (jak karta „Termin i miejsce” na webie). Opis sformatowany
+// (details_html) zostaje na webie — z telefonu zmieniamy tylko zwykły opis.
+export const useUpdateCalendarEvent = (id: number) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (e: NewCalendarEvent) => {
+      const patch: Record<string, unknown> = {
+        title: e.title,
+        module_key: e.moduleKey,
+        date: e.date,
+        time: e.time,
+        end_time: e.endTime,
+        location: e.location,
+      };
+      if (e.description !== undefined) patch.description = e.description;
+      const { error } = await (supabase.from('events') as any).update(patch).eq('id', id);
+      if (error) throw new Error(error.message || 'Nie udało się zapisać zmian.');
+    },
+    onSuccess: () => invalidateEvents(qc),
+  });
+};
+
+export const useDeleteCalendarEvent = (id: number) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('events').delete().eq('id', id);
+      if (error) throw new Error(error.message || 'Nie udało się usunąć wydarzenia.');
+    },
+    onSuccess: () => invalidateEvents(qc),
   });
 };

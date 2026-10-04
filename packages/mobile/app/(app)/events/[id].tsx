@@ -7,12 +7,14 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  Share,
   StatusBar,
   Text,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   CalendarPlus,
   Check,
@@ -23,12 +25,16 @@ import {
   Image as ImageIcon,
   Link as LinkIcon,
   MapPin,
+  Minus,
   MoreHorizontal,
   Music,
+  Navigation,
+  Pencil,
+  Plus,
+  Share2,
   Ticket,
   Type as TypeIcon,
-  UserMinus,
-  UserPlus,
+  Users,
   type LucideIcon,
 } from 'lucide-react-native';
 import { format } from 'date-fns';
@@ -37,7 +43,10 @@ import { B, Monogram, SectionLabel } from '../../../src/components/ui/brand';
 import { goBack } from '../../../src/lib/navigation';
 import { useAuthSession } from '../../../src/lib/auth';
 import { tenantWebBase } from '../../../src/lib/supabase';
+import { usePermissions } from '../../../src/lib/permissions';
+import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import { useMyProfile } from '../../../src/features/account/api';
+import { useUpdateAssignmentStatus } from '../../../src/features/programs/api';
 import { formatTime } from '../../../src/lib/domain';
 import {
   useCancelEvent,
@@ -50,13 +59,16 @@ import {
   type EventDetail,
   type EventFile,
   type EventProgram,
+  type MyAssignment,
   type ServiceSection,
 } from '../../../src/features/calendar/event-detail';
 import { addToPhoneCalendar } from '../../../src/features/calendar/add-to-calendar';
+import { NewCalendarEventModal } from '../../../src/features/calendar/components/NewCalendarEventModal';
 import { cap, isOngoing, isOver, relativeDay, timeRange, useCalendarLabel } from '../../../src/features/calendar/meta';
 
-// Pełny widok wydarzenia (jak strona wydarzenia na webie): termin i miejsce, szczegóły,
-// program, służby, zapisy/płatność, uczestnicy, materiały, pola i zakładki własne.
+// Pełny widok wydarzenia (jak strona wydarzenia na webie): termin i miejsce, szybkie akcje,
+// moja służba (potwierdź/odmów), obecność (Będę), szczegóły, program, służby, materiały,
+// zakładki własne. Osoby z prawem edycji zmieniają podstawowe pola i usuwają wydarzenie.
 
 const F = {
   medium: 'Manrope_500Medium',
@@ -76,6 +88,13 @@ const duration = (sec: number) => {
 };
 const fileSize = (b: number | null) =>
   !b ? null : b < 1024 * 1024 ? `${Math.max(1, Math.round(b / 1024))} KB` : `${(b / 1024 / 1024).toFixed(1).replace('.', ',')} MB`;
+const plural = (n: number, one: string, few: string, many: string) => {
+  if (n === 1) return one;
+  const m10 = n % 10;
+  const m100 = n % 100;
+  return m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? few : many;
+};
+const hm = (d: Date) => format(d, 'HH:mm');
 
 const openUrl = (url: string | null) => {
   if (!url) return;
@@ -172,48 +191,41 @@ interface BodyProps {
 const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: BodyProps) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const perms = usePermissions();
+  const { campusIdForInsert } = useCampusQuery();
   const ev = d.event;
-
-  // Zapisy (event_registrations): pełna rejestracja przy registration_required, w kalendarzach
-  // modułów lekkie „Będę” (jak wcześniej), płatne → strona wydarzenia na webie.
-  const regs = useEventRegistrations(ev.eventId);
-  const signUp = useSignUpEvent(ev.eventId, email);
-  const cancel = useCancelEvent(ev.eventId, email);
-  const [guests, setGuests] = useState(0);
-  const list: EventRegistration[] = regs.data ?? [];
-  const going = list.reduce((s, r) => s + 1 + (r.guests_count || 0), 0);
-  const mine = email ? list.find((r) => (r.user_email || '').toLowerCase() === email.toLowerCase()) ?? null : null;
-  const capacity = d.maxParticipants;
-  const full = capacity != null && going >= capacity;
-  const paidOnWeb = d.isPaid && d.registrationRequired;
-  const quickRsvp = !d.registrationRequired && !!ev.moduleKey;
-  const busy = signUp.isPending || cancel.isPending;
-  const deadlinePassed = !!d.registrationDeadline && d.registrationDeadline < format(new Date(), 'yyyy-MM-dd');
-  const doSignUp = (g: number) =>
-    signUp.mutate(
-      { guests: g, fullName: myName ?? '' },
-      { onError: (e: any) => Alert.alert('Błąd', e?.message ?? 'Nie udało się zapisać.') },
-    );
-  const doCancel = () =>
-    cancel.mutate(undefined, { onError: (e: any) => Alert.alert('Błąd', e?.message ?? 'Nie udało się wypisać.') });
-  const openWebEvent = () => {
-    const base = tenantWebBase();
-    if (base) openUrl(`${base}/wydarzenie/${ev.eventId}`);
-  };
+  const canEdit = perms.can('res:events:update');
+  const [editing, setEditing] = useState(false);
 
   const now = new Date();
   const over = isOver(ev, now);
   const live = isOngoing(ev, now);
   const eyebrow = [d.typeLabel, calendarLabel].filter(Boolean).join(' · ');
+  const length =
+    !ev.allDay && ev.endsAt && ev.endsAt > ev.startsAt ? duration((ev.endsAt.getTime() - ev.startsAt.getTime()) / 1000) : null;
 
+  // Obecność / zapisy (event_registrations) — jak panel „Uczestnicy” na webie: „Będę” przy
+  // każdym wydarzeniu; przy wymaganej rejestracji limit miejsc i termin; płatne → web.
+  const regs = useEventRegistrations(ev.eventId);
+  const list: EventRegistration[] = regs.data ?? [];
+  const going = list.reduce((s, r) => s + 1 + (r.guests_count || 0), 0);
+  const mine = email ? list.find((r) => (r.user_email || '').toLowerCase() === email.toLowerCase()) ?? null : null;
+
+  const showAttendance = (d.sections.participants || d.registrationRequired) && (!over || list.length > 0);
   const showProgram = d.sections.program && !!d.program;
   const showServices = d.sections.services && d.hasServiceConfig;
-  const showRegistration =
-    d.sections.registration && (d.registrationRequired || d.isPaid || d.prices.length > 0 || !!d.formUrl || quickRsvp);
-  const showParticipants = d.sections.participants && list.length > 0;
   const files = [...d.attachments, ...d.materials];
   const showFiles = files.length > 0;
   const showDetails = !!d.details || d.fields.length > 0 || !!d.link;
+  const showMyService = d.myAssignments.length > 0 || ev.isMine;
+
+  const share = () => {
+    const base = tenantWebBase();
+    const when = `${cap(format(ev.startsAt, 'EEEE, d MMMM', { locale: pl }))}, ${timeRange(ev)}`;
+    Share.share({
+      message: [ev.title, when, ev.location, base ? `${base}/wydarzenie/${ev.eventId}` : null].filter(Boolean).join('\n'),
+    }).catch(() => undefined);
+  };
 
   // Skróty do sekcji (przyklejony pasek): pozycja sekcji z onLayout → scrollTo.
   const scrollRef = useRef<ScrollView>(null);
@@ -228,13 +240,19 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
     if (y != null) scrollRef.current?.scrollTo({ y: Math.max(0, baseY.current + y - navH - 6), animated: true });
   };
   const nav: { key: string; label: string }[] = [
+    ...(showAttendance ? [{ key: 'attendance', label: d.registrationRequired ? 'Zapisy' : 'Obecność' }] : []),
     ...(showDetails ? [{ key: 'details', label: 'Szczegóły' }] : []),
     ...(showProgram ? [{ key: 'program', label: 'Program' }] : []),
     ...(showServices ? [{ key: 'services', label: 'Służby' }] : []),
-    ...(showRegistration ? [{ key: 'registration', label: d.isPaid ? 'Zapisy i płatność' : 'Zapisy' }] : []),
-    ...(showParticipants ? [{ key: 'participants', label: 'Uczestnicy' }] : []),
     ...(showFiles ? [{ key: 'files', label: 'Materiały' }] : []),
     ...d.customTabs.map((t) => ({ key: `tab-${t.id}`, label: t.label })),
+  ];
+
+  const actions: { key: string; Icon: LucideIcon; label: string; onPress: () => void }[] = [
+    ...(!over ? [{ key: 'cal', Icon: CalendarPlus, label: 'Do kalendarza', onPress: () => addToPhoneCalendar(ev, d.details || null) }] : []),
+    ...(ev.location ? [{ key: 'map', Icon: Navigation, label: 'Trasa', onPress: () => openMaps(ev.location!) }] : []),
+    { key: 'share', Icon: Share2, label: 'Udostępnij', onPress: share },
+    ...(canEdit ? [{ key: 'edit', Icon: Pencil, label: 'Edytuj', onPress: () => setEditing(true) }] : []),
   ];
 
   return (
@@ -248,11 +266,12 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
         contentContainerStyle={{ paddingBottom: 130 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={B.ink} />}
       >
-        {/* Nagłówek: strzałka + ciemna karta z terminem */}
         <View style={{ paddingTop: 10, paddingHorizontal: 16 }}>
           <View style={{ paddingHorizontal: 4, marginBottom: 14 }}>
             <BackButton onPress={() => goBack(router)} />
           </View>
+
+          {/* Ciemna karta: co, kiedy, gdzie */}
           <View style={{ backgroundColor: B.ink, borderRadius: 28, padding: 20 }}>
             {eyebrow ? (
               <Text style={{ fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: B.kurkuma, fontFamily: F.bold }}>
@@ -280,17 +299,15 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
                   <Clock size={14} color={B.onDarkMuted} />
                   <Text style={{ fontSize: 14, color: B.onDarkMuted, fontFamily: F.semibold, fontVariant: ['tabular-nums'] }}>
                     {timeRange(ev)}
+                    {length ? ` · ${length}` : ''}
                   </Text>
                 </View>
               </View>
             </View>
 
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
-              <Chip dark tone={live ? 'kurkuma' : 'dark'}>
-                {live ? 'Trwa teraz' : over ? 'Zakończone' : relativeDay(ev.startsAt, now)}
-              </Chip>
-              {ev.isMine ? <Chip dark tone="kurkuma">{`Służysz · ${ev.myRole ?? 'grafik'}`}</Chip> : null}
-              {mine ? <Chip dark tone="dark">Jesteś zapisany/a</Chip> : null}
+              <Chip tone={live ? 'kurkuma' : 'dark'}>{live ? 'Trwa teraz' : over ? 'Zakończone' : relativeDay(ev.startsAt, now)}</Chip>
+              {mine ? <Chip tone="dark">{over ? 'Byłeś/aś zapisany/a' : 'Będziesz'}</Chip> : null}
             </View>
 
             {ev.location ? (
@@ -309,21 +326,33 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
               >
                 <MapPin size={17} color={B.kurkuma} />
                 <Text style={{ flex: 1, fontSize: 15, color: B.onDark, fontFamily: F.semibold }}>{ev.location}</Text>
-                <Text style={{ fontSize: 13, color: B.onDarkMuted, fontFamily: F.semibold }}>Mapa</Text>
                 <ChevronRight size={16} color={B.onDarkMuted} />
               </Pressable>
             ) : null}
           </View>
 
-          {!over ? (
-            <Pressable
-              onPress={() => addToPhoneCalendar(ev, d.details || null)}
-              className="active:opacity-80"
-              style={[btn.base, btn.kurkuma, { marginTop: 12 }]}
-            >
-              <CalendarPlus size={17} color={B.ink} strokeWidth={2.3} />
-              <Text style={btn.text}>Dodaj do kalendarza</Text>
-            </Pressable>
+          {/* Szybkie akcje */}
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+            {actions.map((a) => (
+              <Pressable
+                key={a.key}
+                onPress={a.onPress}
+                className="active:opacity-70"
+                accessibilityLabel={a.label}
+                style={{ flex: 1, backgroundColor: B.card, borderRadius: 20, paddingVertical: 12, paddingHorizontal: 4, alignItems: 'center', gap: 7 }}
+              >
+                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: B.paper, alignItems: 'center', justifyContent: 'center' }}>
+                  <a.Icon size={18} color={B.ink} strokeWidth={2.1} />
+                </View>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ fontSize: 12, color: B.ink2, fontFamily: F.semibold }}>
+                  {a.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {showMyService ? (
+            <MyServiceCard assignments={d.myAssignments} fallbackRole={ev.myRole} over={over} eventId={ev.eventId} />
           ) : null}
         </View>
 
@@ -348,6 +377,13 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
         )}
 
         <View style={{ paddingHorizontal: 16 }} onLayout={(e) => (baseY.current = e.nativeEvent.layout.y)}>
+          {showAttendance ? (
+            <View onLayout={mark('attendance')}>
+              <SectionLabel count={going || undefined}>{d.registrationRequired ? 'Zapisy' : 'Obecność'}</SectionLabel>
+              <Attendance d={d} list={list} going={going} mine={mine} over={over} email={email} myName={myName} loading={regs.isLoading} />
+            </View>
+          ) : null}
+
           {showDetails ? (
             <View onLayout={mark('details')}>
               <SectionLabel>Szczegóły</SectionLabel>
@@ -359,7 +395,12 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
                   <KeyValue key={f.label} label={f.label} value={f.value} first={!d.details && i === 0} />
                 ))}
                 {d.link ? (
-                  <LinkRow Icon={LinkIcon} label={d.link.replace(/^https?:\/\//, '')} onPress={() => openUrl(d.link)} first={!d.details && !d.fields.length} />
+                  <LinkRow
+                    Icon={LinkIcon}
+                    label={d.link.replace(/^https?:\/\//, '')}
+                    onPress={() => openUrl(d.link)}
+                    first={!d.details && !d.fields.length}
+                  />
                 ) : null}
               </Card>
             </View>
@@ -368,7 +409,10 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
           {showProgram ? (
             <View onLayout={mark('program')}>
               <SectionLabel>Program</SectionLabel>
-              <ProgramCard program={d.program!} onOpen={() => router.push({ pathname: '/(app)/programs/[id]', params: { id: String(d.program!.id) } })} />
+              <ProgramCard
+                program={d.program!}
+                onOpen={() => router.push({ pathname: '/(app)/programs/[id]', params: { id: String(d.program!.id) } })}
+              />
             </View>
           ) : null}
 
@@ -376,144 +420,6 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
             <View onLayout={mark('services')}>
               <SectionLabel>Służby</SectionLabel>
               <Services sections={d.services} />
-            </View>
-          ) : null}
-
-          {showRegistration ? (
-            <View onLayout={mark('registration')}>
-              <SectionLabel>{d.isPaid ? 'Zapisy i płatność' : 'Zapisy'}</SectionLabel>
-              <Card>
-                {d.registrationRequired ? (
-                  <>
-                    <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                      <Text style={{ fontSize: 15, color: B.ink, fontFamily: F.bold }}>
-                        Zapisani: {going}
-                        {capacity != null ? ` / ${capacity}` : ''}
-                      </Text>
-                      {full && !mine ? <Text style={{ fontSize: 13, color: B.gold, fontFamily: F.bold }}>Brak miejsc</Text> : null}
-                    </View>
-                    {capacity != null ? (
-                      <View style={{ height: 6, borderRadius: 3, backgroundColor: B.paper2, overflow: 'hidden', marginTop: 10 }}>
-                        <View style={{ height: 6, width: `${Math.min(100, Math.round((going / capacity) * 100))}%`, backgroundColor: B.kurkuma }} />
-                      </View>
-                    ) : null}
-                    {d.registrationDeadline ? (
-                      <Text style={{ marginTop: 10, fontSize: 13, color: B.ink3, fontFamily: F.medium }}>
-                        Zapisy do {ymdPl(d.registrationDeadline)}
-                        {deadlinePassed ? ' · zamknięte' : ''}
-                      </Text>
-                    ) : null}
-                  </>
-                ) : null}
-
-                {d.prices.length > 0 ? (
-                  <View style={{ marginTop: d.registrationRequired ? 12 : 0 }}>
-                    {d.prices.map((p, i) => (
-                      <KeyValue key={`${p.label}-${i}`} label={p.label} value={money(p.amount)} first={!d.registrationRequired && i === 0} />
-                    ))}
-                    {d.paymentDeadline ? <KeyValue label="Płatność do" value={ymdPl(d.paymentDeadline)} /> : null}
-                  </View>
-                ) : null}
-
-                <View style={{ marginTop: d.registrationRequired || d.prices.length ? 14 : 0, gap: 8 }}>
-                  {over ? null : paidOnWeb ? (
-                    <Pressable onPress={openWebEvent} className="active:opacity-80" style={[btn.base, btn.dark]}>
-                      <Ticket size={16} color="#fff" strokeWidth={2.3} />
-                      <Text style={[btn.text, { color: '#fff' }]}>{mine ? 'Twoja rejestracja' : 'Zapisz się i zapłać'}</Text>
-                    </Pressable>
-                  ) : d.registrationRequired ? (
-                    !email ? null : mine ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: B.kurkuma, alignItems: 'center', justifyContent: 'center' }}>
-                            <Check size={15} color={B.ink} strokeWidth={2.6} />
-                          </View>
-                          <Text style={{ fontSize: 14, color: B.ink, fontFamily: F.bold }}>
-                            Jesteś zapisany/a{mine.guests_count ? ` (+${mine.guests_count})` : ''}
-                          </Text>
-                        </View>
-                        <Pressable onPress={doCancel} disabled={busy} className="active:opacity-70" style={[btn.base, { backgroundColor: B.paper2, paddingVertical: 9 }]}>
-                          {busy ? <ActivityIndicator size="small" color={B.ink} /> : <UserMinus size={15} color={B.ink} />}
-                          <Text style={[btn.text, { fontSize: 13 }]}>Wypisz</Text>
-                        </Pressable>
-                      </View>
-                    ) : deadlinePassed ? null : (
-                      <>
-                        <Text style={{ fontSize: 13, color: B.ink3, fontFamily: F.semibold }}>Osoby towarzyszące</Text>
-                        <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
-                          {[0, 1, 2, 3, 4, 5].map((n) => (
-                            <Pressable
-                              key={n}
-                              onPress={() => setGuests(n)}
-                              style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: guests === n ? B.ink : B.paper2 }}
-                            >
-                              <Text style={{ fontSize: 13, color: guests === n ? '#fff' : B.ink, fontFamily: F.semibold }}>
-                                {n === 0 ? 'Sam/a' : `+${n}`}
-                              </Text>
-                            </Pressable>
-                          ))}
-                        </View>
-                        <Pressable
-                          onPress={() => doSignUp(guests)}
-                          disabled={busy || full}
-                          className="active:opacity-80"
-                          style={[btn.base, btn.dark, { marginTop: 4, opacity: full ? 0.5 : 1 }]}
-                        >
-                          {busy ? <ActivityIndicator size="small" color="#fff" /> : <UserPlus size={16} color="#fff" strokeWidth={2.3} />}
-                          <Text style={[btn.text, { color: '#fff' }]}>{full ? 'Brak miejsc' : 'Zapisz się'}</Text>
-                        </Pressable>
-                      </>
-                    )
-                  ) : quickRsvp && email ? (
-                    <Pressable
-                      onPress={() => (mine ? doCancel() : doSignUp(0))}
-                      disabled={busy}
-                      className="active:opacity-80"
-                      style={[btn.base, mine ? btn.kurkuma : { backgroundColor: B.paper2 }]}
-                    >
-                      {busy ? <ActivityIndicator size="small" color={B.ink} /> : mine ? <Check size={16} color={B.ink} strokeWidth={2.5} /> : <UserPlus size={16} color={B.ink} />}
-                      <Text style={btn.text}>{mine ? 'Będę · potwierdzone' : 'Potwierdź obecność'}</Text>
-                    </Pressable>
-                  ) : null}
-                  {d.formUrl && !over ? (
-                    <Pressable onPress={() => openUrl(d.formUrl)} className="active:opacity-80" style={[btn.base, { backgroundColor: B.paper2 }]}>
-                      <FileText size={16} color={B.ink} />
-                      <Text style={btn.text}>Formularz zgłoszeniowy</Text>
-                    </Pressable>
-                  ) : null}
-                </View>
-              </Card>
-            </View>
-          ) : null}
-
-          {showParticipants ? (
-            <View onLayout={mark('participants')}>
-              <SectionLabel count={going}>Uczestnicy</SectionLabel>
-              <Card padded={false}>
-                {list.map((r, i) => {
-                  const name = r.full_name || r.user_email?.split('@')[0] || 'Uczestnik';
-                  return (
-                    <View
-                      key={r.id}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 12,
-                        paddingHorizontal: 16,
-                        paddingVertical: 11,
-                        borderTopWidth: i ? 1 : 0,
-                        borderTopColor: B.line,
-                      }}
-                    >
-                      <Monogram name={name} size={34} />
-                      <Text numberOfLines={1} style={{ flex: 1, fontSize: 15, color: B.ink, fontFamily: F.semibold }}>
-                        {name}
-                      </Text>
-                      {r.guests_count ? <Text style={{ fontSize: 13, color: B.gold, fontFamily: F.bold }}>+{r.guests_count}</Text> : null}
-                    </View>
-                  );
-                })}
-              </Card>
             </View>
           ) : null}
 
@@ -536,17 +442,310 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
               </Card>
             </View>
           ))}
-
-          {!nav.length ? (
-            <Text style={{ marginTop: 22, textAlign: 'center', fontSize: 14, color: B.ink4, fontFamily: F.medium }}>
-              Brak dodatkowych informacji o tym wydarzeniu.
-            </Text>
-          ) : null}
         </View>
       </ScrollView>
+
+      {canEdit ? (
+        <NewCalendarEventModal
+          visible={editing}
+          onClose={() => setEditing(false)}
+          userEmail={email}
+          campusIdForInsert={campusIdForInsert}
+          canDelete={perms.can('res:events:delete')}
+          onDeleted={() => goBack(router)}
+          editing={{
+            id: ev.eventId,
+            title: ev.title,
+            moduleKey: ev.moduleKey,
+            date: format(ev.startsAt, 'yyyy-MM-dd'),
+            time: ev.allDay ? null : hm(ev.startsAt),
+            endTime: ev.endsAt && !ev.allDay ? hm(ev.endsAt) : null,
+            location: ev.location,
+            description: d.raw.description,
+            hasDetailsHtml: d.raw.hasDetailsHtml,
+          }}
+        />
+      ) : null}
     </View>
   );
 };
+
+// ── Moja służba ────────────────────────────────────────────────────────────
+
+const STATUS_TEXT: Record<string, string> = {
+  pending: 'Czeka na Twoje potwierdzenie',
+  accepted: 'Potwierdzone',
+  rejected: 'Odmówiono',
+};
+
+const MyServiceCard = ({
+  assignments,
+  fallbackRole,
+  over,
+  eventId,
+}: {
+  assignments: MyAssignment[];
+  fallbackRole: string | null;
+  over: boolean;
+  eventId: number;
+}) => {
+  const qc = useQueryClient();
+  const respond = useUpdateAssignmentStatus();
+  const answer = (a: MyAssignment, status: 'accepted' | 'rejected') =>
+    respond.mutate(
+      { id: a.id, status },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: ['event-detail', eventId] });
+          qc.invalidateQueries({ queryKey: ['agenda'] });
+        },
+        onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? 'Spróbuj ponownie.'),
+      },
+    );
+  const rows = assignments.length
+    ? assignments
+    : [{ id: '', team: '', role: fallbackRole ?? 'Służba', status: null } as MyAssignment];
+
+  return (
+    <View style={{ marginTop: 12, backgroundColor: B.kurkuma, borderRadius: 24, padding: 18, gap: 14 }}>
+      {rows.map((a, i) => (
+        <View key={a.id || i} style={{ gap: 10 }}>
+          <View>
+            <Text style={{ fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: B.goldDeep, fontFamily: F.bold }}>
+              Twoja służba
+            </Text>
+            <Text style={{ marginTop: 4, fontSize: 18, color: B.ink, fontFamily: F.xbold, letterSpacing: -0.4 }}>
+              {[a.role, a.team].filter(Boolean).join(' · ')}
+            </Text>
+            {a.status ? (
+              <Text style={{ marginTop: 2, fontSize: 13, color: B.goldDeep, fontFamily: F.semibold }}>{STATUS_TEXT[a.status]}</Text>
+            ) : null}
+          </View>
+          {a.id && !over && a.status !== 'accepted' ? (
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable
+                onPress={() => answer(a, 'accepted')}
+                disabled={respond.isPending}
+                className="active:opacity-80"
+                style={[btn.base, btn.dark, { flex: 1, paddingVertical: 11 }]}
+              >
+                <Check size={16} color="#fff" strokeWidth={2.6} />
+                <Text style={[btn.text, { color: '#fff' }]}>Potwierdzam</Text>
+              </Pressable>
+              {a.status !== 'rejected' ? (
+                <Pressable
+                  onPress={() => answer(a, 'rejected')}
+                  disabled={respond.isPending}
+                  className="active:opacity-80"
+                  style={[btn.base, { flex: 1, paddingVertical: 11, backgroundColor: 'rgba(42,35,18,0.1)' }]}
+                >
+                  <Text style={btn.text}>Nie mogę</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+      ))}
+    </View>
+  );
+};
+
+// ── Obecność / zapisy ─────────────────────────────────────────────────────
+
+const Attendance = ({
+  d,
+  list,
+  going,
+  mine,
+  over,
+  email,
+  myName,
+  loading,
+}: {
+  d: EventDetail;
+  list: EventRegistration[];
+  going: number;
+  mine: EventRegistration | null;
+  over: boolean;
+  email: string | null;
+  myName: string | null;
+  loading: boolean;
+}) => {
+  const ev = d.event;
+  const signUp = useSignUpEvent(ev.eventId, email);
+  const cancel = useCancelEvent(ev.eventId, email);
+  const [guests, setGuests] = useState(0);
+  const [showAll, setShowAll] = useState(false);
+  const busy = signUp.isPending || cancel.isPending;
+  const capacity = d.maxParticipants;
+  const full = capacity != null && going >= capacity;
+  const paidOnWeb = d.isPaid && d.registrationRequired;
+  const deadlinePassed = !!d.registrationDeadline && d.registrationDeadline < format(new Date(), 'yyyy-MM-dd');
+
+  const doSignUp = () =>
+    signUp.mutate(
+      { guests, fullName: myName ?? '' },
+      { onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') },
+    );
+  const doCancel = () =>
+    cancel.mutate(undefined, { onError: (e: any) => Alert.alert('Nie udało się wypisać', e?.message ?? 'Spróbuj ponownie.') });
+  const openWebEvent = () => {
+    const base = tenantWebBase();
+    if (base) openUrl(`${base}/wydarzenie/${ev.eventId}`);
+  };
+
+  const names = list.map((r) => r.full_name || r.user_email?.split('@')[0] || 'Uczestnik');
+  const summary =
+    going === 0
+      ? over
+        ? 'Nikt się nie zapisał'
+        : 'Nikt jeszcze się nie zapisał'
+      : over
+        ? `${going} ${plural(going, 'osoba była', 'osoby były', 'osób było')}`
+        : `${going} ${plural(going, 'osoba będzie', 'osoby będą', 'osób będzie')}`;
+  const shown = showAll ? list : list.slice(0, 5);
+
+  return (
+    <Card padded={false}>
+      <View style={{ padding: 16, gap: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {names.length ? (
+            <View style={{ flexDirection: 'row' }}>
+              {names.slice(0, 4).map((n, i) => (
+                <View key={`${n}-${i}`} style={{ marginLeft: i ? -10 : 0, borderRadius: 18, borderWidth: 2, borderColor: B.card }}>
+                  <Monogram name={n} size={32} />
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: B.paper, alignItems: 'center', justifyContent: 'center' }}>
+              <Users size={17} color={B.ink3} />
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, color: B.ink, fontFamily: F.bold }}>{loading ? 'Wczytywanie…' : summary}</Text>
+            {capacity != null || d.registrationDeadline ? (
+              <Text style={{ marginTop: 1, fontSize: 12, color: B.ink3, fontFamily: F.medium }}>
+                {[
+                  capacity != null ? `limit ${capacity} miejsc` : null,
+                  d.registrationDeadline ? `zapisy do ${ymdPl(d.registrationDeadline)}${deadlinePassed ? ' (zamknięte)' : ''}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+
+        {capacity != null ? (
+          <View style={{ height: 6, borderRadius: 3, backgroundColor: B.paper2, overflow: 'hidden' }}>
+            <View style={{ height: 6, width: `${Math.min(100, Math.round((going / capacity) * 100))}%`, backgroundColor: B.kurkuma }} />
+          </View>
+        ) : null}
+
+        {d.prices.length ? (
+          <View>
+            {d.prices.map((p, i) => (
+              <KeyValue key={`${p.label}-${i}`} label={p.label} value={money(p.amount)} first={i === 0} />
+            ))}
+            {d.paymentDeadline ? <KeyValue label="Płatność do" value={ymdPl(d.paymentDeadline)} /> : null}
+          </View>
+        ) : null}
+
+        {over || !email ? null : paidOnWeb ? (
+          <Pressable onPress={openWebEvent} className="active:opacity-80" style={[btn.base, btn.dark]}>
+            <Ticket size={16} color="#fff" strokeWidth={2.3} />
+            <Text style={[btn.text, { color: '#fff' }]}>{mine ? 'Twoja rejestracja' : 'Zapisz się i zapłać'}</Text>
+          </Pressable>
+        ) : mine ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, paddingLeft: 12, borderRadius: 18, backgroundColor: B.kurkumaSoft }}>
+            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: B.kurkuma, alignItems: 'center', justifyContent: 'center' }}>
+              <Check size={16} color={B.ink} strokeWidth={2.8} />
+            </View>
+            <Text style={{ flex: 1, fontSize: 15, color: B.ink, fontFamily: F.bold }}>
+              Będziesz{mine.guests_count ? ` (+${mine.guests_count})` : ''}
+            </Text>
+            <Pressable onPress={doCancel} disabled={busy} className="active:opacity-70" style={[btn.base, { backgroundColor: B.card, paddingVertical: 8, paddingHorizontal: 14 }]}>
+              {busy ? <ActivityIndicator size="small" color={B.ink} /> : <Text style={[btn.text, { fontSize: 13 }]}>Nie będę</Text>}
+            </Pressable>
+          </View>
+        ) : deadlinePassed ? (
+          <Text style={{ fontSize: 14, color: B.ink3, fontFamily: F.semibold }}>Zapisy są już zamknięte.</Text>
+        ) : full ? (
+          <Text style={{ fontSize: 14, color: B.ink3, fontFamily: F.semibold }}>Brak wolnych miejsc.</Text>
+        ) : (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ flex: 1, fontSize: 14, color: B.ink2, fontFamily: F.semibold }}>Osoby towarzyszące</Text>
+              <Stepper value={guests} onChange={setGuests} max={capacity != null ? Math.max(0, capacity - going - 1) : 10} />
+            </View>
+            <Pressable onPress={doSignUp} disabled={busy} className="active:opacity-80" style={[btn.base, btn.kurkuma]}>
+              {busy ? <ActivityIndicator size="small" color={B.ink} /> : <Check size={17} color={B.ink} strokeWidth={2.6} />}
+              <Text style={btn.text}>{d.registrationRequired ? 'Zapisz się' : 'Będę'}</Text>
+            </Pressable>
+          </>
+        )}
+
+        {d.formUrl && !over ? (
+          <Pressable onPress={() => openUrl(d.formUrl)} className="active:opacity-80" style={[btn.base, { backgroundColor: B.paper2 }]}>
+            <FileText size={16} color={B.ink} />
+            <Text style={btn.text}>Formularz zgłoszeniowy</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      {shown.map((r, i) => {
+        const name = r.full_name || r.user_email?.split('@')[0] || 'Uczestnik';
+        return (
+          <View
+            key={r.id}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: B.line }}
+          >
+            <Monogram name={name} size={30} />
+            <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, color: B.ink, fontFamily: F.semibold }}>
+              {name}
+              {mine && r.id === mine.id ? ' (Ty)' : ''}
+            </Text>
+            {r.guests_count ? <Text style={{ fontSize: 13, color: B.gold, fontFamily: F.bold }}>+{r.guests_count}</Text> : null}
+          </View>
+        );
+      })}
+      {list.length > 5 ? (
+        <Pressable
+          onPress={() => setShowAll((v) => !v)}
+          className="active:opacity-70"
+          style={{ paddingVertical: 13, alignItems: 'center', borderTopWidth: 1, borderTopColor: B.line }}
+        >
+          <Text style={{ fontSize: 13, color: B.gold, fontFamily: F.bold }}>{showAll ? 'Zwiń listę' : `Pokaż wszystkich (${list.length})`}</Text>
+        </Pressable>
+      ) : null}
+    </Card>
+  );
+};
+
+const Stepper = ({ value, onChange, max }: { value: number; onChange: (n: number) => void; max: number }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 3, borderRadius: 999, backgroundColor: B.paper }}>
+    <Pressable
+      onPress={() => onChange(Math.max(0, value - 1))}
+      disabled={value === 0}
+      hitSlop={6}
+      accessibilityLabel="Mniej osób"
+      style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: B.card, opacity: value === 0 ? 0.4 : 1 }}
+    >
+      <Minus size={16} color={B.ink} />
+    </Pressable>
+    <Text style={{ minWidth: 22, textAlign: 'center', fontSize: 15, color: B.ink, fontFamily: F.bold, fontVariant: ['tabular-nums'] }}>{value}</Text>
+    <Pressable
+      onPress={() => onChange(Math.min(max, value + 1))}
+      disabled={value >= max}
+      hitSlop={6}
+      accessibilityLabel="Więcej osób"
+      style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: B.card, opacity: value >= max ? 0.4 : 1 }}
+    >
+      <Plus size={16} color={B.ink} />
+    </Pressable>
+  </View>
+);
 
 // ── Klocki ─────────────────────────────────────────────────────────────────
 
@@ -554,16 +753,9 @@ const Card = ({ children, padded = true }: { children: ReactNode; padded?: boole
   <View style={{ backgroundColor: B.card, borderRadius: 22, padding: padded ? 16 : 0, overflow: 'hidden' }}>{children}</View>
 );
 
-const Chip = ({ children, tone, dark }: { children: string; tone: 'kurkuma' | 'dark'; dark?: boolean }) => (
-  <View
-    style={{
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 999,
-      backgroundColor: tone === 'kurkuma' ? B.kurkuma : dark ? 'rgba(246,244,238,0.12)' : B.paper2,
-    }}
-  >
-    <Text style={{ fontSize: 12, color: tone === 'kurkuma' ? B.ink : dark ? B.onDark : B.ink, fontFamily: F.bold }}>{children}</Text>
+const Chip = ({ children, tone }: { children: string; tone: 'kurkuma' | 'dark' }) => (
+  <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: tone === 'kurkuma' ? B.kurkuma : 'rgba(246,244,238,0.12)' }}>
+    <Text style={{ fontSize: 12, color: tone === 'kurkuma' ? B.ink : B.onDark, fontFamily: F.bold }}>{children}</Text>
   </View>
 );
 
@@ -649,7 +841,16 @@ const ProgramCard = ({ program, onOpen }: { program: EventProgram; onOpen: () =>
             key={it.id ?? idx}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 11, borderTopWidth: 1, borderTopColor: B.line }}
           >
-            <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: it?.type === 'song' ? B.kurkumaSoft : B.paper, alignItems: 'center', justifyContent: 'center' }}>
+            <View
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 15,
+                backgroundColor: it?.type === 'song' ? B.kurkumaSoft : B.paper,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <Icon size={15} color={it?.type === 'song' ? B.gold : B.ink3} strokeWidth={2.2} />
             </View>
             <View style={{ flex: 1 }}>
@@ -663,13 +864,19 @@ const ProgramCard = ({ program, onOpen }: { program: EventProgram; onOpen: () =>
               ) : null}
             </View>
             {it?.duration ? (
-              <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.semibold, fontVariant: ['tabular-nums'] }}>{it.duration % 60 ? formatTime(it.duration) : duration(it.duration)}</Text>
+              <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.semibold, fontVariant: ['tabular-nums'] }}>
+                {it.duration % 60 ? formatTime(it.duration) : duration(it.duration)}
+              </Text>
             ) : null}
           </View>
         );
       })}
       {items.length > LIMIT ? (
-        <Pressable onPress={() => setAll((v) => !v)} className="active:opacity-70" style={{ paddingVertical: 13, alignItems: 'center', borderTopWidth: 1, borderTopColor: B.line }}>
+        <Pressable
+          onPress={() => setAll((v) => !v)}
+          className="active:opacity-70"
+          style={{ paddingVertical: 13, alignItems: 'center', borderTopWidth: 1, borderTopColor: B.line }}
+        >
           <Text style={{ fontSize: 13, color: B.gold, fontFamily: F.bold }}>{all ? 'Zwiń plan' : `Pokaż cały plan (${items.length})`}</Text>
         </Pressable>
       ) : null}
@@ -685,84 +892,96 @@ const ProgramCard = ({ program, onOpen }: { program: EventProgram; onOpen: () =>
 const STATUS_HINT: Record<string, string> = { pending: 'czeka', rejected: 'odmowa' };
 
 const Services = ({ sections }: { sections: ServiceSection[] }) => {
-  const anyone = sections.some((s) => s.roles.length > 0);
-  if (!anyone) {
-    return (
-      <Card>
-        <Text style={{ fontSize: 14, color: B.ink3, fontFamily: F.medium }}>
-          Służby ({sections.map((s) => s.label).join(', ')}) nie mają jeszcze przypisanych osób.
-        </Text>
-      </Card>
-    );
-  }
+  const assigned = sections.filter((s) => s.roles.length > 0 || s.notes);
   const empty = sections.filter((s) => s.roles.length === 0 && !s.notes);
   return (
     <View style={{ gap: 10 }}>
-      {sections
-        .filter((s) => s.roles.length > 0 || s.notes)
-        .map((s) => (
-          <Card key={s.key} padded={false}>
-            <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6 }}>
-              <Text style={{ fontSize: 16, color: B.ink, fontFamily: F.bold, letterSpacing: -0.3 }}>{s.label}</Text>
-            </View>
-            {s.roles.map((r) => (
-              <View key={r.key} style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: B.line }}>
-                <Text style={{ width: '36%', paddingTop: 5, fontSize: 13, color: B.ink3, fontFamily: F.semibold }}>{r.label}</Text>
-                <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-                  {r.people.map((p) => (
-                    <View
-                      key={p.name}
+      {assigned.map((s) => (
+        <Card key={s.key} padded={false}>
+          <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6 }}>
+            <Text style={{ fontSize: 16, color: B.ink, fontFamily: F.bold, letterSpacing: -0.3 }}>{s.label}</Text>
+          </View>
+          {s.roles.map((r) => (
+            <View key={r.key} style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: B.line }}>
+              <Text style={{ width: '36%', paddingTop: 5, fontSize: 13, color: B.ink3, fontFamily: F.semibold }}>{r.label}</Text>
+              <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {r.people.map((p) => (
+                  <View
+                    key={p.name}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 5,
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      borderRadius: 999,
+                      backgroundColor: p.isMe ? B.kurkuma : B.paper,
+                      opacity: p.status === 'rejected' ? 0.5 : 1,
+                    }}
+                  >
+                    {p.status === 'accepted' ? <Check size={12} color={p.isMe ? B.ink : B.gold} strokeWidth={3} /> : null}
+                    <Text
                       style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 5,
-                        paddingHorizontal: 10,
-                        paddingVertical: 5,
-                        borderRadius: 999,
-                        backgroundColor: p.isMe ? B.kurkuma : B.paper,
-                        opacity: p.status === 'rejected' ? 0.5 : 1,
+                        fontSize: 13,
+                        color: B.ink,
+                        fontFamily: p.isMe ? F.bold : F.semibold,
+                        textDecorationLine: p.status === 'rejected' ? 'line-through' : 'none',
                       }}
                     >
-                      {p.status === 'accepted' ? <Check size={12} color={p.isMe ? B.ink : B.gold} strokeWidth={3} /> : null}
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          color: B.ink,
-                          fontFamily: p.isMe ? F.bold : F.semibold,
-                          textDecorationLine: p.status === 'rejected' ? 'line-through' : 'none',
-                        }}
-                      >
-                        {p.isMe ? `${p.name} (Ty)` : p.name}
-                      </Text>
-                      {p.status && STATUS_HINT[p.status] ? (
-                        <Text style={{ fontSize: 11, color: B.ink3, fontFamily: F.semibold }}>{STATUS_HINT[p.status]}</Text>
-                      ) : null}
-                    </View>
-                  ))}
-                </View>
+                      {p.isMe ? `${p.name} (Ty)` : p.name}
+                    </Text>
+                    {p.status && STATUS_HINT[p.status] ? (
+                      <Text style={{ fontSize: 11, color: B.ink3, fontFamily: F.semibold }}>{STATUS_HINT[p.status]}</Text>
+                    ) : null}
+                  </View>
+                ))}
               </View>
-            ))}
-            {s.absent.length || s.notes || s.openRoles ? (
-              <View style={{ paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: B.line, gap: 4 }}>
-                {s.absent.length ? (
-                  <Text style={{ fontSize: 13, color: B.ink3, fontFamily: F.medium }}>Nieobecni: {s.absent.join(', ')}</Text>
-                ) : null}
-                {s.notes ? <Text style={{ fontSize: 13, color: B.ink2, fontFamily: F.medium }}>{s.notes}</Text> : null}
-                {s.openRoles ? (
-                  <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.medium }}>
-                    Nieobsadzone role: {s.openRoles}
-                  </Text>
-                ) : null}
-              </View>
-            ) : (
-              <View style={{ height: 4 }} />
-            )}
-          </Card>
-        ))}
+            </View>
+          ))}
+          {s.absent.length || s.notes || s.openRoles ? (
+            <View style={{ paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: B.line, gap: 4 }}>
+              {s.absent.length ? (
+                <Text style={{ fontSize: 13, color: B.ink3, fontFamily: F.medium }}>Nieobecni: {s.absent.join(', ')}</Text>
+              ) : null}
+              {s.notes ? <Text style={{ fontSize: 13, color: B.ink2, fontFamily: F.medium }}>{s.notes}</Text> : null}
+              {s.openRoles ? (
+                <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.medium }}>Nieobsadzone role: {s.openRoles}</Text>
+              ) : null}
+            </View>
+          ) : (
+            <View style={{ height: 4 }} />
+          )}
+        </Card>
+      ))}
+
+      {/* Służby bez nikogo — lista zamiast akapitu, żeby od razu było widać które. */}
       {empty.length ? (
-        <Text style={{ paddingHorizontal: 4, fontSize: 13, lineHeight: 18, color: B.ink4, fontFamily: F.medium }}>
-          Bez przypisanych osób: {empty.map((s) => s.label).join(', ')}
-        </Text>
+        <Card padded={false}>
+          <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
+            <Text style={{ fontSize: 15, color: B.ink, fontFamily: F.bold }}>
+              {assigned.length ? 'Jeszcze bez przypisań' : 'Nikt nie jest jeszcze przypisany'}
+            </Text>
+            <Text style={{ marginTop: 2, fontSize: 12, color: B.ink3, fontFamily: F.medium }}>Grafik uzupełnia lider służby.</Text>
+          </View>
+          {empty.map((s) => (
+            <View
+              key={s.key}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 11, borderTopWidth: 1, borderTopColor: B.line }}
+            >
+              <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: B.paper, alignItems: 'center', justifyContent: 'center' }}>
+                <Users size={15} color={B.ink3} />
+              </View>
+              <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, color: B.ink, fontFamily: F.semibold }}>
+                {s.label}
+              </Text>
+              {s.openRoles ? (
+                <Text style={{ fontSize: 12, color: B.ink4, fontFamily: F.medium }}>
+                  {s.openRoles} {plural(s.openRoles, 'rola', 'role', 'ról')}
+                </Text>
+              ) : null}
+            </View>
+          ))}
+        </Card>
       ) : null}
     </View>
   );
@@ -775,7 +994,15 @@ const FileRow = ({ file, first }: { file: EventFile; first: boolean }) => {
     <Pressable
       onPress={() => (file.url ? openUrl(file.url) : Alert.alert('Błąd', 'Nie udało się otworzyć pliku.'))}
       className="active:opacity-70"
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: first ? 0 : 1, borderTopColor: B.line }}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderTopWidth: first ? 0 : 1,
+        borderTopColor: B.line,
+      }}
     >
       <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: B.paper, alignItems: 'center', justifyContent: 'center' }}>
         <Icon size={17} color={B.ink2} />
@@ -803,6 +1030,5 @@ const btn = {
   },
   dark: { backgroundColor: B.ink },
   kurkuma: { backgroundColor: B.kurkuma },
-  light: { backgroundColor: B.card },
   text: { fontSize: 14, color: B.ink, fontFamily: F.bold, letterSpacing: -0.2 },
 };

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase, tenantWebBase } from '../../lib/supabase';
 import type { ProgramScheduleItem } from '../../lib/domain';
-import { toAgendaEvent, type AgendaEvent } from './api';
+import { reviveAgendaEvent, toAgendaEvent, type AgendaEvent } from './api';
 import { htmlToText } from './meta';
 
 // Pełne wydarzenie jak web (EventDetailPage + EventTeamsTab + EventMaterialsTab): szczegóły,
@@ -26,6 +26,13 @@ export interface ServiceSection {
   absent: string[];
   notes: string | null;
 }
+// Mój przydział na tym wydarzeniu (schedule_assignments) — do potwierdzenia/odmowy.
+export interface MyAssignment {
+  id: string;
+  team: string;
+  role: string;
+  status: 'pending' | 'accepted' | 'rejected' | null;
+}
 export interface EventFile {
   id: string;
   name: string;
@@ -44,6 +51,9 @@ export interface EventProgram {
 export interface EventDetail {
   event: AgendaEvent;
   typeLabel: string | null;
+  // Surowe pola do edycji.
+  raw: { description: string | null; hasDetailsHtml: boolean };
+  myAssignments: MyAssignment[];
   details: string;
   link: string | null;
   formUrl: string | null;
@@ -109,6 +119,17 @@ const absUrl = (u: string | null | undefined) => {
   return base ? `${base}${u.startsWith('/') ? '' : '/'}${u}` : null;
 };
 
+// Daty z zapisanego na dysku cache wracają jako tekst — odtwórz (patrz reviveAgendaEvent).
+const reviveDetail = (d: EventDetail | null) =>
+  d
+    ? {
+        ...d,
+        event: reviveAgendaEvent(d.event),
+        myAssignments: d.myAssignments ?? [],
+        raw: d.raw ?? { description: null, hasDetailsHtml: false },
+      }
+    : d;
+
 export const useEventDetail = (
   id: number | null,
   me: { email: string | null; name: string | null; moduleLabel: (key: string) => string },
@@ -116,6 +137,7 @@ export const useEventDetail = (
   useQuery({
     queryKey: ['event-detail', id, me.email, me.name],
     enabled: id != null && Number.isFinite(id),
+    select: reviveDetail,
     queryFn: async (): Promise<EventDetail | null> => {
       const { data: row, error } = await supabase.from('events').select('*').eq('id', id).maybeSingle();
       if (error) throw error;
@@ -144,7 +166,7 @@ export const useEventDetail = (
           [] as any[],
         ),
         soft(
-          supabase.from('schedule_assignments').select('team_type, role_key, assigned_name, assigned_email, status').eq('event_id', ev.id),
+          supabase.from('schedule_assignments').select('id, team_type, role_key, role_label, assigned_name, assigned_email, status').eq('event_id', ev.id),
           [] as any[],
         ),
         soft(supabase.from('event_materials').select('file_id').eq('event_id', ev.id), [] as any[]),
@@ -284,9 +306,22 @@ export const useEventDetail = (
         .map((t) => ({ id: String(t.id), label: String(t.label || 'Zakładka'), text: htmlToText(custom[`tabhtml_${t.id}`] as string) }))
         .filter((t) => t.text);
 
+      const myAssignments: MyAssignment[] = me.email
+        ? asList(sa)
+            .filter((a) => String(a.assigned_email || '').toLowerCase() === me.email!.toLowerCase())
+            .map((a) => ({
+              id: String(a.id),
+              team: sectionDefs.find((x) => x.key === a.team_type)?.label ?? me.moduleLabel(a.team_type) ?? a.team_type,
+              role: a.role_label || roleLabels.get(`${a.team_type}|${a.role_key}`) || a.role_key || 'Służba',
+              status: a.status ?? null,
+            }))
+        : [];
+
       return {
         event,
         typeLabel,
+        raw: { description: ev.description ?? null, hasDetailsHtml: !!String(ev.details_html ?? '').trim() },
+        myAssignments,
         details: htmlToText(ev.details_html || ev.description),
         link: ev.link || null,
         formUrl: ev.form_url || (ev.form_id && base ? `${base}/form/${ev.form_id}` : null),

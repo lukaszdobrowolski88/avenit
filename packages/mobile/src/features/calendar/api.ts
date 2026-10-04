@@ -133,6 +133,15 @@ const myRolesByEvent = async (
   return out;
 };
 
+// Cache zapytań jest zapisywany na dysku (PersistQueryClientProvider) — po restarcie Date
+// wraca jako tekst. `select` odtwarza daty zarówno ze świeżych, jak i z zapisanych danych.
+export const reviveAgendaEvent = (e: AgendaEvent): AgendaEvent => ({
+  ...e,
+  startsAt: e.startsAt instanceof Date ? e.startsAt : new Date(e.startsAt),
+  endsAt: e.endsAt == null ? null : e.endsAt instanceof Date ? e.endsAt : new Date(e.endsAt),
+});
+const reviveAgenda = (rows: AgendaEvent[]) => rows.map(reviveAgendaEvent);
+
 export const useAgenda = (
   params: {
     fromDays?: number;
@@ -144,6 +153,7 @@ export const useAgenda = (
   const { fromDays = -60, toDays = 120, userEmail = null, userName = null, selectedCampusId, withCampusFilter } = params;
   return useQuery({
     queryKey: ['agenda', selectedCampusId, fromDays, toDays, userEmail, userName],
+    select: reviveAgenda,
     queryFn: async (): Promise<AgendaEvent[]> => {
       const now = new Date();
       const from = new Date(now);
