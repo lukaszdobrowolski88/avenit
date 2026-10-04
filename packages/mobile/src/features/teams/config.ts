@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react-native';
 import {
+  Baby,
   Briefcase,
   CalendarDays,
   ClipboardList,
@@ -23,6 +24,7 @@ import {
 export type TeamKey = 'worship' | 'media' | 'atmosfera' | 'kids' | 'mlodziezowka' | 'homegroups';
 
 export type TeamTabKey =
+  | 'checkin'
   | 'wall'
   | 'events'
   | 'schedule'
@@ -75,7 +77,7 @@ export const TEAM_CONFIG: Record<TeamKey, TeamConfig> = {
   },
   kids: {
     key: 'kids',
-    tabs: ['events', 'schedule', 'members', 'finance', 'equipment', 'files'],
+    tabs: ['checkin', 'events', 'schedule', 'members', 'finance', 'equipment', 'files'],
     financeName: 'małe Avenit',
     memberTable: 'kids_teachers',
     eventsTable: 'events',
@@ -106,6 +108,7 @@ export const isTeamKey = (s: string | undefined): s is TeamKey =>
   !!s && Object.prototype.hasOwnProperty.call(TEAM_CONFIG, s);
 
 export const TAB_META: Record<TeamTabKey, { label: string; Icon: LucideIcon }> = {
+  checkin: { label: 'Dziś', Icon: Baby },
   wall: { label: 'Tablica', Icon: MessageSquare },
   events: { label: 'Wydarzenia', Icon: CalendarDays },
   schedule: { label: 'Grafik', Icon: ClipboardList },

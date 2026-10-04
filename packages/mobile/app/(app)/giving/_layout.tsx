@@ -6,6 +6,7 @@ export default function GivingLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="donate" />
       <Stack.Screen name="statement" />
+      <Stack.Screen name="admin" />
     </Stack>
   );
 }

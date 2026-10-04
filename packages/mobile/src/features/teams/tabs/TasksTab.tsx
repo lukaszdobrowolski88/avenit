@@ -5,10 +5,18 @@ import { useAddTask, useSetTaskStatus, useTeamBoard, type BoardStatusLabel, type
 import { Card, Empty, Loading } from './ui';
 
 // Zadania zespołu = tablica Projektów (boards.source_kind) jak ModuleBoard na webie.
-export const TasksTab = ({ sourceKind, myEmail }: { sourceKind: string | undefined; myEmail: string | null }) => {
-  const board = useTeamBoard(sourceKind);
-  const setStatus = useSetTaskStatus(sourceKind);
-  const addTask = useAddTask(sourceKind);
+export const TasksTab = ({
+  sourceKind,
+  boardId,
+  myEmail,
+}: {
+  sourceKind: string | undefined;
+  boardId?: string;
+  myEmail: string | null;
+}) => {
+  const board = useTeamBoard(sourceKind, boardId);
+  const setStatus = useSetTaskStatus(sourceKind, boardId);
+  const addTask = useAddTask(sourceKind, boardId);
   const [filter, setFilter] = useState<string>('open');
   const [draft, setDraft] = useState('');
 

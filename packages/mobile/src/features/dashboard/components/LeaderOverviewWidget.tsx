@@ -1,4 +1,5 @@
 import { Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { ArrowUpRight, Gauge } from 'lucide-react-native';
@@ -79,6 +80,7 @@ interface Props {
 }
 
 export const LeaderOverviewWidget = ({ giving, attendance, rsvp }: Props) => {
+  const router = useRouter();
   const hasGiving = !!giving && (giving.year > 0 || giving.month > 0);
   const hasAttendance = attendance.length > 0;
   const hasRsvp = rsvp.length > 0;
@@ -97,7 +99,7 @@ export const LeaderOverviewWidget = ({ giving, attendance, rsvp }: Props) => {
   return (
     <WidgetCard title="Przegląd" Icon={Gauge} iconTint="#1d4ed8" iconBg="#dbeafe">
       {hasGiving ? (
-        <Block label={`Dawanie · ${monthName}`} onPress={() => openOnWeb('/giving')} first={isFirst()}>
+        <Block label={`Dawanie · ${monthName}`} onPress={() => router.push('/(app)/giving/admin')} first={isFirst()}>
           <Big>{money(giving!.month)}</Big>
           <Sub>
             {giving!.monthCount} wpłat w tym miesiącu · od stycznia {money(giving!.year)}
@@ -106,7 +108,7 @@ export const LeaderOverviewWidget = ({ giving, attendance, rsvp }: Props) => {
       ) : null}
 
       {hasAttendance ? (
-        <Block label="Frekwencja" onPress={() => openOnWeb('/attendance')} first={isFirst()}>
+        <Block label="Frekwencja" onPress={() => router.push('/(app)/attendance')} first={isFirst()}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 16 }}>
             <View>
               <Big>{last?.headcount ?? 0}</Big>

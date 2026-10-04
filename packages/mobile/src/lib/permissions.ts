@@ -25,6 +25,7 @@ export interface PermissionGrant {
 }
 
 export interface PermissionModule {
+  id?: string;
   key: string;
   label: string;
   icon: string | null;
@@ -36,9 +37,12 @@ export interface PermissionModule {
 }
 
 export interface PermissionTab {
+  id?: string;
   module_key: string;
   key: string;
   label: string;
+  // Typ zakładki z kreatora: board | custom | announcements | links | wall | events | … | empty.
+  component_type?: string;
   display_order: number | null;
   visible: boolean;
 }
@@ -170,6 +174,7 @@ export const usePermissions = () => {
     isAdmin: !!data?.isAdmin || fallbackStaff,
     role: data?.role ?? null,
     modules: (data?.modules ?? []) as PermissionModule[],
+    tabs: (data?.tabs ?? []) as PermissionTab[],
     ministries: (data?.ministries ?? []) as MyPermissions['ministries'],
     can,
     moduleVisible,
