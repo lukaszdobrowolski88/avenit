@@ -47,8 +47,8 @@ const ProgramTab = ({
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: 8,
-      backgroundColor: active ? '#ffffff' : 'transparent',
-      shadowColor: active ? '#0f172a' : 'transparent',
+      backgroundColor: active ? '#F6F4EE' : 'transparent',
+      shadowColor: active ? '#2A2312' : 'transparent',
       shadowOpacity: active ? 0.08 : 0,
       shadowRadius: active ? 4 : 0,
       shadowOffset: { width: 0, height: 1 },
@@ -58,8 +58,8 @@ const ProgramTab = ({
     <Text
       style={{
         fontSize: 13,
-        color: active ? '#be185d' : '#64748b',
-        fontFamily: 'Inter_600SemiBold',
+        color: active ? '#8A6606' : '#7A7466',
+        fontFamily: 'Manrope_600SemiBold',
       }}
     >
       {label}
@@ -74,23 +74,23 @@ const TEAM_LABELS: Record<
 > = {
   worship: {
     label: 'Zespół Uwielbienia',
-    tint: '#be185d',
-    bg: '#fce7f3',
-    gradFrom: '#ec4899',
-    gradTo: '#f97316',
+    tint: '#8A6606',
+    bg: '#FFF1C2',
+    gradFrom: '#8A6606',
+    gradTo: '#FFBE0B',
   },
   media: {
     label: 'MediaTeam',
     tint: '#9a3412',
     bg: '#ffedd5',
-    gradFrom: '#f97316',
+    gradFrom: '#FFBE0B',
     gradTo: '#facc15',
   },
   produkcja: {
     label: 'MediaTeam',
     tint: '#9a3412',
     bg: '#ffedd5',
-    gradFrom: '#f97316',
+    gradFrom: '#FFBE0B',
     gradTo: '#facc15',
   },
   atmosfera: {
@@ -111,14 +111,14 @@ const TEAM_LABELS: Record<
     label: 'Scena',
     tint: '#7c2d12',
     bg: '#fed7aa',
-    gradFrom: '#ec4899',
+    gradFrom: '#8A6606',
     gradTo: '#f43f5e',
   },
   mc: {
     label: 'MC',
     tint: '#9d174d',
-    bg: '#fce7f3',
-    gradFrom: '#ec4899',
+    bg: '#FFF1C2',
+    gradFrom: '#8A6606',
     gradTo: '#a855f7',
   },
   kids: {
@@ -157,10 +157,10 @@ export default function ProgramDetailScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
         }}
       >
-        <ActivityIndicator color="#ec4899" />
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
@@ -171,11 +171,11 @@ export default function ProgramDetailScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
           paddingHorizontal: 24,
         }}
       >
-        <Text style={{ textAlign: 'center', color: '#e11d48', fontFamily: 'Inter_500Medium' }}>
+        <Text style={{ textAlign: 'center', color: '#e11d48', fontFamily: 'Manrope_500Medium' }}>
           {(programQuery.error as Error)?.message ?? 'Błąd'}
         </Text>
       </View>
@@ -189,11 +189,11 @@ export default function ProgramDetailScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
           paddingHorizontal: 24,
         }}
       >
-        <Text style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+        <Text style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
           Program nie istnieje.
         </Text>
       </View>
@@ -210,14 +210,14 @@ export default function ProgramDetailScreen() {
   const notesCount = itemsWithNotes.length;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+    <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
       <View
         style={{
           paddingHorizontal: 20,
           paddingTop: insets.top + 6,
           paddingBottom: 14,
           borderBottomWidth: 1,
-          borderBottomColor: '#eef0f3',
+          borderBottomColor: '#E6E1D5',
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -228,23 +228,23 @@ export default function ProgramDetailScreen() {
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: '#fafaf9',
+              backgroundColor: '#F1EEE6',
               borderWidth: 1,
-              borderColor: '#e7e5e4',
+              borderColor: '#E3DDD0',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <ChevronLeft size={20} color="#1c1917" strokeWidth={2.2} />
+            <ChevronLeft size={20} color="#2A2312" strokeWidth={2.2} />
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text
               numberOfLines={1}
               style={{
                 fontSize: 22,
-                color: '#0c0a09',
+                color: '#2A2312',
                 letterSpacing: -0.5,
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Manrope_700Bold',
               }}
             >
               {(program.title && String(program.title).trim()) || 'Nabożeństwo'}
@@ -252,10 +252,10 @@ export default function ProgramDetailScreen() {
             <Text
               style={{
                 fontSize: 12,
-                color: '#78716c',
+                color: '#7A7466',
                 marginTop: 3,
                 letterSpacing: -0.1,
-                fontFamily: 'Inter_500Medium',
+                fontFamily: 'Manrope_500Medium',
               }}
             >
               {(() => {
@@ -273,17 +273,17 @@ export default function ProgramDetailScreen() {
               marginTop: 14,
               paddingTop: 14,
               borderTopWidth: 1,
-              borderTopColor: '#f5f5f4',
+              borderTopColor: '#ECE8DE',
             }}
           >
             <Text
               style={{
                 fontSize: 11,
-                color: '#78716c',
+                color: '#7A7466',
                 marginBottom: 8,
                 letterSpacing: 0.6,
                 textTransform: 'uppercase',
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Manrope_700Bold',
               }}
             >
               Twoje przypisania
@@ -298,7 +298,7 @@ export default function ProgramDetailScreen() {
       <View
         style={{
           flexDirection: 'row',
-          backgroundColor: '#f5f5f4',
+          backgroundColor: '#ECE8DE',
           marginHorizontal: 16,
           marginTop: 12,
           padding: 4,
@@ -331,7 +331,7 @@ export default function ProgramDetailScreen() {
         {tab === 'team' && (
           <View>
             {teamQuery.isLoading ? (
-              <ActivityIndicator color="#ec4899" />
+              <ActivityIndicator color="#2A2312" />
             ) : teamGrouped.length === 0 ? (
               <View style={{ alignItems: 'center', paddingVertical: 32 }}>
                 <View
@@ -339,15 +339,15 @@ export default function ProgramDetailScreen() {
                     width: 56,
                     height: 56,
                     borderRadius: 16,
-                    backgroundColor: '#fef3f2',
+                    backgroundColor: '#FFF8E1',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 8,
                   }}
                 >
-                  <UsersIcon size={24} color="#ec4899" />
+                  <UsersIcon size={24} color="#8A6606" />
                 </View>
-                <Text style={{ fontSize: 13, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+                <Text style={{ fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
                   Brak przypisanego zespołu.
                 </Text>
               </View>
@@ -355,10 +355,10 @@ export default function ProgramDetailScreen() {
               teamGrouped.map(([teamType, members]) => {
                 const meta = TEAM_LABELS[teamType] ?? {
                   label: teamType,
-                  tint: '#57534e',
-                  bg: '#f5f5f4',
-                  gradFrom: '#a8a29e',
-                  gradTo: '#78716c',
+                  tint: '#4A463E',
+                  bg: '#ECE8DE',
+                  gradFrom: '#A8A59E',
+                  gradTo: '#7A7466',
                 };
                 return (
                   <View
@@ -366,8 +366,8 @@ export default function ProgramDetailScreen() {
                     className="mb-4"
                     style={{
                       borderRadius: 20,
-                      backgroundColor: '#ffffff',
-                      shadowColor: '#0f172a',
+                      backgroundColor: '#F6F4EE',
+                      shadowColor: '#2A2312',
                       shadowOffset: { width: 0, height: 4 },
                       shadowOpacity: 0.05,
                       shadowRadius: 14,
@@ -379,7 +379,7 @@ export default function ProgramDetailScreen() {
                       style={{
                         borderRadius: 20,
                         borderWidth: 1,
-                        borderColor: '#eef0f3',
+                        borderColor: '#E6E1D5',
                       }}
                     >
                       <View
@@ -387,7 +387,7 @@ export default function ProgramDetailScreen() {
                         style={{
                           backgroundColor: meta.bg,
                           borderBottomWidth: 1,
-                          borderBottomColor: '#eef0f3',
+                          borderBottomColor: '#E6E1D5',
                         }}
                       >
                         <Text
@@ -395,18 +395,18 @@ export default function ProgramDetailScreen() {
                           style={{
                             color: meta.tint,
                             letterSpacing: -0.3,
-                            fontFamily: 'Inter_700Bold',
+                            fontFamily: 'Manrope_700Bold',
                           }}
                         >
                           {meta.label}
                         </Text>
                         <View
                           className="px-2 py-0.5"
-                          style={{ borderRadius: 999, backgroundColor: '#ffffff' }}
+                          style={{ borderRadius: 999, backgroundColor: '#F6F4EE' }}
                         >
                           <Text
                             className="text-[11px]"
-                            style={{ color: meta.tint, fontFamily: 'Inter_700Bold' }}
+                            style={{ color: meta.tint, fontFamily: 'Manrope_700Bold' }}
                           >
                             {members?.length ?? 0}
                           </Text>
@@ -419,7 +419,7 @@ export default function ProgramDetailScreen() {
                             className="flex-row items-center gap-3 px-2 py-2.5"
                             style={{
                               borderBottomWidth: idx < (members?.length ?? 0) - 1 ? 1 : 0,
-                              borderBottomColor: '#f5f5f4',
+                              borderBottomColor: '#ECE8DE',
                             }}
                           >
                             <View
@@ -435,7 +435,7 @@ export default function ProgramDetailScreen() {
                               <Text
                                 style={{
                                   color: meta.tint,
-                                  fontFamily: 'Inter_700Bold',
+                                  fontFamily: 'Manrope_700Bold',
                                   fontSize: 13,
                                 }}
                               >
@@ -446,9 +446,9 @@ export default function ProgramDetailScreen() {
                               <Text
                                 className="text-[14px]"
                                 style={{
-                                  color: '#0c0a09',
+                                  color: '#2A2312',
                                   letterSpacing: -0.2,
-                                  fontFamily: 'Inter_600SemiBold',
+                                  fontFamily: 'Manrope_600SemiBold',
                                 }}
                                 numberOfLines={1}
                               >
@@ -456,7 +456,7 @@ export default function ProgramDetailScreen() {
                               </Text>
                               <Text
                                 className="text-[12px] mt-0.5"
-                                style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
+                                style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
                               >
                                 {m.role_key}
                               </Text>
@@ -482,7 +482,7 @@ export default function ProgramDetailScreen() {
                                       : m.status === 'rejected'
                                         ? '#be123c'
                                         : '#b45309',
-                                  fontFamily: 'Inter_700Bold',
+                                  fontFamily: 'Manrope_700Bold',
                                 }}
                               >
                                 {m.status === 'accepted'
@@ -518,20 +518,20 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
             width: 64,
             height: 64,
             borderRadius: 18,
-            backgroundColor: '#fef3f2',
+            backgroundColor: '#FFF8E1',
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: 12,
           }}
         >
-          <StickyNote size={28} color="#ec4899" />
+          <StickyNote size={28} color="#8A6606" />
         </View>
-        <Text className="text-[16px]" style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+        <Text className="text-[16px]" style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
           Brak notatek i załączników
         </Text>
         <Text
           className="text-[13px] text-center mt-1"
-          style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+          style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
         >
           Notatki i pliki dodajesz w aplikacji webowej.
         </Text>
@@ -546,8 +546,8 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
           className="mb-3"
           style={{
             borderRadius: 16,
-            backgroundColor: '#ffffff',
-            shadowColor: '#0f172a',
+            backgroundColor: '#F6F4EE',
+            shadowColor: '#2A2312',
             shadowOffset: { width: 0, height: 3 },
             shadowOpacity: 0.04,
             shadowRadius: 10,
@@ -559,15 +559,15 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
             style={{
               borderRadius: 16,
               borderWidth: 1,
-              borderColor: '#eef0f3',
+              borderColor: '#E6E1D5',
             }}
           >
             <Text
               className="text-[11px] uppercase mb-1"
               style={{
-                color: '#78716c',
+                color: '#7A7466',
                 letterSpacing: 0.4,
-                fontFamily: 'Inter_600SemiBold',
+                fontFamily: 'Manrope_600SemiBold',
               }}
             >
               {it.type === 'song'
@@ -581,9 +581,9 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
             <Text
               className="text-[15px]"
               style={{
-                color: '#0c0a09',
+                color: '#2A2312',
                 letterSpacing: -0.3,
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Manrope_700Bold',
               }}
             >
               {it.title || '(bez tytułu)'}
@@ -592,8 +592,8 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
               <Text
                 className="text-[13px] mt-2"
                 style={{
-                  color: '#1c1917',
-                  fontFamily: 'Inter_400Regular',
+                  color: '#2A2312',
+                  fontFamily: 'Manrope_400Regular',
                   lineHeight: 19,
                 }}
               >
@@ -603,7 +603,7 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
             {Array.isArray(it.customAttachments) && it.customAttachments.length > 0 ? (
               <View
                 className="mt-3 pt-3 gap-2"
-                style={{ borderTopWidth: 1, borderTopColor: '#f5f5f4' }}
+                style={{ borderTopWidth: 1, borderTopColor: '#ECE8DE' }}
               >
                 {it.customAttachments.map((a, i) => (
                   <Pressable
@@ -612,7 +612,7 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
                     className="flex-row items-center gap-3 active:opacity-70"
                     style={{
                       borderRadius: 10,
-                      backgroundColor: '#fef3f2',
+                      backgroundColor: '#FFF8E1',
                       paddingHorizontal: 12,
                       paddingVertical: 10,
                     }}
@@ -631,12 +631,12 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
                     </View>
                     <Text
                       className="flex-1 text-[13px]"
-                      style={{ color: '#0c0a09', fontFamily: 'Inter_500Medium' }}
+                      style={{ color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
                       numberOfLines={1}
                     >
                       {a.name}
                     </Text>
-                    <ExternalLink size={14} color="#a8a29e" />
+                    <ExternalLink size={14} color="#A8A59E" />
                   </Pressable>
                 ))}
               </View>

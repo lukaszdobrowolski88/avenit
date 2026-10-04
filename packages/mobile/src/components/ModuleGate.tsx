@@ -13,7 +13,7 @@ export const NoModuleAccess = ({ message }: { message?: string }) => {
     <View
       style={{
         flex: 1,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#F6F4EE',
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 32,
@@ -25,23 +25,23 @@ export const NoModuleAccess = ({ message }: { message?: string }) => {
           width: 56,
           height: 56,
           borderRadius: 18,
-          backgroundColor: '#f5f5f4',
+          backgroundColor: '#ECE8DE',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Lock size={24} color="#78716c" />
+        <Lock size={24} color="#7A7466" />
       </View>
-      <Text style={{ fontSize: 18, color: '#0c0a09', fontFamily: 'Inter_700Bold', letterSpacing: -0.3 }}>
+      <Text style={{ fontSize: 18, color: '#2A2312', fontFamily: 'Manrope_700Bold', letterSpacing: -0.3 }}>
         Brak dostępu
       </Text>
       <Text
         style={{
           fontSize: 14,
           lineHeight: 20,
-          color: '#78716c',
+          color: '#7A7466',
           textAlign: 'center',
-          fontFamily: 'Inter_400Regular',
+          fontFamily: 'Manrope_400Regular',
         }}
       >
         {message ??
@@ -55,10 +55,10 @@ export const NoModuleAccess = ({ message }: { message?: string }) => {
           paddingHorizontal: 20,
           paddingVertical: 11,
           borderRadius: 999,
-          backgroundColor: '#0c0a09',
+          backgroundColor: '#2A2312',
         }}
       >
-        <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: 'Inter_600SemiBold' }}>Wróć</Text>
+        <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: 'Manrope_600SemiBold' }}>Wróć</Text>
       </Pressable>
     </View>
   );
@@ -68,8 +68,8 @@ export const ModuleGate = ({ moduleKey, children }: { moduleKey: string; childre
   const perms = usePermissions();
   if (!perms.ready) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color="#ec4899" />
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }

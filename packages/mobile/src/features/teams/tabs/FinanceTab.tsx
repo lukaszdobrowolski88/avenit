@@ -27,7 +27,7 @@ const Bar = ({ value, max }: { value: number; max: number }) => {
   const pct = max > 0 ? Math.min(1, value / max) : 0;
   const over = max > 0 && value > max;
   return (
-    <View style={{ height: 6, borderRadius: 3, backgroundColor: '#ece9e6', overflow: 'hidden' }}>
+    <View style={{ height: 6, borderRadius: 3, backgroundColor: '#E6E1D5', overflow: 'hidden' }}>
       <View style={{ width: `${Math.round(pct * 100)}%`, height: 6, borderRadius: 3, backgroundColor: over ? '#dc2626' : '#16a34a' }} />
     </View>
   );
@@ -37,18 +37,18 @@ const inputStyle = {
   height: 46,
   borderRadius: 14,
   paddingHorizontal: 14,
-  backgroundColor: '#f5f5f4',
+  backgroundColor: '#ECE8DE',
   fontSize: 15,
-  color: '#0c0a09',
-  fontFamily: 'Inter_500Medium',
+  color: '#2A2312',
+  fontFamily: 'Manrope_500Medium',
 } as const;
 
 const Label = ({ children }: { children: string }) => (
   <Text
     style={{
       fontSize: 12,
-      color: '#57534e',
-      fontFamily: 'Inter_700Bold',
+      color: '#4A463E',
+      fontFamily: 'Manrope_700Bold',
       letterSpacing: 0.4,
       textTransform: 'uppercase',
       marginTop: 14,
@@ -132,14 +132,14 @@ export const FinanceTab = ({
       {data ? (
         <>
           <Card>
-            <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_600SemiBold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+            <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_600SemiBold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
               Budżet {data.year}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 4, marginBottom: 8 }}>
-              <Text style={{ fontSize: 24, color: '#0c0a09', fontFamily: 'Inter_700Bold', letterSpacing: -0.6 }}>
+              <Text style={{ fontSize: 24, color: '#2A2312', fontFamily: 'Manrope_700Bold', letterSpacing: -0.6 }}>
                 {money(data.spent)}
               </Text>
-              <Text style={{ fontSize: 13, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+              <Text style={{ fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
                 z {money(data.planned)}
               </Text>
             </View>
@@ -149,12 +149,12 @@ export const FinanceTab = ({
           {data.lines.length ? (
             <Card>
               {data.lines.map((l, i) => (
-                <View key={l.id} style={{ paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderTopColor: '#ece9e6', gap: 6 }}>
+                <View key={l.id} style={{ paddingVertical: 8, borderTopWidth: i ? 1 : 0, borderTopColor: '#E6E1D5', gap: 6 }}>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                    <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                       {l.description}
                     </Text>
-                    <Text style={{ fontSize: 13, color: l.spent > l.planned && l.planned > 0 ? '#dc2626' : '#57534e', fontFamily: 'Inter_600SemiBold' }}>
+                    <Text style={{ fontSize: 13, color: l.spent > l.planned && l.planned > 0 ? '#dc2626' : '#4A463E', fontFamily: 'Manrope_600SemiBold' }}>
                       {money(l.spent)} / {money(l.planned)}
                     </Text>
                   </View>
@@ -167,10 +167,10 @@ export const FinanceTab = ({
           <Text
             style={{
               fontSize: 13,
-              color: '#78716c',
+              color: '#7A7466',
               letterSpacing: 0.5,
               textTransform: 'uppercase',
-              fontFamily: 'Inter_700Bold',
+              fontFamily: 'Manrope_700Bold',
               marginTop: 8,
               marginBottom: 8,
             }}
@@ -178,7 +178,7 @@ export const FinanceTab = ({
             Wydatki
           </Text>
           {data.expenses.length === 0 ? (
-            <Text style={{ fontSize: 13, color: '#a8a29e', fontFamily: 'Inter_500Medium', marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, color: '#A8A59E', fontFamily: 'Manrope_500Medium', marginBottom: 12 }}>
               Brak wydatków w tym roku.
             </Text>
           ) : null}
@@ -186,15 +186,15 @@ export const FinanceTab = ({
             <Card key={e.id}>
               <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Text numberOfLines={1} style={{ fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                  <Text numberOfLines={1} style={{ fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                     {e.contractor || e.description || 'Wydatek'}
                   </Text>
-                  <Text numberOfLines={1} style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+                  <Text numberOfLines={1} style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
                     {[e.date, e.description && e.contractor ? e.description : null].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
-                {e.hasDocuments ? <Paperclip size={14} color="#a8a29e" /> : null}
-                <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>{money(e.amount)}</Text>
+                {e.hasDocuments ? <Paperclip size={14} color="#A8A59E" /> : null}
+                <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{money(e.amount)}</Text>
               </View>
             </Card>
           ))}
@@ -202,22 +202,22 @@ export const FinanceTab = ({
       ) : null}
 
       <Modal visible={open} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setOpen(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#ffffff' }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 8 }}>
-            <Text style={{ flex: 1, fontSize: 20, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>Nowy wydatek</Text>
+            <Text style={{ flex: 1, fontSize: 20, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Nowy wydatek</Text>
             <Pressable onPress={() => setOpen(false)} hitSlop={10} className="active:opacity-60">
-              <X size={22} color="#57534e" />
+              <X size={22} color="#4A463E" />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
             <Label>Kwota (zł)</Label>
-            <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor="#a8a29e" style={inputStyle} />
+            <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor="#A8A59E" style={inputStyle} />
 
             <Label>Data płatności</Label>
-            <TextInput value={date} onChangeText={setDate} placeholder="RRRR-MM-DD" placeholderTextColor="#a8a29e" style={inputStyle} />
+            <TextInput value={date} onChangeText={setDate} placeholder="RRRR-MM-DD" placeholderTextColor="#A8A59E" style={inputStyle} />
 
             <Label>Kontrahent</Label>
-            <TextInput value={contractor} onChangeText={setContractor} placeholder="np. Thomann, Media Expert" placeholderTextColor="#a8a29e" style={inputStyle} />
+            <TextInput value={contractor} onChangeText={setContractor} placeholder="np. Thomann, Media Expert" placeholderTextColor="#A8A59E" style={inputStyle} />
 
             {(data?.lines.length ?? 0) > 0 ? (
               <>
@@ -230,9 +230,9 @@ export const FinanceTab = ({
                         key={l.id}
                         onPress={() => setLine(on ? null : l.description)}
                         className="active:opacity-70"
-                        style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: on ? '#0c0a09' : '#f5f5f4' }}
+                        style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: on ? '#2A2312' : '#ECE8DE' }}
                       >
-                        <Text style={{ fontSize: 13, color: on ? '#ffffff' : '#44403c', fontFamily: 'Inter_600SemiBold' }}>{l.description}</Text>
+                        <Text style={{ fontSize: 13, color: on ? '#ffffff' : '#3A3427', fontFamily: 'Manrope_600SemiBold' }}>{l.description}</Text>
                       </Pressable>
                     );
                   })}
@@ -245,7 +245,7 @@ export const FinanceTab = ({
               value={details}
               onChangeText={setDetails}
               placeholder="Na co był wydatek?"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#A8A59E"
               multiline
               style={[inputStyle, { height: 90, paddingTop: 12, textAlignVertical: 'top' as const }]}
             />
@@ -253,9 +253,9 @@ export const FinanceTab = ({
             <Label>Paragon / faktura</Label>
             {receipt ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Image source={{ uri: receipt.uri }} style={{ width: 72, height: 72, borderRadius: 12, backgroundColor: '#f5f5f4' }} contentFit="cover" />
+                <Image source={{ uri: receipt.uri }} style={{ width: 72, height: 72, borderRadius: 12, backgroundColor: '#ECE8DE' }} contentFit="cover" />
                 <Pressable onPress={() => setReceipt(null)} className="active:opacity-60">
-                  <Text style={{ fontSize: 14, color: '#b91c1c', fontFamily: 'Inter_600SemiBold' }}>Usuń zdjęcie</Text>
+                  <Text style={{ fontSize: 14, color: '#b91c1c', fontFamily: 'Manrope_600SemiBold' }}>Usuń zdjęcie</Text>
                 </Pressable>
               </View>
             ) : (
@@ -275,15 +275,15 @@ export const FinanceTab = ({
                       flex: 1,
                       height: 46,
                       borderRadius: 14,
-                      backgroundColor: '#f5f5f4',
+                      backgroundColor: '#ECE8DE',
                       flexDirection: 'row',
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: 8,
                     }}
                   >
-                    <Icon size={16} color="#1c1917" />
-                    <Text style={{ fontSize: 14, color: '#1c1917', fontFamily: 'Inter_600SemiBold' }}>{label}</Text>
+                    <Icon size={16} color="#2A2312" />
+                    <Text style={{ fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{label}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -297,7 +297,7 @@ export const FinanceTab = ({
                 marginTop: 24,
                 height: 52,
                 borderRadius: 16,
-                backgroundColor: '#0c0a09',
+                backgroundColor: '#2A2312',
                 alignItems: 'center',
                 justifyContent: 'center',
                 opacity: add.isPending ? 0.6 : 1,
@@ -306,7 +306,7 @@ export const FinanceTab = ({
               {add.isPending ? (
                 <ActivityIndicator color="#ffffff" />
               ) : (
-                <Text style={{ fontSize: 15, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>Zapisz wydatek</Text>
+                <Text style={{ fontSize: 15, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>Zapisz wydatek</Text>
               )}
             </Pressable>
           </ScrollView>

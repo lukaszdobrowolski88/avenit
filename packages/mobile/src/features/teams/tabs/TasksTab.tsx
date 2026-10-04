@@ -83,7 +83,7 @@ export const TasksTab = ({
           alignItems: 'center',
           gap: 8,
           borderRadius: 14,
-          backgroundColor: '#f5f5f4',
+          backgroundColor: '#ECE8DE',
           paddingLeft: 14,
           paddingRight: 6,
           height: 46,
@@ -94,10 +94,10 @@ export const TasksTab = ({
           value={draft}
           onChangeText={setDraft}
           placeholder="Nowe zadanie…"
-          placeholderTextColor="#a8a29e"
+          placeholderTextColor="#A8A59E"
           returnKeyType="done"
           onSubmitEditing={submit}
-          style={{ flex: 1, fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_500Medium' }}
+          style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
         />
         <Pressable
           onPress={submit}
@@ -107,7 +107,7 @@ export const TasksTab = ({
             width: 34,
             height: 34,
             borderRadius: 17,
-            backgroundColor: draft.trim() ? '#0c0a09' : '#d6d3d1',
+            backgroundColor: draft.trim() ? '#2A2312' : '#D3CCBC',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -124,9 +124,9 @@ export const TasksTab = ({
               key={l.id}
               onPress={() => setFilter(l.id)}
               className="active:opacity-70"
-              style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: on ? '#fce7f3' : '#f5f5f4' }}
+              style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: on ? '#FFF1C2' : '#ECE8DE' }}
             >
-              <Text style={{ fontSize: 13, color: on ? '#be185d' : '#57534e', fontFamily: 'Inter_600SemiBold' }}>{l.title}</Text>
+              <Text style={{ fontSize: 13, color: on ? '#8A6606' : '#4A463E', fontFamily: 'Manrope_600SemiBold' }}>{l.title}</Text>
             </Pressable>
           );
         })}
@@ -139,23 +139,23 @@ export const TasksTab = ({
           <Card key={t.id}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View style={{ flex: 1, gap: 4 }}>
-                <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>{t.name}</Text>
+                <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{t.name}</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
                   {t.date ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Calendar size={11} color="#a8a29e" />
-                      <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>{t.date}</Text>
+                      <Calendar size={11} color="#A8A59E" />
+                      <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>{t.date}</Text>
                     </View>
                   ) : null}
                   {t.people.length ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Users size={11} color="#a8a29e" />
-                      <Text numberOfLines={1} style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+                      <Users size={11} color="#A8A59E" />
+                      <Text numberOfLines={1} style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
                         {t.people.join(', ')}
                       </Text>
                     </View>
                   ) : null}
-                  {t.groupName ? <Text style={{ fontSize: 12, color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>{t.groupName}</Text> : null}
+                  {t.groupName ? <Text style={{ fontSize: 12, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>{t.groupName}</Text> : null}
                 </View>
               </View>
               <Pressable
@@ -165,10 +165,10 @@ export const TasksTab = ({
                   paddingHorizontal: 10,
                   paddingVertical: 6,
                   borderRadius: 999,
-                  backgroundColor: label ? `${label.color}22` : '#ece9e6',
+                  backgroundColor: label ? `${label.color}22` : '#E6E1D5',
                 }}
               >
-                <Text style={{ fontSize: 12, color: label?.color ?? '#57534e', fontFamily: 'Inter_700Bold' }}>
+                <Text style={{ fontSize: 12, color: label?.color ?? '#4A463E', fontFamily: 'Manrope_700Bold' }}>
                   {label?.title ?? 'Ustaw status'}
                 </Text>
               </Pressable>

@@ -40,7 +40,7 @@ export default function SongsScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title="Pieśni"
           subtitle="Repertuar zespołu"
@@ -56,17 +56,17 @@ export default function SongsScreen() {
                 paddingHorizontal: 12,
                 height: 36,
                 borderRadius: 18,
-                backgroundColor: '#fafaf9',
+                backgroundColor: '#F1EEE6',
                 borderWidth: 1,
-                borderColor: '#eef0f3',
+                borderColor: '#E6E1D5',
               }}
             >
-              <FolderOpen size={14} color="#ec4899" />
+              <FolderOpen size={14} color="#8A6606" />
               <Text
                 style={{
                   fontSize: 12,
-                  color: '#0c0a09',
-                  fontFamily: 'Inter_700Bold',
+                  color: '#2A2312',
+                  fontFamily: 'Manrope_700Bold',
                   letterSpacing: -0.1,
                 }}
               >
@@ -82,24 +82,24 @@ export default function SongsScreen() {
             style={{
               height: 46,
               borderRadius: 14,
-              backgroundColor: '#fafaf9',
+              backgroundColor: '#F1EEE6',
               borderWidth: 1,
-              borderColor: '#eef0f3',
+              borderColor: '#E6E1D5',
             }}
           >
-            <Search size={18} color="#a8a29e" />
+            <Search size={18} color="#A8A59E" />
             <TextInput
               className="flex-1 text-base"
-              style={{ color: '#0c0a09', fontFamily: 'Inter_500Medium' }}
+              style={{ color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
               placeholder="Szukaj pieśni…"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#A8A59E"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search ? (
               <Pressable onPress={() => setSearch('')} hitSlop={10}>
-                <X size={16} color="#a8a29e" />
+                <X size={16} color="#A8A59E" />
               </Pressable>
             ) : null}
           </View>
@@ -136,13 +136,13 @@ export default function SongsScreen() {
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}
+              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
             >
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
@@ -153,7 +153,7 @@ export default function SongsScreen() {
             data={filtered}
             keyExtractor={(item) => String(item.id)}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
             ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
             ListEmptyComponent={
@@ -163,23 +163,23 @@ export default function SongsScreen() {
                     width: 64,
                     height: 64,
                     borderRadius: 18,
-                    backgroundColor: '#fef3f2',
+                    backgroundColor: '#FFF8E1',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 12,
                   }}
                 >
-                  <Music size={28} color="#ec4899" />
+                  <Music size={28} color="#8A6606" />
                 </View>
                 <Text
                   className="text-[16px]"
-                  style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+                  style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
                 >
                   Brak pieśni
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+                  style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
                 >
                   {search || activeTag
                     ? 'Spróbuj zmienić filtr lub wyszukiwanie.'
@@ -196,8 +196,8 @@ export default function SongsScreen() {
                   className="active:opacity-80"
                   style={{
                     borderRadius: 16,
-                    backgroundColor: '#ffffff',
-                    shadowColor: '#0f172a',
+                    backgroundColor: '#F6F4EE',
+                    shadowColor: '#2A2312',
                     shadowOffset: { width: 0, height: 3 },
                     shadowOpacity: 0.04,
                     shadowRadius: 10,
@@ -209,7 +209,7 @@ export default function SongsScreen() {
                     style={{
                       borderRadius: 16,
                       borderWidth: 1,
-                      borderColor: '#eef0f3',
+                      borderColor: '#E6E1D5',
                     }}
                   >
                     <View
@@ -217,20 +217,20 @@ export default function SongsScreen() {
                         width: 40,
                         height: 40,
                         borderRadius: 12,
-                        backgroundColor: '#fef3f2',
+                        backgroundColor: '#FFF8E1',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      <Music size={18} color="#ec4899" />
+                      <Music size={18} color="#8A6606" />
                     </View>
                     <View className="flex-1">
                       <Text
                         className="text-[15px]"
                         style={{
-                          color: '#0c0a09',
+                          color: '#2A2312',
                           letterSpacing: -0.3,
-                          fontFamily: 'Inter_600SemiBold',
+                          fontFamily: 'Manrope_600SemiBold',
                         }}
                         numberOfLines={1}
                       >
@@ -240,7 +240,7 @@ export default function SongsScreen() {
                         {item.key ? (
                           <Text
                             className="text-[12px]"
-                            style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
+                            style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
                           >
                             {item.key}
                           </Text>
@@ -248,7 +248,7 @@ export default function SongsScreen() {
                         {item.tempo ? (
                           <Text
                             className="text-[12px]"
-                            style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
+                            style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
                           >
                             {item.tempo} BPM
                           </Text>
@@ -259,11 +259,11 @@ export default function SongsScreen() {
                               <View
                                 key={t}
                                 className="px-1.5 py-0.5"
-                                style={{ borderRadius: 4, backgroundColor: '#f5f5f4' }}
+                                style={{ borderRadius: 4, backgroundColor: '#ECE8DE' }}
                               >
                                 <Text
                                   className="text-[10px]"
-                                  style={{ color: '#57534e', fontFamily: 'Inter_500Medium' }}
+                                  style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium' }}
                                 >
                                   {t}
                                 </Text>
@@ -306,16 +306,16 @@ const Chip = ({
       paddingHorizontal: 14,
       paddingVertical: 7,
       borderRadius: 999,
-      backgroundColor: active ? '#0c0a09' : '#fafaf9',
+      backgroundColor: active ? '#2A2312' : '#F1EEE6',
       borderWidth: 1,
-      borderColor: active ? '#0c0a09' : '#eef0f3',
+      borderColor: active ? '#2A2312' : '#E6E1D5',
     }}
   >
     <Text
       className="text-[13px]"
       style={{
-        color: active ? '#ffffff' : '#1c1917',
-        fontFamily: 'Inter_600SemiBold',
+        color: active ? '#ffffff' : '#2A2312',
+        fontFamily: 'Manrope_600SemiBold',
       }}
     >
       {label}

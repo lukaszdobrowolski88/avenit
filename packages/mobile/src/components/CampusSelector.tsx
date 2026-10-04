@@ -77,7 +77,7 @@ export function CampusSelector({ className = '' }: Props) {
             className="flex-row items-center justify-between rounded-xl px-3 py-3 active:bg-gray-100"
           >
             <Text className="text-base text-gray-800">Wszystkie lokalizacje</Text>
-            {selectedCampusId === null && <Check size={18} color="#ec4899" />}
+            {selectedCampusId === null && <Check size={18} color="#8A6606" />}
           </Pressable>
           {campuses.map((c) => (
             <Pressable
@@ -86,7 +86,7 @@ export function CampusSelector({ className = '' }: Props) {
               className="flex-row items-center justify-between rounded-xl px-3 py-3 active:bg-gray-100"
             >
               <Text className="text-base text-gray-800">{c.name}</Text>
-              {selectedCampusId === c.id && <Check size={18} color="#ec4899" />}
+              {selectedCampusId === c.id && <Check size={18} color="#8A6606" />}
             </Pressable>
           ))}
         </BottomSheetView>

@@ -61,7 +61,7 @@ const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolea
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: isLast ? 0 : 1,
-        borderBottomColor: '#f5f5f4',
+        borderBottomColor: '#ECE8DE',
       }}
     >
       <View
@@ -69,15 +69,15 @@ const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolea
           width: 36,
           height: 36,
           borderRadius: 18,
-          backgroundColor: member.is_leader ? '#fef3c7' : '#fef3f2',
+          backgroundColor: member.is_leader ? '#fef3c7' : '#FFF8E1',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
         <Text
           style={{
-            color: member.is_leader ? '#b45309' : '#be185d',
-            fontFamily: 'Inter_700Bold',
+            color: member.is_leader ? '#b45309' : '#8A6606',
+            fontFamily: 'Manrope_700Bold',
             fontSize: 13,
           }}
         >
@@ -89,9 +89,9 @@ const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolea
           <Text
             style={{
               fontSize: 14,
-              color: '#0c0a09',
+              color: '#2A2312',
               letterSpacing: -0.2,
-              fontFamily: 'Inter_600SemiBold',
+              fontFamily: 'Manrope_600SemiBold',
             }}
           >
             {member.full_name}
@@ -103,9 +103,9 @@ const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolea
             numberOfLines={1}
             style={{
               fontSize: 12,
-              color: '#78716c',
+              color: '#7A7466',
               marginTop: 2,
-              fontFamily: 'Inter_500Medium',
+              fontFamily: 'Manrope_500Medium',
             }}
           >
             {member.email || member.phone}
@@ -120,14 +120,14 @@ const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolea
             width: 32,
             height: 32,
             borderRadius: 10,
-            backgroundColor: '#fafaf9',
+            backgroundColor: '#F1EEE6',
             borderWidth: 1,
-            borderColor: '#eef0f3',
+            borderColor: '#E6E1D5',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Phone size={14} color="#57534e" />
+          <Phone size={14} color="#4A463E" />
         </Pressable>
       ) : null}
     </View>
@@ -155,12 +155,12 @@ const InfoLine = ({
         paddingVertical: 6,
       }}
     >
-      <Icon size={14} color="#78716c" strokeWidth={2.2} />
+      <Icon size={14} color="#7A7466" strokeWidth={2.2} />
       <Text
         style={{
           fontSize: 14,
-          color: onPress ? '#be185d' : '#1c1917',
-          fontFamily: onPress ? 'Inter_600SemiBold' : 'Inter_500Medium',
+          color: onPress ? '#8A6606' : '#2A2312',
+          fontFamily: onPress ? 'Manrope_600SemiBold' : 'Manrope_500Medium',
         }}
       >
         {text}
@@ -182,10 +182,10 @@ export default function HomeGroupDetailScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
         }}
       >
-        <ActivityIndicator color="#ec4899" />
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
@@ -202,11 +202,11 @@ export default function HomeGroupDetailScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
           paddingHorizontal: 24,
         }}
       >
-        <Text style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+        <Text style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
           Grupa nie istnieje.
         </Text>
       </View>
@@ -221,7 +221,7 @@ export default function HomeGroupDetailScreen() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <ScrollView
-        style={{ flex: 1, backgroundColor: '#ffffff' }}
+        style={{ flex: 1, backgroundColor: '#F6F4EE' }}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
         <View
@@ -241,14 +241,14 @@ export default function HomeGroupDetailScreen() {
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: '#fafaf9',
+              backgroundColor: '#F1EEE6',
               borderWidth: 1,
-              borderColor: '#e7e5e4',
+              borderColor: '#E3DDD0',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <ChevronLeft size={20} color="#1c1917" strokeWidth={2.2} />
+            <ChevronLeft size={20} color="#2A2312" strokeWidth={2.2} />
           </Pressable>
         </View>
 
@@ -276,10 +276,10 @@ export default function HomeGroupDetailScreen() {
           <Text
             style={{
               fontSize: 22,
-              color: '#0c0a09',
+              color: '#2A2312',
               textAlign: 'center',
               letterSpacing: -0.5,
-              fontFamily: 'Inter_700Bold',
+              fontFamily: 'Manrope_700Bold',
             }}
           >
             {group.name}
@@ -288,11 +288,11 @@ export default function HomeGroupDetailScreen() {
             <Text
               style={{
                 fontSize: 13,
-                color: '#78716c',
+                color: '#7A7466',
                 textAlign: 'center',
                 marginTop: 6,
                 lineHeight: 19,
-                fontFamily: 'Inter_400Regular',
+                fontFamily: 'Manrope_400Regular',
               }}
             >
               {group.description}
@@ -306,8 +306,8 @@ export default function HomeGroupDetailScreen() {
               marginHorizontal: 16,
               marginBottom: 12,
               borderRadius: 20,
-              backgroundColor: '#ffffff',
-              shadowColor: '#0f172a',
+              backgroundColor: '#F6F4EE',
+              shadowColor: '#2A2312',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.05,
               shadowRadius: 14,
@@ -318,7 +318,7 @@ export default function HomeGroupDetailScreen() {
               style={{
                 borderRadius: 20,
                 borderWidth: 1,
-                borderColor: '#eef0f3',
+                borderColor: '#E6E1D5',
                 paddingHorizontal: 16,
                 paddingVertical: 12,
               }}
@@ -326,11 +326,11 @@ export default function HomeGroupDetailScreen() {
               <Text
                 style={{
                   fontSize: 11,
-                  color: '#78716c',
+                  color: '#7A7466',
                   marginBottom: 4,
                   letterSpacing: 0.6,
                   textTransform: 'uppercase',
-                  fontFamily: 'Inter_700Bold',
+                  fontFamily: 'Manrope_700Bold',
                 }}
               >
                 Spotkania
@@ -376,7 +376,7 @@ export default function HomeGroupDetailScreen() {
                   }}
                 >
                   <Navigation size={16} color="#1d4ed8" strokeWidth={2.4} />
-                  <Text style={{ fontSize: 14, color: '#1d4ed8', fontFamily: 'Inter_700Bold' }}>
+                  <Text style={{ fontSize: 14, color: '#1d4ed8', fontFamily: 'Manrope_700Bold' }}>
                     Nawiguj do grupy
                   </Text>
                 </Pressable>
@@ -391,8 +391,8 @@ export default function HomeGroupDetailScreen() {
               marginHorizontal: 16,
               marginBottom: 12,
               borderRadius: 20,
-              backgroundColor: '#ffffff',
-              shadowColor: '#0f172a',
+              backgroundColor: '#F6F4EE',
+              shadowColor: '#2A2312',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.05,
               shadowRadius: 14,
@@ -403,7 +403,7 @@ export default function HomeGroupDetailScreen() {
               style={{
                 borderRadius: 20,
                 borderWidth: 1,
-                borderColor: '#eef0f3',
+                borderColor: '#E6E1D5',
                 paddingHorizontal: 16,
                 paddingVertical: 12,
               }}
@@ -411,11 +411,11 @@ export default function HomeGroupDetailScreen() {
               <Text
                 style={{
                   fontSize: 11,
-                  color: '#78716c',
+                  color: '#7A7466',
                   marginBottom: 8,
                   letterSpacing: 0.6,
                   textTransform: 'uppercase',
-                  fontFamily: 'Inter_700Bold',
+                  fontFamily: 'Manrope_700Bold',
                 }}
               >
                 Lider
@@ -437,9 +437,9 @@ export default function HomeGroupDetailScreen() {
                   <Text
                     style={{
                       fontSize: 15,
-                      color: '#0c0a09',
+                      color: '#2A2312',
                       letterSpacing: -0.3,
-                      fontFamily: 'Inter_700Bold',
+                      fontFamily: 'Manrope_700Bold',
                     }}
                   >
                     {group.leader.full_name}
@@ -451,9 +451,9 @@ export default function HomeGroupDetailScreen() {
                       <Text
                         style={{
                           fontSize: 13,
-                          color: '#be185d',
+                          color: '#8A6606',
                           marginTop: 2,
-                          fontFamily: 'Inter_500Medium',
+                          fontFamily: 'Manrope_500Medium',
                         }}
                       >
                         {group.leader.email}
@@ -469,14 +469,14 @@ export default function HomeGroupDetailScreen() {
                       width: 36,
                       height: 36,
                       borderRadius: 12,
-                      backgroundColor: '#fafaf9',
+                      backgroundColor: '#F1EEE6',
                       borderWidth: 1,
-                      borderColor: '#eef0f3',
+                      borderColor: '#E6E1D5',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <Phone size={15} color="#57534e" />
+                    <Phone size={15} color="#4A463E" />
                   </Pressable>
                 ) : null}
               </View>
@@ -490,9 +490,9 @@ export default function HomeGroupDetailScreen() {
               marginHorizontal: 16,
               marginTop: 4,
               borderRadius: 20,
-              backgroundColor: '#fafaf9',
+              backgroundColor: '#F1EEE6',
               borderWidth: 1,
-              borderColor: '#eef0f3',
+              borderColor: '#E6E1D5',
               paddingVertical: 20,
               paddingHorizontal: 16,
               flexDirection: 'row',
@@ -500,13 +500,13 @@ export default function HomeGroupDetailScreen() {
               gap: 10,
             }}
           >
-            <Users size={16} color="#a8a29e" strokeWidth={2.2} />
+            <Users size={16} color="#A8A59E" strokeWidth={2.2} />
             <Text
               style={{
                 flex: 1,
                 fontSize: 13,
-                color: '#78716c',
-                fontFamily: 'Inter_500Medium',
+                color: '#7A7466',
+                fontFamily: 'Manrope_500Medium',
                 lineHeight: 18,
               }}
             >
@@ -518,8 +518,8 @@ export default function HomeGroupDetailScreen() {
             style={{
               marginHorizontal: 16,
               borderRadius: 20,
-              backgroundColor: '#ffffff',
-              shadowColor: '#0f172a',
+              backgroundColor: '#F6F4EE',
+              shadowColor: '#2A2312',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.05,
               shadowRadius: 14,
@@ -530,7 +530,7 @@ export default function HomeGroupDetailScreen() {
               style={{
                 borderRadius: 20,
                 borderWidth: 1,
-                borderColor: '#eef0f3',
+                borderColor: '#E6E1D5',
                 overflow: 'hidden',
               }}
             >
@@ -544,14 +544,14 @@ export default function HomeGroupDetailScreen() {
                   paddingBottom: 8,
                 }}
               >
-                <Users size={14} color="#78716c" strokeWidth={2.4} />
+                <Users size={14} color="#7A7466" strokeWidth={2.4} />
                 <Text
                   style={{
                     fontSize: 11,
-                    color: '#78716c',
+                    color: '#7A7466',
                     letterSpacing: 0.6,
                     textTransform: 'uppercase',
-                    fontFamily: 'Inter_700Bold',
+                    fontFamily: 'Manrope_700Bold',
                   }}
                 >
                   Członkowie · {members.length}

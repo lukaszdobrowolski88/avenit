@@ -10,10 +10,10 @@ export const SectionHeader = ({ title, subtitle }: Props) => (
     <Text
       className="text-[11px]"
       style={{
-        color: '#a8a29e',
+        color: '#A8A59E',
         letterSpacing: 1.2,
         textTransform: 'uppercase',
-        fontFamily: 'Inter_700Bold',
+        fontFamily: 'Manrope_700Bold',
       }}
     >
       {title}
@@ -22,9 +22,9 @@ export const SectionHeader = ({ title, subtitle }: Props) => (
       <Text
         className="text-[16px] mt-0.5"
         style={{
-          color: '#0c0a09',
+          color: '#2A2312',
           letterSpacing: -0.4,
-          fontFamily: 'Inter_700Bold',
+          fontFamily: 'Manrope_700Bold',
         }}
       >
         {subtitle}

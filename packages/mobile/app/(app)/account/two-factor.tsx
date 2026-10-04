@@ -30,7 +30,7 @@ const CodesGrid = ({ codes }: { codes: string[] }) => (
       borderRadius: 14,
       backgroundColor: '#f8fafc',
       borderWidth: 1,
-      borderColor: '#e2e8f0',
+      borderColor: '#E3DDD0',
     }}
   >
     {codes.map((c, i) => (
@@ -41,8 +41,8 @@ const CodesGrid = ({ codes }: { codes: string[] }) => (
           width: '47%',
           fontSize: 15,
           letterSpacing: 1,
-          color: '#0f172a',
-          fontFamily: 'Inter_600SemiBold',
+          color: '#2A2312',
+          fontFamily: 'Manrope_600SemiBold',
           textAlign: 'center',
         }}
       >
@@ -156,12 +156,12 @@ export default function TwoFactorScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Weryfikacja dwustopniowa" subtitle="Dodatkowe zabezpieczenie konta" showBack />
 
         {status.isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : (
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
@@ -181,16 +181,16 @@ export default function TwoFactorScreen() {
                   >
                     <KeyRound size={26} color="#059669" />
                   </View>
-                  <Text style={{ fontSize: 18, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>
+                  <Text style={{ fontSize: 18, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                     Kody zapasowe
                   </Text>
                   <Text
                     style={{
                       fontSize: 13,
-                      color: '#78716c',
+                      color: '#7A7466',
                       textAlign: 'center',
                       marginTop: 4,
-                      fontFamily: 'Inter_400Regular',
+                      fontFamily: 'Manrope_400Regular',
                     }}
                   >
                     Zapisz je w bezpiecznym miejscu. Pozwolą zalogować się, gdy nie masz dostępu do
@@ -216,7 +216,7 @@ export default function TwoFactorScreen() {
                   Użyj Google Authenticator, Microsoft Authenticator lub Authy.
                 </Text>
                 <Pressable onPress={openAuthenticator} style={styles.secondaryBtn}>
-                  <Smartphone size={16} color="#be185d" />
+                  <Smartphone size={16} color="#8A6606" />
                   <Text style={styles.secondaryBtnText}>Otwórz w aplikacji Authenticator</Text>
                 </Pressable>
 
@@ -227,14 +227,14 @@ export default function TwoFactorScreen() {
                   <Text selectable style={styles.secretText}>
                     {setupData.secret}
                   </Text>
-                  <Copy size={15} color="#a8a29e" />
+                  <Copy size={15} color="#A8A59E" />
                 </View>
 
                 <Text style={[styles.sectionTitle, { marginTop: 18 }]}>3. Wpisz kod z aplikacji</Text>
                 <TextInput
                   style={styles.codeInput}
                   placeholder="000000"
-                  placeholderTextColor="#cbd5e1"
+                  placeholderTextColor="#D3CCBC"
                   keyboardType="number-pad"
                   maxLength={6}
                   value={code}
@@ -253,7 +253,7 @@ export default function TwoFactorScreen() {
                   }}
                   style={{ marginTop: 12, alignItems: 'center' }}
                 >
-                  <Text style={{ fontSize: 13, color: '#78716c', fontFamily: 'Inter_600SemiBold' }}>
+                  <Text style={{ fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_600SemiBold' }}>
                     Anuluj
                   </Text>
                 </Pressable>
@@ -263,17 +263,17 @@ export default function TwoFactorScreen() {
                 <View style={[styles.statusCard, { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }]}>
                   <ShieldCheck size={22} color="#059669" />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, color: '#065f46', fontFamily: 'Inter_700Bold' }}>
+                    <Text style={{ fontSize: 15, color: '#065f46', fontFamily: 'Manrope_700Bold' }}>
                       2FA jest włączone
                     </Text>
-                    <Text style={{ fontSize: 12, color: '#047857', marginTop: 2, fontFamily: 'Inter_400Regular' }}>
+                    <Text style={{ fontSize: 12, color: '#047857', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>
                       Logowanie wymaga kodu z aplikacji uwierzytelniającej.
                     </Text>
                   </View>
                 </View>
 
                 <View style={styles.infoRow}>
-                  <KeyRound size={16} color="#78716c" />
+                  <KeyRound size={16} color="#7A7466" />
                   <Text style={styles.infoText}>
                     Kody zapasowe: {unusedBackup} nieużytych
                   </Text>
@@ -286,7 +286,7 @@ export default function TwoFactorScreen() {
                   }}
                   style={[styles.secondaryBtn, { marginTop: 16 }]}
                 >
-                  <KeyRound size={16} color="#be185d" />
+                  <KeyRound size={16} color="#8A6606" />
                   <Text style={styles.secondaryBtnText}>Wygeneruj nowe kody zapasowe</Text>
                 </Pressable>
 
@@ -306,10 +306,10 @@ export default function TwoFactorScreen() {
                 <View style={[styles.statusCard, { backgroundColor: '#fff7ed', borderColor: '#fed7aa' }]}>
                   <ShieldOff size={22} color="#ea580c" />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, color: '#9a3412', fontFamily: 'Inter_700Bold' }}>
+                    <Text style={{ fontSize: 15, color: '#9a3412', fontFamily: 'Manrope_700Bold' }}>
                       2FA jest wyłączone
                     </Text>
-                    <Text style={{ fontSize: 12, color: '#c2410c', marginTop: 2, fontFamily: 'Inter_400Regular' }}>
+                    <Text style={{ fontSize: 12, color: '#c2410c', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>
                       Włącz dodatkowe zabezpieczenie, by chronić swoje konto.
                     </Text>
                   </View>
@@ -342,19 +342,19 @@ export default function TwoFactorScreen() {
           onPress={() => setPromptFor(null)}
         >
           <Pressable
-            style={{ backgroundColor: '#ffffff', borderRadius: 20, padding: 20 }}
+            style={{ backgroundColor: '#F6F4EE', borderRadius: 20, padding: 20 }}
             onPress={(e) => e.stopPropagation()}
           >
-            <Text style={{ fontSize: 16, color: '#0c0a09', fontFamily: 'Inter_700Bold', marginBottom: 4 }}>
+            <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginBottom: 4 }}>
               {promptFor === 'disable' ? 'Wyłącz 2FA' : 'Nowe kody zapasowe'}
             </Text>
-            <Text style={{ fontSize: 13, color: '#78716c', marginBottom: 14, fontFamily: 'Inter_400Regular' }}>
+            <Text style={{ fontSize: 13, color: '#7A7466', marginBottom: 14, fontFamily: 'Manrope_400Regular' }}>
               Potwierdź 6-cyfrowym kodem z aplikacji uwierzytelniającej.
             </Text>
             <TextInput
               style={styles.codeInput}
               placeholder="000000"
-              placeholderTextColor="#cbd5e1"
+              placeholderTextColor="#D3CCBC"
               keyboardType="number-pad"
               maxLength={6}
               value={promptCode}
@@ -368,7 +368,7 @@ export default function TwoFactorScreen() {
               </GradientButton>
             </View>
             <Pressable onPress={() => setPromptFor(null)} style={{ marginTop: 12, alignItems: 'center' }}>
-              <Text style={{ fontSize: 13, color: '#78716c', fontFamily: 'Inter_600SemiBold' }}>Anuluj</Text>
+              <Text style={{ fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_600SemiBold' }}>Anuluj</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -380,11 +380,11 @@ export default function TwoFactorScreen() {
 const styles = {
   sectionTitle: {
     fontSize: 13,
-    color: '#0c0a09',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 4,
   } as const,
-  help: { fontSize: 13, color: '#78716c', fontFamily: 'Inter_400Regular', lineHeight: 19 } as const,
+  help: { fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_400Regular', lineHeight: 19 } as const,
   secondaryBtn: {
     marginTop: 10,
     flexDirection: 'row',
@@ -394,10 +394,10 @@ const styles = {
     paddingVertical: 13,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#fbcfe8',
-    backgroundColor: '#ffffff',
+    borderColor: '#F3E3B0',
+    backgroundColor: '#F6F4EE',
   } as const,
-  secondaryBtnText: { fontSize: 14, color: '#be185d', fontFamily: 'Inter_700Bold' } as const,
+  secondaryBtnText: { fontSize: 14, color: '#8A6606', fontFamily: 'Manrope_700Bold' } as const,
   secretBox: {
     marginTop: 8,
     flexDirection: 'row',
@@ -409,21 +409,21 @@ const styles = {
     borderRadius: 14,
     backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#E3DDD0',
   } as const,
-  secretText: { flex: 1, fontSize: 15, letterSpacing: 2, color: '#0f172a', fontFamily: 'Inter_600SemiBold' } as const,
+  secretText: { flex: 1, fontSize: 15, letterSpacing: 2, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' } as const,
   codeInput: {
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 22,
     letterSpacing: 8,
     textAlign: 'center',
-    color: '#0c0a09',
-    backgroundColor: '#fafaf9',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    backgroundColor: '#F1EEE6',
+    fontFamily: 'Manrope_700Bold',
   } as const,
   statusCard: {
     flexDirection: 'row',
@@ -434,7 +434,7 @@ const styles = {
     borderWidth: 1,
   } as const,
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16 } as const,
-  infoText: { fontSize: 14, color: '#1c1917', fontFamily: 'Inter_500Medium' } as const,
+  infoText: { fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_500Medium' } as const,
   dangerBtn: {
     marginTop: 12,
     flexDirection: 'row',
@@ -447,5 +447,5 @@ const styles = {
     borderColor: '#fecaca',
     backgroundColor: '#fef2f2',
   } as const,
-  dangerBtnText: { fontSize: 14, color: '#dc2626', fontFamily: 'Inter_700Bold' } as const,
+  dangerBtnText: { fontSize: 14, color: '#dc2626', fontFamily: 'Manrope_700Bold' } as const,
 };

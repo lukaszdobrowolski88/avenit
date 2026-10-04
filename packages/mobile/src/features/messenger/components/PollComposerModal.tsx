@@ -12,8 +12,8 @@ interface Props {
 
 const labelStyle = {
   fontSize: 11,
-  color: "#78716c",
-  fontFamily: "Inter_700Bold",
+  color: "#7A7466",
+  fontFamily: "Manrope_700Bold",
   textTransform: "uppercase" as const,
   letterSpacing: 0.4,
   marginBottom: 6,
@@ -22,15 +22,15 @@ const labelStyle = {
 
 const inputStyle = {
   borderWidth: 1,
-  borderColor: "#eef0f3",
+  borderColor: "#E6E1D5",
   borderRadius: 12,
   paddingHorizontal: 14,
   paddingVertical: 12,
   fontSize: 15,
-  color: "#0c0a09",
-  backgroundColor: "#fafaf9",
+  color: "#2A2312",
+  backgroundColor: "#F1EEE6",
   marginBottom: 12,
-  fontFamily: "Inter_500Medium",
+  fontFamily: "Manrope_500Medium",
 } as const;
 
 export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
@@ -73,7 +73,7 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
       >
         <Pressable
           style={{
-            backgroundColor: "#ffffff",
+            backgroundColor: "#F6F4EE",
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             padding: 20,
@@ -90,11 +90,11 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
               marginBottom: 14,
             }}
           >
-            <Text style={{ fontSize: 18, color: "#0c0a09", fontFamily: "Inter_700Bold" }}>
+            <Text style={{ fontSize: 18, color: "#2A2312", fontFamily: "Manrope_700Bold" }}>
               📊 Nowa ankieta
             </Text>
             <Pressable onPress={close} hitSlop={10}>
-              <X size={20} color="#78716c" />
+              <X size={20} color="#7A7466" />
             </Pressable>
           </View>
 
@@ -105,7 +105,7 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
               value={question}
               onChangeText={setQuestion}
               placeholder="O co pytasz?"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#A8A59E"
             />
 
             <Text style={labelStyle}>Opcje</Text>
@@ -115,14 +115,14 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
                   style={[inputStyle, { flex: 1, marginBottom: 0 }]}
                   value={o}
                   placeholder={`Opcja ${i + 1}`}
-                  placeholderTextColor="#a8a29e"
+                  placeholderTextColor="#A8A59E"
                   onChangeText={(t) =>
                     setOptions((prev) => prev.map((x, j) => (j === i ? t : x)))
                   }
                 />
                 {options.length > 2 ? (
                   <Pressable onPress={() => setOptions((prev) => prev.filter((_, j) => j !== i))} hitSlop={8}>
-                    <X size={18} color="#a8a29e" />
+                    <X size={18} color="#A8A59E" />
                   </Pressable>
                 ) : null}
               </View>
@@ -132,8 +132,8 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
                 onPress={() => setOptions((prev) => [...prev, ""])}
                 style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8 }}
               >
-                <Plus size={16} color="#ec4899" />
-                <Text style={{ color: "#be185d", fontFamily: "Inter_600SemiBold" }}>Dodaj opcję</Text>
+                <Plus size={16} color="#8A6606" />
+                <Text style={{ color: "#8A6606", fontFamily: "Manrope_600SemiBold" }}>Dodaj opcję</Text>
               </Pressable>
             ) : null}
 
@@ -147,15 +147,15 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
                   height: 22,
                   borderRadius: 6,
                   borderWidth: 2,
-                  borderColor: multiple ? "#ec4899" : "#cbd5e1",
-                  backgroundColor: multiple ? "#ec4899" : "transparent",
+                  borderColor: multiple ? "#FFBE0B" : "#D3CCBC",
+                  backgroundColor: multiple ? "#2A2312" : "transparent",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
                 {multiple ? <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700" }}>✓</Text> : null}
               </View>
-              <Text style={{ color: "#334155", fontFamily: "Inter_500Medium" }}>Wielokrotny wybór</Text>
+              <Text style={{ color: "#3A3427", fontFamily: "Manrope_500Medium" }}>Wielokrotny wybór</Text>
             </Pressable>
 
             <Pressable
@@ -163,14 +163,14 @@ export const PollComposerModal = ({ visible, onClose, onCreate }: Props) => {
               disabled={!valid}
               style={{
                 marginTop: 10,
-                backgroundColor: "#ec4899",
+                backgroundColor: "#2A2312",
                 borderRadius: 14,
                 paddingVertical: 14,
                 alignItems: "center",
                 opacity: valid ? 1 : 0.5,
               }}
             >
-              <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Inter_700Bold" }}>Utwórz ankietę</Text>
+              <Text style={{ color: "#fff", fontSize: 15, fontFamily: "Manrope_700Bold" }}>Utwórz ankietę</Text>
             </Pressable>
           </ScrollView>
         </Pressable>

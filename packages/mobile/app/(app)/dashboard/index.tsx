@@ -8,8 +8,10 @@ import {
   useGivingSummary,
   useRsvpSummary,
   useUpcomingEvents,
+  type UpcomingEvent,
 } from '../../../src/features/dashboard/extras';
 import { Greeting } from '../../../src/features/dashboard/components/Greeting';
+import { NextUpCard } from '../../../src/features/dashboard/components/NextUpCard';
 import { ForYouStrip } from '../../../src/features/dashboard/components/ForYouStrip';
 import { QuickAccess } from '../../../src/features/dashboard/components/QuickAccess';
 import { UpcomingEventsWidget } from '../../../src/features/dashboard/components/UpcomingEventsWidget';
@@ -24,9 +26,19 @@ import { PendingInvitationsWidget } from '../../../src/features/dashboard/compon
 import { PendingAccountsCard } from '../../../src/features/dashboard/components/PendingAccountsCard';
 import { AbsencesWidget } from '../../../src/features/dashboard/components/AbsencesWidget';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
+import { D } from '../../../src/features/dashboard/theme';
 
 // Tło strony pulpitu — białe karty odcinają się od niego bez ramek i cieni.
-const PAGE_BG = '#f6f5f3';
+const PAGE_BG = D.page;
+
+const isOver = (ev: UpcomingEvent) => {
+  if (!ev.time) return false;
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  if (ev.date !== today) return false;
+  const [h, m] = ev.time.split(':').map(Number);
+  return (h ?? 0) * 60 + (m ?? 0) + 180 < now.getHours() * 60 + now.getMinutes();
+};
 
 export default function DashboardScreen() {
   const { user } = useAuthSession();
@@ -57,36 +69,43 @@ export default function DashboardScreen() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: PAGE_BG }}>
-        <ActivityIndicator color="#ec4899" />
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
 
-  const acceptedMinistry = (data?.upcomingMinistry ?? []).filter(
-    (m: UpcomingMinistryItem) => m.status === 'accepted',
-  ).length;
+  const ministry: UpcomingMinistryItem[] = data?.upcomingMinistry ?? [];
+  const acceptedMinistry = ministry.filter((m) => m.status === 'accepted').length;
+  const todoTasks = (data?.myTasks ?? []).filter((t: { status: string }) => t.status !== 'done' && t.status !== 'Zrobione').length;
+
+  // Najbliższe wydarzenie idzie do karty-bohatera; lista pokazuje kolejne. Dzisiejsze
+  // wydarzenia, które zaczęły się ponad 3 godziny temu, już minęły.
+  const upcoming = (events.data ?? []).filter((ev: UpcomingEvent) => !isOver(ev));
+  const nextEvent = upcoming[0] ?? null;
+  const nextRole = nextEvent
+    ? ministry.find((m) => m.eventId === nextEvent.id && m.status !== 'rejected')?.myRole ?? null
+    : null;
 
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <ScrollView
         style={{ flex: 1, backgroundColor: PAGE_BG }}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 110 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={refreshAll}
-            tintColor="#ec4899"
+            tintColor="#2A2312"
             progressViewOffset={40}
           />
         }
       >
         <Greeting
           email={user?.email ?? null}
-          tasksCount={(data?.myTasks ?? []).length}
+          tasksCount={todoTasks}
           ministryCount={acceptedMinistry}
-          prayersCount={(data?.myPrayers ?? []).length}
           pendingInvitations={(data?.pendingInvitations ?? []).length}
           unreadMessages={data?.totalUnreadMessages ?? 0}
         />
@@ -95,14 +114,16 @@ export default function DashboardScreen() {
 
         <PendingAccountsCard />
 
+        {nextEvent ? <NextUpCard event={nextEvent} myRole={nextRole} /> : null}
+
         <ForYouStrip />
 
         <QuickAccess />
 
-        <UpcomingEventsWidget events={events.data ?? []} />
+        <UpcomingEventsWidget events={upcoming.slice(1)} />
 
         <MinistryWidget
-          ministry={data?.upcomingMinistry ?? []}
+          ministry={ministry}
           suggestions={data?.ministrySuggestions ?? []}
           history={data?.ministryHistory ?? []}
         />

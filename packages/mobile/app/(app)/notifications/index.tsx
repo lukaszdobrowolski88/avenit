@@ -52,7 +52,7 @@ export default function NotificationsScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title="Powiadomienia"
           subtitle={unreadCount > 0 ? `${unreadCount} nieprzeczytanych` : 'Wszystko odczytane'}
@@ -67,13 +67,13 @@ export default function NotificationsScreen() {
                   paddingHorizontal: 12,
                   paddingVertical: 8,
                   borderRadius: 999,
-                  backgroundColor: '#0c0a09',
+                  backgroundColor: '#2A2312',
                 }}
               >
                 <CheckCheck size={14} color="white" />
                 <Text
                   className="text-[12px]"
-                  style={{ color: '#ffffff', fontFamily: 'Inter_700Bold' }}
+                  style={{ color: '#ffffff', fontFamily: 'Manrope_700Bold' }}
                 >
                   Odczytane
                 </Text>
@@ -84,13 +84,13 @@ export default function NotificationsScreen() {
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}
+              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
             >
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
@@ -101,7 +101,7 @@ export default function NotificationsScreen() {
             data={data ?? []}
             keyExtractor={(item) => item.id}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
             ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
             ListEmptyComponent={
@@ -111,23 +111,23 @@ export default function NotificationsScreen() {
                     width: 64,
                     height: 64,
                     borderRadius: 18,
-                    backgroundColor: '#fef3f2',
+                    backgroundColor: '#FFF8E1',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 12,
                   }}
                 >
-                  <Bell size={28} color="#ec4899" />
+                  <Bell size={28} color="#8A6606" />
                 </View>
                 <Text
                   className="text-[16px]"
-                  style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+                  style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
                 >
                   Brak powiadomień
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+                  style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
                 >
                   Powiadomienia o wiadomościach, zadaniach i wydarzeniach pojawią się tutaj.
                 </Text>
@@ -147,10 +147,10 @@ export default function NotificationsScreen() {
                   className="flex-row items-start gap-3 p-3.5 active:opacity-80"
                   style={{
                     borderRadius: 16,
-                    backgroundColor: item.read ? '#ffffff' : '#fffbeb',
+                    backgroundColor: item.read ? '#F6F4EE' : '#fffbeb',
                     borderWidth: 1,
-                    borderColor: item.read ? '#eef0f3' : '#fde68a',
-                    shadowColor: '#0f172a',
+                    borderColor: item.read ? '#E6E1D5' : '#fde68a',
+                    shadowColor: '#2A2312',
                     shadowOffset: { width: 0, height: 3 },
                     shadowOpacity: item.read ? 0.04 : 0.06,
                     shadowRadius: 10,
@@ -174,9 +174,9 @@ export default function NotificationsScreen() {
                       <Text
                         className="flex-1 text-[14px]"
                         style={{
-                          color: '#0c0a09',
+                          color: '#2A2312',
                           letterSpacing: -0.2,
-                          fontFamily: item.read ? 'Inter_500Medium' : 'Inter_700Bold',
+                          fontFamily: item.read ? 'Manrope_500Medium' : 'Manrope_700Bold',
                         }}
                         numberOfLines={1}
                       >
@@ -184,7 +184,7 @@ export default function NotificationsScreen() {
                       </Text>
                       <Text
                         className="text-[10px]"
-                        style={{ color: '#a8a29e', fontFamily: 'Inter_500Medium' }}
+                        style={{ color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}
                       >
                         {formatRelative(item.created_at)}
                       </Text>
@@ -192,7 +192,7 @@ export default function NotificationsScreen() {
                     {item.body ? (
                       <Text
                         className="text-[12px] mt-0.5"
-                        style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+                        style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
                         numberOfLines={2}
                       >
                         {item.body}
@@ -205,7 +205,7 @@ export default function NotificationsScreen() {
                         width: 8,
                         height: 8,
                         borderRadius: 4,
-                        backgroundColor: '#ec4899',
+                        backgroundColor: '#2A2312',
                         marginTop: 6,
                       }}
                     />

@@ -90,8 +90,8 @@ export default function CustomModuleScreen() {
 
   if (!perms.ready) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
-        <ActivityIndicator color="#ec4899" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F6F4EE' }}>
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
@@ -142,10 +142,10 @@ export default function CustomModuleScreen() {
           <Pressable
             onPress={() => openOnWeb(mod?.path || `/module/${moduleKey}`)}
             className="active:opacity-70"
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderRadius: 16, backgroundColor: '#f7f6f5' }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderRadius: 16, backgroundColor: '#EFEBE2' }}
           >
-            <ExternalLink size={16} color="#be185d" />
-            <Text style={{ flex: 1, fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>Otwórz tę część na webie</Text>
+            <ExternalLink size={16} color="#8A6606" />
+            <Text style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>Otwórz tę część na webie</Text>
           </Pressable>
         );
     }
@@ -172,7 +172,7 @@ export default function CustomModuleScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader title={mod?.label ?? moduleKey} subtitle="Moduł kościoła" Icon={LayoutGrid} showBack />
         {tabs.length > 1 ? (
           <View style={{ marginBottom: 6 }}>
@@ -198,7 +198,7 @@ export default function CustomModuleScreen() {
                 ]);
                 setRefreshing(false);
               }}
-              tintColor="#ec4899"
+              tintColor="#2A2312"
             />
           }
         >

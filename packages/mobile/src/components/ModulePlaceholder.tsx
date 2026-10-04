@@ -20,9 +20,9 @@ export function ModulePlaceholder({ title, subtitle, Icon, showBack }: Props) {
       <Card>
         <Text
           style={{
-            color: '#0c0a09',
+            color: '#2A2312',
             fontSize: 15,
-            fontFamily: 'Inter_600SemiBold',
+            fontFamily: 'Manrope_600SemiBold',
             marginBottom: 6,
           }}
         >
@@ -30,10 +30,10 @@ export function ModulePlaceholder({ title, subtitle, Icon, showBack }: Props) {
         </Text>
         <Text
           style={{
-            color: '#78716c',
+            color: '#7A7466',
             fontSize: 13,
             lineHeight: 18,
-            fontFamily: 'Inter_400Regular',
+            fontFamily: 'Manrope_400Regular',
           }}
         >
           Ten moduł jest w przygotowaniu i pojawi się w jednej z najbliższych aktualizacji aplikacji.

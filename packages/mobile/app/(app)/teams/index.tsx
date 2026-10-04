@@ -16,12 +16,12 @@ export default function TeamsListScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Zespoły" subtitle="Tablice, wydarzenia, grafiki" Icon={Users} showBack />
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}>
           {!ready ? (
             <View style={{ paddingVertical: 40 }}>
-              <ActivityIndicator color="#ec4899" />
+              <ActivityIndicator color="#2A2312" />
             </View>
           ) : null}
           {ready && teams.length === 0 ? (
@@ -29,8 +29,8 @@ export default function TeamsListScreen() {
               style={{
                 paddingVertical: 40,
                 textAlign: 'center',
-                color: '#a8a29e',
-                fontFamily: 'Inter_500Medium',
+                color: '#A8A59E',
+                fontFamily: 'Manrope_500Medium',
               }}
             >
               Nie należysz jeszcze do żadnego zespołu.
@@ -52,7 +52,7 @@ export default function TeamsListScreen() {
                     gap: 14,
                     padding: 14,
                     borderRadius: 18,
-                    backgroundColor: '#f7f6f5',
+                    backgroundColor: '#EFEBE2',
                   }}
                 >
                   {native ? (
@@ -60,8 +60,6 @@ export default function TeamsListScreen() {
                       Icon={native.Icon}
                       size={48}
                       iconSize={22}
-                      from={native.gradFrom}
-                      to={native.gradTo}
                     />
                   ) : (
                     <View
@@ -81,9 +79,9 @@ export default function TeamsListScreen() {
                     <Text
                       style={{
                         fontSize: 16,
-                        color: '#0c0a09',
+                        color: '#2A2312',
                         letterSpacing: -0.3,
-                        fontFamily: 'Inter_700Bold',
+                        fontFamily: 'Manrope_700Bold',
                       }}
                     >
                       {t.label}
@@ -91,9 +89,9 @@ export default function TeamsListScreen() {
                     <Text
                       style={{
                         fontSize: 12,
-                        color: '#78716c',
+                        color: '#7A7466',
                         marginTop: 2,
-                        fontFamily: 'Inter_500Medium',
+                        fontFamily: 'Manrope_500Medium',
                       }}
                     >
                       {native
@@ -102,9 +100,9 @@ export default function TeamsListScreen() {
                     </Text>
                   </View>
                   {t.isWeb ? (
-                    <ArrowUpRight size={18} color="#a8a29e" strokeWidth={2.2} />
+                    <ArrowUpRight size={18} color="#A8A59E" strokeWidth={2.2} />
                   ) : (
-                    <ChevronRight size={18} color="#a8a29e" strokeWidth={2.2} />
+                    <ChevronRight size={18} color="#A8A59E" strokeWidth={2.2} />
                   )}
                 </View>
               </Pressable>

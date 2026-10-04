@@ -103,7 +103,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
       >
         <View style={[styles.programCardInner, isSelected && styles.programCardInnerSelected]}>
           <View style={[styles.programIcon, isSelected && styles.programIconSelected]}>
-            <Calendar size={18} color={isSelected ? '#ffffff' : '#ec4899'} strokeWidth={2.2} />
+            <Calendar size={18} color={isSelected ? '#ffffff' : '#8A6606'} strokeWidth={2.2} />
           </View>
           <View style={{ flex: 1 }}>
             <Text numberOfLines={1} style={styles.programTitle}>
@@ -116,7 +116,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
                 </Text>
               ) : null}
               <View style={styles.countPill}>
-                <Music size={9} color="#be185d" strokeWidth={2.4} />
+                <Music size={9} color="#8A6606" strokeWidth={2.4} />
                 <Text style={styles.countPillText}>
                   {count} {count === 1 ? 'pieśń' : 'pieśni'}
                 </Text>
@@ -125,7 +125,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
           </View>
           {alreadyAdded ? (
             <View style={styles.addedBadge}>
-              <Check size={11} color="#a8a29e" strokeWidth={2.6} />
+              <Check size={11} color="#A8A59E" strokeWidth={2.6} />
               <Text style={styles.addedBadgeText}>DODANA</Text>
             </View>
           ) : isSelected ? (
@@ -145,16 +145,16 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
       onRequestClose={handleClose}
       presentationStyle="pageSheet"
     >
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <View style={styles.header}>
           <Pressable onPress={handleClose} hitSlop={10}>
-            <X size={22} color="#1c1917" />
+            <X size={22} color="#2A2312" />
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle}>Dodaj do programu</Text>
             {song?.title ? (
               <View style={styles.songRow}>
-                <Music size={12} color="#ec4899" />
+                <Music size={12} color="#8A6606" />
                 <Text numberOfLines={1} style={styles.headerSubtitle}>
                   {song.title}
                 </Text>
@@ -177,34 +177,34 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
         <ScrollView keyboardShouldPersistTaps="handled" style={{ flex: 1 }}>
           <Text style={styles.section}>WYBIERZ PROGRAM (od dzisiaj)</Text>
           <View style={styles.searchBox}>
-            <Search size={16} color="#a8a29e" />
+            <Search size={16} color="#A8A59E" />
             <TextInput
               style={styles.searchInput}
               placeholder="Szukaj programu…"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#A8A59E"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search ? (
               <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                <X size={14} color="#a8a29e" />
+                <X size={14} color="#A8A59E" />
               </Pressable>
             ) : null}
           </View>
 
           {isLoading ? (
             <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-              <ActivityIndicator color="#ec4899" />
+              <ActivityIndicator color="#2A2312" />
             </View>
           ) : filtered.length === 0 ? (
             <View style={{ paddingVertical: 32, paddingHorizontal: 16, alignItems: 'center' }}>
-              <Calendar size={28} color="#cbd5e1" />
+              <Calendar size={28} color="#D3CCBC" />
               <Text
                 style={{
                   marginTop: 8,
-                  color: '#78716c',
-                  fontFamily: 'Inter_500Medium',
+                  color: '#7A7466',
+                  fontFamily: 'Manrope_500Medium',
                   textAlign: 'center',
                 }}
               >
@@ -247,7 +247,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
             <TextInput
               style={styles.noteInput}
               placeholder="Opcjonalna notatka, np. fragment, zwrotka, kiedy zaśpiewać…"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#A8A59E"
               value={note}
               onChangeText={setNote}
               multiline
@@ -269,12 +269,12 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eef0f3',
+    borderBottomColor: '#E6E1D5',
   },
   headerTitle: {
     fontSize: 16,
-    color: '#0c0a09',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.3,
   },
   songRow: {
@@ -286,30 +286,30 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     flex: 1,
     fontSize: 12,
-    color: '#78716c',
-    fontFamily: 'Inter_500Medium',
+    color: '#7A7466',
+    fontFamily: 'Manrope_500Medium',
   },
   saveBtn: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: '#ec4899',
+    backgroundColor: '#2A2312',
     minWidth: 70,
     alignItems: 'center',
   },
   saveBtnDisabled: {
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#F1EEE6',
   },
   saveBtnText: {
     fontSize: 13,
     color: '#ffffff',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   section: {
     fontSize: 11,
     letterSpacing: 1.2,
-    color: '#78716c',
-    fontFamily: 'Inter_700Bold',
+    color: '#7A7466',
+    fontFamily: 'Manrope_700Bold',
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 8,
@@ -322,15 +322,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 42,
     borderRadius: 14,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#F1EEE6',
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#0c0a09',
-    fontFamily: 'Inter_500Medium',
+    color: '#2A2312',
+    fontFamily: 'Manrope_500Medium',
   },
   programsListContent: {
     marginTop: 8,
@@ -339,8 +339,8 @@ const styles = StyleSheet.create({
   },
   programCardShadow: {
     borderRadius: 16,
-    backgroundColor: '#ffffff',
-    shadowColor: '#0f172a',
+    backgroundColor: '#F6F4EE',
+    shadowColor: '#2A2312',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.04,
     shadowRadius: 10,
@@ -353,27 +353,27 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
   },
   programCardInnerSelected: {
-    borderColor: '#ec4899',
-    backgroundColor: '#fdf2f8',
+    borderColor: '#FFBE0B',
+    backgroundColor: '#FFF8E1',
   },
   programIcon: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#fef3f2',
+    backgroundColor: '#FFF8E1',
     alignItems: 'center',
     justifyContent: 'center',
   },
   programIconSelected: {
-    backgroundColor: '#ec4899',
+    backgroundColor: '#2A2312',
   },
   programTitle: {
     fontSize: 15,
-    color: '#0c0a09',
-    fontFamily: 'Inter_600SemiBold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_600SemiBold',
     letterSpacing: -0.3,
   },
   programMetaRow: {
@@ -385,8 +385,8 @@ const styles = StyleSheet.create({
   },
   programMetaText: {
     fontSize: 12,
-    color: '#78716c',
-    fontFamily: 'Inter_500Medium',
+    color: '#7A7466',
+    fontFamily: 'Manrope_500Medium',
   },
   countPill: {
     flexDirection: 'row',
@@ -395,19 +395,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: '#fdf2f8',
+    backgroundColor: '#FFF8E1',
   },
   countPillText: {
     fontSize: 10,
-    color: '#be185d',
-    fontFamily: 'Inter_700Bold',
+    color: '#8A6606',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: 0.2,
   },
   checkBubble: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#ec4899',
+    backgroundColor: '#2A2312',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -418,13 +418,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: '#f5f5f4',
+    backgroundColor: '#ECE8DE',
   },
   addedBadgeText: {
     fontSize: 9,
     letterSpacing: 0.6,
-    color: '#78716c',
-    fontFamily: 'Inter_700Bold',
+    color: '#7A7466',
+    fontFamily: 'Manrope_700Bold',
   },
   keysGrid: {
     flexDirection: 'row',
@@ -436,19 +436,19 @@ const styles = StyleSheet.create({
     minWidth: 48,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#F1EEE6',
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
     alignItems: 'center',
   },
   keyBtnActive: {
-    backgroundColor: '#ec4899',
-    borderColor: '#ec4899',
+    backgroundColor: '#2A2312',
+    borderColor: '#FFBE0B',
   },
   keyText: {
     fontSize: 13,
-    color: '#1c1917',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_700Bold',
   },
   keyTextActive: {
     color: '#ffffff',
@@ -456,13 +456,13 @@ const styles = StyleSheet.create({
   noteInput: {
     minHeight: 80,
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#0c0a09',
-    fontFamily: 'Inter_400Regular',
-    backgroundColor: '#fafaf9',
+    color: '#2A2312',
+    fontFamily: 'Manrope_400Regular',
+    backgroundColor: '#F1EEE6',
   },
 });

@@ -84,18 +84,18 @@ export default function SessionsScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Aktywne sesje" subtitle="Urządzenia zalogowane do konta" showBack />
 
         {isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : (
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {sessions.map((s) => {
@@ -112,8 +112,8 @@ export default function SessionsScreen() {
                     marginBottom: 10,
                     borderRadius: 16,
                     borderWidth: 1,
-                    borderColor: s.current ? '#fbcfe8' : '#eef0f3',
-                    backgroundColor: s.current ? '#fdf2f8' : '#ffffff',
+                    borderColor: s.current ? '#F3E3B0' : '#E6E1D5',
+                    backgroundColor: s.current ? '#FFF8E1' : '#F6F4EE',
                   }}
                 >
                   <View
@@ -121,27 +121,27 @@ export default function SessionsScreen() {
                       width: 42,
                       height: 42,
                       borderRadius: 12,
-                      backgroundColor: s.current ? '#fce7f3' : '#f5f5f4',
+                      backgroundColor: s.current ? '#FFF1C2' : '#ECE8DE',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <Icon size={20} color={s.current ? '#be185d' : '#78716c'} />
+                    <Icon size={20} color={s.current ? '#8A6606' : '#7A7466'} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                      <Text style={{ fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                         {deviceLabel(s.user_agent)}
                       </Text>
                       {s.current ? (
-                        <View style={{ paddingHorizontal: 7, paddingVertical: 1, borderRadius: 999, backgroundColor: '#ec4899' }}>
-                          <Text style={{ fontSize: 10, color: '#ffffff', fontFamily: 'Inter_700Bold' }}>
+                        <View style={{ paddingHorizontal: 7, paddingVertical: 1, borderRadius: 999, backgroundColor: '#2A2312' }}>
+                          <Text style={{ fontSize: 10, color: '#ffffff', fontFamily: 'Manrope_700Bold' }}>
                             To urządzenie
                           </Text>
                         </View>
                       ) : null}
                     </View>
-                    <Text style={{ fontSize: 12, color: '#a8a29e', marginTop: 2, fontFamily: 'Inter_400Regular' }}>
+                    <Text style={{ fontSize: 12, color: '#A8A59E', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>
                       Zalogowano {format(new Date(s.created_at), 'd MMM yyyy, HH:mm', { locale: pl })}
                     </Text>
                   </View>
@@ -171,7 +171,7 @@ export default function SessionsScreen() {
                 ) : (
                   <LogOut size={16} color="#dc2626" />
                 )}
-                <Text style={{ fontSize: 14, color: '#dc2626', fontFamily: 'Inter_700Bold' }}>
+                <Text style={{ fontSize: 14, color: '#dc2626', fontFamily: 'Manrope_700Bold' }}>
                   Wyloguj inne urządzenia ({others})
                 </Text>
               </Pressable>
@@ -181,8 +181,8 @@ export default function SessionsScreen() {
                   textAlign: 'center',
                   marginTop: 8,
                   fontSize: 13,
-                  color: '#a8a29e',
-                  fontFamily: 'Inter_400Regular',
+                  color: '#A8A59E',
+                  fontFamily: 'Manrope_400Regular',
                 }}
               >
                 Jesteś zalogowany/a tylko na tym urządzeniu.

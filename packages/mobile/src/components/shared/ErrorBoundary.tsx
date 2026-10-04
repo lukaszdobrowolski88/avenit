@@ -30,7 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <View
           style={{
             flex: 1,
-            backgroundColor: '#ffffff',
+            backgroundColor: '#F6F4EE',
             paddingHorizontal: 24,
             paddingVertical: 48,
           }}
@@ -41,7 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
               color: '#be123c',
               marginBottom: 8,
               letterSpacing: -0.4,
-              fontFamily: 'Inter_700Bold',
+              fontFamily: 'Manrope_700Bold',
             }}
           >
             Coś poszło nie tak
@@ -49,9 +49,9 @@ export class ErrorBoundary extends Component<Props, State> {
           <Text
             style={{
               fontSize: 14,
-              color: '#78716c',
+              color: '#7A7466',
               marginBottom: 20,
-              fontFamily: 'Inter_500Medium',
+              fontFamily: 'Manrope_500Medium',
             }}
           >
             Spróbuj ponownie. Jeśli problem powraca, daj nam znać.
@@ -60,27 +60,27 @@ export class ErrorBoundary extends Component<Props, State> {
             style={{
               maxHeight: 200,
               borderRadius: 14,
-              backgroundColor: '#fafaf9',
+              backgroundColor: '#F1EEE6',
               borderWidth: 1,
-              borderColor: '#eef0f3',
+              borderColor: '#E6E1D5',
               padding: 12,
               marginBottom: 20,
             }}
           >
-            <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: '#57534e' }}>
+            <Text style={{ fontFamily: 'Manrope_400Regular', fontSize: 12, color: '#4A463E' }}>
               {this.state.error.name}: {this.state.error.message}
             </Text>
           </ScrollView>
           <Pressable
             onPress={this.reset}
             style={{
-              backgroundColor: '#ec4899',
+              backgroundColor: '#2A2312',
               borderRadius: 14,
               paddingVertical: 14,
               alignItems: 'center',
             }}
           >
-            <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}>
+            <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
               Spróbuj ponownie
             </Text>
           </Pressable>

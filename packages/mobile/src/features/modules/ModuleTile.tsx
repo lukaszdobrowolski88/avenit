@@ -4,8 +4,6 @@ import { ArrowUpRight, type LucideIcon } from 'lucide-react-native';
 interface Props {
   label: string;
   Icon: LucideIcon;
-  tint: string;
-  bg: string;
   onPress: () => void;
   // Moduł bez ekranu w apce — otwiera się na webie (mała strzałka w rogu).
   isWeb?: boolean;
@@ -15,18 +13,16 @@ interface Props {
   surface?: string;
 }
 
-// Kafel modułu: ikona w miękkim kwadracie + nazwa. Bez ramek i pasków — tło kafla
-// odróżnia go od strony (kanon „miękka pigułka").
+// Kafel modułu: czarna ikona w kółku + nazwa. Monochrom jak pulpit — bez kolorowych
+// kwadratów, ramek i pasków; tło kafla odróżnia go od strony.
 export const ModuleTile = ({
   label,
   Icon,
-  tint,
-  bg,
   onPress,
   isWeb,
   badge,
   width,
-  surface = '#f7f6f5',
+  surface = '#ECE8DE',
 }: Props) => (
   <Pressable
     onPress={onPress}
@@ -38,26 +34,26 @@ export const ModuleTile = ({
     <View
       style={{
         alignItems: 'center',
-        paddingTop: 14,
+        paddingTop: 16,
         paddingBottom: 12,
         paddingHorizontal: 6,
-        borderRadius: 18,
+        borderRadius: 22,
         backgroundColor: surface,
-        gap: 9,
-        minHeight: 104,
+        gap: 10,
+        minHeight: 108,
       }}
     >
       <View
         style={{
-          width: 46,
-          height: 46,
-          borderRadius: 14,
-          backgroundColor: bg,
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          backgroundColor: surface === '#ffffff' ? '#F6F4EE' : '#ffffff',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Icon size={22} color={tint} strokeWidth={2.1} />
+        <Icon size={21} color="#2A2312" strokeWidth={1.9} />
       </View>
       <Text
         numberOfLines={2}
@@ -65,8 +61,8 @@ export const ModuleTile = ({
           fontSize: 12,
           lineHeight: 15,
           textAlign: 'center',
-          color: '#1c1917',
-          fontFamily: 'Inter_600SemiBold',
+          color: '#2A2312',
+          fontFamily: 'Manrope_600SemiBold',
           letterSpacing: -0.1,
         }}
       >
@@ -74,7 +70,7 @@ export const ModuleTile = ({
       </Text>
       {isWeb ? (
         <View style={{ position: 'absolute', top: 8, right: 8 }}>
-          <ArrowUpRight size={13} color="#a8a29e" strokeWidth={2.4} />
+          <ArrowUpRight size={14} color="#A8A59E" strokeWidth={2.2} />
         </View>
       ) : null}
       {badge ? (
@@ -87,12 +83,12 @@ export const ModuleTile = ({
             height: 20,
             paddingHorizontal: 6,
             borderRadius: 10,
-            backgroundColor: '#ec4899',
+            backgroundColor: '#FFBE0B',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Text style={{ fontSize: 11, color: '#ffffff', fontFamily: 'Inter_700Bold' }}>
+          <Text style={{ fontSize: 11, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
             {badge > 99 ? '99+' : badge}
           </Text>
         </View>

@@ -40,8 +40,8 @@ const DonationCard = ({
       className="mb-3"
       style={{
         borderRadius: 20,
-        backgroundColor: '#ffffff',
-        shadowColor: '#0f172a',
+        backgroundColor: '#F6F4EE',
+        shadowColor: '#2A2312',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
         shadowRadius: 14,
@@ -50,12 +50,12 @@ const DonationCard = ({
     >
       <View
         className="overflow-hidden p-4 flex-row items-center"
-        style={{ borderRadius: 20, borderWidth: 1, borderColor: '#eef0f3' }}
+        style={{ borderRadius: 20, borderWidth: 1, borderColor: '#E6E1D5' }}
       >
         <View className="flex-1">
           <Text
             className="text-[11px] uppercase mb-1"
-            style={{ color: '#78716c', letterSpacing: 0.4, fontFamily: 'Inter_600SemiBold' }}
+            style={{ color: '#7A7466', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
           >
             {formatDate(donation.donation_date, 'd MMM yyyy')}
           </Text>
@@ -72,7 +72,7 @@ const DonationCard = ({
             ) : null}
             <Text
               className="text-[15px]"
-              style={{ color: '#0c0a09', letterSpacing: -0.3, fontFamily: 'Inter_700Bold' }}
+              style={{ color: '#2A2312', letterSpacing: -0.3, fontFamily: 'Manrope_700Bold' }}
             >
               {fund?.name ?? 'Darowizna'}
             </Text>
@@ -81,11 +81,11 @@ const DonationCard = ({
             {methodLabel ? (
               <View
                 className="px-2 py-0.5"
-                style={{ borderRadius: 999, backgroundColor: '#f1f5f9' }}
+                style={{ borderRadius: 999, backgroundColor: '#ECE8DE' }}
               >
                 <Text
                   className="text-[11px]"
-                  style={{ color: '#475569', fontFamily: 'Inter_600SemiBold' }}
+                  style={{ color: '#4A463E', fontFamily: 'Manrope_600SemiBold' }}
                 >
                   {methodLabel}
                 </Text>
@@ -99,7 +99,7 @@ const DonationCard = ({
                 <Repeat size={10} color="#16a34a" />
                 <Text
                   className="text-[11px]"
-                  style={{ color: '#16a34a', fontFamily: 'Inter_600SemiBold' }}
+                  style={{ color: '#16a34a', fontFamily: 'Manrope_600SemiBold' }}
                 >
                   Cykliczna
                 </Text>
@@ -109,7 +109,7 @@ const DonationCard = ({
         </View>
         <Text
           className="text-[16px]"
-          style={{ color: '#059669', letterSpacing: -0.4, fontFamily: 'Inter_700Bold' }}
+          style={{ color: '#059669', letterSpacing: -0.4, fontFamily: 'Manrope_700Bold' }}
         >
           {formatMoney(donation.amount, donation.currency ?? currency)}
         </Text>
@@ -139,18 +139,18 @@ export default function GivingScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Dawanie" subtitle="Twoje darowizny" Icon={Gift} showBack />
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}
+              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
             >
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
@@ -159,7 +159,7 @@ export default function GivingScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {/* Karta podsumowania roku */}
@@ -174,20 +174,20 @@ export default function GivingScreen() {
             >
               <Text
                 className="text-[12px]"
-                style={{ color: '#047857', fontFamily: 'Inter_600SemiBold' }}
+                style={{ color: '#047857', fontFamily: 'Manrope_600SemiBold' }}
               >
                 Twoje dawanie w {summary.year}
               </Text>
               <Text
                 className="text-[34px] mt-1"
-                style={{ color: '#065f46', letterSpacing: -1, fontFamily: 'Inter_700Bold' }}
+                style={{ color: '#065f46', letterSpacing: -1, fontFamily: 'Manrope_700Bold' }}
               >
                 {formatMoney(summary.yearTotal, summary.currency)}
               </Text>
               {summary.allTimeTotal > summary.yearTotal ? (
                 <Text
                   className="text-[12px] mt-1"
-                  style={{ color: '#059669', fontFamily: 'Inter_500Medium' }}
+                  style={{ color: '#059669', fontFamily: 'Manrope_500Medium' }}
                 >
                   Łącznie: {formatMoney(summary.allTimeTotal, summary.currency)}
                 </Text>
@@ -201,7 +201,7 @@ export default function GivingScreen() {
                 style={{ paddingVertical: 10 }}
               >
                 <FileText size={15} color="#047857" />
-                <Text className="text-[13px]" style={{ color: '#047857', fontFamily: 'Inter_700Bold' }}>
+                <Text className="text-[13px]" style={{ color: '#047857', fontFamily: 'Manrope_700Bold' }}>
                   Zestawienie roczne (PIT)
                 </Text>
               </Pressable>
@@ -212,7 +212,7 @@ export default function GivingScreen() {
               <View className="mb-4">
                 <Text
                   className="text-[11px] uppercase mb-2 px-1"
-                  style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}
+                  style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Zbiórki
                 </Text>
@@ -225,15 +225,15 @@ export default function GivingScreen() {
                       key={c.id}
                       onPress={() => router.push('/(app)/giving/donate')}
                       className="mb-2 active:opacity-90"
-                      style={{ borderRadius: 18, borderWidth: 1, borderColor: '#eef0f3', backgroundColor: '#ffffff', padding: 14 }}
+                      style={{ borderRadius: 18, borderWidth: 1, borderColor: '#E6E1D5', backgroundColor: '#F6F4EE', padding: 14 }}
                     >
-                      <Text className="text-[15px]" style={{ color: '#0c0a09', fontFamily: 'Inter_700Bold' }} numberOfLines={1}>
+                      <Text className="text-[15px]" style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }} numberOfLines={1}>
                         {c.name}
                       </Text>
                       {c.description ? (
                         <Text
                           className="text-[12px] mt-0.5"
-                          style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+                          style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
                           numberOfLines={2}
                         >
                           {c.description}
@@ -241,20 +241,20 @@ export default function GivingScreen() {
                       ) : null}
                       {goal > 0 ? (
                         <>
-                          <View style={{ height: 7, borderRadius: 4, backgroundColor: '#f1f5f9', overflow: 'hidden', marginTop: 10 }}>
+                          <View style={{ height: 7, borderRadius: 4, backgroundColor: '#ECE8DE', overflow: 'hidden', marginTop: 10 }}>
                             <View style={{ height: '100%', width: `${pct}%`, borderRadius: 4, backgroundColor: '#16a34a' }} />
                           </View>
                           <View className="flex-row items-center justify-between mt-1.5">
-                            <Text className="text-[12px]" style={{ color: '#15803d', fontFamily: 'Inter_700Bold' }}>
+                            <Text className="text-[12px]" style={{ color: '#15803d', fontFamily: 'Manrope_700Bold' }}>
                               {formatMoney(raised, summary.currency)}
                             </Text>
-                            <Text className="text-[12px]" style={{ color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>
+                            <Text className="text-[12px]" style={{ color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
                               z {formatMoney(goal, summary.currency)} · {pct}%
                             </Text>
                           </View>
                         </>
                       ) : (
-                        <Text className="text-[12px] mt-2" style={{ color: '#16a34a', fontFamily: 'Inter_600SemiBold' }}>
+                        <Text className="text-[12px] mt-2" style={{ color: '#16a34a', fontFamily: 'Manrope_600SemiBold' }}>
                           Wesprzyj →
                         </Text>
                       )}
@@ -278,7 +278,7 @@ export default function GivingScreen() {
                 <Info size={18} color="#d97706" style={{ marginTop: 1 }} />
                 <Text
                   className="flex-1 text-[13px]"
-                  style={{ color: '#92400e', fontFamily: 'Inter_400Regular', lineHeight: 19 }}
+                  style={{ color: '#92400e', fontFamily: 'Manrope_400Regular', lineHeight: 19 }}
                 >
                   Nie znaleźliśmy historii darowizn powiązanej z Twoim kontem. Jeśli wspierasz
                   wspólnotę, poproś koordynatora o powiązanie konta z Twoim profilem członka. Nadal
@@ -305,13 +305,13 @@ export default function GivingScreen() {
                 </View>
                 <Text
                   className="text-[16px]"
-                  style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+                  style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
                 >
                   Brak darowizn
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+                  style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
                 >
                   Twoje darowizny pojawią się tutaj po zarejestrowaniu.
                 </Text>
@@ -320,7 +320,7 @@ export default function GivingScreen() {
               <>
                 <Text
                   className="text-[11px] uppercase mb-2 mx-1"
-                  style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}
+                  style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Historia
                 </Text>

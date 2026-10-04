@@ -28,24 +28,24 @@ const CATEGORIES: PrayerCategory[] = ['zdrowie', 'rodzina', 'finanse', 'duchowe'
 
 const labelStyle = {
   fontSize: 12,
-  color: '#57534e',
+  color: '#4A463E',
   marginBottom: 6,
   letterSpacing: 0.4,
   textTransform: 'uppercase' as const,
-  fontFamily: 'Inter_700Bold',
+  fontFamily: 'Manrope_700Bold',
 };
 
 const inputStyle = {
   borderWidth: 1,
-  borderColor: '#eef0f3',
+  borderColor: '#E6E1D5',
   borderRadius: 14,
   paddingHorizontal: 14,
   paddingVertical: 12,
   fontSize: 15,
-  color: '#0c0a09',
-  backgroundColor: '#fafaf9',
+  color: '#2A2312',
+  backgroundColor: '#F1EEE6',
   marginBottom: 16,
-  fontFamily: 'Inter_400Regular',
+  fontFamily: 'Manrope_400Regular',
 } as const;
 
 export default function NewPrayerScreen() {
@@ -114,7 +114,7 @@ export default function NewPrayerScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, backgroundColor: '#ffffff' }}
+        style={{ flex: 1, backgroundColor: '#F6F4EE' }}
       >
         <View
           style={{
@@ -133,26 +133,26 @@ export default function NewPrayerScreen() {
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: '#fafaf9',
+              backgroundColor: '#F1EEE6',
               borderWidth: 1,
-              borderColor: '#e7e5e4',
+              borderColor: '#E3DDD0',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <ChevronLeft size={20} color="#1c1917" strokeWidth={2.2} />
+            <ChevronLeft size={20} color="#2A2312" strokeWidth={2.2} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+            <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
               {isEditing ? 'Edycja intencji' : 'Nowa intencja'}
             </Text>
             <Text
               style={{
                 fontSize: 24,
-                color: '#0c0a09',
+                color: '#2A2312',
                 marginTop: 2,
                 letterSpacing: -0.6,
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Manrope_700Bold',
               }}
             >
               Modlitwa
@@ -168,7 +168,7 @@ export default function NewPrayerScreen() {
           <TextInput
             style={[inputStyle, { minHeight: 120, textAlignVertical: 'top' as const }]}
             placeholder="O co chciałabyś/chciałbyś prosić w modlitwie?"
-            placeholderTextColor="#a8a29e"
+            placeholderTextColor="#A8A59E"
             multiline
             value={content}
             onChangeText={setContent}
@@ -201,7 +201,7 @@ export default function NewPrayerScreen() {
                     style={{
                       fontSize: 13,
                       color: active ? '#ffffff' : meta.tint,
-                      fontFamily: 'Inter_600SemiBold',
+                      fontFamily: 'Manrope_600SemiBold',
                     }}
                   >
                     {meta.label}
@@ -215,7 +215,7 @@ export default function NewPrayerScreen() {
           <TextInput
             style={inputStyle}
             placeholder="np. Anna, mama Marka..."
-            placeholderTextColor="#a8a29e"
+            placeholderTextColor="#A8A59E"
             value={requesterName}
             onChangeText={setRequesterName}
             editable={!busy}
@@ -241,17 +241,17 @@ export default function NewPrayerScreen() {
                     gap: 7,
                     paddingVertical: 12,
                     borderRadius: 14,
-                    backgroundColor: active ? '#0c0a09' : '#fafaf9',
+                    backgroundColor: active ? '#2A2312' : '#F1EEE6',
                     borderWidth: 1,
-                    borderColor: active ? '#0c0a09' : '#eef0f3',
+                    borderColor: active ? '#2A2312' : '#E6E1D5',
                   }}
                 >
-                  <Icon size={15} color={active ? '#ffffff' : '#78716c'} />
+                  <Icon size={15} color={active ? '#ffffff' : '#7A7466'} />
                   <Text
                     style={{
                       fontSize: 13,
-                      color: active ? '#ffffff' : '#1c1917',
-                      fontFamily: 'Inter_600SemiBold',
+                      color: active ? '#ffffff' : '#2A2312',
+                      fontFamily: 'Manrope_600SemiBold',
                     }}
                   >
                     {label}
@@ -269,9 +269,9 @@ export default function NewPrayerScreen() {
               borderRadius: 14,
               paddingHorizontal: 14,
               paddingVertical: 12,
-              backgroundColor: '#fafaf9',
+              backgroundColor: '#F1EEE6',
               borderWidth: 1,
-              borderColor: '#eef0f3',
+              borderColor: '#E6E1D5',
               marginBottom: 24,
             }}
           >
@@ -279,9 +279,9 @@ export default function NewPrayerScreen() {
               <Text
                 style={{
                   fontSize: 15,
-                  color: '#0c0a09',
+                  color: '#2A2312',
                   letterSpacing: -0.2,
-                  fontFamily: 'Inter_600SemiBold',
+                  fontFamily: 'Manrope_600SemiBold',
                 }}
               >
                 Anonimowo
@@ -289,9 +289,9 @@ export default function NewPrayerScreen() {
               <Text
                 style={{
                   fontSize: 12,
-                  color: '#78716c',
+                  color: '#7A7466',
                   marginTop: 2,
-                  fontFamily: 'Inter_400Regular',
+                  fontFamily: 'Manrope_400Regular',
                 }}
               >
                 Twój email nie będzie widoczny dla innych
@@ -300,9 +300,9 @@ export default function NewPrayerScreen() {
             <Switch
               value={anonymous}
               onValueChange={setAnonymous}
-              trackColor={{ true: '#ec4899', false: '#e7e5e4' }}
+              trackColor={{ true: '#FFBE0B', false: '#E3DDD0' }}
               thumbColor="#ffffff"
-              ios_backgroundColor="#e7e5e4"
+              ios_backgroundColor="#E3DDD0"
             />
           </View>
 

@@ -4,15 +4,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { Bell, Calendar, CheckSquare, Heart, MessageCircle } from 'lucide-react-native';
+import { Bell } from 'lucide-react-native';
 import { useMyProfile } from '../../account/api';
 import { useUnreadNotificationsCount } from '../../notifications/api';
+import { D, F } from '../theme';
 
 interface Props {
   email: string | null | undefined;
   tasksCount?: number;
   ministryCount?: number;
-  prayersCount?: number;
   pendingInvitations?: number;
   unreadMessages?: number;
 }
@@ -40,44 +40,23 @@ const firstName = (fullName: string | null | undefined, email: string | null | u
   return local ? local.charAt(0).toUpperCase() + local.slice(1) : '';
 };
 
-const Chip = ({
-  Icon,
-  text,
-  tint,
-  onPress,
-}: {
-  Icon: typeof CheckSquare;
-  text: string;
-  tint: string;
-  onPress?: () => void;
-}) => (
-  <Pressable
-    onPress={onPress}
-    disabled={!onPress}
-    className="active:opacity-70"
-    style={{
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      paddingHorizontal: 11,
-      paddingVertical: 7,
-      borderRadius: 999,
-      backgroundColor: '#ffffff',
-    }}
-  >
-    <Icon size={13} color={tint} strokeWidth={2.4} />
-    <Text style={{ fontSize: 12, color: '#1c1917', fontFamily: 'Inter_600SemiBold' }}>{text}</Text>
-  </Pressable>
-);
+// Druga (czarna) linia nagłówka: najważniejsza rzecz na dziś, w kolejności pilności.
+const headline = ({ pendingInvitations = 0, unreadMessages = 0, tasksCount = 0, ministryCount = 0 }: Props) => {
+  if (pendingInvitations > 0) {
+    return `${pendingInvitations} ${plural(pendingInvitations, 'zaproszenie czeka', 'zaproszenia czekają', 'zaproszeń czeka')} na odpowiedź`;
+  }
+  if (unreadMessages > 0) {
+    return `${unreadMessages} ${plural(unreadMessages, 'nowa wiadomość', 'nowe wiadomości', 'nowych wiadomości')}`;
+  }
+  if (tasksCount > 0) return `${tasksCount} ${plural(tasksCount, 'zadanie', 'zadania', 'zadań')} do zrobienia`;
+  if (ministryCount > 0) {
+    return `${ministryCount} ${plural(ministryCount, 'służba', 'służby', 'służb')} przed Tobą`;
+  }
+  return 'Nic pilnego na dziś';
+};
 
-export const Greeting = ({
-  email,
-  tasksCount = 0,
-  ministryCount = 0,
-  prayersCount = 0,
-  pendingInvitations = 0,
-  unreadMessages = 0,
-}: Props) => {
+export const Greeting = (props: Props) => {
+  const { email } = props;
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const profile = useMyProfile(email ?? null);
@@ -88,142 +67,72 @@ export const Greeting = ({
   const avatarUrl = profile.data?.avatar_url ?? null;
   const today = format(new Date(), 'EEEE, d MMMM', { locale: pl });
 
-  const chips = [
-    pendingInvitations > 0 && {
-      key: 'inv',
-      Icon: Bell,
-      tint: '#be185d',
-      text: `${pendingInvitations} ${plural(pendingInvitations, 'zaproszenie', 'zaproszenia', 'zaproszeń')}`,
-    },
-    unreadMessages > 0 && {
-      key: 'msg',
-      Icon: MessageCircle,
-      tint: '#1d4ed8',
-      text: `${unreadMessages} ${plural(unreadMessages, 'wiadomość', 'wiadomości', 'wiadomości')}`,
-      onPress: () => router.push('/(app)/messenger'),
-    },
-    ministryCount > 0 && {
-      key: 'min',
-      Icon: Calendar,
-      tint: '#6d28d9',
-      text: `${ministryCount} ${plural(ministryCount, 'służba', 'służby', 'służb')}`,
-    },
-    tasksCount > 0 && {
-      key: 'task',
-      Icon: CheckSquare,
-      tint: '#0f766e',
-      text: `${tasksCount} ${plural(tasksCount, 'zadanie', 'zadania', 'zadań')}`,
-    },
-    prayersCount > 0 && {
-      key: 'pray',
-      Icon: Heart,
-      tint: '#c2410c',
-      text: `${prayersCount} ${plural(prayersCount, 'modlitwa', 'modlitwy', 'modlitw')}`,
-      onPress: () => router.push('/(app)/prayers'),
-    },
-  ].filter(Boolean) as {
-    key: string;
-    Icon: typeof Bell;
-    tint: string;
-    text: string;
-    onPress?: () => void;
-  }[];
-
   return (
-    <View style={{ paddingHorizontal: 20, paddingTop: insets.top + 12, paddingBottom: 16 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              fontSize: 12,
-              color: '#78716c',
-              letterSpacing: 0.6,
-              textTransform: 'uppercase',
-              fontFamily: 'Inter_600SemiBold',
-            }}
-          >
-            {today}
-          </Text>
-          <Text
-            numberOfLines={2}
-            style={{
-              marginTop: 4,
-              fontSize: 27,
-              lineHeight: 32,
-              color: '#0c0a09',
-              letterSpacing: -0.8,
-              fontFamily: 'Inter_700Bold',
-            }}
-          >
-            {greeting()}
-            {name ? `, ${name}` : ''}
-          </Text>
-        </View>
-
+    <View style={{ paddingHorizontal: 20, paddingTop: insets.top + 12, paddingBottom: 26 }}>
+      {/* Pasek jak na grafikach marki: logo po lewej, akcje po prawej. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Image
+          source={require('../../../../assets/brand/logo-slod.png')}
+          style={{ width: 84, height: 22 }}
+          contentFit="contain"
+          accessibilityLabel="avenit"
+        />
+        <View style={{ flex: 1 }} />
         <Pressable
           onPress={() => router.push('/(app)/notifications')}
           accessibilityLabel={unreadCount ? `Powiadomienia, ${unreadCount} nieprzeczytanych` : 'Powiadomienia'}
           hitSlop={6}
           className="active:opacity-70"
           style={{
-            width: 42,
-            height: 42,
-            borderRadius: 21,
-            backgroundColor: '#ffffff',
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: D.card,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Bell size={19} color="#1c1917" strokeWidth={2.1} />
+          <Bell size={20} color={D.ink} strokeWidth={1.9} />
           {unreadCount > 0 ? (
             <View
               style={{
                 position: 'absolute',
-                top: -2,
-                right: -2,
-                minWidth: 19,
-                height: 19,
-                paddingHorizontal: 5,
-                borderRadius: 10,
+                top: 8,
+                right: 9,
+                width: 11,
+                height: 11,
+                borderRadius: 6,
                 borderWidth: 2,
-                borderColor: '#f6f5f3',
-                backgroundColor: '#ec4899',
-                alignItems: 'center',
-                justifyContent: 'center',
+                borderColor: D.card,
+                backgroundColor: D.accent,
               }}
-            >
-              <Text style={{ fontSize: 10, color: '#ffffff', fontFamily: 'Inter_700Bold' }}>
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </Text>
-            </View>
+            />
           ) : null}
         </Pressable>
-
         <Pressable
           onPress={() => router.push('/(app)/account')}
           accessibilityLabel="Twoje konto"
           hitSlop={6}
           className="active:opacity-70"
-          style={{ }}
         >
           {avatarUrl ? (
             <Image
               source={{ uri: avatarUrl }}
-              style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: '#e7e5e4' }}
+              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: D.hair }}
               contentFit="cover"
             />
           ) : (
             <View
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 21,
-                backgroundColor: '#1c1917',
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: D.accent,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}>
+              <Text style={{ color: D.ink, fontSize: 16, fontFamily: F.bold }}>
                 {(name || email || '?').charAt(0).toUpperCase()}
               </Text>
             </View>
@@ -231,13 +140,30 @@ export const Greeting = ({
         </Pressable>
       </View>
 
-      {chips.length > 0 ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
-          {chips.map((c) => (
-            <Chip key={c.key} Icon={c.Icon} text={c.text} tint={c.tint} onPress={c.onPress} />
-          ))}
-        </View>
-      ) : null}
+      {/* Nagłówek jak „Cały kościół. / Jedna aplikacja.”: etykieta z datą, pogrubione
+          powitanie i cienka linia z tym, co dziś najważniejsze — kropka w kurkumie. */}
+      <Text
+        style={{
+          marginTop: 30,
+          fontSize: 12,
+          letterSpacing: 1.4,
+          textTransform: 'uppercase',
+          color: D.gold,
+          fontFamily: F.semibold,
+        }}
+      >
+        {today}
+      </Text>
+      <Text
+        style={{ marginTop: 10, fontSize: 34, lineHeight: 39, letterSpacing: -1.3, color: D.ink, fontFamily: F.bold }}
+      >
+        {greeting()}
+        {name ? `, ${name}` : ''}
+      </Text>
+      <Text style={{ fontSize: 34, lineHeight: 39, letterSpacing: -1.3, color: D.ink, fontFamily: F.light }}>
+        {headline(props)}
+        <Text style={{ color: D.accent, fontFamily: F.bold }}>.</Text>
+      </Text>
     </View>
   );
 };

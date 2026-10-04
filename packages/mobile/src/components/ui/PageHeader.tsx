@@ -31,26 +31,26 @@ export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: P
             width: 40,
             height: 40,
             borderRadius: 20,
-            backgroundColor: '#fafaf9',
+            backgroundColor: '#F1EEE6',
             borderWidth: 1,
-            borderColor: '#e7e5e4',
+            borderColor: '#E3DDD0',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <ChevronLeft size={20} color="#1c1917" strokeWidth={2.2} />
+          <ChevronLeft size={20} color="#2A2312" strokeWidth={2.2} />
         </Pressable>
       ) : null}
       {Icon && !showBack ? (
-        <GradientIcon Icon={Icon} size={40} iconSize={20} from="#f97316" to="#ec4899" />
+        <GradientIcon Icon={Icon} size={40} iconSize={20} />
       ) : null}
       <View className="flex-1">
         {subtitle ? (
           <Text
             className="text-[12px]"
             style={{
-              color: '#78716c',
-              fontFamily: 'Inter_500Medium',
+              color: '#7A7466',
+              fontFamily: 'Manrope_500Medium',
               letterSpacing: -0.1,
             }}
           >
@@ -60,9 +60,9 @@ export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: P
         <Text
           className="text-[24px] mt-0.5"
           style={{
-            color: '#0c0a09',
+            color: '#2A2312',
             letterSpacing: -0.6,
-            fontFamily: 'Inter_700Bold',
+            fontFamily: 'Manrope_700Bold',
           }}
           numberOfLines={1}
         >

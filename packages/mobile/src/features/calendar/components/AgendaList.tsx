@@ -17,9 +17,9 @@ const SOURCE_META: Record<
   EventSource,
   { label: string; tint: string; bg: string; Icon: typeof Calendar }
 > = {
-  program: { label: 'Program', tint: '#be185d', bg: '#fce7f3', Icon: ListChecks },
+  program: { label: 'Program', tint: '#8A6606', bg: '#FFF1C2', Icon: ListChecks },
   event: { label: 'Wydarzenie', tint: '#0e7490', bg: '#cffafe', Icon: Calendar },
-  worship: { label: 'Zespół Uwielbienia', tint: '#9d174d', bg: '#fce7f3', Icon: Music },
+  worship: { label: 'Zespół Uwielbienia', tint: '#9d174d', bg: '#FFF1C2', Icon: Music },
   media: { label: 'Media Team', tint: '#1d4ed8', bg: '#dbeafe', Icon: ImageIcon },
   atmosfera: { label: 'Atmosfera Team', tint: '#b45309', bg: '#fef3c7', Icon: Sparkles },
   kids: { label: 'Dzieci', tint: '#047857', bg: '#d1fae5', Icon: Baby },
@@ -89,8 +89,8 @@ export const AgendaList = ({ items, onPick }: Props) => {
         style={{
           textAlign: 'center',
           paddingVertical: 48,
-          color: '#78716c',
-          fontFamily: 'Inter_500Medium',
+          color: '#7A7466',
+          fontFamily: 'Manrope_500Medium',
         }}
       >
         Brak wydarzeń.
@@ -120,7 +120,7 @@ export const AgendaList = ({ items, onPick }: Props) => {
                   style={[
                     styles.dayBadgeMonth,
                     isToday && { color: '#ffffff' },
-                    isPast && !isToday && { color: '#a8a29e' },
+                    isPast && !isToday && { color: '#A8A59E' },
                   ]}
                 >
                   {monthShort}
@@ -129,7 +129,7 @@ export const AgendaList = ({ items, onPick }: Props) => {
                   style={[
                     styles.dayBadgeNum,
                     isToday && { color: '#ffffff' },
-                    isPast && !isToday && { color: '#a8a29e' },
+                    isPast && !isToday && { color: '#A8A59E' },
                   ]}
                 >
                   {dayNum}
@@ -198,28 +198,28 @@ const styles = StyleSheet.create({
     width: 44,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#F1EEE6',
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dayBadgeToday: { backgroundColor: '#ec4899', borderColor: '#ec4899' },
+  dayBadgeToday: { backgroundColor: '#2A2312', borderColor: '#FFBE0B' },
   dayBadgePast: { opacity: 0.55 },
-  dayBadgeMonth: { fontSize: 9, color: '#78716c', fontFamily: 'Inter_700Bold', letterSpacing: 0.6 },
+  dayBadgeMonth: { fontSize: 9, color: '#7A7466', fontFamily: 'Manrope_700Bold', letterSpacing: 0.6 },
   dayBadgeNum: {
     fontSize: 18,
-    color: '#0c0a09',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.4,
     marginTop: 1,
   },
-  dayLabel: { fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_700Bold', letterSpacing: -0.3 },
-  dayCount: { fontSize: 11, color: '#a8a29e', fontFamily: 'Inter_500Medium', marginTop: 2 },
+  dayLabel: { fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_700Bold', letterSpacing: -0.3 },
+  dayCount: { fontSize: 11, color: '#A8A59E', fontFamily: 'Manrope_500Medium', marginTop: 2 },
   cardShadow: {
     borderRadius: 16,
-    backgroundColor: '#ffffff',
-    shadowColor: '#0f172a',
+    backgroundColor: '#F6F4EE',
+    shadowColor: '#2A2312',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.04,
     shadowRadius: 10,
@@ -233,9 +233,9 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
   },
-  cardInnerMine: { borderColor: '#fbcfe8', backgroundColor: '#fef3f2' },
+  cardInnerMine: { borderColor: '#F3E3B0', backgroundColor: '#FFF8E1' },
   icon: {
     width: 40,
     height: 40,
@@ -245,8 +245,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    color: '#0c0a09',
-    fontFamily: 'Inter_600SemiBold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_600SemiBold',
     letterSpacing: -0.3,
   },
   metaRow: {
@@ -257,13 +257,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   tagPill: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  tagPillText: { fontSize: 10, fontFamily: 'Inter_700Bold', letterSpacing: 0.2 },
-  metaText: { fontSize: 11, color: '#78716c', fontFamily: 'Inter_500Medium' },
-  minePill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: '#ec4899' },
+  tagPillText: { fontSize: 10, fontFamily: 'Manrope_700Bold', letterSpacing: 0.2 },
+  metaText: { fontSize: 11, color: '#7A7466', fontFamily: 'Manrope_500Medium' },
+  minePill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: '#2A2312' },
   minePillText: {
     fontSize: 9,
     color: '#ffffff',
     letterSpacing: 0.6,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
 });

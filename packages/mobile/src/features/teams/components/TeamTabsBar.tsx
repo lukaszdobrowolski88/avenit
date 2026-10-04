@@ -51,15 +51,15 @@ export const TeamTabsBar = ({
                 paddingHorizontal: 13,
                 paddingVertical: 8,
                 borderRadius: 999,
-                backgroundColor: on ? '#0c0a09' : '#f5f5f4',
+                backgroundColor: on ? '#2A2312' : '#ECE8DE',
               }}
             >
-              <Icon size={14} color={on ? '#ffffff' : '#57534e'} strokeWidth={2.3} />
+              <Icon size={14} color={on ? '#ffffff' : '#4A463E'} strokeWidth={2.3} />
               <Text
                 style={{
                   fontSize: 13,
-                  color: on ? '#ffffff' : '#44403c',
-                  fontFamily: 'Inter_600SemiBold',
+                  color: on ? '#ffffff' : '#3A3427',
+                  fontFamily: 'Manrope_600SemiBold',
                 }}
               >
                 {label}

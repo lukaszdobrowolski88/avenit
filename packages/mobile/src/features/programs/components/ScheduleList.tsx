@@ -7,9 +7,9 @@ import {
 } from '../../../lib/domain';
 
 const TYPE_META: Record<ScheduleItemType, { Icon: typeof Music; tint: string; bg: string }> = {
-  item: { Icon: TypeIcon, tint: '#57534e', bg: '#f5f5f4' },
+  item: { Icon: TypeIcon, tint: '#4A463E', bg: '#ECE8DE' },
   header: { Icon: MoreHorizontal, tint: '#b45309', bg: '#fef3c7' },
-  song: { Icon: Music, tint: '#9d174d', bg: '#fce7f3' },
+  song: { Icon: Music, tint: '#9d174d', bg: '#FFF1C2' },
   media: { Icon: ImageIcon, tint: '#1d4ed8', bg: '#dbeafe' },
 };
 
@@ -24,8 +24,8 @@ export const ScheduleList = ({ schedule }: Props) => {
         style={{
           textAlign: 'center',
           paddingVertical: 24,
-          color: '#78716c',
-          fontFamily: 'Inter_500Medium',
+          color: '#7A7466',
+          fontFamily: 'Manrope_500Medium',
         }}
       >
         Brak elementów w programie.
@@ -55,7 +55,7 @@ export const ScheduleList = ({ schedule }: Props) => {
                   color: meta.tint,
                   letterSpacing: 0.4,
                   textTransform: 'uppercase',
-                  fontFamily: 'Inter_700Bold',
+                  fontFamily: 'Manrope_700Bold',
                 }}
               >
                 Sekcja
@@ -63,10 +63,10 @@ export const ScheduleList = ({ schedule }: Props) => {
               <Text
                 style={{
                   fontSize: 14,
-                  color: '#0c0a09',
+                  color: '#2A2312',
                   marginTop: 2,
                   letterSpacing: -0.2,
-                  fontFamily: 'Inter_700Bold',
+                  fontFamily: 'Manrope_700Bold',
                 }}
               >
                 {item.title || 'Nowa sekcja'}
@@ -86,8 +86,8 @@ export const ScheduleList = ({ schedule }: Props) => {
               marginBottom: 6,
               borderRadius: 14,
               borderWidth: 1,
-              borderColor: '#eef0f3',
-              backgroundColor: '#ffffff',
+              borderColor: '#E6E1D5',
+              backgroundColor: '#F6F4EE',
             }}
           >
             <View
@@ -107,9 +107,9 @@ export const ScheduleList = ({ schedule }: Props) => {
                 numberOfLines={1}
                 style={{
                   fontSize: 14,
-                  color: '#0c0a09',
+                  color: '#2A2312',
                   letterSpacing: -0.2,
-                  fontFamily: 'Inter_600SemiBold',
+                  fontFamily: 'Manrope_600SemiBold',
                 }}
               >
                 {item.title || (item.type === 'song' ? 'Pieśń' : 'Element')}
@@ -119,9 +119,9 @@ export const ScheduleList = ({ schedule }: Props) => {
                   numberOfLines={2}
                   style={{
                     fontSize: 12,
-                    color: '#78716c',
+                    color: '#7A7466',
                     marginTop: 2,
-                    fontFamily: 'Inter_400Regular',
+                    fontFamily: 'Manrope_400Regular',
                   }}
                 >
                   {item.notes}
@@ -131,9 +131,9 @@ export const ScheduleList = ({ schedule }: Props) => {
             <Text
               style={{
                 fontSize: 12,
-                color: '#78716c',
+                color: '#7A7466',
                 fontVariant: ['tabular-nums'],
-                fontFamily: 'Inter_500Medium',
+                fontFamily: 'Manrope_500Medium',
               }}
             >
               {formatTime(item.duration ?? 0)}

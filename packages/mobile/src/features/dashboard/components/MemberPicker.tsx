@@ -80,7 +80,7 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}>
         <View
           style={{
-            backgroundColor: '#ffffff',
+            backgroundColor: '#F6F4EE',
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingTop: 16,
@@ -100,15 +100,15 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
             <Text
               style={{
                 fontSize: 18,
-                color: '#0c0a09',
+                color: '#2A2312',
                 letterSpacing: -0.4,
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Manrope_700Bold',
               }}
             >
               Przypisz osobę
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color="#78716c" />
+              <X size={20} color="#7A7466" />
             </Pressable>
           </View>
 
@@ -121,22 +121,22 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                 paddingHorizontal: 14,
                 height: 42,
                 borderRadius: 14,
-                backgroundColor: '#fafaf9',
+                backgroundColor: '#F1EEE6',
                 borderWidth: 1,
-                borderColor: '#eef0f3',
+                borderColor: '#E6E1D5',
               }}
             >
-              <Search size={16} color="#a8a29e" />
+              <Search size={16} color="#A8A59E" />
               <TextInput
                 value={search}
                 onChangeText={setSearch}
                 placeholder="Szukaj po imieniu lub email…"
-                placeholderTextColor="#a8a29e"
+                placeholderTextColor="#A8A59E"
                 style={{
                   flex: 1,
                   fontSize: 14,
-                  color: '#0c0a09',
-                  fontFamily: 'Inter_500Medium',
+                  color: '#2A2312',
+                  fontFamily: 'Manrope_500Medium',
                 }}
                 autoCapitalize="none"
               />
@@ -155,7 +155,7 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
               paddingHorizontal: 20,
               paddingVertical: 12,
               borderBottomWidth: 1,
-              borderBottomColor: '#f5f5f4',
+              borderBottomColor: '#ECE8DE',
             }}
           >
             <View
@@ -163,29 +163,29 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                 width: 36,
                 height: 36,
                 borderRadius: 18,
-                backgroundColor: '#f5f5f4',
+                backgroundColor: '#ECE8DE',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <UserX size={16} color="#78716c" />
+              <UserX size={16} color="#7A7466" />
             </View>
             <Text
               style={{
                 flex: 1,
                 fontSize: 14,
-                color: '#1c1917',
-                fontFamily: 'Inter_600SemiBold',
+                color: '#2A2312',
+                fontFamily: 'Manrope_600SemiBold',
               }}
             >
               Bez przypisania
             </Text>
-            {!selectedEmail ? <Check size={16} color="#ec4899" /> : null}
+            {!selectedEmail ? <Check size={16} color="#8A6606" /> : null}
           </Pressable>
 
           {isLoading ? (
             <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-              <ActivityIndicator color="#ec4899" />
+              <ActivityIndicator color="#2A2312" />
             </View>
           ) : (
             <FlatList
@@ -197,8 +197,8 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                   style={{
                     textAlign: 'center',
                     paddingVertical: 32,
-                    color: '#78716c',
-                    fontFamily: 'Inter_500Medium',
+                    color: '#7A7466',
+                    fontFamily: 'Manrope_500Medium',
                   }}
                 >
                   Brak wyników.
@@ -219,7 +219,7 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                       paddingHorizontal: 20,
                       paddingVertical: 12,
                       borderBottomWidth: 1,
-                      borderBottomColor: '#f5f5f4',
+                      borderBottomColor: '#ECE8DE',
                     }}
                   >
                     <View
@@ -227,13 +227,13 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                         width: 36,
                         height: 36,
                         borderRadius: 18,
-                        backgroundColor: '#fef3f2',
+                        backgroundColor: '#FFF8E1',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
                       <Text
-                        style={{ color: '#be185d', fontFamily: 'Inter_700Bold', fontSize: 13 }}
+                        style={{ color: '#8A6606', fontFamily: 'Manrope_700Bold', fontSize: 13 }}
                       >
                         {initials(item)}
                       </Text>
@@ -242,8 +242,8 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                       <Text
                         style={{
                           fontSize: 14,
-                          color: '#0c0a09',
-                          fontFamily: 'Inter_600SemiBold',
+                          color: '#2A2312',
+                          fontFamily: 'Manrope_600SemiBold',
                         }}
                         numberOfLines={1}
                       >
@@ -254,16 +254,16 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                           numberOfLines={1}
                           style={{
                             fontSize: 12,
-                            color: '#78716c',
+                            color: '#7A7466',
                             marginTop: 2,
-                            fontFamily: 'Inter_500Medium',
+                            fontFamily: 'Manrope_500Medium',
                           }}
                         >
                           {item.email}
                         </Text>
                       ) : null}
                     </View>
-                    {selected ? <Check size={18} color="#ec4899" /> : null}
+                    {selected ? <Check size={18} color="#8A6606" /> : null}
                   </Pressable>
                 );
               }}
@@ -292,7 +292,7 @@ export const MemberAvatar = ({
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: '#fef3f2',
+        backgroundColor: '#FFF8E1',
         alignItems: 'center',
         justifyContent: 'center',
       }}
@@ -300,11 +300,11 @@ export const MemberAvatar = ({
       <Text
         style={{
           fontSize: Math.round(size * 0.4),
-          color: '#be185d',
-          fontFamily: 'Inter_700Bold',
+          color: '#8A6606',
+          fontFamily: 'Manrope_700Bold',
         }}
       >
-        {initialsLetter || <User size={Math.round(size * 0.5)} color="#be185d" />}
+        {initialsLetter || <User size={Math.round(size * 0.5)} color="#8A6606" />}
       </Text>
     </View>
   );

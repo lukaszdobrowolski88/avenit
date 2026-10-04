@@ -32,7 +32,7 @@ const itemsLabel = (count: number) =>
 
 const ProgramCard = ({ program }: { program: ProgramListItem }) => {
   const { getCampus } = useCampusBadge();
-  const accent = program.type?.color || '#ec4899';
+  const accent = program.type?.color || '#8A6606';
   const title = fallbackTitle(program.title, program.type?.name);
   const itemsCount = Array.isArray(program.schedule) ? program.schedule.length : 0;
   const programCampus = getCampus(program.campus_id ?? null);
@@ -42,8 +42,8 @@ const ProgramCard = ({ program }: { program: ProgramListItem }) => {
         className="mx-4 mb-2.5 active:opacity-80"
         style={{
           borderRadius: 16,
-          backgroundColor: '#ffffff',
-          shadowColor: '#0f172a',
+          backgroundColor: '#F6F4EE',
+          shadowColor: '#2A2312',
           shadowOffset: { width: 0, height: 3 },
           shadowOpacity: 0.04,
           shadowRadius: 10,
@@ -55,7 +55,7 @@ const ProgramCard = ({ program }: { program: ProgramListItem }) => {
           style={{
             borderRadius: 16,
             borderWidth: 1,
-            borderColor: '#eef0f3',
+            borderColor: '#E6E1D5',
           }}
         >
           <View className="flex-1">
@@ -65,9 +65,9 @@ const ProgramCard = ({ program }: { program: ProgramListItem }) => {
               <Text
                 className="text-[11px] uppercase"
                 style={{
-                  color: '#78716c',
+                  color: '#7A7466',
                   letterSpacing: 0.4,
-                  fontFamily: 'Inter_600SemiBold',
+                  fontFamily: 'Manrope_600SemiBold',
                 }}
               >
                 {formatDate(program.date, 'EEEE, d MMM')}
@@ -76,22 +76,22 @@ const ProgramCard = ({ program }: { program: ProgramListItem }) => {
             <Text
               className="text-[15px] mt-0.5"
               style={{
-                color: '#0c0a09',
+                color: '#2A2312',
                 letterSpacing: -0.3,
-                fontFamily: 'Inter_600SemiBold',
+                fontFamily: 'Manrope_600SemiBold',
               }}
               numberOfLines={1}
             >
               {title}
             </Text>
             <View className="flex-row items-center gap-2 mt-0.5">
-              <Text className="text-[12px]" style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+              <Text className="text-[12px]" style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
                 {itemsLabel(itemsCount)}
               </Text>
               {programCampus ? <CampusBadge campus={programCampus} /> : null}
             </View>
           </View>
-          <ChevronRight size={18} color="#a8a29e" strokeWidth={2.2} />
+          <ChevronRight size={18} color="#A8A59E" strokeWidth={2.2} />
         </View>
       </Pressable>
     </Link>
@@ -106,7 +106,7 @@ const TypeSection = ({
   programs: ProgramListItem[];
 }) => {
   if (programs.length === 0) return null;
-  const color = type?.color || '#a8a29e';
+  const color = type?.color || '#A8A59E';
   const name = type?.name || 'Inne';
   return (
     <View className="mb-4">
@@ -115,14 +115,14 @@ const TypeSection = ({
         <Text
           className="text-[12px] uppercase flex-1"
           style={{
-            color: '#57534e',
+            color: '#4A463E',
             letterSpacing: 0.6,
-            fontFamily: 'Inter_700Bold',
+            fontFamily: 'Manrope_700Bold',
           }}
         >
           {name}
         </Text>
-        <Text className="text-[11px]" style={{ color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>
+        <Text className="text-[11px]" style={{ color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
           {programs.length}
         </Text>
       </View>
@@ -162,8 +162,8 @@ export default function ProgramsScreen() {
 
   if (programsQuery.isLoading || typesQuery.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
-        <ActivityIndicator color="#ec4899" />
+      <View className="flex-1 items-center justify-center" style={{ backgroundColor: '#F6F4EE' }}>
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
@@ -172,9 +172,9 @@ export default function ProgramsScreen() {
     return (
       <View
         className="flex-1 items-center justify-center px-6"
-        style={{ backgroundColor: '#ffffff' }}
+        style={{ backgroundColor: '#F6F4EE' }}
       >
-        <Text className="text-center" style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}>
+        <Text className="text-center" style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}>
           {(programsQuery.error as Error)?.message ?? 'Błąd'}
         </Text>
         <Pressable
@@ -185,10 +185,10 @@ export default function ProgramsScreen() {
             paddingHorizontal: 16,
             paddingVertical: 10,
             borderRadius: 12,
-            backgroundColor: '#ec4899',
+            backgroundColor: '#2A2312',
           }}
         >
-          <Text style={{ color: 'white', fontFamily: 'Inter_600SemiBold' }}>Spróbuj ponownie</Text>
+          <Text style={{ color: 'white', fontFamily: 'Manrope_600SemiBold' }}>Spróbuj ponownie</Text>
         </Pressable>
       </View>
     );
@@ -199,13 +199,13 @@ export default function ProgramsScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <ScrollView
         className="flex-1"
-        style={{ backgroundColor: '#ffffff' }}
+        style={{ backgroundColor: '#F6F4EE' }}
         contentContainerStyle={{ paddingBottom: 120 }}
         refreshControl={
           <RefreshControl
             refreshing={programsQuery.isRefetching}
             onRefresh={programsQuery.refetch}
-            tintColor="#ec4899"
+            tintColor="#2A2312"
             progressViewOffset={40}
           />
         }
@@ -218,20 +218,20 @@ export default function ProgramsScreen() {
                 width: 64,
                 height: 64,
                 borderRadius: 18,
-                backgroundColor: '#fef3f2',
+                backgroundColor: '#FFF8E1',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,
               }}
             >
-              <CalendarIcon size={28} color="#ec4899" />
+              <CalendarIcon size={28} color="#8A6606" />
             </View>
-            <Text className="text-[16px]" style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+            <Text className="text-[16px]" style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
               Brak nadchodzących programów
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+              style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
             >
               Pociągnij w dół, aby odświeżyć.
             </Text>

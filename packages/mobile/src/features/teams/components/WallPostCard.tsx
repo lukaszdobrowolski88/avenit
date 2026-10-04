@@ -114,8 +114,8 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
       style={{
         marginBottom: 12,
         borderRadius: 18,
-        backgroundColor: '#ffffff',
-        shadowColor: '#0f172a',
+        backgroundColor: '#F6F4EE',
+        shadowColor: '#2A2312',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.04,
         shadowRadius: 10,
@@ -126,8 +126,8 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
         style={{
           borderRadius: 18,
           borderWidth: 1,
-          borderColor: post.pinned ? '#fde68a' : '#eef0f3',
-          backgroundColor: post.pinned ? '#fffbeb' : '#ffffff',
+          borderColor: post.pinned ? '#fde68a' : '#E6E1D5',
+          backgroundColor: post.pinned ? '#fffbeb' : '#F6F4EE',
           padding: 14,
         }}
       >
@@ -139,19 +139,19 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
               width: 36,
               height: 36,
               borderRadius: 18,
-              backgroundColor: '#fef3f2',
+              backgroundColor: '#FFF8E1',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: '#be185d', fontSize: 13, fontFamily: 'Inter_700Bold' }}>
+            <Text style={{ color: '#8A6606', fontSize: 13, fontFamily: 'Manrope_700Bold' }}>
               {initials(post.author_name, post.author_email)}
             </Text>
           </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text
-                style={{ fontSize: 13, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}
+                style={{ fontSize: 13, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}
               >
                 {author}
               </Text>
@@ -174,7 +174,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                       color: '#b45309',
                       letterSpacing: 0.4,
                       textTransform: 'uppercase',
-                      fontFamily: 'Inter_700Bold',
+                      fontFamily: 'Manrope_700Bold',
                     }}
                   >
                     Przypięty
@@ -185,16 +185,16 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
             <Text
               style={{
                 fontSize: 11,
-                color: '#78716c',
+                color: '#7A7466',
                 marginTop: 1,
-                fontFamily: 'Inter_500Medium',
+                fontFamily: 'Manrope_500Medium',
               }}
             >
               {relTime(post.created_at)}
             </Text>
           </View>
           <Pressable onPress={handleMore} hitSlop={8} style={{ padding: 4 }}>
-            <MoreVertical size={18} color="#a8a29e" />
+            <MoreVertical size={18} color="#A8A59E" />
           </Pressable>
         </View>
 
@@ -202,10 +202,10 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
           <Text
             style={{
               fontSize: 16,
-              color: '#0c0a09',
+              color: '#2A2312',
               marginBottom: 6,
               letterSpacing: -0.3,
-              fontFamily: 'Inter_700Bold',
+              fontFamily: 'Manrope_700Bold',
             }}
           >
             {post.title}
@@ -215,9 +215,9 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
           <Text
             style={{
               fontSize: 14,
-              color: '#1c1917',
+              color: '#2A2312',
               lineHeight: 20,
-              fontFamily: 'Inter_400Regular',
+              fontFamily: 'Manrope_400Regular',
             }}
           >
             {post.content}
@@ -232,7 +232,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
             marginTop: 12,
             paddingTop: 10,
             borderTopWidth: 1,
-            borderTopColor: '#f5f5f4',
+            borderTopColor: '#ECE8DE',
           }}
         >
           <Pressable
@@ -243,14 +243,14 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
           >
             <Heart
               size={16}
-              color={liked ? '#ec4899' : '#78716c'}
-              fill={liked ? '#ec4899' : 'none'}
+              color={liked ? '#8A6606' : '#7A7466'}
+              fill={liked ? '#8A6606' : 'none'}
             />
             <Text
               style={{
                 fontSize: 12,
-                color: liked ? '#be185d' : '#78716c',
-                fontFamily: liked ? 'Inter_700Bold' : 'Inter_500Medium',
+                color: liked ? '#8A6606' : '#7A7466',
+                fontFamily: liked ? 'Manrope_700Bold' : 'Manrope_500Medium',
               }}
             >
               {post.likes.length}
@@ -261,8 +261,8 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
             hitSlop={6}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
           >
-            <MessageCircle size={16} color="#78716c" />
-            <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+            <MessageCircle size={16} color="#7A7466" />
+            <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
               {post.comments.length}{' '}
               {post.comments.length === 1 ? 'komentarz' : 'komentarzy'}
             </Text>
@@ -280,7 +280,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                       width: 28,
                       height: 28,
                       borderRadius: 14,
-                      backgroundColor: '#f5f5f4',
+                      backgroundColor: '#ECE8DE',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
@@ -288,8 +288,8 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                     <Text
                       style={{
                         fontSize: 11,
-                        color: '#57534e',
-                        fontFamily: 'Inter_700Bold',
+                        color: '#4A463E',
+                        fontFamily: 'Manrope_700Bold',
                       }}
                     >
                       {initials(c.author_name ?? null, c.author_email)}
@@ -298,7 +298,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                   <View
                     style={{
                       flex: 1,
-                      backgroundColor: '#fafaf9',
+                      backgroundColor: '#F1EEE6',
                       borderRadius: 12,
                       paddingHorizontal: 10,
                       paddingVertical: 8,
@@ -308,8 +308,8 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                       <Text
                         style={{
                           fontSize: 12,
-                          color: '#0c0a09',
-                          fontFamily: 'Inter_700Bold',
+                          color: '#2A2312',
+                          fontFamily: 'Manrope_700Bold',
                         }}
                       >
                         {cAuthor}
@@ -317,8 +317,8 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                       <Text
                         style={{
                           fontSize: 10,
-                          color: '#a8a29e',
-                          fontFamily: 'Inter_500Medium',
+                          color: '#A8A59E',
+                          fontFamily: 'Manrope_500Medium',
                         }}
                       >
                         {relTime(c.created_at)}
@@ -327,9 +327,9 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                     <Text
                       style={{
                         fontSize: 13,
-                        color: '#1c1917',
+                        color: '#2A2312',
                         marginTop: 2,
-                        fontFamily: 'Inter_400Regular',
+                        fontFamily: 'Manrope_400Regular',
                         lineHeight: 18,
                       }}
                     >
@@ -348,7 +348,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                   value={commentText}
                   onChangeText={setCommentText}
                   placeholder="Napisz komentarz…"
-                  placeholderTextColor="#a8a29e"
+                  placeholderTextColor="#A8A59E"
                   multiline
                   style={{
                     flex: 1,
@@ -357,12 +357,12 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                     borderRadius: 14,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
-                    backgroundColor: '#fafaf9',
+                    backgroundColor: '#F1EEE6',
                     borderWidth: 1,
-                    borderColor: '#eef0f3',
+                    borderColor: '#E6E1D5',
                     fontSize: 13,
-                    color: '#0c0a09',
-                    fontFamily: 'Inter_400Regular',
+                    color: '#2A2312',
+                    fontFamily: 'Manrope_400Regular',
                   }}
                 />
                 <Pressable
@@ -372,7 +372,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                     width: 38,
                     height: 38,
                     borderRadius: 19,
-                    backgroundColor: commentText.trim() ? '#ec4899' : '#e7e5e4',
+                    backgroundColor: commentText.trim() ? '#2A2312' : '#E3DDD0',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}

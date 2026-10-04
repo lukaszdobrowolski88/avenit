@@ -39,7 +39,7 @@ export const LyricsView = ({ lyrics, fromKey, toKey }: Props) => {
               key={i}
               style={{
                 fontSize: 15,
-                color: '#0c0a09',
+                color: '#2A2312',
                 marginBottom: 4,
                 fontFamily: monospace,
               }}
@@ -60,7 +60,7 @@ export const LyricsView = ({ lyrics, fromKey, toKey }: Props) => {
             <Text
               style={{
                 fontSize: 13,
-                color: '#be185d',
+                color: '#8A6606',
                 fontFamily: monospace,
                 fontWeight: '700',
               }}
@@ -70,7 +70,7 @@ export const LyricsView = ({ lyrics, fromKey, toKey }: Props) => {
             <Text
               style={{
                 fontSize: 15,
-                color: '#0c0a09',
+                color: '#2A2312',
                 fontFamily: monospace,
               }}
             >

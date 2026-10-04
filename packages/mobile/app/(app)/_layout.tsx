@@ -1,24 +1,13 @@
 import { Tabs, Redirect } from 'expo-router';
-import { ActivityIndicator, Platform, View } from 'react-native';
-import { Calendar, Home, LayoutGrid, MessageCircle, User } from 'lucide-react-native';
+import { ActivityIndicator, View } from 'react-native';
+import { Calendar, Home, LayoutGrid, MessageCircle } from 'lucide-react-native';
 import { useAuthSession } from '../../src/lib/auth';
 import { usePermissions } from '../../src/lib/permissions';
 import { useT } from '../../src/i18n';
+import { FloatingTabBar } from '../../src/components/navigation/FloatingTabBar';
+import { AccountTabIcon } from '../../src/components/navigation/AccountTabIcon';
 
-// Eksportowany — żeby ekrany detail (np. wątek czatu) mogły same przywrócić styl po ukryciu.
-export const APP_TAB_BAR_STYLE = {
-  position: 'absolute' as const,
-  borderTopWidth: 0,
-  backgroundColor: 'rgba(255,255,255,0.96)',
-  height: Platform.OS === 'ios' ? 88 : 70,
-  paddingTop: 8,
-  paddingBottom: Platform.OS === 'ios' ? 28 : 10,
-  shadowColor: '#0f172a',
-  shadowOffset: { width: 0, height: -4 },
-  shadowOpacity: 0.06,
-  shadowRadius: 16,
-  elevation: 12,
-};
+const stroke = (focused: boolean) => (focused ? 2.4 : 1.8);
 
 export default function AppLayout() {
   const { session, loading } = useAuthSession();
@@ -36,39 +25,23 @@ export default function AppLayout() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
         }}
       >
-        <ActivityIndicator color="#ec4899" />
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
   if (!session) return <Redirect href="/(auth)/login" />;
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: '#ec4899',
-        tabBarInactiveTintColor: '#94a3b8',
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '700',
-          letterSpacing: -0.2,
-          marginTop: -2,
-        },
-        tabBarItemStyle: {
-          paddingVertical: 6,
-        },
-        tabBarStyle: APP_TAB_BAR_STYLE,
-      }}
-    >
+    <Tabs tabBar={(props) => <FloatingTabBar {...props} />} screenOptions={{ headerShown: false }}>
       <Tabs.Screen
         name="dashboard"
         options={{
           title: t('Start'),
           tabBarIcon: ({ color, focused }) => (
-            <Home color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
+            <Home color={color} size={24} strokeWidth={stroke(focused)} />
           ),
         }}
       />
@@ -78,7 +51,7 @@ export default function AppLayout() {
           title: t('Kalendarz'),
           href: tabHref('calendar'),
           tabBarIcon: ({ color, focused }) => (
-            <Calendar color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
+            <Calendar color={color} size={24} strokeWidth={stroke(focused)} />
           ),
         }}
       />
@@ -88,7 +61,7 @@ export default function AppLayout() {
           title: t('Czat'),
           href: tabHref('komunikator'),
           tabBarIcon: ({ color, focused }) => (
-            <MessageCircle color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
+            <MessageCircle color={color} size={24} strokeWidth={stroke(focused)} />
           ),
         }}
       />
@@ -97,7 +70,7 @@ export default function AppLayout() {
         options={{
           title: t('Moduły'),
           tabBarIcon: ({ color, focused }) => (
-            <LayoutGrid color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
+            <LayoutGrid color={color} size={24} strokeWidth={stroke(focused)} />
           ),
         }}
       />
@@ -105,9 +78,7 @@ export default function AppLayout() {
         name="account"
         options={{
           title: t('Konto'),
-          tabBarIcon: ({ color, focused }) => (
-            <User color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
-          ),
+          tabBarIcon: ({ color, focused }) => <AccountTabIcon color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen name="programs" options={{ href: null }} />

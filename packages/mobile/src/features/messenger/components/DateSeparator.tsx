@@ -19,19 +19,19 @@ export const DateSeparator = ({ date }: { date: string | Date }) => {
         gap: 8,
       }}
     >
-      <View style={{ flex: 1, height: 1, backgroundColor: "#eef0f3" }} />
+      <View style={{ flex: 1, height: 1, backgroundColor: "#E6E1D5" }} />
       <Text
         style={{
           fontSize: 11,
-          color: "#78716c",
-          fontFamily: "Inter_700Bold",
+          color: "#7A7466",
+          fontFamily: "Manrope_700Bold",
           textTransform: "capitalize",
           letterSpacing: 0.4,
         }}
       >
         {labelFor(d)}
       </Text>
-      <View style={{ flex: 1, height: 1, backgroundColor: "#eef0f3" }} />
+      <View style={{ flex: 1, height: 1, backgroundColor: "#E6E1D5" }} />
     </View>
   );
 };

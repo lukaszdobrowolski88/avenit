@@ -5,22 +5,22 @@ import { supabase } from '../../src/lib/supabase';
 
 const inputStyle = {
   borderWidth: 1,
-  borderColor: '#eef0f3',
+  borderColor: '#E6E1D5',
   borderRadius: 14,
   paddingHorizontal: 14,
   paddingVertical: 12,
   fontSize: 15,
-  color: '#0c0a09',
-  backgroundColor: '#fafaf9',
+  color: '#2A2312',
+  backgroundColor: '#F1EEE6',
   marginBottom: 14,
-  fontFamily: 'Inter_500Medium',
+  fontFamily: 'Manrope_500Medium',
 } as const;
 
 const labelStyle = {
   fontSize: 12,
-  color: '#57534e',
+  color: '#4A463E',
   marginBottom: 6,
-  fontFamily: 'Inter_600SemiBold',
+  fontFamily: 'Manrope_600SemiBold',
   textTransform: 'uppercase' as const,
   letterSpacing: 0.4,
 };
@@ -90,10 +90,10 @@ export default function ResetPasswordScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
         }}
       >
-        <ActivityIndicator color="#ec4899" />
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
@@ -105,17 +105,17 @@ export default function ResetPasswordScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
           paddingHorizontal: 24,
         }}
       >
         <Text
           style={{
             fontSize: 18,
-            color: '#0c0a09',
+            color: '#2A2312',
             textAlign: 'center',
             marginBottom: 8,
-            fontFamily: 'Inter_700Bold',
+            fontFamily: 'Manrope_700Bold',
           }}
         >
           Link nieaktywny
@@ -123,10 +123,10 @@ export default function ResetPasswordScreen() {
         <Text
           style={{
             fontSize: 14,
-            color: '#78716c',
+            color: '#7A7466',
             textAlign: 'center',
             marginBottom: 22,
-            fontFamily: 'Inter_500Medium',
+            fontFamily: 'Manrope_500Medium',
           }}
         >
           {linkError}
@@ -134,14 +134,14 @@ export default function ResetPasswordScreen() {
         <Pressable
           onPress={() => router.replace('/(auth)/login')}
           style={{
-            backgroundColor: '#ec4899',
+            backgroundColor: '#2A2312',
             borderRadius: 14,
             paddingVertical: 14,
             paddingHorizontal: 28,
             alignItems: 'center',
           }}
         >
-          <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}>
+          <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
             Wróć do logowania
           </Text>
         </Pressable>
@@ -153,7 +153,7 @@ export default function ResetPasswordScreen() {
     <View
       style={{
         flex: 1,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#F6F4EE',
         paddingHorizontal: 24,
         justifyContent: 'center',
       }}
@@ -161,10 +161,10 @@ export default function ResetPasswordScreen() {
       <Text
         style={{
           fontSize: 24,
-          color: '#0c0a09',
+          color: '#2A2312',
           marginBottom: 6,
           letterSpacing: -0.5,
-          fontFamily: 'Inter_700Bold',
+          fontFamily: 'Manrope_700Bold',
         }}
       >
         Nowe hasło
@@ -172,9 +172,9 @@ export default function ResetPasswordScreen() {
       <Text
         style={{
           fontSize: 14,
-          color: '#78716c',
+          color: '#7A7466',
           marginBottom: 24,
-          fontFamily: 'Inter_500Medium',
+          fontFamily: 'Manrope_500Medium',
         }}
       >
         Wprowadź nowe hasło do konta.
@@ -185,7 +185,7 @@ export default function ResetPasswordScreen() {
         style={inputStyle}
         secureTextEntry
         placeholder="••••••••"
-        placeholderTextColor="#a8a29e"
+        placeholderTextColor="#A8A59E"
         value={password}
         onChangeText={setPassword}
         editable={!loading}
@@ -196,7 +196,7 @@ export default function ResetPasswordScreen() {
         style={[inputStyle, { marginBottom: 22 }]}
         secureTextEntry
         placeholder="••••••••"
-        placeholderTextColor="#a8a29e"
+        placeholderTextColor="#A8A59E"
         value={confirm}
         onChangeText={setConfirm}
         editable={!loading}
@@ -206,7 +206,7 @@ export default function ResetPasswordScreen() {
         onPress={handleSubmit}
         disabled={loading}
         style={{
-          backgroundColor: '#ec4899',
+          backgroundColor: '#2A2312',
           borderRadius: 14,
           paddingVertical: 14,
           alignItems: 'center',
@@ -216,7 +216,7 @@ export default function ResetPasswordScreen() {
         {loading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}>
+          <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
             Zapisz hasło
           </Text>
         )}

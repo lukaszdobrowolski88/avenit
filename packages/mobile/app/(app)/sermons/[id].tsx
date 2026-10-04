@@ -24,22 +24,22 @@ export default function SermonDetailScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
         }}
       >
-        <ActivityIndicator color="#ec4899" />
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
 
   if (isError) {
     return (
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Kazanie" showBack />
         <View className="flex-1 items-center justify-center px-6">
           <Text
             className="text-center"
-            style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}
+            style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
           >
             {(error as Error)?.message ?? 'Błąd'}
           </Text>
@@ -50,10 +50,10 @@ export default function SermonDetailScreen() {
 
   if (!sermon) {
     return (
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Kazanie" showBack />
         <View className="flex-1 items-center justify-center px-6">
-          <Text style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+          <Text style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
             Kazanie nie istnieje.
           </Text>
         </View>
@@ -64,14 +64,14 @@ export default function SermonDetailScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Kazanie" subtitle={sermon.series ?? undefined} showBack />
 
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}>
           {sermon.sermon_date ? (
             <Text
               className="text-[11px] uppercase mb-1"
-              style={{ color: '#78716c', letterSpacing: 0.4, fontFamily: 'Inter_600SemiBold' }}
+              style={{ color: '#7A7466', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
             >
               {formatDate(sermon.sermon_date, 'EEEE, d MMM yyyy')}
             </Text>
@@ -79,7 +79,7 @@ export default function SermonDetailScreen() {
 
           <Text
             className="text-[24px] mb-2"
-            style={{ color: '#0c0a09', letterSpacing: -0.6, fontFamily: 'Inter_700Bold' }}
+            style={{ color: '#2A2312', letterSpacing: -0.6, fontFamily: 'Manrope_700Bold' }}
           >
             {sermon.title || 'Kazanie'}
           </Text>
@@ -100,7 +100,7 @@ export default function SermonDetailScreen() {
               </View>
               <Text
                 className="text-[14px]"
-                style={{ color: '#57534e', fontFamily: 'Inter_500Medium' }}
+                style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium' }}
               >
                 {sermon.speaker}
               </Text>
@@ -110,12 +110,12 @@ export default function SermonDetailScreen() {
           {sermon.scripture_ref ? (
             <View
               className="flex-row items-start gap-2 mb-4 p-3"
-              style={{ borderRadius: 14, backgroundColor: '#f5f5f4' }}
+              style={{ borderRadius: 14, backgroundColor: '#ECE8DE' }}
             >
-              <Quote size={16} color="#a8a29e" style={{ marginTop: 2 }} />
+              <Quote size={16} color="#A8A59E" style={{ marginTop: 2 }} />
               <Text
                 className="flex-1 text-[14px] italic"
-                style={{ color: '#44403c', fontFamily: 'Inter_500Medium', lineHeight: 20 }}
+                style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}
               >
                 {sermon.scripture_ref}
               </Text>
@@ -133,7 +133,7 @@ export default function SermonDetailScreen() {
           {sermon.description ? (
             <Text
               className="text-[14px] mb-4"
-              style={{ color: '#1c1917', fontFamily: 'Inter_400Regular', lineHeight: 22 }}
+              style={{ color: '#2A2312', fontFamily: 'Manrope_400Regular', lineHeight: 22 }}
             >
               {sermon.description}
             </Text>
@@ -142,17 +142,17 @@ export default function SermonDetailScreen() {
           {sermon.notes ? (
             <View
               className="p-4"
-              style={{ borderRadius: 16, borderWidth: 1, borderColor: '#eef0f3' }}
+              style={{ borderRadius: 16, borderWidth: 1, borderColor: '#E6E1D5' }}
             >
               <Text
                 className="text-[11px] uppercase mb-2"
-                style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}
+                style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
               >
                 Notatki
               </Text>
               <Text
                 className="text-[14px]"
-                style={{ color: '#44403c', fontFamily: 'Inter_400Regular', lineHeight: 22 }}
+                style={{ color: '#3A3427', fontFamily: 'Manrope_400Regular', lineHeight: 22 }}
               >
                 {sermon.notes}
               </Text>
@@ -162,7 +162,7 @@ export default function SermonDetailScreen() {
           {!sermon.audio_url && !sermon.video_url ? (
             <Text
               className="text-[13px] text-center mt-2"
-              style={{ color: '#a8a29e', fontFamily: 'Inter_400Regular' }}
+              style={{ color: '#A8A59E', fontFamily: 'Manrope_400Regular' }}
             >
               Brak dostępnego nagrania dla tego kazania.
             </Text>

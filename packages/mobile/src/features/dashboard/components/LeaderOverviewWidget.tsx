@@ -2,7 +2,8 @@ import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ArrowUpRight, Gauge } from 'lucide-react-native';
+import { ArrowUpRight } from 'lucide-react-native';
+import { D, F } from '../theme';
 import { WidgetCard } from './WidgetCard';
 import { openOnWeb } from '../../modules/useModules';
 import type { AttendancePoint, GivingSummary, RsvpCampaignSummary } from '../extras';
@@ -40,7 +41,7 @@ const Block = ({
       paddingHorizontal: 16,
       paddingVertical: 12,
       borderTopWidth: first ? 0 : 1,
-      borderTopColor: '#f2f0ee',
+      borderTopColor: D.hair,
       backgroundColor: 'transparent',
     }}
   >
@@ -48,29 +49,27 @@ const Block = ({
       <Text
         style={{
           flex: 1,
-          fontSize: 12,
-          color: '#78716c',
-          letterSpacing: 0.4,
-          textTransform: 'uppercase',
-          fontFamily: 'Inter_600SemiBold',
+          fontSize: 13,
+          color: D.ink2,
+          fontFamily: F.semibold,
         }}
       >
         {label}
       </Text>
-      <ArrowUpRight size={14} color="#a8a29e" />
+      <ArrowUpRight size={16} color={D.ink3} />
     </View>
     {children}
   </Pressable>
 );
 
 const Big = ({ children }: { children: React.ReactNode }) => (
-  <Text style={{ fontSize: 26, color: '#0c0a09', fontFamily: 'Inter_700Bold', letterSpacing: -0.8 }}>
+  <Text style={{ fontSize: 28, color: D.ink, fontFamily: F.bold, letterSpacing: -1 }}>
     {children}
   </Text>
 );
 
 const Sub = ({ children }: { children: React.ReactNode }) => (
-  <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium', marginTop: 2 }}>{children}</Text>
+  <Text style={{ fontSize: 13, color: D.ink2, fontFamily: F.medium, marginTop: 2 }}>{children}</Text>
 );
 
 interface Props {
@@ -97,7 +96,7 @@ export const LeaderOverviewWidget = ({ giving, attendance, rsvp }: Props) => {
   };
 
   return (
-    <WidgetCard title="Przegląd" Icon={Gauge} iconTint="#1d4ed8" iconBg="#dbeafe">
+    <WidgetCard title="Przegląd">
       {hasGiving ? (
         <Block label={`Dawanie · ${monthName}`} onPress={() => router.push('/(app)/giving/admin')} first={isFirst()}>
           <Big>{money(giving!.month)}</Big>
@@ -125,7 +124,7 @@ export const LeaderOverviewWidget = ({ giving, attendance, rsvp }: Props) => {
                     flex: 1,
                     height: Math.max(4, Math.round((a.headcount / max) * 44)),
                     borderRadius: 4,
-                    backgroundColor: i === attendance.length - 1 ? '#1d4ed8' : '#bfdbfe',
+                    backgroundColor: i === attendance.length - 1 ? D.ink : '#E2E2DF',
                   }}
                 />
               ))}
@@ -143,15 +142,15 @@ export const LeaderOverviewWidget = ({ giving, attendance, rsvp }: Props) => {
             >
               <Text
                 numberOfLines={1}
-                style={{ flex: 1, fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+                style={{ flex: 1, fontSize: 14, color: D.ink, fontFamily: F.semibold }}
               >
                 {c.title}
-                <Text style={{ color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>
+                <Text style={{ color: D.ink3, fontFamily: F.medium }}>
                   {c.eventDate ? ` · ${shortDate(c.eventDate)}` : ''}
                 </Text>
               </Text>
-              <Text style={{ fontSize: 12, color: '#15803d', fontFamily: 'Inter_700Bold' }}>{c.yes} tak</Text>
-              <Text style={{ fontSize: 12, color: '#a16207', fontFamily: 'Inter_600SemiBold' }}>
+              <Text style={{ fontSize: 12, color: '#15803d', fontFamily: F.bold }}>{c.yes} tak</Text>
+              <Text style={{ fontSize: 12, color: '#a16207', fontFamily: F.semibold }}>
                 {c.pending} czeka
               </Text>
             </View>

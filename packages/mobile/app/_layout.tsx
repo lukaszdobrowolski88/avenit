@@ -163,7 +163,7 @@ export default function RootLayout() {
   }, []);
 
   if (!fontsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: '#ffffff' }} />;
+    return <View style={{ flex: 1, backgroundColor: '#F6F4EE' }} />;
   }
 
   return (

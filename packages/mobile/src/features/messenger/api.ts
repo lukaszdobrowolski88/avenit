@@ -167,7 +167,7 @@ export const MINISTRY_CHANNEL_META: Record<
   { label: string; tint: string; bg: string }
 > = {
   worship: { label: "Worship", tint: "#a855f7", bg: "#f3e8ff" },
-  media: { label: "Media", tint: "#f97316", bg: "#ffedd5" },
+  media: { label: "Media", tint: "#FFBE0B", bg: "#ffedd5" },
   atmosfera: { label: "Atmosfera", tint: "#14b8a6", bg: "#ccfbf1" },
   kids: { label: "Dzieci", tint: "#eab308", bg: "#fef3c7" },
   groups: { label: "Grupy domowe", tint: "#3b82f6", bg: "#dbeafe" },

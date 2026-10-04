@@ -18,12 +18,12 @@ const Action = ({ Icon, onPress, label }: { Icon: typeof Phone; onPress: () => v
       width: 34,
       height: 34,
       borderRadius: 17,
-      backgroundColor: '#ffffff',
+      backgroundColor: '#F6F4EE',
       alignItems: 'center',
       justifyContent: 'center',
     }}
   >
-    <Icon size={15} color="#1c1917" strokeWidth={2.2} />
+    <Icon size={15} color="#2A2312" strokeWidth={2.2} />
   </Pressable>
 );
 
@@ -64,17 +64,17 @@ export const PeopleTab = ({
             height: 42,
             paddingHorizontal: 12,
             borderRadius: 14,
-            backgroundColor: '#f5f5f4',
+            backgroundColor: '#ECE8DE',
             marginBottom: 12,
           }}
         >
-          <Search size={16} color="#a8a29e" />
+          <Search size={16} color="#A8A59E" />
           <TextInput
             value={q}
             onChangeText={setQ}
             placeholder="Szukaj osoby"
-            placeholderTextColor="#a8a29e"
-            style={{ flex: 1, fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_400Regular' }}
+            placeholderTextColor="#A8A59E"
+            style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}
           />
         </View>
       ) : null}
@@ -93,24 +93,24 @@ export const PeopleTab = ({
                 width: 40,
                 height: 40,
                 borderRadius: 20,
-                backgroundColor: p.isLeader ? '#fef3c7' : '#fce7f3',
+                backgroundColor: p.isLeader ? '#fef3c7' : '#FFF1C2',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Text style={{ fontSize: 13, color: p.isLeader ? '#a16207' : '#be185d', fontFamily: 'Inter_700Bold' }}>
+              <Text style={{ fontSize: 13, color: p.isLeader ? '#a16207' : '#8A6606', fontFamily: 'Manrope_700Bold' }}>
                 {initials(p.name) || '?'}
               </Text>
             </View>
             <View style={{ flex: 1, gap: 2 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                   {p.name}
                 </Text>
                 {p.isLeader ? <Star size={12} color="#d97706" fill="#d97706" /> : null}
               </View>
               {[p.roles.length ? p.roles.join(', ') : p.role, p.groupName].filter(Boolean).length ? (
-                <Text numberOfLines={1} style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+                <Text numberOfLines={1} style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
                   {[p.roles.length ? p.roles.join(', ') : p.role, p.groupName].filter(Boolean).join(' · ')}
                 </Text>
               ) : null}
@@ -139,19 +139,19 @@ export const RolesTab = ({ teamKey, memberTable }: { teamKey: TeamKey; memberTab
     <View>
       {list.map((r) => (
         <Card key={r.id}>
-          <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>{r.name}</Text>
+          <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{r.name}</Text>
           {r.description ? (
-            <Text style={{ fontSize: 12, color: '#78716c', marginTop: 2, fontFamily: 'Inter_400Regular' }}>{r.description}</Text>
+            <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>{r.description}</Text>
           ) : null}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
             {r.people.length ? (
               r.people.map((n) => (
-                <View key={n} style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, backgroundColor: '#ffffff' }}>
-                  <Text style={{ fontSize: 12, color: '#1c1917', fontFamily: 'Inter_500Medium' }}>{n}</Text>
+                <View key={n} style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, backgroundColor: '#F6F4EE' }}>
+                  <Text style={{ fontSize: 12, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}>{n}</Text>
                 </View>
               ))
             ) : (
-              <Text style={{ fontSize: 12, color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>Nikt nie jest przypisany</Text>
+              <Text style={{ fontSize: 12, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>Nikt nie jest przypisany</Text>
             )}
           </View>
         </Card>

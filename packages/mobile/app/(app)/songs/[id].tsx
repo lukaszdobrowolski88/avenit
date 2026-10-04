@@ -25,10 +25,10 @@ export default function SongDetailScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
         }}
       >
-        <ActivityIndicator color="#ec4899" />
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
@@ -39,7 +39,7 @@ export default function SongDetailScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
           paddingHorizontal: 24,
         }}
       >
@@ -47,7 +47,7 @@ export default function SongDetailScreen() {
           style={{
             textAlign: 'center',
             color: '#e11d48',
-            fontFamily: 'Inter_500Medium',
+            fontFamily: 'Manrope_500Medium',
           }}
         >
           {(error as Error)?.message ?? 'Błąd'}
@@ -62,11 +62,11 @@ export default function SongDetailScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
           paddingHorizontal: 24,
         }}
       >
-        <Text style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+        <Text style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
           Pieśń nie istnieje.
         </Text>
       </View>
@@ -79,7 +79,7 @@ export default function SongDetailScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <ScrollView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <ScrollView style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <View
           style={{
             paddingHorizontal: 20,
@@ -97,21 +97,21 @@ export default function SongDetailScreen() {
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: '#fafaf9',
+              backgroundColor: '#F1EEE6',
               borderWidth: 1,
-              borderColor: '#e7e5e4',
+              borderColor: '#E3DDD0',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <ChevronLeft size={20} color="#1c1917" strokeWidth={2.2} />
+            <ChevronLeft size={20} color="#2A2312" strokeWidth={2.2} />
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text
               style={{
                 fontSize: 12,
-                color: '#78716c',
-                fontFamily: 'Inter_500Medium',
+                color: '#7A7466',
+                fontFamily: 'Manrope_500Medium',
                 letterSpacing: -0.1,
               }}
             >
@@ -122,10 +122,10 @@ export default function SongDetailScreen() {
               numberOfLines={1}
               style={{
                 fontSize: 24,
-                color: '#0c0a09',
+                color: '#2A2312',
                 marginTop: 2,
                 letterSpacing: -0.6,
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Manrope_700Bold',
               }}
             >
               {song.title}
@@ -141,8 +141,8 @@ export default function SongDetailScreen() {
               paddingHorizontal: 12,
               height: 40,
               borderRadius: 20,
-              backgroundColor: '#ec4899',
-              shadowColor: '#ec4899',
+              backgroundColor: '#2A2312',
+              shadowColor: '#2A2312',
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.3,
               shadowRadius: 8,
@@ -154,7 +154,7 @@ export default function SongDetailScreen() {
               style={{
                 fontSize: 12,
                 color: '#ffffff',
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Manrope_700Bold',
                 letterSpacing: -0.1,
               }}
             >
@@ -173,8 +173,8 @@ export default function SongDetailScreen() {
               paddingHorizontal: 16,
               paddingVertical: 32,
               textAlign: 'center',
-              color: '#78716c',
-              fontFamily: 'Inter_500Medium',
+              color: '#7A7466',
+              fontFamily: 'Manrope_500Medium',
             }}
           >
             Brak tekstu.

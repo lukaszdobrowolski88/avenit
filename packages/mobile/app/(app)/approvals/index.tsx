@@ -30,10 +30,10 @@ export default function ApprovalsScreen() {
   };
 
   const Row = ({ a, approveLabel }: { a: PendingAccount; approveLabel: string }) => (
-    <View style={{ borderRadius: 18, backgroundColor: '#f7f6f5', padding: 14, marginBottom: 10, gap: 10 }}>
+    <View style={{ borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14, marginBottom: 10, gap: 10 }}>
       <View>
-        <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>{a.name}</Text>
-        <Text style={{ fontSize: 12, color: '#78716c', marginTop: 2, fontFamily: 'Inter_500Medium' }}>
+        <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{a.name}</Text>
+        <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
           {a.email}
           {a.createdAt ? ` · ${formatDate(a.createdAt, 'd MMM, HH:mm')}` : ''}
         </Text>
@@ -46,16 +46,16 @@ export default function ApprovalsScreen() {
           style={{ flex: 1, height: 42, borderRadius: 12, backgroundColor: '#15803d', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
         >
           <Check size={16} color="#ffffff" strokeWidth={2.6} />
-          <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>{approveLabel}</Text>
+          <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>{approveLabel}</Text>
         </Pressable>
         <Pressable
           onPress={() => run(a, false)}
           disabled={decide.isPending}
           className="active:opacity-70"
-          style={{ flex: 1, height: 42, borderRadius: 12, backgroundColor: '#ffffff', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+          style={{ flex: 1, height: 42, borderRadius: 12, backgroundColor: '#F6F4EE', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
         >
           <X size={16} color="#b91c1c" strokeWidth={2.6} />
-          <Text style={{ fontSize: 14, color: '#b91c1c', fontFamily: 'Inter_600SemiBold' }}>Odrzuć</Text>
+          <Text style={{ fontSize: 14, color: '#b91c1c', fontFamily: 'Manrope_600SemiBold' }}>Odrzuć</Text>
         </Pressable>
       </View>
     </View>
@@ -64,11 +64,11 @@ export default function ApprovalsScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Nowe konta" subtitle="Zatwierdzanie rejestracji" Icon={UserCheck} showBack />
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130 }}
-          refreshControl={<RefreshControl refreshing={pending.isRefetching} onRefresh={() => pending.refetch()} tintColor="#ec4899" />}
+          refreshControl={<RefreshControl refreshing={pending.isRefetching} onRefresh={() => pending.refetch()} tintColor="#2A2312" />}
         >
           {pending.isLoading ? <Loading /> : null}
           {!pending.isLoading && list.length === 0 ? (
@@ -77,7 +77,7 @@ export default function ApprovalsScreen() {
 
           {toApprove.length ? (
             <>
-              <Text style={{ fontSize: 13, color: '#78716c', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Inter_700Bold', marginBottom: 8 }}>
+              <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
                 Czekają na zatwierdzenie
               </Text>
               {toApprove.map((a) => (
@@ -89,8 +89,8 @@ export default function ApprovalsScreen() {
           {unverified.length ? (
             <>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, marginBottom: 8 }}>
-                <Mail size={13} color="#78716c" />
-                <Text style={{ fontSize: 13, color: '#78716c', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Inter_700Bold' }}>
+                <Mail size={13} color="#7A7466" />
+                <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold' }}>
                   Nie potwierdzili e-maila
                 </Text>
               </View>

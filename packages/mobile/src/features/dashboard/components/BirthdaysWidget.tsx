@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Cake } from 'lucide-react-native';
 import { WidgetCard } from './WidgetCard';
+import { D, F } from '../theme';
 import type { Birthday } from '../extras';
 
 const when = (days: number) => {
@@ -14,7 +14,7 @@ export const BirthdaysWidget = ({ items }: { items: Birthday[] }) => {
   const router = useRouter();
   if (items.length === 0) return null;
   return (
-    <WidgetCard title="Urodziny" Icon={Cake} iconTint="#a21caf" iconBg="#fae8ff" badge="2 tyg.">
+    <WidgetCard title="Urodziny" count={items.length}>
       <View style={{ paddingHorizontal: 8, paddingBottom: 8 }}>
         {items.map((b) => {
           const isToday = b.daysUntil === 0;
@@ -35,19 +35,19 @@ export const BirthdaysWidget = ({ items }: { items: Birthday[] }) => {
             >
               <View
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: isToday ? '#a21caf' : '#fae8ff',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: isToday ? D.ink : D.well,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
                 <Text
                   style={{
-                    fontSize: 13,
-                    color: isToday ? '#ffffff' : '#a21caf',
-                    fontFamily: 'Inter_700Bold',
+                    fontSize: 14,
+                    color: isToday ? '#ffffff' : D.ink,
+                    fontFamily: F.bold,
                   }}
                 >
                   {b.name.charAt(0).toUpperCase()}
@@ -55,15 +55,15 @@ export const BirthdaysWidget = ({ items }: { items: Birthday[] }) => {
               </View>
               <Text
                 numberOfLines={1}
-                style={{ flex: 1, fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+                style={{ flex: 1, fontSize: 15, color: D.ink, fontFamily: F.semibold }}
               >
                 {b.name}
               </Text>
               <Text
                 style={{
-                  fontSize: 12,
-                  color: isToday ? '#a21caf' : '#78716c',
-                  fontFamily: isToday ? 'Inter_700Bold' : 'Inter_500Medium',
+                  fontSize: 13,
+                  color: isToday ? D.gold : D.ink2,
+                  fontFamily: isToday ? F.bold : F.medium,
                 }}
               >
                 {when(b.daysUntil)}

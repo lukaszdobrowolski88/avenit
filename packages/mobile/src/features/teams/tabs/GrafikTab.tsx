@@ -17,15 +17,15 @@ const PersonChip = ({ p }: { p: GrafikPerson }) => (
       paddingHorizontal: 9,
       paddingVertical: 4,
       borderRadius: 999,
-      backgroundColor: p.isMe ? '#fce7f3' : '#ffffff',
+      backgroundColor: p.isMe ? '#FFF1C2' : '#F6F4EE',
     }}
   >
     {p.status ? <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: STATUS_DOT[p.status] }} /> : null}
     <Text
       style={{
         fontSize: 12,
-        color: p.isMe ? '#be185d' : '#1c1917',
-        fontFamily: p.isMe ? 'Inter_700Bold' : 'Inter_500Medium',
+        color: p.isMe ? '#8A6606' : '#2A2312',
+        fontFamily: p.isMe ? 'Manrope_700Bold' : 'Manrope_500Medium',
         textDecorationLine: p.status === 'rejected' ? 'line-through' : 'none',
       }}
     >
@@ -72,12 +72,12 @@ export const GrafikTab = ({ teamKey, me }: { teamKey: TeamKey; me: { email: stri
           }
         >
           <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-            <DateBlock ymd={row.date} tint={row.involvesMe ? '#be185d' : '#0e7490'} bg={row.involvesMe ? '#fdf2f8' : '#f0fdff'} />
+            <DateBlock ymd={row.date} tint={row.involvesMe ? '#8A6606' : '#0e7490'} bg={row.involvesMe ? '#FFF8E1' : '#f0fdff'} />
             <View style={{ flex: 1 }}>
-              <Text numberOfLines={2} style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+              <Text numberOfLines={2} style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                 {row.title}
               </Text>
-              <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium', marginTop: 2 }}>
+              <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium', marginTop: 2 }}>
                 {dayLabel(row.date)}
                 {row.time ? ` · ${row.time}` : ''}
               </Text>
@@ -91,10 +91,10 @@ export const GrafikTab = ({ teamKey, me }: { teamKey: TeamKey; me: { email: stri
                   <Text
                     style={{
                       fontSize: 11,
-                      color: '#78716c',
+                      color: '#7A7466',
                       letterSpacing: 0.4,
                       textTransform: 'uppercase',
-                      fontFamily: 'Inter_600SemiBold',
+                      fontFamily: 'Manrope_600SemiBold',
                     }}
                   >
                     {role.label}
@@ -108,18 +108,18 @@ export const GrafikTab = ({ teamKey, me }: { teamKey: TeamKey; me: { email: stri
               ))}
             </View>
           ) : (
-            <Text style={{ marginTop: 8, fontSize: 12, color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>
+            <Text style={{ marginTop: 8, fontSize: 12, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
               Nikt jeszcze nie jest przypisany.
             </Text>
           )}
 
           {row.absent.length ? (
-            <Text style={{ marginTop: 8, fontSize: 12, color: '#b91c1c', fontFamily: 'Inter_500Medium' }}>
+            <Text style={{ marginTop: 8, fontSize: 12, color: '#b91c1c', fontFamily: 'Manrope_500Medium' }}>
               Nieobecni: {row.absent.join(', ')}
             </Text>
           ) : null}
           {row.notes ? (
-            <Text style={{ marginTop: 4, fontSize: 12, color: '#57534e', fontFamily: 'Inter_400Regular' }}>{row.notes}</Text>
+            <Text style={{ marginTop: 4, fontSize: 12, color: '#4A463E', fontFamily: 'Manrope_400Regular' }}>{row.notes}</Text>
           ) : null}
         </Card>
       ))}

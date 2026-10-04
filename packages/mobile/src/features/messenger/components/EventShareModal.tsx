@@ -34,7 +34,7 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
       >
         <Pressable
           style={{
-            backgroundColor: "#ffffff",
+            backgroundColor: "#F6F4EE",
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingTop: 20,
@@ -52,27 +52,27 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
               paddingHorizontal: 20,
             }}
           >
-            <Text style={{ fontSize: 18, color: "#0c0a09", fontFamily: "Inter_700Bold" }}>
+            <Text style={{ fontSize: 18, color: "#2A2312", fontFamily: "Manrope_700Bold" }}>
               📅 Udostępnij wydarzenie
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color="#78716c" />
+              <X size={20} color="#7A7466" />
             </Pressable>
           </View>
 
           {isLoading ? (
             <View style={{ paddingVertical: 40, alignItems: "center" }}>
-              <ActivityIndicator color="#ec4899" />
+              <ActivityIndicator color="#2A2312" />
             </View>
           ) : events.length === 0 ? (
             <View style={{ paddingVertical: 40, alignItems: "center", paddingHorizontal: 24 }}>
-              <Calendar size={28} color="#cbd5e1" />
+              <Calendar size={28} color="#D3CCBC" />
               <Text
                 style={{
                   marginTop: 8,
                   fontSize: 14,
-                  color: "#78716c",
-                  fontFamily: "Inter_500Medium",
+                  color: "#7A7466",
+                  fontFamily: "Manrope_500Medium",
                   textAlign: "center",
                 }}
               >
@@ -95,8 +95,8 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
                       marginBottom: 8,
                       borderRadius: 14,
                       borderWidth: 1,
-                      borderColor: "#eef0f3",
-                      backgroundColor: "#fafaf9",
+                      borderColor: "#E6E1D5",
+                      backgroundColor: "#F1EEE6",
                     }}
                   >
                     <View
@@ -113,21 +113,21 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text
-                        style={{ fontSize: 15, color: "#0c0a09", fontFamily: "Inter_600SemiBold" }}
+                        style={{ fontSize: 15, color: "#2A2312", fontFamily: "Manrope_600SemiBold" }}
                         numberOfLines={1}
                       >
                         {e.title}
                       </Text>
                       {dateLine ? (
-                        <Text style={{ fontSize: 12, color: "#78716c", fontFamily: "Inter_500Medium" }}>
+                        <Text style={{ fontSize: 12, color: "#7A7466", fontFamily: "Manrope_500Medium" }}>
                           {dateLine}
                         </Text>
                       ) : null}
                       {e.location ? (
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 1 }}>
-                          <MapPin size={11} color="#a8a29e" />
+                          <MapPin size={11} color="#A8A59E" />
                           <Text
-                            style={{ fontSize: 12, color: "#a8a29e", fontFamily: "Inter_400Regular" }}
+                            style={{ fontSize: 12, color: "#A8A59E", fontFamily: "Manrope_400Regular" }}
                             numberOfLines={1}
                           >
                             {e.location}
@@ -135,7 +135,7 @@ export const EventShareModal = ({ visible, onClose, onShare }: Props) => {
                         </View>
                       ) : null}
                     </View>
-                    <ChevronRight size={18} color="#cbd5e1" />
+                    <ChevronRight size={18} color="#D3CCBC" />
                   </Pressable>
                 );
               })}

@@ -23,7 +23,7 @@ const fieldStyle = {
   height: 46,
   borderRadius: 14,
   paddingHorizontal: 14,
-  backgroundColor: '#f5f5f4',
+  backgroundColor: '#ECE8DE',
 };
 
 export const DateField = ({ value, onChange }: { value: string; onChange: (ymd: string) => void }) => {
@@ -56,8 +56,8 @@ export const DateField = ({ value, onChange }: { value: string; onChange: (ymd: 
         className="active:opacity-70"
         style={fieldStyle}
       >
-        <CalendarDays size={17} color="#57534e" />
-        <Text style={{ flex: 1, fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_500Medium' }}>
+        <CalendarDays size={17} color="#4A463E" />
+        <Text style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}>
           {label.charAt(0).toUpperCase() + label.slice(1)}
         </Text>
       </Pressable>
@@ -67,7 +67,7 @@ export const DateField = ({ value, onChange }: { value: string; onChange: (ymd: 
           onPress={() => setOpen(false)}
           style={{ flex: 1, backgroundColor: 'rgba(12,10,9,0.35)', justifyContent: 'center', padding: 20 }}
         >
-          <Pressable onPress={(e) => e.stopPropagation()} style={{ backgroundColor: '#ffffff', borderRadius: 22, padding: 16 }}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={{ backgroundColor: '#F6F4EE', borderRadius: 22, padding: 16 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
               <Pressable
                 onPress={() => setAnchor(new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1))}
@@ -75,9 +75,9 @@ export const DateField = ({ value, onChange }: { value: string; onChange: (ymd: 
                 className="active:opacity-60"
                 style={{ padding: 6 }}
               >
-                <ChevronLeft size={20} color="#1c1917" />
+                <ChevronLeft size={20} color="#2A2312" />
               </Pressable>
-              <Text style={{ flex: 1, textAlign: 'center', fontSize: 16, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>
+              <Text style={{ flex: 1, textAlign: 'center', fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                 {title.charAt(0).toUpperCase() + title.slice(1)}
               </Text>
               <Pressable
@@ -86,12 +86,12 @@ export const DateField = ({ value, onChange }: { value: string; onChange: (ymd: 
                 className="active:opacity-60"
                 style={{ padding: 6 }}
               >
-                <ChevronRight size={20} color="#1c1917" />
+                <ChevronRight size={20} color="#2A2312" />
               </Pressable>
             </View>
             <View style={{ flexDirection: 'row' }}>
               {WEEK.map((w) => (
-                <Text key={w} style={{ flex: 1, textAlign: 'center', fontSize: 11, color: '#a8a29e', fontFamily: 'Inter_700Bold' }}>
+                <Text key={w} style={{ flex: 1, textAlign: 'center', fontSize: 11, color: '#A8A59E', fontFamily: 'Manrope_700Bold' }}>
                   {w}
                 </Text>
               ))}
@@ -117,14 +117,14 @@ export const DateField = ({ value, onChange }: { value: string; onChange: (ymd: 
                         borderRadius: 12,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        backgroundColor: isSel ? '#0c0a09' : isToday ? '#fce7f3' : 'transparent',
+                        backgroundColor: isSel ? '#2A2312' : isToday ? '#FFF1C2' : 'transparent',
                       }}
                     >
                       <Text
                         style={{
                           fontSize: 14,
-                          fontFamily: 'Inter_600SemiBold',
-                          color: isSel ? '#ffffff' : !inMonth ? '#d6d3d1' : isToday ? '#be185d' : '#1c1917',
+                          fontFamily: 'Manrope_600SemiBold',
+                          color: isSel ? '#ffffff' : !inMonth ? '#D3CCBC' : isToday ? '#8A6606' : '#2A2312',
                         }}
                       >
                         {d.getDate()}
@@ -152,7 +152,7 @@ export const TimeField = ({
   placeholder?: string;
 }) => (
   <View style={fieldStyle}>
-    <Clock size={17} color="#57534e" />
+    <Clock size={17} color="#4A463E" />
     <TextInput
       value={value}
       onChangeText={(t) => {
@@ -160,10 +160,10 @@ export const TimeField = ({
         onChange(digits.length > 2 ? `${digits.slice(0, 2)}:${digits.slice(2)}` : digits);
       }}
       placeholder={placeholder}
-      placeholderTextColor="#a8a29e"
+      placeholderTextColor="#A8A59E"
       keyboardType="number-pad"
       maxLength={5}
-      style={{ flex: 1, fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_500Medium' }}
+      style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
     />
   </View>
 );

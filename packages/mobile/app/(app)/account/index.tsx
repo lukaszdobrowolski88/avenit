@@ -142,14 +142,14 @@ export default function AccountScreen() {
   return (
     <ScrollView
       className="flex-1"
-      style={{ backgroundColor: '#ffffff' }}
+      style={{ backgroundColor: '#F6F4EE' }}
       contentContainerStyle={{ paddingBottom: 120 }}
     >
       <View className="items-center pb-8 px-4" style={{ paddingTop: insets.top + 16 }}>
         {avatarUrl ? (
           <Image
             source={{ uri: avatarUrl }}
-            style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#f5f5f4' }}
+            style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#ECE8DE' }}
             contentFit="cover"
           />
         ) : (
@@ -158,16 +158,16 @@ export default function AccountScreen() {
         <Text
           className="mt-4 text-[18px]"
           style={{
-            color: '#0c0a09',
+            color: '#2A2312',
             letterSpacing: -0.4,
-            fontFamily: 'Inter_700Bold',
+            fontFamily: 'Manrope_700Bold',
           }}
         >
           {fullName || email}
         </Text>
         <Text
           className="text-[12px] mt-1"
-          style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
+          style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
         >
           {fullName ? email : t('Konto')}
         </Text>
@@ -177,8 +177,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={UserCog}
-          iconTint="#be185d"
-          iconBg="#fce7f3"
+          iconTint="#8A6606"
+          iconBg="#FFF1C2"
           title={t("Edytuj profil")}
           description={t("Zmień imię i zdjęcie profilowe")}
           onPress={() => router.push('/(app)/account/edit-profile')}
@@ -190,9 +190,9 @@ export default function AccountScreen() {
           <Text
             className="text-[11px] uppercase mx-5 mb-2"
             style={{
-              color: '#78716c',
+              color: '#7A7466',
               letterSpacing: 0.6,
-              fontFamily: 'Inter_700Bold',
+              fontFamily: 'Manrope_700Bold',
             }}
           >
             {t('Lokalizacja')}
@@ -203,8 +203,8 @@ export default function AccountScreen() {
           <Text
             className="text-[11px] mx-5 mt-2"
             style={{
-              color: '#a8a29e',
-              fontFamily: 'Inter_500Medium',
+              color: '#A8A59E',
+              fontFamily: 'Manrope_500Medium',
               lineHeight: 16,
             }}
           >
@@ -238,13 +238,13 @@ export default function AccountScreen() {
       <View className="mb-4">
         <Text
           className="text-[11px] uppercase mx-5 mb-2"
-          style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}
+          style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
         >
           {t('Język')}
         </Text>
         <View
           className="mx-4"
-          style={{ borderRadius: 16, borderWidth: 1, borderColor: '#eef0f3', overflow: 'hidden' }}
+          style={{ borderRadius: 16, borderWidth: 1, borderColor: '#E6E1D5', overflow: 'hidden' }}
         >
           {languages.map((l, idx) => {
             const active = lang === l.code;
@@ -260,8 +260,8 @@ export default function AccountScreen() {
                   paddingHorizontal: 16,
                   paddingVertical: 14,
                   borderTopWidth: idx === 0 ? 0 : 1,
-                  borderTopColor: '#f5f5f4',
-                  backgroundColor: active ? '#fdf2f8' : '#ffffff',
+                  borderTopColor: '#ECE8DE',
+                  backgroundColor: active ? '#FFF8E1' : '#F6F4EE',
                 }}
               >
                 <Text style={{ fontSize: 20 }}>{l.flag}</Text>
@@ -269,13 +269,13 @@ export default function AccountScreen() {
                   style={{
                     flex: 1,
                     fontSize: 15,
-                    color: '#0c0a09',
-                    fontFamily: active ? 'Inter_700Bold' : 'Inter_500Medium',
+                    color: '#2A2312',
+                    fontFamily: active ? 'Manrope_700Bold' : 'Manrope_500Medium',
                   }}
                 >
                   {l.label}
                 </Text>
-                {active ? <Check size={18} color="#ec4899" /> : null}
+                {active ? <Check size={18} color="#8A6606" /> : null}
               </Pressable>
             );
           })}
@@ -322,8 +322,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="toggle"
           Icon={Bell}
-          iconTint="#ec4899"
-          iconBg="#fce7f3"
+          iconTint="#8A6606"
+          iconBg="#FFF1C2"
           title={t("Powiadomienia push")}
           description={pushOn ? t('Włączone') : t('Wyłączone')}
           value={pushOn}
@@ -344,8 +344,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={LayoutGrid}
-          iconTint="#be185d"
-          iconBg="#fce7f3"
+          iconTint="#8A6606"
+          iconBg="#FFF1C2"
           title={t("Wszystkie moduły")}
           description={t("Zespoły, grupy, materiały i reszta — według Twoich uprawnień")}
           onPress={() => router.push('/(app)/modules')}
@@ -353,8 +353,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={Bell}
-          iconTint="#ec4899"
-          iconBg="#fce7f3"
+          iconTint="#8A6606"
+          iconBg="#FFF1C2"
           title={t("Powiadomienia")}
           description={t("Centrum powiadomień")}
           onPress={() => router.push('/(app)/notifications')}
@@ -365,8 +365,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={Shield}
-          iconTint="#475569"
-          iconBg="#e2e8f0"
+          iconTint="#4A463E"
+          iconBg="#E3DDD0"
           title={t("Polityka prywatności")}
           description={t("Otwórz w przeglądarce")}
           onPress={() => openWeb('/polityka-prywatnosci')}
@@ -374,8 +374,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={Shield}
-          iconTint="#475569"
-          iconBg="#e2e8f0"
+          iconTint="#4A463E"
+          iconBg="#E3DDD0"
           title={t("Regulamin")}
           description={t("Otwórz w przeglądarce")}
           onPress={() => openWeb('/regulamin')}
@@ -403,7 +403,7 @@ export default function AccountScreen() {
 
       <Text
         className="text-[11px] text-center mt-2"
-        style={{ color: '#a8a29e', fontFamily: 'Inter_500Medium' }}
+        style={{ color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}
       >
         Avenit · v1.0.0
       </Text>

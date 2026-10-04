@@ -29,8 +29,8 @@ const Label = ({ children }: { children: string }) => (
   <Text
     style={{
       fontSize: 12,
-      color: '#57534e',
-      fontFamily: 'Inter_700Bold',
+      color: '#4A463E',
+      fontFamily: 'Manrope_700Bold',
       letterSpacing: 0.4,
       textTransform: 'uppercase',
       marginTop: 16,
@@ -45,10 +45,10 @@ const inputStyle = {
   height: 46,
   borderRadius: 14,
   paddingHorizontal: 14,
-  backgroundColor: '#f5f5f4',
+  backgroundColor: '#ECE8DE',
   fontSize: 15,
-  color: '#0c0a09',
-  fontFamily: 'Inter_500Medium',
+  color: '#2A2312',
+  fontFamily: 'Manrope_500Medium',
 } as const;
 
 export default function AttendanceScreen() {
@@ -94,19 +94,19 @@ export default function AttendanceScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Frekwencja" subtitle="Obecność na spotkaniach" Icon={UserCheck} showBack />
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130 }}
-          refreshControl={<RefreshControl refreshing={sessions.isRefetching} onRefresh={() => sessions.refetch()} tintColor="#ec4899" />}
+          refreshControl={<RefreshControl refreshing={sessions.isRefetching} onRefresh={() => sessions.refetch()} tintColor="#2A2312" />}
         >
           {canCreate ? (
             <Pressable
               onPress={startNew}
               className="active:opacity-70"
-              style={{ height: 46, borderRadius: 14, backgroundColor: '#0c0a09', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}
+              style={{ height: 46, borderRadius: 14, backgroundColor: '#2A2312', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}
             >
-              <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>+ Sprawdź obecność</Text>
+              <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>+ Sprawdź obecność</Text>
             </Pressable>
           ) : null}
 
@@ -120,35 +120,35 @@ export default function AttendanceScreen() {
               key={s.id}
               onPress={() => router.push({ pathname: '/(app)/attendance/[id]', params: { id: s.id } })}
               className="active:opacity-70"
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 18, backgroundColor: '#f7f6f5', marginBottom: 10 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 18, backgroundColor: '#EFEBE2', marginBottom: 10 }}
             >
               <DateBlock ymd={s.date} tint="#0f766e" bg="#f0fdfa" />
               <View style={{ flex: 1 }}>
-                <Text numberOfLines={1} style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                <Text numberOfLines={1} style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                   {s.title || TYPE_LABEL[s.type] || 'Sesja'}
                 </Text>
-                <Text style={{ fontSize: 12, color: '#78716c', marginTop: 2, fontFamily: 'Inter_500Medium' }}>
+                <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                   {dayLabel(s.date)} · {TYPE_LABEL[s.type] ?? s.type}
                 </Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontSize: 20, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>{s.count}</Text>
-                <Text style={{ fontSize: 10, color: '#a8a29e', fontFamily: 'Inter_600SemiBold' }}>
+                <Text style={{ fontSize: 20, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{s.count}</Text>
+                <Text style={{ fontSize: 10, color: '#A8A59E', fontFamily: 'Manrope_600SemiBold' }}>
                   {s.estimated ? 'szacunkowo' : 'obecnych'}
                 </Text>
               </View>
-              <ChevronRight size={16} color="#a8a29e" />
+              <ChevronRight size={16} color="#A8A59E" />
             </Pressable>
           ))}
         </ScrollView>
       </View>
 
       <Modal visible={open} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setOpen(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#ffffff' }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 4 }}>
-            <Text style={{ flex: 1, fontSize: 20, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>Nowa sesja</Text>
+            <Text style={{ flex: 1, fontSize: 20, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Nowa sesja</Text>
             <Pressable onPress={() => setOpen(false)} hitSlop={10} className="active:opacity-60">
-              <X size={22} color="#57534e" />
+              <X size={22} color="#4A463E" />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
@@ -161,15 +161,15 @@ export default function AttendanceScreen() {
                     key={t.key}
                     onPress={() => setType(t.key)}
                     className="active:opacity-70"
-                    style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: on ? '#0c0a09' : '#f5f5f4' }}
+                    style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: on ? '#2A2312' : '#ECE8DE' }}
                   >
-                    <Text style={{ fontSize: 13, color: on ? '#ffffff' : '#44403c', fontFamily: 'Inter_600SemiBold' }}>{t.label}</Text>
+                    <Text style={{ fontSize: 13, color: on ? '#ffffff' : '#3A3427', fontFamily: 'Manrope_600SemiBold' }}>{t.label}</Text>
                   </Pressable>
                 );
               })}
             </View>
             <Label>Nazwa (opcjonalnie)</Label>
-            <TextInput value={title} onChangeText={setTitle} placeholder="np. Nabożeństwo niedzielne" placeholderTextColor="#a8a29e" style={inputStyle} />
+            <TextInput value={title} onChangeText={setTitle} placeholder="np. Nabożeństwo niedzielne" placeholderTextColor="#A8A59E" style={inputStyle} />
             <Label>Data</Label>
             <DateField value={date} onChange={setDate} />
             <Label>Liczba osób (szacunkowo, opcjonalnie)</Label>
@@ -178,10 +178,10 @@ export default function AttendanceScreen() {
               onChangeText={(t) => setHeadcount(t.replace(/\D/g, ''))}
               keyboardType="number-pad"
               placeholder="np. 85"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#A8A59E"
               style={inputStyle}
             />
-            <Text style={{ fontSize: 12, lineHeight: 17, color: '#a8a29e', marginTop: 10, fontFamily: 'Inter_400Regular' }}>
+            <Text style={{ fontSize: 12, lineHeight: 17, color: '#A8A59E', marginTop: 10, fontFamily: 'Manrope_400Regular' }}>
               Po utworzeniu odhaczysz obecnych z listy członków i dopiszesz gości.
             </Text>
             <Pressable
@@ -192,7 +192,7 @@ export default function AttendanceScreen() {
                 marginTop: 20,
                 height: 52,
                 borderRadius: 16,
-                backgroundColor: '#0c0a09',
+                backgroundColor: '#2A2312',
                 alignItems: 'center',
                 justifyContent: 'center',
                 opacity: create.isPending ? 0.6 : 1,
@@ -201,7 +201,7 @@ export default function AttendanceScreen() {
               {create.isPending ? (
                 <ActivityIndicator color="#ffffff" />
               ) : (
-                <Text style={{ fontSize: 15, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>Utwórz i odhaczaj</Text>
+                <Text style={{ fontSize: 15, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>Utwórz i odhaczaj</Text>
               )}
             </Pressable>
           </ScrollView>

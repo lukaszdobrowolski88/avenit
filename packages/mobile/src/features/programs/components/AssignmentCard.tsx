@@ -25,13 +25,13 @@ export const AssignmentCard = ({ assignment }: Props) => {
   return (
     <View
       style={{
-        backgroundColor: '#ffffff',
+        backgroundColor: '#F6F4EE',
         borderRadius: 14,
         paddingHorizontal: 14,
         paddingVertical: 12,
         marginBottom: 8,
         borderWidth: 1,
-        borderColor: '#eef0f3',
+        borderColor: '#E6E1D5',
       }}
     >
       <View
@@ -45,9 +45,9 @@ export const AssignmentCard = ({ assignment }: Props) => {
           <Text
             style={{
               fontSize: 14,
-              color: '#0c0a09',
+              color: '#2A2312',
               letterSpacing: -0.2,
-              fontFamily: 'Inter_600SemiBold',
+              fontFamily: 'Manrope_600SemiBold',
             }}
           >
             {formatRole(assignment)}
@@ -57,7 +57,7 @@ export const AssignmentCard = ({ assignment }: Props) => {
               fontSize: 12,
               marginTop: 4,
               color: meta.color,
-              fontFamily: 'Inter_500Medium',
+              fontFamily: 'Manrope_500Medium',
             }}
           >
             {meta.label}
@@ -67,7 +67,7 @@ export const AssignmentCard = ({ assignment }: Props) => {
         {isPending && (
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {update.isPending ? (
-              <ActivityIndicator color="#ec4899" />
+              <ActivityIndicator color="#2A2312" />
             ) : (
               <>
                 <Pressable

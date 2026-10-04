@@ -63,17 +63,17 @@ export default function GivingStatementScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Zestawienie roczne" subtitle="Darowizny do rozliczenia (PIT)" showBack />
 
         {isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : donations.length === 0 ? (
           <ScrollView
             contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />}
+            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
           >
             <View
               style={{
@@ -88,17 +88,17 @@ export default function GivingStatementScreen() {
             >
               <FileText size={28} color="#16a34a" />
             </View>
-            <Text style={{ fontSize: 16, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+            <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
               Brak darowizn
             </Text>
-            <Text style={{ fontSize: 13, color: '#78716c', textAlign: 'center', marginTop: 4, fontFamily: 'Inter_400Regular' }}>
+            <Text style={{ fontSize: 13, color: '#7A7466', textAlign: 'center', marginTop: 4, fontFamily: 'Manrope_400Regular' }}>
               Gdy Twoje wpłaty zostaną zarejestrowane, pojawi się tu roczne zestawienie.
             </Text>
           </ScrollView>
         ) : (
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />}
+            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
           >
             {/* Wybór roku */}
             <ScrollView
@@ -121,7 +121,7 @@ export default function GivingStatementScreen() {
                       borderColor: active ? '#16a34a' : '#dcfce7',
                     }}
                   >
-                    <Text style={{ fontSize: 14, color: active ? '#ffffff' : '#15803d', fontFamily: 'Inter_700Bold' }}>
+                    <Text style={{ fontSize: 14, color: active ? '#ffffff' : '#15803d', fontFamily: 'Manrope_700Bold' }}>
                       {y}
                     </Text>
                   </Pressable>
@@ -140,13 +140,13 @@ export default function GivingStatementScreen() {
                 marginBottom: 16,
               }}
             >
-              <Text style={{ fontSize: 12, color: '#15803d', fontFamily: 'Inter_600SemiBold', letterSpacing: 0.3 }}>
+              <Text style={{ fontSize: 12, color: '#15803d', fontFamily: 'Manrope_600SemiBold', letterSpacing: 0.3 }}>
                 SUMA ZA ROK {activeYear}
               </Text>
-              <Text style={{ fontSize: 30, color: '#14532d', marginTop: 4, letterSpacing: -0.8, fontFamily: 'Inter_700Bold' }}>
+              <Text style={{ fontSize: 30, color: '#14532d', marginTop: 4, letterSpacing: -0.8, fontFamily: 'Manrope_700Bold' }}>
                 {formatMoney(total, currency)}
               </Text>
-              <Text style={{ fontSize: 12, color: '#16a34a', marginTop: 2, fontFamily: 'Inter_500Medium' }}>
+              <Text style={{ fontSize: 12, color: '#16a34a', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                 {inYear.length} {inYear.length === 1 ? 'wpłata' : 'wpłat'} · {donorName}
               </Text>
             </View>
@@ -164,21 +164,21 @@ export default function GivingStatementScreen() {
                   marginBottom: 8,
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: '#eef0f3',
-                  backgroundColor: '#ffffff',
+                  borderColor: '#E6E1D5',
+                  backgroundColor: '#F6F4EE',
                 }}
               >
-                <Text style={{ fontSize: 14, color: '#57534e', fontFamily: 'Inter_500Medium' }}>
+                <Text style={{ fontSize: 14, color: '#4A463E', fontFamily: 'Manrope_500Medium' }}>
                   {formatDate(d.donation_date, 'd MMM yyyy')}
                 </Text>
-                <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>
+                <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                   {formatMoney(d.amount, currency)}
                 </Text>
               </View>
             ))}
 
             <Text
-              style={{ fontSize: 11, color: '#a8a29e', textAlign: 'center', marginTop: 8, fontFamily: 'Inter_400Regular', lineHeight: 16 }}
+              style={{ fontSize: 11, color: '#A8A59E', textAlign: 'center', marginTop: 8, fontFamily: 'Manrope_400Regular', lineHeight: 16 }}
             >
               Zestawienie orientacyjne na podstawie zarejestrowanych wpłat. Oficjalne
               potwierdzenie do PIT wystaw w biurze wspólnoty.
@@ -190,8 +190,8 @@ export default function GivingStatementScreen() {
           <View style={{ position: 'absolute', left: 16, right: 16, bottom: 28 }}>
             <GradientButton onPress={share}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Share2 size={17} color="#ffffff" />
-                <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}>
+                <Share2 size={17} color="#2A2312" />
+                <Text style={{ color: '#2A2312', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
                   Udostępnij zestawienie {activeYear}
                 </Text>
               </View>

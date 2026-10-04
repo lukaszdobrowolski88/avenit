@@ -6,10 +6,10 @@ import { pl } from 'date-fns/locale';
 import type { AgendaEvent, EventSource } from '../api';
 
 const SOURCE_DOT: Record<EventSource, string> = {
-  program: '#ec4899',
+  program: '#8A6606',
   event: '#0891b2',
   worship: '#a855f7',
-  media: '#f97316',
+  media: '#FFBE0B',
   atmosfera: '#14b8a6',
   kids: '#eab308',
   homegroups: '#3b82f6',
@@ -94,14 +94,14 @@ export const MonthView = ({ items, onPick }: Props) => {
     <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
       <View style={styles.monthHeader}>
         <Pressable onPress={() => movMonth(-1)} hitSlop={10} style={styles.navBtn}>
-          <ChevronLeft size={18} color="#1c1917" />
+          <ChevronLeft size={18} color="#2A2312" />
         </Pressable>
         <Pressable onPress={goToday} style={{ flex: 1, alignItems: 'center' }}>
           <Text style={styles.monthTitle}>{headerLabelCap}</Text>
           <Text style={styles.monthSub}>Stuknij, by wrócić do dziś</Text>
         </Pressable>
         <Pressable onPress={() => movMonth(1)} hitSlop={10} style={styles.navBtn}>
-          <ChevronRight size={18} color="#1c1917" />
+          <ChevronRight size={18} color="#2A2312" />
         </Pressable>
       </View>
 
@@ -135,9 +135,9 @@ export const MonthView = ({ items, onPick }: Props) => {
               <Text
                 style={[
                   styles.cellNum,
-                  !sameMonth && { color: '#d6d3d1' },
+                  !sameMonth && { color: '#D3CCBC' },
                   isSelected && { color: '#ffffff' },
-                  isToday && !isSelected && { color: '#ec4899' },
+                  isToday && !isSelected && { color: '#8A6606' },
                 ]}
               >
                 {d.getDate()}
@@ -148,7 +148,7 @@ export const MonthView = ({ items, onPick }: Props) => {
                     key={s}
                     style={[
                       styles.dot,
-                      { backgroundColor: isSelected ? '#ffffff' : SOURCE_DOT[s] },
+                      { backgroundColor: isSelected ? '#F6F4EE' : SOURCE_DOT[s] },
                     ]}
                   />
                 ))}
@@ -203,7 +203,7 @@ export const MonthView = ({ items, onPick }: Props) => {
                     paddingVertical: 12,
                     paddingHorizontal: 14,
                     borderRadius: 14,
-                    backgroundColor: evt.isMine ? '#fdf2f8' : '#f6f6f5',
+                    backgroundColor: evt.isMine ? '#FFF8E1' : '#f6f6f5',
                   }}
                 >
                   <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: color }} />
@@ -244,26 +244,26 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#F1EEE6',
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   monthTitle: {
     fontSize: 18,
-    color: '#0c0a09',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.4,
   },
-  monthSub: { fontSize: 11, color: '#a8a29e', fontFamily: 'Inter_500Medium', marginTop: 1 },
+  monthSub: { fontSize: 11, color: '#A8A59E', fontFamily: 'Manrope_500Medium', marginTop: 1 },
   weekdayRow: { flexDirection: 'row', paddingHorizontal: 12, marginBottom: 4 },
   weekdayCell: {
     flex: 1,
     textAlign: 'center',
     fontSize: 11,
-    color: '#a8a29e',
-    fontFamily: 'Inter_700Bold',
+    color: '#A8A59E',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: 0.6,
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12 },
@@ -275,9 +275,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 12,
   },
-  cellSelected: { backgroundColor: '#ec4899' },
-  cellToday: { backgroundColor: '#fef3f2' },
-  cellNum: { fontSize: 14, color: '#1c1917', fontFamily: 'Inter_600SemiBold' },
+  cellSelected: { backgroundColor: '#2A2312' },
+  cellToday: { backgroundColor: '#FFF8E1' },
+  cellNum: { fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' },
   dotsRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4, minHeight: 6 },
   dot: { width: 5, height: 5, borderRadius: 3 },
   dotRing: {
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     borderWidth: 1.5,
-    borderColor: '#ec4899',
+    borderColor: '#FFBE0B',
     backgroundColor: 'transparent',
   },
   dayPanel: {
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#eef0f3',
+    borderTopColor: '#E6E1D5',
   },
   dayPanelHead: {
     flexDirection: 'row',
@@ -303,8 +303,8 @@ const styles = StyleSheet.create({
   },
   dayPanelTitle: {
     fontSize: 15,
-    color: '#0c0a09',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.3,
   },
   countBadge: {
@@ -312,14 +312,14 @@ const styles = StyleSheet.create({
     height: 20,
     paddingHorizontal: 6,
     borderRadius: 10,
-    backgroundColor: '#f5f5f4',
+    backgroundColor: '#ECE8DE',
     alignItems: 'center',
     justifyContent: 'center',
   },
   countBadgeText: {
     fontSize: 11,
-    color: '#78716c',
-    fontFamily: 'Inter_700Bold',
+    color: '#7A7466',
+    fontFamily: 'Manrope_700Bold',
   },
   emptyWrap: {
     paddingVertical: 32,
@@ -329,27 +329,27 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 28, opacity: 0.55 },
   emptyText: {
     textAlign: 'center',
-    color: '#a8a29e',
-    fontFamily: 'Inter_500Medium',
+    color: '#A8A59E',
+    fontFamily: 'Manrope_500Medium',
     fontSize: 13,
   },
   dayTitle: {
     fontSize: 15,
-    color: '#0c0a09',
-    fontFamily: 'Inter_600SemiBold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_600SemiBold',
     letterSpacing: -0.2,
   },
-  daySub: { fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium', marginTop: 2 },
+  daySub: { fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium', marginTop: 2 },
   minePill: {
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: '#ec4899',
+    backgroundColor: '#2A2312',
   },
   minePillText: {
     fontSize: 9,
     color: '#ffffff',
     letterSpacing: 0.4,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
 });

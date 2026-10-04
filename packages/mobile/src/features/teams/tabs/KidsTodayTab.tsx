@@ -142,9 +142,9 @@ export const KidsTodayTab = ({ myEmail, canCreateSession }: { myEmail: string | 
           <Pressable
             onPress={() => createSession.mutate(undefined, { onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? '') })}
             className="active:opacity-70"
-            style={{ height: 46, borderRadius: 14, backgroundColor: '#0c0a09', alignItems: 'center', justifyContent: 'center' }}
+            style={{ height: 46, borderRadius: 14, backgroundColor: '#2A2312', alignItems: 'center', justifyContent: 'center' }}
           >
-            <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>Utwórz sesję na dziś</Text>
+            <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>Utwórz sesję na dziś</Text>
           </Pressable>
         ) : null}
       </View>
@@ -155,19 +155,19 @@ export const KidsTodayTab = ({ myEmail, canCreateSession }: { myEmail: string | 
     <View>
       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
         <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#fef9c3', padding: 14 }}>
-          <Text style={{ fontSize: 11, color: '#854d0e', fontFamily: 'Inter_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>W salach</Text>
-          <Text style={{ fontSize: 28, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>{present}</Text>
+          <Text style={{ fontSize: 11, color: '#854d0e', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>W salach</Text>
+          <Text style={{ fontSize: 28, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{present}</Text>
         </View>
-        <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#f7f6f5', padding: 14 }}>
-          <Text style={{ fontSize: 11, color: '#57534e', fontFamily: 'Inter_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>Odebrane</Text>
-          <Text style={{ fontSize: 28, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>{checkins.length - present}</Text>
+        <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14 }}>
+          <Text style={{ fontSize: 11, color: '#4A463E', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>Odebrane</Text>
+          <Text style={{ fontSize: 28, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{checkins.length - present}</Text>
         </View>
       </View>
 
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
           <ShieldCheck size={15} color="#15803d" />
-          <Text style={{ fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>Odbiór dziecka</Text>
+          <Text style={{ fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Odbiór dziecka</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TextInput
@@ -175,15 +175,15 @@ export const KidsTodayTab = ({ myEmail, canCreateSession }: { myEmail: string | 
             onChangeText={(t) => setCode(t.replace(/\D/g, '').slice(0, 4))}
             keyboardType="number-pad"
             placeholder="Kod rodzica (4 cyfry)"
-            placeholderTextColor="#a8a29e"
-            style={{ flex: 1, height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#ffffff', fontSize: 18, letterSpacing: 4, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}
+            placeholderTextColor="#A8A59E"
+            style={{ flex: 1, height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#F6F4EE', fontSize: 18, letterSpacing: 4, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}
           />
           <Pressable
             onPress={pickup}
             className="active:opacity-70"
-            style={{ paddingHorizontal: 18, height: 46, borderRadius: 14, backgroundColor: code.length === 4 ? '#15803d' : '#d6d3d1', alignItems: 'center', justifyContent: 'center' }}
+            style={{ paddingHorizontal: 18, height: 46, borderRadius: 14, backgroundColor: code.length === 4 ? '#15803d' : '#D3CCBC', alignItems: 'center', justifyContent: 'center' }}
           >
-            <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Inter_700Bold' }}>Wydaj</Text>
+            <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_700Bold' }}>Wydaj</Text>
           </Pressable>
         </View>
       </Card>
@@ -191,18 +191,18 @@ export const KidsTodayTab = ({ myEmail, canCreateSession }: { myEmail: string | 
       {!checkins.length ? <Empty Icon={Baby} title="Nikt jeszcze nie jest zameldowany" /> : null}
       {byRoom.map(([room, list]) => (
         <View key={room} style={{ marginBottom: 8 }}>
-          <Text style={{ fontSize: 13, color: '#78716c', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Inter_700Bold', marginVertical: 8 }}>
+          <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginVertical: 8 }}>
             {room} · {list.filter((c) => !c.outAt).length}
           </Text>
           {list.map((c) => (
             <Card key={c.id}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, opacity: c.outAt ? 0.55 : 1 }}>
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                  <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                     {c.child}
-                    {c.birthYear ? <Text style={{ color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>{`  ${new Date().getFullYear() - c.birthYear} l.`}</Text> : null}
+                    {c.birthYear ? <Text style={{ color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>{`  ${new Date().getFullYear() - c.birthYear} l.`}</Text> : null}
                   </Text>
-                  <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+                  <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
                     {c.inAt ? `od ${format(new Date(c.inAt), 'HH:mm')}` : ''}
                     {c.outAt ? ` · odebrane ${format(new Date(c.outAt), 'HH:mm')}` : ''}
                   </Text>

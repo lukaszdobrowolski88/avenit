@@ -1,20 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Text, TextInput, type TextStyle } from 'react-native';
-import {
-  useFonts,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  Inter_800ExtraBold,
-} from '@expo-google-fonts/inter';
+import { useFonts } from 'expo-font';
 
+// Krój marki: Manrope (księga znaku Avenit). Pliki statyczne w assets/fonts — bez paczki npm.
 export const FONT = {
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semibold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
-  extrabold: 'Inter_800ExtraBold',
+  light: 'Manrope_300Light',
+  regular: 'Manrope_400Regular',
+  medium: 'Manrope_500Medium',
+  semibold: 'Manrope_600SemiBold',
+  bold: 'Manrope_700Bold',
+  extrabold: 'Manrope_800ExtraBold',
 } as const;
 
 export const familyForWeight = (
@@ -25,6 +20,7 @@ export const familyForWeight = (
   if (w === '700' || w === 'bold') return FONT.bold;
   if (w === '600') return FONT.semibold;
   if (w === '500') return FONT.medium;
+  if (w === '300' || w === '200' || w === '100') return FONT.light;
   return FONT.regular;
 };
 
@@ -48,11 +44,12 @@ const applyDefaults = () => {
 
 export const useAppFonts = () => {
   const [loaded, error] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Inter_800ExtraBold,
+    [FONT.light]: require('../../assets/fonts/Manrope_300Light.ttf'),
+    [FONT.regular]: require('../../assets/fonts/Manrope_400Regular.ttf'),
+    [FONT.medium]: require('../../assets/fonts/Manrope_500Medium.ttf'),
+    [FONT.semibold]: require('../../assets/fonts/Manrope_600SemiBold.ttf'),
+    [FONT.bold]: require('../../assets/fonts/Manrope_700Bold.ttf'),
+    [FONT.extrabold]: require('../../assets/fonts/Manrope_800ExtraBold.ttf'),
   });
   // Zabezpieczenie: NIGDY nie blokuj startu na fontach. Gdyby `useFonts` zwróciło
   // błąd albo utknęło (asset/bundling), po timeoutcie i tak wchodzimy do apki

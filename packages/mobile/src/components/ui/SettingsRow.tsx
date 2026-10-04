@@ -33,8 +33,8 @@ type Props = ToggleProps | NavProps | ActionProps;
 
 const Body = ({
   Icon,
-  iconTint = '#ec4899',
-  iconBg = '#fef3f2',
+  iconTint = '#8A6606',
+  iconBg = '#FFF8E1',
   title,
   description,
 }: BaseProps) => (
@@ -55,9 +55,9 @@ const Body = ({
       <Text
         className="text-[15px]"
         style={{
-          color: '#0c0a09',
+          color: '#2A2312',
           letterSpacing: -0.2,
-          fontFamily: 'Inter_500Medium',
+          fontFamily: 'Manrope_500Medium',
         }}
       >
         {title}
@@ -65,7 +65,7 @@ const Body = ({
       {description ? (
         <Text
           className="text-[12px] mt-0.5"
-          style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+          style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
         >
           {description}
         </Text>
@@ -79,16 +79,16 @@ export const SettingsRow = (props: Props) => {
     return (
       <View
         className="flex-row items-center px-4 py-3"
-        style={{ borderBottomWidth: 1, borderBottomColor: '#f5f5f4' }}
+        style={{ borderBottomWidth: 1, borderBottomColor: '#ECE8DE' }}
       >
         <Body {...props} />
         <Switch
           value={props.value}
           onValueChange={props.onValueChange}
           disabled={props.disabled}
-          trackColor={{ true: '#ec4899', false: '#e7e5e4' }}
+          trackColor={{ true: '#FFBE0B', false: '#E3DDD0' }}
           thumbColor="#ffffff"
-          ios_backgroundColor="#e7e5e4"
+          ios_backgroundColor="#E3DDD0"
         />
       </View>
     );
@@ -98,10 +98,10 @@ export const SettingsRow = (props: Props) => {
       <Pressable
         onPress={props.onPress}
         className="flex-row items-center px-4 py-3 active:opacity-70"
-        style={{ borderBottomWidth: 1, borderBottomColor: '#f5f5f4' }}
+        style={{ borderBottomWidth: 1, borderBottomColor: '#ECE8DE' }}
       >
         <Body {...props} />
-        {props.rightElement ?? <ChevronRight size={18} color="#a8a29e" />}
+        {props.rightElement ?? <ChevronRight size={18} color="#A8A59E" />}
       </Pressable>
     );
   }
@@ -131,9 +131,9 @@ export const SettingsGroup = ({
       <Text
         className="text-[11px] uppercase mx-5 mb-2"
         style={{
-          color: '#78716c',
+          color: '#7A7466',
           letterSpacing: 0.6,
-          fontFamily: 'Inter_700Bold',
+          fontFamily: 'Manrope_700Bold',
         }}
       >
         {title}
@@ -143,8 +143,8 @@ export const SettingsGroup = ({
       className="mx-4"
       style={{
         borderRadius: 20,
-        backgroundColor: '#ffffff',
-        shadowColor: '#0f172a',
+        backgroundColor: '#F6F4EE',
+        shadowColor: '#2A2312',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
         shadowRadius: 14,
@@ -156,7 +156,7 @@ export const SettingsGroup = ({
         style={{
           borderRadius: 20,
           borderWidth: 1,
-          borderColor: '#eef0f3',
+          borderColor: '#E6E1D5',
         }}
       >
         {children}

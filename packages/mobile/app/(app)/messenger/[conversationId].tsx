@@ -383,7 +383,7 @@ export default function ConversationScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-        style={{ flex: 1, backgroundColor: "#ffffff" }}
+        style={{ flex: 1, backgroundColor: "#F6F4EE" }}
       >
         <ConversationHeader
           details={detailsQuery.data ?? null}
@@ -406,7 +406,7 @@ export default function ConversationScreen() {
 
         {messagesQuery.isLoading ? (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : (
           <FlatList
@@ -435,7 +435,7 @@ export default function ConversationScreen() {
                     width: 64,
                     height: 64,
                     borderRadius: 18,
-                    backgroundColor: "#fef3f2",
+                    backgroundColor: "#FFF8E1",
                     alignItems: "center",
                     justifyContent: "center",
                     marginBottom: 12,
@@ -444,8 +444,8 @@ export default function ConversationScreen() {
                 <Text
                   style={{
                     fontSize: 14,
-                    color: "#78716c",
-                    fontFamily: "Inter_500Medium",
+                    color: "#7A7466",
+                    fontFamily: "Manrope_500Medium",
                   }}
                 >
                   Brak wiadomości. Napisz pierwszą!
@@ -495,7 +495,7 @@ export default function ConversationScreen() {
           />
         )}
 
-        <View style={{ paddingBottom: composerBottomPad, backgroundColor: "#ffffff" }}>
+        <View style={{ paddingBottom: composerBottomPad, backgroundColor: "#F6F4EE" }}>
           <ComposerBar
             text={text}
             onChangeText={setText}

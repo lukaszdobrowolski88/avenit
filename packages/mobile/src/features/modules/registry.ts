@@ -57,7 +57,7 @@ export interface ModuleEntry {
 const m = (e: ModuleEntry) => e;
 
 export const MODULE_REGISTRY: Record<string, ModuleEntry> = {
-  programs: m({ key: 'programs', label: 'Programy', Icon: ListChecks, tint: '#be185d', bg: '#fce7f3', section: 'community', route: '/(app)/programs', webPath: '/programs' }),
+  programs: m({ key: 'programs', label: 'Programy', Icon: ListChecks, tint: '#8A6606', bg: '#FFF1C2', section: 'community', route: '/(app)/programs', webPath: '/programs' }),
   calendar: m({ key: 'calendar', label: 'Wydarzenia', Icon: Calendar, tint: '#0e7490', bg: '#cffafe', section: 'community', route: '/(app)/calendar', webPath: '/wydarzenia' }),
   komunikator: m({ key: 'komunikator', label: 'Komunikator', Icon: MessageCircle, tint: '#7c3aed', bg: '#ede9fe', section: 'community', route: '/(app)/messenger', webPath: '/komunikator' }),
   prayer: m({ key: 'prayer', label: 'Ściana modlitwy', Icon: HandHeart, tint: '#c2410c', bg: '#ffedd5', section: 'community', route: '/(app)/prayers', webPath: '/prayer' }),
@@ -66,9 +66,9 @@ export const MODULE_REGISTRY: Record<string, ModuleEntry> = {
   sermons: m({ key: 'sermons', label: 'Kazania', Icon: Podcast, tint: '#9333ea', bg: '#f3e8ff', section: 'community', route: '/(app)/sermons', webPath: '/teaching' }),
   boards: m({ key: 'boards', label: 'Projekty', Icon: LayoutGrid, tint: '#0f766e', bg: '#ccfbf1', section: 'community', route: '/(app)/work', webPath: '/projekty' }),
 
-  worship: m({ key: 'worship', label: 'Zespół Uwielbienia', Icon: Music, tint: '#db2777', bg: '#fce7f3', section: 'teams', route: '/(app)/teams/worship', webPath: '/worship' }),
+  worship: m({ key: 'worship', label: 'Zespół Uwielbienia', Icon: Music, tint: '#8A6606', bg: '#FFF1C2', section: 'teams', route: '/(app)/teams/worship', webPath: '/worship' }),
   // Baza pieśni to część modułu Uwielbienia na webie (zakładka) — tu osobny kafel.
-  songs: m({ key: 'songs', label: 'Baza pieśni', Icon: Music, tint: '#be185d', bg: '#fdf2f8', section: 'teams', route: '/(app)/songs', webPath: '/worship' }),
+  songs: m({ key: 'songs', label: 'Baza pieśni', Icon: Music, tint: '#8A6606', bg: '#FFF8E1', section: 'teams', route: '/(app)/songs', webPath: '/worship' }),
   media: m({ key: 'media', label: 'MediaTeam', Icon: Video, tint: '#2563eb', bg: '#dbeafe', section: 'teams', route: '/(app)/teams/media', webPath: '/media' }),
   atmosfera: m({ key: 'atmosfera', label: 'Atmosfera Team', Icon: Sparkles, tint: '#0d9488', bg: '#ccfbf1', section: 'teams', route: '/(app)/teams/atmosfera', webPath: '/atmosfera' }),
   kids: m({ key: 'kids', label: 'Dzieci', Icon: Baby, tint: '#ca8a04', bg: '#fef9c3', section: 'teams', route: '/(app)/teams/kids', webPath: '/kids' }),
@@ -84,13 +84,13 @@ export const MODULE_REGISTRY: Record<string, ModuleEntry> = {
   rsvp: m({ key: 'rsvp', label: 'Obecność (RSVP)', Icon: MailCheck, tint: '#0e7490', bg: '#cffafe', section: 'manage', webPath: '/rsvp' }),
   serve: m({ key: 'serve', label: 'Służba', Icon: CalendarOff, tint: '#6d28d9', bg: '#ede9fe', section: 'manage', webPath: '/serve' }),
   mailing: m({ key: 'mailing', label: 'Mailing', Icon: Send, tint: '#1d4ed8', bg: '#dbeafe', section: 'manage', webPath: '/mailing' }),
-  mail: m({ key: 'mail', label: 'Poczta', Icon: Mail, tint: '#334155', bg: '#e2e8f0', section: 'manage', webPath: '/mail' }),
+  mail: m({ key: 'mail', label: 'Poczta', Icon: Mail, tint: '#3A3427', bg: '#E3DDD0', section: 'manage', webPath: '/mail' }),
   sms_campaigns: m({ key: 'sms_campaigns', label: 'SMS Kampanie', Icon: MessageSquare, tint: '#15803d', bg: '#dcfce7', section: 'manage', webPath: '/sms-campaigns' }),
   push_campaigns: m({ key: 'push_campaigns', label: 'Push Kampanie', Icon: BellRing, tint: '#c2410c', bg: '#ffedd5', section: 'manage', webPath: '/push-campaigns' }),
   automation: m({ key: 'automation', label: 'Automatyzacje', Icon: Workflow, tint: '#7c3aed', bg: '#ede9fe', section: 'manage', webPath: '/automation' }),
   analytics: m({ key: 'analytics', label: 'Analityka', Icon: BarChart3, tint: '#0369a1', bg: '#e0f2fe', section: 'manage', webPath: '/analytics' }),
   ai: m({ key: 'ai', label: 'Asystent AI', Icon: Bot, tint: '#9333ea', bg: '#f3e8ff', section: 'manage', webPath: '/ai' }),
-  settings: m({ key: 'settings', label: 'Ustawienia', Icon: Settings, tint: '#44403c', bg: '#f5f5f4', section: 'manage', webPath: '/settings' }),
+  settings: m({ key: 'settings', label: 'Ustawienia', Icon: Settings, tint: '#3A3427', bg: '#ECE8DE', section: 'manage', webPath: '/settings' }),
 };
 
 // Klucze, których NIE pokazujemy jako kafelka modułu (pulpit to zakładka Start).
@@ -101,8 +101,8 @@ export const customModuleEntry = (key: string, label: string, path: string | nul
   key,
   label,
   Icon: Briefcase,
-  tint: '#475569',
-  bg: '#f1f5f9',
+  tint: '#4A463E',
+  bg: '#ECE8DE',
   section: 'teams',
   route: `/(app)/custom/${key}`,
   webPath: path || `/module/${key}`,
@@ -116,19 +116,21 @@ export interface PersonalEntry {
   tint: string;
   bg: string;
   route: string;
+  // Krótka etykieta pod kaflem na pulpicie (sekcja „Dla Ciebie” daje kontekst „moje”).
+  short: string;
   // Pokazuj tylko, gdy moduł widoczny (np. Moja praca wymaga Projektów).
   requiresModule?: string;
 }
 
 export const PERSONAL_ENTRIES: PersonalEntry[] = [
-  { key: 'my-work', label: 'Moja praca', Icon: Briefcase, tint: '#0f766e', bg: '#ccfbf1', route: '/(app)/work', requiresModule: 'boards' },
-  { key: 'my-rsvp', label: 'Moje zaproszenia', Icon: MailCheck, tint: '#0e7490', bg: '#cffafe', route: '/(app)/rsvp' },
-  { key: 'my-availability', label: 'Moja dostępność', Icon: CalendarOff, tint: '#6d28d9', bg: '#ede9fe', route: '/(app)/serve/availability' },
-  { key: 'my-giving', label: 'Moje dawanie', Icon: Gift, tint: '#be123c', bg: '#ffe4e6', route: '/(app)/giving' },
-  { key: 'setlist', label: 'Planowane pieśni', Icon: Music, tint: '#db2777', bg: '#fce7f3', route: '/(app)/setlist' },
-  { key: 'materials', label: 'Materiały', Icon: FolderOpen, tint: '#a16207', bg: '#fef3c7', route: '/(app)/materials' },
-  { key: 'shared', label: 'Udostępnione mi', Icon: Share2, tint: '#4338ca', bg: '#e0e7ff', route: '/(app)/materials/shared' },
-  { key: 'notifications', label: 'Powiadomienia', Icon: Bell, tint: '#b45309', bg: '#fef3c7', route: '/(app)/notifications' },
+  { key: 'my-work', label: 'Moja praca', short: 'Praca', Icon: Briefcase, tint: '#0f766e', bg: '#ccfbf1', route: '/(app)/work', requiresModule: 'boards' },
+  { key: 'my-rsvp', label: 'Moje zaproszenia', short: 'Zaproszenia', Icon: MailCheck, tint: '#0e7490', bg: '#cffafe', route: '/(app)/rsvp' },
+  { key: 'my-availability', label: 'Moja dostępność', short: 'Dostępność', Icon: CalendarOff, tint: '#6d28d9', bg: '#ede9fe', route: '/(app)/serve/availability' },
+  { key: 'my-giving', label: 'Moje dawanie', short: 'Dawanie', Icon: Gift, tint: '#be123c', bg: '#ffe4e6', route: '/(app)/giving' },
+  { key: 'setlist', label: 'Planowane pieśni', short: 'Pieśni', Icon: Music, tint: '#8A6606', bg: '#FFF1C2', route: '/(app)/setlist' },
+  { key: 'materials', label: 'Materiały', short: 'Materiały', Icon: FolderOpen, tint: '#a16207', bg: '#fef3c7', route: '/(app)/materials' },
+  { key: 'shared', label: 'Udostępnione mi', short: 'Udostępnione', Icon: Share2, tint: '#4338ca', bg: '#e0e7ff', route: '/(app)/materials/shared' },
+  { key: 'notifications', label: 'Powiadomienia', short: 'Powiadomienia', Icon: Bell, tint: '#b45309', bg: '#fef3c7', route: '/(app)/notifications' },
 ];
 
 export const SECTION_LABELS: Record<ModuleSection, string> = {

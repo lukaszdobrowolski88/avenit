@@ -132,7 +132,7 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
             style={{
               fontSize: 11,
               color: '#6d28d9',
-              fontFamily: 'Inter_600SemiBold',
+              fontFamily: 'Manrope_600SemiBold',
               fontVariant: ['tabular-nums'],
             }}
           >
@@ -142,7 +142,7 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
             style={{
               fontSize: 11,
               color: '#a78bda',
-              fontFamily: 'Inter_600SemiBold',
+              fontFamily: 'Manrope_600SemiBold',
               fontVariant: ['tabular-nums'],
             }}
           >

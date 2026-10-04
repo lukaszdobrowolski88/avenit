@@ -51,9 +51,9 @@ const SOURCE_META: Record<
   EventSource,
   { label: string; tint: string; bg: string; Icon: typeof Calendar }
 > = {
-  program: { label: 'Program', tint: '#be185d', bg: '#fce7f3', Icon: ListChecks },
+  program: { label: 'Program', tint: '#8A6606', bg: '#FFF1C2', Icon: ListChecks },
   event: { label: 'Wydarzenie', tint: '#0e7490', bg: '#cffafe', Icon: Calendar },
-  worship: { label: 'Zespół Uwielbienia', tint: '#9d174d', bg: '#fce7f3', Icon: Music },
+  worship: { label: 'Zespół Uwielbienia', tint: '#9d174d', bg: '#FFF1C2', Icon: Music },
   media: { label: 'Media Team', tint: '#1d4ed8', bg: '#dbeafe', Icon: ImageIcon },
   atmosfera: { label: 'Atmosfera Team', tint: '#b45309', bg: '#fef3c7', Icon: Sparkles },
   kids: { label: 'Dzieci', tint: '#047857', bg: '#d1fae5', Icon: Baby },
@@ -227,7 +227,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
               </Text>
             </View>
             <Pressable onPress={onClose} hitSlop={10} style={styles.closeBtn}>
-              <X size={18} color="#1c1917" />
+              <X size={18} color="#2A2312" />
             </Pressable>
           </View>
 
@@ -237,7 +237,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
           >
             <View style={styles.row}>
               <View style={styles.iconSm}>
-                <Calendar size={16} color="#78716c" strokeWidth={2.2} />
+                <Calendar size={16} color="#7A7466" strokeWidth={2.2} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowLabel}>DATA</Text>
@@ -247,7 +247,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
 
             <View style={styles.row}>
               <View style={styles.iconSm}>
-                <Clock size={16} color="#78716c" strokeWidth={2.2} />
+                <Clock size={16} color="#7A7466" strokeWidth={2.2} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.rowLabel}>GODZINA</Text>
@@ -258,7 +258,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
             {event.location ? (
               <View style={styles.row}>
                 <View style={styles.iconSm}>
-                  <MapPin size={16} color="#78716c" strokeWidth={2.2} />
+                  <MapPin size={16} color="#7A7466" strokeWidth={2.2} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.rowLabel}>LOKALIZACJA</Text>
@@ -298,7 +298,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
               <View style={styles.rsvpBox}>
                 <View style={styles.rsvpHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Users size={15} color="#be185d" />
+                    <Users size={15} color="#8A6606" />
                     <Text style={styles.rsvpCount}>
                       {isMinistry
                         ? `Potwierdzeni: ${regs.length}`
@@ -319,7 +319,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
                         styles.capBarFill,
                         {
                           width: `${Math.min(100, Math.round((going / cap) * 100))}%`,
-                          backgroundColor: isFull ? '#ef4444' : '#ec4899',
+                          backgroundColor: isFull ? '#ef4444' : '#2A2312',
                         },
                       ]}
                     />
@@ -328,7 +328,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
 
                 {regsQuery.isLoading ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 }}>
-                    <ActivityIndicator size="small" color="#ec4899" />
+                    <ActivityIndicator size="small" color="#2A2312" />
                     <Text style={styles.rsvpMuted}>Ładowanie…</Text>
                   </View>
                 ) : !userEmail ? (
@@ -337,14 +337,14 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
                   <Pressable
                     onPress={toggleMinistry}
                     disabled={rsvpBusy}
-                    style={[styles.rsvpToggle, { backgroundColor: myReg ? '#16a34a' : '#f5f5f4' }]}
+                    style={[styles.rsvpToggle, { backgroundColor: myReg ? '#16a34a' : '#ECE8DE' }]}
                   >
                     {rsvpBusy ? (
-                      <ActivityIndicator size="small" color={myReg ? '#ffffff' : '#57534e'} />
+                      <ActivityIndicator size="small" color={myReg ? '#ffffff' : '#4A463E'} />
                     ) : (
                       <>
-                        {myReg ? <Check size={15} color="#ffffff" /> : <Users size={15} color="#57534e" />}
-                        <Text style={[styles.rsvpToggleText, { color: myReg ? '#ffffff' : '#57534e' }]}>
+                        {myReg ? <Check size={15} color="#ffffff" /> : <Users size={15} color="#4A463E" />}
+                        <Text style={[styles.rsvpToggleText, { color: myReg ? '#ffffff' : '#4A463E' }]}>
                           {myReg ? 'Będę' : 'Potwierdź obecność'}
                         </Text>
                       </>
@@ -378,16 +378,16 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
                           style={[
                             styles.guestChip,
                             {
-                              backgroundColor: guests === n ? '#0c0a09' : '#fafaf9',
-                              borderColor: guests === n ? '#0c0a09' : '#eef0f3',
+                              backgroundColor: guests === n ? '#2A2312' : '#F1EEE6',
+                              borderColor: guests === n ? '#2A2312' : '#E6E1D5',
                             },
                           ]}
                         >
                           <Text
                             style={{
                               fontSize: 13,
-                              color: guests === n ? '#ffffff' : '#1c1917',
-                              fontFamily: 'Inter_600SemiBold',
+                              color: guests === n ? '#ffffff' : '#2A2312',
+                              fontFamily: 'Manrope_600SemiBold',
                             }}
                           >
                             {n === 0 ? 'Sam/a' : `+${n}`}
@@ -413,7 +413,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
             ) : null}
 
             <Pressable onPress={addToCalendar} style={styles.secondaryBtn}>
-              <CalendarPlus size={16} color="#be185d" strokeWidth={2.4} />
+              <CalendarPlus size={16} color="#8A6606" strokeWidth={2.4} />
               <Text style={styles.secondaryBtnText}>Dodaj do kalendarza</Text>
             </Pressable>
           </ScrollView>
@@ -426,7 +426,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.45)', justifyContent: 'flex-end' },
   sheet: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#F6F4EE',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingTop: 8,
@@ -439,7 +439,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#e7e5e4',
+    backgroundColor: '#E3DDD0',
     marginBottom: 12,
   },
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 16 },
@@ -454,17 +454,17 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#F1EEE6',
     alignItems: 'center',
     justifyContent: 'center',
   },
   tag: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  tagText: { fontSize: 10, letterSpacing: 0.8, fontFamily: 'Inter_700Bold' },
+  tagText: { fontSize: 10, letterSpacing: 0.8, fontFamily: 'Manrope_700Bold' },
   title: {
     marginTop: 6,
     fontSize: 19,
-    color: '#0c0a09',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.4,
     lineHeight: 24,
   },
@@ -474,41 +474,41 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f5f5f4',
+    borderTopColor: '#ECE8DE',
   },
   iconSm: {
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#F1EEE6',
     alignItems: 'center',
     justifyContent: 'center',
   },
   rowLabel: {
     fontSize: 10,
     letterSpacing: 0.8,
-    color: '#78716c',
-    fontFamily: 'Inter_700Bold',
+    color: '#7A7466',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 2,
   },
-  rowValue: { fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_500Medium' },
-  descBlock: { paddingTop: 12, paddingBottom: 4, borderTopWidth: 1, borderTopColor: '#f5f5f4' },
+  rowValue: { fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_500Medium' },
+  descBlock: { paddingTop: 12, paddingBottom: 4, borderTopWidth: 1, borderTopColor: '#ECE8DE' },
   descText: {
     marginTop: 6,
     fontSize: 14,
-    color: '#1c1917',
-    fontFamily: 'Inter_400Regular',
+    color: '#2A2312',
+    fontFamily: 'Manrope_400Regular',
     lineHeight: 20,
   },
   mineBanner: {
     marginTop: 16,
     padding: 12,
     borderRadius: 12,
-    backgroundColor: '#fdf2f8',
+    backgroundColor: '#FFF8E1',
     borderWidth: 1,
-    borderColor: '#fbcfe8',
+    borderColor: '#F3E3B0',
   },
-  mineBannerText: { fontSize: 13, color: '#be185d', fontFamily: 'Inter_600SemiBold' },
+  mineBannerText: { fontSize: 13, color: '#8A6606', fontFamily: 'Manrope_600SemiBold' },
   primaryBtn: {
     marginTop: 18,
     flexDirection: 'row',
@@ -517,8 +517,8 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#ec4899',
-    shadowColor: '#ec4899',
+    backgroundColor: '#2A2312',
+    shadowColor: '#2A2312',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontSize: 14,
     color: '#ffffff',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.2,
   },
   secondaryBtn: {
@@ -539,22 +539,22 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#fbcfe8',
-    backgroundColor: '#ffffff',
+    borderColor: '#F3E3B0',
+    backgroundColor: '#F6F4EE',
   },
   secondaryBtnText: {
     fontSize: 14,
-    color: '#be185d',
-    fontFamily: 'Inter_700Bold',
+    color: '#8A6606',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.2,
   },
   rsvpBox: {
     marginTop: 18,
     padding: 14,
     borderRadius: 16,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#F1EEE6',
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
   },
   rsvpHeader: {
     flexDirection: 'row',
@@ -562,23 +562,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 10,
   },
-  rsvpCount: { fontSize: 13, color: '#1c1917', fontFamily: 'Inter_700Bold' },
+  rsvpCount: { fontSize: 13, color: '#2A2312', fontFamily: 'Manrope_700Bold' },
   fullBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
     backgroundColor: '#fee2e2',
   },
-  fullBadgeText: { fontSize: 11, color: '#dc2626', fontFamily: 'Inter_700Bold' },
+  fullBadgeText: { fontSize: 11, color: '#dc2626', fontFamily: 'Manrope_700Bold' },
   capBarBg: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#e7e5e4',
+    backgroundColor: '#E3DDD0',
     overflow: 'hidden',
     marginBottom: 12,
   },
   capBarFill: { height: '100%', borderRadius: 3 },
-  rsvpMuted: { fontSize: 13, color: '#78716c', fontFamily: 'Inter_400Regular' },
+  rsvpMuted: { fontSize: 13, color: '#7A7466', fontFamily: 'Manrope_400Regular' },
   rsvpToggle: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -587,9 +587,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
   },
-  rsvpToggleText: { fontSize: 14, fontFamily: 'Inter_700Bold', letterSpacing: -0.2 },
+  rsvpToggleText: { fontSize: 14, fontFamily: 'Manrope_700Bold', letterSpacing: -0.2 },
   rsvpSignedRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  rsvpSignedText: { fontSize: 14, color: '#15803d', fontFamily: 'Inter_600SemiBold' },
+  rsvpSignedText: { fontSize: 14, color: '#15803d', fontFamily: 'Manrope_600SemiBold' },
   rsvpCancelBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#fef2f2',
   },
-  rsvpCancelText: { fontSize: 13, color: '#dc2626', fontFamily: 'Inter_700Bold' },
+  rsvpCancelText: { fontSize: 13, color: '#dc2626', fontFamily: 'Manrope_700Bold' },
   guestChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,

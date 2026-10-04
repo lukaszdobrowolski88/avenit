@@ -112,7 +112,7 @@ export const useMyWork = (userEmail: string | null) =>
           statusLabels: (statusCol?.settings?.labels ?? []).map((l) => ({
             id: String(l.id),
             title: String(l.title ?? l.id),
-            color: String(l.color ?? '#a8a29e'),
+            color: String(l.color ?? '#A8A59E'),
           })),
           cells,
         });

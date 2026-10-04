@@ -32,7 +32,7 @@ const BUCKETS: { key: BucketKey; label: string; tint: string }[] = [
   { key: 'overdue', label: 'Zaległe', tint: '#dc2626' },
   { key: 'today', label: 'Dziś', tint: '#ea580c' },
   { key: 'upcoming', label: 'Nadchodzące', tint: '#0e7490' },
-  { key: 'nodate', label: 'Bez terminu', tint: '#78716c' },
+  { key: 'nodate', label: 'Bez terminu', tint: '#7A7466' },
 ];
 
 // Miękka karta (bez paska-akcentu); kolor tablicy pokazuje kropka przy jej nazwie.
@@ -45,7 +45,7 @@ const ItemCard = ({ item, onStatus }: { item: WorkItem; onStatus: (item: WorkIte
       padding: 14,
       marginBottom: 8,
       borderRadius: 16,
-      backgroundColor: '#f7f6f5',
+      backgroundColor: '#EFEBE2',
       opacity: item.done ? 0.6 : 1,
     }}
   >
@@ -53,8 +53,8 @@ const ItemCard = ({ item, onStatus }: { item: WorkItem; onStatus: (item: WorkIte
       <Text
         style={{
           fontSize: 15,
-          color: '#0c0a09',
-          fontFamily: 'Inter_600SemiBold',
+          color: '#2A2312',
+          fontFamily: 'Manrope_600SemiBold',
           textDecorationLine: item.done ? 'line-through' : 'none',
         }}
         numberOfLines={2}
@@ -64,12 +64,12 @@ const ItemCard = ({ item, onStatus }: { item: WorkItem; onStatus: (item: WorkIte
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.boardColor }} />
-          <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+          <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
             {item.boardName}
           </Text>
         </View>
         {item.due ? (
-          <Text style={{ fontSize: 12, color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>
+          <Text style={{ fontSize: 12, color: '#A8A59E', fontFamily: 'Manrope_500Medium' }}>
             · {fmtDue(item.due)}
           </Text>
         ) : null}
@@ -84,11 +84,11 @@ const ItemCard = ({ item, onStatus }: { item: WorkItem; onStatus: (item: WorkIte
           paddingHorizontal: 10,
           paddingVertical: 6,
           borderRadius: 999,
-          backgroundColor: (item.statusColor ?? '#64748b') + '22',
+          backgroundColor: (item.statusColor ?? '#7A7466') + '22',
         }}
       >
         <Text
-          style={{ fontSize: 12, color: item.statusColor ?? '#475569', fontFamily: 'Inter_700Bold' }}
+          style={{ fontSize: 12, color: item.statusColor ?? '#4A463E', fontFamily: 'Manrope_700Bold' }}
           numberOfLines={1}
         >
           {item.statusLabel ?? 'Ustaw status'}
@@ -152,7 +152,7 @@ export default function MyWorkScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title="Moja praca"
           subtitle={total > 0 ? `${openCount} otwartych z ${total}` : 'Zadania przypisane do Ciebie'}
@@ -169,14 +169,14 @@ export default function MyWorkScreen() {
                 paddingHorizontal: 12,
                 paddingVertical: 8,
                 borderRadius: 999,
-                backgroundColor: showDone ? '#0c0a09' : '#fafaf9',
+                backgroundColor: showDone ? '#2A2312' : '#F1EEE6',
                 borderWidth: 1,
-                borderColor: showDone ? '#0c0a09' : '#eef0f3',
+                borderColor: showDone ? '#2A2312' : '#E6E1D5',
               }}
             >
-              <CheckCircle2 size={14} color={showDone ? '#ffffff' : '#78716c'} />
+              <CheckCircle2 size={14} color={showDone ? '#ffffff' : '#7A7466'} />
               <Text
-                style={{ fontSize: 12, color: showDone ? '#ffffff' : '#57534e', fontFamily: 'Inter_600SemiBold' }}
+                style={{ fontSize: 12, color: showDone ? '#ffffff' : '#4A463E', fontFamily: 'Manrope_600SemiBold' }}
               >
                 Zrobione
               </Text>
@@ -186,11 +186,11 @@ export default function MyWorkScreen() {
 
         {isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <Text style={{ color: '#e11d48', textAlign: 'center', fontFamily: 'Inter_500Medium' }}>
+            <Text style={{ color: '#e11d48', textAlign: 'center', fontFamily: 'Manrope_500Medium' }}>
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
           </View>
@@ -198,7 +198,7 @@ export default function MyWorkScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {total === 0 || (!showDone && openCount === 0) ? (
@@ -216,11 +216,11 @@ export default function MyWorkScreen() {
                 >
                   <ListTodo size={28} color="#10b981" />
                 </View>
-                <Text style={{ fontSize: 16, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                   {total === 0 ? 'Nic do zrobienia' : 'Wszystko zrobione 🎉'}
                 </Text>
                 <Text
-                  style={{ fontSize: 13, color: '#78716c', textAlign: 'center', marginTop: 4, fontFamily: 'Inter_400Regular' }}
+                  style={{ fontSize: 13, color: '#7A7466', textAlign: 'center', marginTop: 4, fontFamily: 'Manrope_400Regular' }}
                 >
                   Nie masz teraz przypisanych zadań na tablicach.
                 </Text>
@@ -234,7 +234,7 @@ export default function MyWorkScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                       <CircleDot size={13} color={tint} />
                       <Text
-                        style={{ fontSize: 12, color: tint, letterSpacing: 0.4, fontFamily: 'Inter_700Bold', textTransform: 'uppercase' }}
+                        style={{ fontSize: 12, color: tint, letterSpacing: 0.4, fontFamily: 'Manrope_700Bold', textTransform: 'uppercase' }}
                       >
                         {label} · {items.length}
                       </Text>

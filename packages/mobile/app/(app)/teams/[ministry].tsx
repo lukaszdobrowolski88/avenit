@@ -102,8 +102,8 @@ export default function TeamDetailScreen() {
   }
   if (!perms.ready) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
-        <ActivityIndicator color="#ec4899" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F6F4EE' }}>
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
@@ -159,7 +159,7 @@ export default function TeamDetailScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <View
           style={{
             paddingHorizontal: 16,
@@ -178,23 +178,23 @@ export default function TeamDetailScreen() {
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: '#fafaf9',
+              backgroundColor: '#F1EEE6',
               borderWidth: 1,
-              borderColor: '#e7e5e4',
+              borderColor: '#E3DDD0',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <ChevronLeft size={20} color="#1c1917" strokeWidth={2.2} />
+            <ChevronLeft size={20} color="#2A2312" strokeWidth={2.2} />
           </Pressable>
-          <GradientIcon Icon={look.Icon} size={44} iconSize={20} from={look.from} to={look.to} />
+          <GradientIcon Icon={look.Icon} size={44} iconSize={20} />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+            <Text style={{ fontSize: 12, color: '#7A7466', fontFamily: 'Manrope_500Medium' }}>
               {cfg.key === 'homegroups' ? 'Panel służby' : 'Zespół'}
             </Text>
             <Text
               numberOfLines={1}
-              style={{ fontSize: 21, color: '#0c0a09', letterSpacing: -0.5, fontFamily: 'Inter_700Bold' }}
+              style={{ fontSize: 21, color: '#2A2312', letterSpacing: -0.5, fontFamily: 'Manrope_700Bold' }}
             >
               {teamLabel}
             </Text>
@@ -206,7 +206,7 @@ export default function TeamDetailScreen() {
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 130 }}
           keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ec4899" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2A2312" />}
         >
           {renderContent()}
         </ScrollView>

@@ -23,16 +23,16 @@ const DecisionButtons = ({ onApprove, onReject, disabled }: { onApprove: () => v
       style={{ flex: 1, height: 40, borderRadius: 12, backgroundColor: '#15803d', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
     >
       <Check size={15} color="#ffffff" strokeWidth={2.6} />
-      <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>Zatwierdź</Text>
+      <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>Zatwierdź</Text>
     </Pressable>
     <Pressable
       onPress={onReject}
       disabled={disabled}
       className="active:opacity-70"
-      style={{ flex: 1, height: 40, borderRadius: 12, backgroundColor: '#ffffff', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+      style={{ flex: 1, height: 40, borderRadius: 12, backgroundColor: '#F6F4EE', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
     >
       <X size={15} color="#b91c1c" strokeWidth={2.6} />
-      <Text style={{ fontSize: 14, color: '#b91c1c', fontFamily: 'Inter_600SemiBold' }}>Odrzuć</Text>
+      <Text style={{ fontSize: 14, color: '#b91c1c', fontFamily: 'Manrope_600SemiBold' }}>Odrzuć</Text>
     </Pressable>
   </View>
 );
@@ -61,11 +61,11 @@ export default function FinanceScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Finanse" subtitle="Do decyzji" Icon={Wallet} showBack />
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130 }}
-          refreshControl={<RefreshControl refreshing={decisions.isRefetching} onRefresh={() => decisions.refetch()} tintColor="#ec4899" />}
+          refreshControl={<RefreshControl refreshing={decisions.isRefetching} onRefresh={() => decisions.refetch()} tintColor="#2A2312" />}
         >
           {decisions.isLoading ? <Loading /> : null}
 
@@ -74,22 +74,22 @@ export default function FinanceScreen() {
           ) : null}
 
           {proposals.length ? (
-            <Text style={{ fontSize: 13, color: '#78716c', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Inter_700Bold', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
               Propozycje do budżetu
             </Text>
           ) : null}
           {proposals.map((p) => (
-            <View key={p.id} style={{ borderRadius: 18, backgroundColor: '#f7f6f5', padding: 14, marginBottom: 10 }}>
+            <View key={p.id} style={{ borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14, marginBottom: 10 }}>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>{p.description || 'Propozycja'}</Text>
-                  <Text style={{ fontSize: 12, color: '#78716c', marginTop: 2, fontFamily: 'Inter_500Medium' }}>
+                  <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{p.description || 'Propozycja'}</Text>
+                  <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                     {[p.teamType, p.kind === 'income' ? 'przychód' : 'wydatek', String(p.year), p.submittedBy].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
-                <Text style={{ fontSize: 16, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>{money(p.amount)}</Text>
+                <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{money(p.amount)}</Text>
               </View>
-              {p.note ? <Text style={{ fontSize: 13, color: '#44403c', marginTop: 6, fontFamily: 'Inter_400Regular' }}>{p.note}</Text> : null}
+              {p.note ? <Text style={{ fontSize: 13, color: '#3A3427', marginTop: 6, fontFamily: 'Manrope_400Regular' }}>{p.note}</Text> : null}
               <DecisionButtons
                 disabled={decideP.isPending}
                 onApprove={() => decide('Dodać do budżetu?', () => decideP.mutateAsync({ p, approve: true }))}
@@ -99,20 +99,20 @@ export default function FinanceScreen() {
           ))}
 
           {expenses.length ? (
-            <Text style={{ fontSize: 13, color: '#78716c', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Inter_700Bold', marginTop: 10, marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#7A7466', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginTop: 10, marginBottom: 8 }}>
               Wydatki do akceptacji
             </Text>
           ) : null}
           {expenses.map((e) => (
-            <View key={e.id} style={{ borderRadius: 18, backgroundColor: '#f7f6f5', padding: 14, marginBottom: 10 }}>
+            <View key={e.id} style={{ borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14, marginBottom: 10 }}>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>{e.contractor || e.description || 'Wydatek'}</Text>
-                  <Text style={{ fontSize: 12, color: '#78716c', marginTop: 2, fontFamily: 'Inter_500Medium' }}>
+                  <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{e.contractor || e.description || 'Wydatek'}</Text>
+                  <Text style={{ fontSize: 12, color: '#7A7466', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                     {[e.teamType, e.date, e.submittedBy].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
-                <Text style={{ fontSize: 16, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>{money(e.amount)}</Text>
+                <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{money(e.amount)}</Text>
               </View>
               <DecisionButtons
                 disabled={decideE.isPending}
@@ -125,10 +125,10 @@ export default function FinanceScreen() {
           <Pressable
             onPress={() => openOnWeb('/finance')}
             className="active:opacity-70"
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, padding: 14, borderRadius: 16, backgroundColor: '#f7f6f5' }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, padding: 14, borderRadius: 16, backgroundColor: '#EFEBE2' }}
           >
-            <ExternalLink size={16} color="#be185d" />
-            <Text style={{ flex: 1, fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>Budżet, raporty i księgowość na webie</Text>
+            <ExternalLink size={16} color="#8A6606" />
+            <Text style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>Budżet, raporty i księgowość na webie</Text>
           </Pressable>
         </ScrollView>
       </View>

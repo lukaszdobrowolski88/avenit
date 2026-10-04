@@ -53,13 +53,13 @@ const ICON_BY_TYPE = {
   audio: { Icon: FileAudio, tint: '#16a34a', bg: '#dcfce7' },
   video: { Icon: FileVideo, tint: '#7c3aed', bg: '#ede9fe' },
   doc: { Icon: FileText, tint: '#0891b2', bg: '#cffafe' },
-  other: { Icon: FileIcon, tint: '#64748b', bg: '#e2e8f0' },
+  other: { Icon: FileIcon, tint: '#7A7466', bg: '#E3DDD0' },
 };
 
 const itemCardStyle = {
   borderRadius: 16,
-  backgroundColor: '#ffffff',
-  shadowColor: '#0f172a',
+  backgroundColor: '#F6F4EE',
+  shadowColor: '#2A2312',
   shadowOffset: { width: 0, height: 3 },
   shadowOpacity: 0.04,
   shadowRadius: 10,
@@ -69,7 +69,7 @@ const itemCardStyle = {
 const itemBorderStyle = {
   borderRadius: 16,
   borderWidth: 1,
-  borderColor: '#eef0f3',
+  borderColor: '#E6E1D5',
 } as const;
 
 // Moduły, które mają na webie zakładkę „Pliki” (MaterialsTab z team_type = klucz modułu).
@@ -195,7 +195,7 @@ export default function MaterialsScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <View className="px-5 pb-3 flex-row items-center gap-3" style={{ paddingTop: insets.top + 10 }}>
           <Pressable
             onPress={handleBack}
@@ -205,16 +205,16 @@ export default function MaterialsScreen() {
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: '#fafaf9',
+              backgroundColor: '#F1EEE6',
               borderWidth: 1,
-              borderColor: '#e7e5e4',
+              borderColor: '#E3DDD0',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
             <ChevronRight
               size={20}
-              color="#1c1917"
+              color="#2A2312"
               strokeWidth={2.2}
               style={{ transform: [{ rotate: '180deg' }] }}
             />
@@ -222,13 +222,13 @@ export default function MaterialsScreen() {
           <View className="flex-1">
             <Text
               className="text-[12px]"
-              style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
+              style={{ color: '#7A7466', fontFamily: 'Manrope_500Medium' }}
             >
               {space === undefined ? 'Pliki i dokumenty' : 'Materiały'}
             </Text>
             <Text
               className="text-[24px] mt-0.5"
-              style={{ color: '#0c0a09', letterSpacing: -0.6, fontFamily: 'Inter_700Bold' }}
+              style={{ color: '#2A2312', letterSpacing: -0.6, fontFamily: 'Manrope_700Bold' }}
               numberOfLines={1}
             >
               {spaceLabel}
@@ -242,7 +242,7 @@ export default function MaterialsScreen() {
                     width: 40,
                     height: 40,
                     borderRadius: 20,
-                    backgroundColor: '#ec4899',
+                    backgroundColor: '#2A2312',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
@@ -250,7 +250,7 @@ export default function MaterialsScreen() {
                   <ActivityIndicator color="#ffffff" />
                 </View>
               ) : (
-                <GradientIcon Icon={Upload} size={40} iconSize={19} from="#f97316" to="#ec4899" rounded />
+                <GradientIcon Icon={Upload} size={40} iconSize={19} rounded />
               )}
             </Pressable>
           ) : null}
@@ -272,21 +272,21 @@ export default function MaterialsScreen() {
               onPress={() => setFolderId(null)}
               className="flex-row items-center gap-1"
             >
-              <Folder size={12} color="#78716c" />
+              <Folder size={12} color="#7A7466" />
               <Text
                 className="text-[12px]"
-                style={{ color: '#57534e', fontFamily: 'Inter_500Medium' }}
+                style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium' }}
               >
                 {spaceLabel}
               </Text>
             </Pressable>
             {path.data!.map((p: FolderRow) => (
               <View key={p.id} className="flex-row items-center gap-1">
-                <ChevronRight size={12} color="#a8a29e" />
+                <ChevronRight size={12} color="#A8A59E" />
                 <Pressable onPress={() => setFolderId(p.id)}>
                   <Text
                     className="text-[12px]"
-                    style={{ color: '#57534e', fontFamily: 'Inter_500Medium' }}
+                    style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium' }}
                   >
                     {p.name}
                   </Text>
@@ -329,21 +329,21 @@ export default function MaterialsScreen() {
                     <x.Icon size={19} color={x.tint} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text className="text-[15px]" style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                    <Text className="text-[15px]" style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                       {x.label}
                     </Text>
-                    <Text className="text-[12px] mt-0.5" style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}>
+                    <Text className="text-[12px] mt-0.5" style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}>
                       {x.sub}
                     </Text>
                   </View>
-                  <ChevronRight size={18} color="#a8a29e" />
+                  <ChevronRight size={18} color="#A8A59E" />
                 </View>
               </Pressable>
             ))}
           </ScrollView>
         ) : isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-8">
@@ -362,22 +362,22 @@ export default function MaterialsScreen() {
             </View>
             <Text
               className="text-[16px] text-center"
-              style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+              style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
             >
               Nie udało się wczytać materiałów
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+              style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
             >
               Sprawdź połączenie i spróbuj ponownie.
             </Text>
             <Pressable
               onPress={onRefresh}
               className="mt-4 active:opacity-70"
-              style={{ paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: '#ec4899' }}
+              style={{ paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: '#2A2312' }}
             >
-              <Text style={{ color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>Spróbuj ponownie</Text>
+              <Text style={{ color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>Spróbuj ponownie</Text>
             </Pressable>
           </View>
         ) : (
@@ -387,7 +387,7 @@ export default function MaterialsScreen() {
               <RefreshControl
                 refreshing={isRefetching}
                 onRefresh={onRefresh}
-                tintColor="#ec4899"
+                tintColor="#2A2312"
               />
             }
           >
@@ -396,7 +396,7 @@ export default function MaterialsScreen() {
               <View className="mb-3">
                 <Text
                   className="text-[11px] uppercase mb-2 px-1"
-                  style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}
+                  style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Foldery
                 </Text>
@@ -426,15 +426,15 @@ export default function MaterialsScreen() {
                       <Text
                         className="flex-1 text-[15px]"
                         style={{
-                          color: '#0c0a09',
+                          color: '#2A2312',
                           letterSpacing: -0.2,
-                          fontFamily: 'Inter_500Medium',
+                          fontFamily: 'Manrope_500Medium',
                         }}
                         numberOfLines={1}
                       >
                         {f.name}
                       </Text>
-                      <ChevronRight size={16} color="#a8a29e" />
+                      <ChevronRight size={16} color="#A8A59E" />
                     </View>
                   </Pressable>
                 ))}
@@ -445,7 +445,7 @@ export default function MaterialsScreen() {
               <View>
                 <Text
                   className="text-[11px] uppercase mb-2 px-1"
-                  style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}
+                  style={{ color: '#7A7466', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Pliki
                 </Text>
@@ -479,9 +479,9 @@ export default function MaterialsScreen() {
                           <Text
                             className="text-[15px]"
                             style={{
-                              color: '#0c0a09',
+                              color: '#2A2312',
                               letterSpacing: -0.2,
-                              fontFamily: 'Inter_500Medium',
+                              fontFamily: 'Manrope_500Medium',
                             }}
                             numberOfLines={1}
                           >
@@ -489,7 +489,7 @@ export default function MaterialsScreen() {
                           </Text>
                           <Text
                             className="text-[12px] mt-0.5"
-                            style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+                            style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
                           >
                             {formatBytes(file.file_size)}
                             {file.download_count > 0
@@ -504,7 +504,7 @@ export default function MaterialsScreen() {
                           className="active:opacity-60"
                           style={{ padding: 4 }}
                         >
-                          <MoreHorizontal size={18} color="#a8a29e" />
+                          <MoreHorizontal size={18} color="#A8A59E" />
                         </Pressable>
                       </View>
                     </Pressable>
@@ -530,13 +530,13 @@ export default function MaterialsScreen() {
                 </View>
                 <Text
                   className="text-[16px]"
-                  style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+                  style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
                 >
                   Pusty folder
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+                  style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
                 >
                   Brak plików i podfolderów.
                 </Text>

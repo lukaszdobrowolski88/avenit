@@ -32,7 +32,7 @@ const ICON_BY_TYPE = {
   audio: { Icon: FileAudio, tint: '#16a34a', bg: '#dcfce7' },
   video: { Icon: FileVideo, tint: '#7c3aed', bg: '#ede9fe' },
   doc: { Icon: FileText, tint: '#0891b2', bg: '#cffafe' },
-  other: { Icon: FileIcon, tint: '#64748b', bg: '#e2e8f0' },
+  other: { Icon: FileIcon, tint: '#7A7466', bg: '#E3DDD0' },
 } as const;
 
 export default function SharedMaterialsScreen() {
@@ -55,23 +55,23 @@ export default function SharedMaterialsScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Udostępnione mi" subtitle="Pliki udostępnione Tobie i Twoim grupom" showBack />
 
         {isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <Text style={{ color: '#e11d48', textAlign: 'center', fontFamily: 'Inter_500Medium' }}>
+            <Text style={{ color: '#e11d48', textAlign: 'center', fontFamily: 'Manrope_500Medium' }}>
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
           </View>
         ) : files.length === 0 ? (
           <ScrollView
             contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />}
+            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
           >
             <View
               style={{
@@ -86,11 +86,11 @@ export default function SharedMaterialsScreen() {
             >
               <Share2 size={28} color="#0891b2" />
             </View>
-            <Text style={{ fontSize: 16, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+            <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
               Nic tu jeszcze nie ma
             </Text>
             <Text
-              style={{ fontSize: 13, color: '#78716c', textAlign: 'center', marginTop: 4, fontFamily: 'Inter_400Regular' }}
+              style={{ fontSize: 13, color: '#7A7466', textAlign: 'center', marginTop: 4, fontFamily: 'Manrope_400Regular' }}
             >
               Gdy ktoś udostępni Ci plik, pojawi się tutaj.
             </Text>
@@ -98,7 +98,7 @@ export default function SharedMaterialsScreen() {
         ) : (
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
-            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />}
+            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />}
           >
             {files.map((f) => {
               const ic = ICON_BY_TYPE[fileIconType(f.mime_type)];
@@ -115,8 +115,8 @@ export default function SharedMaterialsScreen() {
                     marginBottom: 8,
                     borderRadius: 16,
                     borderWidth: 1,
-                    borderColor: '#eef0f3',
-                    backgroundColor: '#ffffff',
+                    borderColor: '#E6E1D5',
+                    backgroundColor: '#F6F4EE',
                   }}
                 >
                   <View
@@ -132,10 +132,10 @@ export default function SharedMaterialsScreen() {
                     <ic.Icon size={20} color={ic.tint} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }} numberOfLines={2}>
+                    <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }} numberOfLines={2}>
                       {f.name}
                     </Text>
-                    <Text style={{ fontSize: 12, color: '#a8a29e', marginTop: 2, fontFamily: 'Inter_500Medium' }}>
+                    <Text style={{ fontSize: 12, color: '#A8A59E', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                       {formatBytes(f.file_size || 0)}
                       {f.shared_label && f.shared_label !== 'folder' ? ` · ${f.shared_label}` : ''}
                     </Text>

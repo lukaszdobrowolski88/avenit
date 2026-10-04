@@ -26,8 +26,8 @@ const SectionTitle = ({ children }: { children: string }) => (
   <Text
     style={{
       fontSize: 13,
-      color: '#78716c',
-      fontFamily: 'Inter_700Bold',
+      color: '#7A7466',
+      fontFamily: 'Manrope_700Bold',
       letterSpacing: 0.4,
       textTransform: 'uppercase',
       marginTop: 22,
@@ -68,7 +68,7 @@ export default function ModulesScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title="Moduły"
           subtitle={ready ? `${items.length + personal.length} dostępnych dla Ciebie` : 'Wczytywanie uprawnień…'}
@@ -78,7 +78,7 @@ export default function ModulesScreen() {
           contentContainerStyle={{ paddingHorizontal: SIDE, paddingBottom: 130 }}
           keyboardShouldPersistTaps="handled"
           refreshControl={
-            <RefreshControl refreshing={false} onRefresh={() => perms.refetch()} tintColor="#ec4899" />
+            <RefreshControl refreshing={false} onRefresh={() => perms.refetch()} tintColor="#2A2312" />
           }
         >
           <View
@@ -86,31 +86,31 @@ export default function ModulesScreen() {
               flexDirection: 'row',
               alignItems: 'center',
               gap: 8,
-              backgroundColor: '#f5f5f4',
+              backgroundColor: '#ECE8DE',
               borderRadius: 14,
               paddingHorizontal: 12,
               height: 44,
             }}
           >
-            <Search size={18} color="#a8a29e" />
+            <Search size={18} color="#A8A59E" />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder="Szukaj modułu…"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#A8A59E"
               autoCorrect={false}
-              style={{ flex: 1, fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_400Regular' }}
+              style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}
             />
             {query ? (
               <Pressable onPress={() => setQuery('')} hitSlop={10}>
-                <X size={16} color="#a8a29e" />
+                <X size={16} color="#A8A59E" />
               </Pressable>
             ) : null}
           </View>
 
           {!ready ? (
             <View style={{ paddingVertical: 48, alignItems: 'center' }}>
-              <ActivityIndicator color="#ec4899" />
+              <ActivityIndicator color="#2A2312" />
             </View>
           ) : null}
 
@@ -124,8 +124,6 @@ export default function ModulesScreen() {
                     width={tileWidth}
                     label={p.label}
                     Icon={p.Icon}
-                    tint={p.tint}
-                    bg={p.bg}
                     badge={p.key === 'notifications' ? unread.data ?? 0 : undefined}
                     onPress={() => router.push(p.route as never)}
                   />
@@ -145,8 +143,6 @@ export default function ModulesScreen() {
                         width={tileWidth}
                         label={it.label}
                         Icon={it.Icon}
-                        tint={it.tint}
-                        bg={it.bg}
                         isWeb={it.isWeb}
                         onPress={() => openModule(it, router)}
                       />
@@ -164,8 +160,6 @@ export default function ModulesScreen() {
                   width={tileWidth}
                   label="Nowe konta"
                   Icon={UserCheck}
-                  tint="#15803d"
-                  bg="#dcfce7"
                   badge={pendingCount}
                   onPress={() => router.push('/(app)/approvals')}
                 />
@@ -178,8 +172,8 @@ export default function ModulesScreen() {
               style={{
                 marginTop: 32,
                 textAlign: 'center',
-                color: '#a8a29e',
-                fontFamily: 'Inter_500Medium',
+                color: '#A8A59E',
+                fontFamily: 'Manrope_500Medium',
               }}
             >
               Brak modułu o nazwie „{query.trim()}”
@@ -192,8 +186,8 @@ export default function ModulesScreen() {
                 marginTop: 26,
                 fontSize: 12,
                 lineHeight: 17,
-                color: '#a8a29e',
-                fontFamily: 'Inter_500Medium',
+                color: '#A8A59E',
+                fontFamily: 'Manrope_500Medium',
               }}
             >
               {perms.fallback

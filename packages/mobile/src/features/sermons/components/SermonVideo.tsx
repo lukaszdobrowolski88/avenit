@@ -40,7 +40,7 @@ const OpenButton = ({ url }: { url: string }) => (
     style={{ paddingVertical: 12, borderRadius: 14, backgroundColor: '#fee2e2' }}
   >
     <PlaySquare size={18} color="#dc2626" />
-    <Text className="text-[14px]" style={{ color: '#dc2626', fontFamily: 'Inter_700Bold' }}>
+    <Text className="text-[14px]" style={{ color: '#dc2626', fontFamily: 'Manrope_700Bold' }}>
       Obejrzyj wideo
     </Text>
   </Pressable>
@@ -78,7 +78,7 @@ export const SermonVideo = ({ url }: { url: string }) => {
         style={{ paddingVertical: 8 }}
       >
         <PlaySquare size={14} color="#dc2626" />
-        <Text className="text-[12px]" style={{ color: '#dc2626', fontFamily: 'Inter_600SemiBold' }}>
+        <Text className="text-[12px]" style={{ color: '#dc2626', fontFamily: 'Manrope_600SemiBold' }}>
           Otwórz w aplikacji wideo
         </Text>
       </Pressable>

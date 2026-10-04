@@ -79,23 +79,23 @@ export const NewEventModal = ({
 
   const labelStyle = {
     fontSize: 11,
-    color: '#78716c',
+    color: '#7A7466',
     marginBottom: 6,
     letterSpacing: 0.4,
     textTransform: 'uppercase' as const,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   };
   const inputStyle = {
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: '#0c0a09',
-    backgroundColor: '#fafaf9',
+    color: '#2A2312',
+    backgroundColor: '#F1EEE6',
     marginBottom: 12,
-    fontFamily: 'Inter_400Regular' as const,
+    fontFamily: 'Manrope_400Regular' as const,
   };
 
   return (
@@ -110,7 +110,7 @@ export const NewEventModal = ({
       >
         <View
           style={{
-            backgroundColor: '#ffffff',
+            backgroundColor: '#F6F4EE',
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             padding: 20,
@@ -129,15 +129,15 @@ export const NewEventModal = ({
             <Text
               style={{
                 fontSize: 18,
-                color: '#0c0a09',
+                color: '#2A2312',
                 letterSpacing: -0.4,
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Manrope_700Bold',
               }}
             >
               Nowe wydarzenie
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color="#78716c" />
+              <X size={20} color="#7A7466" />
             </Pressable>
           </View>
 
@@ -147,7 +147,7 @@ export const NewEventModal = ({
               value={title}
               onChangeText={setTitle}
               placeholder="np. Próba przed niedzielą"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#A8A59E"
               style={inputStyle}
             />
 
@@ -165,16 +165,16 @@ export const NewEventModal = ({
                       paddingHorizontal: 12,
                       paddingVertical: 6,
                       borderRadius: 999,
-                      backgroundColor: active ? '#0c0a09' : '#fafaf9',
+                      backgroundColor: active ? '#2A2312' : '#F1EEE6',
                       borderWidth: 1,
-                      borderColor: active ? '#0c0a09' : '#eef0f3',
+                      borderColor: active ? '#2A2312' : '#E6E1D5',
                     }}
                   >
                     <Text
                       style={{
                         fontSize: 13,
-                        color: active ? '#ffffff' : '#1c1917',
-                        fontFamily: 'Inter_600SemiBold',
+                        color: active ? '#ffffff' : '#2A2312',
+                        fontFamily: 'Manrope_600SemiBold',
                       }}
                     >
                       {t.label}
@@ -191,7 +191,7 @@ export const NewEventModal = ({
                   value={dateStr}
                   onChangeText={setDateStr}
                   placeholder="2026-05-10"
-                  placeholderTextColor="#a8a29e"
+                  placeholderTextColor="#A8A59E"
                   style={inputStyle}
                 />
               </View>
@@ -201,7 +201,7 @@ export const NewEventModal = ({
                   value={timeStr}
                   onChangeText={setTimeStr}
                   placeholder="19:00"
-                  placeholderTextColor="#a8a29e"
+                  placeholderTextColor="#A8A59E"
                   style={inputStyle}
                 />
               </View>
@@ -212,7 +212,7 @@ export const NewEventModal = ({
               value={location}
               onChangeText={setLocation}
               placeholder="np. Sala główna"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#A8A59E"
               style={inputStyle}
             />
 
@@ -221,7 +221,7 @@ export const NewEventModal = ({
               value={description}
               onChangeText={setDescription}
               placeholder="Dodatkowe info dla zespołu…"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#A8A59E"
               multiline
               style={[inputStyle, { minHeight: 80, textAlignVertical: 'top' as const }]}
             />
@@ -234,11 +234,11 @@ export const NewEventModal = ({
                 borderRadius: 14,
                 paddingVertical: 14,
                 alignItems: 'center',
-                backgroundColor: !title.trim() || isLoading ? '#e7e5e4' : '#ec4899',
+                backgroundColor: !title.trim() || isLoading ? '#E3DDD0' : '#2A2312',
               }}
             >
               <Text
-                style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}
+                style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}
               >
                 {isLoading ? 'Zapisywanie…' : 'Zapisz wydarzenie'}
               </Text>

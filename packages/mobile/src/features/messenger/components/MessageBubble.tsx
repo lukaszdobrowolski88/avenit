@@ -17,7 +17,7 @@ const MENTION_RE = /(@[\p{L}][\p{L}\d._-]*)/u;
 const renderWithMentions = (text: string, accent: string) =>
   text.split(MENTION_RE).map((part, i) =>
     part.startsWith("@") ? (
-      <Text key={i} style={{ fontFamily: "Inter_700Bold", color: accent }}>
+      <Text key={i} style={{ fontFamily: "Manrope_700Bold", color: accent }}>
         {part}
       </Text>
     ) : (
@@ -72,15 +72,15 @@ const Avatar = ({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: "#fef3f2",
+        backgroundColor: "#FFF8E1",
         alignItems: "center",
         justifyContent: "center",
       }}
     >
       <Text
         style={{
-          color: "#be185d",
-          fontFamily: "Inter_700Bold",
+          color: "#8A6606",
+          fontFamily: "Manrope_700Bold",
           fontSize: 12,
         }}
       >
@@ -129,7 +129,7 @@ export const MessageBubble = ({
       <View style={{ alignItems: "center", marginVertical: 6 }}>
         <View
           style={{
-            backgroundColor: "#eef0f3",
+            backgroundColor: "#E6E1D5",
             borderRadius: 999,
             paddingHorizontal: 12,
             paddingVertical: 5,
@@ -139,8 +139,8 @@ export const MessageBubble = ({
           <Text
             style={{
               fontSize: 12,
-              color: "#78716c",
-              fontFamily: "Inter_500Medium",
+              color: "#7A7466",
+              fontFamily: "Manrope_500Medium",
               textAlign: "center",
             }}
           >
@@ -183,12 +183,12 @@ export const MessageBubble = ({
               paddingHorizontal: 4,
             }}
           >
-            <Pin size={10} color="#a8a29e" />
+            <Pin size={10} color="#A8A59E" />
             <Text
               style={{
                 fontSize: 10,
-                color: "#a8a29e",
-                fontFamily: "Inter_600SemiBold",
+                color: "#A8A59E",
+                fontFamily: "Manrope_600SemiBold",
                 letterSpacing: -0.1,
               }}
             >
@@ -207,8 +207,8 @@ export const MessageBubble = ({
           borderTopRightRadius: mine && showSender ? 6 : 18,
           borderBottomLeftRadius: !mine ? 6 : 18,
           borderBottomRightRadius: mine ? 6 : 18,
-          backgroundColor: mine ? "#ec4899" : "#f5f5f4",
-          shadowColor: "#0f172a",
+          backgroundColor: mine ? "#2A2312" : "#ECE8DE",
+          shadowColor: "#2A2312",
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: mine ? 0.1 : 0.04,
           shadowRadius: 4,
@@ -219,8 +219,8 @@ export const MessageBubble = ({
           <Text
             style={{
               fontSize: 11,
-              color: "#78716c",
-              fontFamily: "Inter_700Bold",
+              color: "#7A7466",
+              fontFamily: "Manrope_700Bold",
               marginBottom: 2,
             }}
           >
@@ -232,19 +232,19 @@ export const MessageBubble = ({
           <View
             style={{
               borderLeftWidth: 2,
-              borderLeftColor: mine ? "rgba(255,255,255,0.5)" : "#a8a29e",
+              borderLeftColor: mine ? "rgba(255,255,255,0.5)" : "#A8A59E",
               paddingLeft: 8,
               marginBottom: 4,
               paddingVertical: 2,
             }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <CornerUpLeft size={10} color={mine ? "#fce7f3" : "#78716c"} />
+              <CornerUpLeft size={10} color={mine ? "#FFF1C2" : "#7A7466"} />
               <Text
                 style={{
                   fontSize: 11,
-                  color: mine ? "#fce7f3" : "#57534e",
-                  fontFamily: "Inter_600SemiBold",
+                  color: mine ? "#FFF1C2" : "#4A463E",
+                  fontFamily: "Manrope_600SemiBold",
                 }}
               >
                 {replyName}
@@ -254,8 +254,8 @@ export const MessageBubble = ({
               numberOfLines={1}
               style={{
                 fontSize: 12,
-                color: mine ? "#fbcfe8" : "#78716c",
-                fontFamily: "Inter_400Regular",
+                color: mine ? "#F3E3B0" : "#7A7466",
+                fontFamily: "Manrope_400Regular",
               }}
             >
               {replyTo.deleted_at ? "(usunięto)" : replyTo.content || "(załącznik)"}
@@ -306,7 +306,7 @@ export const MessageBubble = ({
                 gap: 8,
                 padding: 8,
                 borderRadius: 10,
-                backgroundColor: mine ? "rgba(255,255,255,0.18)" : "#ffffff",
+                backgroundColor: mine ? "rgba(255,255,255,0.18)" : "#F6F4EE",
                 marginBottom: 4,
               }}
             >
@@ -315,8 +315,8 @@ export const MessageBubble = ({
                 style={{
                   flex: 1,
                   fontSize: 13,
-                  color: mine ? "#ffffff" : "#0c0a09",
-                  fontFamily: "Inter_500Medium",
+                  color: mine ? "#ffffff" : "#2A2312",
+                  fontFamily: "Manrope_500Medium",
                 }}
                 numberOfLines={1}
               >
@@ -330,8 +330,8 @@ export const MessageBubble = ({
           <Text
             style={{
               fontSize: 10,
-              color: mine ? "#fde68a" : "#be185d",
-              fontFamily: "Inter_700Bold",
+              color: mine ? "#fde68a" : "#8A6606",
+              fontFamily: "Manrope_700Bold",
               marginBottom: 2,
             }}
           >
@@ -367,11 +367,11 @@ export const MessageBubble = ({
             style={{
               fontSize: 15,
               lineHeight: 21,
-              color: mine ? "#ffffff" : "#0c0a09",
-              fontFamily: "Inter_400Regular",
+              color: mine ? "#ffffff" : "#2A2312",
+              fontFamily: "Manrope_400Regular",
             }}
           >
-            {renderWithMentions(message.content, mine ? "#fde68a" : "#be185d")}
+            {renderWithMentions(message.content, mine ? "#fde68a" : "#8A6606")}
           </Text>
         ) : null}
 
@@ -388,9 +388,9 @@ export const MessageBubble = ({
             <Text
               style={{
                 fontSize: 10,
-                color: mine ? "#fce7f3" : "#a8a29e",
+                color: mine ? "#FFF1C2" : "#A8A59E",
                 fontStyle: "italic",
-                fontFamily: "Inter_400Regular",
+                fontFamily: "Manrope_400Regular",
               }}
             >
               edytowano ·{" "}
@@ -399,8 +399,8 @@ export const MessageBubble = ({
           <Text
             style={{
               fontSize: 10,
-              color: mine ? "#fce7f3" : "#a8a29e",
-              fontFamily: "Inter_500Medium",
+              color: mine ? "#FFF1C2" : "#A8A59E",
+              fontFamily: "Manrope_500Medium",
             }}
           >
             {time}
@@ -413,8 +413,8 @@ export const MessageBubble = ({
                 if (st === "read")
                   return <CheckCheck size={12} color="#ffffff" strokeWidth={2.4} />;
                 if (st === "delivered")
-                  return <CheckCheck size={12} color="#fbcfe8" strokeWidth={2.4} />;
-                return <Check size={12} color="#fbcfe8" strokeWidth={2.4} />;
+                  return <CheckCheck size={12} color="#F3E3B0" strokeWidth={2.4} />;
+                return <Check size={12} color="#F3E3B0" strokeWidth={2.4} />;
               })()
             : null}
         </View>
@@ -442,17 +442,17 @@ export const MessageBubble = ({
                 paddingHorizontal: 8,
                 paddingVertical: 3,
                 borderRadius: 999,
-                backgroundColor: r.hasUserReacted ? "#fce7f3" : "#fafaf9",
+                backgroundColor: r.hasUserReacted ? "#FFF1C2" : "#F1EEE6",
                 borderWidth: 1,
-                borderColor: r.hasUserReacted ? "#f9a8d4" : "#eef0f3",
+                borderColor: r.hasUserReacted ? "#f9a8d4" : "#E6E1D5",
               }}
             >
               <Text style={{ fontSize: 12 }}>{r.emoji}</Text>
               <Text
                 style={{
                   fontSize: 11,
-                  color: r.hasUserReacted ? "#be185d" : "#57534e",
-                  fontFamily: "Inter_700Bold",
+                  color: r.hasUserReacted ? "#8A6606" : "#4A463E",
+                  fontFamily: "Manrope_700Bold",
                 }}
               >
                 {r.count}

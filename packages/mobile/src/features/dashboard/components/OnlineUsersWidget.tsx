@@ -1,8 +1,8 @@
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useAuthSession } from '../../../lib/auth';
 import { findOrCreateDirect } from '../../messenger/start';
-import { MessageCircle, Users, UserX } from 'lucide-react-native';
+import { D, F } from '../theme';
 import { WidgetCard } from './WidgetCard';
 import type { OnlineUser } from '../api';
 
@@ -34,12 +34,12 @@ const UserAvatar = ({ user, onPress }: { user: OnlineUser; onPress: () => void }
             width: 48,
             height: 48,
             borderRadius: 24,
-            backgroundColor: '#fef3f2',
+            backgroundColor: D.well,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Text style={{ fontSize: 13, color: '#be185d', fontFamily: 'Inter_700Bold' }}>
+          <Text style={{ fontSize: 14, color: D.ink, fontFamily: F.bold }}>
             {initialsFor(user)}
           </Text>
         </View>
@@ -61,10 +61,10 @@ const UserAvatar = ({ user, onPress }: { user: OnlineUser; onPress: () => void }
         numberOfLines={1}
         style={{
           fontSize: 11,
-          color: '#57534e',
+          color: D.ink2,
           marginTop: 6,
           textAlign: 'center',
-          fontFamily: 'Inter_500Medium',
+          fontFamily: F.medium,
         }}
       >
         {displayName(user)}
@@ -92,56 +92,24 @@ export const OnlineUsersWidget = ({ users, offlineCount }: Props) => {
     }
   };
   const onlineCount = users.filter((u) => u.status === 'online').length;
-  const hasUsers = users.length > 0;
+  if (users.length === 0) return null;
 
   return (
-    <WidgetCard title="Kto jest online" Icon={Users} iconTint="#15803d" iconBg="#dcfce7">
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          paddingHorizontal: 16,
-          paddingTop: 12,
-          paddingBottom: 4,
-        }}
+    <WidgetCard
+      title="Kto jest online"
+      count={onlineCount}
+      actionLabel="Czat"
+      onAction={() => router.push('/(app)/messenger')}
+    >
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 16, gap: 4 }}
       >
-        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' }} />
-        <Text style={{ fontSize: 13, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>
-          {onlineCount} online
-        </Text>
-      </View>
-
-      {hasUsers ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 10, gap: 4 }}
-        >
-          {users.map((u) => (
-            <UserAvatar key={u.email} user={u} onPress={() => startChat(u.email)} />
-          ))}
-        </ScrollView>
-      ) : (
-        <View style={{ paddingHorizontal: 16, paddingVertical: 24, alignItems: 'center' }}>
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 14,
-              backgroundColor: '#f5f5f4',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 8,
-            }}
-          >
-            <UserX size={20} color="#a8a29e" />
-          </View>
-          <Text style={{ fontSize: 13, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
-            Brak aktywnych użytkowników
-          </Text>
-        </View>
-      )}
+        {users.map((u) => (
+          <UserAvatar key={u.email} user={u} onPress={() => startChat(u.email)} />
+        ))}
+      </ScrollView>
 
       {offlineCount > 0 ? (
         <View
@@ -149,15 +117,15 @@ export const OnlineUsersWidget = ({ users, offlineCount }: Props) => {
             paddingHorizontal: 16,
             paddingVertical: 8,
             borderTopWidth: 1,
-            borderTopColor: '#f5f5f4',
+            borderTopColor: D.hair,
           }}
         >
           <Text
             style={{
-              fontSize: 11,
-              color: '#78716c',
+              fontSize: 12,
+              color: D.ink2,
               textAlign: 'center',
-              fontFamily: 'Inter_500Medium',
+              fontFamily: F.medium,
             }}
           >
             + {offlineCount} offline
@@ -165,26 +133,6 @@ export const OnlineUsersWidget = ({ users, offlineCount }: Props) => {
         </View>
       ) : null}
 
-      <Link href="/(app)/messenger" asChild>
-        <Pressable
-          className="active:opacity-70"
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            borderTopWidth: 1,
-            borderTopColor: '#f5f5f4',
-          }}
-        >
-          <MessageCircle size={14} color="#ec4899" />
-          <Text style={{ fontSize: 13, color: '#be185d', fontFamily: 'Inter_600SemiBold' }}>
-            Otwórz komunikator
-          </Text>
-        </Pressable>
-      </Link>
     </WidgetCard>
   );
 };

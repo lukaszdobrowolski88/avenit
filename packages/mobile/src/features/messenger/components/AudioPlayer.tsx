@@ -51,9 +51,9 @@ export const AudioPlayer = ({ uri, durationHintMs, variant = "dark" }: Props) =>
           bg: "rgba(255,255,255,0.18)",
         }
       : {
-          fg: "#0c0a09",
-          fgMuted: "#a8a29e",
-          tint: "#ec4899",
+          fg: "#2A2312",
+          fgMuted: "#A8A59E",
+          tint: "#8A6606",
           bg: "#ffffff",
         };
 
@@ -135,9 +135,9 @@ export const AudioPlayer = ({ uri, durationHintMs, variant = "dark" }: Props) =>
         }}
       >
         {isPlaying ? (
-          <Pause size={14} color={variant === "light" ? "#ec4899" : "#ffffff"} fill={variant === "light" ? "#ec4899" : "#ffffff"} />
+          <Pause size={14} color={variant === "light" ? "#8A6606" : "#ffffff"} fill={variant === "light" ? "#8A6606" : "#ffffff"} />
         ) : (
-          <Play size={14} color={variant === "light" ? "#ec4899" : "#ffffff"} fill={variant === "light" ? "#ec4899" : "#ffffff"} />
+          <Play size={14} color={variant === "light" ? "#8A6606" : "#ffffff"} fill={variant === "light" ? "#8A6606" : "#ffffff"} />
         )}
       </Pressable>
 
@@ -168,7 +168,7 @@ export const AudioPlayer = ({ uri, durationHintMs, variant = "dark" }: Props) =>
         style={{
           fontSize: 11,
           color: colors.fg,
-          fontFamily: "Inter_600SemiBold",
+          fontFamily: "Manrope_600SemiBold",
           fontVariant: ["tabular-nums"],
           minWidth: 32,
           textAlign: "right",

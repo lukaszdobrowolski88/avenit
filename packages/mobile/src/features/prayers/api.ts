@@ -188,8 +188,8 @@ export const CATEGORY_META: Record<
   { label: string; tint: string; bg: string; emoji: string }
 > = {
   zdrowie: { label: 'Zdrowie', tint: '#059669', bg: '#d1fae5', emoji: '💚' },
-  rodzina: { label: 'Rodzina', tint: '#ec4899', bg: '#fce7f3', emoji: '👪' },
+  rodzina: { label: 'Rodzina', tint: '#8A6606', bg: '#FFF1C2', emoji: '👪' },
   finanse: { label: 'Finanse', tint: '#d97706', bg: '#fef3c7', emoji: '💰' },
   duchowe: { label: 'Duchowe', tint: '#7c3aed', bg: '#ede9fe', emoji: '🙏' },
-  inne: { label: 'Inne', tint: '#475569', bg: '#e2e8f0', emoji: '✨' },
+  inne: { label: 'Inne', tint: '#4A463E', bg: '#E3DDD0', emoji: '✨' },
 };

@@ -25,11 +25,11 @@ import { usePermissions } from '../../../src/lib/permissions';
 import { NewCalendarEventModal } from '../../../src/features/calendar/components/NewCalendarEventModal';
 
 const SOURCE_FILTERS: { key: EventSource | 'all' | 'mine'; label: string; color: string }[] = [
-  { key: 'all', label: 'Wszystkie', color: '#475569' },
-  { key: 'mine', label: 'Moje', color: '#ec4899' },
-  { key: 'program', label: 'Programy', color: '#ec4899' },
+  { key: 'all', label: 'Wszystkie', color: '#4A463E' },
+  { key: 'mine', label: 'Moje', color: '#8A6606' },
+  { key: 'program', label: 'Programy', color: '#8A6606' },
   { key: 'worship', label: 'Zespół Uwielbienia', color: '#a855f7' },
-  { key: 'media', label: 'Media Team', color: '#f97316' },
+  { key: 'media', label: 'Media Team', color: '#FFBE0B' },
   { key: 'atmosfera', label: 'Atmosfera Team', color: '#14b8a6' },
   { key: 'kids', label: 'Dzieci', color: '#eab308' },
   { key: 'homegroups', label: 'Grupy Domowe', color: '#3b82f6' },
@@ -74,7 +74,7 @@ export default function CalendarScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title="Kalendarz"
           subtitle="Wszystkie wydarzenia"
@@ -87,7 +87,7 @@ export default function CalendarScreen() {
               >
                 <List
                   size={14}
-                  color={view === 'agenda' ? '#ffffff' : '#57534e'}
+                  color={view === 'agenda' ? '#ffffff' : '#4A463E'}
                   strokeWidth={2.4}
                 />
                 <Text
@@ -105,7 +105,7 @@ export default function CalendarScreen() {
               >
                 <CalendarDays
                   size={14}
-                  color={view === 'month' ? '#ffffff' : '#57534e'}
+                  color={view === 'month' ? '#ffffff' : '#4A463E'}
                   strokeWidth={2.4}
                 />
                 <Text
@@ -145,9 +145,9 @@ export default function CalendarScreen() {
                     paddingHorizontal: 12,
                     paddingVertical: 7,
                     borderRadius: 999,
-                    backgroundColor: active ? f.color : '#fafaf9',
+                    backgroundColor: active ? f.color : '#F1EEE6',
                     borderWidth: 1,
-                    borderColor: active ? f.color : '#eef0f3',
+                    borderColor: active ? f.color : '#E6E1D5',
                   }}
                 >
                   <View
@@ -155,14 +155,14 @@ export default function CalendarScreen() {
                       width: 7,
                       height: 7,
                       borderRadius: 4,
-                      backgroundColor: active ? '#ffffff' : f.color,
+                      backgroundColor: active ? '#F6F4EE' : f.color,
                     }}
                   />
                   <Text
                     className="text-[13px]"
                     style={{
-                      color: active ? '#ffffff' : '#1c1917',
-                      fontFamily: 'Inter_600SemiBold',
+                      color: active ? '#ffffff' : '#2A2312',
+                      fontFamily: 'Manrope_600SemiBold',
                     }}
                   >
                     {f.label} · {count}
@@ -175,13 +175,13 @@ export default function CalendarScreen() {
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}
+              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
             >
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
@@ -192,10 +192,10 @@ export default function CalendarScreen() {
                 paddingHorizontal: 20,
                 paddingVertical: 10,
                 borderRadius: 12,
-                backgroundColor: '#ec4899',
+                backgroundColor: '#2A2312',
               }}
             >
-              <Text style={{ color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>
+              <Text style={{ color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>
                 Spróbuj ponownie
               </Text>
             </Pressable>
@@ -211,7 +211,7 @@ export default function CalendarScreen() {
               padding: 32,
             }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <View
@@ -219,23 +219,23 @@ export default function CalendarScreen() {
                 width: 64,
                 height: 64,
                 borderRadius: 18,
-                backgroundColor: '#fef3f2',
+                backgroundColor: '#FFF8E1',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,
               }}
             >
-              <Calendar size={28} color="#ec4899" />
+              <Calendar size={28} color="#8A6606" />
             </View>
             <Text
               className="text-[16px]"
-              style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+              style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
             >
               Brak wydarzeń
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+              style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
             >
               {filter !== 'all'
                 ? 'Spróbuj wybrać inny filtr.'
@@ -247,7 +247,7 @@ export default function CalendarScreen() {
             className="flex-1"
             contentContainerStyle={{ paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <AgendaList items={items} onPick={setPicked} />
@@ -268,10 +268,10 @@ export default function CalendarScreen() {
             width: 56,
             height: 56,
             borderRadius: 28,
-            backgroundColor: '#0c0a09',
+            backgroundColor: '#2A2312',
             alignItems: 'center',
             justifyContent: 'center',
-            shadowColor: '#0c0a09',
+            shadowColor: '#2A2312',
             shadowOffset: { width: 0, height: 6 },
             shadowOpacity: 0.25,
             shadowRadius: 12,
@@ -297,9 +297,9 @@ const styles = StyleSheet.create({
     gap: 4,
     padding: 3,
     borderRadius: 12,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#F1EEE6',
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
   },
   viewBtn: {
     flexDirection: 'row',
@@ -309,11 +309,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 9,
   },
-  viewBtnActive: { backgroundColor: '#0c0a09' },
+  viewBtnActive: { backgroundColor: '#2A2312' },
   viewBtnText: {
     fontSize: 11,
-    color: '#57534e',
-    fontFamily: 'Inter_700Bold',
+    color: '#4A463E',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.1,
   },
   viewBtnTextActive: { color: '#ffffff' },

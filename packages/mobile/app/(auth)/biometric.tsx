@@ -54,10 +54,10 @@ export default function BiometricScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
         }}
       >
-        <ActivityIndicator color="#ec4899" />
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
@@ -66,22 +66,22 @@ export default function BiometricScreen() {
     <View
       style={{
         flex: 1,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#F6F4EE',
         paddingHorizontal: 24,
         justifyContent: 'center',
       }}
     >
       <View style={{ alignItems: 'center', marginBottom: 28 }}>
-        <GradientIcon Icon={Fingerprint} size={80} iconSize={40} from="#f97316" to="#ec4899" rounded />
+        <GradientIcon Icon={Fingerprint} size={80} iconSize={40} rounded />
       </View>
       <Text
         style={{
           fontSize: 24,
-          color: '#0c0a09',
+          color: '#2A2312',
           textAlign: 'center',
           marginBottom: 10,
           letterSpacing: -0.5,
-          fontFamily: 'Inter_700Bold',
+          fontFamily: 'Manrope_700Bold',
         }}
       >
         Włączyć {hint}?
@@ -89,11 +89,11 @@ export default function BiometricScreen() {
       <Text
         style={{
           fontSize: 14,
-          color: '#78716c',
+          color: '#7A7466',
           textAlign: 'center',
           marginBottom: 28,
           lineHeight: 20,
-          fontFamily: 'Inter_500Medium',
+          fontFamily: 'Manrope_500Medium',
         }}
       >
         Następnym razem zalogujesz się jednym dotknięciem zamiast wpisywać hasło.
@@ -102,22 +102,22 @@ export default function BiometricScreen() {
       <Pressable
         onPress={enableBiometric}
         style={{
-          backgroundColor: '#ec4899',
+          backgroundColor: '#2A2312',
           borderRadius: 14,
           paddingVertical: 14,
           alignItems: 'center',
           marginBottom: 12,
         }}
       >
-        <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}>Włącz</Text>
+        <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>Włącz</Text>
       </Pressable>
       <Pressable onPress={skip} style={{ paddingVertical: 10 }}>
         <Text
           style={{
             textAlign: 'center',
             fontSize: 13,
-            color: '#78716c',
-            fontFamily: 'Inter_500Medium',
+            color: '#7A7466',
+            fontFamily: 'Manrope_500Medium',
           }}
         >
           Pomiń

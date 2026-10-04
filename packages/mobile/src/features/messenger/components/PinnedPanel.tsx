@@ -50,7 +50,7 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
             style={{
               fontSize: 11,
               color: "#c2410c",
-              fontFamily: "Inter_700Bold",
+              fontFamily: "Manrope_700Bold",
               letterSpacing: -0.1,
             }}
           >
@@ -61,7 +61,7 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
             style={{
               fontSize: 13,
               color: "#7c2d12",
-              fontFamily: "Inter_500Medium",
+              fontFamily: "Manrope_500Medium",
               marginTop: 1,
             }}
           >
@@ -100,7 +100,7 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
             flex: 1,
             fontSize: 12,
             color: "#c2410c",
-            fontFamily: "Inter_700Bold",
+            fontFamily: "Manrope_700Bold",
             letterSpacing: -0.1,
           }}
         >
@@ -133,7 +133,7 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
                   style={{
                     fontSize: 11,
                     color: "#c2410c",
-                    fontFamily: "Inter_700Bold",
+                    fontFamily: "Manrope_700Bold",
                   }}
                 >
                   {senderName}
@@ -143,7 +143,7 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
                   style={{
                     fontSize: 13,
                     color: "#7c2d12",
-                    fontFamily: "Inter_400Regular",
+                    fontFamily: "Manrope_400Regular",
                     marginTop: 1,
                   }}
                 >

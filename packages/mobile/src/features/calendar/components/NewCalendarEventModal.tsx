@@ -20,8 +20,8 @@ const Label = ({ children }: { children: string }) => (
   <Text
     style={{
       fontSize: 12,
-      color: '#57534e',
-      fontFamily: 'Inter_700Bold',
+      color: '#4A463E',
+      fontFamily: 'Manrope_700Bold',
       letterSpacing: 0.4,
       textTransform: 'uppercase',
       marginTop: 16,
@@ -36,10 +36,10 @@ const inputStyle = {
   height: 46,
   borderRadius: 14,
   paddingHorizontal: 14,
-  backgroundColor: '#f5f5f4',
+  backgroundColor: '#ECE8DE',
   fontSize: 15,
-  color: '#0c0a09',
-  fontFamily: 'Inter_500Medium',
+  color: '#2A2312',
+  fontFamily: 'Manrope_500Medium',
 } as const;
 
 export const NewCalendarEventModal = ({
@@ -104,16 +104,16 @@ export const NewCalendarEventModal = ({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 4 }}>
-          <Text style={{ flex: 1, fontSize: 20, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>Nowe wydarzenie</Text>
+          <Text style={{ flex: 1, fontSize: 20, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Nowe wydarzenie</Text>
           <Pressable onPress={onClose} hitSlop={10} className="active:opacity-60">
-            <X size={22} color="#57534e" />
+            <X size={22} color="#4A463E" />
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <Label>Tytuł</Label>
-          <TextInput value={title} onChangeText={setTitle} placeholder="np. Spotkanie liderów" placeholderTextColor="#a8a29e" style={inputStyle} />
+          <TextInput value={title} onChangeText={setTitle} placeholder="np. Spotkanie liderów" placeholderTextColor="#A8A59E" style={inputStyle} />
 
           <Label>Kalendarz</Label>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -124,9 +124,9 @@ export const NewCalendarEventModal = ({
                   key={o.key ?? 'general'}
                   onPress={() => setModuleKey(o.key)}
                   className="active:opacity-70"
-                  style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: on ? '#0c0a09' : '#f5f5f4' }}
+                  style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: on ? '#2A2312' : '#ECE8DE' }}
                 >
-                  <Text style={{ fontSize: 13, color: on ? '#ffffff' : '#44403c', fontFamily: 'Inter_600SemiBold' }}>{o.label}</Text>
+                  <Text style={{ fontSize: 13, color: on ? '#ffffff' : '#3A3427', fontFamily: 'Manrope_600SemiBold' }}>{o.label}</Text>
                 </Pressable>
               );
             })}
@@ -147,9 +147,9 @@ export const NewCalendarEventModal = ({
           </View>
 
           <Label>Miejsce</Label>
-          <TextInput value={location} onChangeText={setLocation} placeholder="np. Sala główna" placeholderTextColor="#a8a29e" style={inputStyle} />
+          <TextInput value={location} onChangeText={setLocation} placeholder="np. Sala główna" placeholderTextColor="#A8A59E" style={inputStyle} />
 
-          <Text style={{ fontSize: 12, lineHeight: 17, color: '#a8a29e', marginTop: 14, fontFamily: 'Inter_400Regular' }}>
+          <Text style={{ fontSize: 12, lineHeight: 17, color: '#A8A59E', marginTop: 14, fontFamily: 'Manrope_400Regular' }}>
             Opis, zapisy, płatności i widoczność ustawisz na webie na stronie wydarzenia.
           </Text>
 
@@ -161,7 +161,7 @@ export const NewCalendarEventModal = ({
               marginTop: 20,
               height: 52,
               borderRadius: 16,
-              backgroundColor: '#0c0a09',
+              backgroundColor: '#2A2312',
               alignItems: 'center',
               justifyContent: 'center',
               opacity: create.isPending ? 0.6 : 1,
@@ -170,7 +170,7 @@ export const NewCalendarEventModal = ({
             {create.isPending ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={{ fontSize: 15, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>Dodaj wydarzenie</Text>
+              <Text style={{ fontSize: 15, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>Dodaj wydarzenie</Text>
             )}
           </Pressable>
         </ScrollView>

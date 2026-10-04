@@ -4,6 +4,7 @@ import { ChevronRight, UserCheck } from 'lucide-react-native';
 import { usePermissions } from '../../../lib/permissions';
 import { usePendingAccounts, type PendingAccount } from '../../admin/approvals';
 import { plural } from './Greeting';
+import { D, F } from '../theme';
 
 // Dla osób zarządzających użytkownikami: ktoś czeka na zatwierdzenie konta.
 export const PendingAccountsCard = () => {
@@ -20,27 +21,27 @@ export const PendingAccountsCard = () => {
       className="active:opacity-70"
       style={{
         marginHorizontal: 16,
-        marginBottom: 14,
+        marginBottom: 28,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
         padding: 14,
-        borderRadius: 20,
-        backgroundColor: '#ffffff',
+        borderRadius: D.radius,
+        backgroundColor: D.card,
       }}
     >
-      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#dcfce7', alignItems: 'center', justifyContent: 'center' }}>
-        <UserCheck size={19} color="#15803d" />
+      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: D.well, alignItems: 'center', justifyContent: 'center' }}>
+        <UserCheck size={20} color={D.ink} strokeWidth={1.9} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>
+        <Text style={{ fontSize: 15, color: D.ink, letterSpacing: -0.2, fontFamily: F.bold }}>
           {count} {plural(count, 'konto czeka', 'konta czekają', 'kont czeka')} na zatwierdzenie
         </Text>
-        <Text style={{ fontSize: 12, color: '#78716c', marginTop: 1, fontFamily: 'Inter_500Medium' }}>
+        <Text style={{ fontSize: 13, color: D.ink2, marginTop: 1, fontFamily: F.medium }}>
           Nowe rejestracje w kościele
         </Text>
       </View>
-      <ChevronRight size={18} color="#a8a29e" />
+      <ChevronRight size={18} color={D.ink3} />
     </Pressable>
   );
 };

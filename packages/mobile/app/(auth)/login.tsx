@@ -16,7 +16,7 @@ import {
   beginTwoFactor,
   type LoginTenant,
 } from '../../src/lib/auth';
-import { GradientAvatar } from '../../src/components/ui/GradientAvatar';
+import { Image } from 'expo-image';
 import { GradientButton } from '../../src/components/ui/GradientButton';
 
 export default function LoginScreen() {
@@ -74,35 +74,28 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={{ flex: 1, backgroundColor: '#ffffff' }}
+      style={{ flex: 1, backgroundColor: '#F6F4EE' }}
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ alignItems: 'center', marginBottom: 24 }}>
-          <GradientAvatar initial="A" size={80} rounded={false} />
+        <View style={{ alignItems: 'center', marginBottom: 22, gap: 18 }}>
+          <Image source={require('../../assets/brand/znak-kurkuma.png')} style={{ width: 76, height: 76 }} contentFit="contain" />
+          <Image
+            source={require('../../assets/brand/logo-slod.png')}
+            style={{ width: 137, height: 36 }}
+            contentFit="contain"
+            accessibilityLabel="avenit"
+          />
         </View>
-
-        <Text
-          style={{
-            fontSize: 28,
-            color: '#0c0a09',
-            textAlign: 'center',
-            marginBottom: 6,
-            letterSpacing: -0.6,
-            fontFamily: 'Inter_700Bold',
-          }}
-        >
-          Avenit
-        </Text>
         <Text
           style={{
             fontSize: 14,
-            color: '#78716c',
+            color: '#7A7466',
             textAlign: 'center',
             marginBottom: 28,
-            fontFamily: 'Inter_500Medium',
+            fontFamily: 'Manrope_500Medium',
           }}
         >
           {choices ? 'Wybierz swój kościół' : 'Zaloguj się do aplikacji'}
@@ -118,8 +111,8 @@ export default function LoginScreen() {
                 style={{
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: '#eef0f3',
-                  backgroundColor: '#fafaf9',
+                  borderColor: '#E6E1D5',
+                  backgroundColor: '#F1EEE6',
                   paddingHorizontal: 16,
                   paddingVertical: 16,
                   opacity: loading ? 0.6 : 1,
@@ -128,8 +121,8 @@ export default function LoginScreen() {
                 <Text
                   style={{
                     fontSize: 15,
-                    color: '#0c0a09',
-                    fontFamily: 'Inter_600SemiBold',
+                    color: '#2A2312',
+                    fontFamily: 'Manrope_600SemiBold',
                   }}
                 >
                   {c.name}
@@ -145,8 +138,8 @@ export default function LoginScreen() {
                 style={{
                   textAlign: 'center',
                   fontSize: 13,
-                  color: '#78716c',
-                  fontFamily: 'Inter_500Medium',
+                  color: '#7A7466',
+                  fontFamily: 'Manrope_500Medium',
                 }}
               >
                 Wróć
@@ -159,8 +152,8 @@ export default function LoginScreen() {
         <View
           style={{
             borderRadius: 20,
-            backgroundColor: '#ffffff',
-            shadowColor: '#0f172a',
+            backgroundColor: '#F6F4EE',
+            shadowColor: '#2A2312',
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.05,
             shadowRadius: 14,
@@ -171,16 +164,16 @@ export default function LoginScreen() {
             style={{
               borderRadius: 20,
               borderWidth: 1,
-              borderColor: '#eef0f3',
+              borderColor: '#E6E1D5',
               padding: 20,
             }}
           >
             <Text
               style={{
                 fontSize: 12,
-                color: '#57534e',
+                color: '#4A463E',
                 marginBottom: 6,
-                fontFamily: 'Inter_600SemiBold',
+                fontFamily: 'Manrope_600SemiBold',
                 textTransform: 'uppercase',
                 letterSpacing: 0.4,
               }}
@@ -190,22 +183,22 @@ export default function LoginScreen() {
             <TextInput
               style={{
                 borderWidth: 1,
-                borderColor: '#eef0f3',
+                borderColor: '#E6E1D5',
                 borderRadius: 14,
                 paddingHorizontal: 14,
                 paddingVertical: 12,
                 fontSize: 15,
-                color: '#0c0a09',
-                backgroundColor: '#fafaf9',
+                color: '#2A2312',
+                backgroundColor: '#F1EEE6',
                 marginBottom: 14,
-                fontFamily: 'Inter_500Medium',
+                fontFamily: 'Manrope_500Medium',
               }}
               autoCapitalize="none"
               autoComplete="email"
               keyboardType="email-address"
               textContentType="emailAddress"
               placeholder="ty@avenit.pl"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#A8A59E"
               value={email}
               onChangeText={setEmail}
               editable={!loading}
@@ -214,9 +207,9 @@ export default function LoginScreen() {
             <Text
               style={{
                 fontSize: 12,
-                color: '#57534e',
+                color: '#4A463E',
                 marginBottom: 6,
-                fontFamily: 'Inter_600SemiBold',
+                fontFamily: 'Manrope_600SemiBold',
                 textTransform: 'uppercase',
                 letterSpacing: 0.4,
               }}
@@ -226,22 +219,22 @@ export default function LoginScreen() {
             <TextInput
               style={{
                 borderWidth: 1,
-                borderColor: '#eef0f3',
+                borderColor: '#E6E1D5',
                 borderRadius: 14,
                 paddingHorizontal: 14,
                 paddingVertical: 12,
                 fontSize: 15,
-                color: '#0c0a09',
-                backgroundColor: '#fafaf9',
+                color: '#2A2312',
+                backgroundColor: '#F1EEE6',
                 marginBottom: 18,
-                fontFamily: 'Inter_500Medium',
+                fontFamily: 'Manrope_500Medium',
               }}
               autoCapitalize="none"
               autoComplete="password"
               textContentType="password"
               secureTextEntry
               placeholder="••••••••"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#A8A59E"
               value={password}
               onChangeText={setPassword}
               editable={!loading}
@@ -258,8 +251,8 @@ export default function LoginScreen() {
                 style={{
                   textAlign: 'center',
                   fontSize: 13,
-                  color: '#be185d',
-                  fontFamily: 'Inter_600SemiBold',
+                  color: '#8A6606',
+                  fontFamily: 'Manrope_600SemiBold',
                 }}
               >
                 Nie pamiętam hasła

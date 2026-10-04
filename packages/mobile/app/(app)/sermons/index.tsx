@@ -23,8 +23,8 @@ const SermonCard = ({ sermon, onPress }: { sermon: Sermon; onPress: () => void }
       className="mb-3 active:opacity-90"
       style={{
         borderRadius: 20,
-        backgroundColor: '#ffffff',
-        shadowColor: '#0f172a',
+        backgroundColor: '#F6F4EE',
+        shadowColor: '#2A2312',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.05,
         shadowRadius: 14,
@@ -33,20 +33,20 @@ const SermonCard = ({ sermon, onPress }: { sermon: Sermon; onPress: () => void }
     >
       <View
         className="overflow-hidden p-4"
-        style={{ borderRadius: 20, borderWidth: 1, borderColor: '#eef0f3' }}
+        style={{ borderRadius: 20, borderWidth: 1, borderColor: '#E6E1D5' }}
       >
         <View className="flex-row items-center justify-between">
           {sermon.sermon_date ? (
             <Text
               className="text-[11px] uppercase"
-              style={{ color: '#78716c', letterSpacing: 0.4, fontFamily: 'Inter_600SemiBold' }}
+              style={{ color: '#7A7466', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
             >
               {formatDate(sermon.sermon_date, 'd MMM yyyy')}
             </Text>
           ) : (
             <View />
           )}
-          <ChevronRight size={18} color="#a8a29e" />
+          <ChevronRight size={18} color="#A8A59E" />
         </View>
 
         {sermon.series ? (
@@ -54,7 +54,7 @@ const SermonCard = ({ sermon, onPress }: { sermon: Sermon; onPress: () => void }
             className="self-start px-2 py-0.5 mt-1 mb-1"
             style={{ borderRadius: 999, backgroundColor: '#f3e8ff' }}
           >
-            <Text className="text-[11px]" style={{ color: '#7c3aed', fontFamily: 'Inter_700Bold' }}>
+            <Text className="text-[11px]" style={{ color: '#7c3aed', fontFamily: 'Manrope_700Bold' }}>
               {sermon.series}
             </Text>
           </View>
@@ -62,17 +62,17 @@ const SermonCard = ({ sermon, onPress }: { sermon: Sermon; onPress: () => void }
 
         <Text
           className="text-[18px] mt-1"
-          style={{ color: '#0c0a09', letterSpacing: -0.4, fontFamily: 'Inter_700Bold' }}
+          style={{ color: '#2A2312', letterSpacing: -0.4, fontFamily: 'Manrope_700Bold' }}
         >
           {sermon.title || 'Kazanie'}
         </Text>
 
         {sermon.scripture_ref ? (
           <View className="flex-row items-center gap-1.5 mt-1.5">
-            <Quote size={13} color="#a8a29e" />
+            <Quote size={13} color="#A8A59E" />
             <Text
               className="text-[13px] italic"
-              style={{ color: '#57534e', fontFamily: 'Inter_400Regular' }}
+              style={{ color: '#4A463E', fontFamily: 'Manrope_400Regular' }}
             >
               {sermon.scripture_ref}
             </Text>
@@ -96,7 +96,7 @@ const SermonCard = ({ sermon, onPress }: { sermon: Sermon; onPress: () => void }
               </View>
               <Text
                 className="text-[13px]"
-                style={{ color: '#57534e', fontFamily: 'Inter_500Medium' }}
+                style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium' }}
               >
                 {sermon.speaker}
               </Text>
@@ -127,7 +127,7 @@ const SeriesChip = ({ label, active, onPress }: { label: string; active: boolean
       borderColor: active ? '#7c3aed' : '#ede9fe',
     }}
   >
-    <Text className="text-[13px]" style={{ color: active ? '#ffffff' : '#6d28d9', fontFamily: 'Inter_600SemiBold' }}>
+    <Text className="text-[13px]" style={{ color: active ? '#ffffff' : '#6d28d9', fontFamily: 'Manrope_600SemiBold' }}>
       {label}
     </Text>
   </Pressable>
@@ -165,7 +165,7 @@ export default function SermonsScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Kazania" subtitle="Posłuchaj Słowa" Icon={Podcast} showBack />
 
         {!isLoading && !isError && (data ?? []).length > 0 ? (
@@ -175,30 +175,30 @@ export default function SermonsScreen() {
                 className="flex-row items-center gap-2 px-3"
                 style={{
                   borderRadius: 999,
-                  backgroundColor: '#fafaf9',
+                  backgroundColor: '#F1EEE6',
                   borderWidth: 1,
-                  borderColor: '#eef0f3',
+                  borderColor: '#E6E1D5',
                   height: 40,
                 }}
               >
-                <Search size={16} color="#a8a29e" />
+                <Search size={16} color="#A8A59E" />
                 <TextInput
                   style={{
                     flex: 1,
                     fontSize: 14,
-                    color: '#0c0a09',
-                    fontFamily: 'Inter_400Regular',
+                    color: '#2A2312',
+                    fontFamily: 'Manrope_400Regular',
                     paddingVertical: 0,
                   }}
                   placeholder="Szukaj: tytuł, mówca, werset…"
-                  placeholderTextColor="#a8a29e"
+                  placeholderTextColor="#A8A59E"
                   value={search}
                   onChangeText={setSearch}
                   returnKeyType="search"
                 />
                 {search.length > 0 ? (
                   <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                    <X size={15} color="#a8a29e" />
+                    <X size={15} color="#A8A59E" />
                   </Pressable>
                 ) : null}
               </View>
@@ -222,13 +222,13 @@ export default function SermonsScreen() {
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}
+              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
             >
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
@@ -242,7 +242,7 @@ export default function SermonsScreen() {
               padding: 32,
             }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <View
@@ -260,13 +260,13 @@ export default function SermonsScreen() {
             </View>
             <Text
               className="text-[16px]"
-              style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+              style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
             >
               Brak kazań
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+              style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}
             >
               Opublikowane kazania pojawią się tutaj.
             </Text>
@@ -275,7 +275,7 @@ export default function SermonsScreen() {
           <ScrollView
             contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <View
@@ -291,10 +291,10 @@ export default function SermonsScreen() {
             >
               <Search size={26} color="#7c3aed" />
             </View>
-            <Text className="text-[16px]" style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+            <Text className="text-[16px]" style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
               Brak wyników
             </Text>
-            <Text className="text-[13px] text-center mt-1" style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}>
+            <Text className="text-[13px] text-center mt-1" style={{ color: '#7A7466', fontFamily: 'Manrope_400Regular' }}>
               Zmień wyszukiwanie lub wybraną serię.
             </Text>
             {hasFilters ? (
@@ -305,7 +305,7 @@ export default function SermonsScreen() {
                 }}
                 style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, backgroundColor: '#f3e8ff' }}
               >
-                <Text style={{ fontSize: 13, color: '#7c3aed', fontFamily: 'Inter_700Bold' }}>Wyczyść filtry</Text>
+                <Text style={{ fontSize: 13, color: '#7c3aed', fontFamily: 'Manrope_700Bold' }}>Wyczyść filtry</Text>
               </Pressable>
             ) : null}
           </ScrollView>
@@ -313,7 +313,7 @@ export default function SermonsScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {list.map((s: Sermon) => (
