@@ -195,7 +195,7 @@ export default function SongsScreen() {
               const first = index === 0;
               const last = index === filtered.length - 1;
               return (
-                <Link href={{ pathname: '/(app)/songs/[id]', params: { id: String(item.id) } }} asChild>
+                <Link push href={{ pathname: '/(app)/songs/[id]', params: { id: String(item.id) } }} asChild>
                   {/* Wiersz pieśni: na początku tonacja i tempo — to, czego zespół szuka najpierw. */}
                   <Pressable
                     className="active:opacity-80"

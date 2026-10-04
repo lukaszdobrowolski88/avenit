@@ -420,7 +420,7 @@ export default function MessengerScreen() {
                     paddingVertical: 12,
                   }}
                 >
-                  <Link
+                  <Link push
                     href={{
                       pathname: "/(app)/messenger/[conversationId]",
                       params: { conversationId: item.id },

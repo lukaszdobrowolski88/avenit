@@ -40,7 +40,7 @@ export const MyPrayersWidget = ({ items }: { items: RecentPrayer[] }) => {
           {items.slice(0, 3).map((p, idx, arr) => {
             const meta = formatCategory(p.category);
             return (
-              <Link key={p.id} href={{ pathname: '/(app)/prayers' }} asChild>
+              <Link push key={p.id} href={{ pathname: '/(app)/prayers' }} asChild>
                 <Pressable
                   className="active:opacity-70"
                   style={{

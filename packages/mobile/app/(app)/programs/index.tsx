@@ -37,7 +37,7 @@ const ProgramCard = ({ program }: { program: ProgramListItem }) => {
   const itemsCount = Array.isArray(program.schedule) ? program.schedule.length : 0;
   const programCampus = getCampus(program.campus_id ?? null);
   return (
-    <Link href={{ pathname: '/(app)/programs/[id]', params: { id: String(program.id) } }} asChild>
+    <Link push href={{ pathname: '/(app)/programs/[id]', params: { id: String(program.id) } }} asChild>
       <Pressable
         className="mx-4 mb-2.5 active:opacity-80"
         style={{

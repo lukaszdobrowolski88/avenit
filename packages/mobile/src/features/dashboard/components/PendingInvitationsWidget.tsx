@@ -44,7 +44,7 @@ const InvitationCard = ({ inv }: { inv: PendingInvitation }) => {
         <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: inv.typeColor || D.accent }} />
         <Text style={{ fontSize: 12, color: D.ink2, fontFamily: F.medium }}>{formatDate(inv.date, 'EEEE, d MMM')}</Text>
       </View>
-      <Link
+      <Link push
         href={
           inv.programId != null
             ? { pathname: '/(app)/programs/[id]', params: { id: String(inv.programId) } }

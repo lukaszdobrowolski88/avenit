@@ -105,7 +105,7 @@ const Row = ({
       ? ({ pathname: '/(app)/programs/[id]', params: { id: String(programId) } } as const)
       : ('/(app)/calendar' as const);
   return (
-    <Link href={href} asChild>
+    <Link push href={href} asChild>
       <Pressable
         className="active:opacity-70"
         style={{

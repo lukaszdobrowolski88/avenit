@@ -29,7 +29,7 @@ export const MessagesWidget = ({ conversations, totalUnread }: Props) => {
           const title =
             c.name || (c.type === 'ministry' ? c.ministry_key ?? 'Kanał' : 'Rozmowa');
           return (
-            <Link
+            <Link push
               key={c.id}
               href={{
                 pathname: '/(app)/messenger/[conversationId]',

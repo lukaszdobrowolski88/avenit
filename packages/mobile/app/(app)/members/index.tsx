@@ -266,7 +266,7 @@ export default function MembersScreen() {
               const last = index === filtered.length - 1;
               const isMember = item.status === 'Członek';
               return (
-                <Link
+                <Link push
                   href={{ pathname: '/(app)/members/[id]', params: { id: String(item.id) } }}
                   asChild
                 >
