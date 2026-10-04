@@ -17,6 +17,7 @@ import type { TeamConfig } from '../config';
 import { useAddTeamExpense, useTeamFinance, type TeamFinance } from '../data';
 import { pickImageForTask, takePhotoForTask, type PickedAsset } from '../../dashboard/task-attachments';
 import { AddButton, Card, Empty, Loading, money } from './ui';
+import { DateField } from '../../../components/ui/DateField';
 
 const todayYmd = () => {
   const d = new Date();
@@ -214,7 +215,7 @@ export const FinanceTab = ({
             <TextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0,00" placeholderTextColor="#857F70" style={inputStyle} />
 
             <Label>Data płatności</Label>
-            <TextInput value={date} onChangeText={setDate} placeholder="RRRR-MM-DD" placeholderTextColor="#857F70" style={inputStyle} />
+            <DateField value={date} onChange={setDate} />
 
             <Label>Kontrahent</Label>
             <TextInput value={contractor} onChangeText={setContractor} placeholder="np. Thomann, Media Expert" placeholderTextColor="#857F70" style={inputStyle} />

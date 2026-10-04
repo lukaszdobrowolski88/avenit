@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Lock, X } from 'lucide-react-native';
 import { useUpdateMember, type MemberRow, type MemberStatus } from '../api';
+import { DateField } from '../../../components/ui/DateField';
 
 const STATUSES: MemberStatus[] = ['Członek', 'Sympatyk', 'Gość'];
 
@@ -171,7 +172,12 @@ export const EditMemberModal = ({
           {field('phone', 'Telefon', { keyboard: 'phone-pad', placeholder: '+48 …' })}
           {field('email', 'E-mail', { keyboard: 'email-address' })}
           {field('address', 'Adres')}
-          {field('birth_date', 'Data urodzenia', { placeholder: 'RRRR-MM-DD' })}
+          <Label locked={!can('birth_date')}>Data urodzenia</Label>
+          {can('birth_date') ? (
+            <DateField value={form.birth_date} onChange={set('birth_date')} optional placeholder="Nie podano" />
+          ) : (
+            <Text style={[inputStyle, { lineHeight: 46, color: '#857F70' }]}>{form.birth_date || '—'}</Text>
+          )}
           {field('notes', 'Notatki', { multiline: true })}
 
           <Pressable

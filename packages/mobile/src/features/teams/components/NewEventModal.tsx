@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { X } from 'lucide-react-native';
+import { DateField, TimeField } from '../../../components/ui/DateField';
 
 interface Props {
   visible: boolean;
@@ -57,7 +58,7 @@ export const NewEventModal = ({
     const dateTimeMatch = `${dateStr}T${timeStr}:00`;
     const startDate = new Date(dateTimeMatch);
     if (isNaN(startDate.getTime())) {
-      Alert.alert('Błędna data', 'Format: YYYY-MM-DD i HH:MM');
+      Alert.alert('Wybierz termin', 'Ustaw datę i godzinę wydarzenia.');
       return;
     }
     try {
@@ -85,6 +86,8 @@ export const NewEventModal = ({
     textTransform: 'uppercase' as const,
     fontFamily: 'Manrope_700Bold',
   };
+  // Pola wyboru daty/godziny w stylu pozostałych pól formularza (białe z ramką).
+  const pickerStyle = { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E6E1D5', height: 48, marginBottom: 12 };
   const inputStyle = {
     borderWidth: 1,
     borderColor: '#E6E1D5',
@@ -182,27 +185,11 @@ export const NewEventModal = ({
               })}
             </View>
 
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <View style={{ flex: 2 }}>
-                <Text style={labelStyle}>Data (YYYY-MM-DD)</Text>
-                <TextInput
-                  value={dateStr}
-                  onChangeText={setDateStr}
-                  placeholder="2026-05-10"
-                  placeholderTextColor="#857F70"
-                  style={inputStyle}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={labelStyle}>Godzina</Text>
-                <TextInput
-                  value={timeStr}
-                  onChangeText={setTimeStr}
-                  placeholder="19:00"
-                  placeholderTextColor="#857F70"
-                  style={inputStyle}
-                />
-              </View>
+            <Text style={labelStyle}>Data</Text>
+            <DateField value={dateStr} onChange={setDateStr} style={pickerStyle} />
+            <Text style={labelStyle}>Godzina</Text>
+            <View style={{ width: '50%' }}>
+              <TimeField value={timeStr} onChange={setTimeStr} title="Godzina" style={pickerStyle} />
             </View>
 
             <Text style={labelStyle}>Miejsce (opcjonalnie)</Text>

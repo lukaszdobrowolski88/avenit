@@ -32,6 +32,7 @@ import {
 } from 'lucide-react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '../../../lib/domain';
+import { DateField } from '../../../components/ui/DateField';
 import { EmptyRow, WidgetCard } from './WidgetCard';
 import { D, F } from '../theme';
 import { MemberAvatar, MemberPicker, type PickedMember } from './MemberPicker';
@@ -158,6 +159,9 @@ const inputStyle = {
   backgroundColor: '#FFFFFF',
   fontFamily: 'Manrope_500Medium' as const,
 };
+
+// Pole daty w stylu pól formularza (białe z ramką).
+const pickerStyle = { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E6E1D5', height: 48 };
 
 const addDays = (iso: string, days: number): string => {
   const d = new Date(iso);
@@ -411,14 +415,9 @@ const TaskFormModal = ({
             </Pressable>
 
             <Label>Termin</Label>
-            <TextInput
-              value={dateText}
-              onChangeText={setDateText}
-              placeholder="np. 2026-05-10 (lub puste)"
-              placeholderTextColor="#857F70"
-              keyboardType="numbers-and-punctuation"
-              style={[inputStyle, { marginBottom: 8 }]}
-            />
+            <View style={{ marginBottom: 8 }}>
+              <DateField value={dateText} onChange={setQuickDate} optional placeholder="Bez terminu" style={pickerStyle} />
+            </View>
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
               {[
                 { label: 'Dziś', v: today },

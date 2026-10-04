@@ -85,8 +85,9 @@ export const NewCalendarEventModal = ({
 
   const save = async () => {
     if (!title.trim()) return Alert.alert('Podaj tytuł', 'Tytuł wydarzenia jest wymagany.');
-    if (time && !isValidTime(time)) return Alert.alert('Błędna godzina', 'Wpisz godzinę jako GG:MM, np. 18:30.');
-    if (endTime && !isValidTime(endTime)) return Alert.alert('Błędna godzina końca', 'Wpisz godzinę jako GG:MM.');
+    if (time && !isValidTime(time)) return Alert.alert('Błędna godzina', 'Wybierz godzinę początku.');
+    if (endTime && !isValidTime(endTime)) return Alert.alert('Błędna godzina końca', 'Wybierz godzinę końca.');
+    if (time && endTime && endTime <= time) return Alert.alert('Koniec przed początkiem', 'Godzina końca musi być późniejsza niż początek.');
     try {
       await create.mutateAsync({
         title: title.trim(),
@@ -138,11 +139,11 @@ export const NewCalendarEventModal = ({
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <View style={{ flex: 1 }}>
               <Label>Początek</Label>
-              <TimeField value={time} onChange={setTime} placeholder="np. 18:00" />
+              <TimeField value={time} onChange={setTime} title="Początek" placeholder="Cały dzień" optional suggest="18:00" />
             </View>
             <View style={{ flex: 1 }}>
               <Label>Koniec</Label>
-              <TimeField value={endTime} onChange={setEndTime} placeholder="opcjonalnie" />
+              <TimeField value={endTime} onChange={setEndTime} title="Koniec" placeholder="opcjonalnie" optional from={time || null} />
             </View>
           </View>
 

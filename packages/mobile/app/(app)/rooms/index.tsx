@@ -78,7 +78,8 @@ export default function RoomsScreen() {
   const save = async () => {
     if (!resourceId) return Alert.alert('Wybierz salę');
     if (!title.trim()) return Alert.alert('Podaj tytuł', 'Np. „Próba zespołu” albo „Spotkanie grupy”.');
-    if (!isValidTime(start) || !isValidTime(end)) return Alert.alert('Błędna godzina', 'Wpisz godziny jako GG:MM.');
+    if (!isValidTime(start) || !isValidTime(end)) return Alert.alert('Wybierz godziny', 'Ustaw początek i koniec rezerwacji.');
+    if (end <= start) return Alert.alert('Koniec przed początkiem', 'Godzina „do” musi być późniejsza niż „od”.');
     try {
       await create.mutateAsync({ resourceId, title: title.trim(), startAt: at(date, start), endAt: at(date, end), note: note.trim() || null });
       setOpen(false);
@@ -198,11 +199,11 @@ export default function RoomsScreen() {
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <View style={{ flex: 1 }}>
                 <Label>Od</Label>
-                <TimeField value={start} onChange={setStart} />
+                <TimeField value={start} onChange={setStart} title="Od" />
               </View>
               <View style={{ flex: 1 }}>
                 <Label>Do</Label>
-                <TimeField value={end} onChange={setEnd} />
+                <TimeField value={end} onChange={setEnd} title="Do" from={start} />
               </View>
             </View>
             <Label>Notatka</Label>
