@@ -145,9 +145,9 @@ export default function CalendarScreen() {
                     paddingHorizontal: 12,
                     paddingVertical: 7,
                     borderRadius: 999,
-                    backgroundColor: active ? f.color : '#F1EEE6',
-                    borderWidth: 1,
-                    borderColor: active ? f.color : '#E6E1D5',
+                    // Aktywny zawsze słód (kolor kategorii tylko w kropce) — inaczej np. biały
+                    // tekst na kurkumie byłby nieczytelny.
+                    backgroundColor: active ? '#2A2312' : '#ECE8DE',
                   }}
                 >
                   <View
@@ -155,7 +155,7 @@ export default function CalendarScreen() {
                       width: 7,
                       height: 7,
                       borderRadius: 4,
-                      backgroundColor: active ? '#F6F4EE' : f.color,
+                      backgroundColor: active ? '#FFBE0B' : f.color,
                     }}
                   />
                   <Text

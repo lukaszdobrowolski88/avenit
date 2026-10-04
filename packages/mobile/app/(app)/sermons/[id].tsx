@@ -6,10 +6,10 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { Quote, User } from 'lucide-react-native';
 import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { SermonAudioPlayer } from '../../../src/features/sermons/components/SermonAudioPlayer';
+import { B, Monogram } from '../../../src/components/ui/brand';
 import { SermonVideo } from '../../../src/features/sermons/components/SermonVideo';
 import { useSermon } from '../../../src/features/sermons/api';
 
@@ -68,86 +68,47 @@ export default function SermonDetailScreen() {
         <PageHeader title="Kazanie" subtitle={sermon.series ?? undefined} showBack />
 
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}>
-          {sermon.sermon_date ? (
-            <Text
-              className="text-[11px] uppercase mb-1"
-              style={{ color: '#6B6557', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
-            >
-              {formatDate(sermon.sermon_date, 'EEEE, d MMM yyyy')}
+          {/* Karta jak plakat marki: kurkumowa data, tytuł pogrubiony + werset cienkim krojem,
+              mówca i odtwarzanie na ciemnym tle (słód). */}
+          <View style={{ borderRadius: 28, backgroundColor: B.ink, padding: 22, marginBottom: 16 }}>
+            {sermon.sermon_date ? (
+              <Text style={{ fontSize: 12, letterSpacing: 1.3, textTransform: 'uppercase', color: B.kurkuma, fontFamily: 'Manrope_700Bold' }}>
+                {formatDate(sermon.sermon_date, 'EEEE, d MMM yyyy')}
+              </Text>
+            ) : null}
+            <Text style={{ fontSize: 28, lineHeight: 33, marginTop: 10, color: B.onDark, letterSpacing: -1, fontFamily: 'Manrope_700Bold' }}>
+              {sermon.title || 'Kazanie'}
             </Text>
-          ) : null}
-
-          <Text
-            className="text-[24px] mb-2"
-            style={{ color: '#2A2312', letterSpacing: -0.6, fontFamily: 'Manrope_700Bold' }}
-          >
-            {sermon.title || 'Kazanie'}
-          </Text>
-
-          {sermon.speaker ? (
-            <View className="flex-row items-center gap-2 mb-3">
-              <View
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: 14,
-                  backgroundColor: '#ECE8DE',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <User size={14} color="#2A2312" />
-              </View>
-              <Text
-                className="text-[14px]"
-                style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium' }}
-              >
-                {sermon.speaker}
-              </Text>
-            </View>
-          ) : null}
-
-          {sermon.scripture_ref ? (
-            <View
-              className="flex-row items-start gap-2 mb-4 p-3"
-              style={{ borderRadius: 14, backgroundColor: '#ECE8DE' }}
-            >
-              <Quote size={16} color="#857F70" style={{ marginTop: 2 }} />
-              <Text
-                className="flex-1 text-[14px] italic"
-                style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium', lineHeight: 20 }}
-              >
+            {sermon.scripture_ref ? (
+              <Text style={{ fontSize: 24, lineHeight: 30, color: B.onDark, letterSpacing: -0.8, fontFamily: 'Manrope_300Light' }}>
                 {sermon.scripture_ref}
+                <Text style={{ color: B.kurkuma, fontFamily: 'Manrope_700Bold' }}>.</Text>
               </Text>
-            </View>
-          ) : null}
-
-          {sermon.audio_url ? (
-            <View className="mb-3">
-              <SermonAudioPlayer uri={sermon.audio_url} />
-            </View>
-          ) : null}
+            ) : null}
+            {sermon.speaker ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 18 }}>
+                <Monogram name={sermon.speaker} size={32} onDark />
+                <Text style={{ fontSize: 14, color: B.onDark, fontFamily: 'Manrope_600SemiBold' }}>{sermon.speaker}</Text>
+              </View>
+            ) : null}
+            {sermon.audio_url ? (
+              <View style={{ marginTop: 20 }}>
+                <SermonAudioPlayer uri={sermon.audio_url} dark />
+              </View>
+            ) : null}
+          </View>
 
           {sermon.video_url ? <SermonVideo url={sermon.video_url} /> : null}
 
           {sermon.description ? (
-            <Text
-              className="text-[14px] mb-4"
-              style={{ color: '#2A2312', fontFamily: 'Manrope_400Regular', lineHeight: 22 }}
-            >
+            <Text style={{ fontSize: 15, lineHeight: 24, marginBottom: 16, paddingHorizontal: 4, color: B.ink2, fontFamily: 'Manrope_400Regular' }}>
               {sermon.description}
             </Text>
           ) : null}
 
           {sermon.notes ? (
-            <View
-              className="p-4"
-              style={{ borderRadius: 16, borderWidth: 1, borderColor: '#E6E1D5' }}
-            >
-              <Text
-                className="text-[11px] uppercase mb-2"
-                style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
-              >
+            <View style={{ borderRadius: 22, backgroundColor: B.card, padding: 18 }}>
+              <Text style={{ fontSize: 12, letterSpacing: 1.3, textTransform: 'uppercase', color: B.gold, marginBottom: 8, fontFamily: 'Manrope_700Bold' }}>
                 Notatki
               </Text>
               <Text

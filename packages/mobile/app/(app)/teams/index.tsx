@@ -1,17 +1,48 @@
 import { ActivityIndicator, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowUpRight, ChevronRight, Users } from 'lucide-react-native';
+import { ArrowUpRight, Users } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
-import { GradientIcon } from '../../../src/components/ui/GradientIcon';
+import { B, IconWell, ListCard, ListRow, SectionLabel } from '../../../src/components/ui/brand';
 import { ALL_MINISTRIES } from '../../../src/features/teams/api';
-import { openModule, useModules } from '../../../src/features/modules/useModules';
+import { openModule, useModules, type ModuleItem } from '../../../src/features/modules/useModules';
 
 // Zespoły i służby, do których ta osoba ma dostęp (jak sidebar weba): natywne ekrany
 // dla 5 wbudowanych służb, moduły z kreatora otwierane na webie.
 export default function TeamsListScreen() {
   const router = useRouter();
-  const { ready, items } = useModules();
+  const { ready, items, perms } = useModules();
   const teams = items.filter((it) => it.section === 'teams' && it.key !== 'songs');
+  // Rola w służbie (przynależność) — lider wyróżniony słodem, członek kurkumą.
+  const roleOf = (key: string) => {
+    const mine = perms.ministries.filter((m) => m.ministry_key === key);
+    if (!mine.length) return null;
+    return mine.some((m) => m.role === 'leader') ? 'leader' : 'member';
+  };
+  const mineTeams = teams.filter((t) => roleOf(t.key));
+  const otherTeams = teams.filter((t) => !roleOf(t.key));
+
+  const row = (t: ModuleItem) => {
+    const native = ALL_MINISTRIES.find((m) => m.key === t.key);
+    const role = roleOf(t.key);
+    return (
+      <ListRow
+        key={t.key}
+        leading={<IconWell Icon={t.Icon} size={46} tone={role === 'leader' ? 'slod' : role === 'member' ? 'kurkuma' : 'paper'} />}
+        title={t.label}
+        subtitle={native ? `Tablica · Wydarzenia${native.teamType ? ' · Grafik' : ''}` : 'Otwiera się na stronie kościoła'}
+        meta={
+          role ? (
+            <Text style={{ fontSize: 11, marginTop: 4, letterSpacing: 1, textTransform: 'uppercase', color: B.gold, fontFamily: 'Manrope_700Bold' }}>
+              {role === 'leader' ? 'Lider' : 'Członek zespołu'}
+            </Text>
+          ) : null
+        }
+        right={t.isWeb ? <ArrowUpRight size={18} color={B.ink4} strokeWidth={2.2} /> : undefined}
+        noChevron={t.isWeb}
+        onPress={() => openModule(t, router)}
+      />
+    );
+  };
 
   return (
     <>
@@ -36,78 +67,18 @@ export default function TeamsListScreen() {
               Nie należysz jeszcze do żadnego zespołu.
             </Text>
           ) : null}
-          {teams.map((t) => {
-            const native = ALL_MINISTRIES.find((m) => m.key === t.key);
-            return (
-              <Pressable
-                key={t.key}
-                onPress={() => openModule(t, router)}
-                className="active:opacity-70"
-                style={{ marginBottom: 10 }}
-              >
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 14,
-                    padding: 14,
-                    borderRadius: 18,
-                    backgroundColor: '#EFEBE2',
-                  }}
-                >
-                  {native ? (
-                    <GradientIcon
-                      Icon={native.Icon}
-                      size={48}
-                      iconSize={22}
-                    />
-                  ) : (
-                    <View
-                      style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 14,
-                        backgroundColor: t.bg,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <t.Icon size={22} color={t.tint} />
-                    </View>
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        color: '#2A2312',
-                        letterSpacing: -0.3,
-                        fontFamily: 'Manrope_700Bold',
-                      }}
-                    >
-                      {t.label}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: '#6B6557',
-                        marginTop: 2,
-                        fontFamily: 'Manrope_500Medium',
-                      }}
-                    >
-                      {native
-                        ? `Tablica · Wydarzenia${native.teamType ? ' · Grafik' : ''}`
-                        : 'Otwiera się na stronie kościoła'}
-                    </Text>
-                  </View>
-                  {t.isWeb ? (
-                    <ArrowUpRight size={18} color="#857F70" strokeWidth={2.2} />
-                  ) : (
-                    <ChevronRight size={18} color="#857F70" strokeWidth={2.2} />
-                  )}
-                </View>
-              </Pressable>
-            );
-          })}
+          {mineTeams.length ? (
+            <>
+              <SectionLabel count={mineTeams.length}>Twoje zespoły</SectionLabel>
+              <ListCard>{mineTeams.map(row)}</ListCard>
+            </>
+          ) : null}
+          {otherTeams.length ? (
+            <>
+              <SectionLabel count={otherTeams.length}>{mineTeams.length ? 'Pozostałe' : 'Wszystkie zespoły'}</SectionLabel>
+              <ListCard>{otherTeams.map(row)}</ListCard>
+            </>
+          ) : null}
         </ScrollView>
       </View>
     </>

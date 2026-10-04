@@ -14,6 +14,7 @@ import { Link } from 'expo-router';
 import { Search, Users, X } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { CampusBadge, useCampusBadge } from '../../../src/components/CampusBadge';
+import { B, Monogram } from '../../../src/components/ui/brand';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import {
   useMembers,
@@ -232,7 +233,11 @@ export default function MembersScreen() {
             refreshControl={
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
-            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+            ItemSeparatorComponent={() => (
+              <View style={{ backgroundColor: B.card }}>
+                <View style={{ height: 1, marginLeft: 76, backgroundColor: B.line }} />
+              </View>
+            )}
             ListEmptyComponent={
               <View className="items-center mt-12 px-6">
                 <View
@@ -262,92 +267,54 @@ export default function MembersScreen() {
                 </Text>
               </View>
             }
-            renderItem={({ item }) => {
+            renderItem={({ item, index }) => {
               const meta = item.status ? STATUS_META[item.status] : null;
               const itemCampus = getCampus((item as any).campus_id ?? null);
+              const first = index === 0;
+              const last = index === filtered.length - 1;
+              const isMember = item.status === 'Członek';
               return (
                 <Link
                   href={{ pathname: '/(app)/members/[id]', params: { id: String(item.id) } }}
                   asChild
                 >
+                  {/* Jedna biała grupa: zaokrąglone tylko pierwszy i ostatni wiersz. */}
                   <Pressable
                     className="active:opacity-80"
                     style={{
-                      borderRadius: 16,
-                      backgroundColor: '#F6F4EE',
-                      shadowColor: '#2A2312',
-                      shadowOffset: { width: 0, height: 3 },
-                      shadowOpacity: 0.04,
-                      shadowRadius: 10,
-                      elevation: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 14,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      backgroundColor: B.card,
+                      borderTopLeftRadius: first ? 22 : 0,
+                      borderTopRightRadius: first ? 22 : 0,
+                      borderBottomLeftRadius: last ? 22 : 0,
+                      borderBottomRightRadius: last ? 22 : 0,
                     }}
                   >
-                    <View
-                      className="flex-row items-center gap-3 p-3.5"
-                      style={{
-                        borderRadius: 16,
-                        borderWidth: 1,
-                        borderColor: '#E6E1D5',
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: 22,
-                          backgroundColor: meta?.bg ?? '#FFF8E1',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: meta?.tint ?? '#8A6606',
-                            fontFamily: 'Manrope_700Bold',
-                          }}
-                        >
-                          {initials(item)}
-                        </Text>
-                      </View>
-                      <View className="flex-1">
-                        <Text
-                          className="text-[15px]"
-                          style={{
-                            color: '#2A2312',
-                            letterSpacing: -0.2,
-                            fontFamily: 'Manrope_600SemiBold',
-                          }}
-                          numberOfLines={1}
-                        >
-                          {fullName(item)}
-                        </Text>
-                        <View className="flex-row items-center gap-2 mt-0.5">
-                          {item.email ? (
-                            <Text
-                              className="text-[12px]"
-                              style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
-                              numberOfLines={1}
-                            >
-                              {item.email}
-                            </Text>
-                          ) : null}
-                          {itemCampus ? <CampusBadge campus={itemCampus} /> : null}
-                        </View>
-                      </View>
-                      {meta ? (
-                        <View
-                          className="px-2 py-0.5"
-                          style={{ borderRadius: 999, backgroundColor: meta.bg }}
-                        >
-                          <Text
-                            className="text-[11px]"
-                            style={{ color: meta.tint, fontFamily: 'Manrope_700Bold' }}
-                          >
-                            {meta.label}
+                    <Monogram name={fullName(item)} size={46} />
+                    <View style={{ flex: 1 }}>
+                      <Text numberOfLines={1} style={{ fontSize: 16, color: B.ink, letterSpacing: -0.3, fontFamily: 'Manrope_600SemiBold' }}>
+                        {fullName(item)}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                        {item.email ? (
+                          <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 13, color: B.ink3, fontFamily: 'Manrope_500Medium' }}>
+                            {item.email}
                           </Text>
-                        </View>
-                      ) : null}
+                        ) : null}
+                        {itemCampus ? <CampusBadge campus={itemCampus} /> : null}
+                      </View>
                     </View>
+                    {meta ? (
+                      <View style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, backgroundColor: isMember ? B.kurkumaSoft : B.paper2 }}>
+                        <Text style={{ fontSize: 11, color: isMember ? B.goldDeep : B.ink2, fontFamily: 'Manrope_700Bold' }}>
+                          {meta.label}
+                        </Text>
+                      </View>
+                    ) : null}
                   </Pressable>
                 </Link>
               );

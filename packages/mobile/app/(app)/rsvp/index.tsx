@@ -236,7 +236,7 @@ const InvitationCard = ({
                   borderRadius: 12,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: active ? a.bg : '#f8fafc',
+                  backgroundColor: active ? a.bg : '#ECE8DE',
                   borderWidth: 1,
                   borderColor: active ? a.color : '#E3DDD0',
                 }}

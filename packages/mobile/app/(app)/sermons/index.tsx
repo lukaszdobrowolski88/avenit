@@ -15,100 +15,64 @@ import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { useSermons, type Sermon } from '../../../src/features/sermons/api';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
+import { B, Monogram } from '../../../src/components/ui/brand';
 
-const SermonCard = ({ sermon, onPress }: { sermon: Sermon; onPress: () => void }) => {
+// Karta kazania jak post marki: musztardowa data, duży tytuł, werset, mówca, odtwarzanie w
+// kurkumie. Najnowsze kazanie — wariant ciemny (słód).
+const SermonCard = ({ sermon, onPress, featured }: { sermon: Sermon; onPress: () => void; featured?: boolean }) => {
+  const ink = featured ? B.onDark : B.ink;
+  const muted = featured ? B.onDarkMuted : B.ink3;
   return (
     <Pressable
       onPress={onPress}
       className="mb-3 active:opacity-90"
-      style={{
-        borderRadius: 20,
-        backgroundColor: '#F6F4EE',
-        shadowColor: '#2A2312',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
-      }}
+      style={{ borderRadius: 24, backgroundColor: featured ? B.ink : B.card, padding: 18 }}
     >
-      <View
-        className="overflow-hidden p-4"
-        style={{ borderRadius: 20, borderWidth: 1, borderColor: '#E6E1D5' }}
-      >
-        <View className="flex-row items-center justify-between">
-          {sermon.sermon_date ? (
-            <Text
-              className="text-[11px] uppercase"
-              style={{ color: '#6B6557', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
-            >
-              {formatDate(sermon.sermon_date, 'd MMM yyyy')}
-            </Text>
-          ) : (
-            <View />
-          )}
-          <ChevronRight size={18} color="#857F70" />
-        </View>
-
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Text style={{ flex: 1, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', color: featured ? B.kurkuma : B.gold, fontFamily: 'Manrope_700Bold' }}>
+          {featured ? 'Najnowsze' : ''}
+          {featured && sermon.sermon_date ? ' · ' : ''}
+          {sermon.sermon_date ? formatDate(sermon.sermon_date, 'd MMM yyyy') : ''}
+        </Text>
         {sermon.series ? (
-          <View
-            className="self-start px-2 py-0.5 mt-1 mb-1"
-            style={{ borderRadius: 999, backgroundColor: '#ECE8DE' }}
-          >
-            <Text className="text-[11px]" style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
+          <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: featured ? 'rgba(255,190,11,0.16)' : B.kurkumaSoft }}>
+            <Text numberOfLines={1} style={{ fontSize: 11, color: featured ? B.kurkuma : B.goldDeep, fontFamily: 'Manrope_700Bold' }}>
               {sermon.series}
             </Text>
           </View>
         ) : null}
+      </View>
 
-        <Text
-          className="text-[18px] mt-1"
-          style={{ color: '#2A2312', letterSpacing: -0.4, fontFamily: 'Manrope_700Bold' }}
-        >
-          {sermon.title || 'Kazanie'}
-        </Text>
+      <Text style={{ fontSize: 22, lineHeight: 27, marginTop: 10, color: ink, letterSpacing: -0.7, fontFamily: 'Manrope_700Bold' }}>
+        {sermon.title || 'Kazanie'}
+      </Text>
 
-        {sermon.scripture_ref ? (
-          <View className="flex-row items-center gap-1.5 mt-1.5">
-            <Quote size={13} color="#857F70" />
-            <Text
-              className="text-[13px] italic"
-              style={{ color: '#4A463E', fontFamily: 'Manrope_400Regular' }}
-            >
-              {sermon.scripture_ref}
-            </Text>
-          </View>
-        ) : null}
-
-        <View className="flex-row items-center justify-between mt-3">
-          {sermon.speaker ? (
-            <View className="flex-row items-center gap-2">
-              <View
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 12,
-                  backgroundColor: '#ECE8DE',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <User size={12} color="#2A2312" />
-              </View>
-              <Text
-                className="text-[13px]"
-                style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium' }}
-              >
-                {sermon.speaker}
-              </Text>
-            </View>
-          ) : (
-            <View />
-          )}
-          <View className="flex-row items-center gap-2">
-            {sermon.audio_url ? <Headphones size={16} color="#2A2312" /> : null}
-            {sermon.video_url ? <PlaySquare size={16} color="#dc2626" /> : null}
-          </View>
+      {sermon.scripture_ref ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+          <Quote size={13} color={featured ? B.kurkuma : B.gold} />
+          <Text style={{ fontSize: 14, color: muted, fontFamily: 'Manrope_500Medium' }}>{sermon.scripture_ref}</Text>
         </View>
+      ) : null}
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16 }}>
+        {sermon.speaker ? (
+          <>
+            <Monogram name={sermon.speaker} size={30} onDark={featured} />
+            <Text numberOfLines={1} style={{ flex: 1, fontSize: 14, color: ink, fontFamily: 'Manrope_600SemiBold' }}>
+              {sermon.speaker}
+            </Text>
+          </>
+        ) : (
+          <View style={{ flex: 1 }} />
+        )}
+        {sermon.video_url ? <PlaySquare size={18} color={muted} /> : null}
+        {sermon.audio_url ? (
+          <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: B.kurkuma, alignItems: 'center', justifyContent: 'center' }}>
+            <Headphones size={17} color={B.ink} strokeWidth={2.2} />
+          </View>
+        ) : (
+          <ChevronRight size={18} color={muted} />
+        )}
       </View>
     </Pressable>
   );
@@ -316,10 +280,11 @@ export default function SermonsScreen() {
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
-            {list.map((s: Sermon) => (
+            {list.map((s: Sermon, i: number) => (
               <SermonCard
                 key={s.id}
                 sermon={s}
+                featured={i === 0 && !hasFilters}
                 onPress={() =>
                   router.push({ pathname: '/(app)/sermons/[id]', params: { id: s.id } })
                 }

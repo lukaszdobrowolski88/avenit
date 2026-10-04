@@ -11,6 +11,7 @@ import {
   StatusBar,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,6 +47,7 @@ import { useModules } from '../../../src/features/modules/useModules';
 import { usePermissions } from '../../../src/lib/permissions';
 import { PromptModal } from '../../../src/components/ui/PromptModal';
 import { GradientIcon } from '../../../src/components/ui/GradientIcon';
+import { IconWell, ListCard, ListRow, SectionLabel, Tile } from '../../../src/components/ui/brand';
 
 const ICON_BY_TYPE = {
   pdf: { Icon: FileText, tint: '#dc2626', bg: '#fee2e2' },
@@ -56,21 +58,7 @@ const ICON_BY_TYPE = {
   other: { Icon: FileIcon, tint: '#6B6557', bg: '#E3DDD0' },
 };
 
-const itemCardStyle = {
-  borderRadius: 16,
-  backgroundColor: '#F6F4EE',
-  shadowColor: '#2A2312',
-  shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.04,
-  shadowRadius: 10,
-  elevation: 1,
-} as const;
 
-const itemBorderStyle = {
-  borderRadius: 16,
-  borderWidth: 1,
-  borderColor: '#E6E1D5',
-} as const;
 
 // Moduły, które mają na webie zakładkę „Pliki” (MaterialsTab z team_type = klucz modułu).
 const FILE_SPACES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'teaching'];
@@ -137,6 +125,9 @@ export default function MaterialsScreen() {
       ]);
     }
   };
+
+  const { width } = useWindowDimensions();
+  const tileW = Math.floor((width - 32 - 10) / 2);
 
   const spaces = useMemo(
     () =>
@@ -298,48 +289,45 @@ export default function MaterialsScreen() {
 
         {space === undefined ? (
           <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}>
-            {[
-              { key: '__shared', label: 'Udostępnione mi', sub: 'Pliki udostępnione Tobie i Twoim grupom', Icon: Share2, tint: '#2A2312', bg: '#ECE8DE' },
-              { key: '__general', label: 'Ogólne', sub: 'Pliki wspólne kościoła', Icon: FolderOpen, tint: '#2A2312', bg: '#ECE8DE' },
-              ...spaces.map((x) => ({ ...x, sub: 'Pliki zespołu' })),
-            ].map((x) => (
-              <Pressable
-                key={x.key}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Tile
+                dark
+                width={tileW}
+                Icon={Share2}
+                title="Udostępnione mi"
+                subtitle="Pliki dla Ciebie i Twoich grup"
+                onPress={() => router.push('/(app)/materials/shared')}
+              />
+              <Tile
+                width={tileW}
+                Icon={FolderOpen}
+                title="Ogólne"
+                subtitle="Pliki wspólne kościoła"
                 onPress={() => {
-                  if (x.key === '__shared') router.push('/(app)/materials/shared');
-                  else {
-                    setFolderId(null);
-                    setSpace(x.key === '__general' ? null : x.key);
-                  }
+                  setFolderId(null);
+                  setSpace(null);
                 }}
-                className="mb-2 active:opacity-80"
-                style={itemCardStyle}
-              >
-                <View className="flex-row items-center gap-3 p-3.5" style={itemBorderStyle}>
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 12,
-                      backgroundColor: x.bg,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <x.Icon size={19} color={x.tint} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text className="text-[15px]" style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
-                      {x.label}
-                    </Text>
-                    <Text className="text-[12px] mt-0.5" style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}>
-                      {x.sub}
-                    </Text>
-                  </View>
-                  <ChevronRight size={18} color="#857F70" />
-                </View>
-              </Pressable>
-            ))}
+              />
+            </View>
+            {spaces.length > 0 ? (
+              <>
+                <SectionLabel count={spaces.length}>Pliki zespołów</SectionLabel>
+                <ListCard>
+                  {spaces.map((x) => (
+                    <ListRow
+                      key={x.key}
+                      leading={<IconWell Icon={x.Icon} size={42} />}
+                      dividerInset={72}
+                      title={x.label}
+                      onPress={() => {
+                        setFolderId(null);
+                        setSpace(x.key);
+                      }}
+                    />
+                  ))}
+                </ListCard>
+              </>
+            ) : null}
           </ScrollView>
         ) : isLoading ? (
           <View className="flex-1 items-center justify-center">
@@ -393,124 +381,67 @@ export default function MaterialsScreen() {
           >
 
             {(folders.data?.length ?? 0) > 0 && (
-              <View className="mb-3">
-                <Text
-                  className="text-[11px] uppercase mb-2 px-1"
-                  style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
-                >
-                  Foldery
-                </Text>
-                {folders.data!.map((f: FolderRow) => (
-                  <Pressable
-                    key={f.id}
-                    onPress={() => setFolderId(f.id)}
-                    className="mb-2 active:opacity-80"
-                    style={itemCardStyle}
-                  >
-                    <View
-                      className="flex-row items-center gap-3 p-3.5"
-                      style={itemBorderStyle}
-                    >
-                      <View
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 12,
-                          backgroundColor: '#ECE8DE',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <FolderOpen size={18} color="#2A2312" />
-                      </View>
-                      <Text
-                        className="flex-1 text-[15px]"
-                        style={{
-                          color: '#2A2312',
-                          letterSpacing: -0.2,
-                          fontFamily: 'Manrope_500Medium',
-                        }}
-                        numberOfLines={1}
-                      >
-                        {f.name}
-                      </Text>
-                      <ChevronRight size={16} color="#857F70" />
-                    </View>
-                  </Pressable>
-                ))}
-              </View>
+              <>
+                <SectionLabel count={folders.data!.length} style={{ marginTop: 6 }}>Foldery</SectionLabel>
+                <ListCard>
+                  {folders.data!.map((f: FolderRow) => (
+                    <ListRow
+                      key={f.id}
+                      leading={<IconWell Icon={FolderOpen} tone="kurkuma" size={42} />}
+                      dividerInset={72}
+                      title={f.name}
+                      onPress={() => setFolderId(f.id)}
+                    />
+                  ))}
+                </ListCard>
+              </>
             )}
 
             {(files.data?.length ?? 0) > 0 && (
-              <View>
-                <Text
-                  className="text-[11px] uppercase mb-2 px-1"
-                  style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
-                >
-                  Pliki
-                </Text>
-                {files.data!.map((file: FileRow) => {
-                  const meta = ICON_BY_TYPE[fileIconType(file.mime_type)];
-                  return (
-                    <Pressable
-                      key={file.id}
-                      onPress={() => handleOpenFile(file)}
-                      onLongPress={() => fileActions(file)}
-                      className="mb-2 active:opacity-80"
-                      style={itemCardStyle}
-                    >
-                      <View
-                        className="flex-row items-center gap-3 p-3.5"
-                        style={itemBorderStyle}
-                      >
-                        <View
-                          style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 12,
-                            backgroundColor: meta.bg,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <meta.Icon size={18} color={meta.tint} />
-                        </View>
-                        <View className="flex-1">
-                          <Text
-                            className="text-[15px]"
+              <>
+                <SectionLabel count={files.data!.length}>Pliki</SectionLabel>
+                <ListCard>
+                  {files.data!.map((file: FileRow) => {
+                    const meta = ICON_BY_TYPE[fileIconType(file.mime_type)];
+                    return (
+                      <ListRow
+                        key={file.id}
+                        leading={
+                          <View
                             style={{
-                              color: '#2A2312',
-                              letterSpacing: -0.2,
-                              fontFamily: 'Manrope_500Medium',
+                              width: 42,
+                              height: 42,
+                              borderRadius: 21,
+                              backgroundColor: meta.bg,
+                              alignItems: 'center',
+                              justifyContent: 'center',
                             }}
-                            numberOfLines={1}
                           >
-                            {file.name}
-                          </Text>
-                          <Text
-                            className="text-[12px] mt-0.5"
-                            style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
+                            <meta.Icon size={18} color={meta.tint} />
+                          </View>
+                        }
+                        dividerInset={72}
+                        title={file.name}
+                        subtitle={`${formatBytes(file.file_size)}${file.download_count > 0 ? ` · ${file.download_count} pobrań` : ''}`}
+                        onPress={() => handleOpenFile(file)}
+                        onLongPress={() => fileActions(file)}
+                        noChevron
+                        right={
+                          <Pressable
+                            onPress={() => fileActions(file)}
+                            hitSlop={10}
+                            accessibilityLabel={`Więcej akcji: ${file.name}`}
+                            className="active:opacity-60"
+                            style={{ padding: 4 }}
                           >
-                            {formatBytes(file.file_size)}
-                            {file.download_count > 0
-                              ? ` · ${file.download_count} pobrań`
-                              : ''}
-                          </Text>
-                        </View>
-                        <Pressable
-                          onPress={() => fileActions(file)}
-                          hitSlop={10}
-                          accessibilityLabel={`Więcej akcji: ${file.name}`}
-                          className="active:opacity-60"
-                          style={{ padding: 4 }}
-                        >
-                          <MoreHorizontal size={18} color="#857F70" />
-                        </Pressable>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
+                            <MoreHorizontal size={18} color="#857F70" />
+                          </Pressable>
+                        }
+                      />
+                    );
+                  })}
+                </ListCard>
+              </>
             )}
 
             {(folders.data?.length ?? 0) === 0 && (files.data?.length ?? 0) === 0 ? (

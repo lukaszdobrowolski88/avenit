@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import type { AgendaEvent, EventSource } from '../api';
@@ -179,7 +179,7 @@ export const MonthView = ({ items, onPick }: Props) => {
         </View>
         {dayItems.length === 0 ? (
           <View style={styles.emptyWrap}>
-            <Text style={styles.emptyEmoji}>🗓️</Text>
+            <CalendarDays size={26} color="#857F70" strokeWidth={1.8} />
             <Text style={styles.emptyText}>Brak wydarzeń tego dnia</Text>
           </View>
         ) : (
@@ -326,7 +326,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  emptyEmoji: { fontSize: 28, opacity: 0.55 },
   emptyText: {
     textAlign: 'center',
     color: '#857F70',

@@ -15,6 +15,7 @@ import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { useTeachings, type ProgramTeaching } from '../../../src/features/teachings/api';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
+import { B, InfoBlock, Monogram } from '../../../src/components/ui/brand';
 
 const SeriesChip = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
   <Pressable
@@ -68,54 +69,34 @@ const MediaButton = ({
   );
 };
 
-const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
+// Karta nauczania: blok daty (najnowsze — słód z kurkumą), musztardowy dzień tygodnia,
+// tytuł i osoba nauczająca z monogramem.
+const TeachingCard = ({ teaching, latest }: { teaching: ProgramTeaching; latest?: boolean }) => {
   const [notesOpen, setNotesOpen] = useState(false);
   return (
-    <View
-      className="mb-3"
-      style={{
-        borderRadius: 20,
-        backgroundColor: '#F6F4EE',
-        shadowColor: '#2A2312',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
-      }}
-    >
-      <View
-        className="overflow-hidden p-4"
-        style={{ borderRadius: 20, borderWidth: 1, borderColor: '#E6E1D5' }}
-      >
-        <Text
-          className="text-[11px] uppercase mb-1"
-          style={{ color: '#6B6557', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
-        >
-          {formatDate(teaching.date, 'EEEE, d MMM yyyy')}
-        </Text>
-        {teaching.series ? (
-          <View
-            className="self-start px-2 py-0.5 mb-2"
-            style={{ borderRadius: 999, backgroundColor: '#ECE8DE' }}
-          >
-            <Text
-              className="text-[11px]"
-              style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}
-            >
-              {teaching.series.name}
+    <View className="mb-3" style={{ borderRadius: 24, backgroundColor: B.card, padding: 18 }}>
+      <View>
+        <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center', marginBottom: 12 }}>
+          <InfoBlock top={formatDate(teaching.date, 'd')} bottom={formatDate(teaching.date, 'LLL')} dark={latest} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', color: B.gold, fontFamily: 'Manrope_700Bold' }}>
+              {latest ? 'Ostatnie · ' : ''}
+              {formatDate(teaching.date, 'EEEE')}
+            </Text>
+            <Text style={{ fontSize: 19, lineHeight: 24, marginTop: 3, color: B.ink, letterSpacing: -0.5, fontFamily: 'Manrope_700Bold' }}>
+              {teaching.title || 'Nauczanie'}
             </Text>
           </View>
+        </View>
+        {teaching.series ? (
+          <View style={{ alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: B.kurkumaSoft, marginBottom: 10 }}>
+            <Text style={{ fontSize: 11, color: B.goldDeep, fontFamily: 'Manrope_700Bold' }}>{teaching.series.name}</Text>
+          </View>
         ) : null}
-        <Text
-          className="text-[18px] mb-2"
-          style={{ color: '#2A2312', letterSpacing: -0.4, fontFamily: 'Manrope_700Bold' }}
-        >
-          {teaching.title || 'Nauczanie'}
-        </Text>
 
         {teaching.scripture ? (
           <View className="flex-row items-start gap-2 mb-2">
-            <Quote size={14} color="#857F70" style={{ marginTop: 3 }} />
+            <Quote size={14} color={B.gold} style={{ marginTop: 3 }} />
             <Text
               className="flex-1 text-[13px] italic"
               style={{ color: '#4A463E', fontFamily: 'Manrope_400Regular', lineHeight: 19 }}
@@ -135,25 +116,9 @@ const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
         ) : null}
 
         {teaching.speaker ? (
-          <View className="flex-row items-center gap-2 mb-3">
-            <View
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: 12,
-                backgroundColor: '#ECE8DE',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <User size={12} color="#2A2312" />
-            </View>
-            <Text
-              className="text-[13px]"
-              style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium' }}
-            >
-              {teaching.speaker.name}
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, marginTop: 2 }}>
+            <Monogram name={teaching.speaker.name} size={30} />
+            <Text style={{ fontSize: 14, color: B.ink, fontFamily: 'Manrope_600SemiBold' }}>{teaching.speaker.name}</Text>
           </View>
         ) : null}
 
@@ -173,15 +138,15 @@ const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
               Icon={Headphones}
               label="Spotify"
               url={teaching.spotifyUrl}
-              tint="#2A2312"
-              bg="#ECE8DE"
+              tint="#6B4F05"
+              bg="#FFF1C2"
             />
             <MediaButton
               Icon={Headphones}
               label="Audio"
               url={teaching.audioUrl}
-              tint="#2A2312"
-              bg="#ECE8DE"
+              tint="#6B4F05"
+              bg="#FFF1C2"
             />
           </View>
         )}
@@ -394,8 +359,8 @@ export default function TeachingsScreen() {
               <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
-            {list.map((t: ProgramTeaching) => (
-              <TeachingCard key={t.programId} teaching={t} />
+            {list.map((t: ProgramTeaching, i: number) => (
+              <TeachingCard key={t.programId} teaching={t} latest={i === 0} />
             ))}
           </ScrollView>
         )}
