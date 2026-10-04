@@ -160,3 +160,14 @@ test('parseSelect: podpowiedzi PostgREST po „!” są odcinane z aliasu i celu
   assert.equal(b.alias, 'creator');
   assert.equal(b.target, 'app_users');
 });
+
+test('buildQuery: to-one z `references` łączy po wskazanej kolumnie celu (SMS creator po e-mailu)', () => {
+  const { sql } = buildQuery({
+    table: 'sms_campaigns',
+    op: 'select',
+    select: '*, segments:sms_campaign_segments(*), creator:app_users!sms_campaigns_created_by_fkey(full_name, avatar_url)',
+  });
+  assert.match(sql, /\."email" = t\."created_by"/);
+  assert.match(sql, /\."campaign_id" = t\."id"/);
+  assert.doesNotMatch(sql, /password_hash/);
+});
