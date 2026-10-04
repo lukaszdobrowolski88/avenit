@@ -156,6 +156,17 @@ function resolveRelationship(table, embed) {
   );
 }
 
+// Zawężenie odczytu propozycji budżetu (routes ustawia q.__proposalScope osobom bez prawa
+// zatwierdzania budżetu): zespoły, których zakładkę Finanse widzą, oraz własne zgłoszenia.
+// Fail-closed: pusta lista zespołów i brak e-maila => żaden wiersz.
+export function proposalScopeClause(scope, alias, params) {
+  params.push(Array.isArray(scope.teamTypes) ? scope.teamTypes.map(String) : []);
+  const pTeams = params.length;
+  params.push(scope.email || '');
+  const pEmail = params.length;
+  return `(${alias}."team_type" = ANY($${pTeams}::text[]) OR ($${pEmail} <> '' AND lower(${alias}."submitted_by") = lower($${pEmail})))`;
+}
+
 // Pary [tabela nadrzędna, tabela dociągana] ze wszystkich złączeń w select (rekurencyjnie).
 // Do kontroli dostępu w routes.js — buildQuery sprawdza tylko, czy tabela jest w REGISTRY.
 export function embeddedTablePairs(table, select) {
@@ -317,6 +328,10 @@ export function buildQuery(q) {
       if (vis) {
         const vc = visibilityClause();
         selWhere = selWhere ? `${selWhere} AND ${vc}` : ` WHERE ${vc}`;
+      }
+      if (q.__proposalScope && table === 'budget_proposals') {
+        const pc = proposalScopeClause(q.__proposalScope, alias, params);
+        selWhere = selWhere ? `${selWhere} AND ${pc}` : ` WHERE ${pc}`;
       }
       let sql = `SELECT ${cols.join(', ')} FROM ${tbl} ${alias}${selWhere}`;
       if (q.order?.length) {
