@@ -89,7 +89,7 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
       onRequestClose={handleClose}
       presentationStyle="pageSheet"
     >
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         {selectedProgram ? (
           <ProgramSongsEditor
             program={selectedProgram}
@@ -102,7 +102,7 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
             <View style={styles.header}>
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <FolderOpen size={20} color="#ec4899" />
+                  <FolderOpen size={20} color="#8A6606" />
                   <Text style={styles.headerTitle}>Programy</Text>
                 </View>
                 <Text style={styles.headerSubtitle}>
@@ -110,24 +110,24 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
                 </Text>
               </View>
               <Pressable onPress={handleClose} hitSlop={10}>
-                <X size={22} color="#1c1917" />
+                <X size={22} color="#2A2312" />
               </Pressable>
             </View>
 
             <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
               <View style={styles.searchBox}>
-                <Search size={16} color="#a8a29e" />
+                <Search size={16} color="#857F70" />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Szukaj programu…"
-                  placeholderTextColor="#a8a29e"
+                  placeholderTextColor="#857F70"
                   value={search}
                   onChangeText={setSearch}
                   autoCapitalize="none"
                 />
                 {search ? (
                   <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                    <X size={14} color="#a8a29e" />
+                    <X size={14} color="#857F70" />
                   </Pressable>
                 ) : null}
               </View>
@@ -135,7 +135,7 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
 
             {isLoading ? (
               <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color="#ec4899" />
+                <ActivityIndicator color="#2A2312" />
               </View>
             ) : (
               <FlatList
@@ -144,7 +144,7 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
                 contentContainerStyle={{ padding: 16, gap: 8 }}
                 ListEmptyComponent={
                   <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-                    <Calendar size={28} color="#cbd5e1" />
+                    <Calendar size={28} color="#9A9586" />
                     <Text style={styles.emptyText}>Brak nadchodzących programów.</Text>
                   </View>
                 }
@@ -158,7 +158,7 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
                     >
                       <View style={styles.programCardInner}>
                         <View style={styles.programIcon}>
-                          <Calendar size={18} color="#ec4899" strokeWidth={2.2} />
+                          <Calendar size={18} color="#8A6606" strokeWidth={2.2} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text numberOfLines={1} style={styles.programTitle}>
@@ -171,14 +171,14 @@ export const ProgramsManagerModal = ({ visible, onClose, myEmail }: Props) => {
                               </Text>
                             ) : null}
                             <View style={styles.countPill}>
-                              <Music size={9} color="#be185d" strokeWidth={2.4} />
+                              <Music size={9} color="#8A6606" strokeWidth={2.4} />
                               <Text style={styles.countPillText}>
                                 {count} {count === 1 ? 'pieśń' : 'pieśni'}
                               </Text>
                             </View>
                           </View>
                         </View>
-                        <ChevronRight size={18} color="#cbd5e1" />
+                        <ChevronRight size={18} color="#9A9586" />
                       </View>
                     </Pressable>
                   );
@@ -286,7 +286,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
     <>
       <View style={styles.editorHeader}>
         <Pressable onPress={onBack} hitSlop={10}>
-          <ChevronLeft size={22} color="#1c1917" />
+          <ChevronLeft size={22} color="#2A2312" />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text numberOfLines={1} style={styles.editorTitle}>
@@ -298,7 +298,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
           </Text>
         </View>
         <Pressable onPress={onClose} hitSlop={10}>
-          <X size={22} color="#1c1917" />
+          <X size={22} color="#2A2312" />
         </Pressable>
       </View>
 
@@ -308,11 +308,11 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
       >
         {isLoading ? (
           <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : rows.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Music size={28} color="#cbd5e1" />
+            <Music size={28} color="#9A9586" />
             <Text style={styles.emptyText}>Brak pieśni przypisanych do tego programu.</Text>
           </View>
         ) : (
@@ -327,7 +327,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
                 <View style={styles.suggestionCardInner}>
                   <View style={styles.suggestionTopRow}>
                     <View style={styles.songIcon}>
-                      <Music size={18} color="#ec4899" strokeWidth={2.2} />
+                      <Music size={18} color="#8A6606" strokeWidth={2.2} />
                       <View style={styles.idxBubble}>
                         <Text style={styles.idxBubbleText}>{row._idx + 1}</Text>
                       </View>
@@ -344,7 +344,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
                           onPress={() => startNoteEdit(row)}
                           style={[styles.pill, { flexShrink: 1 }]}
                         >
-                          <StickyNote size={10} color="#57534e" />
+                          <StickyNote size={10} color="#4A463E" />
                           <Text style={styles.pillText} numberOfLines={1}>
                             {row.note ? row.note : 'Notatka'}
                           </Text>
@@ -360,7 +360,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
                       hitSlop={6}
                       style={[styles.actionBtn, isFirst && { opacity: 0.3 }]}
                     >
-                      <ChevronUp size={14} color="#57534e" />
+                      <ChevronUp size={14} color="#4A463E" />
                     </Pressable>
                     <Pressable
                       disabled={isLast}
@@ -368,7 +368,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
                       hitSlop={6}
                       style={[styles.actionBtn, isLast && { opacity: 0.3 }]}
                     >
-                      <ChevronDown size={14} color="#57534e" />
+                      <ChevronDown size={14} color="#4A463E" />
                     </Pressable>
                     <View style={{ flex: 1 }} />
                     <Pressable
@@ -416,7 +416,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
                       <TextInput
                         style={styles.noteInput}
                         placeholder="Np. fragment, zwrotka, kiedy zaśpiewać…"
-                        placeholderTextColor="#a8a29e"
+                        placeholderTextColor="#857F70"
                         value={draftNote}
                         onChangeText={setDraftNote}
                         multiline
@@ -447,7 +447,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
           />
         ) : (
           <Pressable onPress={() => setShowPicker(true)} style={styles.addBtn}>
-            <Plus size={16} color="#ec4899" />
+            <Plus size={16} color="#8A6606" />
             <Text style={styles.addBtnText}>Dodaj pieśń z bazy</Text>
           </Pressable>
         )}
@@ -486,15 +486,15 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
       >
         <Text style={styles.section}>WYBIERZ PIEŚŃ</Text>
         <Pressable onPress={onCancel} hitSlop={8}>
-          <X size={16} color="#a8a29e" />
+          <X size={16} color="#857F70" />
         </Pressable>
       </View>
       <View style={styles.searchBox}>
-        <Search size={16} color="#a8a29e" />
+        <Search size={16} color="#857F70" />
         <TextInput
           style={styles.searchInput}
           placeholder="Szukaj po tytule…"
-          placeholderTextColor="#a8a29e"
+          placeholderTextColor="#857F70"
           value={query}
           onChangeText={setQuery}
           autoCapitalize="none"
@@ -502,15 +502,15 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
       </View>
       {isLoading ? (
         <View style={{ paddingVertical: 16, alignItems: 'center' }}>
-          <ActivityIndicator color="#ec4899" />
+          <ActivityIndicator color="#2A2312" />
         </View>
       ) : filtered.length === 0 ? (
         <Text
           style={{
             paddingVertical: 16,
             textAlign: 'center',
-            color: '#a8a29e',
-            fontFamily: 'Inter_500Medium',
+            color: '#857F70',
+            fontFamily: 'Manrope_500Medium',
           }}
         >
           Brak wyników.
@@ -526,7 +526,7 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
               style={[styles.pickerRow, disabled && { opacity: 0.5 }]}
             >
               <View style={styles.pickerIcon}>
-                <Music size={14} color="#ec4899" strokeWidth={2.2} />
+                <Music size={14} color="#8A6606" strokeWidth={2.2} />
               </View>
               <Text numberOfLines={1} style={styles.pickerTitle}>
                 {s.title}
@@ -549,18 +549,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eef0f3',
+    borderBottomColor: '#E6E1D5',
   },
   headerTitle: {
     fontSize: 18,
-    color: '#0c0a09',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.4,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#78716c',
-    fontFamily: 'Inter_500Medium',
+    color: '#6B6557',
+    fontFamily: 'Manrope_500Medium',
     marginTop: 4,
     lineHeight: 17,
   },
@@ -571,24 +571,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 42,
     borderRadius: 14,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#0c0a09',
-    fontFamily: 'Inter_500Medium',
+    color: '#2A2312',
+    fontFamily: 'Manrope_500Medium',
   },
   programCardShadow: {
     borderRadius: 16,
-    backgroundColor: '#ffffff',
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 1,
+    backgroundColor: '#FFFFFF',
   },
   programCardInner: {
     flexDirection: 'row',
@@ -596,21 +591,19 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#eef0f3',
   },
   programIcon: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#fef3f2',
+    backgroundColor: '#FFF8E1',
     alignItems: 'center',
     justifyContent: 'center',
   },
   programTitle: {
     fontSize: 15,
-    color: '#0c0a09',
-    fontFamily: 'Inter_600SemiBold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_600SemiBold',
     letterSpacing: -0.3,
   },
   programMetaRow: {
@@ -622,8 +615,8 @@ const styles = StyleSheet.create({
   },
   programMetaText: {
     fontSize: 12,
-    color: '#78716c',
-    fontFamily: 'Inter_500Medium',
+    color: '#6B6557',
+    fontFamily: 'Manrope_500Medium',
   },
   countPill: {
     flexDirection: 'row',
@@ -632,18 +625,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: '#fdf2f8',
+    backgroundColor: '#FFF8E1',
   },
   countPillText: {
     fontSize: 10,
-    color: '#be185d',
-    fontFamily: 'Inter_700Bold',
+    color: '#8A6606',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: 0.2,
   },
   emptyText: {
     marginTop: 8,
-    color: '#78716c',
-    fontFamily: 'Inter_500Medium',
+    color: '#6B6557',
+    fontFamily: 'Manrope_500Medium',
     textAlign: 'center',
   },
   emptyBox: {
@@ -653,8 +646,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: '#e7e5e4',
-    backgroundColor: '#fafaf9',
+    borderColor: '#E3DDD0',
+    backgroundColor: '#FFFFFF',
   },
 
   editorHeader: {
@@ -665,35 +658,28 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eef0f3',
+    borderBottomColor: '#E6E1D5',
   },
   editorTitle: {
     fontSize: 16,
-    color: '#0c0a09',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.3,
   },
   editorSubtitle: {
     fontSize: 12,
-    color: '#78716c',
-    fontFamily: 'Inter_500Medium',
+    color: '#6B6557',
+    fontFamily: 'Manrope_500Medium',
     marginTop: 1,
   },
   suggestionCardShadow: {
     borderRadius: 16,
-    backgroundColor: '#ffffff',
-    shadowColor: '#0f172a',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 1,
+    backgroundColor: '#FFFFFF',
     marginBottom: 8,
   },
   suggestionCardInner: {
     padding: 14,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#eef0f3',
   },
   suggestionTopRow: {
     flexDirection: 'row',
@@ -704,7 +690,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#fef3f2',
+    backgroundColor: '#FFF8E1',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -716,7 +702,7 @@ const styles = StyleSheet.create({
     height: 18,
     paddingHorizontal: 4,
     borderRadius: 9,
-    backgroundColor: '#ec4899',
+    backgroundColor: '#2A2312',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -725,12 +711,12 @@ const styles = StyleSheet.create({
   idxBubbleText: {
     fontSize: 10,
     color: '#ffffff',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   songTitle: {
     fontSize: 15,
-    color: '#0c0a09',
-    fontFamily: 'Inter_600SemiBold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_600SemiBold',
     letterSpacing: -0.3,
   },
   pillsRow: {
@@ -746,12 +732,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: '#f5f5f4',
+    backgroundColor: '#ECE8DE',
   },
   pillText: {
     fontSize: 10,
-    color: '#57534e',
-    fontFamily: 'Inter_500Medium',
+    color: '#4A463E',
+    fontFamily: 'Manrope_500Medium',
   },
   actionsRow: {
     flexDirection: 'row',
@@ -760,13 +746,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#f5f5f4',
+    borderTopColor: '#ECE8DE',
   },
   actionBtn: {
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#F1EEE6',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -777,13 +763,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#f5f5f4',
+    borderTopColor: '#ECE8DE',
   },
   section: {
     fontSize: 11,
     letterSpacing: 1.0,
-    color: '#78716c',
-    fontFamily: 'Inter_700Bold',
+    color: '#6B6557',
+    fontFamily: 'Manrope_700Bold',
     marginBottom: 8,
   },
   keysGrid: {
@@ -796,19 +782,19 @@ const styles = StyleSheet.create({
     minWidth: 44,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
     alignItems: 'center',
   },
   keyBtnActive: {
-    backgroundColor: '#ec4899',
-    borderColor: '#ec4899',
+    backgroundColor: '#2A2312',
+    borderColor: '#FFBE0B',
   },
   keyText: {
     fontSize: 12,
-    color: '#1c1917',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_700Bold',
   },
   keyTextActive: {
     color: '#ffffff',
@@ -816,14 +802,14 @@ const styles = StyleSheet.create({
   noteInput: {
     minHeight: 70,
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 13,
-    color: '#0c0a09',
-    fontFamily: 'Inter_400Regular',
-    backgroundColor: '#fafaf9',
+    color: '#2A2312',
+    fontFamily: 'Manrope_400Regular',
+    backgroundColor: '#FFFFFF',
   },
   inlineActions: {
     flexDirection: 'row',
@@ -835,23 +821,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#F1EEE6',
   },
   btnGhostText: {
     fontSize: 13,
-    color: '#57534e',
-    fontFamily: 'Inter_600SemiBold',
+    color: '#4A463E',
+    fontFamily: 'Manrope_600SemiBold',
   },
   btnPrimary: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: '#ec4899',
+    backgroundColor: '#2A2312',
   },
   btnPrimaryText: {
     fontSize: 13,
     color: '#ffffff',
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
   addBtn: {
     flexDirection: 'row',
@@ -863,21 +849,21 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: '#fbcfe8',
-    backgroundColor: '#fdf2f8',
+    borderColor: '#F3E3B0',
+    backgroundColor: '#FFF8E1',
   },
   addBtnText: {
     fontSize: 13,
-    color: '#be185d',
-    fontFamily: 'Inter_700Bold',
+    color: '#8A6606',
+    fontFamily: 'Manrope_700Bold',
   },
   pickerBox: {
     marginTop: 8,
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#eef0f3',
-    backgroundColor: '#ffffff',
+    borderColor: '#E6E1D5',
+    backgroundColor: '#F6F4EE',
   },
   pickerRow: {
     flexDirection: 'row',
@@ -886,29 +872,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#F1EEE6',
   },
   pickerIcon: {
     width: 30,
     height: 30,
     borderRadius: 9,
-    backgroundColor: '#fef3f2',
+    backgroundColor: '#FFF8E1',
     alignItems: 'center',
     justifyContent: 'center',
   },
   pickerTitle: {
     flex: 1,
     fontSize: 13,
-    color: '#0c0a09',
-    fontFamily: 'Inter_500Medium',
+    color: '#2A2312',
+    fontFamily: 'Manrope_500Medium',
   },
   pickerKey: {
     fontSize: 10,
-    color: '#be185d',
-    fontFamily: 'Inter_700Bold',
+    color: '#8A6606',
+    fontFamily: 'Manrope_700Bold',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: '#fdf2f8',
+    backgroundColor: '#FFF8E1',
   },
 });

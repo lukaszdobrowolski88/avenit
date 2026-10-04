@@ -13,6 +13,7 @@ import { LogOut, Monitor, Smartphone } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
+import { B, IconWell, ListCard, ListRow, SectionLabel } from '../../../src/components/ui/brand';
 import { useSessions } from '../../../src/features/account/api';
 import { supabase } from '../../../src/lib/supabase';
 import { useQueryClient } from '@tanstack/react-query';
@@ -84,86 +85,78 @@ export default function SessionsScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Aktywne sesje" subtitle="Urządzenia zalogowane do konta" showBack />
 
         {isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : (
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 60 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
-            {sessions.map((s) => {
-              const mobile = isMobileUa(s.user_agent);
-              const Icon = mobile ? Smartphone : Monitor;
-              return (
-                <View
-                  key={String(s.id)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: 14,
-                    marginBottom: 10,
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: s.current ? '#fbcfe8' : '#eef0f3',
-                    backgroundColor: s.current ? '#fdf2f8' : '#ffffff',
-                  }}
-                >
+            {/* Bieżące urządzenie — ciemna karta marki; pozostałe w jednej białej liście. */}
+            {sessions
+              .filter((s) => s.current)
+              .map((s) => {
+                const Icon = isMobileUa(s.user_agent) ? Smartphone : Monitor;
+                return (
                   <View
-                    style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 12,
-                      backgroundColor: s.current ? '#fce7f3' : '#f5f5f4',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                    key={String(s.id)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderRadius: 24, backgroundColor: B.ink }}
                   >
-                    <Icon size={20} color={s.current ? '#be185d' : '#78716c'} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                    <IconWell Icon={Icon} tone="kurkuma" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: B.kurkuma, fontFamily: 'Manrope_700Bold' }}>
+                        To urządzenie
+                      </Text>
+                      <Text style={{ fontSize: 17, color: B.onDark, marginTop: 2, letterSpacing: -0.3, fontFamily: 'Manrope_700Bold' }}>
                         {deviceLabel(s.user_agent)}
                       </Text>
-                      {s.current ? (
-                        <View style={{ paddingHorizontal: 7, paddingVertical: 1, borderRadius: 999, backgroundColor: '#ec4899' }}>
-                          <Text style={{ fontSize: 10, color: '#ffffff', fontFamily: 'Inter_700Bold' }}>
-                            To urządzenie
-                          </Text>
-                        </View>
-                      ) : null}
+                      <Text style={{ fontSize: 13, color: B.onDarkMuted, marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
+                        Zalogowano {format(new Date(s.created_at), 'd MMM yyyy, HH:mm', { locale: pl })}
+                      </Text>
                     </View>
-                    <Text style={{ fontSize: 12, color: '#a8a29e', marginTop: 2, fontFamily: 'Inter_400Regular' }}>
-                      Zalogowano {format(new Date(s.created_at), 'd MMM yyyy, HH:mm', { locale: pl })}
-                    </Text>
                   </View>
-                </View>
-              );
-            })}
+                );
+              })}
+
+            {sessions.some((s) => !s.current) ? (
+              <>
+                <SectionLabel count={sessions.filter((s) => !s.current).length}>Inne urządzenia</SectionLabel>
+                <ListCard>
+                  {sessions
+                    .filter((s) => !s.current)
+                    .map((s) => (
+                      <ListRow
+                        key={String(s.id)}
+                        leading={<IconWell Icon={isMobileUa(s.user_agent) ? Smartphone : Monitor} size={42} />}
+                        dividerInset={72}
+                        title={deviceLabel(s.user_agent)}
+                        subtitle={`Zalogowano ${format(new Date(s.created_at), 'd MMM yyyy, HH:mm', { locale: pl })}`}
+                      />
+                    ))}
+                </ListCard>
+              </>
+            ) : null}
 
             {others > 0 ? (
               <Pressable
                 onPress={logoutOthers}
                 disabled={busy}
                 style={{
-                  marginTop: 8,
+                  marginTop: 16,
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
-                  paddingVertical: 14,
-                  borderRadius: 14,
-                  borderWidth: 1.5,
-                  borderColor: '#fecaca',
-                  backgroundColor: '#fef2f2',
+                  height: 50,
+                  borderRadius: 25,
+                  backgroundColor: '#FFFFFF',
                 }}
               >
                 {busy ? (
@@ -171,7 +164,7 @@ export default function SessionsScreen() {
                 ) : (
                   <LogOut size={16} color="#dc2626" />
                 )}
-                <Text style={{ fontSize: 14, color: '#dc2626', fontFamily: 'Inter_700Bold' }}>
+                <Text style={{ fontSize: 14, color: '#dc2626', fontFamily: 'Manrope_700Bold' }}>
                   Wyloguj inne urządzenia ({others})
                 </Text>
               </Pressable>
@@ -181,8 +174,8 @@ export default function SessionsScreen() {
                   textAlign: 'center',
                   marginTop: 8,
                   fontSize: 13,
-                  color: '#a8a29e',
-                  fontFamily: 'Inter_400Regular',
+                  color: '#857F70',
+                  fontFamily: 'Manrope_400Regular',
                 }}
               >
                 Jesteś zalogowany/a tylko na tym urządzeniu.

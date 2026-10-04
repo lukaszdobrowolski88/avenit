@@ -1,9 +1,11 @@
 import { Pressable, Text, View } from 'react-native';
-import { Link } from 'expo-router';
-import { Hash, Inbox, MessageCircle } from 'lucide-react-native';
+import { Link, useRouter } from 'expo-router';
+import { Hash, MessageCircle } from 'lucide-react-native';
+import { D, F } from '../theme';
 import { formatRelative } from '../../../lib/domain';
-import { WidgetCard } from './WidgetCard';
+import { EmptyRow, WidgetCard } from './WidgetCard';
 import type { UnreadConversation } from '../api';
+import { goToTab } from '../../../lib/navigation';
 
 interface Props {
   conversations: UnreadConversation[];
@@ -11,63 +13,23 @@ interface Props {
 }
 
 export const MessagesWidget = ({ conversations, totalUnread }: Props) => {
+  const router = useRouter();
   return (
     <WidgetCard
-      title="Nieprzeczytane"
-      Icon={MessageCircle}
-      iconTint="#1d4ed8"
-      iconBg="#dbeafe"
-      badge={totalUnread > 0 ? String(totalUnread) : undefined}
+      title="Wiadomości"
+      count={totalUnread}
+      actionLabel="Czat"
+      onAction={() => goToTab(router, 'messenger')}
     >
       {conversations.length === 0 ? (
-        <View style={{ paddingHorizontal: 16, paddingVertical: 32, alignItems: 'center' }}>
-          <View
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 16,
-              backgroundColor: '#ecfdf5',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 12,
-            }}
-          >
-            <Inbox size={24} color="#047857" />
-          </View>
-          <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>
-            Wszystko przeczytane!
-          </Text>
-          <Text
-            style={{ fontSize: 12, color: '#78716c', marginTop: 4, fontFamily: 'Inter_400Regular' }}
-          >
-            Nie masz nowych wiadomości
-          </Text>
-          <Link href="/(app)/messenger" asChild>
-            <Pressable
-              className="active:opacity-70"
-              style={{
-                marginTop: 12,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 10,
-                backgroundColor: '#fafaf9',
-                borderWidth: 1,
-                borderColor: '#eef0f3',
-              }}
-            >
-              <Text style={{ fontSize: 13, color: '#be185d', fontFamily: 'Inter_600SemiBold' }}>
-                Otwórz komunikator →
-              </Text>
-            </Pressable>
-          </Link>
-        </View>
+        <EmptyRow text="Wszystko przeczytane" actionLabel="Otwórz czat" onAction={() => goToTab(router, 'messenger')} />
       ) : (
         conversations.slice(0, 4).map((c, idx, arr) => {
           const Icon = c.type === 'ministry' ? Hash : MessageCircle;
           const title =
             c.name || (c.type === 'ministry' ? c.ministry_key ?? 'Kanał' : 'Rozmowa');
           return (
-            <Link
+            <Link push
               key={c.id}
               href={{
                 pathname: '/(app)/messenger/[conversationId]',
@@ -83,21 +45,21 @@ export const MessagesWidget = ({ conversations, totalUnread }: Props) => {
                   gap: 12,
                   paddingHorizontal: 16,
                   paddingVertical: 12,
-                  borderBottomWidth: idx < arr.length - 1 ? 1 : 0,
-                  borderBottomColor: '#f5f5f4',
+                  paddingBottom: idx < arr.length - 1 ? 8 : 14,
+                  paddingTop: idx === 0 ? 14 : 8,
                 }}
               >
                 <View
                   style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: '#dbeafe',
+                    width: 42,
+                    height: 42,
+                    borderRadius: 21,
+                    backgroundColor: D.well,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Icon size={16} color="#1d4ed8" />
+                  <Icon size={18} color={D.ink} strokeWidth={1.9} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -106,16 +68,16 @@ export const MessagesWidget = ({ conversations, totalUnread }: Props) => {
                       style={{
                         flex: 1,
                         fontSize: 14,
-                        color: '#0c0a09',
+                        color: D.ink,
                         letterSpacing: -0.2,
-                        fontFamily: 'Inter_700Bold',
+                        fontFamily: F.bold,
                       }}
                     >
                       {title}
                     </Text>
                     {c.last_message_at ? (
                       <Text
-                        style={{ fontSize: 10, color: '#a8a29e', fontFamily: 'Inter_500Medium' }}
+                        style={{ fontSize: 10, color: D.ink3, fontFamily: F.medium }}
                       >
                         {formatRelative(c.last_message_at)}
                       </Text>
@@ -126,9 +88,9 @@ export const MessagesWidget = ({ conversations, totalUnread }: Props) => {
                       numberOfLines={1}
                       style={{
                         fontSize: 12,
-                        color: '#78716c',
+                        color: D.ink2,
                         marginTop: 2,
-                        fontFamily: 'Inter_400Regular',
+                        fontFamily: F.regular,
                       }}
                     >
                       {c.last_message}
@@ -141,13 +103,13 @@ export const MessagesWidget = ({ conversations, totalUnread }: Props) => {
                     height: 22,
                     paddingHorizontal: 6,
                     borderRadius: 11,
-                    backgroundColor: '#ec4899',
+                    backgroundColor: D.accent,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
                   <Text
-                    style={{ fontSize: 11, color: '#ffffff', fontFamily: 'Inter_700Bold' }}
+                    style={{ fontSize: 11, color: D.ink, fontFamily: F.bold }}
                   >
                     {c.unread_count > 99 ? '99+' : c.unread_count}
                   </Text>

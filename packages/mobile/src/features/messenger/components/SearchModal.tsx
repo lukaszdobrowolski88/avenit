@@ -53,7 +53,7 @@ export const SearchModal = ({
       onRequestClose={handleClose}
       presentationStyle="pageSheet"
     >
-      <View style={{ flex: 1, backgroundColor: "#ffffff" }}>
+      <View style={{ flex: 1, backgroundColor: "#F6F4EE" }}>
         <View
           style={{
             flexDirection: "row",
@@ -63,11 +63,11 @@ export const SearchModal = ({
             paddingHorizontal: 16,
             gap: 10,
             borderBottomWidth: 1,
-            borderBottomColor: "#eef0f3",
+            borderBottomColor: "#E6E1D5",
           }}
         >
           <Pressable onPress={handleClose} hitSlop={10}>
-            <X size={22} color="#1c1917" />
+            <X size={22} color="#2A2312" />
           </Pressable>
           <View
             style={{
@@ -78,21 +78,21 @@ export const SearchModal = ({
               paddingHorizontal: 14,
               height: 42,
               borderRadius: 14,
-              backgroundColor: "#fafaf9",
+              backgroundColor: "#F1EEE6",
               borderWidth: 1,
-              borderColor: "#eef0f3",
+              borderColor: "#E6E1D5",
             }}
           >
-            <Search size={16} color="#a8a29e" />
+            <Search size={16} color="#857F70" />
             <TextInput
               style={{
                 flex: 1,
                 fontSize: 14,
-                color: "#0c0a09",
-                fontFamily: "Inter_500Medium",
+                color: "#2A2312",
+                fontFamily: "Manrope_500Medium",
               }}
               placeholder="Szukaj wiadomości…"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#857F70"
               value={query}
               onChangeText={setQuery}
               autoFocus
@@ -100,7 +100,7 @@ export const SearchModal = ({
             />
             {query ? (
               <Pressable onPress={() => setQuery("")} hitSlop={8}>
-                <X size={14} color="#a8a29e" />
+                <X size={14} color="#857F70" />
               </Pressable>
             ) : null}
           </View>
@@ -120,19 +120,19 @@ export const SearchModal = ({
                 width: 64,
                 height: 64,
                 borderRadius: 18,
-                backgroundColor: "#fef3f2",
+                backgroundColor: "#FFF8E1",
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 12,
               }}
             >
-              <Search size={26} color="#ec4899" />
+              <Search size={26} color="#8A6606" />
             </View>
             <Text
               style={{
                 fontSize: 15,
-                color: "#0c0a09",
-                fontFamily: "Inter_700Bold",
+                color: "#2A2312",
+                fontFamily: "Manrope_700Bold",
                 marginBottom: 4,
               }}
             >
@@ -142,8 +142,8 @@ export const SearchModal = ({
               style={{
                 textAlign: "center",
                 fontSize: 13,
-                color: "#78716c",
-                fontFamily: "Inter_500Medium",
+                color: "#6B6557",
+                fontFamily: "Manrope_500Medium",
               }}
             >
               Wpisz co najmniej 2 znaki, aby rozpocząć wyszukiwanie
@@ -151,7 +151,7 @@ export const SearchModal = ({
           </View>
         ) : isFetching ? (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : (
           <FlatList
@@ -159,15 +159,15 @@ export const SearchModal = ({
             keyExtractor={(m) => m.id}
             contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}
             ItemSeparatorComponent={() => (
-              <View style={{ height: 1, backgroundColor: "#f5f5f4" }} />
+              <View style={{ height: 1, backgroundColor: "#ECE8DE" }} />
             )}
             ListEmptyComponent={
               <Text
                 style={{
                   textAlign: "center",
                   marginTop: 48,
-                  color: "#78716c",
-                  fontFamily: "Inter_500Medium",
+                  color: "#6B6557",
+                  fontFamily: "Manrope_500Medium",
                 }}
               >
                 Brak wyników.
@@ -197,8 +197,8 @@ export const SearchModal = ({
                     <Text
                       style={{
                         fontSize: 13,
-                        color: "#be185d",
-                        fontFamily: "Inter_700Bold",
+                        color: "#8A6606",
+                        fontFamily: "Manrope_700Bold",
                       }}
                     >
                       {senderName}
@@ -206,8 +206,8 @@ export const SearchModal = ({
                     <Text
                       style={{
                         fontSize: 11,
-                        color: "#a8a29e",
-                        fontFamily: "Inter_500Medium",
+                        color: "#857F70",
+                        fontFamily: "Manrope_500Medium",
                       }}
                     >
                       {date}
@@ -217,8 +217,8 @@ export const SearchModal = ({
                     numberOfLines={2}
                     style={{
                       fontSize: 14,
-                      color: "#1c1917",
-                      fontFamily: "Inter_400Regular",
+                      color: "#2A2312",
+                      fontFamily: "Manrope_400Regular",
                       lineHeight: 19,
                     }}
                   >

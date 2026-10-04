@@ -14,7 +14,7 @@ const formatRole = (a: MyAssignmentRow): string => {
 const STATUS_META = {
   accepted: { color: '#047857', label: 'Potwierdzone' },
   rejected: { color: '#be123c', label: 'Odrzucone' },
-  pending: { color: '#b45309', label: 'Oczekuje na potwierdzenie' },
+  pending: { color: '#8A6606', label: 'Oczekuje na potwierdzenie' },
 } as const;
 
 export const AssignmentCard = ({ assignment }: Props) => {
@@ -25,13 +25,13 @@ export const AssignmentCard = ({ assignment }: Props) => {
   return (
     <View
       style={{
-        backgroundColor: '#ffffff',
+        backgroundColor: '#F6F4EE',
         borderRadius: 14,
         paddingHorizontal: 14,
         paddingVertical: 12,
         marginBottom: 8,
         borderWidth: 1,
-        borderColor: '#eef0f3',
+        borderColor: '#E6E1D5',
       }}
     >
       <View
@@ -45,9 +45,9 @@ export const AssignmentCard = ({ assignment }: Props) => {
           <Text
             style={{
               fontSize: 14,
-              color: '#0c0a09',
+              color: '#2A2312',
               letterSpacing: -0.2,
-              fontFamily: 'Inter_600SemiBold',
+              fontFamily: 'Manrope_600SemiBold',
             }}
           >
             {formatRole(assignment)}
@@ -57,7 +57,7 @@ export const AssignmentCard = ({ assignment }: Props) => {
               fontSize: 12,
               marginTop: 4,
               color: meta.color,
-              fontFamily: 'Inter_500Medium',
+              fontFamily: 'Manrope_500Medium',
             }}
           >
             {meta.label}
@@ -67,7 +67,7 @@ export const AssignmentCard = ({ assignment }: Props) => {
         {isPending && (
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {update.isPending ? (
-              <ActivityIndicator color="#ec4899" />
+              <ActivityIndicator color="#2A2312" />
             ) : (
               <>
                 <Pressable
@@ -83,13 +83,13 @@ export const AssignmentCard = ({ assignment }: Props) => {
                   style={{
                     width: 36,
                     height: 36,
-                    borderRadius: 10,
-                    backgroundColor: '#10b981',
+                    borderRadius: 18,
+                    backgroundColor: '#FFBE0B',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Check color="white" size={18} />
+                  <Check color="#2A2312" size={18} strokeWidth={2.6} />
                 </Pressable>
                 <Pressable
                   onPress={() =>
@@ -104,13 +104,13 @@ export const AssignmentCard = ({ assignment }: Props) => {
                   style={{
                     width: 36,
                     height: 36,
-                    borderRadius: 10,
-                    backgroundColor: '#f43f5e',
+                    borderRadius: 18,
+                    backgroundColor: '#ECE8DE',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <X color="white" size={18} />
+                  <X color="#B42318" size={18} strokeWidth={2.4} />
                 </Pressable>
               </>
             )}

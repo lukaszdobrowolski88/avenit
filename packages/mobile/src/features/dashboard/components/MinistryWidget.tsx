@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Link } from 'expo-router';
-import { Calendar, Check, Clock, History, Lightbulb, X as XIcon } from 'lucide-react-native';
+import { Check, Clock, X as XIcon } from 'lucide-react-native';
 import { formatDate } from '../../../lib/domain';
-import { WidgetCard } from './WidgetCard';
+import { EmptyRow, WidgetCard } from './WidgetCard';
+import { D, F } from '../theme';
 import type { UpcomingMinistryItem, UpcomingProgramItem } from '../api';
 
 type TabKey = 'upcoming' | 'suggestions' | 'history';
@@ -29,7 +30,7 @@ const StatusPill = ({ status }: { status: 'pending' | 'accepted' | 'rejected' })
         }}
       >
         <Check size={10} color="#047857" />
-        <Text style={{ fontSize: 10, color: '#047857', fontFamily: 'Inter_700Bold' }}>
+        <Text style={{ fontSize: 10, color: '#047857', fontFamily: F.bold }}>
           Potwierdzone
         </Text>
       </View>
@@ -49,7 +50,7 @@ const StatusPill = ({ status }: { status: 'pending' | 'accepted' | 'rejected' })
         }}
       >
         <XIcon size={10} color="#be123c" />
-        <Text style={{ fontSize: 10, color: '#be123c', fontFamily: 'Inter_700Bold' }}>
+        <Text style={{ fontSize: 10, color: '#be123c', fontFamily: F.bold }}>
           Odrzucone
         </Text>
       </View>
@@ -64,50 +65,23 @@ const StatusPill = ({ status }: { status: 'pending' | 'accepted' | 'rejected' })
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 999,
-        backgroundColor: '#fef3c7',
+        backgroundColor: '#FFF1C2',
       }}
     >
-      <Clock size={10} color="#b45309" />
-      <Text style={{ fontSize: 10, color: '#b45309', fontFamily: 'Inter_700Bold' }}>Oczekuje</Text>
+      <Clock size={10} color="#8A6606" />
+      <Text style={{ fontSize: 10, color: '#8A6606', fontFamily: F.bold }}>Oczekuje</Text>
     </View>
   );
 };
 
-const Tab = ({
-  active,
-  onPress,
-  Icon,
-  label,
-}: {
-  active: boolean;
-  onPress: () => void;
-  Icon: typeof Clock;
-  label: string;
-}) => (
-  <Pressable
-    onPress={onPress}
-    style={{
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      paddingVertical: 8,
-      borderRadius: 10,
-      backgroundColor: active ? '#ffffff' : 'transparent',
-      shadowColor: active ? '#0f172a' : 'transparent',
-      shadowOpacity: active ? 0.06 : 0,
-      shadowRadius: active ? 4 : 0,
-      shadowOffset: { width: 0, height: 1 },
-      elevation: active ? 2 : 0,
-    }}
-  >
-    <Icon size={12} color={active ? '#0c0a09' : '#78716c'} />
+const Tab = ({ active, onPress, label }: { active: boolean; onPress: () => void; label: string }) => (
+  <Pressable onPress={onPress} hitSlop={8} accessibilityRole="tab" accessibilityState={{ selected: active }}>
     <Text
       style={{
-        fontSize: 12,
-        color: active ? '#0c0a09' : '#78716c',
-        fontFamily: 'Inter_600SemiBold',
+        fontSize: 17,
+        letterSpacing: -0.4,
+        color: active ? D.ink : D.ink3,
+        fontFamily: active ? F.bold : F.semibold,
       }}
     >
       {label}
@@ -131,40 +105,30 @@ const Row = ({
       ? ({ pathname: '/(app)/programs/[id]', params: { id: String(programId) } } as const)
       : ('/(app)/calendar' as const);
   return (
-    <Link href={href} asChild>
+    <Link push href={href} asChild>
       <Pressable
         className="active:opacity-70"
         style={{
-          flexDirection: 'row',
-          alignItems: 'stretch',
-          gap: 12,
           paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderBottomWidth: isLast ? 0 : 1,
-          borderBottomColor: '#f5f5f4',
+          paddingTop: 12,
+          paddingBottom: isLast ? 16 : 12,
         }}
       >
-        <View style={{ width: 4, borderRadius: 2, backgroundColor: m.typeColor || '#ec4899' }} />
         <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              fontSize: 11,
-              color: '#78716c',
-              letterSpacing: 0.4,
-              textTransform: 'uppercase',
-              fontFamily: 'Inter_600SemiBold',
-            }}
-          >
-            {formatDate(m.date, 'EEEE, d MMM')}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: m.typeColor || D.accent }} />
+            <Text style={{ fontSize: 12, color: D.ink2, fontFamily: F.medium }}>
+              {formatDate(m.date, 'EEEE, d MMM')}
+            </Text>
+          </View>
           <Text
             numberOfLines={1}
             style={{
-              fontSize: 14,
-              color: '#0c0a09',
-              marginTop: 2,
+              fontSize: 15,
+              color: D.ink,
+              marginTop: 3,
               letterSpacing: -0.2,
-              fontFamily: 'Inter_600SemiBold',
+              fontFamily: F.semibold,
             }}
           >
             {m.title || m.typeName || 'Nabożeństwo'}
@@ -174,9 +138,7 @@ const Row = ({
               style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}
             >
               {myRole ? (
-                <Text
-                  style={{ fontSize: 12, color: '#57534e', fontFamily: 'Inter_500Medium' }}
-                >
+                <Text style={{ fontSize: 13, color: D.ink2, fontFamily: F.medium }}>
                   {myRole}
                 </Text>
               ) : null}
@@ -189,82 +151,15 @@ const Row = ({
   );
 };
 
-const EmptyState = ({
-  Icon,
-  title,
-  subtitle,
-}: {
-  Icon: typeof Calendar;
-  title: string;
-  subtitle?: string;
-}) => (
-  <View style={{ paddingHorizontal: 16, paddingVertical: 32, alignItems: 'center' }}>
-    <View
-      style={{
-        width: 48,
-        height: 48,
-        borderRadius: 14,
-        backgroundColor: '#f5f5f4',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 8,
-      }}
-    >
-      <Icon size={20} color="#a8a29e" />
-    </View>
-    <Text style={{ fontSize: 13, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
-      {title}
-    </Text>
-    {subtitle ? (
-      <Text
-        style={{
-          fontSize: 11,
-          color: '#78716c',
-          marginTop: 2,
-          textAlign: 'center',
-          fontFamily: 'Inter_400Regular',
-        }}
-      >
-        {subtitle}
-      </Text>
-    ) : null}
-  </View>
-);
-
 export const MinistryWidget = ({ ministry, suggestions, history }: Props) => {
   const [tab, setTab] = useState<TabKey>('upcoming');
 
   return (
-    <WidgetCard title="Moja Służba" Icon={Calendar} iconTint="#be185d" iconBg="#fce7f3">
-      <View style={{ paddingHorizontal: 12, paddingTop: 12, paddingBottom: 8 }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: 4,
-            backgroundColor: '#f5f5f4',
-            padding: 4,
-            borderRadius: 14,
-          }}
-        >
-          <Tab
-            active={tab === 'upcoming'}
-            onPress={() => setTab('upcoming')}
-            Icon={Clock}
-            label="Nadchodzące"
-          />
-          <Tab
-            active={tab === 'suggestions'}
-            onPress={() => setTab('suggestions')}
-            Icon={Lightbulb}
-            label="Sugestie"
-          />
-          <Tab
-            active={tab === 'history'}
-            onPress={() => setTab('history')}
-            Icon={History}
-            label="Historia"
-          />
-        </View>
+    <WidgetCard title="Moja służba" count={ministry.length}>
+      <View style={{ flexDirection: 'row', gap: 18, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
+        <Tab active={tab === 'upcoming'} onPress={() => setTab('upcoming')} label="Nadchodzące" />
+        <Tab active={tab === 'suggestions'} onPress={() => setTab('suggestions')} label="Sugestie" />
+        <Tab active={tab === 'history'} onPress={() => setTab('history')} label="Historia" />
       </View>
 
       {tab === 'upcoming' ? (
@@ -273,11 +168,7 @@ export const MinistryWidget = ({ ministry, suggestions, history }: Props) => {
             <Row key={`${m.programId ?? m.eventId}-${i}`} m={m} isLast={i === ministry.length - 1} />
           ))
         ) : (
-          <EmptyState
-            Icon={Calendar}
-            title="Brak nadchodzących służb"
-            subtitle="Nie jesteś przypisany do żadnego programu"
-          />
+          <EmptyRow text="Nie masz nadchodzących służb" />
         )
       ) : null}
 
@@ -303,11 +194,7 @@ export const MinistryWidget = ({ ministry, suggestions, history }: Props) => {
             ))
           )
         ) : (
-          <EmptyState
-            Icon={Lightbulb}
-            title="Brak zaproszeń do służby"
-            subtitle="Tu zobaczysz nowe propozycje z grafiku i programu"
-          />
+          <EmptyRow text="Brak nowych propozycji służby" />
         )
       ) : null}
 
@@ -325,7 +212,7 @@ export const MinistryWidget = ({ ministry, suggestions, history }: Props) => {
             ))
           )
         ) : (
-          <EmptyState Icon={History} title="Brak historii służby" />
+          <EmptyRow text="Brak historii służby" />
         )
       ) : null}
     </WidgetCard>

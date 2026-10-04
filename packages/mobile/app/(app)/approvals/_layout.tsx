@@ -8,8 +8,8 @@ export default function ApprovalsLayout() {
   const perms = usePermissions();
   if (!perms.ready) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
-        <ActivityIndicator color="#ec4899" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F6F4EE' }}>
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }

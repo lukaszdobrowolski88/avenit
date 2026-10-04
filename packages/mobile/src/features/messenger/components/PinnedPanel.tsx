@@ -39,18 +39,18 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
           gap: 10,
           paddingHorizontal: 16,
           paddingVertical: 10,
-          backgroundColor: "#fff7ed",
+          backgroundColor: "#FFF8E1",
           borderBottomWidth: 1,
-          borderBottomColor: "#fed7aa",
+          borderBottomColor: "#F3E3B0",
         }}
       >
-        <Pin size={14} color="#c2410c" strokeWidth={2.4} />
+        <Pin size={14} color="#8A6606" strokeWidth={2.4} />
         <View style={{ flex: 1 }}>
           <Text
             style={{
               fontSize: 11,
-              color: "#c2410c",
-              fontFamily: "Inter_700Bold",
+              color: "#8A6606",
+              fontFamily: "Manrope_700Bold",
               letterSpacing: -0.1,
             }}
           >
@@ -61,14 +61,14 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
             style={{
               fontSize: 13,
               color: "#7c2d12",
-              fontFamily: "Inter_500Medium",
+              fontFamily: "Manrope_500Medium",
               marginTop: 1,
             }}
           >
             {first.msg.content || "(załącznik)"}
           </Text>
         </View>
-        <ChevronDown size={16} color="#c2410c" />
+        <ChevronDown size={16} color="#8A6606" />
       </Pressable>
     );
   }
@@ -76,9 +76,9 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
   return (
     <View
       style={{
-        backgroundColor: "#fff7ed",
+        backgroundColor: "#FFF8E1",
         borderBottomWidth: 1,
-        borderBottomColor: "#fed7aa",
+        borderBottomColor: "#F3E3B0",
         maxHeight: 220,
       }}
     >
@@ -91,22 +91,22 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
           paddingHorizontal: 16,
           paddingVertical: 8,
           borderBottomWidth: 1,
-          borderBottomColor: "#fed7aa",
+          borderBottomColor: "#F3E3B0",
         }}
       >
-        <Pin size={14} color="#c2410c" strokeWidth={2.4} />
+        <Pin size={14} color="#8A6606" strokeWidth={2.4} />
         <Text
           style={{
             flex: 1,
             fontSize: 12,
-            color: "#c2410c",
-            fontFamily: "Inter_700Bold",
+            color: "#8A6606",
+            fontFamily: "Manrope_700Bold",
             letterSpacing: -0.1,
           }}
         >
           Przypięte wiadomości ({items.length})
         </Text>
-        <ChevronUp size={16} color="#c2410c" />
+        <ChevronUp size={16} color="#8A6606" />
       </Pressable>
       <ScrollView style={{ maxHeight: 180 }}>
         {items.map(({ pin, msg }) => {
@@ -121,7 +121,7 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
                 paddingHorizontal: 16,
                 paddingVertical: 10,
                 borderBottomWidth: 1,
-                borderBottomColor: "#fed7aa",
+                borderBottomColor: "#F3E3B0",
               }}
             >
               <Pressable
@@ -132,8 +132,8 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
                 <Text
                   style={{
                     fontSize: 11,
-                    color: "#c2410c",
-                    fontFamily: "Inter_700Bold",
+                    color: "#8A6606",
+                    fontFamily: "Manrope_700Bold",
                   }}
                 >
                   {senderName}
@@ -143,7 +143,7 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
                   style={{
                     fontSize: 13,
                     color: "#7c2d12",
-                    fontFamily: "Inter_400Regular",
+                    fontFamily: "Manrope_400Regular",
                     marginTop: 1,
                   }}
                 >
@@ -162,7 +162,7 @@ export const PinnedPanel = ({ pinned, messageById, members, onJump, onUnpin }: P
                     justifyContent: "center",
                   }}
                 >
-                  <X size={14} color="#9a3412" />
+                  <X size={14} color="#8A6606" />
                 </Pressable>
               ) : null}
             </View>

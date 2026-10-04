@@ -1,136 +1,36 @@
-import { Tabs, Redirect } from 'expo-router';
-import { ActivityIndicator, Platform, View } from 'react-native';
-import { Calendar, Home, LayoutGrid, MessageCircle, User } from 'lucide-react-native';
+import { Redirect, Stack } from 'expo-router';
+import { ActivityIndicator, View } from 'react-native';
 import { useAuthSession } from '../../src/lib/auth';
-import { usePermissions } from '../../src/lib/permissions';
-import { useT } from '../../src/i18n';
+import { FloatingTabBar } from '../../src/components/navigation/FloatingTabBar';
 
-// Eksportowany — żeby ekrany detail (np. wątek czatu) mogły same przywrócić styl po ukryciu.
-export const APP_TAB_BAR_STYLE = {
-  position: 'absolute' as const,
-  borderTopWidth: 0,
-  backgroundColor: 'rgba(255,255,255,0.96)',
-  height: Platform.OS === 'ios' ? 88 : 70,
-  paddingTop: 8,
-  paddingBottom: Platform.OS === 'ios' ? 28 : 10,
-  shadowColor: '#0f172a',
-  shadowOffset: { width: 0, height: -4 },
-  shadowOpacity: 0.06,
-  shadowRadius: 16,
-  elevation: 12,
+// Nawigacja: pięć zakładek w (tabs), a wszystkie pozostałe ekrany na JEDNYM wspólnym stosie
+// nad nimi. Każde wejście dokłada ekran do tej samej historii, więc „wstecz” zawsze wraca
+// tam, skąd się przyszło (wcześniej sekcje były ukrytymi zakładkami z własnymi stosami —
+// wstecz skakało na Start albo na zapamiętany wcześniej ekran sekcji).
+// Pasek zakładek to nakładka nad całym stosem.
+export const unstable_settings = {
+  // Wejście z linku (powiadomienie) prosto w ekran — pod spodem i tak są zakładki.
+  initialRouteName: '(tabs)',
 };
 
 export default function AppLayout() {
   const { session, loading } = useAuthSession();
-  const t = useT();
-  // Zakładki według uprawnień jak na webie. Do pierwszego wczytania pokazujemy
-  // Kalendarz i Czat (ma je prawie każdy), żeby pasek nie migał przy starcie.
-  const perms = usePermissions();
-  const tabHref = (moduleKey: string) =>
-    !perms.ready || perms.moduleVisible(moduleKey) ? undefined : null;
 
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#ffffff',
-        }}
-      >
-        <ActivityIndicator color="#ec4899" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F6F4EE' }}>
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
   if (!session) return <Redirect href="/(auth)/login" />;
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: '#ec4899',
-        tabBarInactiveTintColor: '#94a3b8',
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '700',
-          letterSpacing: -0.2,
-          marginTop: -2,
-        },
-        tabBarItemStyle: {
-          paddingVertical: 6,
-        },
-        tabBarStyle: APP_TAB_BAR_STYLE,
-      }}
-    >
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          title: t('Start'),
-          tabBarIcon: ({ color, focused }) => (
-            <Home color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="calendar"
-        options={{
-          title: t('Kalendarz'),
-          href: tabHref('calendar'),
-          tabBarIcon: ({ color, focused }) => (
-            <Calendar color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="messenger"
-        options={{
-          title: t('Czat'),
-          href: tabHref('komunikator'),
-          tabBarIcon: ({ color, focused }) => (
-            <MessageCircle color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="modules"
-        options={{
-          title: t('Moduły'),
-          tabBarIcon: ({ color, focused }) => (
-            <LayoutGrid color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="account"
-        options={{
-          title: t('Konto'),
-          tabBarIcon: ({ color, focused }) => (
-            <User color={color} size={focused ? 24 : 22} strokeWidth={focused ? 2.6 : 2} />
-          ),
-        }}
-      />
-      <Tabs.Screen name="programs" options={{ href: null }} />
-      <Tabs.Screen name="songs" options={{ href: null }} />
-      <Tabs.Screen name="prayers" options={{ href: null }} />
-      <Tabs.Screen name="giving" options={{ href: null }} />
-      <Tabs.Screen name="rsvp" options={{ href: null }} />
-      <Tabs.Screen name="sermons" options={{ href: null }} />
-      <Tabs.Screen name="members" options={{ href: null }} />
-      <Tabs.Screen name="materials" options={{ href: null }} />
-      <Tabs.Screen name="teachings" options={{ href: null }} />
-      <Tabs.Screen name="forms" options={{ href: null }} />
-      <Tabs.Screen name="notifications" options={{ href: null }} />
-      <Tabs.Screen name="teams" options={{ href: null }} />
-      <Tabs.Screen name="home-groups" options={{ href: null }} />
-      <Tabs.Screen name="serve" options={{ href: null }} />
-      <Tabs.Screen name="work" options={{ href: null }} />
-      <Tabs.Screen name="setlist" options={{ href: null }} />
-      <Tabs.Screen name="attendance" options={{ href: null }} />
-      <Tabs.Screen name="approvals" options={{ href: null }} />
-      <Tabs.Screen name="custom" options={{ href: null }} />
-      <Tabs.Screen name="rooms" options={{ href: null }} />
-      <Tabs.Screen name="finance" options={{ href: null }} />
-    </Tabs>
+    <View style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+      <FloatingTabBar />
+    </View>
   );
 }

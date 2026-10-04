@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Lock, X } from 'lucide-react-native';
 import { useUpdateMember, type MemberRow, type MemberStatus } from '../api';
+import { DateField } from '../../../components/ui/DateField';
 
 const STATUSES: MemberStatus[] = ['Członek', 'Sympatyk', 'Gość'];
 
@@ -20,18 +21,18 @@ const inputStyle = {
   height: 46,
   borderRadius: 14,
   paddingHorizontal: 14,
-  backgroundColor: '#f5f5f4',
+  backgroundColor: '#ECE8DE',
   fontSize: 15,
-  color: '#0c0a09',
-  fontFamily: 'Inter_500Medium',
+  color: '#2A2312',
+  fontFamily: 'Manrope_500Medium',
 } as const;
 
 const Label = ({ children, locked }: { children: string; locked?: boolean }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 16, marginBottom: 6 }}>
-    <Text style={{ fontSize: 12, color: '#57534e', fontFamily: 'Inter_700Bold', letterSpacing: 0.4, textTransform: 'uppercase' }}>
+    <Text style={{ fontSize: 12, color: '#8A6606', fontFamily: 'Manrope_700Bold', letterSpacing: 1.2, textTransform: 'uppercase' }}>
       {children}
     </Text>
-    {locked ? <Lock size={11} color="#a8a29e" /> : null}
+    {locked ? <Lock size={11} color="#857F70" /> : null}
   </View>
 );
 
@@ -115,14 +116,14 @@ export const EditMemberModal = ({
           onChangeText={set(key)}
           editable={!locked}
           placeholder={opts.placeholder}
-          placeholderTextColor="#a8a29e"
+          placeholderTextColor="#857F70"
           keyboardType={opts.keyboard}
           autoCapitalize={opts.keyboard === 'email-address' ? 'none' : 'sentences'}
           multiline={opts.multiline}
           style={[
             inputStyle,
             opts.multiline ? { height: 96, paddingTop: 12, textAlignVertical: 'top' as const } : null,
-            locked ? { color: '#a8a29e' } : null,
+            locked ? { color: '#857F70' } : null,
           ]}
         />
       </>
@@ -131,11 +132,11 @@ export const EditMemberModal = ({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 4 }}>
-          <Text style={{ flex: 1, fontSize: 20, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>Edytuj dane</Text>
+          <Text style={{ flex: 1, fontSize: 20, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Edytuj dane</Text>
           <Pressable onPress={onClose} hitSlop={10} className="active:opacity-60">
-            <X size={22} color="#57534e" />
+            <X size={22} color="#4A463E" />
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
@@ -158,11 +159,11 @@ export const EditMemberModal = ({
                     paddingHorizontal: 12,
                     paddingVertical: 7,
                     borderRadius: 999,
-                    backgroundColor: on ? '#0c0a09' : '#f5f5f4',
+                    backgroundColor: on ? '#2A2312' : '#ECE8DE',
                     opacity: can('status') ? 1 : 0.5,
                   }}
                 >
-                  <Text style={{ fontSize: 13, color: on ? '#ffffff' : '#44403c', fontFamily: 'Inter_600SemiBold' }}>{st}</Text>
+                  <Text style={{ fontSize: 13, color: on ? '#ffffff' : '#3A3427', fontFamily: 'Manrope_600SemiBold' }}>{st}</Text>
                 </Pressable>
               );
             })}
@@ -171,7 +172,12 @@ export const EditMemberModal = ({
           {field('phone', 'Telefon', { keyboard: 'phone-pad', placeholder: '+48 …' })}
           {field('email', 'E-mail', { keyboard: 'email-address' })}
           {field('address', 'Adres')}
-          {field('birth_date', 'Data urodzenia', { placeholder: 'RRRR-MM-DD' })}
+          <Label locked={!can('birth_date')}>Data urodzenia</Label>
+          {can('birth_date') ? (
+            <DateField value={form.birth_date} onChange={set('birth_date')} optional placeholder="Nie podano" />
+          ) : (
+            <Text style={[inputStyle, { lineHeight: 46, color: '#857F70' }]}>{form.birth_date || '—'}</Text>
+          )}
           {field('notes', 'Notatki', { multiline: true })}
 
           <Pressable
@@ -182,7 +188,7 @@ export const EditMemberModal = ({
               marginTop: 22,
               height: 52,
               borderRadius: 16,
-              backgroundColor: '#0c0a09',
+              backgroundColor: '#2A2312',
               alignItems: 'center',
               justifyContent: 'center',
               opacity: update.isPending ? 0.6 : 1,
@@ -191,7 +197,7 @@ export const EditMemberModal = ({
             {update.isPending ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={{ fontSize: 15, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>Zapisz zmiany</Text>
+              <Text style={{ fontSize: 15, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>Zapisz zmiany</Text>
             )}
           </Pressable>
         </ScrollView>

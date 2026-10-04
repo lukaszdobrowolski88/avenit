@@ -49,7 +49,7 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
       >
         <View
           style={{
-            backgroundColor: '#ffffff',
+            backgroundColor: '#F6F4EE',
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             padding: 20,
@@ -67,26 +67,26 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
             <Text
               style={{
                 fontSize: 18,
-                color: '#0c0a09',
+                color: '#2A2312',
                 letterSpacing: -0.4,
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Manrope_700Bold',
               }}
             >
               Nowy post
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color="#78716c" />
+              <X size={20} color="#6B6557" />
             </Pressable>
           </View>
 
           <Text
             style={{
               fontSize: 11,
-              color: '#78716c',
+              color: '#8A6606',
               marginBottom: 6,
-              letterSpacing: 0.4,
+              letterSpacing: 1.2,
               textTransform: 'uppercase',
-              fontFamily: 'Inter_700Bold',
+              fontFamily: 'Manrope_700Bold',
             }}
           >
             Tytuł (opcjonalnie)
@@ -95,29 +95,29 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
             value={title}
             onChangeText={setTitle}
             placeholder="np. Próba w piątek"
-            placeholderTextColor="#a8a29e"
+            placeholderTextColor="#857F70"
             style={{
               borderWidth: 1,
-              borderColor: '#eef0f3',
+              borderColor: '#E6E1D5',
               borderRadius: 14,
               paddingHorizontal: 14,
               paddingVertical: 12,
               fontSize: 15,
-              color: '#0c0a09',
-              backgroundColor: '#fafaf9',
+              color: '#2A2312',
+              backgroundColor: '#FFFFFF',
               marginBottom: 14,
-              fontFamily: 'Inter_500Medium',
+              fontFamily: 'Manrope_500Medium',
             }}
           />
 
           <Text
             style={{
               fontSize: 11,
-              color: '#78716c',
+              color: '#8A6606',
               marginBottom: 6,
-              letterSpacing: 0.4,
+              letterSpacing: 1.2,
               textTransform: 'uppercase',
-              fontFamily: 'Inter_700Bold',
+              fontFamily: 'Manrope_700Bold',
             }}
           >
             Treść
@@ -126,20 +126,20 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
             value={content}
             onChangeText={setContent}
             placeholder="Napisz coś do zespołu…"
-            placeholderTextColor="#a8a29e"
+            placeholderTextColor="#857F70"
             multiline
             style={{
               borderWidth: 1,
-              borderColor: '#eef0f3',
+              borderColor: '#E6E1D5',
               borderRadius: 14,
               paddingHorizontal: 14,
               paddingVertical: 12,
               fontSize: 14,
-              color: '#0c0a09',
-              backgroundColor: '#fafaf9',
+              color: '#2A2312',
+              backgroundColor: '#FFFFFF',
               minHeight: 120,
               textAlignVertical: 'top',
-              fontFamily: 'Inter_400Regular',
+              fontFamily: 'Manrope_400Regular',
             }}
           />
 
@@ -151,11 +151,11 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
               borderRadius: 14,
               paddingVertical: 14,
               alignItems: 'center',
-              backgroundColor: !content.trim() || isLoading ? '#e7e5e4' : '#ec4899',
+              backgroundColor: !content.trim() || isLoading ? '#E3DDD0' : '#2A2312',
             }}
           >
             <Text
-              style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}
+              style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}
             >
               {isLoading ? 'Publikowanie…' : 'Opublikuj'}
             </Text>

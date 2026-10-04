@@ -93,9 +93,9 @@ export const initials = (m: { first_name: string | null; last_name: string | nul
 };
 
 export const STATUS_META: Record<MemberStatus, { tint: string; bg: string; label: string }> = {
-  Członek: { tint: '#059669', bg: '#d1fae5', label: 'Członek' },
-  Sympatyk: { tint: '#2563eb', bg: '#dbeafe', label: 'Sympatyk' },
-  Gość: { tint: '#64748b', bg: '#e2e8f0', label: 'Gość' },
+  Członek: { tint: '#2A2312', bg: '#ECE8DE', label: 'Członek' },
+  Sympatyk: { tint: '#2A2312', bg: '#ECE8DE', label: 'Sympatyk' },
+  Gość: { tint: '#6B6557', bg: '#E3DDD0', label: 'Gość' },
 };
 
 export const MINISTRY_LABELS: Record<string, string> = {

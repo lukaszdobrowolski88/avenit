@@ -1,4 +1,5 @@
 import type { Router } from 'expo-router';
+import { goToTab } from './navigation';
 
 // Mapowanie URL/data.link na route w aplikacji.
 // Akceptuje:
@@ -16,6 +17,15 @@ export const navigateFromDeepLink = (router: Router, link: string | null | undef
     router.push({
       pathname: '/(app)/programs/[id]',
       params: { id: programMatch[1] },
+    });
+    return;
+  }
+  // Wydarzenie: web /wydarzenie/<id>, aplikacja /events/<id>.
+  const eventMatch = path.match(/^\/?(?:\(app\)\/)?(?:events?|wydarzenie)\/(\d+)/);
+  if (eventMatch) {
+    router.push({
+      pathname: '/(app)/events/[id]',
+      params: { id: eventMatch[1] },
     });
     return;
   }
@@ -51,6 +61,6 @@ export const navigateFromDeepLink = (router: Router, link: string | null | undef
     router.push('/(app)/rsvp');
     return;
   }
-  // Fallback — nie umiemy sparsować, idź do dashboardu.
-  router.push('/(app)/dashboard');
+  // Fallback — nie umiemy sparsować, idź na Start (zakładka, bez dokładania jej na stos).
+  goToTab(router, 'dashboard');
 };

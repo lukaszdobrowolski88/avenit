@@ -58,14 +58,12 @@ const Chip = ({
       paddingHorizontal: 14,
       paddingVertical: 7,
       borderRadius: 999,
-      backgroundColor: active ? '#0c0a09' : '#fafaf9',
-      borderWidth: 1,
-      borderColor: active ? '#0c0a09' : '#eef0f3',
+      backgroundColor: active ? '#2A2312' : '#ECE8DE',
     }}
   >
     <Text
       className="text-[13px]"
-      style={{ color: active ? '#ffffff' : '#1c1917', fontFamily: 'Inter_600SemiBold' }}
+      style={{ color: active ? '#ffffff' : '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
     >
       {label}
     </Text>
@@ -92,7 +90,7 @@ const OwnerAction = ({
     style={{ paddingVertical: 6, paddingHorizontal: 4, opacity: disabled ? 0.4 : 1 }}
   >
     <Icon size={14} color={tint} />
-    <Text className="text-[12px]" style={{ color: tint, fontFamily: 'Inter_600SemiBold' }}>
+    <Text className="text-[12px]" style={{ color: tint, fontFamily: 'Manrope_600SemiBold' }}>
       {label}
     </Text>
   </Pressable>
@@ -126,40 +124,35 @@ const PrayerCard = ({
       className="mb-3"
       style={{
         borderRadius: 20,
-        backgroundColor: '#ffffff',
-        shadowColor: '#0f172a',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
+        backgroundColor: '#FFFFFF',
       }}
     >
       <View
         className="overflow-hidden p-4"
-        style={{ borderRadius: 20, borderWidth: 1, borderColor: '#eef0f3' }}
+        style={{ borderRadius: 20 }}
       >
         <View className="flex-row items-center gap-2 mb-2">
           <View className="px-2 py-0.5" style={{ borderRadius: 999, backgroundColor: meta.bg }}>
             <Text
               className="text-[11px]"
-              style={{ color: meta.tint, fontFamily: 'Inter_700Bold' }}
+              style={{ color: meta.tint, fontFamily: 'Manrope_700Bold' }}
             >
-              {meta.emoji} {t(meta.label)}
+              {t(meta.label)}
             </Text>
           </View>
           <Text
             className="text-[11px]"
-            style={{ color: '#a8a29e', fontFamily: 'Inter_500Medium' }}
+            style={{ color: '#857F70', fontFamily: 'Manrope_500Medium' }}
           >
             {formatRelative(prayer.created_at)}
           </Text>
           {prayer.visibility === 'leaders_only' && (
             <View
               className="flex-row items-center gap-1 px-2 py-0.5"
-              style={{ borderRadius: 999, backgroundColor: '#ede9fe' }}
+              style={{ borderRadius: 999, backgroundColor: '#ECE8DE' }}
             >
-              <Lock size={9} color="#7c3aed" />
-              <Text className="text-[10px]" style={{ color: '#6d28d9', fontFamily: 'Inter_700Bold' }}>
+              <Lock size={9} color="#2A2312" />
+              <Text className="text-[10px]" style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                 {t('Liderzy')}
               </Text>
             </View>
@@ -172,7 +165,7 @@ const PrayerCard = ({
               <Sparkles size={10} color="#059669" />
               <Text
                 className="text-[10px]"
-                style={{ color: '#047857', fontFamily: 'Inter_700Bold' }}
+                style={{ color: '#047857', fontFamily: 'Manrope_700Bold' }}
               >
                 {t('Wysłuchana')}
               </Text>
@@ -182,7 +175,7 @@ const PrayerCard = ({
 
         <Text
           className="text-[15px] mb-2"
-          style={{ color: '#0c0a09', lineHeight: 22, fontFamily: 'Inter_400Regular' }}
+          style={{ color: '#2A2312', lineHeight: 22, fontFamily: 'Manrope_400Regular' }}
         >
           {prayer.content}
         </Text>
@@ -197,13 +190,13 @@ const PrayerCard = ({
           >
             <Text
               className="text-[11px] mb-1"
-              style={{ color: '#047857', fontFamily: 'Inter_700Bold' }}
+              style={{ color: '#047857', fontFamily: 'Manrope_700Bold' }}
             >
               {t('Świadectwo:')}
             </Text>
             <Text
               className="text-[13px]"
-              style={{ color: '#064e3b', fontFamily: 'Inter_400Regular' }}
+              style={{ color: '#064e3b', fontFamily: 'Manrope_400Regular' }}
             >
               {prayer.answered_testimony}
             </Text>
@@ -212,7 +205,7 @@ const PrayerCard = ({
 
         <Text
           className="text-[12px] mb-3"
-          style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
+          style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
         >
           {displayName}
         </Text>
@@ -220,7 +213,7 @@ const PrayerCard = ({
         <View className="flex-row items-center justify-between">
           <Text
             className="text-[12px]"
-            style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+            style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
           >
             {prayer.prayer_count > 0
               ? `${prayer.prayer_count} ${prayer.prayer_count === 1 ? t('osoba modli się') : t('osób modli się')}`
@@ -236,22 +229,22 @@ const PrayerCard = ({
               paddingHorizontal: 12,
               paddingVertical: 7,
               borderRadius: 999,
-              backgroundColor: iAmPraying ? '#ec4899' : '#fef3f2',
+              backgroundColor: iAmPraying ? '#2A2312' : '#FFF8E1',
               borderWidth: 1,
-              borderColor: iAmPraying ? '#ec4899' : '#fbcfe8',
+              borderColor: iAmPraying ? '#FFBE0B' : '#F3E3B0',
               opacity: prayer.status !== 'active' ? 0.5 : 1,
             }}
           >
             <Heart
               size={13}
-              color={iAmPraying ? 'white' : '#ec4899'}
+              color={iAmPraying ? 'white' : '#8A6606'}
               fill={iAmPraying ? 'white' : 'none'}
             />
             <Text
               className="text-[12px]"
               style={{
-                color: iAmPraying ? '#ffffff' : '#be185d',
-                fontFamily: 'Inter_700Bold',
+                color: iAmPraying ? '#ffffff' : '#8A6606',
+                fontFamily: 'Manrope_700Bold',
               }}
             >
               {iAmPraying ? t('Modlę się') : t('Modlę się też')}
@@ -268,7 +261,7 @@ const PrayerCard = ({
               <OwnerAction
                 Icon={RotateCcw}
                 label={t("Przywróć")}
-                tint="#0e7490"
+                tint="#2A2312"
                 onPress={() => onReopen(prayer)}
               />
             ) : (
@@ -279,7 +272,7 @@ const PrayerCard = ({
                 onPress={() => onMarkAnswered(prayer)}
               />
             )}
-            <OwnerAction Icon={Pencil} label={t("Edytuj")} tint="#57534e" onPress={() => onEdit(prayer)} />
+            <OwnerAction Icon={Pencil} label={t("Edytuj")} tint="#4A463E" onPress={() => onEdit(prayer)} />
             <OwnerAction Icon={Trash2} label={t("Usuń")} tint="#dc2626" onPress={() => onDelete(prayer)} />
           </View>
         )}
@@ -378,7 +371,7 @@ export default function PrayersScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title={t("Modlitwy")}
           subtitle={t("Intencje społeczności")}
@@ -392,8 +385,6 @@ export default function PrayersScreen() {
                 Icon={Plus}
                 size={40}
                 iconSize={20}
-                from="#f97316"
-                to="#ec4899"
                 rounded
               />
             </Pressable>
@@ -411,31 +402,29 @@ export default function PrayersScreen() {
           <View
             className="flex-row items-center gap-2 px-3"
             style={{
-              borderRadius: 999,
-              backgroundColor: '#fafaf9',
-              borderWidth: 1,
-              borderColor: '#eef0f3',
+              borderRadius: 24,
+              backgroundColor: '#FFFFFF',
               height: 40,
             }}
           >
-            <Search size={16} color="#a8a29e" />
+            <Search size={16} color="#857F70" />
             <TextInput
               style={{
                 flex: 1,
                 fontSize: 14,
-                color: '#0c0a09',
-                fontFamily: 'Inter_400Regular',
+                color: '#2A2312',
+                fontFamily: 'Manrope_400Regular',
                 paddingVertical: 0,
               }}
               placeholder={t("Szukaj w intencjach…")}
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#857F70"
               value={search}
               onChangeText={setSearch}
               returnKeyType="search"
             />
             {search.length > 0 && (
               <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                <X size={15} color="#a8a29e" />
+                <X size={15} color="#857F70" />
               </Pressable>
             )}
           </View>
@@ -451,7 +440,7 @@ export default function PrayersScreen() {
             {CATEGORIES.map((c) => (
               <Chip
                 key={c}
-                label={`${CATEGORY_META[c].emoji} ${t(CATEGORY_META[c].label)}`}
+                label={t(CATEGORY_META[c].label)}
                 active={category === c}
                 onPress={() => setCategory(c)}
               />
@@ -461,13 +450,13 @@ export default function PrayersScreen() {
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}
+              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
             >
               {(error as Error)?.message ?? t('Błąd')}
             </Text>
@@ -481,7 +470,7 @@ export default function PrayersScreen() {
               padding: 32,
             }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <View
@@ -489,23 +478,23 @@ export default function PrayersScreen() {
                 width: 64,
                 height: 64,
                 borderRadius: 18,
-                backgroundColor: '#fef3f2',
+                backgroundColor: '#FFF8E1',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,
               }}
             >
-              <Heart size={28} color="#ec4899" />
+              <Heart size={28} color="#8A6606" />
             </View>
             <Text
               className="text-[16px]"
-              style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+              style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
             >
               {search || category !== 'all' || scope !== 'active' ? t('Brak wyników') : t('Brak intencji')}
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+              style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
             >
               {search || category !== 'all' || scope !== 'active'
                 ? t('Zmień filtry lub wyczyść wyszukiwanie.')
@@ -516,7 +505,7 @@ export default function PrayersScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {list.map((p: PrayerRequest) => (
@@ -547,7 +536,7 @@ export default function PrayersScreen() {
         >
           <Pressable
             style={{
-              backgroundColor: '#ffffff',
+              backgroundColor: '#F6F4EE',
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               padding: 20,
@@ -557,32 +546,32 @@ export default function PrayersScreen() {
           >
             <View className="flex-row items-center gap-2 mb-1">
               <Sparkles size={18} color="#059669" />
-              <Text style={{ fontSize: 18, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>
+              <Text style={{ fontSize: 18, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                 {t('Modlitwa wysłuchana 🙌')}
               </Text>
             </View>
             <Text
-              style={{ fontSize: 13, color: '#78716c', marginBottom: 14, fontFamily: 'Inter_400Regular' }}
+              style={{ fontSize: 13, color: '#6B6557', marginBottom: 14, fontFamily: 'Manrope_400Regular' }}
             >
               {t('Możesz dodać krótkie świadectwo (opcjonalnie) — zbuduje wiarę wspólnoty.')}
             </Text>
             <TextInput
               style={{
                 borderWidth: 1,
-                borderColor: '#eef0f3',
+                borderColor: '#E6E1D5',
                 borderRadius: 14,
                 paddingHorizontal: 14,
                 paddingVertical: 12,
                 minHeight: 96,
                 textAlignVertical: 'top',
                 fontSize: 15,
-                color: '#0c0a09',
-                backgroundColor: '#fafaf9',
+                color: '#2A2312',
+                backgroundColor: '#FFFFFF',
                 marginBottom: 16,
-                fontFamily: 'Inter_400Regular',
+                fontFamily: 'Manrope_400Regular',
               }}
               placeholder={t("Jak Bóg odpowiedział na tę modlitwę?")}
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#857F70"
               multiline
               value={testimony}
               onChangeText={setTestimony}

@@ -20,21 +20,22 @@ import {
 } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
 import { useColorScheme } from 'nativewind';
-import { useAuthSession, signOut } from '../../../src/lib/auth';
-import { registerPushToken } from '../../../src/lib/push';
+import { useAuthSession, signOut } from '../../../../src/lib/auth';
+import { registerPushToken } from '../../../../src/lib/push';
 import {
   isBiometricEnabled,
   setBiometricEnabled,
   authenticateWithBiometric,
   getBiometricCapability,
-} from '../../../src/lib/biometric';
-import { GradientAvatar } from '../../../src/components/ui/GradientAvatar';
-import { SettingsGroup, SettingsRow } from '../../../src/components/ui/SettingsRow';
-import { CampusSelector } from '../../../src/components/CampusSelector';
-import { useCampus } from '../../../src/contexts/CampusContext';
-import { tenantWebBase } from '../../../src/lib/supabase';
-import { useMyProfile, use2FAStatus } from '../../../src/features/account/api';
-import { useT, useLang } from '../../../src/i18n';
+} from '../../../../src/lib/biometric';
+import { GradientAvatar } from '../../../../src/components/ui/GradientAvatar';
+import { SettingsGroup, SettingsRow } from '../../../../src/components/ui/SettingsRow';
+import { CampusSelector } from '../../../../src/components/CampusSelector';
+import { useCampus } from '../../../../src/contexts/CampusContext';
+import { tenantWebBase } from '../../../../src/lib/supabase';
+import { useMyProfile, use2FAStatus } from '../../../../src/features/account/api';
+import { useT, useLang } from '../../../../src/i18n';
+import { goToTab } from '../../../../src/lib/navigation';
 
 // Otwiera stronę web tenanta (np. politykę prywatności) — host tenanta z getTenant(),
 // z fallbackiem na apex. Wymagane linki prawne + usuwanie konta (wymóg App Store / Play).
@@ -142,14 +143,14 @@ export default function AccountScreen() {
   return (
     <ScrollView
       className="flex-1"
-      style={{ backgroundColor: '#ffffff' }}
+      style={{ backgroundColor: '#F6F4EE' }}
       contentContainerStyle={{ paddingBottom: 120 }}
     >
       <View className="items-center pb-8 px-4" style={{ paddingTop: insets.top + 16 }}>
         {avatarUrl ? (
           <Image
             source={{ uri: avatarUrl }}
-            style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#f5f5f4' }}
+            style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: '#ECE8DE' }}
             contentFit="cover"
           />
         ) : (
@@ -158,16 +159,16 @@ export default function AccountScreen() {
         <Text
           className="mt-4 text-[18px]"
           style={{
-            color: '#0c0a09',
+            color: '#2A2312',
             letterSpacing: -0.4,
-            fontFamily: 'Inter_700Bold',
+            fontFamily: 'Manrope_700Bold',
           }}
         >
           {fullName || email}
         </Text>
         <Text
           className="text-[12px] mt-1"
-          style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
+          style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
         >
           {fullName ? email : t('Konto')}
         </Text>
@@ -177,8 +178,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={UserCog}
-          iconTint="#be185d"
-          iconBg="#fce7f3"
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
           title={t("Edytuj profil")}
           description={t("Zmień imię i zdjęcie profilowe")}
           onPress={() => router.push('/(app)/account/edit-profile')}
@@ -190,9 +191,9 @@ export default function AccountScreen() {
           <Text
             className="text-[11px] uppercase mx-5 mb-2"
             style={{
-              color: '#78716c',
+              color: '#8A6606',
               letterSpacing: 0.6,
-              fontFamily: 'Inter_700Bold',
+              fontFamily: 'Manrope_700Bold',
             }}
           >
             {t('Lokalizacja')}
@@ -203,8 +204,8 @@ export default function AccountScreen() {
           <Text
             className="text-[11px] mx-5 mt-2"
             style={{
-              color: '#a8a29e',
-              fontFamily: 'Inter_500Medium',
+              color: '#857F70',
+              fontFamily: 'Manrope_500Medium',
               lineHeight: 16,
             }}
           >
@@ -217,8 +218,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="toggle"
           Icon={Moon}
-          iconTint="#7c3aed"
-          iconBg="#ede9fe"
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
           title={t("Tryb ciemny")}
           description={isDark ? t('Włączony') : t('Zgodny z systemem')}
           value={isDark}
@@ -227,8 +228,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={Palette}
-          iconTint="#0891b2"
-          iconBg="#cffafe"
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
           title={t("Motyw systemowy")}
           description={t("Dopasuj automatycznie do urządzenia")}
           onPress={() => setColorScheme('system')}
@@ -238,13 +239,13 @@ export default function AccountScreen() {
       <View className="mb-4">
         <Text
           className="text-[11px] uppercase mx-5 mb-2"
-          style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}
+          style={{ color: '#8A6606', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
         >
           {t('Język')}
         </Text>
         <View
           className="mx-4"
-          style={{ borderRadius: 16, borderWidth: 1, borderColor: '#eef0f3', overflow: 'hidden' }}
+          style={{ borderRadius: 16, borderWidth: 1, borderColor: '#E6E1D5', overflow: 'hidden' }}
         >
           {languages.map((l, idx) => {
             const active = lang === l.code;
@@ -260,8 +261,8 @@ export default function AccountScreen() {
                   paddingHorizontal: 16,
                   paddingVertical: 14,
                   borderTopWidth: idx === 0 ? 0 : 1,
-                  borderTopColor: '#f5f5f4',
-                  backgroundColor: active ? '#fdf2f8' : '#ffffff',
+                  borderTopColor: '#ECE8DE',
+                  backgroundColor: active ? '#FFF8E1' : '#F6F4EE',
                 }}
               >
                 <Text style={{ fontSize: 20 }}>{l.flag}</Text>
@@ -269,13 +270,13 @@ export default function AccountScreen() {
                   style={{
                     flex: 1,
                     fontSize: 15,
-                    color: '#0c0a09',
-                    fontFamily: active ? 'Inter_700Bold' : 'Inter_500Medium',
+                    color: '#2A2312',
+                    fontFamily: active ? 'Manrope_700Bold' : 'Manrope_500Medium',
                   }}
                 >
                   {l.label}
                 </Text>
-                {active ? <Check size={18} color="#ec4899" /> : null}
+                {active ? <Check size={18} color="#8A6606" /> : null}
               </Pressable>
             );
           })}
@@ -286,8 +287,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="toggle"
           Icon={Fingerprint}
-          iconTint="#059669"
-          iconBg="#d1fae5"
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
           title={t("Logowanie biometryczne")}
           description={
             biometricSupported
@@ -301,8 +302,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={ShieldCheck}
-          iconTint="#0891b2"
-          iconBg="#cffafe"
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
           title={t("Weryfikacja dwustopniowa")}
           description={twoFa.data?.enabled ? t('Włączona — zarządzaj') : t('Wyłączona — włącz zabezpieczenie')}
           onPress={() => router.push('/(app)/account/two-factor')}
@@ -310,8 +311,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={KeyRound}
-          iconTint="#d97706"
-          iconBg="#fef3c7"
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
           title={t("Zmień hasło")}
           description={t("Wprowadź nowe hasło dla zalogowanego konta")}
           onPress={() => router.push('/(auth)/reset-password')}
@@ -322,8 +323,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="toggle"
           Icon={Bell}
-          iconTint="#ec4899"
-          iconBg="#fce7f3"
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
           title={t("Powiadomienia push")}
           description={pushOn ? t('Włączone') : t('Wyłączone')}
           value={pushOn}
@@ -332,8 +333,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={Smartphone}
-          iconTint="#2563eb"
-          iconBg="#dbeafe"
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
           title={t("Aktywne sesje")}
           description={t("Zalogowane urządzenia i wylogowanie zdalne")}
           onPress={() => router.push('/(app)/account/sessions')}
@@ -344,17 +345,17 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={LayoutGrid}
-          iconTint="#be185d"
-          iconBg="#fce7f3"
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
           title={t("Wszystkie moduły")}
           description={t("Zespoły, grupy, materiały i reszta — według Twoich uprawnień")}
-          onPress={() => router.push('/(app)/modules')}
+          onPress={() => goToTab(router, 'modules')}
         />
         <SettingsRow
           variant="nav"
           Icon={Bell}
-          iconTint="#ec4899"
-          iconBg="#fce7f3"
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
           title={t("Powiadomienia")}
           description={t("Centrum powiadomień")}
           onPress={() => router.push('/(app)/notifications')}
@@ -365,8 +366,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={Shield}
-          iconTint="#475569"
-          iconBg="#e2e8f0"
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
           title={t("Polityka prywatności")}
           description={t("Otwórz w przeglądarce")}
           onPress={() => openWeb('/polityka-prywatnosci')}
@@ -374,8 +375,8 @@ export default function AccountScreen() {
         <SettingsRow
           variant="nav"
           Icon={Shield}
-          iconTint="#475569"
-          iconBg="#e2e8f0"
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
           title={t("Regulamin")}
           description={t("Otwórz w przeglądarce")}
           onPress={() => openWeb('/regulamin')}
@@ -403,7 +404,7 @@ export default function AccountScreen() {
 
       <Text
         className="text-[11px] text-center mt-2"
-        style={{ color: '#a8a29e', fontFamily: 'Inter_500Medium' }}
+        style={{ color: '#857F70', fontFamily: 'Manrope_500Medium' }}
       >
         Avenit · v1.0.0
       </Text>

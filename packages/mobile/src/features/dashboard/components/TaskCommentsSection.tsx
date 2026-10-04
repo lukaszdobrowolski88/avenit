@@ -51,19 +51,19 @@ const CommentItem = ({
           width: 32,
           height: 32,
           borderRadius: 16,
-          backgroundColor: '#fef3f2',
+          backgroundColor: '#FFF8E1',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Text style={{ color: '#be185d', fontFamily: 'Inter_700Bold', fontSize: 12 }}>
+        <Text style={{ color: '#8A6606', fontFamily: 'Manrope_700Bold', fontSize: 12 }}>
           {initials(comment.author_name, comment.author_email)}
         </Text>
       </View>
       <View
         style={{
           flex: 1,
-          backgroundColor: '#fafaf9',
+          backgroundColor: '#F1EEE6',
           borderRadius: 12,
           paddingHorizontal: 12,
           paddingVertical: 8,
@@ -71,26 +71,26 @@ const CommentItem = ({
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Text
-            style={{ flex: 1, fontSize: 12, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}
+            style={{ flex: 1, fontSize: 12, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}
           >
             {author}
           </Text>
-          <Text style={{ fontSize: 10, color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>
+          <Text style={{ fontSize: 10, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
             {relTime(comment.created_at)}
           </Text>
           {canDelete ? (
             <Pressable onPress={onDelete} hitSlop={6} style={{ marginLeft: 4 }}>
-              <Trash2 size={12} color="#a8a29e" />
+              <Trash2 size={12} color="#857F70" />
             </Pressable>
           ) : null}
         </View>
         <Text
           style={{
             fontSize: 13,
-            color: '#1c1917',
+            color: '#2A2312',
             marginTop: 2,
             lineHeight: 18,
-            fontFamily: 'Inter_400Regular',
+            fontFamily: 'Manrope_400Regular',
           }}
         >
           {comment.content}
@@ -113,18 +113,18 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
           paddingVertical: 12,
           paddingHorizontal: 14,
           borderRadius: 12,
-          backgroundColor: '#fafaf9',
+          backgroundColor: '#FFFFFF',
           borderWidth: 1,
-          borderColor: '#eef0f3',
+          borderColor: '#E6E1D5',
           marginBottom: 14,
         }}
       >
         <Text
           style={{
             fontSize: 12,
-            color: '#78716c',
+            color: '#6B6557',
             textAlign: 'center',
-            fontFamily: 'Inter_500Medium',
+            fontFamily: 'Manrope_500Medium',
           }}
         >
           Zapisz zadanie, aby dodawać komentarze.
@@ -151,14 +151,14 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
   return (
     <View style={{ marginBottom: 14 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-        <MessageCircle size={11} color="#78716c" strokeWidth={2.4} />
+        <MessageCircle size={11} color="#6B6557" strokeWidth={2.4} />
         <Text
           style={{
             fontSize: 11,
-            color: '#78716c',
-            letterSpacing: 0.4,
+            color: '#8A6606',
+            letterSpacing: 1.2,
             textTransform: 'uppercase',
-            fontFamily: 'Inter_700Bold',
+            fontFamily: 'Manrope_700Bold',
           }}
         >
           Komentarze ({comments.length})
@@ -167,17 +167,17 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
 
       {isLoading ? (
         <View style={{ paddingVertical: 16, alignItems: 'center' }}>
-          <ActivityIndicator color="#ec4899" />
+          <ActivityIndicator color="#2A2312" />
         </View>
       ) : comments.length === 0 ? (
         <Text
           style={{
             fontSize: 13,
-            color: '#a8a29e',
+            color: '#857F70',
             textAlign: 'center',
             paddingVertical: 12,
             fontStyle: 'italic',
-            fontFamily: 'Inter_400Regular',
+            fontFamily: 'Manrope_400Regular',
           }}
         >
           Brak komentarzy. Bądź pierwszy!
@@ -214,7 +214,7 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
             value={text}
             onChangeText={setText}
             placeholder="Napisz komentarz…"
-            placeholderTextColor="#a8a29e"
+            placeholderTextColor="#857F70"
             multiline
             style={{
               flex: 1,
@@ -223,12 +223,12 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
               borderRadius: 14,
               paddingHorizontal: 14,
               paddingVertical: 10,
-              backgroundColor: '#fafaf9',
+              backgroundColor: '#FFFFFF',
               borderWidth: 1,
-              borderColor: '#eef0f3',
+              borderColor: '#E6E1D5',
               fontSize: 13,
-              color: '#0c0a09',
-              fontFamily: 'Inter_400Regular',
+              color: '#2A2312',
+              fontFamily: 'Manrope_400Regular',
             }}
           />
           <Pressable
@@ -238,7 +238,7 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: !text.trim() || addComment.isPending ? '#e7e5e4' : '#ec4899',
+              backgroundColor: !text.trim() || addComment.isPending ? '#E3DDD0' : '#2A2312',
               alignItems: 'center',
               justifyContent: 'center',
             }}

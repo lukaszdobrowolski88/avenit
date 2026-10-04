@@ -22,7 +22,7 @@ const STATUS_META: Record<
   AbsenceItem['status'],
   { label: string; tint: string; bg: string; Icon: typeof Check }
 > = {
-  pending: { label: 'Oczekuje', tint: '#b45309', bg: '#fef3c7', Icon: Clock },
+  pending: { label: 'Oczekuje', tint: '#8A6606', bg: '#FFF1C2', Icon: Clock },
   approved: { label: 'Zatwierdzona', tint: '#047857', bg: '#d1fae5', Icon: Check },
   rejected: { label: 'Odrzucona', tint: '#be123c', bg: '#ffe4e6', Icon: X },
 };
@@ -109,7 +109,7 @@ const ReportModal = ({
       >
         <View
           style={{
-            backgroundColor: '#ffffff',
+            backgroundColor: '#F6F4EE',
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             padding: 20,
@@ -128,26 +128,26 @@ const ReportModal = ({
             <Text
               style={{
                 fontSize: 18,
-                color: '#0c0a09',
+                color: '#2A2312',
                 letterSpacing: -0.4,
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Manrope_700Bold',
               }}
             >
               Zgłoś nieobecność
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color="#78716c" />
+              <X size={20} color="#6B6557" />
             </Pressable>
           </View>
 
           <Text
             style={{
               fontSize: 11,
-              color: '#78716c',
+              color: '#8A6606',
               marginBottom: 8,
-              letterSpacing: 0.4,
+              letterSpacing: 1.2,
               textTransform: 'uppercase',
-              fontFamily: 'Inter_700Bold',
+              fontFamily: 'Manrope_700Bold',
             }}
           >
             Wybierz nabożeństwo
@@ -157,10 +157,10 @@ const ReportModal = ({
               <Text
                 style={{
                   fontSize: 13,
-                  color: '#78716c',
+                  color: '#6B6557',
                   paddingHorizontal: 8,
                   paddingVertical: 12,
-                  fontFamily: 'Inter_500Medium',
+                  fontFamily: 'Manrope_500Medium',
                 }}
               >
                 Brak nadchodzących nabożeństw.
@@ -181,25 +181,25 @@ const ReportModal = ({
                       borderRadius: 14,
                       marginBottom: 8,
                       borderWidth: 1,
-                      borderColor: isSelected ? '#ec4899' : '#eef0f3',
-                      backgroundColor: isSelected ? '#fef3f2' : '#ffffff',
+                      borderColor: isSelected ? '#FFBE0B' : '#E6E1D5',
+                      backgroundColor: isSelected ? '#FFF8E1' : '#F6F4EE',
                     }}
                   >
                     <View
                       style={{
                         width: 4,
                         borderRadius: 2,
-                        backgroundColor: p.typeColor || '#ec4899',
+                        backgroundColor: p.typeColor || '#2A2312',
                       }}
                     />
                     <View style={{ flex: 1 }}>
                       <Text
                         style={{
                           fontSize: 11,
-                          color: '#78716c',
-                          letterSpacing: 0.4,
+                          color: '#8A6606',
+                          letterSpacing: 1.2,
                           textTransform: 'uppercase',
-                          fontFamily: 'Inter_600SemiBold',
+                          fontFamily: 'Manrope_600SemiBold',
                         }}
                       >
                         {formatDate(p.date, 'EEEE, d MMM')}
@@ -207,16 +207,16 @@ const ReportModal = ({
                       <Text
                         style={{
                           fontSize: 14,
-                          color: '#0c0a09',
+                          color: '#2A2312',
                           marginTop: 2,
                           letterSpacing: -0.2,
-                          fontFamily: 'Inter_600SemiBold',
+                          fontFamily: 'Manrope_600SemiBold',
                         }}
                       >
                         {p.title || p.typeName || 'Nabożeństwo'}
                       </Text>
                     </View>
-                    {isSelected ? <Check size={18} color="#ec4899" /> : null}
+                    {isSelected ? <Check size={18} color="#8A6606" /> : null}
                   </Pressable>
                 );
               })
@@ -226,11 +226,11 @@ const ReportModal = ({
           <Text
             style={{
               fontSize: 11,
-              color: '#78716c',
+              color: '#8A6606',
               marginBottom: 8,
-              letterSpacing: 0.4,
+              letterSpacing: 1.2,
               textTransform: 'uppercase',
-              fontFamily: 'Inter_700Bold',
+              fontFamily: 'Manrope_700Bold',
             }}
           >
             Powód (opcjonalnie)
@@ -239,21 +239,21 @@ const ReportModal = ({
             value={note}
             onChangeText={setNote}
             placeholder="np. wyjazd, choroba..."
-            placeholderTextColor="#a8a29e"
+            placeholderTextColor="#857F70"
             multiline
             numberOfLines={2}
             style={{
               borderWidth: 1,
-              borderColor: '#eef0f3',
+              borderColor: '#E6E1D5',
               borderRadius: 14,
               paddingHorizontal: 14,
               paddingVertical: 12,
               fontSize: 14,
-              color: '#0c0a09',
-              backgroundColor: '#fafaf9',
+              color: '#2A2312',
+              backgroundColor: '#FFFFFF',
               minHeight: 60,
               textAlignVertical: 'top',
-              fontFamily: 'Inter_400Regular',
+              fontFamily: 'Manrope_400Regular',
             }}
           />
 
@@ -265,10 +265,10 @@ const ReportModal = ({
               borderRadius: 14,
               paddingVertical: 14,
               alignItems: 'center',
-              backgroundColor: !selected || isLoading ? '#e7e5e4' : '#ec4899',
+              backgroundColor: !selected || isLoading ? '#E3DDD0' : '#2A2312',
             }}
           >
-            <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}>
+            <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
               {isLoading ? 'Zapisywanie...' : 'Zgłoś nieobecność'}
             </Text>
           </Pressable>
@@ -322,13 +322,7 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
 
   return (
     <>
-      <WidgetCard
-        title="Moje Nieobecności"
-        Icon={CalendarX}
-        iconTint="#6d28d9"
-        iconBg="#ede9fe"
-        badge={items.length > 0 ? String(items.length) : undefined}
-      >
+      <WidgetCard title="Moje nieobecności" count={items.length}>
         <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
           <Pressable
             onPress={() => setModalOpen(true)}
@@ -342,11 +336,11 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
               borderRadius: 14,
               borderWidth: 2,
               borderStyle: 'dashed',
-              borderColor: '#e7e5e4',
+              borderColor: '#E3DDD0',
             }}
           >
-            <Plus size={14} color="#78716c" />
-            <Text style={{ fontSize: 13, color: '#57534e', fontFamily: 'Inter_600SemiBold' }}>
+            <Plus size={14} color="#6B6557" />
+            <Text style={{ fontSize: 13, color: '#4A463E', fontFamily: 'Manrope_600SemiBold' }}>
               Zgłoś nieobecność
             </Text>
           </Pressable>
@@ -363,7 +357,7 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
                   paddingHorizontal: 12,
                   paddingVertical: 12,
                   borderRadius: 14,
-                  backgroundColor: '#fafaf9',
+                  backgroundColor: '#F1EEE6',
                 }}
               >
                 <View
@@ -371,21 +365,21 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    backgroundColor: '#ffedd5',
+                    backgroundColor: '#FFF1C2',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <CalendarX size={16} color="#c2410c" />
+                  <CalendarX size={16} color="#8A6606" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     numberOfLines={1}
                     style={{
                       fontSize: 13,
-                      color: '#0c0a09',
+                      color: '#2A2312',
                       letterSpacing: -0.2,
-                      fontFamily: 'Inter_600SemiBold',
+                      fontFamily: 'Manrope_600SemiBold',
                     }}
                   >
                     {availablePrograms[0].title ||
@@ -411,7 +405,7 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
                     paddingHorizontal: 16,
                     paddingVertical: 12,
                     borderBottomWidth: idx < arr.length - 1 ? 1 : 0,
-                    borderBottomColor: '#f5f5f4',
+                    borderBottomColor: '#ECE8DE',
                   }}
                 >
                   <View
@@ -430,9 +424,9 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
                     <Text
                       style={{
                         fontSize: 14,
-                        color: '#0c0a09',
+                        color: '#2A2312',
                         letterSpacing: -0.2,
-                        fontFamily: 'Inter_600SemiBold',
+                        fontFamily: 'Manrope_600SemiBold',
                       }}
                     >
                       {formatDate(a.absence_date, 'EEEE, d MMM')}
@@ -442,9 +436,9 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
                         numberOfLines={1}
                         style={{
                           fontSize: 12,
-                          color: '#78716c',
+                          color: '#6B6557',
                           marginTop: 2,
-                          fontFamily: 'Inter_400Regular',
+                          fontFamily: 'Manrope_400Regular',
                         }}
                       >
                         {a.note}
@@ -460,7 +454,7 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
                     }}
                   >
                     <Text
-                      style={{ fontSize: 10, color: meta.tint, fontFamily: 'Inter_700Bold' }}
+                      style={{ fontSize: 10, color: meta.tint, fontFamily: 'Manrope_700Bold' }}
                     >
                       {meta.label}
                     </Text>
@@ -472,7 +466,7 @@ export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
                     className="active:opacity-50"
                     style={{ padding: 6 }}
                   >
-                    <Trash2 size={15} color="#a8a29e" />
+                    <Trash2 size={15} color="#857F70" />
                   </Pressable>
                 </View>
               );

@@ -16,7 +16,6 @@ import {
 import {
   Camera,
   CheckCircle,
-  CheckSquare,
   Circle,
   Clock,
   FileText,
@@ -33,7 +32,9 @@ import {
 } from 'lucide-react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '../../../lib/domain';
-import { WidgetCard } from './WidgetCard';
+import { DateField } from '../../../components/ui/DateField';
+import { EmptyRow, WidgetCard } from './WidgetCard';
+import { D, F } from '../theme';
 import { MemberAvatar, MemberPicker, type PickedMember } from './MemberPicker';
 import { TaskCommentsSection } from './TaskCommentsSection';
 import { supabase } from '../../../lib/supabase';
@@ -51,8 +52,8 @@ import type { TaskAttachment, TaskItem } from '../api';
 type Status = 'todo' | 'in_progress' | 'done';
 
 const STATUS_META: Record<string, { tint: string; bg: string; label: string; Icon: typeof Clock }> = {
-  todo: { tint: '#57534e', bg: '#f5f5f4', label: 'Do zrobienia', Icon: Circle },
-  in_progress: { tint: '#1d4ed8', bg: '#dbeafe', label: 'W trakcie', Icon: Loader },
+  todo: { tint: '#4A463E', bg: '#ECE8DE', label: 'Do zrobienia', Icon: Circle },
+  in_progress: { tint: '#2A2312', bg: '#ECE8DE', label: 'W trakcie', Icon: Loader },
   done: { tint: '#047857', bg: '#d1fae5', label: 'Zrobione', Icon: CheckCircle },
 };
 
@@ -136,11 +137,11 @@ const Label = ({ children }: { children: string }) => (
   <Text
     style={{
       fontSize: 11,
-      color: '#78716c',
+      color: '#8A6606',
       marginBottom: 6,
-      letterSpacing: 0.4,
+      letterSpacing: 1.2,
       textTransform: 'uppercase',
-      fontFamily: 'Inter_700Bold',
+      fontFamily: 'Manrope_700Bold',
     }}
   >
     {children}
@@ -149,15 +150,18 @@ const Label = ({ children }: { children: string }) => (
 
 const inputStyle = {
   borderWidth: 1,
-  borderColor: '#eef0f3',
+  borderColor: '#E6E1D5',
   borderRadius: 14,
   paddingHorizontal: 14,
   paddingVertical: 12,
   fontSize: 15,
-  color: '#0c0a09',
-  backgroundColor: '#fafaf9',
-  fontFamily: 'Inter_500Medium' as const,
+  color: '#2A2312',
+  backgroundColor: '#FFFFFF',
+  fontFamily: 'Manrope_500Medium' as const,
 };
+
+// Pole daty w stylu pól formularza (białe z ramką).
+const pickerStyle = { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E6E1D5', height: 48 };
 
 const addDays = (iso: string, days: number): string => {
   const d = new Date(iso);
@@ -280,7 +284,7 @@ const TaskFormModal = ({
       >
         <View
           style={{
-            backgroundColor: '#ffffff',
+            backgroundColor: '#F6F4EE',
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingHorizontal: 20,
@@ -300,15 +304,15 @@ const TaskFormModal = ({
             <Text
               style={{
                 fontSize: 18,
-                color: '#0c0a09',
+                color: '#2A2312',
                 letterSpacing: -0.4,
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Manrope_700Bold',
               }}
             >
               {isEdit ? 'Edytuj zadanie' : 'Nowe zadanie'}
             </Text>
             <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color="#78716c" />
+              <X size={20} color="#6B6557" />
             </Pressable>
           </View>
 
@@ -318,7 +322,7 @@ const TaskFormModal = ({
               value={form.title}
               onChangeText={(v) => setForm((f) => ({ ...f, title: v }))}
               placeholder="Co jest do zrobienia?"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#857F70"
               style={[inputStyle, { marginBottom: 14 }]}
               autoFocus={!isEdit}
               returnKeyType="next"
@@ -348,8 +352,8 @@ const TaskFormModal = ({
                       numberOfLines={1}
                       style={{
                         fontSize: 14,
-                        color: '#0c0a09',
-                        fontFamily: 'Inter_600SemiBold',
+                        color: '#2A2312',
+                        fontFamily: 'Manrope_600SemiBold',
                       }}
                     >
                       {form.assigned_to_name || form.assigned_to_email}
@@ -359,9 +363,9 @@ const TaskFormModal = ({
                       numberOfLines={1}
                       style={{
                         fontSize: 11,
-                        color: '#78716c',
+                        color: '#6B6557',
                         marginTop: 1,
-                        fontFamily: 'Inter_500Medium',
+                        fontFamily: 'Manrope_500Medium',
                       }}
                     >
                       {form.assigned_to_email}
@@ -378,7 +382,7 @@ const TaskFormModal = ({
                     }}
                     hitSlop={8}
                   >
-                    <X size={16} color="#a8a29e" />
+                    <X size={16} color="#857F70" />
                   </Pressable>
                 </>
               ) : (
@@ -388,37 +392,32 @@ const TaskFormModal = ({
                       width: 28,
                       height: 28,
                       borderRadius: 14,
-                      backgroundColor: '#f5f5f4',
+                      backgroundColor: '#ECE8DE',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <UserX size={14} color="#78716c" />
+                    <UserX size={14} color="#6B6557" />
                   </View>
                   <Text
                     style={{
                       flex: 1,
                       fontSize: 14,
-                      color: '#78716c',
-                      fontFamily: 'Inter_500Medium',
+                      color: '#6B6557',
+                      fontFamily: 'Manrope_500Medium',
                     }}
                   >
                     Nikt — tap aby przypisać
                   </Text>
-                  <UserIcon size={16} color="#a8a29e" />
+                  <UserIcon size={16} color="#857F70" />
                 </>
               )}
             </Pressable>
 
             <Label>Termin</Label>
-            <TextInput
-              value={dateText}
-              onChangeText={setDateText}
-              placeholder="np. 2026-05-10 (lub puste)"
-              placeholderTextColor="#a8a29e"
-              keyboardType="numbers-and-punctuation"
-              style={[inputStyle, { marginBottom: 8 }]}
-            />
+            <View style={{ marginBottom: 8 }}>
+              <DateField value={dateText} onChange={setQuickDate} optional placeholder="Bez terminu" style={pickerStyle} />
+            </View>
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
               {[
                 { label: 'Dziś', v: today },
@@ -435,16 +434,14 @@ const TaskFormModal = ({
                       paddingHorizontal: 10,
                       paddingVertical: 6,
                       borderRadius: 999,
-                      backgroundColor: active ? '#0c0a09' : '#fafaf9',
-                      borderWidth: 1,
-                      borderColor: active ? '#0c0a09' : '#eef0f3',
+                      backgroundColor: active ? '#2A2312' : '#ECE8DE',
                     }}
                   >
                     <Text
                       style={{
                         fontSize: 11,
-                        color: active ? '#ffffff' : '#1c1917',
-                        fontFamily: 'Inter_600SemiBold',
+                        color: active ? '#ffffff' : '#2A2312',
+                        fontFamily: 'Manrope_600SemiBold',
                       }}
                     >
                       {opt.label}
@@ -472,17 +469,17 @@ const TaskFormModal = ({
                       gap: 6,
                       paddingVertical: 10,
                       borderRadius: 12,
-                      backgroundColor: active ? meta.bg : '#fafaf9',
+                      backgroundColor: active ? meta.bg : '#F1EEE6',
                       borderWidth: 1,
-                      borderColor: active ? meta.tint : '#eef0f3',
+                      borderColor: active ? meta.tint : '#E6E1D5',
                     }}
                   >
                     <Icon size={14} color={meta.tint} strokeWidth={2.4} />
                     <Text
                       style={{
                         fontSize: 12,
-                        color: active ? meta.tint : '#57534e',
-                        fontFamily: 'Inter_700Bold',
+                        color: active ? meta.tint : '#4A463E',
+                        fontFamily: 'Manrope_700Bold',
                       }}
                     >
                       {meta.label}
@@ -497,7 +494,7 @@ const TaskFormModal = ({
               value={form.description}
               onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
               placeholder="Szczegóły zadania..."
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#857F70"
               multiline
               style={[
                 inputStyle,
@@ -515,17 +512,17 @@ const TaskFormModal = ({
                 const fileBg = isPdf
                   ? '#fee2e2'
                   : isAudio
-                    ? '#ede9fe'
+                    ? '#ECE8DE'
                     : isVideo
-                      ? '#dbeafe'
-                      : '#f5f5f4';
+                      ? '#ECE8DE'
+                      : '#ECE8DE';
                 const fileTint = isPdf
                   ? '#dc2626'
                   : isAudio
-                    ? '#7c3aed'
+                    ? '#2A2312'
                     : isVideo
-                      ? '#1d4ed8'
-                      : '#57534e';
+                      ? '#2A2312'
+                      : '#4A463E';
                 return (
                   <View
                     key={`${att.url}-${i}`}
@@ -536,9 +533,9 @@ const TaskFormModal = ({
                       paddingHorizontal: 10,
                       paddingVertical: 8,
                       borderRadius: 12,
-                      backgroundColor: '#fafaf9',
+                      backgroundColor: '#FFFFFF',
                       borderWidth: 1,
-                      borderColor: '#eef0f3',
+                      borderColor: '#E6E1D5',
                     }}
                   >
                     {isImage ? (
@@ -568,8 +565,8 @@ const TaskFormModal = ({
                         numberOfLines={1}
                         style={{
                           fontSize: 13,
-                          color: '#0c0a09',
-                          fontFamily: 'Inter_600SemiBold',
+                          color: '#2A2312',
+                          fontFamily: 'Manrope_600SemiBold',
                         }}
                       >
                         {att.name}
@@ -578,9 +575,9 @@ const TaskFormModal = ({
                         <Text
                           style={{
                             fontSize: 11,
-                            color: '#78716c',
+                            color: '#6B6557',
                             marginTop: 1,
-                            fontFamily: 'Inter_500Medium',
+                            fontFamily: 'Manrope_500Medium',
                           }}
                         >
                           {Math.round(att.size / 1024)} KB
@@ -592,7 +589,7 @@ const TaskFormModal = ({
                       hitSlop={8}
                       style={{ padding: 4 }}
                     >
-                      <Trash2 size={14} color="#a8a29e" />
+                      <Trash2 size={14} color="#857F70" />
                     </Pressable>
                   </View>
                 );
@@ -613,16 +610,16 @@ const TaskFormModal = ({
                     borderRadius: 12,
                     borderWidth: 2,
                     borderStyle: 'dashed',
-                    borderColor: '#e7e5e4',
+                    borderColor: '#E3DDD0',
                   }}
                 >
                   {uploading ? (
-                    <ActivityIndicator color="#ec4899" />
+                    <ActivityIndicator color="#2A2312" />
                   ) : (
                     <>
-                      <ImageIcon size={14} color="#57534e" />
+                      <ImageIcon size={14} color="#4A463E" />
                       <Text
-                        style={{ fontSize: 12, color: '#57534e', fontFamily: 'Inter_600SemiBold' }}
+                        style={{ fontSize: 12, color: '#4A463E', fontFamily: 'Manrope_600SemiBold' }}
                       >
                         Galeria
                       </Text>
@@ -643,12 +640,12 @@ const TaskFormModal = ({
                     borderRadius: 12,
                     borderWidth: 2,
                     borderStyle: 'dashed',
-                    borderColor: '#e7e5e4',
+                    borderColor: '#E3DDD0',
                   }}
                 >
-                  <Camera size={14} color="#57534e" />
+                  <Camera size={14} color="#4A463E" />
                   <Text
-                    style={{ fontSize: 12, color: '#57534e', fontFamily: 'Inter_600SemiBold' }}
+                    style={{ fontSize: 12, color: '#4A463E', fontFamily: 'Manrope_600SemiBold' }}
                   >
                     Aparat
                   </Text>
@@ -667,12 +664,12 @@ const TaskFormModal = ({
                     borderRadius: 12,
                     borderWidth: 2,
                     borderStyle: 'dashed',
-                    borderColor: '#e7e5e4',
+                    borderColor: '#E3DDD0',
                   }}
                 >
-                  <FileText size={14} color="#57534e" />
+                  <FileText size={14} color="#4A463E" />
                   <Text
-                    style={{ fontSize: 12, color: '#57534e', fontFamily: 'Inter_600SemiBold' }}
+                    style={{ fontSize: 12, color: '#4A463E', fontFamily: 'Manrope_600SemiBold' }}
                   >
                     Plik
                   </Text>
@@ -696,9 +693,9 @@ const TaskFormModal = ({
                 paddingHorizontal: 14,
                 paddingVertical: 12,
                 borderRadius: 14,
-                backgroundColor: '#fafaf9',
+                backgroundColor: '#FFFFFF',
                 borderWidth: 1,
-                borderColor: form.is_private ? '#fbcfe8' : '#eef0f3',
+                borderColor: form.is_private ? '#F3E3B0' : '#E6E1D5',
                 marginBottom: 14,
               }}
             >
@@ -708,8 +705,8 @@ const TaskFormModal = ({
                   height: 22,
                   borderRadius: 6,
                   borderWidth: 2,
-                  borderColor: form.is_private ? '#ec4899' : '#d6d3d1',
-                  backgroundColor: form.is_private ? '#ec4899' : 'transparent',
+                  borderColor: form.is_private ? '#FFBE0B' : '#D3CCBC',
+                  backgroundColor: form.is_private ? '#2A2312' : 'transparent',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -718,22 +715,22 @@ const TaskFormModal = ({
               </View>
               <View style={{ flex: 1 }}>
                 <Text
-                  style={{ fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+                  style={{ fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
                 >
                   Prywatne
                 </Text>
                 <Text
                   style={{
                     fontSize: 12,
-                    color: '#78716c',
+                    color: '#6B6557',
                     marginTop: 2,
-                    fontFamily: 'Inter_400Regular',
+                    fontFamily: 'Manrope_400Regular',
                   }}
                 >
                   Tylko Ty widzisz to zadanie
                 </Text>
               </View>
-              <Lock size={16} color={form.is_private ? '#ec4899' : '#a8a29e'} />
+              <Lock size={16} color={form.is_private ? '#8A6606' : '#A8A59E'} />
             </Pressable>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -753,7 +750,7 @@ const TaskFormModal = ({
                 >
                   <Trash2 size={14} color="#be123c" />
                   <Text
-                    style={{ fontSize: 13, color: '#be123c', fontFamily: 'Inter_700Bold' }}
+                    style={{ fontSize: 13, color: '#be123c', fontFamily: 'Manrope_700Bold' }}
                   >
                     Usuń
                   </Text>
@@ -767,13 +764,13 @@ const TaskFormModal = ({
                   paddingHorizontal: 14,
                   paddingVertical: 12,
                   borderRadius: 12,
-                  backgroundColor: '#fafaf9',
+                  backgroundColor: '#FFFFFF',
                   borderWidth: 1,
-                  borderColor: '#eef0f3',
+                  borderColor: '#E6E1D5',
                 }}
               >
                 <Text
-                  style={{ fontSize: 13, color: '#57534e', fontFamily: 'Inter_600SemiBold' }}
+                  style={{ fontSize: 13, color: '#4A463E', fontFamily: 'Manrope_600SemiBold' }}
                 >
                   Anuluj
                 </Text>
@@ -786,10 +783,10 @@ const TaskFormModal = ({
                   paddingVertical: 12,
                   borderRadius: 12,
                   backgroundColor:
-                    !form.title.trim() || isLoading ? '#e7e5e4' : '#ec4899',
+                    !form.title.trim() || isLoading ? '#E3DDD0' : '#8A6606',
                 }}
               >
-                <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: 'Inter_700Bold' }}>
+                <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: 'Manrope_700Bold' }}>
                   {isLoading ? 'Zapisywanie…' : isEdit ? 'Zapisz' : 'Dodaj'}
                 </Text>
               </Pressable>
@@ -908,42 +905,31 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
   return (
     <>
       <WidgetCard
-        title="Moje Zadania"
-        Icon={CheckSquare}
-        iconTint="#0f766e"
-        iconBg="#ccfbf1"
+        title="Moje zadania"
+        count={todoCount}
         action={
           <Pressable
             onPress={openNew}
+            hitSlop={6}
             className="active:opacity-70"
             style={{
               flexDirection: 'row',
               alignItems: 'center',
               gap: 4,
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 8,
-              backgroundColor: '#ffedd5',
+              paddingHorizontal: 12,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: D.card,
             }}
           >
-            <Plus size={12} color="#c2410c" strokeWidth={2.4} />
-            <Text style={{ fontSize: 12, color: '#c2410c', fontFamily: 'Inter_700Bold' }}>
-              Dodaj
-            </Text>
+            <Plus size={14} color={D.ink} strokeWidth={2.2} />
+            <Text style={{ fontSize: 13, color: D.ink, fontFamily: F.semibold }}>Dodaj</Text>
           </Pressable>
         }
       >
-        <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 }}>
-          <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
-            {todoCount} do zrobienia
-          </Text>
-        </View>
+        <View style={{ height: 6 }} />
         {items.length === 0 ? (
-          <View style={{ paddingHorizontal: 16, paddingVertical: 24, alignItems: 'center' }}>
-            <Text style={{ fontSize: 13, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
-              Brak zadań do zrobienia
-            </Text>
-          </View>
+          <EmptyRow text="Brak zadań do zrobienia" />
         ) : (
           items.slice(0, 5).map((t, idx, arr) => {
             const meta = STATUS_META[t.status as Status] ?? STATUS_META.todo;
@@ -964,7 +950,7 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                   paddingHorizontal: 16,
                   paddingVertical: 12,
                   borderBottomWidth: idx < arr.length - 1 ? 1 : 0,
-                  borderBottomColor: '#f5f5f4',
+                  borderBottomColor: '#ECE8DE',
                 }}
               >
                 <Pressable
@@ -993,9 +979,9 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                     numberOfLines={1}
                     style={{
                       fontSize: 14,
-                      color: done ? '#a8a29e' : '#0c0a09',
+                      color: done ? '#857F70' : '#2A2312',
                       textDecorationLine: done ? 'line-through' : 'none',
-                      fontFamily: 'Inter_500Medium',
+                      fontFamily: 'Manrope_500Medium',
                     }}
                   >
                     {t.title}
@@ -1013,8 +999,8 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                       <Text
                         style={{
                           fontSize: 11,
-                          color: overdue ? '#be123c' : '#78716c',
-                          fontFamily: overdue ? 'Inter_700Bold' : 'Inter_500Medium',
+                          color: overdue ? '#be123c' : '#6B6557',
+                          fontFamily: overdue ? 'Manrope_700Bold' : 'Manrope_500Medium',
                         }}
                       >
                         {overdue ? '⚠ ' : ''}
@@ -1025,12 +1011,12 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                       <View
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}
                       >
-                        <UserIcon size={9} color="#a8a29e" strokeWidth={2.4} />
+                        <UserIcon size={9} color="#857F70" strokeWidth={2.4} />
                         <Text
                           style={{
                             fontSize: 10,
-                            color: '#78716c',
-                            fontFamily: 'Inter_600SemiBold',
+                            color: '#6B6557',
+                            fontFamily: 'Manrope_600SemiBold',
                           }}
                           numberOfLines={1}
                         >
@@ -1045,12 +1031,12 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                       <View
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}
                       >
-                        <Paperclip size={9} color="#a8a29e" strokeWidth={2.4} />
+                        <Paperclip size={9} color="#857F70" strokeWidth={2.4} />
                         <Text
                           style={{
                             fontSize: 10,
-                            color: '#78716c',
-                            fontFamily: 'Inter_600SemiBold',
+                            color: '#6B6557',
+                            fontFamily: 'Manrope_600SemiBold',
                           }}
                         >
                           {attCount}
@@ -1061,12 +1047,12 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                       <View
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}
                       >
-                        <MessageCircleIcon size={9} color="#a8a29e" strokeWidth={2.4} />
+                        <MessageCircleIcon size={9} color="#857F70" strokeWidth={2.4} />
                         <Text
                           style={{
                             fontSize: 10,
-                            color: '#78716c',
-                            fontFamily: 'Inter_600SemiBold',
+                            color: '#6B6557',
+                            fontFamily: 'Manrope_600SemiBold',
                           }}
                         >
                           {commentCount}
@@ -1077,12 +1063,12 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                       <View
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
                       >
-                        <Lock size={9} color="#a8a29e" strokeWidth={2.4} />
+                        <Lock size={9} color="#857F70" strokeWidth={2.4} />
                         <Text
                           style={{
                             fontSize: 10,
-                            color: '#a8a29e',
-                            fontFamily: 'Inter_600SemiBold',
+                            color: '#857F70',
+                            fontFamily: 'Manrope_600SemiBold',
                           }}
                         >
                           Prywatne
@@ -1097,11 +1083,11 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                       paddingHorizontal: 8,
                       paddingVertical: 2,
                       borderRadius: 6,
-                      backgroundColor: '#dbeafe',
+                      backgroundColor: '#ECE8DE',
                     }}
                   >
                     <Text
-                      style={{ fontSize: 10, color: '#1d4ed8', fontFamily: 'Inter_700Bold' }}
+                      style={{ fontSize: 10, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}
                     >
                       Dla mnie
                     </Text>
@@ -1112,11 +1098,11 @@ export const TasksWidget = ({ items }: { items: TaskItem[] }) => {
                       paddingHorizontal: 8,
                       paddingVertical: 2,
                       borderRadius: 6,
-                      backgroundColor: '#fce7f3',
+                      backgroundColor: '#FFF1C2',
                     }}
                   >
                     <Text
-                      style={{ fontSize: 10, color: '#9d174d', fontFamily: 'Inter_700Bold' }}
+                      style={{ fontSize: 10, color: '#9d174d', fontFamily: 'Manrope_700Bold' }}
                     >
                       Osobiste
                     </Text>

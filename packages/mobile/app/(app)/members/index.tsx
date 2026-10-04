@@ -14,6 +14,7 @@ import { Link } from 'expo-router';
 import { Search, Users, X } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { CampusBadge, useCampusBadge } from '../../../src/components/CampusBadge';
+import { B, Monogram } from '../../../src/components/ui/brand';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import {
   useMembers,
@@ -59,7 +60,7 @@ export default function MembersScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title="Społeczność"
           subtitle={`${filtered.length} z ${data?.length ?? 0}`}
@@ -72,25 +73,23 @@ export default function MembersScreen() {
             className="flex-row items-center gap-2 px-3.5"
             style={{
               height: 46,
-              borderRadius: 14,
-              backgroundColor: '#fafaf9',
-              borderWidth: 1,
-              borderColor: '#eef0f3',
+              borderRadius: 24,
+              backgroundColor: '#FFFFFF',
             }}
           >
-            <Search size={18} color="#a8a29e" />
+            <Search size={18} color="#857F70" />
             <TextInput
               className="flex-1 text-base"
-              style={{ color: '#0c0a09', fontFamily: 'Inter_500Medium' }}
+              style={{ color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
               placeholder="Szukaj po imieniu lub email…"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#857F70"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search ? (
               <Pressable onPress={() => setSearch('')} hitSlop={10}>
-                <X size={16} color="#a8a29e" />
+                <X size={16} color="#857F70" />
               </Pressable>
             ) : null}
           </View>
@@ -118,16 +117,14 @@ export default function MembersScreen() {
                     paddingHorizontal: 14,
                     paddingVertical: 7,
                     borderRadius: 999,
-                    backgroundColor: active ? '#0c0a09' : '#fafaf9',
-                    borderWidth: 1,
-                    borderColor: active ? '#0c0a09' : '#eef0f3',
+                    backgroundColor: active ? '#2A2312' : '#ECE8DE',
                   }}
                 >
                   <Text
                     className="text-[13px]"
                     style={{
-                      color: active ? '#ffffff' : '#1c1917',
-                      fontFamily: 'Inter_600SemiBold',
+                      color: active ? '#ffffff' : '#2A2312',
+                      fontFamily: 'Manrope_600SemiBold',
                     }}
                   >
                     {s.label} · {counts[s.key]}
@@ -152,7 +149,7 @@ export default function MembersScreen() {
             >
               <Text
                 className="text-[12px] mr-1 self-center"
-                style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
+                style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
               >
                 Służba:
               </Text>
@@ -163,16 +160,14 @@ export default function MembersScreen() {
                   paddingHorizontal: 12,
                   paddingVertical: 5,
                   borderRadius: 999,
-                  backgroundColor: ministryFilter === null ? '#1c1917' : '#fafaf9',
-                  borderWidth: 1,
-                  borderColor: ministryFilter === null ? '#1c1917' : '#eef0f3',
+                  backgroundColor: ministryFilter === null ? '#2A2312' : '#ECE8DE',
                 }}
               >
                 <Text
                   className="text-[12px]"
                   style={{
-                    color: ministryFilter === null ? '#ffffff' : '#1c1917',
-                    fontFamily: 'Inter_600SemiBold',
+                    color: ministryFilter === null ? '#ffffff' : '#2A2312',
+                    fontFamily: 'Manrope_600SemiBold',
                   }}
                 >
                   Wszystkie
@@ -190,16 +185,14 @@ export default function MembersScreen() {
                       paddingHorizontal: 12,
                       paddingVertical: 5,
                       borderRadius: 999,
-                      backgroundColor: active ? '#1c1917' : '#fafaf9',
-                      borderWidth: 1,
-                      borderColor: active ? '#1c1917' : '#eef0f3',
+                      backgroundColor: active ? '#2A2312' : '#ECE8DE',
                     }}
                   >
                     <Text
                       className="text-[12px]"
                       style={{
-                        color: active ? '#ffffff' : '#1c1917',
-                        fontFamily: 'Inter_600SemiBold',
+                        color: active ? '#ffffff' : '#2A2312',
+                        fontFamily: 'Manrope_600SemiBold',
                       }}
                     >
                       {label}
@@ -213,13 +206,13 @@ export default function MembersScreen() {
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}
+              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
             >
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
@@ -230,9 +223,13 @@ export default function MembersScreen() {
             data={filtered}
             keyExtractor={(item) => String(item.id)}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
-            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+            ItemSeparatorComponent={() => (
+              <View style={{ backgroundColor: B.card }}>
+                <View style={{ height: 1, marginLeft: 76, backgroundColor: B.line }} />
+              </View>
+            )}
             ListEmptyComponent={
               <View className="items-center mt-12 px-6">
                 <View
@@ -240,114 +237,76 @@ export default function MembersScreen() {
                     width: 64,
                     height: 64,
                     borderRadius: 18,
-                    backgroundColor: '#fef3f2',
+                    backgroundColor: '#FFF8E1',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 12,
                   }}
                 >
-                  <Users size={28} color="#ec4899" />
+                  <Users size={28} color="#8A6606" />
                 </View>
                 <Text
                   className="text-[16px]"
-                  style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+                  style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
                 >
                   Brak osób
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+                  style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                 >
                   Spróbuj innego filtru.
                 </Text>
               </View>
             }
-            renderItem={({ item }) => {
+            renderItem={({ item, index }) => {
               const meta = item.status ? STATUS_META[item.status] : null;
               const itemCampus = getCampus((item as any).campus_id ?? null);
+              const first = index === 0;
+              const last = index === filtered.length - 1;
+              const isMember = item.status === 'Członek';
               return (
-                <Link
+                <Link push
                   href={{ pathname: '/(app)/members/[id]', params: { id: String(item.id) } }}
                   asChild
                 >
+                  {/* Jedna biała grupa: zaokrąglone tylko pierwszy i ostatni wiersz. */}
                   <Pressable
                     className="active:opacity-80"
                     style={{
-                      borderRadius: 16,
-                      backgroundColor: '#ffffff',
-                      shadowColor: '#0f172a',
-                      shadowOffset: { width: 0, height: 3 },
-                      shadowOpacity: 0.04,
-                      shadowRadius: 10,
-                      elevation: 1,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 14,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      backgroundColor: B.card,
+                      borderTopLeftRadius: first ? 22 : 0,
+                      borderTopRightRadius: first ? 22 : 0,
+                      borderBottomLeftRadius: last ? 22 : 0,
+                      borderBottomRightRadius: last ? 22 : 0,
                     }}
                   >
-                    <View
-                      className="flex-row items-center gap-3 p-3.5"
-                      style={{
-                        borderRadius: 16,
-                        borderWidth: 1,
-                        borderColor: '#eef0f3',
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: 22,
-                          backgroundColor: meta?.bg ?? '#fef3f2',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: meta?.tint ?? '#ec4899',
-                            fontFamily: 'Inter_700Bold',
-                          }}
-                        >
-                          {initials(item)}
-                        </Text>
-                      </View>
-                      <View className="flex-1">
-                        <Text
-                          className="text-[15px]"
-                          style={{
-                            color: '#0c0a09',
-                            letterSpacing: -0.2,
-                            fontFamily: 'Inter_600SemiBold',
-                          }}
-                          numberOfLines={1}
-                        >
-                          {fullName(item)}
-                        </Text>
-                        <View className="flex-row items-center gap-2 mt-0.5">
-                          {item.email ? (
-                            <Text
-                              className="text-[12px]"
-                              style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
-                              numberOfLines={1}
-                            >
-                              {item.email}
-                            </Text>
-                          ) : null}
-                          {itemCampus ? <CampusBadge campus={itemCampus} /> : null}
-                        </View>
-                      </View>
-                      {meta ? (
-                        <View
-                          className="px-2 py-0.5"
-                          style={{ borderRadius: 999, backgroundColor: meta.bg }}
-                        >
-                          <Text
-                            className="text-[11px]"
-                            style={{ color: meta.tint, fontFamily: 'Inter_700Bold' }}
-                          >
-                            {meta.label}
+                    <Monogram name={fullName(item)} size={46} />
+                    <View style={{ flex: 1 }}>
+                      <Text numberOfLines={1} style={{ fontSize: 16, color: B.ink, letterSpacing: -0.3, fontFamily: 'Manrope_600SemiBold' }}>
+                        {fullName(item)}
+                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                        {item.email ? (
+                          <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 13, color: B.ink3, fontFamily: 'Manrope_500Medium' }}>
+                            {item.email}
                           </Text>
-                        </View>
-                      ) : null}
+                        ) : null}
+                        {itemCampus ? <CampusBadge campus={itemCampus} /> : null}
+                      </View>
                     </View>
+                    {meta ? (
+                      <View style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, backgroundColor: isMember ? B.kurkumaSoft : B.paper2 }}>
+                        <Text style={{ fontSize: 11, color: isMember ? B.goldDeep : B.ink2, fontFamily: 'Manrope_700Bold' }}>
+                          {meta.label}
+                        </Text>
+                      </View>
+                    ) : null}
                   </Pressable>
                 </Link>
               );

@@ -39,10 +39,10 @@ export default function Index() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
         }}
       >
-        <ActivityIndicator color="#ec4899" />
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
@@ -56,20 +56,20 @@ export default function Index() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
           paddingHorizontal: 24,
         }}
       >
         <View style={{ marginBottom: 20 }}>
-          <GradientIcon Icon={Lock} size={64} iconSize={28} from="#f97316" to="#ec4899" rounded />
+          <GradientIcon Icon={Lock} size={64} iconSize={28} rounded />
         </View>
         <Text
           style={{
             fontSize: 18,
-            color: '#0c0a09',
+            color: '#2A2312',
             marginBottom: 8,
             letterSpacing: -0.4,
-            fontFamily: 'Inter_700Bold',
+            fontFamily: 'Manrope_700Bold',
           }}
         >
           Aplikacja zablokowana
@@ -77,10 +77,10 @@ export default function Index() {
         <Text
           style={{
             fontSize: 13,
-            color: '#78716c',
+            color: '#6B6557',
             textAlign: 'center',
             marginBottom: 20,
-            fontFamily: 'Inter_500Medium',
+            fontFamily: 'Manrope_500Medium',
           }}
         >
           Odblokuj biometryką żeby kontynuować.
@@ -91,13 +91,13 @@ export default function Index() {
             setLock(ok ? 'unlocked' : 'locked');
           }}
           style={{
-            backgroundColor: '#ec4899',
+            backgroundColor: '#2A2312',
             borderRadius: 14,
             paddingHorizontal: 24,
             paddingVertical: 12,
           }}
         >
-          <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}>
+          <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
             Odblokuj
           </Text>
         </Pressable>
@@ -108,7 +108,7 @@ export default function Index() {
           }}
           style={{ marginTop: 12, paddingHorizontal: 24, paddingVertical: 10 }}
         >
-          <Text style={{ fontSize: 13, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+          <Text style={{ fontSize: 13, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
             Wyloguj
           </Text>
         </Pressable>

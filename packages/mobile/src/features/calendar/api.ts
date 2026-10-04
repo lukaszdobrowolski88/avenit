@@ -1,237 +1,186 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { pl } from 'date-fns/locale';
 import { supabase } from '../../lib/supabase';
 
-export type EventSource =
-  | 'program'
-  | 'event'
-  | 'worship'
-  | 'media'
-  | 'atmosfera'
-  | 'kids'
-  | 'homegroups';
+// Kalendarz = JEDNA tabela `events` (jak web po unifikacji): module_key wskazuje kalendarz
+// modułu (NULL/'general' = ogólny), event_type typ, program_id podpięty plan. Programy i stare
+// tabele zespołów (module_events, *_events) nie są już źródłem — dawały duplikaty i rozjazd z webem.
+
+// Klucz kalendarza wydarzenia: module_key albo 'general'.
+export type EventSource = string;
 
 export interface AgendaEvent {
-  id: string;
+  id: string; // `event-<id>` (klucz listy)
+  eventId: number;
   source: EventSource;
   title: string;
   startsAt: Date;
   endsAt: Date | null;
+  allDay: boolean;
   location: string | null;
   description: string | null;
-  programId?: number;
-  campusId?: number | null;
+  moduleKey: string | null;
+  eventType: string | null;
+  programId: number | null;
+  campusId: number | null;
   isMine: boolean;
+  // Moja rola na tym wydarzeniu (grafik), gdy służę.
+  myRole: string | null;
 }
 
-const MINISTRY_TABLES: { table: string; source: EventSource }[] = [
-  { table: 'worship_events', source: 'worship' },
-  { table: 'media_events', source: 'media' },
-  { table: 'atmosfera_events', source: 'atmosfera' },
-  { table: 'kids_events', source: 'kids' },
-  { table: 'homegroups_events', source: 'homegroups' },
-];
-
-const safeDate = (s: string | null | undefined): Date | null => {
-  if (!s) return null;
-  const m = String(s).match(
-    /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/,
-  );
-  if (!m) {
-    const d = new Date(s);
-    return Number.isNaN(d.getTime()) ? null : d;
-  }
-  const [, y, mo, d, h, mi, se] = m;
-  const out = new Date(
-    Number(y),
-    Number(mo) - 1,
-    Number(d),
-    h ? Number(h) : 0,
-    mi ? Number(mi) : 0,
-    se ? Number(se) : 0,
-  );
-  return Number.isNaN(out.getTime()) ? null : out;
+// `date` przychodzi z API jako pełny znacznik czasu (2026-10-11T00:00:00.000Z) — bierzemy
+// samą datę i składamy z `time`. Doklejanie godziny do znacznika dawało północ („cały dzień”).
+const ymdOf = (v: unknown): string | null => {
+  const m = String(v ?? '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
 };
+const hmOf = (v: unknown): string | null => {
+  const m = String(v ?? '').match(/^(\d{1,2}):(\d{2})/);
+  return m ? `${m[1].padStart(2, '0')}:${m[2]}` : null;
+};
+export const localDate = (ymd: string, hm?: string | null): Date => {
+  const [y, mo, d] = ymd.split('-').map(Number);
+  const [h, mi] = (hm ?? '00:00').split(':').map(Number);
+  return new Date(y, mo - 1, d, h, mi, 0);
+};
+const ymdLocal = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 interface CampusScope {
   selectedCampusId: number | null;
   withCampusFilter: <T>(query: T) => T;
 }
 
-const fetchPrograms = async (
-  fromIso: string,
-  toIso: string,
-  scope: CampusScope,
-): Promise<AgendaEvent[]> => {
-  const base = supabase.from('programs').select('id, date, title, campus_id');
-  const { data, error } = await scope
-    .withCampusFilter(base)
-    .gte('date', fromIso.slice(0, 10))
-    .lte('date', toIso.slice(0, 10))
-    .order('date', { ascending: true });
-  if (error) {
-    // Brak uprawnień / brak tabeli → pokaż CZĘŚĆ kalendarza (jak moduły służb), nie błąd
-    // całości. Prawdziwe awarie (5xx) nadal propagują do widoku błędu z „Spróbuj ponownie".
-    const code = (error as { code?: string }).code;
-    if (code === '403' || code === '42501' || code === '42P01') return [];
-    throw error;
-  }
-  return (data ?? []).flatMap((row: any) => {
-    // Guard na złą/pustą datę — inaczej format(Invalid Date) rzuca "Invalid time value"
-    // i wywala CAŁĄ agendę (kalendarz pokazuje błąd zamiast wydarzeń).
-    const start = safeDate(row.date);
-    if (!start) return [];
-    const fallbackTitle = `Nabożeństwo · ${format(start, 'EEEE', { locale: pl })}`;
-    return [
-      {
-        id: `program-${row.id}`,
-        source: 'program' as const,
-        title: (row.title && String(row.title).trim()) || fallbackTitle,
-        startsAt: start,
-        endsAt: null,
-        location: null,
-        description: null,
-        programId: row.id,
-        campusId: row.campus_id ?? null,
-        isMine: false,
-      } satisfies AgendaEvent,
-    ];
-  });
+const isSoftError = (error: unknown) => {
+  const code = (error as { code?: string } | null)?.code;
+  return code === '403' || code === '42501' || code === '42P01';
 };
 
-const fetchGenericEvents = async (
-  fromIso: string,
-  toIso: string,
-  scope: CampusScope,
-): Promise<AgendaEvent[]> => {
-  const base = supabase
-    .from('events')
-    .select('id, title, description, date, time, end_time, campus_id');
-  const { data, error } = await scope
-    .withCampusFilter(base)
-    .gte('date', fromIso.slice(0, 10))
-    .lte('date', toIso.slice(0, 10))
-    .order('date', { ascending: true });
-  if (error) {
-    // Brak uprawnień / brak tabeli → pokaż CZĘŚĆ kalendarza (jak moduły służb), nie błąd
-    // całości. Prawdziwe awarie (5xx) nadal propagują do widoku błędu z „Spróbuj ponownie".
-    const code = (error as { code?: string }).code;
-    if (code === '403' || code === '42501' || code === '42P01') return [];
-    throw error;
-  }
-  return (data ?? []).flatMap((row: any) => {
-    const time = row.time && /^\d{1,2}:\d{2}/.test(row.time) ? row.time : '00:00';
-    const endTime = row.end_time && /^\d{1,2}:\d{2}/.test(row.end_time) ? row.end_time : null;
-    const startsAt = safeDate(`${row.date}T${time}:00`);
-    if (!startsAt) return []; // pomiń wydarzenie ze złą datą (nie wywracaj agendy)
-    return [
-      {
-        id: `event-${row.id}`,
-        source: 'event' as const,
-        title: row.title,
-        startsAt,
-        endsAt: endTime ? safeDate(`${row.date}T${endTime}:00`) : null,
-        location: null,
-        description: row.description ?? null,
-        campusId: row.campus_id ?? null,
-        isMine: false,
-      } satisfies AgendaEvent,
-    ];
-  });
+export const EVENT_COLUMNS =
+  'id, title, description, date, time, end_time, end_date, location, module_key, event_type, program_id, campus_id';
+
+export const toAgendaEvent = (row: any): AgendaEvent | null => {
+  const ymd = ymdOf(row.date);
+  if (!ymd) return null;
+  const time = hmOf(row.time);
+  const end = hmOf(row.end_time);
+  const endYmd = ymdOf(row.end_date) ?? ymd;
+  return {
+    id: `event-${row.id}`,
+    eventId: Number(row.id),
+    source: row.module_key || 'general',
+    title: (row.title && String(row.title).trim()) || 'Wydarzenie',
+    startsAt: localDate(ymd, time),
+    endsAt: end ? localDate(endYmd, end) : endYmd !== ymd ? localDate(endYmd, null) : null,
+    allDay: !time,
+    location: row.location ?? null,
+    description: row.description ?? null,
+    moduleKey: row.module_key ?? null,
+    eventType: row.event_type ?? null,
+    programId: row.program_id ?? null,
+    campusId: row.campus_id ?? null,
+    isMine: false,
+    myRole: null,
+  };
 };
 
-const fetchMinistry = async (
-  source: EventSource,
-  fromIso: string,
-  toIso: string,
-  scope: CampusScope,
-): Promise<AgendaEvent[]> => {
-  // Wydarzenia modułów służb zunifikowane w module_events (team_type == source dla tych 5).
-  const base = supabase
-    .from('module_events')
-    .select('id, title, description, start_date, end_date, location, campus_id')
-    .eq('team_type', source);
-  const { data, error } = await scope
-    .withCampusFilter(base)
-    .gte('start_date', fromIso)
-    .lte('start_date', toIso)
-    .order('start_date', { ascending: true });
-  if (error) {
-    console.warn(`[agenda] module_events(${source}) skipped:`, error.message);
-    return [];
-  }
-  return (data ?? []).flatMap((row: any) => {
-    const start = safeDate(row.start_date);
-    if (!start) return [];
-    return [
-      {
-        id: `${source}-${row.id}`,
-        source,
-        title: row.title,
-        startsAt: start,
-        endsAt: safeDate(row.end_date),
-        location: row.location ?? null,
-        description: row.description ?? null,
-        campusId: row.campus_id ?? null,
-        isMine: false,
-      } satisfies AgendaEvent,
-    ];
-  });
+const csv = (v: unknown): string[] =>
+  String(v ?? '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+// Etykiety ról służb: `${team_type}|${field_key}` → nazwa (team_roles, jak web).
+const fetchRoleLabels = async (): Promise<Map<string, string>> => {
+  const { data } = await supabase.from('team_roles').select('team_type, field_key, name');
+  return new Map(((data ?? []) as any[]).map((r) => [`${r.team_type}|${r.field_key}`, String(r.name)]));
 };
 
-const fetchMyAssignedProgramIds = async (email: string | null): Promise<Set<number>> => {
-  if (!email) return new Set();
-  const { data, error } = await supabase
-    .from('schedule_assignments')
-    .select('program_id')
-    .eq('assigned_email', email);
-  if (error) {
-    console.warn('[agenda] schedule_assignments skipped:', error.message);
-    return new Set();
+// Moje służby na wydarzeniu: grafik trzyma imiona w events.assignments
+// ({team:{field_key:"Imię, Imię"}}), a schedule_assignments — przydziały po e-mailu (status).
+// Tak samo liczy „mnie” zakładka Grafik służby. Odrzucone się nie liczą.
+const myRolesByEvent = async (
+  rows: any[],
+  me: { email: string | null; name: string | null },
+): Promise<Map<number, string>> => {
+  const out = new Map<number, string>();
+  if (!me.email && !me.name) return out;
+  const [labels, sa] = await Promise.all([
+    fetchRoleLabels(),
+    me.email
+      ? supabase.from('schedule_assignments').select('event_id, team_type, role_key, role_label, assigned_name, status').eq('assigned_email', me.email)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
+  const myNames = new Set<string>(me.name ? [me.name] : []);
+  for (const a of ((sa as any).data ?? []) as any[]) {
+    if (a.event_id == null) continue;
+    if (a.assigned_name) myNames.add(String(a.assigned_name));
+    if (a.status === 'rejected') continue;
+    out.set(Number(a.event_id), a.role_label || labels.get(`${a.team_type}|${a.role_key}`) || a.role_key || 'Służba');
   }
-  return new Set((data ?? []).map((r: any) => r.program_id));
+  for (const row of rows) {
+    if (out.has(Number(row.id)) || !row.assignments || typeof row.assignments !== 'object') continue;
+    for (const [team, roles] of Object.entries(row.assignments as Record<string, Record<string, string>>)) {
+      for (const [key, names] of Object.entries(roles ?? {})) {
+        if (key === 'notatki' || key === 'absencja') continue;
+        if (csv(names).some((n) => myNames.has(n))) {
+          out.set(Number(row.id), labels.get(`${team}|${key}`) ?? key);
+          break;
+        }
+      }
+      if (out.has(Number(row.id))) break;
+    }
+  }
+  return out;
 };
+
+// Cache zapytań jest zapisywany na dysku (PersistQueryClientProvider) — po restarcie Date
+// wraca jako tekst. `select` odtwarza daty zarówno ze świeżych, jak i z zapisanych danych.
+export const reviveAgendaEvent = (e: AgendaEvent): AgendaEvent => ({
+  ...e,
+  startsAt: e.startsAt instanceof Date ? e.startsAt : new Date(e.startsAt),
+  endsAt: e.endsAt == null ? null : e.endsAt instanceof Date ? e.endsAt : new Date(e.endsAt),
+});
+const reviveAgenda = (rows: AgendaEvent[]) => rows.map(reviveAgendaEvent);
 
 export const useAgenda = (
   params: {
     fromDays?: number;
     toDays?: number;
     userEmail?: string | null;
+    userName?: string | null;
   } & CampusScope,
 ) => {
-  const {
-    fromDays = -7,
-    toDays = 90,
-    userEmail = null,
-    selectedCampusId,
-    withCampusFilter,
-  } = params;
+  const { fromDays = -60, toDays = 120, userEmail = null, userName = null, selectedCampusId, withCampusFilter } = params;
   return useQuery({
-    queryKey: ['agenda', selectedCampusId, fromDays, toDays, userEmail],
+    queryKey: ['agenda', selectedCampusId, fromDays, toDays, userEmail, userName],
+    select: reviveAgenda,
     queryFn: async (): Promise<AgendaEvent[]> => {
-      const scope: CampusScope = { selectedCampusId, withCampusFilter };
       const now = new Date();
       const from = new Date(now);
       from.setDate(from.getDate() + fromDays);
       const to = new Date(now);
       to.setDate(to.getDate() + toDays);
-
-      const fromIso = from.toISOString();
-      const toIso = to.toISOString();
-
-      const [programs, events, ...ministries] = await Promise.all([
-        fetchPrograms(fromIso, toIso, scope),
-        fetchGenericEvents(fromIso, toIso, scope),
-        ...MINISTRY_TABLES.map((m) => fetchMinistry(m.source, fromIso, toIso, scope)),
-      ]);
-
-      const myProgramIds = await fetchMyAssignedProgramIds(userEmail);
-
-      const all = [...programs, ...events, ...ministries.flat()];
-      for (const e of all) {
-        if (e.programId && myProgramIds.has(e.programId)) e.isMine = true;
+      const base = supabase.from('events').select(`${EVENT_COLUMNS}, assignments, is_archived`);
+      const { data, error } = await withCampusFilter(base)
+        .gte('date', ymdLocal(from))
+        .lte('date', ymdLocal(to))
+        .order('date', { ascending: true });
+      if (error) {
+        if (isSoftError(error)) return [];
+        throw error;
       }
+      const rows = ((data ?? []) as any[]).filter((r) => !r.is_archived);
+      const mine = await myRolesByEvent(rows, { email: userEmail, name: userName }).catch(() => new Map<number, string>());
+      const all = rows.flatMap((row) => {
+        const ev = toAgendaEvent(row);
+        if (!ev) return [];
+        const role = mine.get(ev.eventId);
+        if (role) {
+          ev.isMine = true;
+          ev.myRole = role;
+        }
+        return [ev];
+      });
       all.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
       return all;
     },
@@ -240,13 +189,7 @@ export const useAgenda = (
 
 // ── Zapisy na wydarzenia (RSVP / obecność) ─────────────────────────────────
 // event_registrations = T(null): każdy zalogowany czyta/pisze (jak prayer_interactions).
-// JEDNA tabela obsługuje wydarzenia ogólne (events) i modułów (module_events) — event_id
-// to surowe id wydarzenia (web robi tak samo: EventRSVP + EventsTab). „Surowe id" z agendy
-// wyciągamy z klucza „<source>-<n>".
-export const rawEventId = (agendaId: string): number | null => {
-  const n = Number(String(agendaId).split('-').pop());
-  return Number.isFinite(n) ? n : null;
-};
+// event_id = events.id (web: EventRSVP).
 
 export interface EventRegistration {
   id: number;
@@ -276,33 +219,6 @@ export const useEventRegistrations = (eventId: number | null) =>
       return ((data ?? []) as unknown as EventRegistration[]).filter(
         (r) => r.status !== 'not_going',
       );
-    },
-  });
-
-// Flagi rejestracji wydarzenia ogólnego (events). Ładowane leniwie — brak kolumny na
-// danym tenancie degraduje tylko panel RSVP, nie całą agendę (schema-truth).
-export interface EventRsvpMeta {
-  registration_required: boolean;
-  max_participants: number | null;
-  is_paid: boolean;
-}
-export const useEventRsvpMeta = (eventId: number | null, isGenericEvent: boolean) =>
-  useQuery({
-    queryKey: ['event-rsvp-meta', eventId],
-    enabled: isGenericEvent && eventId != null && Number.isFinite(eventId),
-    queryFn: async (): Promise<EventRsvpMeta | null> => {
-      const { data, error } = await supabase
-        .from('events')
-        .select('registration_required, max_participants, is_paid')
-        .eq('id', eventId)
-        .maybeSingle();
-      if (error || !data) return null;
-      const row = data as any;
-      return {
-        registration_required: !!row.registration_required,
-        max_participants: row.max_participants ?? null,
-        is_paid: !!row.is_paid,
-      };
     },
   });
 

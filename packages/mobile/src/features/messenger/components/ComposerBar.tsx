@@ -62,14 +62,14 @@ export const ComposerBar = ({
     return (
       <View
         style={{
-          backgroundColor: "#ffffff",
+          backgroundColor: "#F6F4EE",
           borderTopWidth: 1,
-          borderTopColor: "#eef0f3",
+          borderTopColor: "#E6E1D5",
           padding: 16,
           alignItems: "center",
         }}
       >
-        <Text style={{ fontSize: 13, color: "#78716c", fontFamily: "Inter_500Medium", textAlign: "center" }}>
+        <Text style={{ fontSize: 13, color: "#6B6557", fontFamily: "Manrope_500Medium", textAlign: "center" }}>
           📢 Tylko administratorzy mogą pisać w tym kanale.
         </Text>
       </View>
@@ -81,10 +81,10 @@ export const ComposerBar = ({
 
   // Akcje załączników schowane pod „+" — pole tekstowe dostaje całą szerokość.
   const actions: { key: string; label: string; Icon: typeof ImageIcon; tint: string; bg: string; onPress: () => void }[] = [
-    { key: "image", label: "Zdjęcie", Icon: ImageIcon, tint: "#2563eb", bg: "#dbeafe", onPress: onPickImage },
-    { key: "camera", label: "Aparat", Icon: Camera, tint: "#0e7490", bg: "#cffafe", onPress: onTakePhoto },
-    ...(onCreatePoll ? [{ key: "poll", label: "Ankieta", Icon: BarChart3, tint: "#7c3aed", bg: "#ede9fe", onPress: onCreatePoll }] : []),
-    ...(onShareEvent ? [{ key: "event", label: "Wydarzenie", Icon: Calendar, tint: "#be185d", bg: "#fce7f3", onPress: onShareEvent }] : []),
+    { key: "image", label: "Zdjęcie", Icon: ImageIcon, tint: "#2A2312", bg: "#ECE8DE", onPress: onPickImage },
+    { key: "camera", label: "Aparat", Icon: Camera, tint: "#2A2312", bg: "#ECE8DE", onPress: onTakePhoto },
+    ...(onCreatePoll ? [{ key: "poll", label: "Ankieta", Icon: BarChart3, tint: "#2A2312", bg: "#ECE8DE", onPress: onCreatePoll }] : []),
+    ...(onShareEvent ? [{ key: "event", label: "Wydarzenie", Icon: Calendar, tint: "#8A6606", bg: "#FFF1C2", onPress: onShareEvent }] : []),
   ];
   const runAction = (fn: () => void) => {
     setShowActions(false);
@@ -95,9 +95,9 @@ export const ComposerBar = ({
     return (
       <View
         style={{
-          backgroundColor: "#ffffff",
+          backgroundColor: "#F6F4EE",
           borderTopWidth: 1,
-          borderTopColor: "#eef0f3",
+          borderTopColor: "#E6E1D5",
         }}
       >
         <AudioRecorder
@@ -115,9 +115,9 @@ export const ComposerBar = ({
   return (
     <View
       style={{
-        backgroundColor: "#ffffff",
+        backgroundColor: "#F6F4EE",
         borderTopWidth: 1,
-        borderTopColor: "#eef0f3",
+        borderTopColor: "#E6E1D5",
       }}
     >
       {replyTo && !editing ? (
@@ -134,17 +134,17 @@ export const ComposerBar = ({
             style={{
               flex: 1,
               borderLeftWidth: 3,
-              borderLeftColor: "#ec4899",
+              borderLeftColor: "#FFBE0B",
               paddingLeft: 8,
             }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <CornerUpLeft size={11} color="#ec4899" />
+              <CornerUpLeft size={11} color="#8A6606" />
               <Text
                 style={{
                   fontSize: 11,
-                  color: "#be185d",
-                  fontFamily: "Inter_700Bold",
+                  color: "#8A6606",
+                  fontFamily: "Manrope_700Bold",
                 }}
               >
                 Odpowiedź dla {memberDisplayName(members, replyTo.sender_email)}
@@ -153,8 +153,8 @@ export const ComposerBar = ({
             <Text
               style={{
                 fontSize: 12,
-                color: "#57534e",
-                fontFamily: "Inter_400Regular",
+                color: "#4A463E",
+                fontFamily: "Manrope_400Regular",
               }}
               numberOfLines={1}
             >
@@ -162,7 +162,7 @@ export const ComposerBar = ({
             </Text>
           </View>
           <Pressable onPress={onClearReply} hitSlop={10} style={{ padding: 4 }}>
-            <X size={16} color="#a8a29e" />
+            <X size={16} color="#857F70" />
           </Pressable>
         </View>
       ) : null}
@@ -177,12 +177,12 @@ export const ComposerBar = ({
             paddingTop: 8,
           }}
         >
-          <Pencil size={12} color="#d97706" />
+          <Pencil size={12} color="#8A6606" />
           <Text
             style={{
               fontSize: 11,
-              color: "#b45309",
-              fontFamily: "Inter_700Bold",
+              color: "#8A6606",
+              fontFamily: "Manrope_700Bold",
             }}
           >
             Edytujesz wiadomość
@@ -211,7 +211,7 @@ export const ComposerBar = ({
                 width: 48,
                 height: 48,
                 borderRadius: 10,
-                backgroundColor: "#f5f5f4",
+                backgroundColor: "#ECE8DE",
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -223,15 +223,15 @@ export const ComposerBar = ({
             style={{
               flex: 1,
               fontSize: 12,
-              color: "#78716c",
-              fontFamily: "Inter_500Medium",
+              color: "#6B6557",
+              fontFamily: "Manrope_500Medium",
             }}
             numberOfLines={1}
           >
             {pendingAttachment.name}
           </Text>
           <Pressable onPress={onClearAttachment} hitSlop={10} style={{ padding: 4 }}>
-            <X size={16} color="#a8a29e" />
+            <X size={16} color="#857F70" />
           </Pressable>
         </View>
       ) : null}
@@ -254,18 +254,18 @@ export const ComposerBar = ({
               width: 44,
               height: 44,
               borderRadius: 22,
-              backgroundColor: "#fafaf9",
+              backgroundColor: "#F1EEE6",
               borderWidth: 1,
-              borderColor: "#eef0f3",
+              borderColor: "#E6E1D5",
               alignItems: "center",
               justifyContent: "center",
               opacity: uploading ? 0.5 : 1,
             }}
           >
             {uploading ? (
-              <ActivityIndicator size="small" color="#a8a29e" />
+              <ActivityIndicator size="small" color="#857F70" />
             ) : (
-              <Plus size={22} color="#57534e" strokeWidth={2.2} />
+              <Plus size={22} color="#4A463E" strokeWidth={2.2} />
             )}
           </Pressable>
         ) : null}
@@ -277,15 +277,15 @@ export const ComposerBar = ({
             borderRadius: 22,
             paddingHorizontal: 18,
             paddingVertical: 11,
-            backgroundColor: "#fafaf9",
+            backgroundColor: "#F1EEE6",
             borderWidth: 1,
-            borderColor: "#eef0f3",
+            borderColor: "#E6E1D5",
             fontSize: 15,
-            color: "#0c0a09",
-            fontFamily: "Inter_400Regular",
+            color: "#2A2312",
+            fontFamily: "Manrope_400Regular",
           }}
           placeholder={editing ? "Edytuj…" : uploading ? "Wgrywanie…" : "Napisz wiadomość…"}
-          placeholderTextColor="#a8a29e"
+          placeholderTextColor="#857F70"
           value={text}
           onChangeText={onChangeText}
           multiline
@@ -299,10 +299,10 @@ export const ComposerBar = ({
               width: 44,
               height: 44,
               borderRadius: 22,
-              backgroundColor: "#ec4899",
+              backgroundColor: "#2A2312",
               alignItems: "center",
               justifyContent: "center",
-              shadowColor: "#ec4899",
+              shadowColor: "#2A2312",
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.35,
               shadowRadius: 8,
@@ -323,7 +323,7 @@ export const ComposerBar = ({
                   width: 44,
                   height: 44,
                   borderRadius: 22,
-                  backgroundColor: "#ec4899",
+                  backgroundColor: "#2A2312",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -335,8 +335,6 @@ export const ComposerBar = ({
                 Icon={Send}
                 size={44}
                 iconSize={19}
-                from="#f97316"
-                to="#ec4899"
                 rounded
               />
             )}
@@ -357,7 +355,7 @@ export const ComposerBar = ({
           <Pressable
             onPress={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: "#ffffff",
+              backgroundColor: "#F6F4EE",
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               paddingHorizontal: 16,
@@ -371,7 +369,7 @@ export const ComposerBar = ({
                 width: 40,
                 height: 5,
                 borderRadius: 3,
-                backgroundColor: "#e7e5e4",
+                backgroundColor: "#E3DDD0",
                 marginBottom: 14,
               }}
             />
@@ -399,7 +397,7 @@ export const ComposerBar = ({
                 >
                   <Icon size={21} color={tint} strokeWidth={2.1} />
                 </View>
-                <Text style={{ fontSize: 16, color: "#1c1917", fontFamily: "Inter_600SemiBold" }}>
+                <Text style={{ fontSize: 16, color: "#2A2312", fontFamily: "Manrope_600SemiBold" }}>
                   {label}
                 </Text>
               </Pressable>
@@ -410,13 +408,13 @@ export const ComposerBar = ({
                 marginTop: 8,
                 paddingVertical: 13,
                 borderRadius: 14,
-                backgroundColor: "#fafaf9",
+                backgroundColor: "#F1EEE6",
                 borderWidth: 1,
-                borderColor: "#eef0f3",
+                borderColor: "#E6E1D5",
                 alignItems: "center",
               }}
             >
-              <Text style={{ fontSize: 15, color: "#78716c", fontFamily: "Inter_600SemiBold" }}>
+              <Text style={{ fontSize: 15, color: "#6B6557", fontFamily: "Manrope_600SemiBold" }}>
                 Anuluj
               </Text>
             </Pressable>

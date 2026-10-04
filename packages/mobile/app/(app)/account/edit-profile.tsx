@@ -19,6 +19,7 @@ import { GradientButton } from '../../../src/components/ui/GradientButton';
 import { GradientAvatar } from '../../../src/components/ui/GradientAvatar';
 import { useAuthSession } from '../../../src/lib/auth';
 import { useMyProfile, useUpdateProfile, pickAvatar, uploadAvatar } from '../../../src/features/account/api';
+import { goBack } from '../../../src/lib/navigation';
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -67,7 +68,7 @@ export default function EditProfileScreen() {
     try {
       // name = zgodność wstecz (część kodu czyta app_users.name).
       await update.mutateAsync({ full_name: name, name });
-      router.back();
+      goBack(router);
     } catch (e: any) {
       Alert.alert('Błąd', e?.message ?? 'Nie udało się zapisać profilu.');
     }
@@ -78,13 +79,13 @@ export default function EditProfileScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, backgroundColor: '#ffffff' }}
+        style={{ flex: 1, backgroundColor: '#F6F4EE' }}
       >
         <PageHeader title="Edytuj profil" subtitle="Imię i zdjęcie profilowe" showBack />
 
         {profile.isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : (
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
@@ -93,7 +94,7 @@ export default function EditProfileScreen() {
                 {avatarUrl ? (
                   <Image
                     source={{ uri: avatarUrl }}
-                    style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: '#f5f5f4' }}
+                    style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: '#ECE8DE' }}
                     contentFit="cover"
                   />
                 ) : (
@@ -107,7 +108,7 @@ export default function EditProfileScreen() {
                     width: 32,
                     height: 32,
                     borderRadius: 16,
-                    backgroundColor: '#ec4899',
+                    backgroundColor: '#2A2312',
                     alignItems: 'center',
                     justifyContent: 'center',
                     borderWidth: 3,
@@ -121,7 +122,7 @@ export default function EditProfileScreen() {
                   )}
                 </View>
               </Pressable>
-              <Text style={{ fontSize: 12, color: '#78716c', marginTop: 10, fontFamily: 'Inter_500Medium' }}>
+              <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 10, fontFamily: 'Manrope_500Medium' }}>
                 Dotknij, aby zmienić zdjęcie
               </Text>
             </View>
@@ -130,19 +131,19 @@ export default function EditProfileScreen() {
             <TextInput
               style={styles.input}
               placeholder="np. Anna Kowalska"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#857F70"
               value={fullName}
               onChangeText={setFullName}
               editable={!update.isPending}
             />
 
             <Text style={styles.label}>E-mail</Text>
-            <View style={[styles.input, { justifyContent: 'center', backgroundColor: '#f5f5f4' }]}>
-              <Text style={{ fontSize: 15, color: '#78716c', fontFamily: 'Inter_400Regular' }}>
+            <View style={[styles.input, { justifyContent: 'center', backgroundColor: '#ECE8DE' }]}>
+              <Text style={{ fontSize: 15, color: '#6B6557', fontFamily: 'Manrope_400Regular' }}>
                 {email ?? '—'}
               </Text>
             </View>
-            <Text style={{ fontSize: 12, color: '#a8a29e', marginTop: -8, marginBottom: 16, fontFamily: 'Inter_400Regular' }}>
+            <Text style={{ fontSize: 12, color: '#857F70', marginTop: -8, marginBottom: 16, fontFamily: 'Manrope_400Regular' }}>
               E-maila nie można zmienić w aplikacji.
             </Text>
 
@@ -159,23 +160,23 @@ export default function EditProfileScreen() {
 const styles = {
   label: {
     fontSize: 12,
-    color: '#57534e',
+    color: '#8A6606',
     marginBottom: 6,
-    letterSpacing: 0.4,
+    letterSpacing: 1.2,
     textTransform: 'uppercase' as const,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   } as const,
   input: {
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
     minHeight: 48,
     fontSize: 15,
-    color: '#0c0a09',
-    backgroundColor: '#fafaf9',
+    color: '#2A2312',
+    backgroundColor: '#FFFFFF',
     marginBottom: 16,
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'Manrope_400Regular',
   } as const,
 };

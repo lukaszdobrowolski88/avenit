@@ -19,7 +19,6 @@ import {
   useMember,
   useHousehold,
   fullName,
-  initials,
   STATUS_META,
   MINISTRY_LABELS,
   useAddMemberNote,
@@ -30,6 +29,8 @@ import {
 import { EditMemberModal } from '../../../src/features/members/components/EditMemberModal';
 import { usePermissions } from '../../../src/lib/permissions';
 import { useAuthSession } from '../../../src/lib/auth';
+import { Monogram } from '../../../src/components/ui/brand';
+import { goBack } from '../../../src/lib/navigation';
 
 const SectionCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View
@@ -37,32 +38,25 @@ const SectionCard = ({ title, children }: { title: string; children: React.React
       marginHorizontal: 16,
       marginBottom: 12,
       borderRadius: 20,
-      backgroundColor: '#ffffff',
-      shadowColor: '#0f172a',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.05,
-      shadowRadius: 14,
-      elevation: 2,
+      backgroundColor: '#FFFFFF',
     }}
   >
     <View
       style={{
         borderRadius: 20,
-        borderWidth: 1,
-        borderColor: '#eef0f3',
         overflow: 'hidden',
       }}
     >
       <Text
         style={{
           fontSize: 11,
-          color: '#78716c',
+          color: '#8A6606',
           paddingHorizontal: 16,
           paddingTop: 12,
           paddingBottom: 4,
-          letterSpacing: 0.6,
+          letterSpacing: 1.2,
           textTransform: 'uppercase',
-          fontFamily: 'Inter_700Bold',
+          fontFamily: 'Manrope_700Bold',
         }}
       >
         {title}
@@ -97,7 +91,7 @@ const InfoRow = ({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: isLast ? 0 : 1,
-        borderBottomColor: '#f5f5f4',
+        borderBottomColor: '#ECE8DE',
       }}
     >
       <View
@@ -107,19 +101,19 @@ const InfoRow = ({
           borderRadius: 10,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#fef3f2',
+          backgroundColor: '#FFF8E1',
         }}
       >
-        <Icon size={16} color="#ec4899" strokeWidth={2.2} />
+        <Icon size={16} color="#8A6606" strokeWidth={2.2} />
       </View>
       <View style={{ flex: 1 }}>
         <Text
           style={{
             fontSize: 11,
-            color: '#78716c',
-            letterSpacing: 0.4,
+            color: '#8A6606',
+            letterSpacing: 1.2,
             textTransform: 'uppercase',
-            fontFamily: 'Inter_600SemiBold',
+            fontFamily: 'Manrope_600SemiBold',
           }}
         >
           {label}
@@ -127,10 +121,10 @@ const InfoRow = ({
         <Text
           style={{
             fontSize: 15,
-            color: onPress ? '#be185d' : '#0c0a09',
+            color: onPress ? '#8A6606' : '#2A2312',
             marginTop: 1,
             letterSpacing: -0.2,
-            fontFamily: onPress ? 'Inter_600SemiBold' : 'Inter_500Medium',
+            fontFamily: onPress ? 'Manrope_600SemiBold' : 'Manrope_500Medium',
           }}
         >
           {value}
@@ -164,10 +158,10 @@ export default function MemberDetailScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
         }}
       >
-        <ActivityIndicator color="#ec4899" />
+        <ActivityIndicator color="#2A2312" />
       </View>
     );
   }
@@ -178,11 +172,11 @@ export default function MemberDetailScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#ffffff',
+          backgroundColor: '#F6F4EE',
           paddingHorizontal: 24,
         }}
       >
-        <Text style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+        <Text style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
           Osoba nie istnieje.
         </Text>
       </View>
@@ -196,7 +190,7 @@ export default function MemberDetailScreen() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <ScrollView
-        style={{ flex: 1, backgroundColor: '#ffffff' }}
+        style={{ flex: 1, backgroundColor: '#F6F4EE' }}
         contentContainerStyle={{ paddingBottom: 32 }}
       >
         <View
@@ -207,20 +201,18 @@ export default function MemberDetailScreen() {
           }}
         >
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => goBack(router)}
             hitSlop={10}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#fafaf9',
-              borderWidth: 1,
-              borderColor: '#e7e5e4',
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#FFFFFF',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <ChevronLeft size={20} color="#1c1917" strokeWidth={2.2} />
+            <ChevronLeft size={20} color="#2A2312" strokeWidth={2.2} />
           </Pressable>
           {canEdit ? (
             <Pressable
@@ -236,11 +228,11 @@ export default function MemberDetailScreen() {
                 paddingHorizontal: 14,
                 height: 40,
                 borderRadius: 20,
-                backgroundColor: '#0c0a09',
+                backgroundColor: '#2A2312',
               }}
             >
               <Pencil size={15} color="#ffffff" />
-              <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>Edytuj</Text>
+              <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>Edytuj</Text>
             </Pressable>
           ) : null}
         </View>
@@ -253,34 +245,15 @@ export default function MemberDetailScreen() {
             paddingHorizontal: 16,
           }}
         >
-          <View
-            style={{
-              width: 96,
-              height: 96,
-              borderRadius: 48,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 12,
-              backgroundColor: meta?.bg ?? '#fef3f2',
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 32,
-                color: meta?.tint ?? '#be185d',
-                letterSpacing: -0.5,
-                fontFamily: 'Inter_700Bold',
-              }}
-            >
-              {initials(member)}
-            </Text>
+          <View style={{ marginBottom: 12 }}>
+            <Monogram name={fullName(member)} size={96} />
           </View>
           <Text
             style={{
-              fontSize: 22,
-              color: '#0c0a09',
-              letterSpacing: -0.5,
-              fontFamily: 'Inter_700Bold',
+              fontSize: 26,
+              color: '#2A2312',
+              letterSpacing: -0.8,
+              fontFamily: 'Manrope_700Bold',
             }}
           >
             {fullName(member)}
@@ -299,7 +272,7 @@ export default function MemberDetailScreen() {
                 style={{
                   fontSize: 11,
                   color: meta.tint,
-                  fontFamily: 'Inter_700Bold',
+                  fontFamily: 'Manrope_700Bold',
                 }}
               >
                 {meta.label}
@@ -347,19 +320,12 @@ export default function MemberDetailScreen() {
               marginHorizontal: 16,
               marginBottom: 12,
               borderRadius: 20,
-              backgroundColor: '#ffffff',
-              shadowColor: '#0f172a',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.05,
-              shadowRadius: 14,
-              elevation: 2,
+              backgroundColor: '#FFFFFF',
             }}
           >
             <View
               style={{
                 borderRadius: 20,
-                borderWidth: 1,
-                borderColor: '#eef0f3',
                 paddingHorizontal: 16,
                 paddingVertical: 14,
               }}
@@ -372,14 +338,14 @@ export default function MemberDetailScreen() {
                   marginBottom: 8,
                 }}
               >
-                <UsersIcon size={14} color="#ec4899" strokeWidth={2.4} />
+                <UsersIcon size={14} color="#8A6606" strokeWidth={2.4} />
                 <Text
                   style={{
                     fontSize: 11,
-                    color: '#78716c',
-                    letterSpacing: 0.6,
+                    color: '#8A6606',
+                    letterSpacing: 1.2,
                     textTransform: 'uppercase',
-                    fontFamily: 'Inter_700Bold',
+                    fontFamily: 'Manrope_700Bold',
                   }}
                 >
                   Służby
@@ -393,14 +359,14 @@ export default function MemberDetailScreen() {
                       paddingHorizontal: 10,
                       paddingVertical: 5,
                       borderRadius: 999,
-                      backgroundColor: '#fef3f2',
+                      backgroundColor: '#FFF8E1',
                     }}
                   >
                     <Text
                       style={{
                         fontSize: 12,
-                        color: '#be185d',
-                        fontFamily: 'Inter_600SemiBold',
+                        color: '#8A6606',
+                        fontFamily: 'Manrope_600SemiBold',
                       }}
                     >
                       {MINISTRY_LABELS[m] || m}
@@ -429,19 +395,12 @@ export default function MemberDetailScreen() {
               marginHorizontal: 16,
               marginBottom: 12,
               borderRadius: 20,
-              backgroundColor: '#ffffff',
-              shadowColor: '#0f172a',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.05,
-              shadowRadius: 14,
-              elevation: 2,
+              backgroundColor: '#FFFFFF',
             }}
           >
             <View
               style={{
                 borderRadius: 20,
-                borderWidth: 1,
-                borderColor: '#eef0f3',
                 paddingHorizontal: 16,
                 paddingVertical: 14,
               }}
@@ -449,11 +408,11 @@ export default function MemberDetailScreen() {
               <Text
                 style={{
                   fontSize: 11,
-                  color: '#78716c',
+                  color: '#8A6606',
                   marginBottom: 6,
-                  letterSpacing: 0.6,
+                  letterSpacing: 1.2,
                   textTransform: 'uppercase',
-                  fontFamily: 'Inter_700Bold',
+                  fontFamily: 'Manrope_700Bold',
                 }}
               >
                 Notatki
@@ -461,9 +420,9 @@ export default function MemberDetailScreen() {
               <Text
                 style={{
                   fontSize: 14,
-                  color: '#0c0a09',
+                  color: '#2A2312',
                   lineHeight: 20,
-                  fontFamily: 'Inter_400Regular',
+                  fontFamily: 'Manrope_400Regular',
                 }}
               >
                 {member.notes}
@@ -473,14 +432,14 @@ export default function MemberDetailScreen() {
         ) : null}
 
         {careVisible ? (
-          <View style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 20, backgroundColor: '#f7f6f5', padding: 16, gap: 10 }}>
+          <View style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 20, backgroundColor: '#FFFFFF', padding: 16, gap: 10 }}>
             <Text
               style={{
                 fontSize: 11,
-                color: '#78716c',
-                letterSpacing: 0.6,
+                color: '#8A6606',
+                letterSpacing: 1.2,
                 textTransform: 'uppercase',
-                fontFamily: 'Inter_700Bold',
+                fontFamily: 'Manrope_700Bold',
               }}
             >
               Notatki duszpasterskie
@@ -490,7 +449,7 @@ export default function MemberDetailScreen() {
                 value={noteDraft}
                 onChangeText={setNoteDraft}
                 placeholder="Dodaj notatkę (widzą ją osoby z dostępem do Opieki)"
-                placeholderTextColor="#a8a29e"
+                placeholderTextColor="#857F70"
                 multiline
                 style={{
                   flex: 1,
@@ -500,10 +459,10 @@ export default function MemberDetailScreen() {
                   paddingHorizontal: 12,
                   paddingTop: 11,
                   paddingBottom: 11,
-                  backgroundColor: '#ffffff',
+                  backgroundColor: '#F6F4EE',
                   fontSize: 14,
-                  color: '#0c0a09',
-                  fontFamily: 'Inter_400Regular',
+                  color: '#2A2312',
+                  fontFamily: 'Manrope_400Regular',
                 }}
               />
               <Pressable
@@ -521,7 +480,7 @@ export default function MemberDetailScreen() {
                   width: 44,
                   height: 44,
                   borderRadius: 22,
-                  backgroundColor: noteDraft.trim() ? '#0c0a09' : '#d6d3d1',
+                  backgroundColor: noteDraft.trim() ? '#2A2312' : '#D3CCBC',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -530,9 +489,9 @@ export default function MemberDetailScreen() {
               </Pressable>
             </View>
             {((notes.data ?? []) as MemberNote[]).map((n) => (
-              <View key={n.id} style={{ borderRadius: 14, backgroundColor: '#ffffff', padding: 12, gap: 4 }}>
-                <Text style={{ fontSize: 14, lineHeight: 20, color: '#0c0a09', fontFamily: 'Inter_400Regular' }}>{n.body}</Text>
-                <Text style={{ fontSize: 11, color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>
+              <View key={n.id} style={{ borderRadius: 14, backgroundColor: '#F6F4EE', padding: 12, gap: 4 }}>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}>{n.body}</Text>
+                <Text style={{ fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
                   {[n.author, n.createdAt ? formatDate(n.createdAt, 'd MMM yyyy, HH:mm') : null].filter(Boolean).join(' · ')}
                 </Text>
               </View>

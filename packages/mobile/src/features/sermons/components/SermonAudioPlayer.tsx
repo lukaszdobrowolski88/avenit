@@ -8,6 +8,7 @@ import { Pause, Play } from 'lucide-react-native';
 
 interface Props {
   uri: string;
+  dark?: boolean;
 }
 
 const formatTime = (ms: number) => {
@@ -17,7 +18,8 @@ const formatTime = (ms: number) => {
   return `${m}:${s}`;
 };
 
-export const SermonAudioPlayer = ({ uri }: Props) => {
+// `dark` — wewnątrz ciemnej karty (słód): przezroczyste tło, opisy jasne.
+export const SermonAudioPlayer = ({ uri, dark }: Props) => {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
@@ -81,11 +83,9 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        padding: 12,
+        padding: dark ? 0 : 12,
         borderRadius: 18,
-        backgroundColor: '#faf5ff',
-        borderWidth: 1,
-        borderColor: '#e9d5ff',
+        backgroundColor: dark ? 'transparent' : '#FFFFFF',
       }}
     >
       <Pressable
@@ -95,17 +95,17 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
           width: 48,
           height: 48,
           borderRadius: 24,
-          backgroundColor: '#7c3aed',
+          backgroundColor: '#FFBE0B',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
         {loading ? (
-          <ActivityIndicator color="#ffffff" />
+          <ActivityIndicator color="#2A2312" />
         ) : isPlaying ? (
-          <Pause size={20} color="#ffffff" fill="#ffffff" />
+          <Pause size={20} color="#2A2312" fill="#2A2312" />
         ) : (
-          <Play size={20} color="#ffffff" fill="#ffffff" />
+          <Play size={20} color="#2A2312" fill="#2A2312" style={{ marginLeft: 2 }} />
         )}
       </Pressable>
 
@@ -114,7 +114,7 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
           style={{
             height: 6,
             borderRadius: 3,
-            backgroundColor: '#e9d5ff',
+            backgroundColor: dark ? 'rgba(246,244,238,0.18)' : '#ECE8DE',
             overflow: 'hidden',
           }}
         >
@@ -123,7 +123,7 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
               width: `${progress * 100}%`,
               height: 6,
               borderRadius: 3,
-              backgroundColor: '#7c3aed',
+              backgroundColor: '#FFBE0B',
             }}
           />
         </View>
@@ -131,8 +131,8 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
           <Text
             style={{
               fontSize: 11,
-              color: '#6d28d9',
-              fontFamily: 'Inter_600SemiBold',
+              color: dark ? '#F6F4EE' : '#2A2312',
+              fontFamily: 'Manrope_600SemiBold',
               fontVariant: ['tabular-nums'],
             }}
           >
@@ -141,8 +141,8 @@ export const SermonAudioPlayer = ({ uri }: Props) => {
           <Text
             style={{
               fontSize: 11,
-              color: '#a78bda',
-              fontFamily: 'Inter_600SemiBold',
+              color: dark ? '#CFC8B6' : '#6B6557',
+              fontFamily: 'Manrope_600SemiBold',
               fontVariant: ['tabular-nums'],
             }}
           >

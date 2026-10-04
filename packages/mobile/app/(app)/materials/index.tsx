@@ -11,6 +11,7 @@ import {
   StatusBar,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,31 +47,19 @@ import { useModules } from '../../../src/features/modules/useModules';
 import { usePermissions } from '../../../src/lib/permissions';
 import { PromptModal } from '../../../src/components/ui/PromptModal';
 import { GradientIcon } from '../../../src/components/ui/GradientIcon';
+import { IconWell, ListCard, ListRow, SectionLabel, Tile } from '../../../src/components/ui/brand';
+import { goBack } from '../../../src/lib/navigation';
 
 const ICON_BY_TYPE = {
   pdf: { Icon: FileText, tint: '#dc2626', bg: '#fee2e2' },
-  image: { Icon: ImageIcon, tint: '#2563eb', bg: '#dbeafe' },
-  audio: { Icon: FileAudio, tint: '#16a34a', bg: '#dcfce7' },
-  video: { Icon: FileVideo, tint: '#7c3aed', bg: '#ede9fe' },
-  doc: { Icon: FileText, tint: '#0891b2', bg: '#cffafe' },
-  other: { Icon: FileIcon, tint: '#64748b', bg: '#e2e8f0' },
+  image: { Icon: ImageIcon, tint: '#2A2312', bg: '#ECE8DE' },
+  audio: { Icon: FileAudio, tint: '#2A2312', bg: '#ECE8DE' },
+  video: { Icon: FileVideo, tint: '#2A2312', bg: '#ECE8DE' },
+  doc: { Icon: FileText, tint: '#2A2312', bg: '#ECE8DE' },
+  other: { Icon: FileIcon, tint: '#6B6557', bg: '#E3DDD0' },
 };
 
-const itemCardStyle = {
-  borderRadius: 16,
-  backgroundColor: '#ffffff',
-  shadowColor: '#0f172a',
-  shadowOffset: { width: 0, height: 3 },
-  shadowOpacity: 0.04,
-  shadowRadius: 10,
-  elevation: 1,
-} as const;
 
-const itemBorderStyle = {
-  borderRadius: 16,
-  borderWidth: 1,
-  borderColor: '#eef0f3',
-} as const;
 
 // Moduły, które mają na webie zakładkę „Pliki” (MaterialsTab z team_type = klucz modułu).
 const FILE_SPACES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'teaching'];
@@ -138,6 +127,9 @@ export default function MaterialsScreen() {
     }
   };
 
+  const { width } = useWindowDimensions();
+  const tileW = Math.floor((width - 32 - 10) / 2);
+
   const spaces = useMemo(
     () =>
       modules
@@ -185,7 +177,7 @@ export default function MaterialsScreen() {
     if (folderId === null) {
       // Z przestrzeni wróć do wyboru (chyba że weszliśmy z zakładki zespołu).
       if (space !== undefined && !team) setSpace(undefined);
-      else router.back();
+      else goBack(router);
     } else {
       const parent = path.data?.[path.data.length - 2];
       setFolderId(parent?.id ?? null);
@@ -195,40 +187,37 @@ export default function MaterialsScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <View className="px-5 pb-3 flex-row items-center gap-3" style={{ paddingTop: insets.top + 10 }}>
           <Pressable
             onPress={handleBack}
             className="active:opacity-60"
             hitSlop={10}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#fafaf9',
-              borderWidth: 1,
-              borderColor: '#e7e5e4',
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#FFFFFF',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
             <ChevronRight
               size={20}
-              color="#1c1917"
+              color="#2A2312"
               strokeWidth={2.2}
               style={{ transform: [{ rotate: '180deg' }] }}
             />
           </Pressable>
           <View className="flex-1">
             <Text
-              className="text-[12px]"
-              style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
+              style={{ fontSize: 11, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold' }}
             >
               {space === undefined ? 'Pliki i dokumenty' : 'Materiały'}
             </Text>
             <Text
-              className="text-[24px] mt-0.5"
-              style={{ color: '#0c0a09', letterSpacing: -0.6, fontFamily: 'Inter_700Bold' }}
+              className="text-[27px] mt-0.5"
+              style={{ color: '#2A2312', letterSpacing: -0.9, fontFamily: 'Manrope_700Bold' }}
               numberOfLines={1}
             >
               {spaceLabel}
@@ -242,7 +231,7 @@ export default function MaterialsScreen() {
                     width: 40,
                     height: 40,
                     borderRadius: 20,
-                    backgroundColor: '#ec4899',
+                    backgroundColor: '#2A2312',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
@@ -250,7 +239,7 @@ export default function MaterialsScreen() {
                   <ActivityIndicator color="#ffffff" />
                 </View>
               ) : (
-                <GradientIcon Icon={Upload} size={40} iconSize={19} from="#f97316" to="#ec4899" rounded />
+                <GradientIcon Icon={Upload} size={40} iconSize={19} rounded />
               )}
             </Pressable>
           ) : null}
@@ -272,21 +261,21 @@ export default function MaterialsScreen() {
               onPress={() => setFolderId(null)}
               className="flex-row items-center gap-1"
             >
-              <Folder size={12} color="#78716c" />
+              <Folder size={12} color="#6B6557" />
               <Text
                 className="text-[12px]"
-                style={{ color: '#57534e', fontFamily: 'Inter_500Medium' }}
+                style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium' }}
               >
                 {spaceLabel}
               </Text>
             </Pressable>
             {path.data!.map((p: FolderRow) => (
               <View key={p.id} className="flex-row items-center gap-1">
-                <ChevronRight size={12} color="#a8a29e" />
+                <ChevronRight size={12} color="#857F70" />
                 <Pressable onPress={() => setFolderId(p.id)}>
                   <Text
                     className="text-[12px]"
-                    style={{ color: '#57534e', fontFamily: 'Inter_500Medium' }}
+                    style={{ color: '#4A463E', fontFamily: 'Manrope_500Medium' }}
                   >
                     {p.name}
                   </Text>
@@ -298,52 +287,49 @@ export default function MaterialsScreen() {
 
         {space === undefined ? (
           <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}>
-            {[
-              { key: '__shared', label: 'Udostępnione mi', sub: 'Pliki udostępnione Tobie i Twoim grupom', Icon: Share2, tint: '#0891b2', bg: '#cffafe' },
-              { key: '__general', label: 'Ogólne', sub: 'Pliki wspólne kościoła', Icon: FolderOpen, tint: '#d97706', bg: '#fef3c7' },
-              ...spaces.map((x) => ({ ...x, sub: 'Pliki zespołu' })),
-            ].map((x) => (
-              <Pressable
-                key={x.key}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Tile
+                dark
+                width={tileW}
+                Icon={Share2}
+                title="Udostępnione mi"
+                subtitle="Pliki dla Ciebie i Twoich grup"
+                onPress={() => router.push('/(app)/materials/shared')}
+              />
+              <Tile
+                width={tileW}
+                Icon={FolderOpen}
+                title="Ogólne"
+                subtitle="Pliki wspólne kościoła"
                 onPress={() => {
-                  if (x.key === '__shared') router.push('/(app)/materials/shared');
-                  else {
-                    setFolderId(null);
-                    setSpace(x.key === '__general' ? null : x.key);
-                  }
+                  setFolderId(null);
+                  setSpace(null);
                 }}
-                className="mb-2 active:opacity-80"
-                style={itemCardStyle}
-              >
-                <View className="flex-row items-center gap-3 p-3.5" style={itemBorderStyle}>
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 12,
-                      backgroundColor: x.bg,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <x.Icon size={19} color={x.tint} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text className="text-[15px]" style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
-                      {x.label}
-                    </Text>
-                    <Text className="text-[12px] mt-0.5" style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}>
-                      {x.sub}
-                    </Text>
-                  </View>
-                  <ChevronRight size={18} color="#a8a29e" />
-                </View>
-              </Pressable>
-            ))}
+              />
+            </View>
+            {spaces.length > 0 ? (
+              <>
+                <SectionLabel count={spaces.length}>Pliki zespołów</SectionLabel>
+                <ListCard>
+                  {spaces.map((x) => (
+                    <ListRow
+                      key={x.key}
+                      leading={<IconWell Icon={x.Icon} size={42} />}
+                      dividerInset={72}
+                      title={x.label}
+                      onPress={() => {
+                        setFolderId(null);
+                        setSpace(x.key);
+                      }}
+                    />
+                  ))}
+                </ListCard>
+              </>
+            ) : null}
           </ScrollView>
         ) : isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-8">
@@ -362,22 +348,22 @@ export default function MaterialsScreen() {
             </View>
             <Text
               className="text-[16px] text-center"
-              style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+              style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
             >
               Nie udało się wczytać materiałów
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+              style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
             >
               Sprawdź połączenie i spróbuj ponownie.
             </Text>
             <Pressable
               onPress={onRefresh}
               className="mt-4 active:opacity-70"
-              style={{ paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: '#ec4899' }}
+              style={{ paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, backgroundColor: '#2A2312' }}
             >
-              <Text style={{ color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>Spróbuj ponownie</Text>
+              <Text style={{ color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>Spróbuj ponownie</Text>
             </Pressable>
           </View>
         ) : (
@@ -387,130 +373,73 @@ export default function MaterialsScreen() {
               <RefreshControl
                 refreshing={isRefetching}
                 onRefresh={onRefresh}
-                tintColor="#ec4899"
+                tintColor="#2A2312"
               />
             }
           >
 
             {(folders.data?.length ?? 0) > 0 && (
-              <View className="mb-3">
-                <Text
-                  className="text-[11px] uppercase mb-2 px-1"
-                  style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}
-                >
-                  Foldery
-                </Text>
-                {folders.data!.map((f: FolderRow) => (
-                  <Pressable
-                    key={f.id}
-                    onPress={() => setFolderId(f.id)}
-                    className="mb-2 active:opacity-80"
-                    style={itemCardStyle}
-                  >
-                    <View
-                      className="flex-row items-center gap-3 p-3.5"
-                      style={itemBorderStyle}
-                    >
-                      <View
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 12,
-                          backgroundColor: '#fef3c7',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <FolderOpen size={18} color="#d97706" />
-                      </View>
-                      <Text
-                        className="flex-1 text-[15px]"
-                        style={{
-                          color: '#0c0a09',
-                          letterSpacing: -0.2,
-                          fontFamily: 'Inter_500Medium',
-                        }}
-                        numberOfLines={1}
-                      >
-                        {f.name}
-                      </Text>
-                      <ChevronRight size={16} color="#a8a29e" />
-                    </View>
-                  </Pressable>
-                ))}
-              </View>
+              <>
+                <SectionLabel count={folders.data!.length} style={{ marginTop: 6 }}>Foldery</SectionLabel>
+                <ListCard>
+                  {folders.data!.map((f: FolderRow) => (
+                    <ListRow
+                      key={f.id}
+                      leading={<IconWell Icon={FolderOpen} tone="kurkuma" size={42} />}
+                      dividerInset={72}
+                      title={f.name}
+                      onPress={() => setFolderId(f.id)}
+                    />
+                  ))}
+                </ListCard>
+              </>
             )}
 
             {(files.data?.length ?? 0) > 0 && (
-              <View>
-                <Text
-                  className="text-[11px] uppercase mb-2 px-1"
-                  style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}
-                >
-                  Pliki
-                </Text>
-                {files.data!.map((file: FileRow) => {
-                  const meta = ICON_BY_TYPE[fileIconType(file.mime_type)];
-                  return (
-                    <Pressable
-                      key={file.id}
-                      onPress={() => handleOpenFile(file)}
-                      onLongPress={() => fileActions(file)}
-                      className="mb-2 active:opacity-80"
-                      style={itemCardStyle}
-                    >
-                      <View
-                        className="flex-row items-center gap-3 p-3.5"
-                        style={itemBorderStyle}
-                      >
-                        <View
-                          style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 12,
-                            backgroundColor: meta.bg,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <meta.Icon size={18} color={meta.tint} />
-                        </View>
-                        <View className="flex-1">
-                          <Text
-                            className="text-[15px]"
+              <>
+                <SectionLabel count={files.data!.length}>Pliki</SectionLabel>
+                <ListCard>
+                  {files.data!.map((file: FileRow) => {
+                    const meta = ICON_BY_TYPE[fileIconType(file.mime_type)];
+                    return (
+                      <ListRow
+                        key={file.id}
+                        leading={
+                          <View
                             style={{
-                              color: '#0c0a09',
-                              letterSpacing: -0.2,
-                              fontFamily: 'Inter_500Medium',
+                              width: 42,
+                              height: 42,
+                              borderRadius: 21,
+                              backgroundColor: meta.bg,
+                              alignItems: 'center',
+                              justifyContent: 'center',
                             }}
-                            numberOfLines={1}
                           >
-                            {file.name}
-                          </Text>
-                          <Text
-                            className="text-[12px] mt-0.5"
-                            style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+                            <meta.Icon size={18} color={meta.tint} />
+                          </View>
+                        }
+                        dividerInset={72}
+                        title={file.name}
+                        subtitle={`${formatBytes(file.file_size)}${file.download_count > 0 ? ` · ${file.download_count} pobrań` : ''}`}
+                        onPress={() => handleOpenFile(file)}
+                        onLongPress={() => fileActions(file)}
+                        noChevron
+                        right={
+                          <Pressable
+                            onPress={() => fileActions(file)}
+                            hitSlop={10}
+                            accessibilityLabel={`Więcej akcji: ${file.name}`}
+                            className="active:opacity-60"
+                            style={{ padding: 4 }}
                           >
-                            {formatBytes(file.file_size)}
-                            {file.download_count > 0
-                              ? ` · ${file.download_count} pobrań`
-                              : ''}
-                          </Text>
-                        </View>
-                        <Pressable
-                          onPress={() => fileActions(file)}
-                          hitSlop={10}
-                          accessibilityLabel={`Więcej akcji: ${file.name}`}
-                          className="active:opacity-60"
-                          style={{ padding: 4 }}
-                        >
-                          <MoreHorizontal size={18} color="#a8a29e" />
-                        </Pressable>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
+                            <MoreHorizontal size={18} color="#857F70" />
+                          </Pressable>
+                        }
+                      />
+                    );
+                  })}
+                </ListCard>
+              </>
             )}
 
             {(folders.data?.length ?? 0) === 0 && (files.data?.length ?? 0) === 0 ? (
@@ -520,23 +449,23 @@ export default function MaterialsScreen() {
                     width: 64,
                     height: 64,
                     borderRadius: 18,
-                    backgroundColor: '#cffafe',
+                    backgroundColor: '#ECE8DE',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 12,
                   }}
                 >
-                  <FolderOpen size={28} color="#0891b2" />
+                  <FolderOpen size={28} color="#2A2312" />
                 </View>
                 <Text
                   className="text-[16px]"
-                  style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+                  style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
                 >
                   Pusty folder
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+                  style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                 >
                   Brak plików i podfolderów.
                 </Text>

@@ -53,12 +53,12 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#F6F4EE",
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 8,
     marginBottom: 14,
-    shadowColor: "#0f172a",
+    shadowColor: "#2A2312",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.22,
     shadowRadius: 22,
@@ -72,10 +72,10 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#F6F4EE",
     borderRadius: 16,
     overflow: "hidden",
-    shadowColor: "#0f172a",
+    shadowColor: "#2A2312",
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.22,
     shadowRadius: 24,
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#e7e5e4",
+    borderTopColor: "#E3DDD0",
   },
   rowIcon: {
     width: 24,
@@ -99,8 +99,8 @@ const styles = StyleSheet.create({
   rowLabel: {
     flex: 1,
     fontSize: 15,
-    color: "#0c0a09",
-    fontFamily: "Inter_600SemiBold",
+    color: "#2A2312",
+    fontFamily: "Manrope_600SemiBold",
     letterSpacing: -0.2,
   },
   rowLabelDestructive: {
@@ -190,13 +190,13 @@ export const MessageActionsSheet = ({
                   <Pressable
                     key={a.key}
                     onPress={a.onPress}
-                    android_ripple={{ color: "#fafaf9" }}
+                    android_ripple={{ color: "#F1EEE6" }}
                     style={[styles.row, i > 0 && styles.rowDivider]}
                   >
                     <View style={styles.rowIcon}>
                       <Icon
                         size={20}
-                        color={a.destructive ? "#ef4444" : "#1c1917"}
+                        color={a.destructive ? "#ef4444" : "#2A2312"}
                         strokeWidth={2}
                       />
                     </View>

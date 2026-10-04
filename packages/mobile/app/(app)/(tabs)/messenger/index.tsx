@@ -25,8 +25,8 @@ import {
   VolumeX,
   X,
 } from "lucide-react-native";
-import { formatRelative } from "../../../src/lib/domain";
-import { PageHeader } from "../../../src/components/ui/PageHeader";
+import { formatRelative } from "../../../../src/lib/domain";
+import { PageHeader } from "../../../../src/components/ui/PageHeader";
 import {
   useConversations,
   useToggleStarred,
@@ -40,11 +40,11 @@ import {
   type ConversationFilter,
   type ConversationListItem,
   type MemberLite, type MemberMap,
-} from "../../../src/features/messenger/api";
-import { useRealtimeConversations } from "../../../src/features/messenger/hooks/useRealtimeMessages";
-import { useAuthSession } from "../../../src/lib/auth";
-import { usePresence, type PresenceStatus } from "../../../src/lib/presence";
-import { PresenceDot } from "../../../src/features/messenger/components/PresenceDot";
+} from "../../../../src/features/messenger/api";
+import { useRealtimeConversations } from "../../../../src/features/messenger/hooks/useRealtimeMessages";
+import { useAuthSession } from "../../../../src/lib/auth";
+import { usePresence, type PresenceStatus } from "../../../../src/lib/presence";
+import { PresenceDot } from "../../../../src/features/messenger/components/PresenceDot";
 
 const FILTERS: { key: ConversationFilter; label: string }[] = [
   { key: "all", label: "Wszystkie" },
@@ -73,12 +73,12 @@ const ConversationAvatar = ({
           width: 44,
           height: 44,
           borderRadius: 12,
-          backgroundColor: meta?.bg ?? "#fce7f3",
+          backgroundColor: meta?.bg ?? "#FFF1C2",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Hash size={20} color={meta?.tint ?? "#ec4899"} strokeWidth={2.4} />
+        <Hash size={20} color={meta?.tint ?? "#8A6606"} strokeWidth={2.4} />
       </View>
     );
   }
@@ -89,12 +89,12 @@ const ConversationAvatar = ({
           width: 44,
           height: 44,
           borderRadius: 22,
-          backgroundColor: "#fef3f2",
+          backgroundColor: "#FFF8E1",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <UsersIcon size={20} color="#ec4899" />
+        <UsersIcon size={20} color="#8A6606" />
       </View>
     );
   }
@@ -119,12 +119,12 @@ const ConversationAvatar = ({
             width: 44,
             height: 44,
             borderRadius: 22,
-            backgroundColor: "#fef3f2",
+            backgroundColor: "#FFF8E1",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Text style={{ color: "#be185d", fontFamily: "Inter_700Bold", fontSize: 14 }}>
+          <Text style={{ color: "#8A6606", fontFamily: "Manrope_700Bold", fontSize: 14 }}>
             {initials}
           </Text>
         </View>
@@ -221,7 +221,7 @@ export default function MessengerScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: "#ffffff" }}>
+      <View style={{ flex: 1, backgroundColor: "#F6F4EE" }}>
         <PageHeader
           title="Wiadomości"
           subtitle={
@@ -238,7 +238,7 @@ export default function MessengerScreen() {
                 width: 40,
                 height: 40,
                 borderRadius: 20,
-                backgroundColor: "#0c0a09",
+                backgroundColor: "#2A2312",
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -257,28 +257,28 @@ export default function MessengerScreen() {
               paddingHorizontal: 14,
               height: 42,
               borderRadius: 14,
-              backgroundColor: "#fafaf9",
+              backgroundColor: "#F1EEE6",
               borderWidth: 1,
-              borderColor: "#eef0f3",
+              borderColor: "#E6E1D5",
             }}
           >
-            <Search size={16} color="#a8a29e" />
+            <Search size={16} color="#857F70" />
             <TextInput
               style={{
                 flex: 1,
                 fontSize: 14,
-                color: "#0c0a09",
-                fontFamily: "Inter_500Medium",
+                color: "#2A2312",
+                fontFamily: "Manrope_500Medium",
               }}
               placeholder="Szukaj rozmów…"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#857F70"
               value={search}
               onChangeText={setSearch}
               autoCapitalize="none"
             />
             {search ? (
               <Pressable onPress={() => setSearch("")} hitSlop={8}>
-                <X size={14} color="#a8a29e" />
+                <X size={14} color="#857F70" />
               </Pressable>
             ) : null}
           </View>
@@ -305,16 +305,16 @@ export default function MessengerScreen() {
                     paddingHorizontal: 14,
                     paddingVertical: 7,
                     borderRadius: 999,
-                    backgroundColor: active ? "#0c0a09" : "#fafaf9",
+                    backgroundColor: active ? "#2A2312" : "#F1EEE6",
                     borderWidth: 1,
-                    borderColor: active ? "#0c0a09" : "#eef0f3",
+                    borderColor: active ? "#2A2312" : "#E6E1D5",
                   }}
                 >
                   <Text
                     style={{
                       fontSize: 13,
-                      color: active ? "#ffffff" : "#1c1917",
-                      fontFamily: "Inter_600SemiBold",
+                      color: active ? "#ffffff" : "#2A2312",
+                      fontFamily: "Manrope_600SemiBold",
                     }}
                   >
                     {f.label}
@@ -327,7 +327,7 @@ export default function MessengerScreen() {
 
         {isLoading ? (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View
@@ -342,7 +342,7 @@ export default function MessengerScreen() {
               style={{
                 textAlign: "center",
                 color: "#e11d48",
-                fontFamily: "Inter_500Medium",
+                fontFamily: "Manrope_500Medium",
               }}
             >
               {(error as Error)?.message ?? "Błąd"}
@@ -359,18 +359,18 @@ export default function MessengerScreen() {
             keyExtractor={(item) => item.id}
             stickySectionHeadersEnabled={false}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
             ItemSeparatorComponent={() => (
-              <View style={{ height: 1, backgroundColor: "#f5f5f4" }} />
+              <View style={{ height: 1, backgroundColor: "#ECE8DE" }} />
             )}
             renderSectionHeader={({ section: { title } }) => (
               <Text
                 style={{
                   fontSize: 11,
-                  color: "#78716c",
+                  color: "#6B6557",
                   letterSpacing: 1.4,
-                  fontFamily: "Inter_700Bold",
+                  fontFamily: "Manrope_700Bold",
                   marginTop: 14,
                   marginBottom: 6,
                 }}
@@ -383,8 +383,8 @@ export default function MessengerScreen() {
                 style={{
                   textAlign: "center",
                   marginTop: 48,
-                  color: "#78716c",
-                  fontFamily: "Inter_500Medium",
+                  color: "#6B6557",
+                  fontFamily: "Manrope_500Medium",
                 }}
               >
                 {search ? "Brak wyników." : "Brak konwersacji."}
@@ -420,7 +420,7 @@ export default function MessengerScreen() {
                     paddingVertical: 12,
                   }}
                 >
-                  <Link
+                  <Link push
                     href={{
                       pathname: "/(app)/messenger/[conversationId]",
                       params: { conversationId: item.id },
@@ -458,22 +458,22 @@ export default function MessengerScreen() {
                             style={{
                               flex: 1,
                               fontSize: 15,
-                              color: "#0c0a09",
+                              color: "#2A2312",
                               letterSpacing: -0.2,
-                              fontFamily: unread ? "Inter_700Bold" : "Inter_500Medium",
+                              fontFamily: unread ? "Manrope_700Bold" : "Manrope_500Medium",
                             }}
                           >
                             {displayTitle}
                           </Text>
-                          {item.muted ? <VolumeX size={12} color="#a8a29e" /> : null}
+                          {item.muted ? <VolumeX size={12} color="#857F70" /> : null}
                           {last ? (
                             <Text
                               style={{
                                 fontSize: 11,
-                                color: unread ? "#be185d" : "#a8a29e",
+                                color: unread ? "#8A6606" : "#857F70",
                                 fontFamily: unread
-                                  ? "Inter_700Bold"
-                                  : "Inter_500Medium",
+                                  ? "Manrope_700Bold"
+                                  : "Manrope_500Medium",
                               }}
                             >
                               {formatRelative(last.created_at)}
@@ -486,10 +486,10 @@ export default function MessengerScreen() {
                             style={{
                               fontSize: 13,
                               marginTop: 2,
-                              color: unread ? "#1c1917" : "#78716c",
+                              color: unread ? "#2A2312" : "#6B6557",
                               fontFamily: unread
-                                ? "Inter_500Medium"
-                                : "Inter_400Regular",
+                                ? "Manrope_500Medium"
+                                : "Manrope_400Regular",
                             }}
                           >
                             {lastSenderName ? `${lastSenderName}: ` : ""}
@@ -501,9 +501,9 @@ export default function MessengerScreen() {
                             style={{
                               fontSize: 13,
                               marginTop: 2,
-                              color: "#a8a29e",
+                              color: "#857F70",
                               fontStyle: "italic",
-                              fontFamily: "Inter_400Regular",
+                              fontFamily: "Manrope_400Regular",
                             }}
                           >
                             Brak wiadomości
@@ -517,7 +517,7 @@ export default function MessengerScreen() {
                             height: 22,
                             borderRadius: 11,
                             paddingHorizontal: 6,
-                            backgroundColor: "#ec4899",
+                            backgroundColor: "#2A2312",
                             alignItems: "center",
                             justifyContent: "center",
                           }}
@@ -526,7 +526,7 @@ export default function MessengerScreen() {
                             style={{
                               fontSize: 11,
                               color: "#ffffff",
-                              fontFamily: "Inter_700Bold",
+                              fontFamily: "Manrope_700Bold",
                             }}
                           >
                             {(item.unread_count ?? 0) > 99 ? "99+" : item.unread_count}
@@ -547,8 +547,8 @@ export default function MessengerScreen() {
                   >
                     <Pin
                       size={18}
-                      color={item.pinned ? "#ec4899" : "#cbd5e1"}
-                      fill={item.pinned ? "#ec4899" : "none"}
+                      color={item.pinned ? "#8A6606" : "#9A9586"}
+                      fill={item.pinned ? "#8A6606" : "none"}
                     />
                   </Pressable>
                   <Pressable
@@ -563,8 +563,8 @@ export default function MessengerScreen() {
                   >
                     <Star
                       size={18}
-                      color={item.starred ? "#f59e0b" : "#cbd5e1"}
-                      fill={item.starred ? "#f59e0b" : "none"}
+                      color={item.starred ? "#FFBE0B" : "#9A9586"}
+                      fill={item.starred ? "#FFBE0B" : "none"}
                     />
                   </Pressable>
                   <Pressable
@@ -578,9 +578,9 @@ export default function MessengerScreen() {
                     style={{ marginLeft: 2, padding: 6 }}
                   >
                     {item.archived ? (
-                      <ArchiveRestore size={18} color="#0ea5e9" />
+                      <ArchiveRestore size={18} color="#6B6557" />
                     ) : (
-                      <Archive size={18} color="#cbd5e1" />
+                      <Archive size={18} color="#9A9586" />
                     )}
                   </Pressable>
                 </View>

@@ -206,9 +206,9 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
           gap: 8,
           paddingHorizontal: 12,
           paddingVertical: 10,
-          backgroundColor: "#fdf2f8",
+          backgroundColor: "#FFF8E1",
           borderTopWidth: 1,
-          borderTopColor: "#fbcfe8",
+          borderTopColor: "#F3E3B0",
         }}
       >
         <Pressable
@@ -218,9 +218,9 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: "#ffffff",
+            backgroundColor: "#F6F4EE",
             borderWidth: 1,
-            borderColor: "#fbcfe8",
+            borderColor: "#F3E3B0",
             alignItems: "center",
             justifyContent: "center",
           }}
@@ -245,7 +245,7 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
                 width: 3,
                 height: Math.max(4, h),
                 borderRadius: 2,
-                backgroundColor: "#ec4899",
+                backgroundColor: "#2A2312",
                 opacity: isPaused ? 0.4 : 1,
               }}
             />
@@ -259,10 +259,10 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
             gap: 6,
             paddingHorizontal: 10,
             paddingVertical: 6,
-            backgroundColor: "#ffffff",
+            backgroundColor: "#F6F4EE",
             borderRadius: 999,
             borderWidth: 1,
-            borderColor: "#fbcfe8",
+            borderColor: "#F3E3B0",
             minWidth: 64,
           }}
         >
@@ -271,14 +271,14 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
               width: 8,
               height: 8,
               borderRadius: 4,
-              backgroundColor: isPaused ? "#eab308" : "#ef4444",
+              backgroundColor: isPaused ? "#FFBE0B" : "#ef4444",
             }}
           />
           <Text
             style={{
               fontSize: 12,
-              color: "#be185d",
-              fontFamily: "Inter_700Bold",
+              color: "#8A6606",
+              fontFamily: "Manrope_700Bold",
               fontVariant: ["tabular-nums"],
             }}
           >
@@ -293,17 +293,17 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: "#ffffff",
+            backgroundColor: "#F6F4EE",
             borderWidth: 1,
-            borderColor: "#fbcfe8",
+            borderColor: "#F3E3B0",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
           {isPaused ? (
-            <Play size={16} color="#57534e" />
+            <Play size={16} color="#4A463E" />
           ) : (
-            <Pause size={16} color="#57534e" />
+            <Pause size={16} color="#4A463E" />
           )}
         </Pressable>
 
@@ -314,10 +314,10 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
             width: 40,
             height: 40,
             borderRadius: 20,
-            backgroundColor: "#ec4899",
+            backgroundColor: "#2A2312",
             alignItems: "center",
             justifyContent: "center",
-            shadowColor: "#ec4899",
+            shadowColor: "#2A2312",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.4,
             shadowRadius: 8,
@@ -340,9 +340,9 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
           gap: 8,
           paddingHorizontal: 12,
           paddingVertical: 10,
-          backgroundColor: "#fdf2f8",
+          backgroundColor: "#FFF8E1",
           borderTopWidth: 1,
-          borderTopColor: "#fbcfe8",
+          borderTopColor: "#F3E3B0",
         }}
       >
         <Pressable
@@ -353,9 +353,9 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: "#ffffff",
+            backgroundColor: "#F6F4EE",
             borderWidth: 1,
-            borderColor: "#fbcfe8",
+            borderColor: "#F3E3B0",
             alignItems: "center",
             justifyContent: "center",
             opacity: sending ? 0.5 : 1,
@@ -372,14 +372,14 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: "#ffffff",
+            backgroundColor: "#F6F4EE",
             borderWidth: 1,
-            borderColor: "#fbcfe8",
+            borderColor: "#F3E3B0",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          {isPlaying ? <Pause size={16} color="#ec4899" /> : <Play size={16} color="#ec4899" />}
+          {isPlaying ? <Pause size={16} color="#8A6606" /> : <Play size={16} color="#8A6606" />}
         </Pressable>
 
         <View
@@ -390,19 +390,19 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
             gap: 8,
             paddingHorizontal: 10,
             paddingVertical: 8,
-            backgroundColor: "#ffffff",
+            backgroundColor: "#F6F4EE",
             borderRadius: 12,
             borderWidth: 1,
-            borderColor: "#fbcfe8",
+            borderColor: "#F3E3B0",
           }}
         >
-          <Mic size={14} color="#ec4899" />
+          <Mic size={14} color="#8A6606" />
           <Text
             style={{
               flex: 1,
               fontSize: 13,
-              color: "#1c1917",
-              fontFamily: "Inter_500Medium",
+              color: "#2A2312",
+              fontFamily: "Manrope_500Medium",
             }}
           >
             Wiadomość głosowa
@@ -410,8 +410,8 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
           <Text
             style={{
               fontSize: 11,
-              color: "#a8a29e",
-              fontFamily: "Inter_500Medium",
+              color: "#857F70",
+              fontFamily: "Manrope_500Medium",
               fontVariant: ["tabular-nums"],
             }}
           >
@@ -426,7 +426,7 @@ export const AudioRecorder = ({ onSend, onCancel, disabled }: Props) => {
             width: 40,
             height: 40,
             borderRadius: 20,
-            backgroundColor: "#ec4899",
+            backgroundColor: "#2A2312",
             alignItems: "center",
             justifyContent: "center",
             opacity: sending || disabled ? 0.6 : 1,

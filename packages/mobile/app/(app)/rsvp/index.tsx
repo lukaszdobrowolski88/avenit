@@ -31,9 +31,9 @@ import {
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
   yes: { label: 'Będę', color: '#16a34a', bg: '#dcfce7' },
-  maybe: { label: 'Może', color: '#d97706', bg: '#fef3c7' },
+  maybe: { label: 'Może', color: '#8A6606', bg: '#FFF1C2' },
   no: { label: 'Nie będę', color: '#e11d48', bg: '#fee2e2' },
-  pending: { label: 'Bez odpowiedzi', color: '#78716c', bg: '#f1f5f9' },
+  pending: { label: 'Bez odpowiedzi', color: '#6B6557', bg: '#ECE8DE' },
 };
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -46,7 +46,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 
 const ANSWERS: { key: RsvpAnswer; label: string; color: string; bg: string }[] = [
   { key: 'yes', label: 'Będę', color: '#16a34a', bg: '#dcfce7' },
-  { key: 'maybe', label: 'Może', color: '#d97706', bg: '#fef3c7' },
+  { key: 'maybe', label: 'Może', color: '#8A6606', bg: '#FFF1C2' },
   { key: 'no', label: 'Nie będę', color: '#e11d48', bg: '#fee2e2' },
 ];
 
@@ -84,31 +84,26 @@ const InvitationCard = ({
       className="mb-3"
       style={{
         borderRadius: 20,
-        backgroundColor: '#ffffff',
-        shadowColor: '#0f172a',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
+        backgroundColor: '#FFFFFF',
       }}
     >
       <View
         className="overflow-hidden p-4"
-        style={{ borderRadius: 20, borderWidth: 1, borderColor: '#eef0f3' }}
+        style={{ borderRadius: 20 }}
       >
         <View className="flex-row items-start gap-2">
           <View className="flex-1">
             {eventTypeLabel ? (
               <Text
                 className="text-[11px] uppercase mb-1"
-                style={{ color: '#78716c', letterSpacing: 0.4, fontFamily: 'Inter_600SemiBold' }}
+                style={{ color: '#8A6606', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
               >
                 {eventTypeLabel}
               </Text>
             ) : null}
             <Text
               className="text-[16px]"
-              style={{ color: '#0c0a09', letterSpacing: -0.3, fontFamily: 'Inter_700Bold' }}
+              style={{ color: '#2A2312', letterSpacing: -0.3, fontFamily: 'Manrope_700Bold' }}
             >
               {camp?.title ?? 'Zaproszenie'}
             </Text>
@@ -116,7 +111,7 @@ const InvitationCard = ({
           <View className="px-2.5 py-1" style={{ borderRadius: 999, backgroundColor: statusMeta.bg }}>
             <Text
               className="text-[11px]"
-              style={{ color: statusMeta.color, fontFamily: 'Inter_700Bold' }}
+              style={{ color: statusMeta.color, fontFamily: 'Manrope_700Bold' }}
             >
               {statusMeta.label}
             </Text>
@@ -126,10 +121,10 @@ const InvitationCard = ({
         <View className="mt-3 gap-1.5">
           {camp?.event_date ? (
             <View className="flex-row items-center gap-2">
-              <CalendarCheck size={14} color="#78716c" />
+              <CalendarCheck size={14} color="#6B6557" />
               <Text
                 className="text-[13px]"
-                style={{ color: '#44403c', fontFamily: 'Inter_500Medium' }}
+                style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium' }}
               >
                 {formatDate(camp.event_date, 'EEEE, d MMM yyyy')}
                 {camp.event_time ? ` · ${camp.event_time}` : ''}
@@ -137,10 +132,10 @@ const InvitationCard = ({
             </View>
           ) : camp?.event_time ? (
             <View className="flex-row items-center gap-2">
-              <Clock size={14} color="#78716c" />
+              <Clock size={14} color="#6B6557" />
               <Text
                 className="text-[13px]"
-                style={{ color: '#44403c', fontFamily: 'Inter_500Medium' }}
+                style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium' }}
               >
                 {camp.event_time}
               </Text>
@@ -148,10 +143,10 @@ const InvitationCard = ({
           ) : null}
           {camp?.location ? (
             <View className="flex-row items-center gap-2">
-              <MapPin size={14} color="#78716c" />
+              <MapPin size={14} color="#6B6557" />
               <Text
                 className="text-[13px]"
-                style={{ color: '#44403c', fontFamily: 'Inter_500Medium' }}
+                style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium' }}
               >
                 {camp.location}
               </Text>
@@ -166,10 +161,10 @@ const InvitationCard = ({
             style={{ borderRadius: 14, backgroundColor: '#f8fafc' }}
           >
             <View className="flex-row items-center gap-2 flex-1">
-              <Users size={16} color="#64748b" />
+              <Users size={16} color="#6B6557" />
               <Text
                 className="text-[13px]"
-                style={{ color: '#334155', fontFamily: 'Inter_500Medium' }}
+                style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium' }}
               >
                 Osoby towarzyszące
               </Text>
@@ -183,19 +178,19 @@ const InvitationCard = ({
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: '#ffffff',
+                  backgroundColor: '#F6F4EE',
                   borderWidth: 1,
-                  borderColor: '#e2e8f0',
+                  borderColor: '#E3DDD0',
                   alignItems: 'center',
                   justifyContent: 'center',
                   opacity: guests <= 0 ? 0.4 : 1,
                 }}
               >
-                <Minus size={16} color="#334155" />
+                <Minus size={16} color="#3A3427" />
               </Pressable>
               <Text
                 className="text-[16px]"
-                style={{ color: '#0c0a09', minWidth: 20, textAlign: 'center', fontFamily: 'Inter_700Bold' }}
+                style={{ color: '#2A2312', minWidth: 20, textAlign: 'center', fontFamily: 'Manrope_700Bold' }}
               >
                 {guests}
               </Text>
@@ -207,14 +202,14 @@ const InvitationCard = ({
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: '#ffffff',
+                  backgroundColor: '#F6F4EE',
                   borderWidth: 1,
-                  borderColor: '#e2e8f0',
+                  borderColor: '#E3DDD0',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <Plus size={16} color="#334155" />
+                <Plus size={16} color="#3A3427" />
               </Pressable>
             </View>
           </View>
@@ -236,9 +231,9 @@ const InvitationCard = ({
                   borderRadius: 12,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: active ? a.bg : '#f8fafc',
+                  backgroundColor: active ? a.bg : '#ECE8DE',
                   borderWidth: 1,
-                  borderColor: active ? a.color : '#e7e5e4',
+                  borderColor: active ? a.color : '#E3DDD0',
                 }}
               >
                 {isBusy ? (
@@ -247,8 +242,8 @@ const InvitationCard = ({
                   <Text
                     className="text-[13px]"
                     style={{
-                      color: active ? a.color : '#57534e',
-                      fontFamily: active ? 'Inter_700Bold' : 'Inter_600SemiBold',
+                      color: active ? a.color : '#4A463E',
+                      fontFamily: active ? 'Manrope_700Bold' : 'Manrope_600SemiBold',
                     }}
                   >
                     {status === 'yes' && a.key === 'yes' ? 'Zapisz' : a.label}
@@ -280,7 +275,7 @@ export default function RsvpScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title="Moje zaproszenia"
           subtitle="Potwierdź obecność"
@@ -290,13 +285,13 @@ export default function RsvpScreen() {
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}
+              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
             >
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
@@ -305,7 +300,7 @@ export default function RsvpScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {summary.invitations.length === 0 ? (
@@ -315,23 +310,23 @@ export default function RsvpScreen() {
                     width: 64,
                     height: 64,
                     borderRadius: 18,
-                    backgroundColor: '#fce7f3',
+                    backgroundColor: '#FFF1C2',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 12,
                   }}
                 >
-                  <CalendarCheck size={28} color="#ec4899" />
+                  <CalendarCheck size={28} color="#8A6606" />
                 </View>
                 <Text
                   className="text-[16px]"
-                  style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+                  style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
                 >
                   Brak zaproszeń
                 </Text>
                 <Text
                   className="text-[13px] text-center mt-1"
-                  style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+                  style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
                 >
                   {summary.memberResolved
                     ? 'Nie masz teraz żadnych nadchodzących zaproszeń.'
@@ -345,15 +340,15 @@ export default function RsvpScreen() {
                     className="mb-4 p-4 flex-row items-start gap-3"
                     style={{
                       borderRadius: 20,
-                      backgroundColor: '#fffbeb',
+                      backgroundColor: '#FFF8E1',
                       borderWidth: 1,
-                      borderColor: '#fde68a',
+                      borderColor: '#F3E3B0',
                     }}
                   >
-                    <Info size={18} color="#d97706" style={{ marginTop: 1 }} />
+                    <Info size={18} color="#8A6606" style={{ marginTop: 1 }} />
                     <Text
                       className="flex-1 text-[13px]"
-                      style={{ color: '#92400e', fontFamily: 'Inter_400Regular', lineHeight: 19 }}
+                      style={{ color: '#8A6606', fontFamily: 'Manrope_400Regular', lineHeight: 19 }}
                     >
                       Poniższe zaproszenia dopasowaliśmy po Twoim adresie e-mail. Aby zawsze widzieć
                       wszystkie, poproś koordynatora o powiązanie konta z profilem członka.
@@ -362,7 +357,7 @@ export default function RsvpScreen() {
                 ) : null}
                 <Text
                   className="text-[11px] uppercase mb-2 mx-1"
-                  style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}
+                  style={{ color: '#8A6606', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Nadchodzące
                 </Text>

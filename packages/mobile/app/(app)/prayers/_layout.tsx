@@ -6,10 +6,7 @@ export default function PrayersLayout() {
     <ModuleGate moduleKey="prayer">
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
-        <Stack.Screen
-          name="new"
-          options={{ presentation: 'modal', headerShown: true, title: 'Nowa intencja' }}
-        />
+        <Stack.Screen name="new" />
       </Stack>
     </ModuleGate>
   );

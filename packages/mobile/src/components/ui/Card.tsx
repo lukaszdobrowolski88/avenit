@@ -20,12 +20,7 @@ export const Card = ({ children, compact, flush, style, ...rest }: Props) => {
       style={[
         {
           borderRadius: 20,
-          backgroundColor: '#ffffff',
-          shadowColor: '#0f172a',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.05,
-          shadowRadius: 14,
-          elevation: 2,
+          backgroundColor: '#FFFFFF',
         },
         style,
       ]}
@@ -35,8 +30,6 @@ export const Card = ({ children, compact, flush, style, ...rest }: Props) => {
         className="overflow-hidden"
         style={{
           borderRadius: 20,
-          borderWidth: 1,
-          borderColor: '#eef0f3',
           padding: compact ? 12 : 16,
         }}
       >

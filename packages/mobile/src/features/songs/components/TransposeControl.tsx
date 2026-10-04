@@ -13,7 +13,7 @@ export const TransposeControl = ({ value, onChange, originalKey }: Props) => {
       style={{
         borderTopWidth: 1,
         borderBottomWidth: 1,
-        borderColor: '#eef0f3',
+        borderColor: '#E6E1D5',
         paddingVertical: 12,
       }}
     >
@@ -29,10 +29,10 @@ export const TransposeControl = ({ value, onChange, originalKey }: Props) => {
         <Text
           style={{
             fontSize: 11,
-            color: '#78716c',
-            letterSpacing: 0.4,
+            color: '#8A6606',
+            letterSpacing: 1.2,
             textTransform: 'uppercase',
-            fontFamily: 'Inter_700Bold',
+            fontFamily: 'Manrope_700Bold',
           }}
         >
           Tonacja {originalKey ? `(oryg. ${originalKey})` : ''}
@@ -42,8 +42,8 @@ export const TransposeControl = ({ value, onChange, originalKey }: Props) => {
             <Text
               style={{
                 fontSize: 12,
-                color: '#be185d',
-                fontFamily: 'Inter_600SemiBold',
+                color: '#8A6606',
+                fontFamily: 'Manrope_600SemiBold',
               }}
             >
               Reset
@@ -69,16 +69,14 @@ export const TransposeControl = ({ value, onChange, originalKey }: Props) => {
                 paddingHorizontal: 12,
                 paddingVertical: 6,
                 borderRadius: 10,
-                backgroundColor: active ? '#0c0a09' : '#fafaf9',
-                borderWidth: 1,
-                borderColor: active ? '#0c0a09' : '#eef0f3',
+                backgroundColor: active ? '#2A2312' : '#ECE8DE',
               }}
             >
               <Text
                 style={{
                   fontSize: 13,
-                  color: active ? '#ffffff' : '#1c1917',
-                  fontFamily: 'Inter_600SemiBold',
+                  color: active ? '#ffffff' : '#2A2312',
+                  fontFamily: 'Manrope_600SemiBold',
                 }}
               >
                 {k}

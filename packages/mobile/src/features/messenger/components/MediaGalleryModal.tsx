@@ -49,7 +49,7 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
         margin: 2,
         borderRadius: 8,
         overflow: "hidden",
-        backgroundColor: "#fafaf9",
+        backgroundColor: "#F1EEE6",
       }}
     >
       <Image
@@ -70,7 +70,7 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
         paddingVertical: 12,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
-        borderBottomColor: "#f5f5f4",
+        borderBottomColor: "#ECE8DE",
       }}
     >
       <View
@@ -78,7 +78,7 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
           width: 40,
           height: 40,
           borderRadius: 10,
-          backgroundColor: "#fef3f2",
+          backgroundColor: "#FFF8E1",
           alignItems: "center",
           justifyContent: "center",
         }}
@@ -90,8 +90,8 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
           numberOfLines={1}
           style={{
             fontSize: 14,
-            color: "#0c0a09",
-            fontFamily: "Inter_600SemiBold",
+            color: "#2A2312",
+            fontFamily: "Manrope_600SemiBold",
           }}
         >
           {item.name}
@@ -99,8 +99,8 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
         <Text
           style={{
             fontSize: 11,
-            color: "#a8a29e",
-            fontFamily: "Inter_500Medium",
+            color: "#857F70",
+            fontFamily: "Manrope_500Medium",
             marginTop: 2,
           }}
         >
@@ -117,7 +117,7 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
       onRequestClose={onClose}
       presentationStyle="pageSheet"
     >
-      <View style={{ flex: 1, backgroundColor: "#ffffff" }}>
+      <View style={{ flex: 1, backgroundColor: "#F6F4EE" }}>
         <View
           style={{
             flexDirection: "row",
@@ -127,18 +127,18 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
             paddingHorizontal: 16,
             gap: 12,
             borderBottomWidth: 1,
-            borderBottomColor: "#eef0f3",
+            borderBottomColor: "#E6E1D5",
           }}
         >
           <Pressable onPress={onClose} hitSlop={10}>
-            <X size={22} color="#1c1917" />
+            <X size={22} color="#2A2312" />
           </Pressable>
           <Text
             style={{
               flex: 1,
               fontSize: 16,
-              color: "#0c0a09",
-              fontFamily: "Inter_700Bold",
+              color: "#2A2312",
+              fontFamily: "Manrope_700Bold",
               letterSpacing: -0.3,
             }}
           >
@@ -169,16 +169,16 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
                   paddingHorizontal: 14,
                   paddingVertical: 7,
                   borderRadius: 999,
-                  backgroundColor: active ? "#0c0a09" : "#fafaf9",
+                  backgroundColor: active ? "#2A2312" : "#F1EEE6",
                   borderWidth: 1,
-                  borderColor: active ? "#0c0a09" : "#eef0f3",
+                  borderColor: active ? "#2A2312" : "#E6E1D5",
                 }}
               >
                 <Text
                   style={{
                     fontSize: 13,
-                    color: active ? "#ffffff" : "#1c1917",
-                    fontFamily: "Inter_600SemiBold",
+                    color: active ? "#ffffff" : "#2A2312",
+                    fontFamily: "Manrope_600SemiBold",
                   }}
                 >
                   {t.label}
@@ -190,7 +190,7 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
 
         {isLoading ? (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : tab === "images" ? (
           <FlatList
@@ -204,8 +204,8 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
                 style={{
                   textAlign: "center",
                   marginTop: 48,
-                  color: "#78716c",
-                  fontFamily: "Inter_500Medium",
+                  color: "#6B6557",
+                  fontFamily: "Manrope_500Medium",
                 }}
               >
                 Brak zdjęć w tej rozmowie.
@@ -222,8 +222,8 @@ export const MediaGalleryModal = ({ visible, onClose, conversationId }: Props) =
                 style={{
                   textAlign: "center",
                   marginTop: 48,
-                  color: "#78716c",
-                  fontFamily: "Inter_500Medium",
+                  color: "#6B6557",
+                  fontFamily: "Manrope_500Medium",
                 }}
               >
                 Brak plików w tej rozmowie.

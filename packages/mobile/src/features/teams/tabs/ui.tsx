@@ -24,7 +24,7 @@ export const dayLabel = (ymd: string) => {
   return w.charAt(0).toUpperCase() + w.slice(1);
 };
 
-export const DateBlock = ({ ymd, tint = '#0e7490', bg = '#f0fdff' }: { ymd: string; tint?: string; bg?: string }) => {
+export const DateBlock = ({ ymd, tint = '#2A2312', bg = '#F1EEE6' }: { ymd: string; tint?: string; bg?: string }) => {
   const date = ymd ? parseYmd(ymd) : null;
   return (
     <View
@@ -37,10 +37,10 @@ export const DateBlock = ({ ymd, tint = '#0e7490', bg = '#f0fdff' }: { ymd: stri
         justifyContent: 'center',
       }}
     >
-      <Text style={{ fontSize: 17, lineHeight: 20, color: tint, fontFamily: 'Inter_700Bold' }}>
+      <Text style={{ fontSize: 17, lineHeight: 20, color: tint, fontFamily: 'Manrope_700Bold' }}>
         {date ? date.getDate() : '—'}
       </Text>
-      <Text style={{ fontSize: 10, color: tint, fontFamily: 'Inter_600SemiBold', textTransform: 'uppercase' }}>
+      <Text style={{ fontSize: 10, color: tint, fontFamily: 'Manrope_600SemiBold', textTransform: 'uppercase' }}>
         {date ? format(date, 'LLL', { locale: pl }) : ''}
       </Text>
     </View>
@@ -52,23 +52,23 @@ export const Card = ({ children, onPress }: { children: ReactNode; onPress?: () 
     <Pressable
       onPress={onPress}
       className="active:opacity-70"
-      style={{ borderRadius: 18, backgroundColor: '#f7f6f5', padding: 14, marginBottom: 10 }}
+      style={{ borderRadius: 18, backgroundColor: '#FFFFFF', padding: 14, marginBottom: 10 }}
     >
       {children}
     </Pressable>
   ) : (
-    <View style={{ borderRadius: 18, backgroundColor: '#f7f6f5', padding: 14, marginBottom: 10 }}>{children}</View>
+    <View style={{ borderRadius: 18, backgroundColor: '#FFFFFF', padding: 14, marginBottom: 10 }}>{children}</View>
   );
 
 export const Pill = ({ text, tint, bg }: { text: string; tint: string; bg: string }) => (
   <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: bg }}>
-    <Text style={{ fontSize: 11, color: tint, fontFamily: 'Inter_700Bold' }}>{text}</Text>
+    <Text style={{ fontSize: 11, color: tint, fontFamily: 'Manrope_700Bold' }}>{text}</Text>
   </View>
 );
 
 export const STATUS_PILL: Record<string, { text: string; tint: string; bg: string }> = {
   accepted: { text: 'Potwierdzone', tint: '#15803d', bg: '#dcfce7' },
-  pending: { text: 'Czeka', tint: '#a16207', bg: '#fef3c7' },
+  pending: { text: 'Czeka', tint: '#8A6606', bg: '#FFF1C2' },
   rejected: { text: 'Odrzucone', tint: '#b91c1c', bg: '#fee2e2' },
 };
 
@@ -79,24 +79,24 @@ export const Empty = ({ Icon, title, hint }: { Icon: LucideIcon; title: string; 
         width: 56,
         height: 56,
         borderRadius: 18,
-        backgroundColor: '#f5f5f4',
+        backgroundColor: '#ECE8DE',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 12,
       }}
     >
-      <Icon size={24} color="#a8a29e" />
+      <Icon size={24} color="#857F70" />
     </View>
-    <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold', textAlign: 'center' }}>{title}</Text>
+    <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold', textAlign: 'center' }}>{title}</Text>
     {hint ? (
       <Text
         style={{
           fontSize: 13,
           lineHeight: 18,
-          color: '#78716c',
+          color: '#6B6557',
           marginTop: 4,
           textAlign: 'center',
-          fontFamily: 'Inter_400Regular',
+          fontFamily: 'Manrope_400Regular',
         }}
       >
         {hint}
@@ -107,7 +107,7 @@ export const Empty = ({ Icon, title, hint }: { Icon: LucideIcon; title: string; 
 
 export const Loading = () => (
   <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-    <ActivityIndicator color="#ec4899" />
+    <ActivityIndicator color="#2A2312" />
   </View>
 );
 
@@ -122,11 +122,11 @@ export const AddButton = ({ label, onPress }: { label: string; onPress: () => vo
       gap: 8,
       height: 46,
       borderRadius: 14,
-      backgroundColor: '#0c0a09',
+      backgroundColor: '#2A2312',
       marginBottom: 14,
     }}
   >
-    <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>+ {label}</Text>
+    <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>+ {label}</Text>
   </Pressable>
 );
 
@@ -151,10 +151,10 @@ export const SegmentChips = <T extends string>({
             paddingHorizontal: 12,
             paddingVertical: 7,
             borderRadius: 999,
-            backgroundColor: on ? '#fce7f3' : '#f5f5f4',
+            backgroundColor: on ? '#FFF1C2' : '#ECE8DE',
           }}
         >
-          <Text style={{ fontSize: 13, color: on ? '#be185d' : '#57534e', fontFamily: 'Inter_600SemiBold' }}>
+          <Text style={{ fontSize: 13, color: on ? '#8A6606' : '#4A463E', fontFamily: 'Manrope_600SemiBold' }}>
             {o.label}
           </Text>
         </Pressable>

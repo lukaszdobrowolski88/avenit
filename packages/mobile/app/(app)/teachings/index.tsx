@@ -15,6 +15,7 @@ import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { useTeachings, type ProgramTeaching } from '../../../src/features/teachings/api';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
+import { B, InfoBlock, Monogram } from '../../../src/components/ui/brand';
 
 const SeriesChip = ({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) => (
   <Pressable
@@ -24,12 +25,12 @@ const SeriesChip = ({ label, active, onPress }: { label: string; active: boolean
       paddingHorizontal: 14,
       paddingVertical: 7,
       borderRadius: 999,
-      backgroundColor: active ? '#7c3aed' : '#faf5ff',
+      backgroundColor: active ? '#2A2312' : '#ECE8DE',
       borderWidth: 1,
-      borderColor: active ? '#7c3aed' : '#ede9fe',
+      borderColor: active ? '#2A2312' : '#ECE8DE',
     }}
   >
-    <Text className="text-[13px]" style={{ color: active ? '#ffffff' : '#6d28d9', fontFamily: 'Inter_600SemiBold' }}>
+    <Text className="text-[13px]" style={{ color: active ? '#ffffff' : '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
       {label}
     </Text>
   </Pressable>
@@ -61,64 +62,44 @@ const MediaButton = ({
       }}
     >
       <Icon size={13} color={tint} />
-      <Text className="text-[12px]" style={{ color: tint, fontFamily: 'Inter_700Bold' }}>
+      <Text className="text-[12px]" style={{ color: tint, fontFamily: 'Manrope_700Bold' }}>
         {label}
       </Text>
     </Pressable>
   );
 };
 
-const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
+// Karta nauczania: blok daty (najnowsze — słód z kurkumą), musztardowy dzień tygodnia,
+// tytuł i osoba nauczająca z monogramem.
+const TeachingCard = ({ teaching, latest }: { teaching: ProgramTeaching; latest?: boolean }) => {
   const [notesOpen, setNotesOpen] = useState(false);
   return (
-    <View
-      className="mb-3"
-      style={{
-        borderRadius: 20,
-        backgroundColor: '#ffffff',
-        shadowColor: '#0f172a',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
-      }}
-    >
-      <View
-        className="overflow-hidden p-4"
-        style={{ borderRadius: 20, borderWidth: 1, borderColor: '#eef0f3' }}
-      >
-        <Text
-          className="text-[11px] uppercase mb-1"
-          style={{ color: '#78716c', letterSpacing: 0.4, fontFamily: 'Inter_600SemiBold' }}
-        >
-          {formatDate(teaching.date, 'EEEE, d MMM yyyy')}
-        </Text>
-        {teaching.series ? (
-          <View
-            className="self-start px-2 py-0.5 mb-2"
-            style={{ borderRadius: 999, backgroundColor: '#f3e8ff' }}
-          >
-            <Text
-              className="text-[11px]"
-              style={{ color: '#7c3aed', fontFamily: 'Inter_700Bold' }}
-            >
-              {teaching.series.name}
+    <View className="mb-3" style={{ borderRadius: 24, backgroundColor: B.card, padding: 18 }}>
+      <View>
+        <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center', marginBottom: 12 }}>
+          <InfoBlock top={formatDate(teaching.date, 'd')} bottom={formatDate(teaching.date, 'LLL')} dark={latest} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', color: B.gold, fontFamily: 'Manrope_700Bold' }}>
+              {latest ? 'Ostatnie · ' : ''}
+              {formatDate(teaching.date, 'EEEE')}
+            </Text>
+            <Text style={{ fontSize: 19, lineHeight: 24, marginTop: 3, color: B.ink, letterSpacing: -0.5, fontFamily: 'Manrope_700Bold' }}>
+              {teaching.title || 'Nauczanie'}
             </Text>
           </View>
+        </View>
+        {teaching.series ? (
+          <View style={{ alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: B.kurkumaSoft, marginBottom: 10 }}>
+            <Text style={{ fontSize: 11, color: B.goldDeep, fontFamily: 'Manrope_700Bold' }}>{teaching.series.name}</Text>
+          </View>
         ) : null}
-        <Text
-          className="text-[18px] mb-2"
-          style={{ color: '#0c0a09', letterSpacing: -0.4, fontFamily: 'Inter_700Bold' }}
-        >
-          {teaching.title || 'Nauczanie'}
-        </Text>
 
         {teaching.scripture ? (
           <View className="flex-row items-start gap-2 mb-2">
-            <Quote size={14} color="#a8a29e" style={{ marginTop: 3 }} />
+            <Quote size={14} color={B.gold} style={{ marginTop: 3 }} />
             <Text
               className="flex-1 text-[13px] italic"
-              style={{ color: '#57534e', fontFamily: 'Inter_400Regular', lineHeight: 19 }}
+              style={{ color: '#4A463E', fontFamily: 'Manrope_400Regular', lineHeight: 19 }}
             >
               {teaching.scripture}
             </Text>
@@ -128,39 +109,23 @@ const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
         {teaching.mainPoint ? (
           <Text
             className="text-[13px] mb-2"
-            style={{ color: '#1c1917', fontFamily: 'Inter_400Regular', lineHeight: 20 }}
+            style={{ color: '#2A2312', fontFamily: 'Manrope_400Regular', lineHeight: 20 }}
           >
             {teaching.mainPoint}
           </Text>
         ) : null}
 
         {teaching.speaker ? (
-          <View className="flex-row items-center gap-2 mb-3">
-            <View
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: 12,
-                backgroundColor: '#f3e8ff',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <User size={12} color="#7c3aed" />
-            </View>
-            <Text
-              className="text-[13px]"
-              style={{ color: '#57534e', fontFamily: 'Inter_500Medium' }}
-            >
-              {teaching.speaker.name}
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, marginTop: 2 }}>
+            <Monogram name={teaching.speaker.name} size={30} />
+            <Text style={{ fontSize: 14, color: B.ink, fontFamily: 'Manrope_600SemiBold' }}>{teaching.speaker.name}</Text>
           </View>
         ) : null}
 
         {(teaching.youtubeUrl || teaching.spotifyUrl || teaching.audioUrl) && (
           <View
             className="flex-row flex-wrap gap-1.5 pt-2"
-            style={{ borderTopWidth: 1, borderTopColor: '#f5f5f4' }}
+            style={{ borderTopWidth: 1, borderTopColor: '#ECE8DE' }}
           >
             <MediaButton
               Icon={PlaySquare}
@@ -173,40 +138,40 @@ const TeachingCard = ({ teaching }: { teaching: ProgramTeaching }) => {
               Icon={Headphones}
               label="Spotify"
               url={teaching.spotifyUrl}
-              tint="#16a34a"
-              bg="#dcfce7"
+              tint="#6B4F05"
+              bg="#FFF1C2"
             />
             <MediaButton
               Icon={Headphones}
               label="Audio"
               url={teaching.audioUrl}
-              tint="#0891b2"
-              bg="#cffafe"
+              tint="#6B4F05"
+              bg="#FFF1C2"
             />
           </View>
         )}
 
         {teaching.notes ? (
-          <View className="pt-2 mt-1" style={{ borderTopWidth: 1, borderTopColor: '#f5f5f4' }}>
+          <View className="pt-2 mt-1" style={{ borderTopWidth: 1, borderTopColor: '#ECE8DE' }}>
             <Pressable
               onPress={() => setNotesOpen((v) => !v)}
               className="flex-row items-center gap-1.5 active:opacity-70"
               style={{ paddingVertical: 4 }}
             >
-              <FileText size={14} color="#7c3aed" />
-              <Text className="text-[13px]" style={{ color: '#6d28d9', fontFamily: 'Inter_700Bold' }}>
+              <FileText size={14} color="#2A2312" />
+              <Text className="text-[13px]" style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                 {notesOpen ? 'Ukryj notatki' : 'Pokaż notatki'}
               </Text>
               <ChevronDown
                 size={15}
-                color="#7c3aed"
+                color="#2A2312"
                 style={{ transform: [{ rotate: notesOpen ? '180deg' : '0deg' }] }}
               />
             </Pressable>
             {notesOpen ? (
               <Text
                 className="text-[14px] mt-1"
-                style={{ color: '#1c1917', fontFamily: 'Inter_400Regular', lineHeight: 21 }}
+                style={{ color: '#2A2312', fontFamily: 'Manrope_400Regular', lineHeight: 21 }}
               >
                 {teaching.notes}
               </Text>
@@ -249,7 +214,7 @@ export default function TeachingsScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Nauczania" subtitle="Słowo z nabożeństw" Icon={BookOpen} showBack />
 
         {!isLoading && !isError && (data ?? []).length > 0 ? (
@@ -258,25 +223,23 @@ export default function TeachingsScreen() {
               <View
                 className="flex-row items-center gap-2 px-3"
                 style={{
-                  borderRadius: 999,
-                  backgroundColor: '#fafaf9',
-                  borderWidth: 1,
-                  borderColor: '#eef0f3',
+                  borderRadius: 24,
+                  backgroundColor: '#FFFFFF',
                   height: 40,
                 }}
               >
-                <Search size={16} color="#a8a29e" />
+                <Search size={16} color="#857F70" />
                 <TextInput
-                  style={{ flex: 1, fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_400Regular', paddingVertical: 0 }}
+                  style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_400Regular', paddingVertical: 0 }}
                   placeholder="Szukaj: tytuł, mówca, werset…"
-                  placeholderTextColor="#a8a29e"
+                  placeholderTextColor="#857F70"
                   value={search}
                   onChangeText={setSearch}
                   returnKeyType="search"
                 />
                 {search.length > 0 ? (
                   <Pressable onPress={() => setSearch('')} hitSlop={8}>
-                    <X size={15} color="#a8a29e" />
+                    <X size={15} color="#857F70" />
                   </Pressable>
                 ) : null}
               </View>
@@ -300,13 +263,13 @@ export default function TeachingsScreen() {
 
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center px-6">
             <Text
               className="text-center"
-              style={{ color: '#e11d48', fontFamily: 'Inter_500Medium' }}
+              style={{ color: '#e11d48', fontFamily: 'Manrope_500Medium' }}
             >
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
@@ -320,7 +283,7 @@ export default function TeachingsScreen() {
               padding: 32,
             }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <View
@@ -328,23 +291,23 @@ export default function TeachingsScreen() {
                 width: 64,
                 height: 64,
                 borderRadius: 18,
-                backgroundColor: '#f3e8ff',
+                backgroundColor: '#ECE8DE',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,
               }}
             >
-              <BookOpen size={28} color="#7c3aed" />
+              <BookOpen size={28} color="#2A2312" />
             </View>
             <Text
               className="text-[16px]"
-              style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}
+              style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
             >
               Brak nauczań
             </Text>
             <Text
               className="text-[13px] text-center mt-1"
-              style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}
+              style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}
             >
               Nauczania pojawią się po nabożeństwach.
             </Text>
@@ -353,26 +316,26 @@ export default function TeachingsScreen() {
           <ScrollView
             contentContainerStyle={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             <View
               style={{
                 width: 64,
                 height: 64,
-                borderRadius: 18,
-                backgroundColor: '#f3e8ff',
+                borderRadius: 24,
+                backgroundColor: '#FFFFFF',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,
               }}
             >
-              <Search size={26} color="#7c3aed" />
+              <Search size={26} color="#2A2312" />
             </View>
-            <Text className="text-[16px]" style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+            <Text className="text-[16px]" style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
               Brak wyników
             </Text>
-            <Text className="text-[13px] text-center mt-1" style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}>
+            <Text className="text-[13px] text-center mt-1" style={{ color: '#6B6557', fontFamily: 'Manrope_400Regular' }}>
               Zmień wyszukiwanie lub wybraną serię.
             </Text>
             {hasFilters ? (
@@ -381,9 +344,9 @@ export default function TeachingsScreen() {
                   setSearch('');
                   setSeries(null);
                 }}
-                style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, backgroundColor: '#f3e8ff' }}
+                style={{ marginTop: 14, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, backgroundColor: '#ECE8DE' }}
               >
-                <Text style={{ fontSize: 13, color: '#7c3aed', fontFamily: 'Inter_700Bold' }}>Wyczyść filtry</Text>
+                <Text style={{ fontSize: 13, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>Wyczyść filtry</Text>
               </Pressable>
             ) : null}
           </ScrollView>
@@ -391,11 +354,11 @@ export default function TeachingsScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
-            {list.map((t: ProgramTeaching) => (
-              <TeachingCard key={t.programId} teaching={t} />
+            {list.map((t: ProgramTeaching, i: number) => (
+              <TeachingCard key={t.programId} teaching={t} latest={i === 0} />
             ))}
           </ScrollView>
         )}

@@ -50,24 +50,24 @@ export const DatePickerModal = ({ visible, value, minDate, title, onSelect, onCl
         onPress={onClose}
       >
         <Pressable
-          style={{ backgroundColor: '#ffffff', borderRadius: 20, padding: 16 }}
+          style={{ backgroundColor: '#F6F4EE', borderRadius: 20, padding: 16 }}
           onPress={(e) => e.stopPropagation()}
         >
           {title ? (
-            <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_700Bold', marginBottom: 10 }}>
+            <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginBottom: 10 }}>
               {title}
             </Text>
           ) : null}
 
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <Pressable onPress={() => setCursor((c) => subMonths(c, 1))} hitSlop={10} style={navBtn}>
-              <ChevronLeft size={18} color="#1c1917" />
+              <ChevronLeft size={18} color="#2A2312" />
             </Pressable>
-            <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold', textTransform: 'capitalize' }}>
+            <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold', textTransform: 'capitalize' }}>
               {monthLabel}
             </Text>
             <Pressable onPress={() => setCursor((c) => addMonths(c, 1))} hitSlop={10} style={navBtn}>
-              <ChevronRight size={18} color="#1c1917" />
+              <ChevronRight size={18} color="#2A2312" />
             </Pressable>
           </View>
 
@@ -75,7 +75,7 @@ export const DatePickerModal = ({ visible, value, minDate, title, onSelect, onCl
             {WEEKDAYS.map((w) => (
               <Text
                 key={w}
-                style={{ flex: 1, textAlign: 'center', fontSize: 11, color: '#a8a29e', fontFamily: 'Inter_600SemiBold' }}
+                style={{ flex: 1, textAlign: 'center', fontSize: 11, color: '#857F70', fontFamily: 'Manrope_600SemiBold' }}
               >
                 {w}
               </Text>
@@ -101,15 +101,15 @@ export const DatePickerModal = ({ visible, value, minDate, title, onSelect, onCl
                       borderRadius: 10,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: isSel ? '#ec4899' : 'transparent',
+                      backgroundColor: isSel ? '#2A2312' : 'transparent',
                       opacity: disabled ? 0.3 : 1,
                     }}
                   >
                     <Text
                       style={{
                         fontSize: 14,
-                        color: isSel ? '#ffffff' : '#1c1917',
-                        fontFamily: isSel ? 'Inter_700Bold' : 'Inter_500Medium',
+                        color: isSel ? '#ffffff' : '#2A2312',
+                        fontFamily: isSel ? 'Manrope_700Bold' : 'Manrope_500Medium',
                       }}
                     >
                       {format(d, 'd')}
@@ -129,9 +129,9 @@ const navBtn = {
   width: 34,
   height: 34,
   borderRadius: 17,
-  backgroundColor: '#fafaf9',
+  backgroundColor: '#FFFFFF',
   borderWidth: 1,
-  borderColor: '#eef0f3',
+  borderColor: '#E6E1D5',
   alignItems: 'center' as const,
   justifyContent: 'center' as const,
 };

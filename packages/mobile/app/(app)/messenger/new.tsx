@@ -36,7 +36,7 @@ const Avatar = ({ person }: { person: Person }) =>
   person.avatarUrl ? (
     <Image
       source={{ uri: person.avatarUrl }}
-      style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: "#f5f5f4" }}
+      style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: "#ECE8DE" }}
       contentFit="cover"
     />
   ) : (
@@ -45,12 +45,12 @@ const Avatar = ({ person }: { person: Person }) =>
         width: 42,
         height: 42,
         borderRadius: 21,
-        backgroundColor: "#fce7f3",
+        backgroundColor: "#FFF1C2",
         alignItems: "center",
         justifyContent: "center",
       }}
     >
-      <Text style={{ color: "#be185d", fontFamily: "Inter_700Bold", fontSize: 14 }}>
+      <Text style={{ color: "#8A6606", fontFamily: "Manrope_700Bold", fontSize: 14 }}>
         {initials(person.name) || "?"}
       </Text>
     </View>
@@ -127,7 +127,7 @@ export default function NewConversationScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: "#ffffff" }}>
+      <View style={{ flex: 1, backgroundColor: "#F6F4EE" }}>
         <PageHeader
           title="Nowa rozmowa"
           subtitle={mode === "direct" ? "Wybierz osobę" : "Załóż grupę"}
@@ -135,7 +135,7 @@ export default function NewConversationScreen() {
         />
 
         <View style={{ paddingHorizontal: 16, gap: 10 }}>
-          <View style={{ flexDirection: "row", backgroundColor: "#f5f5f4", padding: 4, borderRadius: 14 }}>
+          <View style={{ flexDirection: "row", backgroundColor: "#ECE8DE", padding: 4, borderRadius: 14 }}>
             {(
               [
                 { key: "direct", label: "Osoba", Icon: UserPlus },
@@ -155,15 +155,15 @@ export default function NewConversationScreen() {
                     gap: 6,
                     paddingVertical: 9,
                     borderRadius: 10,
-                    backgroundColor: active ? "#ffffff" : "transparent",
+                    backgroundColor: active ? "#F6F4EE" : "transparent",
                   }}
                 >
-                  <Icon size={15} color={active ? "#0c0a09" : "#78716c"} />
+                  <Icon size={15} color={active ? "#2A2312" : "#7A7466"} />
                   <Text
                     style={{
                       fontSize: 13,
-                      color: active ? "#0c0a09" : "#78716c",
-                      fontFamily: "Inter_600SemiBold",
+                      color: active ? "#2A2312" : "#6B6557",
+                      fontFamily: "Manrope_600SemiBold",
                     }}
                   >
                     {label}
@@ -178,15 +178,15 @@ export default function NewConversationScreen() {
               value={groupName}
               onChangeText={setGroupName}
               placeholder="Nazwa grupy, np. Zespół na Wielkanoc"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#857F70"
               style={{
                 height: 46,
                 borderRadius: 14,
                 paddingHorizontal: 14,
-                backgroundColor: "#f5f5f4",
+                backgroundColor: "#ECE8DE",
                 fontSize: 15,
-                color: "#0c0a09",
-                fontFamily: "Inter_500Medium",
+                color: "#2A2312",
+                fontFamily: "Manrope_500Medium",
               }}
             />
           ) : null}
@@ -205,13 +205,13 @@ export default function NewConversationScreen() {
                     paddingRight: 8,
                     paddingVertical: 5,
                     borderRadius: 999,
-                    backgroundColor: "#fce7f3",
+                    backgroundColor: "#FFF1C2",
                   }}
                 >
-                  <Text style={{ fontSize: 12, color: "#be185d", fontFamily: "Inter_600SemiBold" }}>
+                  <Text style={{ fontSize: 12, color: "#8A6606", fontFamily: "Manrope_600SemiBold" }}>
                     {byEmail.get(email)?.name ?? email}
                   </Text>
-                  <X size={12} color="#be185d" />
+                  <X size={12} color="#8A6606" />
                 </Pressable>
               ))}
             </View>
@@ -225,25 +225,25 @@ export default function NewConversationScreen() {
               height: 42,
               paddingHorizontal: 12,
               borderRadius: 14,
-              backgroundColor: "#f5f5f4",
+              backgroundColor: "#ECE8DE",
             }}
           >
-            <Search size={16} color="#a8a29e" />
+            <Search size={16} color="#857F70" />
             <TextInput
               value={query}
               onChangeText={setQuery}
               placeholder="Szukaj po imieniu lub e-mailu"
-              placeholderTextColor="#a8a29e"
+              placeholderTextColor="#857F70"
               autoCorrect={false}
               autoCapitalize="none"
-              style={{ flex: 1, fontSize: 14, color: "#0c0a09", fontFamily: "Inter_400Regular" }}
+              style={{ flex: 1, fontSize: 14, color: "#2A2312", fontFamily: "Manrope_400Regular" }}
             />
           </View>
         </View>
 
         {people.isLoading ? (
           <View style={{ paddingTop: 40 }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : (
           <FlatList
@@ -253,7 +253,7 @@ export default function NewConversationScreen() {
             contentContainerStyle={{ paddingHorizontal: 8, paddingTop: 8, paddingBottom: 160 }}
             ListEmptyComponent={
               <Text
-                style={{ textAlign: "center", marginTop: 32, color: "#a8a29e", fontFamily: "Inter_500Medium" }}
+                style={{ textAlign: "center", marginTop: 32, color: "#857F70", fontFamily: "Manrope_500Medium" }}
               >
                 {query ? "Nikogo nie znaleziono" : "Brak innych osób z kontem"}
               </Text>
@@ -279,13 +279,13 @@ export default function NewConversationScreen() {
                   <View style={{ flex: 1 }}>
                     <Text
                       numberOfLines={1}
-                      style={{ fontSize: 15, color: "#0c0a09", fontFamily: "Inter_600SemiBold" }}
+                      style={{ fontSize: 15, color: "#2A2312", fontFamily: "Manrope_600SemiBold" }}
                     >
                       {item.name}
                     </Text>
                     <Text
                       numberOfLines={1}
-                      style={{ fontSize: 12, color: "#78716c", fontFamily: "Inter_400Regular", marginTop: 1 }}
+                      style={{ fontSize: 12, color: "#6B6557", fontFamily: "Manrope_400Regular", marginTop: 1 }}
                     >
                       {item.email}
                     </Text>
@@ -297,8 +297,8 @@ export default function NewConversationScreen() {
                         height: 24,
                         borderRadius: 12,
                         borderWidth: checked ? 0 : 2,
-                        borderColor: "#d6d3d1",
-                        backgroundColor: checked ? "#ec4899" : "transparent",
+                        borderColor: "#D3CCBC",
+                        backgroundColor: checked ? "#2A2312" : "transparent",
                         alignItems: "center",
                         justifyContent: "center",
                       }}
@@ -321,7 +321,7 @@ export default function NewConversationScreen() {
               style={{
                 height: 52,
                 borderRadius: 16,
-                backgroundColor: "#0c0a09",
+                backgroundColor: "#2A2312",
                 alignItems: "center",
                 justifyContent: "center",
                 opacity: busy ? 0.5 : 1,
@@ -330,7 +330,7 @@ export default function NewConversationScreen() {
               {busy ? (
                 <ActivityIndicator color="#ffffff" />
               ) : (
-                <Text style={{ color: "#ffffff", fontSize: 15, fontFamily: "Inter_600SemiBold" }}>
+                <Text style={{ color: "#ffffff", fontSize: 15, fontFamily: "Manrope_600SemiBold" }}>
                   Utwórz grupę{selected.length ? ` (${selected.length + 1} os.)` : ""}
                 </Text>
               )}
@@ -348,7 +348,7 @@ export default function NewConversationScreen() {
               backgroundColor: "rgba(255,255,255,0.6)",
             }}
           >
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : null}
       </View>

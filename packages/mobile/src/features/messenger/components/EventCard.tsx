@@ -13,9 +13,9 @@ interface Props {
 
 export const EventCard = ({ metadata, content, bubbleMine }: Props) => {
   const title = metadata?.title || content || "Wydarzenie";
-  const fg = bubbleMine ? "#ffffff" : "#0c0a09";
-  const sub = bubbleMine ? "#fce7f3" : "#0e7490";
-  const line = bubbleMine ? "#fbcfe8" : "#57534e";
+  const fg = bubbleMine ? "#ffffff" : "#2A2312";
+  const sub = bubbleMine ? "#FFF1C2" : "#2A2312";
+  const line = bubbleMine ? "#F3E3B0" : "#4A463E";
 
   const dateLine = [metadata?.date, metadata?.time].filter(Boolean).join(" · ");
 
@@ -64,20 +64,20 @@ export const EventCard = ({ metadata, content, bubbleMine }: Props) => {
 
   return (
     <View style={{ minWidth: 230, maxWidth: 300 }}>
-      <Text style={{ fontSize: 12, color: sub, fontFamily: "Inter_700Bold", marginBottom: 2 }}>
+      <Text style={{ fontSize: 12, color: sub, fontFamily: "Manrope_700Bold", marginBottom: 2 }}>
         📅 Wydarzenie
       </Text>
-      <Text style={{ fontSize: 15, color: fg, fontFamily: "Inter_600SemiBold", marginBottom: 4 }}>
+      <Text style={{ fontSize: 15, color: fg, fontFamily: "Manrope_600SemiBold", marginBottom: 4 }}>
         {title}
       </Text>
       {dateLine ? (
-        <Text style={{ fontSize: 13, color: line, fontFamily: "Inter_500Medium" }}>{dateLine}</Text>
+        <Text style={{ fontSize: 13, color: line, fontFamily: "Manrope_500Medium" }}>{dateLine}</Text>
       ) : null}
       {metadata?.location ? (
-        <Text style={{ fontSize: 13, color: line, fontFamily: "Inter_400Regular" }}>📍 {metadata.location}</Text>
+        <Text style={{ fontSize: 13, color: line, fontFamily: "Manrope_400Regular" }}>📍 {metadata.location}</Text>
       ) : null}
       {metadata?.description ? (
-        <Text style={{ fontSize: 13, color: line, fontFamily: "Inter_400Regular", marginTop: 2 }}>
+        <Text style={{ fontSize: 13, color: line, fontFamily: "Manrope_400Regular", marginTop: 2 }}>
           {metadata.description}
         </Text>
       ) : null}
@@ -88,10 +88,10 @@ export const EventCard = ({ metadata, content, bubbleMine }: Props) => {
           paddingVertical: 8,
           borderRadius: 10,
           alignItems: "center",
-          backgroundColor: bubbleMine ? "rgba(255,255,255,0.2)" : "#cffafe",
+          backgroundColor: bubbleMine ? "rgba(255,255,255,0.2)" : "#ECE8DE",
         }}
       >
-        <Text style={{ fontSize: 13, color: bubbleMine ? "#ffffff" : "#0e7490", fontFamily: "Inter_700Bold" }}>
+        <Text style={{ fontSize: 13, color: bubbleMine ? "#ffffff" : "#2A2312", fontFamily: "Manrope_700Bold" }}>
           Dodaj do kalendarza
         </Text>
       </Pressable>

@@ -103,7 +103,7 @@ export const useMyWork = (userEmail: string | null) =>
           name: it.name,
           boardId: it.board_id,
           boardName: board?.name ?? 'Tablica',
-          boardColor: board?.color ?? '#6366f1',
+          boardColor: board?.color ?? '#6B6557',
           due: typeof due === 'string' ? due : null,
           statusLabel: label?.title ?? null,
           statusColor: label?.color ?? null,
@@ -112,7 +112,7 @@ export const useMyWork = (userEmail: string | null) =>
           statusLabels: (statusCol?.settings?.labels ?? []).map((l) => ({
             id: String(l.id),
             title: String(l.title ?? l.id),
-            color: String(l.color ?? '#a8a29e'),
+            color: String(l.color ?? '#857F70'),
           })),
           cells,
         });

@@ -33,6 +33,9 @@ export const TeamTabsBar = ({
       ref={ref}
       horizontal
       showsHorizontalScrollIndicator={false}
+      // Bez flexGrow: 0 poziomy ScrollView w kolumnie rozciąga się w pionie i zostawia
+      // pustą przerwę między zakładkami a treścią.
+      style={{ flexGrow: 0 }}
       contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 4 }}
     >
       {tabs.map(({ key, label, Icon }) => {
@@ -51,15 +54,15 @@ export const TeamTabsBar = ({
                 paddingHorizontal: 13,
                 paddingVertical: 8,
                 borderRadius: 999,
-                backgroundColor: on ? '#0c0a09' : '#f5f5f4',
+                backgroundColor: on ? '#2A2312' : '#ECE8DE',
               }}
             >
-              <Icon size={14} color={on ? '#ffffff' : '#57534e'} strokeWidth={2.3} />
+              <Icon size={14} color={on ? '#ffffff' : '#4A463E'} strokeWidth={2.3} />
               <Text
                 style={{
                   fontSize: 13,
-                  color: on ? '#ffffff' : '#44403c',
-                  fontFamily: 'Inter_600SemiBold',
+                  color: on ? '#ffffff' : '#3A3427',
+                  fontFamily: 'Manrope_600SemiBold',
                 }}
               >
                 {label}

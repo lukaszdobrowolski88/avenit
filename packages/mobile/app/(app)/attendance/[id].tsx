@@ -17,6 +17,7 @@ import {
   type CheckMember,
 } from '../../../src/features/attendance/api';
 import { Loading, dayLabel } from '../../../src/features/teams/tabs/ui';
+import { goBack } from '../../../src/lib/navigation';
 
 export default function AttendanceSessionScreen() {
   const router = useRouter();
@@ -76,7 +77,7 @@ export default function AttendanceSessionScreen() {
         style: 'destructive',
         onPress: () =>
           del.mutate(sessionId, {
-            onSuccess: () => router.back(),
+            onSuccess: () => goBack(router),
             onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? ''),
           }),
       },
@@ -85,7 +86,7 @@ export default function AttendanceSessionScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title={session?.title || typeLabel}
           subtitle={session ? `${dayLabel(session.date)} · ${typeLabel}` : 'Wczytywanie…'}
@@ -93,7 +94,7 @@ export default function AttendanceSessionScreen() {
           right={
             canDeleteSession && session ? (
               <Pressable onPress={confirmDelete} hitSlop={10} className="active:opacity-60" accessibilityLabel="Usuń sesję">
-                <Trash2 size={20} color="#a8a29e" />
+                <Trash2 size={20} color="#857F70" />
               </Pressable>
             ) : undefined
           }
@@ -103,14 +104,14 @@ export default function AttendanceSessionScreen() {
         {session ? (
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130 }} keyboardShouldPersistTaps="handled">
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
-              <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#f0fdfa', padding: 14 }}>
-                <Text style={{ fontSize: 11, color: '#0f766e', fontFamily: 'Inter_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+              <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#F1EEE6', padding: 14 }}>
+                <Text style={{ fontSize: 11, color: '#2A2312', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
                   Obecni imiennie
                 </Text>
-                <Text style={{ fontSize: 28, color: '#0c0a09', fontFamily: 'Inter_700Bold', marginTop: 2 }}>{presentCount}</Text>
+                <Text style={{ fontSize: 28, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginTop: 2 }}>{presentCount}</Text>
               </View>
-              <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#f7f6f5', padding: 14 }}>
-                <Text style={{ fontSize: 11, color: '#57534e', fontFamily: 'Inter_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+              <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#FFFFFF', padding: 14 }}>
+                <Text style={{ fontSize: 11, color: '#8A6606', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 1.2 }}>
                   Szacunkowo
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 }}>
@@ -118,26 +119,26 @@ export default function AttendanceSessionScreen() {
                     onPress={() => setHeadcount(Math.max(0, (session.headcount ?? 0) - 1))}
                     hitSlop={6}
                     className="active:opacity-60"
-                    style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#F6F4EE', alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <Minus size={15} color="#1c1917" />
+                    <Minus size={15} color="#2A2312" />
                   </Pressable>
-                  <Text style={{ fontSize: 22, color: '#0c0a09', fontFamily: 'Inter_700Bold', minWidth: 36, textAlign: 'center' }}>
+                  <Text style={{ fontSize: 22, color: '#2A2312', fontFamily: 'Manrope_700Bold', minWidth: 36, textAlign: 'center' }}>
                     {session.headcount ?? '—'}
                   </Text>
                   <Pressable
                     onPress={() => setHeadcount((session.headcount ?? 0) + 1)}
                     hitSlop={6}
                     className="active:opacity-60"
-                    style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' }}
+                    style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#F6F4EE', alignItems: 'center', justifyContent: 'center' }}
                   >
-                    <Plus size={15} color="#1c1917" />
+                    <Plus size={15} color="#2A2312" />
                   </Pressable>
                 </View>
               </View>
             </View>
 
-            <Text style={{ fontSize: 13, color: '#78716c', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Inter_700Bold', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
               Goście
             </Text>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
@@ -145,47 +146,47 @@ export default function AttendanceSessionScreen() {
                 value={guest}
                 onChangeText={setGuest}
                 placeholder="Imię gościa"
-                placeholderTextColor="#a8a29e"
+                placeholderTextColor="#857F70"
                 returnKeyType="done"
                 onSubmitEditing={() => {
                   if (guest.trim()) addGuest.mutate(guest.trim(), { onSuccess: () => setGuest('') });
                 }}
-                style={{ flex: 1, height: 44, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#f5f5f4', fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_500Medium' }}
+                style={{ flex: 1, height: 44, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#FFFFFF', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
               />
               <Pressable
                 onPress={() => {
                   if (guest.trim()) addGuest.mutate(guest.trim(), { onSuccess: () => setGuest(''), onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? '') });
                 }}
                 className="active:opacity-70"
-                style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: guest.trim() ? '#0c0a09' : '#d6d3d1', alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: guest.trim() ? '#2A2312' : '#D3CCBC', alignItems: 'center', justifyContent: 'center' }}
               >
                 <UserPlus size={18} color="#ffffff" />
               </Pressable>
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
               {guests.map((g) => (
-                <View key={g.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 10, paddingRight: 6, paddingVertical: 5, borderRadius: 999, backgroundColor: '#fef3c7' }}>
-                  <Text style={{ fontSize: 13, color: '#92400e', fontFamily: 'Inter_600SemiBold' }}>{g.guestName}</Text>
+                <View key={g.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 10, paddingRight: 6, paddingVertical: 5, borderRadius: 999, backgroundColor: '#FFF1C2' }}>
+                  <Text style={{ fontSize: 13, color: '#8A6606', fontFamily: 'Manrope_600SemiBold' }}>{g.guestName}</Text>
                   {canUncheck ? (
                     <Pressable onPress={() => removeRecord.mutate(g.id)} hitSlop={8} className="active:opacity-60">
-                      <X size={13} color="#92400e" />
+                      <X size={13} color="#8A6606" />
                     </Pressable>
                   ) : null}
                 </View>
               ))}
             </View>
 
-            <Text style={{ fontSize: 13, color: '#78716c', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Inter_700Bold', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
               Członkowie
             </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, paddingHorizontal: 12, borderRadius: 14, backgroundColor: '#f5f5f4', marginBottom: 10 }}>
-              <Search size={16} color="#a8a29e" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, paddingHorizontal: 12, borderRadius: 24, backgroundColor: '#FFFFFF', marginBottom: 10 }}>
+              <Search size={16} color="#857F70" />
               <TextInput
                 value={q}
                 onChangeText={setQ}
                 placeholder="Szukaj osoby"
-                placeholderTextColor="#a8a29e"
-                style={{ flex: 1, fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_400Regular' }}
+                placeholderTextColor="#857F70"
+                style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}
               />
             </View>
             {filtered.map((m) => {
@@ -195,7 +196,7 @@ export default function AttendanceSessionScreen() {
                   key={m.id}
                   onPress={() => onToggle(m)}
                   className="active:opacity-70"
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, backgroundColor: on ? '#f0fdfa' : 'transparent' }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14, backgroundColor: on ? '#F1EEE6' : 'transparent' }}
                 >
                   <View
                     style={{
@@ -203,20 +204,20 @@ export default function AttendanceSessionScreen() {
                       height: 26,
                       borderRadius: 13,
                       borderWidth: on ? 0 : 2,
-                      borderColor: '#d6d3d1',
-                      backgroundColor: on ? '#0f766e' : 'transparent',
+                      borderColor: '#D3CCBC',
+                      backgroundColor: on ? '#2A2312' : 'transparent',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
                     {on ? <Check size={15} color="#ffffff" strokeWidth={3} /> : null}
                   </View>
-                  <Text style={{ flex: 1, fontSize: 15, color: '#0c0a09', fontFamily: on ? 'Inter_600SemiBold' : 'Inter_400Regular' }}>{m.name}</Text>
+                  <Text style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: on ? 'Manrope_600SemiBold' : 'Manrope_400Regular' }}>{m.name}</Text>
                 </Pressable>
               );
             })}
             {members.length === 0 ? (
-              <Text style={{ fontSize: 13, color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>
+              <Text style={{ fontSize: 13, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
                 Brak dostępu do listy członków — możesz dopisać gości i liczbę szacunkową.
               </Text>
             ) : null}

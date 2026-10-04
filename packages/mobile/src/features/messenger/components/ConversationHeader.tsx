@@ -21,6 +21,7 @@ import {
 } from "../api";
 import { PresenceDot } from "./PresenceDot";
 import { PRESENCE_LABELS, type PresenceStatus } from "../../../lib/presence";
+import { goBack } from '../../../lib/navigation';
 
 interface Props {
   details: ConversationDetails | null;
@@ -50,7 +51,7 @@ export const ConversationHeader = ({
     return (
       <View
         style={{
-          backgroundColor: "#ffffff",
+          backgroundColor: "#F6F4EE",
           paddingTop: insets.top + 6,
           paddingBottom: 12,
           paddingHorizontal: 12,
@@ -58,11 +59,11 @@ export const ConversationHeader = ({
           alignItems: "center",
           gap: 10,
           borderBottomWidth: 1,
-          borderBottomColor: "#eef0f3",
+          borderBottomColor: "#E6E1D5",
         }}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack(router)}
           hitSlop={10}
           style={{
             width: 36,
@@ -72,13 +73,13 @@ export const ConversationHeader = ({
             justifyContent: "center",
           }}
         >
-          <ChevronLeft size={22} color="#1c1917" />
+          <ChevronLeft size={22} color="#2A2312" />
         </Pressable>
         <Text
           style={{
             fontSize: 16,
-            color: "#0c0a09",
-            fontFamily: "Inter_700Bold",
+            color: "#2A2312",
+            fontFamily: "Manrope_700Bold",
           }}
         >
           Rozmowa
@@ -118,15 +119,15 @@ export const ConversationHeader = ({
           width: 38,
           height: 38,
           borderRadius: 19,
-          backgroundColor: "#fef3f2",
+          backgroundColor: "#FFF8E1",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
         <Text
           style={{
-            color: "#be185d",
-            fontFamily: "Inter_700Bold",
+            color: "#8A6606",
+            fontFamily: "Manrope_700Bold",
             fontSize: 13,
           }}
         >
@@ -149,12 +150,12 @@ export const ConversationHeader = ({
           width: 38,
           height: 38,
           borderRadius: 12,
-          backgroundColor: ministryMeta?.bg ?? "#fce7f3",
+          backgroundColor: ministryMeta?.bg ?? "#FFF1C2",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Hash size={20} color={ministryMeta?.tint ?? "#ec4899"} strokeWidth={2.4} />
+        <Hash size={20} color={ministryMeta?.tint ?? "#8A6606"} strokeWidth={2.4} />
       </View>
     );
   } else {
@@ -166,12 +167,12 @@ export const ConversationHeader = ({
           width: 38,
           height: 38,
           borderRadius: 19,
-          backgroundColor: "#fef3f2",
+          backgroundColor: "#FFF8E1",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Users size={18} color="#ec4899" />
+        <Users size={18} color="#8A6606" />
       </View>
     );
   }
@@ -179,7 +180,7 @@ export const ConversationHeader = ({
   return (
     <View
       style={{
-        backgroundColor: "#ffffff",
+        backgroundColor: "#F6F4EE",
         paddingTop: insets.top + 6,
         paddingBottom: 12,
         paddingHorizontal: 12,
@@ -187,11 +188,11 @@ export const ConversationHeader = ({
         alignItems: "center",
         gap: 10,
         borderBottomWidth: 1,
-        borderBottomColor: "#eef0f3",
+        borderBottomColor: "#E6E1D5",
       }}
     >
       <Pressable
-        onPress={() => router.back()}
+        onPress={() => goBack(router)}
         hitSlop={10}
         style={{
           width: 36,
@@ -201,7 +202,7 @@ export const ConversationHeader = ({
           justifyContent: "center",
         }}
       >
-        <ChevronLeft size={22} color="#1c1917" />
+        <ChevronLeft size={22} color="#2A2312" />
       </Pressable>
       {avatarBlock}
       <View style={{ flex: 1 }}>
@@ -209,9 +210,9 @@ export const ConversationHeader = ({
           numberOfLines={1}
           style={{
             fontSize: 15,
-            color: "#0c0a09",
+            color: "#2A2312",
             letterSpacing: -0.3,
-            fontFamily: "Inter_700Bold",
+            fontFamily: "Manrope_700Bold",
           }}
         >
           {title}
@@ -221,8 +222,8 @@ export const ConversationHeader = ({
             numberOfLines={1}
             style={{
               fontSize: 12,
-              color: "#78716c",
-              fontFamily: "Inter_500Medium",
+              color: "#6B6557",
+              fontFamily: "Manrope_500Medium",
               marginTop: 1,
             }}
           >
@@ -238,14 +239,14 @@ export const ConversationHeader = ({
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: "#fafaf9",
+            backgroundColor: "#F1EEE6",
             borderWidth: 1,
-            borderColor: "#eef0f3",
+            borderColor: "#E6E1D5",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Search size={16} color="#57534e" strokeWidth={2.2} />
+          <Search size={16} color="#4A463E" strokeWidth={2.2} />
         </Pressable>
       ) : null}
       {onOpenGallery ? (
@@ -256,14 +257,14 @@ export const ConversationHeader = ({
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: "#fafaf9",
+            backgroundColor: "#F1EEE6",
             borderWidth: 1,
-            borderColor: "#eef0f3",
+            borderColor: "#E6E1D5",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <ImageIcon size={16} color="#57534e" strokeWidth={2.2} />
+          <ImageIcon size={16} color="#4A463E" strokeWidth={2.2} />
         </Pressable>
       ) : null}
       <Pressable
@@ -274,18 +275,18 @@ export const ConversationHeader = ({
           width: 36,
           height: 36,
           borderRadius: 18,
-          backgroundColor: details.my_muted ? "#fef3c7" : "#fafaf9",
+          backgroundColor: details.my_muted ? "#FFF1C2" : "#F1EEE6",
           borderWidth: 1,
-          borderColor: details.my_muted ? "#fde68a" : "#eef0f3",
+          borderColor: details.my_muted ? "#F3E3B0" : "#E6E1D5",
           alignItems: "center",
           justifyContent: "center",
           opacity: muteBusy ? 0.5 : 1,
         }}
       >
         {details.my_muted ? (
-          <VolumeX size={16} color="#92400e" strokeWidth={2.2} />
+          <VolumeX size={16} color="#8A6606" strokeWidth={2.2} />
         ) : (
-          <Volume2 size={16} color="#57534e" strokeWidth={2.2} />
+          <Volume2 size={16} color="#4A463E" strokeWidth={2.2} />
         )}
       </Pressable>
     </View>

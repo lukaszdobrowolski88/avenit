@@ -20,7 +20,7 @@ export const ScreenContainer = ({
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <ScrollView
         className="flex-1"
-        style={{ backgroundColor: '#ffffff' }}
+        style={{ backgroundColor: '#F6F4EE' }}
         contentContainerStyle={[
           { paddingBottom: bottomInset, paddingHorizontal: padded ? 16 : 0 },
           contentContainerStyle,
@@ -38,7 +38,7 @@ export const ScreenContainer = ({
 export const Screen = ({ children }: { children: ReactNode }) => (
   <>
     <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-    <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+    <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
       {children}
     </View>
   </>

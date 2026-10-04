@@ -94,14 +94,14 @@ export default function AvailabilityScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader
           title="Moja niedostępność"
           subtitle="Dni, w które nie możesz służyć"
           showBack
           right={
             <Pressable onPress={openCreate} className="active:opacity-80">
-              <GradientIcon Icon={Plus} size={40} iconSize={20} from="#f97316" to="#ec4899" rounded />
+              <GradientIcon Icon={Plus} size={40} iconSize={20} rounded />
             </Pressable>
           }
         />
@@ -123,11 +123,11 @@ export default function AvailabilityScreen() {
 
         {isLoading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <ActivityIndicator color="#ec4899" />
+            <ActivityIndicator color="#2A2312" />
           </View>
         ) : isError ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <Text style={{ color: '#e11d48', textAlign: 'center', fontFamily: 'Inter_500Medium' }}>
+            <Text style={{ color: '#e11d48', textAlign: 'center', fontFamily: 'Manrope_500Medium' }}>
               {(error as Error)?.message ?? 'Błąd'}
             </Text>
           </View>
@@ -135,12 +135,12 @@ export default function AvailabilityScreen() {
           <ScrollView
             contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
             refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
+              <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#2A2312" />
             }
           >
             {!memberResolved ? (
               <View style={infoBox}>
-                <Text style={{ fontSize: 13, color: '#9a3412', fontFamily: 'Inter_500Medium', lineHeight: 19 }}>
+                <Text style={{ fontSize: 13, color: '#8A6606', fontFamily: 'Manrope_500Medium', lineHeight: 19 }}>
                   Twoje konto nie jest jeszcze powiązane z profilem członka. Skontaktuj się z liderem,
                   aby móc zgłaszać niedostępność.
                 </Text>
@@ -152,19 +152,19 @@ export default function AvailabilityScreen() {
                     width: 64,
                     height: 64,
                     borderRadius: 18,
-                    backgroundColor: '#f1f5f9',
+                    backgroundColor: '#ECE8DE',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: 12,
                   }}
                 >
-                  <CalendarOff size={28} color="#94a3b8" />
+                  <CalendarOff size={28} color="#857F70" />
                 </View>
-                <Text style={{ fontSize: 16, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                <Text style={{ fontSize: 16, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                   {onlyUpcoming ? 'Brak nadchodzących' : 'Brak zgłoszeń'}
                 </Text>
                 <Text
-                  style={{ fontSize: 13, color: '#78716c', textAlign: 'center', marginTop: 4, fontFamily: 'Inter_400Regular' }}
+                  style={{ fontSize: 13, color: '#6B6557', textAlign: 'center', marginTop: 4, fontFamily: 'Manrope_400Regular' }}
                 >
                   Dodaj dni, w które nie możesz służyć — lider zobaczy to w grafiku.
                 </Text>
@@ -181,8 +181,8 @@ export default function AvailabilityScreen() {
                     marginBottom: 10,
                     borderRadius: 16,
                     borderWidth: 1,
-                    borderColor: '#eef0f3',
-                    backgroundColor: '#ffffff',
+                    borderColor: '#E6E1D5',
+                    backgroundColor: '#F6F4EE',
                   }}
                 >
                   <View
@@ -190,19 +190,19 @@ export default function AvailabilityScreen() {
                       width: 42,
                       height: 42,
                       borderRadius: 12,
-                      backgroundColor: '#fef3f2',
+                      backgroundColor: '#FFF8E1',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <CalendarOff size={18} color="#ec4899" />
+                    <CalendarOff size={18} color="#8A6606" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                    <Text style={{ fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>
                       {b.start_date === b.end_date ? fmt(b.start_date) : `${fmt(b.start_date)} – ${fmt(b.end_date)}`}
                     </Text>
                     {b.reason ? (
-                      <Text style={{ fontSize: 12, color: '#78716c', marginTop: 2, fontFamily: 'Inter_400Regular' }}>
+                      <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>
                         {b.reason}
                       </Text>
                     ) : null}
@@ -229,7 +229,7 @@ export default function AvailabilityScreen() {
           >
             <Pressable
               style={{
-                backgroundColor: '#ffffff',
+                backgroundColor: '#F6F4EE',
                 borderTopLeftRadius: 24,
                 borderTopRightRadius: 24,
                 padding: 20,
@@ -238,44 +238,44 @@ export default function AvailabilityScreen() {
               onPress={(e) => e.stopPropagation()}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <Text style={{ fontSize: 18, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>
+                <Text style={{ fontSize: 18, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
                   Nowa niedostępność
                 </Text>
                 <Pressable onPress={() => setModalOpen(false)} hitSlop={10}>
-                  <X size={20} color="#78716c" />
+                  <X size={20} color="#6B6557" />
                 </Pressable>
               </View>
 
               <Text style={label}>Od</Text>
               <Pressable onPress={() => setPicker('start')} style={dateField}>
                 <Text style={dateFieldText}>{fmt(startDate)}</Text>
-                <ChevronRight size={16} color="#a8a29e" />
+                <ChevronRight size={16} color="#857F70" />
               </Pressable>
 
               <Text style={label}>Do</Text>
               <Pressable onPress={() => setPicker('end')} style={dateField}>
                 <Text style={dateFieldText}>{fmt(endDate)}</Text>
-                <ChevronRight size={16} color="#a8a29e" />
+                <ChevronRight size={16} color="#857F70" />
               </Pressable>
 
               <Text style={label}>Powód (opcjonalnie)</Text>
               <TextInput
                 style={{
                   borderWidth: 1,
-                  borderColor: '#eef0f3',
+                  borderColor: '#E6E1D5',
                   borderRadius: 14,
                   paddingHorizontal: 14,
                   paddingVertical: 12,
                   minHeight: 64,
                   textAlignVertical: 'top',
                   fontSize: 15,
-                  color: '#0c0a09',
-                  backgroundColor: '#fafaf9',
+                  color: '#2A2312',
+                  backgroundColor: '#FFFFFF',
                   marginBottom: 20,
-                  fontFamily: 'Inter_400Regular',
+                  fontFamily: 'Manrope_400Regular',
                 }}
                 placeholder="np. urlop, wyjazd, choroba"
-                placeholderTextColor="#a8a29e"
+                placeholderTextColor="#857F70"
                 multiline
                 value={reason}
                 onChangeText={setReason}
@@ -317,37 +317,35 @@ const chip = (active: boolean) =>
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 999,
-    backgroundColor: active ? '#0c0a09' : '#fafaf9',
-    borderWidth: 1,
-    borderColor: active ? '#0c0a09' : '#eef0f3',
+    backgroundColor: active ? '#2A2312' : '#ECE8DE',
   }) as const;
 const chipText = (active: boolean) =>
-  ({ fontSize: 13, color: active ? '#ffffff' : '#1c1917', fontFamily: 'Inter_600SemiBold' }) as const;
+  ({ fontSize: 13, color: active ? '#ffffff' : '#2A2312', fontFamily: 'Manrope_600SemiBold' }) as const;
 const label = {
   fontSize: 12,
-  color: '#57534e',
+  color: '#8A6606',
   marginBottom: 6,
-  letterSpacing: 0.4,
+  letterSpacing: 1.2,
   textTransform: 'uppercase' as const,
-  fontFamily: 'Inter_700Bold',
+  fontFamily: 'Manrope_700Bold',
 } as const;
 const dateField = {
   flexDirection: 'row' as const,
   alignItems: 'center' as const,
   justifyContent: 'space-between' as const,
   borderWidth: 1,
-  borderColor: '#eef0f3',
+  borderColor: '#E6E1D5',
   borderRadius: 14,
   paddingHorizontal: 14,
   paddingVertical: 14,
-  backgroundColor: '#fafaf9',
+  backgroundColor: '#FFFFFF',
   marginBottom: 16,
 } as const;
-const dateFieldText = { fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_500Medium' } as const;
+const dateFieldText = { fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' } as const;
 const infoBox = {
   padding: 14,
   borderRadius: 14,
-  backgroundColor: '#fff7ed',
+  backgroundColor: '#FFF8E1',
   borderWidth: 1,
-  borderColor: '#fed7aa',
+  borderColor: '#F3E3B0',
 } as const;

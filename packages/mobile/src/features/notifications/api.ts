@@ -84,9 +84,9 @@ export const TYPE_META: Record<
   NotificationType,
   { tint: string; bg: string; label: string }
 > = {
-  message: { tint: '#2563eb', bg: '#dbeafe', label: 'Wiadomość' },
-  mention: { tint: '#a855f7', bg: '#f3e8ff', label: 'Wzmianka' },
-  task: { tint: '#d97706', bg: '#fef3c7', label: 'Zadanie' },
-  event: { tint: '#ec4899', bg: '#fce7f3', label: 'Wydarzenie' },
-  system: { tint: '#64748b', bg: '#e2e8f0', label: 'System' },
+  message: { tint: '#2A2312', bg: '#ECE8DE', label: 'Wiadomość' },
+  mention: { tint: '#6B6557', bg: '#ECE8DE', label: 'Wzmianka' },
+  task: { tint: '#8A6606', bg: '#FFF1C2', label: 'Zadanie' },
+  event: { tint: '#8A6606', bg: '#FFF1C2', label: 'Wydarzenie' },
+  system: { tint: '#6B6557', bg: '#E3DDD0', label: 'System' },
 };

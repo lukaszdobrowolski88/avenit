@@ -16,6 +16,7 @@ import { GradientButton } from '../../../src/components/ui/GradientButton';
 import { useAuthSession } from '../../../src/lib/auth';
 import { supabase, tenantWebBase } from '../../../src/lib/supabase';
 import { formatMoney } from '../../../src/features/giving/api';
+import { goBack } from '../../../src/lib/navigation';
 
 const QUICK = [20, 50, 100, 200, 500];
 
@@ -78,7 +79,7 @@ export default function DonateScreen() {
         throw new Error(error?.message || 'Nie udało się utworzyć płatności');
       }
       await Linking.openURL(data.paymentUrl);
-      router.back();
+      goBack(router);
     } catch (err) {
       Alert.alert('Błąd płatności', (err as Error)?.message || 'Spróbuj ponownie.');
     } finally {
@@ -89,12 +90,12 @@ export default function DonateScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View className="flex-1" style={{ backgroundColor: '#ffffff' }}>
+      <View className="flex-1" style={{ backgroundColor: '#F6F4EE' }}>
         <PageHeader title="Wesprzyj" subtitle="Szybka darowizna online" Icon={Gift} showBack />
 
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}>
           {/* Szybkie kwoty */}
-          <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}>
+          <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#8A6606', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
             Kwota
           </Text>
           <View className="flex-row flex-wrap gap-2 mb-3">
@@ -104,9 +105,9 @@ export default function DonateScreen() {
                 <Pressable key={q} onPress={() => setAmount(String(q))}
                   style={{
                     paddingHorizontal: 18, paddingVertical: 12, borderRadius: 14, borderWidth: 1,
-                    borderColor: active ? '#059669' : '#e5e7eb', backgroundColor: active ? '#059669' : '#ffffff',
+                    borderColor: active ? '#2A2312' : '#e5e7eb', backgroundColor: active ? '#2A2312' : '#ffffff',
                   }}>
-                  <Text style={{ color: active ? '#ffffff' : '#334155', fontFamily: 'Inter_600SemiBold' }}>{q} zł</Text>
+                  <Text style={{ color: active ? '#ffffff' : '#3A3427', fontFamily: 'Manrope_600SemiBold' }}>{q} zł</Text>
                 </Pressable>
               );
             })}
@@ -114,13 +115,13 @@ export default function DonateScreen() {
           <TextInput
             value={amount} onChangeText={setAmount} keyboardType="numeric" placeholder="Inna kwota (zł)"
             placeholderTextColor="#9ca3af"
-            style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, fontSize: 18, fontFamily: 'Inter_700Bold', color: '#0c0a09', marginBottom: 16 }}
+            style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, fontSize: 18, fontFamily: 'Manrope_700Bold', color: '#2A2312', marginBottom: 16 }}
           />
 
           {/* Fundusze */}
           {funds.length > 0 && (
             <>
-              <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}>
+              <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#8A6606', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
                 Cel
               </Text>
               <View className="flex-row flex-wrap gap-2 mb-4">
@@ -130,9 +131,9 @@ export default function DonateScreen() {
                     <Pressable key={f.id} onPress={() => setFundId(active ? null : f.id)}
                       style={{
                         paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1,
-                        borderColor: active ? '#059669' : '#e5e7eb', backgroundColor: active ? '#ecfdf5' : '#ffffff',
+                        borderColor: active ? '#2A2312' : '#e5e7eb', backgroundColor: active ? '#F1EEE6' : '#ffffff',
                       }}>
-                      <Text style={{ color: active ? '#047857' : '#334155', fontFamily: 'Inter_500Medium', fontSize: 13 }}>{f.name}</Text>
+                      <Text style={{ color: active ? '#2A2312' : '#3A3427', fontFamily: 'Manrope_500Medium', fontSize: 13 }}>{f.name}</Text>
                     </Pressable>
                   );
                 })}
@@ -141,36 +142,36 @@ export default function DonateScreen() {
           )}
 
           {/* E-mail */}
-          <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#78716c', letterSpacing: 0.6, fontFamily: 'Inter_700Bold' }}>
+          <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#8A6606', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
             E-mail (potwierdzenie)
           </Text>
           <TextInput
             value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="twoj@email.pl"
             placeholderTextColor="#9ca3af"
-            style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, fontFamily: 'Inter_400Regular', color: '#0c0a09', marginBottom: 16 }}
+            style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, fontFamily: 'Manrope_400Regular', color: '#2A2312', marginBottom: 16 }}
           />
 
           {/* Notatka */}
           <TextInput
             value={note} onChangeText={setNote} placeholder="Intencja / wiadomość (opcjonalnie)"
             placeholderTextColor="#9ca3af"
-            style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, fontFamily: 'Inter_400Regular', color: '#0c0a09', marginBottom: 20 }}
+            style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 13, fontSize: 15, fontFamily: 'Manrope_400Regular', color: '#2A2312', marginBottom: 20 }}
           />
 
           <Pressable
             onPress={() => setRecurring((v) => !v)}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: recurring ? '#059669' : '#e5e7eb', backgroundColor: recurring ? '#ecfdf5' : '#ffffff', marginBottom: 16 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: recurring ? '#2A2312' : '#e5e7eb', backgroundColor: recurring ? '#F1EEE6' : '#ffffff', marginBottom: 16 }}
           >
-            <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: recurring ? '#059669' : '#cbd5e1', backgroundColor: recurring ? '#059669' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+            <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: recurring ? '#2A2312' : '#D3CCBC', backgroundColor: recurring ? '#2A2312' : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
               {recurring ? <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>✓</Text> : null}
             </View>
-            <Text style={{ color: '#334155', fontFamily: 'Inter_500Medium', fontSize: 14 }}>Chcę wspierać co miesiąc</Text>
+            <Text style={{ color: '#3A3427', fontFamily: 'Manrope_500Medium', fontSize: 14 }}>Chcę wspierać co miesiąc</Text>
           </Pressable>
 
           <GradientButton onPress={submit} disabled={submitting}>
             {submitting ? 'Przekierowanie...' : `Zapłać${amt ? ' ' + formatMoney(amt) : ''}`}
           </GradientButton>
-          <Text className="text-center mt-3" style={{ color: '#9ca3af', fontFamily: 'Inter_400Regular', fontSize: 12 }}>
+          <Text className="text-center mt-3" style={{ color: '#9ca3af', fontFamily: 'Manrope_400Regular', fontSize: 12 }}>
             Bezpieczna płatność Przelewy24 — BLIK, karta lub przelew.
           </Text>
         </ScrollView>

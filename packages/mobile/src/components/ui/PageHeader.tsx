@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, type LucideIcon } from 'lucide-react-native';
 import { GradientIcon } from './GradientIcon';
+import { goBack } from '../../lib/navigation';
 
 interface Props {
   title: string;
@@ -13,6 +14,8 @@ interface Props {
   right?: ReactNode;
 }
 
+// Nagłówek podstron w stylu marki: biały okrągły „wstecz”, musztardowa etykieta
+// (podtytuł wersalikami), duży tytuł; ikona sekcji w kurkumowym kółku jak znak „a”.
 export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: Props) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -24,47 +27,49 @@ export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: P
     >
       {showBack ? (
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBack(router)}
           className="active:opacity-60"
           hitSlop={10}
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: '#fafaf9',
-            borderWidth: 1,
-            borderColor: '#e7e5e4',
+            width: 42,
+            height: 42,
+            borderRadius: 21,
+            backgroundColor: '#FFFFFF',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <ChevronLeft size={20} color="#1c1917" strokeWidth={2.2} />
+          <ChevronLeft size={20} color="#2A2312" strokeWidth={2.2} />
         </Pressable>
       ) : null}
       {Icon && !showBack ? (
-        <GradientIcon Icon={Icon} size={40} iconSize={20} from="#f97316" to="#ec4899" />
+        <GradientIcon Icon={Icon} size={42} iconSize={20} rounded />
       ) : null}
       <View className="flex-1">
         {subtitle ? (
           <Text
-            className="text-[12px]"
+            numberOfLines={1}
             style={{
-              color: '#78716c',
-              fontFamily: 'Inter_500Medium',
-              letterSpacing: -0.1,
+              fontSize: 11,
+              color: '#8A6606',
+              fontFamily: 'Manrope_700Bold',
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
             }}
           >
             {subtitle}
           </Text>
         ) : null}
         <Text
-          className="text-[24px] mt-0.5"
           style={{
-            color: '#0c0a09',
-            letterSpacing: -0.6,
-            fontFamily: 'Inter_700Bold',
+            marginTop: 2,
+            fontSize: 27,
+            lineHeight: 32,
+            color: '#2A2312',
+            letterSpacing: -0.9,
+            fontFamily: 'Manrope_700Bold',
           }}
-          numberOfLines={1}
+          numberOfLines={2}
         >
           {title}
         </Text>

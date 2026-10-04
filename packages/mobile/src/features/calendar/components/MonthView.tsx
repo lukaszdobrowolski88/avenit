@@ -1,29 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import type { AgendaEvent, EventSource } from '../api';
-
-const SOURCE_DOT: Record<EventSource, string> = {
-  program: '#ec4899',
-  event: '#0891b2',
-  worship: '#a855f7',
-  media: '#f97316',
-  atmosfera: '#14b8a6',
-  kids: '#eab308',
-  homegroups: '#3b82f6',
-};
-
-const SOURCE_LABEL: Record<EventSource, string> = {
-  program: 'Program',
-  event: 'Wydarzenie',
-  worship: 'Zespół Uwielbienia',
-  media: 'Media Team',
-  atmosfera: 'Atmosfera Team',
-  kids: 'Dzieci',
-  homegroups: 'Grupy Domowe',
-};
+import type { AgendaEvent } from '../api';
+import { timeRange, useCalendarLabel } from '../meta';
 
 const WEEKDAYS = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So', 'Nd'];
 
@@ -58,6 +39,7 @@ interface Props {
 }
 
 export const MonthView = ({ items, onPick }: Props) => {
+  const calendarLabel = useCalendarLabel();
   const today = useMemo(() => startOfDay(new Date()), []);
   const [anchor, setAnchor] = useState<Date>(today);
   const [selected, setSelected] = useState<Date>(today);
@@ -94,14 +76,14 @@ export const MonthView = ({ items, onPick }: Props) => {
     <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
       <View style={styles.monthHeader}>
         <Pressable onPress={() => movMonth(-1)} hitSlop={10} style={styles.navBtn}>
-          <ChevronLeft size={18} color="#1c1917" />
+          <ChevronLeft size={18} color="#2A2312" />
         </Pressable>
         <Pressable onPress={goToday} style={{ flex: 1, alignItems: 'center' }}>
           <Text style={styles.monthTitle}>{headerLabelCap}</Text>
           <Text style={styles.monthSub}>Stuknij, by wrócić do dziś</Text>
         </Pressable>
         <Pressable onPress={() => movMonth(1)} hitSlop={10} style={styles.navBtn}>
-          <ChevronRight size={18} color="#1c1917" />
+          <ChevronRight size={18} color="#2A2312" />
         </Pressable>
       </View>
 
@@ -119,8 +101,8 @@ export const MonthView = ({ items, onPick }: Props) => {
           const isToday = isoKey(d) === isoKey(today);
           const isSelected = isoKey(d) === isoKey(selected);
           const dayEvents = eventsByDay.get(isoKey(d)) ?? [];
-          const sources = Array.from(new Set(dayEvents.map((e) => e.source))).slice(0, 3);
-          const hasMine = dayEvents.some((e) => e.isMine);
+          // Kropka = wydarzenie (do 3), kurkuma = moja służba.
+          const dots = dayEvents.slice(0, 3);
 
           return (
             <Pressable
@@ -135,28 +117,23 @@ export const MonthView = ({ items, onPick }: Props) => {
               <Text
                 style={[
                   styles.cellNum,
-                  !sameMonth && { color: '#d6d3d1' },
+                  !sameMonth && { color: '#9A9586' },
                   isSelected && { color: '#ffffff' },
-                  isToday && !isSelected && { color: '#ec4899' },
+                  isToday && !isSelected && { color: '#8A6606' },
                 ]}
               >
                 {d.getDate()}
               </Text>
               <View style={styles.dotsRow}>
-                {sources.map((s) => (
+                {dots.map((e) => (
                   <View
-                    key={s}
+                    key={e.id}
                     style={[
                       styles.dot,
-                      { backgroundColor: isSelected ? '#ffffff' : SOURCE_DOT[s] },
+                      { backgroundColor: isSelected ? '#F6F4EE' : e.isMine ? '#FFBE0B' : '#6B6557' },
                     ]}
                   />
                 ))}
-                {hasMine ? (
-                  <View
-                    style={[styles.dotRing, isSelected && { borderColor: '#ffffff' }]}
-                  />
-                ) : null}
               </View>
             </Pressable>
           );
@@ -179,15 +156,13 @@ export const MonthView = ({ items, onPick }: Props) => {
         </View>
         {dayItems.length === 0 ? (
           <View style={styles.emptyWrap}>
-            <Text style={styles.emptyEmoji}>🗓️</Text>
+            <CalendarDays size={26} color="#857F70" strokeWidth={1.8} />
             <Text style={styles.emptyText}>Brak wydarzeń tego dnia</Text>
           </View>
         ) : (
           dayItems.map((evt) => {
-            const start = toDate(evt.startsAt);
-            const hasTime = start.getHours() !== 0 || start.getMinutes() !== 0;
-            const time = hasTime ? format(start, 'HH:mm') : 'Cały dzień';
-            const color = SOURCE_DOT[evt.source];
+            const time = timeRange(evt);
+            const color = evt.isMine ? '#FFBE0B' : '#6B6557';
             return (
               <Pressable
                 key={evt.id}
@@ -203,7 +178,7 @@ export const MonthView = ({ items, onPick }: Props) => {
                     paddingVertical: 12,
                     paddingHorizontal: 14,
                     borderRadius: 14,
-                    backgroundColor: evt.isMine ? '#fdf2f8' : '#f6f6f5',
+                    backgroundColor: evt.isMine ? '#FFF8E1' : '#f6f6f5',
                   }}
                 >
                   <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: color }} />
@@ -212,13 +187,13 @@ export const MonthView = ({ items, onPick }: Props) => {
                       {evt.title}
                     </Text>
                     <Text numberOfLines={1} style={styles.daySub}>
-                      {time} · {SOURCE_LABEL[evt.source]}
+                      {time} · {calendarLabel(evt.moduleKey)}
                       {evt.location ? ` · ${evt.location}` : ''}
                     </Text>
                   </View>
                   {evt.isMine ? (
                     <View style={styles.minePill}>
-                      <Text style={styles.minePillText}>MOJE</Text>
+                      <Text numberOfLines={1} style={styles.minePillText}>{(evt.myRole ?? 'Służysz').toUpperCase()}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -244,26 +219,26 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#fafaf9',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#eef0f3',
+    borderColor: '#E6E1D5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   monthTitle: {
     fontSize: 18,
-    color: '#0c0a09',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.4,
   },
-  monthSub: { fontSize: 11, color: '#a8a29e', fontFamily: 'Inter_500Medium', marginTop: 1 },
+  monthSub: { fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium', marginTop: 1 },
   weekdayRow: { flexDirection: 'row', paddingHorizontal: 12, marginBottom: 4 },
   weekdayCell: {
     flex: 1,
     textAlign: 'center',
     fontSize: 11,
-    color: '#a8a29e',
-    fontFamily: 'Inter_700Bold',
+    color: '#857F70',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: 0.6,
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12 },
@@ -275,9 +250,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 12,
   },
-  cellSelected: { backgroundColor: '#ec4899' },
-  cellToday: { backgroundColor: '#fef3f2' },
-  cellNum: { fontSize: 14, color: '#1c1917', fontFamily: 'Inter_600SemiBold' },
+  cellSelected: { backgroundColor: '#2A2312' },
+  cellToday: { backgroundColor: '#FFF8E1' },
+  cellNum: { fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' },
   dotsRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4, minHeight: 6 },
   dot: { width: 5, height: 5, borderRadius: 3 },
   dotRing: {
@@ -285,7 +260,7 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     borderWidth: 1.5,
-    borderColor: '#ec4899',
+    borderColor: '#FFBE0B',
     backgroundColor: 'transparent',
   },
   dayPanel: {
@@ -293,7 +268,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#eef0f3',
+    borderTopColor: '#E6E1D5',
   },
   dayPanelHead: {
     flexDirection: 'row',
@@ -303,8 +278,8 @@ const styles = StyleSheet.create({
   },
   dayPanelTitle: {
     fontSize: 15,
-    color: '#0c0a09',
-    fontFamily: 'Inter_700Bold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_700Bold',
     letterSpacing: -0.3,
   },
   countBadge: {
@@ -312,44 +287,44 @@ const styles = StyleSheet.create({
     height: 20,
     paddingHorizontal: 6,
     borderRadius: 10,
-    backgroundColor: '#f5f5f4',
+    backgroundColor: '#ECE8DE',
     alignItems: 'center',
     justifyContent: 'center',
   },
   countBadgeText: {
     fontSize: 11,
-    color: '#78716c',
-    fontFamily: 'Inter_700Bold',
+    color: '#6B6557',
+    fontFamily: 'Manrope_700Bold',
   },
   emptyWrap: {
     paddingVertical: 32,
     alignItems: 'center',
     gap: 8,
   },
-  emptyEmoji: { fontSize: 28, opacity: 0.55 },
   emptyText: {
     textAlign: 'center',
-    color: '#a8a29e',
-    fontFamily: 'Inter_500Medium',
+    color: '#857F70',
+    fontFamily: 'Manrope_500Medium',
     fontSize: 13,
   },
   dayTitle: {
     fontSize: 15,
-    color: '#0c0a09',
-    fontFamily: 'Inter_600SemiBold',
+    color: '#2A2312',
+    fontFamily: 'Manrope_600SemiBold',
     letterSpacing: -0.2,
   },
-  daySub: { fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium', marginTop: 2 },
+  daySub: { fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium', marginTop: 2 },
   minePill: {
+    maxWidth: 120,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: '#ec4899',
+    backgroundColor: '#FFBE0B',
   },
   minePillText: {
     fontSize: 9,
-    color: '#ffffff',
+    color: '#2A2312',
     letterSpacing: 0.4,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'Manrope_700Bold',
   },
 });

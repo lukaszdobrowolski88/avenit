@@ -723,7 +723,7 @@ async function loadBoard(boardId: string): Promise<TeamBoard> {
   const labels: BoardStatusLabel[] = (settingsOf(statusCol).labels ?? []).map((l: any) => ({
     id: String(l.id),
     title: String(l.title ?? l.id),
-    color: String(l.color ?? '#a8a29e'),
+    color: String(l.color ?? '#857F70'),
   }));
   const groupName = new Map<string, string>(asList(groups).map((g) => [String(g.id), String(g.name)]));
   const cellsById: Record<string, Record<string, unknown>> = {};

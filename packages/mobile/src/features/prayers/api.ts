@@ -185,11 +185,12 @@ export const useDeletePrayer = () => {
 
 export const CATEGORY_META: Record<
   PrayerCategory,
-  { label: string; tint: string; bg: string; emoji: string }
+  { label: string; tint: string; bg: string }
 > = {
-  zdrowie: { label: 'Zdrowie', tint: '#059669', bg: '#d1fae5', emoji: '💚' },
-  rodzina: { label: 'Rodzina', tint: '#ec4899', bg: '#fce7f3', emoji: '👪' },
-  finanse: { label: 'Finanse', tint: '#d97706', bg: '#fef3c7', emoji: '💰' },
-  duchowe: { label: 'Duchowe', tint: '#7c3aed', bg: '#ede9fe', emoji: '🙏' },
-  inne: { label: 'Inne', tint: '#475569', bg: '#e2e8f0', emoji: '✨' },
+  // Jeden neutralny styl dla wszystkich kategorii (marka) — rozróżnia je nazwa, bez emoji.
+  zdrowie: { label: 'Zdrowie', tint: '#2A2312', bg: '#ECE8DE' },
+  rodzina: { label: 'Rodzina', tint: '#2A2312', bg: '#ECE8DE' },
+  finanse: { label: 'Finanse', tint: '#2A2312', bg: '#ECE8DE' },
+  duchowe: { label: 'Duchowe', tint: '#2A2312', bg: '#ECE8DE' },
+  inne: { label: 'Inne', tint: '#2A2312', bg: '#ECE8DE' },
 };

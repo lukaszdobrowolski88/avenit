@@ -36,7 +36,7 @@ export default function TotpScreen() {
     <View
       style={{
         flex: 1,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#F6F4EE',
         paddingHorizontal: 24,
         justifyContent: 'center',
       }}
@@ -44,10 +44,10 @@ export default function TotpScreen() {
       <Text
         style={{
           fontSize: 24,
-          color: '#0c0a09',
+          color: '#2A2312',
           marginBottom: 6,
           letterSpacing: -0.5,
-          fontFamily: 'Inter_700Bold',
+          fontFamily: 'Manrope_700Bold',
         }}
       >
         Weryfikacja dwustopniowa
@@ -55,9 +55,9 @@ export default function TotpScreen() {
       <Text
         style={{
           fontSize: 14,
-          color: '#78716c',
+          color: '#6B6557',
           marginBottom: 24,
-          fontFamily: 'Inter_500Medium',
+          fontFamily: 'Manrope_500Medium',
         }}
       >
         Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej.
@@ -66,23 +66,23 @@ export default function TotpScreen() {
       <TextInput
         style={{
           borderWidth: 1,
-          borderColor: '#eef0f3',
+          borderColor: '#E6E1D5',
           borderRadius: 14,
           paddingHorizontal: 14,
           paddingVertical: 14,
           fontSize: 22,
           textAlign: 'center',
           letterSpacing: 8,
-          color: '#0c0a09',
-          backgroundColor: '#fafaf9',
+          color: '#2A2312',
+          backgroundColor: '#FFFFFF',
           marginBottom: 24,
-          fontFamily: 'Inter_600SemiBold',
+          fontFamily: 'Manrope_600SemiBold',
         }}
         keyboardType="number-pad"
         maxLength={8}
         autoFocus
         placeholder="123456"
-        placeholderTextColor="#a8a29e"
+        placeholderTextColor="#857F70"
         value={code}
         onChangeText={setCode}
         editable={!loading}
@@ -92,8 +92,8 @@ export default function TotpScreen() {
         onPress={handleVerify}
         disabled={loading}
         style={{
-          backgroundColor: '#ec4899',
-          borderRadius: 14,
+          backgroundColor: '#FFBE0B',
+          borderRadius: 26,
           paddingVertical: 14,
           alignItems: 'center',
           marginBottom: 12,
@@ -101,9 +101,9 @@ export default function TotpScreen() {
         }}
       >
         {loading ? (
-          <ActivityIndicator color="white" />
+          <ActivityIndicator color="#2A2312" />
         ) : (
-          <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Inter_700Bold' }}>
+          <Text style={{ color: '#2A2312', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
             Zweryfikuj
           </Text>
         )}
@@ -114,8 +114,8 @@ export default function TotpScreen() {
           style={{
             textAlign: 'center',
             fontSize: 13,
-            color: '#78716c',
-            fontFamily: 'Inter_500Medium',
+            color: '#6B6557',
+            fontFamily: 'Manrope_500Medium',
           }}
         >
           Anuluj i wyloguj

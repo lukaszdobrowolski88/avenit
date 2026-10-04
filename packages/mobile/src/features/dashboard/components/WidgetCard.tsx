@@ -1,90 +1,79 @@
 import type { ReactNode } from 'react';
-import { Text, View } from 'react-native';
-import type { LucideIcon } from 'lucide-react-native';
+import { Pressable, Text, View } from 'react-native';
+import { D, F } from '../theme';
 
-interface Props {
+interface HeadingProps {
   title: string;
-  Icon: LucideIcon;
-  // Kolor widżetu: ikona w miękkim kwadracie (bez gradientów i pasków).
-  iconTint?: string;
-  iconBg?: string;
-  badge?: string;
-  badgeBg?: string;
-  badgeColor?: string;
+  // Licznik obok tytułu (kółko w kurkumie) — tylko gdy > 0.
+  count?: number;
+  // Własny element po prawej albo link tekstowy (actionLabel + onAction).
   action?: ReactNode;
-  children: ReactNode;
+  actionLabel?: string;
+  onAction?: () => void;
 }
 
-// Karta pulpitu: biała na ciepłoszarym tle strony. Oddziela ją tło, nie ramka ani cień.
-export const WidgetCard = ({
-  title,
-  Icon,
-  iconTint = '#be185d',
-  iconBg = '#fce7f3',
-  badge,
-  badgeBg,
-  badgeColor,
-  action,
-  children,
-}: Props) => (
-  <View
-    style={{
-      marginHorizontal: 16,
-      marginBottom: 14,
-      borderRadius: 22,
-      backgroundColor: '#ffffff',
-      overflow: 'hidden',
-    }}
-  >
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        paddingHorizontal: 16,
-        paddingTop: 15,
-        paddingBottom: 10,
-      }}
-    >
+// Nagłówek sekcji pulpitu: na tle strony, nad kartą — tytuł, licznik, „Zobacz wszystko”.
+export const SectionHeading = ({ title, count, action, actionLabel, onAction }: HeadingProps) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 20, marginBottom: 12 }}>
+    <Text style={{ fontSize: 20, lineHeight: 25, letterSpacing: -0.6, color: D.ink, fontFamily: F.bold }}>{title}</Text>
+    {count ? (
       <View
         style={{
-          width: 30,
-          height: 30,
-          borderRadius: 10,
-          backgroundColor: iconBg,
+          minWidth: 24,
+          height: 24,
+          paddingHorizontal: 7,
+          borderRadius: 12,
+          backgroundColor: D.accent,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Icon size={16} color={iconTint} strokeWidth={2.3} />
+        <Text style={{ fontSize: 12, color: D.ink, fontFamily: F.bold }}>{count > 99 ? '99+' : count}</Text>
       </View>
-      <Text
-        style={{
-          flex: 1,
-          fontSize: 16,
-          color: '#0c0a09',
-          letterSpacing: -0.3,
-          fontFamily: 'Inter_700Bold',
-        }}
+    ) : null}
+    <View style={{ flex: 1 }} />
+    {action ??
+      (actionLabel && onAction ? (
+        <Pressable onPress={onAction} hitSlop={10} className="active:opacity-60">
+          <Text style={{ fontSize: 14, color: D.ink2, fontFamily: F.semibold }}>{actionLabel}</Text>
+        </Pressable>
+      ) : null)}
+  </View>
+);
+
+// Pusty stan w jednej linii (bez dużej ikony) — pulpit zostaje zwarty.
+export const EmptyRow = ({ text, actionLabel, onAction }: { text: string; actionLabel?: string; onAction?: () => void }) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 }}>
+    <Text style={{ flex: 1, fontSize: 14, color: D.ink2, fontFamily: F.medium }}>{text}</Text>
+    {actionLabel && onAction ? (
+      <Pressable
+        onPress={onAction}
+        className="active:opacity-70"
+        style={{ paddingHorizontal: 14, height: 34, borderRadius: 17, backgroundColor: D.well, justifyContent: 'center' }}
       >
-        {title}
-      </Text>
-      {action ? action : null}
-      {badge ? (
-        <View
-          style={{
-            paddingHorizontal: 8,
-            paddingVertical: 3,
-            borderRadius: 999,
-            backgroundColor: badgeBg ?? '#f5f5f4',
-          }}
-        >
-          <Text style={{ fontSize: 11, color: badgeColor ?? '#1c1917', fontFamily: 'Inter_700Bold' }}>
-            {badge}
-          </Text>
-        </View>
-      ) : null}
-    </View>
-    <View>{children}</View>
+        <Text style={{ fontSize: 13, color: D.ink, fontFamily: F.semibold }}>{actionLabel}</Text>
+      </Pressable>
+    ) : null}
+  </View>
+);
+
+interface Props extends HeadingProps {
+  children: ReactNode;
+  // Treść bez wspólnej białej karty (np. osobne karty zaproszeń).
+  bare?: boolean;
+}
+
+// Sekcja pulpitu: nagłówek na tle strony + biała karta. Kartę oddziela od strony
+// samo tło — bez ramek, cieni i kolorowych ikon przy tytule.
+export const WidgetCard = ({ children, bare, ...heading }: Props) => (
+  <View style={{ marginBottom: 28 }}>
+    <SectionHeading {...heading} />
+    {bare ? (
+      children
+    ) : (
+      <View style={{ marginHorizontal: 16, borderRadius: D.radius, backgroundColor: D.card, overflow: 'hidden' }}>
+        {children}
+      </View>
+    )}
   </View>
 );

@@ -55,10 +55,10 @@ const inputStyle = {
   height: 44,
   borderRadius: 14,
   paddingHorizontal: 14,
-  backgroundColor: '#f5f5f4',
+  backgroundColor: '#ECE8DE',
   fontSize: 15,
-  color: '#0c0a09',
-  fontFamily: 'Inter_500Medium',
+  color: '#2A2312',
+  fontFamily: 'Manrope_500Medium',
 } as const;
 
 // ─── Ogłoszenia: { title, body, date, pinned } — przypięte, potem najnowsze ───
@@ -108,21 +108,21 @@ export const AnnouncementsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
       {canAdd && !adding ? <AddButton label="Nowe ogłoszenie" onPress={() => setAdding(true)} /> : null}
       {adding ? (
         <Card>
-          <TextInput value={title} onChangeText={setTitle} placeholder="Tytuł" placeholderTextColor="#a8a29e" style={[inputStyle, { backgroundColor: '#ffffff' }]} />
+          <TextInput value={title} onChangeText={setTitle} placeholder="Tytuł" placeholderTextColor="#857F70" style={[inputStyle, { backgroundColor: '#F6F4EE' }]} />
           <TextInput
             value={body}
             onChangeText={setBody}
             placeholder="Treść"
-            placeholderTextColor="#a8a29e"
+            placeholderTextColor="#857F70"
             multiline
-            style={[inputStyle, { backgroundColor: '#ffffff', height: 90, paddingTop: 12, marginTop: 8, textAlignVertical: 'top' as const }]}
+            style={[inputStyle, { backgroundColor: '#F6F4EE', height: 90, paddingTop: 12, marginTop: 8, textAlignVertical: 'top' as const }]}
           />
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-            <Pressable onPress={() => setAdding(false)} className="active:opacity-70" style={{ flex: 1, height: 42, borderRadius: 12, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: 14, color: '#44403c', fontFamily: 'Inter_600SemiBold' }}>Anuluj</Text>
+            <Pressable onPress={() => setAdding(false)} className="active:opacity-70" style={{ flex: 1, height: 42, borderRadius: 12, backgroundColor: '#F6F4EE', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 14, color: '#3A3427', fontFamily: 'Manrope_600SemiBold' }}>Anuluj</Text>
             </Pressable>
-            <Pressable onPress={submit} className="active:opacity-70" style={{ flex: 1, height: 42, borderRadius: 12, backgroundColor: '#0c0a09', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>Opublikuj</Text>
+            <Pressable onPress={submit} className="active:opacity-70" style={{ flex: 1, height: 42, borderRadius: 12, backgroundColor: '#2A2312', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>Opublikuj</Text>
             </Pressable>
           </View>
         </Card>
@@ -132,8 +132,8 @@ export const AnnouncementsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
       {list.map((r) => (
         <Card key={r.id}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            {r.data.pinned ? <Pin size={13} color="#be185d" /> : null}
-            <Text style={{ flex: 1, fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_700Bold' }}>{r.data.title || 'Ogłoszenie'}</Text>
+            {r.data.pinned ? <Pin size={13} color="#8A6606" /> : null}
+            <Text style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{r.data.title || 'Ogłoszenie'}</Text>
             {canDel ? (
               <Pressable
                 onPress={() =>
@@ -145,15 +145,15 @@ export const AnnouncementsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
                 hitSlop={8}
                 className="active:opacity-60"
               >
-                <Trash2 size={15} color="#a8a29e" />
+                <Trash2 size={15} color="#857F70" />
               </Pressable>
             ) : null}
           </View>
           {r.data.body ? (
-            <Text style={{ fontSize: 14, lineHeight: 20, color: '#44403c', marginTop: 6, fontFamily: 'Inter_400Regular' }}>{r.data.body}</Text>
+            <Text style={{ fontSize: 14, lineHeight: 20, color: '#3A3427', marginTop: 6, fontFamily: 'Manrope_400Regular' }}>{r.data.body}</Text>
           ) : null}
           {r.data.date || r.createdAt ? (
-            <Text style={{ fontSize: 11, color: '#a8a29e', marginTop: 8, fontFamily: 'Inter_500Medium' }}>
+            <Text style={{ fontSize: 11, color: '#857F70', marginTop: 8, fontFamily: 'Manrope_500Medium' }}>
               {formatDate(String(r.data.date || r.createdAt), 'd MMMM yyyy')}
             </Text>
           ) : null}
@@ -176,14 +176,14 @@ export const LinksWidget = ({ ctx }: { ctx: WidgetCtx }) => {
       {list.map((r) => (
         <Card key={r.id} onPress={r.data.url ? () => openUrl(String(r.data.url)) : undefined}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Link2 size={18} color="#2563eb" />
+            <Link2 size={18} color="#2A2312" />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>{r.data.label || r.data.url}</Text>
+              <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{r.data.label || r.data.url}</Text>
               {r.data.description ? (
-                <Text style={{ fontSize: 12, color: '#78716c', marginTop: 2, fontFamily: 'Inter_400Regular' }}>{r.data.description}</Text>
+                <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>{r.data.description}</Text>
               ) : null}
             </View>
-            <ArrowUpRight size={16} color="#a8a29e" />
+            <ArrowUpRight size={16} color="#857F70" />
           </View>
         </Card>
       ))}
@@ -205,17 +205,17 @@ export const ContactsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
         <Card key={r.id}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>{r.data.name || '—'}</Text>
-              {r.data.role ? <Text style={{ fontSize: 12, color: '#78716c', marginTop: 2, fontFamily: 'Inter_500Medium' }}>{r.data.role}</Text> : null}
+              <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{r.data.name || '—'}</Text>
+              {r.data.role ? <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>{r.data.role}</Text> : null}
             </View>
             {r.data.phone ? (
-              <Pressable onPress={() => openUrl(`tel:${r.data.phone}`)} hitSlop={6} className="active:opacity-60" style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' }}>
-                <Phone size={15} color="#1c1917" />
+              <Pressable onPress={() => openUrl(`tel:${r.data.phone}`)} hitSlop={6} className="active:opacity-60" style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: '#F6F4EE', alignItems: 'center', justifyContent: 'center' }}>
+                <Phone size={15} color="#2A2312" />
               </Pressable>
             ) : null}
             {r.data.email ? (
-              <Pressable onPress={() => openUrl(`mailto:${r.data.email}`)} hitSlop={6} className="active:opacity-60" style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' }}>
-                <Mail size={15} color="#1c1917" />
+              <Pressable onPress={() => openUrl(`mailto:${r.data.email}`)} hitSlop={6} className="active:opacity-60" style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: '#F6F4EE', alignItems: 'center', justifyContent: 'center' }}>
+                <Mail size={15} color="#2A2312" />
               </Pressable>
             ) : null}
           </View>
@@ -241,11 +241,11 @@ export const FaqWidget = ({ ctx }: { ctx: WidgetCtx }) => {
         return (
           <Card key={r.id} onPress={() => setOpen(on ? null : r.id)}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ flex: 1, fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>{r.data.question}</Text>
-              {on ? <ChevronDown size={16} color="#a8a29e" /> : <ChevronRight size={16} color="#a8a29e" />}
+              <Text style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{r.data.question}</Text>
+              {on ? <ChevronDown size={16} color="#857F70" /> : <ChevronRight size={16} color="#857F70" />}
             </View>
             {on && r.data.answer ? (
-              <Text style={{ fontSize: 14, lineHeight: 20, color: '#44403c', marginTop: 8, fontFamily: 'Inter_400Regular' }}>{r.data.answer}</Text>
+              <Text style={{ fontSize: 14, lineHeight: 20, color: '#3A3427', marginTop: 8, fontFamily: 'Manrope_400Regular' }}>{r.data.answer}</Text>
             ) : null}
           </Card>
         );
@@ -278,7 +278,7 @@ export const PollWidget = ({ ctx }: { ctx: WidgetCtx }) => {
         const showResults = !!mine || !!r.data.closed;
         return (
           <Card key={r.id}>
-            <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_700Bold', marginBottom: 10 }}>{r.data.question}</Text>
+            <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginBottom: 10 }}>{r.data.question}</Text>
             {(r.data.options ?? []).map((o: { id: string; text: string }) => {
               const count = Object.values(voters).filter((v) => v === o.id).length;
               const pct = total ? Math.round((count / total) * 100) : 0;
@@ -294,19 +294,19 @@ export const PollWidget = ({ ctx }: { ctx: WidgetCtx }) => {
                     )
                   }
                   className="active:opacity-70"
-                  style={{ marginBottom: 8, borderRadius: 12, backgroundColor: '#ffffff', overflow: 'hidden' }}
+                  style={{ marginBottom: 8, borderRadius: 12, backgroundColor: '#F6F4EE', overflow: 'hidden' }}
                 >
                   {showResults ? (
-                    <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, backgroundColor: chosen ? '#fce7f3' : '#f5f5f4' }} />
+                    <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, backgroundColor: chosen ? '#FFF1C2' : '#ECE8DE' }} />
                   ) : null}
                   <View style={{ flexDirection: 'row', alignItems: 'center', padding: 12 }}>
-                    <Text style={{ flex: 1, fontSize: 14, color: '#0c0a09', fontFamily: chosen ? 'Inter_700Bold' : 'Inter_500Medium' }}>{o.text}</Text>
-                    {showResults ? <Text style={{ fontSize: 12, color: '#57534e', fontFamily: 'Inter_700Bold' }}>{pct}%</Text> : null}
+                    <Text style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: chosen ? 'Manrope_700Bold' : 'Manrope_500Medium' }}>{o.text}</Text>
+                    {showResults ? <Text style={{ fontSize: 12, color: '#4A463E', fontFamily: 'Manrope_700Bold' }}>{pct}%</Text> : null}
                   </View>
                 </Pressable>
               );
             })}
-            <Text style={{ fontSize: 11, color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>
+            <Text style={{ fontSize: 11, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
               {total} {total === 1 ? 'głos' : 'głosów'}
               {r.data.closed ? ' · zamknięta' : mine ? ' · możesz zmienić głos' : ''}
             </Text>
@@ -328,7 +328,7 @@ export const CustomTasksWidget = ({ ctx }: { ctx: WidgetCtx }) => {
   const list = ((tasks.data ?? []) as CustomTask[]).filter((t) => (filter === 'open' ? t.status !== 'Gotowe' : true));
   const next = (s: CustomTaskStatus): CustomTaskStatus =>
     CUSTOM_TASK_STATUSES[(CUSTOM_TASK_STATUSES.indexOf(s) + 1) % CUSTOM_TASK_STATUSES.length];
-  const tint: Record<CustomTaskStatus, string> = { 'Do zrobienia': '#57534e', 'W trakcie': '#a16207', Gotowe: '#15803d' };
+  const tint: Record<CustomTaskStatus, string> = { 'Do zrobienia': '#4A463E', 'W trakcie': '#8A6606', Gotowe: '#15803d' };
 
   return (
     <View>
@@ -337,7 +337,7 @@ export const CustomTasksWidget = ({ ctx }: { ctx: WidgetCtx }) => {
           value={draft}
           onChangeText={setDraft}
           placeholder="Nowe zadanie…"
-          placeholderTextColor="#a8a29e"
+          placeholderTextColor="#857F70"
           onSubmitEditing={() => draft.trim() && add.mutate(draft.trim(), { onSuccess: () => setDraft('') })}
           style={[inputStyle, { flex: 1 }]}
         />
@@ -356,9 +356,9 @@ export const CustomTasksWidget = ({ ctx }: { ctx: WidgetCtx }) => {
         <Card key={t.id}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>{t.title}</Text>
+              <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{t.title}</Text>
               {[t.assignee, t.dueDate].filter(Boolean).length ? (
-                <Text style={{ fontSize: 12, color: '#78716c', marginTop: 2, fontFamily: 'Inter_500Medium' }}>
+                <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
                   {[t.assignee, t.dueDate].filter(Boolean).join(' · ')}
                 </Text>
               ) : null}
@@ -366,9 +366,9 @@ export const CustomTasksWidget = ({ ctx }: { ctx: WidgetCtx }) => {
             <Pressable
               onPress={() => setStatus.mutate({ id: t.id, status: next(t.status) })}
               className="active:opacity-70"
-              style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: '#ffffff' }}
+              style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: '#F6F4EE' }}
             >
-              <Text style={{ fontSize: 12, color: tint[t.status], fontFamily: 'Inter_700Bold' }}>{t.status}</Text>
+              <Text style={{ fontSize: 12, color: tint[t.status], fontFamily: 'Manrope_700Bold' }}>{t.status}</Text>
             </Pressable>
           </View>
         </Card>
@@ -391,7 +391,7 @@ export const ModuleBoardsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
       <View>
         {list.length > 1 ? (
           <Pressable onPress={() => setBoardId(null)} className="active:opacity-60" style={{ marginBottom: 10 }}>
-            <Text style={{ fontSize: 13, color: '#be185d', fontFamily: 'Inter_600SemiBold' }}>‹ Wszystkie tablice</Text>
+            <Text style={{ fontSize: 13, color: '#8A6606', fontFamily: 'Manrope_600SemiBold' }}>‹ Wszystkie tablice</Text>
           </Pressable>
         ) : null}
         <TasksTab sourceKind={undefined} boardId={current} myEmail={ctx.userEmail} />
@@ -403,9 +403,9 @@ export const ModuleBoardsWidget = ({ ctx }: { ctx: WidgetCtx }) => {
       {list.map((b) => (
         <Card key={b.id} onPress={() => setBoardId(b.id)}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: b.color ?? '#a8a29e' }} />
-            <Text style={{ flex: 1, fontSize: 15, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>{b.name}</Text>
-            <ChevronRight size={16} color="#a8a29e" />
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: b.color ?? '#A8A59E' }} />
+            <Text style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{b.name}</Text>
+            <ChevronRight size={16} color="#857F70" />
           </View>
         </Card>
       ))}
@@ -465,13 +465,13 @@ export const LayoutWidget = ({
         );
       case 'heading':
         return (
-          <Text key={key} style={{ fontSize: p.level === 1 ? 24 : p.level === 3 ? 16 : 20, color: '#0c0a09', fontFamily: 'Inter_700Bold', marginVertical: 6 }}>
+          <Text key={key} style={{ fontSize: p.level === 1 ? 24 : p.level === 3 ? 16 : 20, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginVertical: 6 }}>
             {p.text}
           </Text>
         );
       case 'text':
         return (
-          <Text key={key} style={{ fontSize: 15, lineHeight: 22, color: '#292524', fontFamily: 'Inter_400Regular', marginBottom: 6 }}>
+          <Text key={key} style={{ fontSize: 15, lineHeight: 22, color: '#2A2312', fontFamily: 'Manrope_400Regular', marginBottom: 6 }}>
             {stripHtml(p.html ?? p.text)}
           </Text>
         );
@@ -479,10 +479,10 @@ export const LayoutWidget = ({
       case 'alert':
       case 'verse':
         return (
-          <View key={key} style={{ borderRadius: 14, backgroundColor: el.type === 'alert' ? '#fef3c7' : '#f7f6f5', padding: 12, marginBottom: 8 }}>
-            <Text style={{ fontSize: 14, lineHeight: 20, color: '#292524', fontFamily: 'Inter_400Regular' }}>{stripHtml(p.text ?? p.html ?? p.content)}</Text>
+          <View key={key} style={{ borderRadius: 14, backgroundColor: el.type === 'alert' ? '#FFF1C2' : '#EFEBE2', padding: 12, marginBottom: 8 }}>
+            <Text style={{ fontSize: 14, lineHeight: 20, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}>{stripHtml(p.text ?? p.html ?? p.content)}</Text>
             {p.reference || p.author ? (
-              <Text style={{ fontSize: 12, color: '#78716c', marginTop: 4, fontFamily: 'Inter_600SemiBold' }}>{p.reference || p.author}</Text>
+              <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 4, fontFamily: 'Manrope_600SemiBold' }}>{p.reference || p.author}</Text>
             ) : null}
           </View>
         );
@@ -490,7 +490,7 @@ export const LayoutWidget = ({
         return (
           <View key={key} style={{ marginBottom: 8, gap: 4 }}>
             {(p.items ?? []).map((it: any, j: number) => (
-              <Text key={j} style={{ fontSize: 15, color: '#292524', fontFamily: 'Inter_400Regular' }}>
+              <Text key={j} style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_400Regular' }}>
                 • {typeof it === 'string' ? it : it?.text ?? ''}
               </Text>
             ))}
@@ -498,13 +498,13 @@ export const LayoutWidget = ({
         );
       case 'button':
         return p.url ? (
-          <Pressable key={key} onPress={() => openUrl(String(p.url))} className="active:opacity-70" style={{ alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: '#0c0a09', marginBottom: 8 }}>
-            <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>{p.label || 'Otwórz'}</Text>
+          <Pressable key={key} onPress={() => openUrl(String(p.url))} className="active:opacity-70" style={{ alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: '#2A2312', marginBottom: 8 }}>
+            <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>{p.label || 'Otwórz'}</Text>
           </Pressable>
         ) : null;
       case 'image':
         return p.url || p.src ? (
-          <Image key={key} source={{ uri: String(p.url || p.src) }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 14, marginBottom: 8, backgroundColor: '#f5f5f4' }} contentFit="cover" />
+          <Image key={key} source={{ uri: String(p.url || p.src) }} style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 14, marginBottom: 8, backgroundColor: '#ECE8DE' }} contentFit="cover" />
         ) : null;
       case 'widget':
         return (
@@ -525,8 +525,8 @@ export const LayoutWidget = ({
       {content}
       {skipped > 0 ? (
         <Pressable onPress={() => openOnWeb(`/module/${ctx.moduleKey}`)} className="active:opacity-70" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
-          <ExternalLink size={14} color="#be185d" />
-          <Text style={{ fontSize: 13, color: '#be185d', fontFamily: 'Inter_600SemiBold' }}>Część elementów zobaczysz na webie</Text>
+          <ExternalLink size={14} color="#8A6606" />
+          <Text style={{ fontSize: 13, color: '#8A6606', fontFamily: 'Manrope_600SemiBold' }}>Część elementów zobaczysz na webie</Text>
         </Pressable>
       ) : null}
     </View>
