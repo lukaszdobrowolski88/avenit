@@ -67,8 +67,7 @@ export const useProgramDetail = (id: string | number) =>
       if (error) throw error;
       if (!data) return null;
       const row = data as any;
-      const schedule = Array.isArray(row.schedule) ? (row.schedule as ProgramScheduleItem[]) : [];
-      return { ...row, schedule };
+      return { ...row, schedule: asSchedule(row.schedule) };
     },
     enabled: id != null && id !== '',
   });
@@ -147,3 +146,237 @@ export const useProgramTeam = (programId: string | number) =>
     },
     enabled: programId != null && programId !== '',
   });
+
+// ── Tworzenie i edycja programów (jak web ProgramsList/ProgramDetail) ──────────
+
+const asSchedule = (raw: unknown): ProgramScheduleItem[] => {
+  const v = typeof raw === 'string' ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
+  return Array.isArray(v) ? (v as ProgramScheduleItem[]) : [];
+};
+
+const invalidatePrograms = (qc: ReturnType<typeof useQueryClient>) => {
+  qc.invalidateQueries({ queryKey: ['programs'] });
+  qc.invalidateQueries({ queryKey: ['event-detail'] });
+  qc.invalidateQueries({ queryKey: ['agenda'] });
+  qc.invalidateQueries({ queryKey: ['dashboard'] });
+};
+
+// Minione programy (archiwum) — od najnowszych.
+export const usePastPrograms = ({ selectedCampusId, withCampusFilter }: CampusScope, enabled: boolean) =>
+  useQuery({
+    queryKey: ['programs', 'past', selectedCampusId],
+    enabled,
+    queryFn: async (): Promise<ProgramListItem[]> => {
+      const today = new Date().toISOString().slice(0, 10);
+      const base = supabase
+        .from('programs')
+        .select('id, date, title, type_id, schedule, campus_id, type:program_types(id, name, color)');
+      const { data, error } = await withCampusFilter(base).lt('date', today).order('date', { ascending: false }).limit(60);
+      if (error) throw error;
+      return (data ?? []) as unknown as ProgramListItem[];
+    },
+  });
+
+// Wydarzenia z podpiętymi programami: program_id → [{id, title, date}] (do list i ekranu programu).
+export interface LinkedEvent {
+  id: number;
+  title: string;
+  date: string;
+  time: string | null;
+  programId: number;
+}
+export const useProgramEventLinks = () =>
+  useQuery({
+    queryKey: ['programs', 'event-links'],
+    queryFn: async (): Promise<LinkedEvent[]> => {
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, title, date, time, program_id')
+        .not('program_id', 'is', null)
+        .order('date', { ascending: false })
+        .limit(500);
+      if (error) return [];
+      return ((data ?? []) as any[]).map((e) => ({
+        id: Number(e.id),
+        title: e.title || 'Wydarzenie',
+        date: String(e.date).slice(0, 10),
+        time: e.time ? String(e.time).slice(0, 5) : null,
+        programId: Number(e.program_id),
+      }));
+    },
+  });
+
+// Wydarzenia w okolicy daty (do podpinania programu).
+export const useEventsAround = (ymd: string | null, enabled: boolean) =>
+  useQuery({
+    queryKey: ['programs', 'events-around', ymd],
+    enabled: enabled && !!ymd,
+    queryFn: async (): Promise<(LinkedEvent & { hasProgram: boolean })[]> => {
+      const d = new Date(`${ymd}T12:00:00`);
+      const from = new Date(d);
+      from.setDate(d.getDate() - 14);
+      const to = new Date(d);
+      to.setDate(d.getDate() + 14);
+      const ymdOf = (x: Date) => x.toISOString().slice(0, 10);
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, title, date, time, program_id')
+        .gte('date', ymdOf(from))
+        .lte('date', ymdOf(to))
+        .order('date', { ascending: true })
+        .limit(200);
+      if (error) return [];
+      return ((data ?? []) as any[]).map((e) => ({
+        id: Number(e.id),
+        title: e.title || 'Wydarzenie',
+        date: String(e.date).slice(0, 10),
+        time: e.time ? String(e.time).slice(0, 5) : null,
+        programId: e.program_id == null ? 0 : Number(e.program_id),
+        hasProgram: e.program_id != null,
+      }));
+    },
+  });
+
+// Programy w okolicy daty (do wyboru istniejącego programu na wydarzeniu).
+export const useProgramsAround = (ymd: string | null, enabled: boolean) =>
+  useQuery({
+    queryKey: ['programs', 'around', ymd],
+    enabled: enabled && !!ymd,
+    queryFn: async (): Promise<ProgramListItem[]> => {
+      const d = new Date(`${ymd}T12:00:00`);
+      const from = new Date(d);
+      from.setDate(d.getDate() - 30);
+      const to = new Date(d);
+      to.setDate(d.getDate() + 30);
+      const ymdOf = (x: Date) => x.toISOString().slice(0, 10);
+      const { data, error } = await supabase
+        .from('programs')
+        .select('id, date, title, type_id, schedule, campus_id, type:program_types(id, name, color)')
+        .gte('date', ymdOf(from))
+        .lte('date', ymdOf(to))
+        .order('date', { ascending: true })
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as unknown as ProgramListItem[];
+    },
+  });
+
+export interface ProgramHeaderInput {
+  title: string | null;
+  date: string;
+  typeId: number | null;
+}
+
+// Nowy program (pusty plan) + opcjonalne podpięcie do wydarzenia. Zwraca id.
+export const useCreateProgram = (userEmail: string | null, campusIdForInsert: number | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: ProgramHeaderInput & { eventId?: number | null }): Promise<number> => {
+      const { data, error } = await (supabase.from('programs') as any)
+        .insert([
+          {
+            title: input.title,
+            date: input.date,
+            type_id: input.typeId,
+            schedule: [],
+            song_ids: [],
+            campus_id: campusIdForInsert,
+            created_by: userEmail,
+          },
+        ])
+        .select('id')
+        .single();
+      if (error) throw new Error(error.message || 'Nie udało się utworzyć programu.');
+      const id = Number((data as any).id);
+      if (input.eventId) {
+        const { error: linkErr } = await (supabase.from('events') as any).update({ program_id: id }).eq('id', input.eventId);
+        if (linkErr) throw new Error(`Program utworzony, ale nie udało się podpiąć go do wydarzenia: ${linkErr.message}`);
+      }
+      return id;
+    },
+    onSuccess: () => invalidatePrograms(qc),
+  });
+};
+
+export const useUpdateProgramHeader = (programId: number) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: ProgramHeaderInput) => {
+      const { error } = await (supabase.from('programs') as any)
+        .update({ title: input.title, date: input.date, type_id: input.typeId })
+        .eq('id', programId);
+      if (error) throw new Error(error.message || 'Nie udało się zapisać programu.');
+    },
+    onSuccess: () => invalidatePrograms(qc),
+  });
+};
+
+// Zapis planu — od razu po każdej zmianie, z optymistyczną aktualizacją ekranu
+// (przy błędzie wraca poprzedni stan).
+export const useSaveSchedule = (programId: number) => {
+  const qc = useQueryClient();
+  const key = ['programs', 'detail', String(programId)];
+  return useMutation({
+    mutationFn: async (schedule: ProgramScheduleItem[]) => {
+      const { error } = await (supabase.from('programs') as any).update({ schedule }).eq('id', programId);
+      if (error) throw new Error(error.message || 'Nie udało się zapisać planu.');
+    },
+    onMutate: async (schedule) => {
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData(key);
+      qc.setQueryData(key, (old: any) => (old ? { ...old, schedule } : old));
+      return { prev };
+    },
+    onError: (_e, _s, ctx) => {
+      if (ctx?.prev !== undefined) qc.setQueryData(key, ctx.prev);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['programs', 'upcoming'] });
+      qc.invalidateQueries({ queryKey: ['programs', 'past'] });
+      qc.invalidateQueries({ queryKey: ['event-detail'] });
+    },
+  });
+};
+
+// Usunięcie programu — events.program_id nie ma klucza obcego, więc najpierw odpinamy
+// program od wydarzeń (inaczej zostałyby martwe odnośniki).
+export const useDeleteProgram = (programId: number) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      await (supabase.from('events') as any).update({ program_id: null }).eq('program_id', programId);
+      const { error } = await supabase.from('programs').delete().eq('id', programId);
+      if (error) throw new Error(error.message || 'Nie udało się usunąć programu.');
+    },
+    onSuccess: () => invalidatePrograms(qc),
+  });
+};
+
+// Podpięcie / odpięcie programu na wydarzeniu (events.program_id).
+export const useLinkProgram = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ eventId, programId }: { eventId: number; programId: number | null }) => {
+      const { error } = await (supabase.from('events') as any).update({ program_id: programId }).eq('id', eventId);
+      if (error) throw new Error(error.message || 'Nie udało się zmienić programu wydarzenia.');
+    },
+    onSuccess: () => invalidatePrograms(qc),
+  });
+};
+
+export { asSchedule };
+
+// Tytuły/tonacje pieśni z planu (starsze elementy mogą mieć tylko songId).
+export const useSongTitles = (ids: (number | string)[]) => {
+  const uniq = Array.from(new Set(ids.map(String))).sort();
+  return useQuery({
+    queryKey: ['programs', 'song-titles', uniq.join(',')],
+    enabled: uniq.length > 0,
+    staleTime: 10 * 60_000,
+    queryFn: async (): Promise<Record<string, { title: string; key: string | null }>> => {
+      const { data, error } = await supabase.from('songs').select('id, title, key').in('id', uniq.map(Number));
+      if (error) return {};
+      return Object.fromEntries(((data ?? []) as any[]).map((s) => [String(s.id), { title: String(s.title ?? ''), key: s.key ?? null }]));
+    },
+  });
+};

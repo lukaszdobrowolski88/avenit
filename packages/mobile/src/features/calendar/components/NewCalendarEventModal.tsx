@@ -101,7 +101,10 @@ export const NewCalendarEventModal = ({
     setLocation(editing?.location ?? '');
     setModuleKey(editing?.moduleKey ?? null);
     setDescription(editing?.description ?? '');
-  }, [visible, editing]);
+    // Tylko przy otwarciu — `editing` przychodzi jako nowy obiekt przy każdym renderze rodzica,
+    // a zależność od niego kasowałaby wpisywany tekst.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   // Kalendarze modułów, które kościół ma w event_calendars i do których mam dostęp.
   const options = useMemo(() => {
