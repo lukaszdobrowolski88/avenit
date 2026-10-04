@@ -1,4 +1,5 @@
-import { ActivityIndicator, Linking, Pressable, ScrollView, StatusBar, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StatusBar, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -7,7 +8,9 @@ import {
   Home,
   Mail,
   MapPin,
+  Pencil,
   Phone,
+  Send,
   Users as UsersIcon,
 } from 'lucide-react-native';
 import { formatDate } from '../../../src/lib/domain';
@@ -19,8 +22,14 @@ import {
   initials,
   STATUS_META,
   MINISTRY_LABELS,
+  useAddMemberNote,
+  useMemberNotes,
+  type MemberNote,
   type MemberStatus,
 } from '../../../src/features/members/api';
+import { EditMemberModal } from '../../../src/features/members/components/EditMemberModal';
+import { usePermissions } from '../../../src/lib/permissions';
+import { useAuthSession } from '../../../src/lib/auth';
 
 const SectionCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View
@@ -135,9 +144,18 @@ export default function MemberDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { selectedCampusId } = useCampusQuery();
+  const { selectedCampusId, campusIdForInsert } = useCampusQuery();
   const { data: member, isLoading } = useMember(id ?? '', selectedCampusId);
   const { data: household } = useHousehold(member?.household_id ?? null);
+  const { user } = useAuthSession();
+  const perms = usePermissions();
+  // Edycja jak web (res:members:update); notatki duszpasterskie w module Opieka (module:care).
+  const canEdit = perms.can('res:members:update');
+  const careVisible = perms.moduleVisible('care');
+  const notes = useMemberNotes(id ?? null, careVisible);
+  const addNote = useAddMemberNote(id ?? '', user?.email ?? null, campusIdForInsert);
+  const [editing, setEditing] = useState(false);
+  const [noteDraft, setNoteDraft] = useState('');
 
   if (isLoading) {
     return (
@@ -204,6 +222,27 @@ export default function MemberDetailScreen() {
           >
             <ChevronLeft size={20} color="#1c1917" strokeWidth={2.2} />
           </Pressable>
+          {canEdit ? (
+            <Pressable
+              onPress={() => setEditing(true)}
+              className="active:opacity-70"
+              style={{
+                position: 'absolute',
+                right: 20,
+                top: insets.top + 6,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                paddingHorizontal: 14,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: '#0c0a09',
+              }}
+            >
+              <Pencil size={15} color="#ffffff" />
+              <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Inter_600SemiBold' }}>Edytuj</Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <View
@@ -432,7 +471,83 @@ export default function MemberDetailScreen() {
             </View>
           </View>
         ) : null}
+
+        {careVisible ? (
+          <View style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 20, backgroundColor: '#f7f6f5', padding: 16, gap: 10 }}>
+            <Text
+              style={{
+                fontSize: 11,
+                color: '#78716c',
+                letterSpacing: 0.6,
+                textTransform: 'uppercase',
+                fontFamily: 'Inter_700Bold',
+              }}
+            >
+              Notatki duszpasterskie
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-end' }}>
+              <TextInput
+                value={noteDraft}
+                onChangeText={setNoteDraft}
+                placeholder="Dodaj notatkę (widzą ją osoby z dostępem do Opieki)"
+                placeholderTextColor="#a8a29e"
+                multiline
+                style={{
+                  flex: 1,
+                  minHeight: 44,
+                  maxHeight: 120,
+                  borderRadius: 14,
+                  paddingHorizontal: 12,
+                  paddingTop: 11,
+                  paddingBottom: 11,
+                  backgroundColor: '#ffffff',
+                  fontSize: 14,
+                  color: '#0c0a09',
+                  fontFamily: 'Inter_400Regular',
+                }}
+              />
+              <Pressable
+                onPress={() => {
+                  const body = noteDraft.trim();
+                  if (!body) return;
+                  addNote.mutate(body, {
+                    onSuccess: () => setNoteDraft(''),
+                    onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? ''),
+                  });
+                }}
+                disabled={!noteDraft.trim() || addNote.isPending}
+                className="active:opacity-70"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: noteDraft.trim() ? '#0c0a09' : '#d6d3d1',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Send size={17} color="#ffffff" />
+              </Pressable>
+            </View>
+            {((notes.data ?? []) as MemberNote[]).map((n) => (
+              <View key={n.id} style={{ borderRadius: 14, backgroundColor: '#ffffff', padding: 12, gap: 4 }}>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: '#0c0a09', fontFamily: 'Inter_400Regular' }}>{n.body}</Text>
+                <Text style={{ fontSize: 11, color: '#a8a29e', fontFamily: 'Inter_500Medium' }}>
+                  {[n.author, n.createdAt ? formatDate(n.createdAt, 'd MMM yyyy, HH:mm') : null].filter(Boolean).join(' · ')}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
+      {canEdit ? (
+        <EditMemberModal
+          visible={editing}
+          member={member}
+          onClose={() => setEditing(false)}
+          fieldWritable={perms.fieldWritable}
+        />
+      ) : null}
     </>
   );
 }

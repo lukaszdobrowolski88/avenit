@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 
@@ -128,3 +128,80 @@ export const useMemberFilters = (
       return matchesSearch && matchesStatus && matchesMinistry;
     });
   }, [members, search, status, ministry]);
+
+// ─── Edycja członka (jak web Members.jsx, ale bezpieczniej) ──────────────────
+// Web wysyła cały wiersz, więc zapis pada, gdy admin zabronił edycji jakiegoś pola
+// (serwer odrzuca payload z zabronioną kolumną). Tu wysyłamy TYLKO zmienione pola
+// i pomijamy te, których nie wolno edytować (fieldWritable).
+
+export type MemberPatch = Partial<
+  Pick<MemberRow, 'first_name' | 'last_name' | 'email' | 'phone' | 'address' | 'status' | 'birth_date' | 'notes'>
+>;
+
+export const useUpdateMember = (fieldWritable: (resource: string, column: string) => boolean) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ before, after }: { before: MemberRow; after: MemberPatch }) => {
+      const patch: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(after)) {
+        const next = typeof v === 'string' ? v.trim() || null : v ?? null;
+        const prev = (before as any)[k] ?? null;
+        if (next !== prev && fieldWritable('members', k)) patch[k] = next;
+      }
+      // Status inny niż Członek → bez daty i deklaracji członkowskiej (Members.jsx:297-313).
+      if ('status' in patch && patch.status !== 'Członek' && before.status === 'Członek') {
+        if (fieldWritable('members', 'membership_date')) patch.membership_date = null;
+        if (fieldWritable('members', 'membership_declaration_url')) patch.membership_declaration_url = null;
+      }
+      if (!Object.keys(patch).length) return;
+      const { error } = await (supabase.from('members') as any).update(patch).eq('id', before.id);
+      if (error) throw new Error(error.message || 'Nie udało się zapisać zmian.');
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['members'] }),
+  });
+};
+
+// ─── Notatki duszpasterskie (moduł Opieka, member_notes jak NotesTab.jsx) ────
+
+export interface MemberNote {
+  id: string;
+  body: string;
+  author: string | null;
+  createdAt: string;
+}
+
+export const useMemberNotes = (memberId: string | number | null, enabled: boolean) =>
+  useQuery({
+    queryKey: ['members', 'notes', memberId],
+    enabled: enabled && memberId != null && memberId !== '',
+    queryFn: async (): Promise<MemberNote[]> => {
+      const { data, error } = await supabase
+        .from('member_notes')
+        .select('id, body, author_email, created_at')
+        .eq('member_id', memberId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return ((data ?? []) as any[]).map((n) => ({
+        id: String(n.id),
+        body: String(n.body ?? ''),
+        author: n.author_email ?? null,
+        createdAt: String(n.created_at ?? ''),
+      }));
+    },
+  });
+
+export const useAddMemberNote = (memberId: string | number, authorEmail: string | null, campusId: number | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: string) => {
+      const { error } = await (supabase.from('member_notes') as any).insert({
+        member_id: memberId,
+        author_email: authorEmail,
+        body,
+        campus_id: campusId,
+      });
+      if (error) throw new Error(error.message || 'Nie udało się dodać notatki.');
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['members', 'notes', memberId] }),
+  });
+};

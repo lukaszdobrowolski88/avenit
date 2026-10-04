@@ -1,9 +1,9 @@
 import { Stack } from 'expo-router';
 import { ModuleGate } from '../../../src/components/ModuleGate';
 
-export default function MembersLayout() {
+export default function AttendanceLayout() {
   return (
-    <ModuleGate moduleKey="members">
+    <ModuleGate moduleKey="attendance">
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="[id]" />

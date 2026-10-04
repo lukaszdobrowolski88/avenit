@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import {
+  ActionSheetIOS,
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -21,6 +23,7 @@ import {
   Folder,
   FolderOpen,
   Image as ImageIcon,
+  MoreHorizontal,
   Share2,
   Upload,
 } from 'lucide-react-native';
@@ -29,6 +32,8 @@ import {
   useFiles,
   useFolderPath,
   useUploadMaterial,
+  useRenameMaterial,
+  useDeleteMaterial,
   pickDocument,
   formatBytes,
   fileIconType,
@@ -38,6 +43,8 @@ import {
 } from '../../../src/features/materials/api';
 import { useAuthSession } from '../../../src/lib/auth';
 import { useModules } from '../../../src/features/modules/useModules';
+import { usePermissions } from '../../../src/lib/permissions';
+import { PromptModal } from '../../../src/components/ui/PromptModal';
 import { GradientIcon } from '../../../src/components/ui/GradientIcon';
 
 const ICON_BY_TYPE = {
@@ -82,6 +89,54 @@ export default function MaterialsScreen() {
   const files = useFiles(folderId, teamType);
   const path = useFolderPath(folderId);
   const upload = useUploadMaterial(folderId, user?.email ?? null, teamType);
+  const rename = useRenameMaterial();
+  const remove = useDeleteMaterial();
+  const perms = usePermissions();
+  const [renaming, setRenaming] = useState<FileRow | null>(null);
+
+  // Jak serwer: własne pliki zawsze, cudze tylko z uprawnieniem z roli.
+  const isMine = (f: FileRow) => !!user?.email && (f.uploaded_by ?? '').toLowerCase() === user.email.toLowerCase();
+  const canRename = (f: FileRow) => isMine(f) || perms.can('res:materials_files:update');
+  const canDelete = (f: FileRow) => isMine(f) || perms.can('res:materials_files:delete');
+
+  const fileActions = (file: FileRow) => {
+    const actions: { label: string; destructive?: boolean; run: () => void }[] = [
+      { label: 'Otwórz', run: () => handleOpenFile(file) },
+    ];
+    if (canRename(file)) actions.push({ label: 'Zmień nazwę', run: () => setRenaming(file) });
+    if (canDelete(file)) {
+      actions.push({
+        label: 'Usuń',
+        destructive: true,
+        run: () =>
+          Alert.alert('Usunąć plik?', `„${file.name}” zniknie dla wszystkich.`, [
+            { text: 'Anuluj', style: 'cancel' },
+            {
+              text: 'Usuń',
+              style: 'destructive',
+              onPress: () =>
+                remove.mutate(file, { onError: (e: any) => Alert.alert('Nie udało się usunąć', e?.message ?? '') }),
+            },
+          ]),
+      });
+    }
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: file.name,
+          options: [...actions.map((a) => a.label), 'Anuluj'],
+          cancelButtonIndex: actions.length,
+          destructiveButtonIndex: actions.findIndex((a) => a.destructive),
+        },
+        (i) => actions[i]?.run(),
+      );
+    } else {
+      Alert.alert(file.name, undefined, [
+        ...actions.map((a) => ({ text: a.label, style: a.destructive ? ('destructive' as const) : undefined, onPress: a.run })),
+        { text: 'Anuluj', style: 'cancel' as const },
+      ]);
+    }
+  };
 
   const spaces = useMemo(
     () =>
@@ -400,6 +455,7 @@ export default function MaterialsScreen() {
                     <Pressable
                       key={file.id}
                       onPress={() => handleOpenFile(file)}
+                      onLongPress={() => fileActions(file)}
                       className="mb-2 active:opacity-80"
                       style={itemCardStyle}
                     >
@@ -441,6 +497,15 @@ export default function MaterialsScreen() {
                               : ''}
                           </Text>
                         </View>
+                        <Pressable
+                          onPress={() => fileActions(file)}
+                          hitSlop={10}
+                          accessibilityLabel={`Więcej akcji: ${file.name}`}
+                          className="active:opacity-60"
+                          style={{ padding: 4 }}
+                        >
+                          <MoreHorizontal size={18} color="#a8a29e" />
+                        </Pressable>
                       </View>
                     </Pressable>
                   );
@@ -480,6 +545,19 @@ export default function MaterialsScreen() {
           </ScrollView>
         )}
       </View>
+      <PromptModal
+        visible={!!renaming}
+        title="Zmień nazwę pliku"
+        initialValue={renaming?.name ?? ''}
+        onCancel={() => setRenaming(null)}
+        onConfirm={(name) => {
+          const f = renaming;
+          setRenaming(null);
+          if (f && name !== f.name) {
+            rename.mutate({ id: f.id, name }, { onError: (e: any) => Alert.alert('Nie udało się', e?.message ?? '') });
+          }
+        }}
+      />
     </>
   );
 }

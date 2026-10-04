@@ -193,8 +193,6 @@ const PrayerCard = ({
             style={{
               borderRadius: 12,
               backgroundColor: '#ecfdf5',
-              borderLeftWidth: 3,
-              borderLeftColor: '#10b981',
             }}
           >
             <Text

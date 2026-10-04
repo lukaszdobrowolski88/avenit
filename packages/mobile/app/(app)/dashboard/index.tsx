@@ -21,6 +21,7 @@ import { MyPrayersWidget } from '../../../src/features/dashboard/components/MyPr
 import { TasksWidget } from '../../../src/features/dashboard/components/TasksWidget';
 import { OnlineUsersWidget } from '../../../src/features/dashboard/components/OnlineUsersWidget';
 import { PendingInvitationsWidget } from '../../../src/features/dashboard/components/PendingInvitationsWidget';
+import { PendingAccountsCard } from '../../../src/features/dashboard/components/PendingAccountsCard';
 import { AbsencesWidget } from '../../../src/features/dashboard/components/AbsencesWidget';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 
@@ -91,6 +92,8 @@ export default function DashboardScreen() {
         />
 
         <PendingInvitationsWidget invitations={data?.pendingInvitations ?? []} />
+
+        <PendingAccountsCard />
 
         <ForYouStrip />
 

@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Calendar, CalendarDays, List } from 'lucide-react-native';
+import { Calendar, CalendarDays, List, Plus } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import {
   useAgenda,
@@ -21,6 +21,8 @@ import { MonthView } from '../../../src/features/calendar/components/MonthView';
 import { EventDetailSheet } from '../../../src/features/calendar/components/EventDetailSheet';
 import { useAuthSession } from '../../../src/lib/auth';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
+import { usePermissions } from '../../../src/lib/permissions';
+import { NewCalendarEventModal } from '../../../src/features/calendar/components/NewCalendarEventModal';
 
 const SOURCE_FILTERS: { key: EventSource | 'all' | 'mine'; label: string; color: string }[] = [
   { key: 'all', label: 'Wszystkie', color: '#475569' },
@@ -38,7 +40,11 @@ type ViewMode = 'agenda' | 'month';
 
 export default function CalendarScreen() {
   const { user } = useAuthSession();
-  const { selectedCampusId, withCampusFilter } = useCampusQuery();
+  const { selectedCampusId, withCampusFilter, campusIdForInsert } = useCampusQuery();
+  const perms = usePermissions();
+  // Jak serwer: dodawać może rola z res:events:create (członek tylko czyta).
+  const canCreate = perms.can('res:events:create');
+  const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState<EventSource | 'all' | 'mine'>('all');
   const [view, setView] = useState<ViewMode>('agenda');
   const [picked, setPicked] = useState<AgendaEvent | null>(null);
@@ -250,6 +256,37 @@ export default function CalendarScreen() {
       </View>
 
       <EventDetailSheet event={picked} onClose={() => setPicked(null)} />
+      {canCreate ? (
+        <Pressable
+          onPress={() => setCreating(true)}
+          accessibilityLabel="Nowe wydarzenie"
+          className="active:opacity-80"
+          style={{
+            position: 'absolute',
+            right: 18,
+            bottom: 108,
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: '#0c0a09',
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: '#0c0a09',
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.25,
+            shadowRadius: 12,
+            elevation: 6,
+          }}
+        >
+          <Plus size={24} color="#ffffff" strokeWidth={2.4} />
+        </Pressable>
+      ) : null}
+      <NewCalendarEventModal
+        visible={creating}
+        onClose={() => setCreating(false)}
+        userEmail={user?.email ?? null}
+        campusIdForInsert={campusIdForInsert}
+      />
     </>
   );
 }

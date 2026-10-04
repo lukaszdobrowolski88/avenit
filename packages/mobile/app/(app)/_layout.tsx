@@ -126,6 +126,8 @@ export default function AppLayout() {
       <Tabs.Screen name="serve" options={{ href: null }} />
       <Tabs.Screen name="work" options={{ href: null }} />
       <Tabs.Screen name="setlist" options={{ href: null }} />
+      <Tabs.Screen name="attendance" options={{ href: null }} />
+      <Tabs.Screen name="approvals" options={{ href: null }} />
     </Tabs>
   );
 }

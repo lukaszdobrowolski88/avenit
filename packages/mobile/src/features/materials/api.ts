@@ -20,6 +20,7 @@ export interface FileRow {
   description: string | null;
   download_count: number;
   created_at: string;
+  uploaded_by?: string | null;
 }
 
 // Przestrzeń plików jak na webie: kolumna team_type = klucz modułu zespołu ('worship',
@@ -175,6 +176,36 @@ export const useUploadMaterial = (
       if (insErr) throw new Error(insErr.message || 'Nie udało się zapisać pliku.');
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['materials', 'files', teamType, folderId] }),
+  });
+};
+
+// Zmiana nazwy / usunięcie pliku — jak web (useMaterials.js). Serwer pozwala tylko na
+// własne pliki (uploaded_by), chyba że rola daje res:materials_files:update|delete.
+export const useRenameMaterial = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { error } = await (supabase.from('materials_files') as any)
+        .update({ name, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw new Error(error.message || 'Nie udało się zmienić nazwy.');
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['materials', 'files'] }),
+  });
+};
+
+export const useDeleteMaterial = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: Pick<FileRow, 'id' | 'storage_path'>) => {
+      // Najpierw wiersz (to jego chroni serwer), dopiero potem plik w storage.
+      const { error } = await supabase.from('materials_files').delete().eq('id', file.id);
+      if (error) throw new Error(error.message || 'Nie udało się usunąć pliku.');
+      if (file.storage_path) {
+        await supabase.storage.from('materials').remove([file.storage_path]).catch(() => undefined);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['materials', 'files'] }),
   });
 };
 
