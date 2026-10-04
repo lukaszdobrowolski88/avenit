@@ -1,4 +1,6 @@
 import '../global.css';
+// Przed pierwszym renderem pól: odstęp liter nie „przecieka” między polami (iOS 26).
+import '../src/lib/text-input-kern-fix';
 import { useEffect, useRef } from 'react';
 import { AppState, View, type AppStateStatus } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
