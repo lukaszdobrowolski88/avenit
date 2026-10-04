@@ -1,8 +1,8 @@
 // POST /api/db — pojedynczy endpoint zapytań (odpowiednik PostgREST dla klienta
 // zgodnego z supabase-js). Autoryzacja per tabela/rola w registry.js.
-import { buildQuery, buildWhere, ApiError, quoteIdent, embeddedTablePairs } from './querybuilder.js';
+import { buildQuery, buildWhere, ApiError, quoteIdent, embeddedTablePairs, proposalScopeClause } from './querybuilder.js';
 import { canAccess, getTableRule, invalidatePermissions, requireCapability, loadGrants } from './registry.js';
-import { fieldColumns, crudCapability } from '@avenit/shared/src/permissions/catalog.js';
+import { fieldColumns, crudCapability, MODULES } from '@avenit/shared/src/permissions/catalog.js';
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { emitChange } from '../realtime/hub.js';
 import { notifyOnWrite } from '../realtime/push-hooks.js';
@@ -13,6 +13,19 @@ import { platformDisabledModules } from '../lib/platform-modules.js';
 //   checkins>households — obsługa Dzieci widzi rodzinę zameldowanego dziecka (odbiór,
 //   kontakt z rodzicem), choć gospodarstwa należą do modułu Członkowie.
 const EMBED_CROSS_MODULE_ALLOW = new Set(['checkins>households']);
+
+// Propozycje budżetu: team_type, pod którym zakładka Finanse zespołu (shared/FinanceTab,
+// prop `ministry`) zapisuje i czyta propozycje. Stałe etykiety, często inne niż nazwa w menu.
+// Moduły własne (FinanceWidget) zapisują nazwę albo klucz modułu.
+const PROPOSAL_TEAM_TYPES = {
+  worship: 'Grupa Uwielbienia',
+  media: 'MediaTeam',
+  atmosfera: 'AtmosferaTeam',
+  kids: 'małe Avenit',
+  homegroups: 'Grupy domowe',
+  mlodziezowka: 'Mlodziezowka',
+};
+const BUILTIN_MODULE_KEYS = new Set(MODULES.map((m) => m.key));
 
 // Tabele, których insert wyzwala automatyczny push (patrz push-hooks.js).
 // Push wysyłamy wsadowo (fn send-assignment-invites), nie na każdy insert przypisania.
@@ -105,16 +118,45 @@ export default async function dataApiRoutes(app) {
         }
       }
 
+      // Resolver nie-admina (admin i tryb legacy: null — bez dodatkowych ograniczeń niżej).
+      const resolver = !isAdmin && allGrants !== null
+        ? makeResolver(allGrants, { role: user.role, userId: user.id, isAdmin: false })
+        : null;
+      // Pełny wgląd w propozycje budżetu ma tylko ten, kto je zatwierdza. Sam odczyt modułu
+      // Finanse (np. preset lidera) nie wystarcza — lider widzi propozycje swoich zespołów.
+      const fullFinance = !resolver || resolver.can('action:finance:approve');
+
       // Propozycje budżetu (T(null)): składa je każdy (liderzy z zakładki Finanse zespołu),
       // ale decyzję (zmiana statusu / usunięcie) podejmuje tylko action:finance:approve.
+      // upsert to też zmiana istniejącego wiersza, a insert z gotowym statusem — decyzja.
       if (
         access.ok &&
         q.table === 'budget_proposals' &&
-        (q.op === 'update' || q.op === 'delete') &&
         access.resolver &&
-        !access.resolver.can('action:finance:approve')
+        !access.resolver.can('action:finance:approve') &&
+        (q.op === 'update' || q.op === 'delete' || q.op === 'upsert' ||
+          (q.op === 'insert' && proposalRows(q).some((r) => r.status != null && r.status !== 'pending')))
       ) {
         throw new ApiError(403, 'Decyzje o budżecie wymagają uprawnienia do zatwierdzania finansów');
+      }
+
+      // Bez prawa zatwierdzania propozycje są widoczne tylko dla zespołów, których zakładkę
+      // Finanse osoba otwiera, i własne. Zgłaszać też można tylko dla tych zespołów i pod
+      // własnym e-mailem (submitted_by).
+      if (access.ok && q.table === 'budget_proposals' && !fullFinance) {
+        const teamTypes = await proposalTeamTypes(req, resolver);
+        if (q.op === 'select') q.__proposalScope = { teamTypes, email: req.user.email || '' };
+        if (q.op === 'insert') {
+          const email = String(req.user.email || '').toLowerCase();
+          for (const r of proposalRows(q)) {
+            if (!teamTypes.includes(r.team_type)) {
+              throw new ApiError(403, 'Propozycję można zgłosić tylko dla zespołu, którego finanse widzisz');
+            }
+            if (r.submitted_by != null && String(r.submitted_by).toLowerCase() !== email) {
+              throw new ApiError(403, 'Propozycję zgłaszasz pod własnym adresem e-mail');
+            }
+          }
+        }
       }
 
       // Złączenia (embed) nie mogą omijać uprawnień: tabela dociągana wymaga dostępu do
@@ -122,24 +164,25 @@ export default async function dataApiRoutes(app) {
       // obecność w REGISTRY, więc np. dostęp do checkins dawał przez złączenie dane z modułu
       // Członkowie. Celowo bez CRUD per zasób — złączenia w obrębie modułu (programs →
       // program_types) działają jak dotąd. Admin i tryb legacy (grants null) bez zmian.
-      if (q.select && !isAdmin && allGrants !== null) {
+      if (q.select && resolver) {
         const pairs = embeddedTablePairs(q.table, q.select);
-        if (pairs.length) {
-          const embedResolver = makeResolver(allGrants, { role: user.role, userId: user.id, isAdmin: false });
-          for (const [parent, child] of pairs) {
-            const rule = getTableRule(child);
-            if (!rule) continue; // buildQuery odrzuci nieznaną tabelę
-            if (rule.readRoles && !rule.readRoles.includes(user.role)) {
-              throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu`);
-            }
-            if (
-              typeof rule.resource === 'string' &&
-              rule.resource.startsWith('module:') &&
-              !EMBED_CROSS_MODULE_ALLOW.has(`${parent}>${child}`) &&
-              !embedResolver.can(rule.resource)
-            ) {
-              throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu (${rule.resource})`);
-            }
+        for (const [parent, child] of pairs) {
+          const rule = getTableRule(child);
+          if (!rule) continue; // buildQuery odrzuci nieznaną tabelę
+          if (rule.readRoles && !rule.readRoles.includes(user.role)) {
+            throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu`);
+          }
+          if (
+            typeof rule.resource === 'string' &&
+            rule.resource.startsWith('module:') &&
+            !EMBED_CROSS_MODULE_ALLOW.has(`${parent}>${child}`) &&
+            !resolver.can(rule.resource)
+          ) {
+            throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu (${rule.resource})`);
+          }
+          // Zawężenie wierszy propozycji działa tylko na tabeli głównej — w złączeniu ich nie dajemy.
+          if (child === 'budget_proposals' && !fullFinance) {
+            throw new ApiError(403, "Brak dostępu do danych 'budget_proposals' w złączeniu");
           }
         }
       }
@@ -184,9 +227,8 @@ export default async function dataApiRoutes(app) {
 
       // head + count: tylko liczba wierszy.
       if (q.op === 'select' && q.head && q.count) {
-        const rule = getTableRule(q.table);
         const params = [];
-        const where = buildWhere(q.filters, params, 't', rule?.hiddenColumns || []);
+        const where = countWhere(q, params);
         const { rows } = await req.db.query(
           `SELECT count(*)::int AS count FROM ${quoteIdent(q.table)} t${where}`,
           params
@@ -215,9 +257,8 @@ export default async function dataApiRoutes(app) {
 
       let count = null;
       if (q.op === 'select' && q.count) {
-        const rule = getTableRule(q.table);
         const params = [];
-        const where = buildWhere(q.filters, params, 't', rule?.hiddenColumns || []);
+        const where = countWhere(q, params);
         const { rows } = await req.db.query(
           `SELECT count(*)::int AS count FROM ${quoteIdent(q.table)} t${where}`,
           params
@@ -381,6 +422,42 @@ async function allowSelfUpdate(q, req) {
     ((f[0].column === 'id' && String(f[0].value) === String(req.user.id)) ||
       (f[0].column === 'email' && f[0].value?.toLowerCase() === req.user.email?.toLowerCase()))
   );
+}
+
+// WHERE dla zliczania (count / head): filtry żądania + zawężenie propozycji budżetu.
+function countWhere(q, params) {
+  const rule = getTableRule(q.table);
+  let where = buildWhere(q.filters, params, 't', rule?.hiddenColumns || []);
+  if (q.__proposalScope && q.table === 'budget_proposals') {
+    const pc = proposalScopeClause(q.__proposalScope, 't', params);
+    where = where ? `${where} AND ${pc}` : ` WHERE ${pc}`;
+  }
+  return where;
+}
+
+function proposalRows(q) {
+  return (Array.isArray(q.values) ? q.values : [q.values]).filter(Boolean);
+}
+
+// team_type propozycji widocznych bez dostępu do Finansów: zespoły z zakładką Finanse
+// (tab:<moduł>:finances — rola albo przynależność do służby) i moduły własne z dostępem
+// (nazwa i klucz, bo FinanceWidget zapisuje `moduleName || moduleKey`). Moduł własny =
+// bez component_name i spoza katalogu (sermons/rsvp/ai mają komponent, choć nie są w katalogu).
+async function proposalTeamTypes(req, resolver) {
+  const out = new Set();
+  for (const [key, label] of Object.entries(PROPOSAL_TEAM_TYPES)) {
+    if (resolver.can(`tab:${key}:finances`)) out.add(label);
+  }
+  try {
+    const { rows } = await req.db.query(`SELECT key, label, component_name FROM app_modules`);
+    for (const m of rows) {
+      if (!m.key || m.component_name || BUILTIN_MODULE_KEYS.has(m.key)) continue;
+      if (!resolver.can(`module:${m.key}`)) continue;
+      out.add(m.key);
+      if (m.label) out.add(m.label);
+    }
+  } catch { /* brak tabeli — tylko zespoły wbudowane */ }
+  return [...out];
 }
 
 // Wyznacza module_key żądania na module_records (insert: z values; pozostałe: z filtra eq).

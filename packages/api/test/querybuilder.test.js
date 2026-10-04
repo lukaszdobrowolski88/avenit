@@ -171,3 +171,18 @@ test('buildQuery: to-one z `references` łączy po wskazanej kolumnie celu (SMS 
   assert.match(sql, /\."campaign_id" = t\."id"/);
   assert.doesNotMatch(sql, /password_hash/);
 });
+
+test('buildQuery: __proposalScope zawęża budget_proposals do zespołów i własnych zgłoszeń', () => {
+  const { sql, params } = buildQuery({
+    table: 'budget_proposals',
+    op: 'select',
+    select: '*',
+    filters: [{ type: 'eq', column: 'status', value: 'pending' }],
+    __proposalScope: { teamTypes: ['MediaTeam'], email: 'jan@x.pl' },
+  });
+  assert.match(sql, /t\."team_type" = ANY\(\$2::text\[\]\) OR \(\$3 <> '' AND lower\(t\."submitted_by"\) = lower\(\$3\)\)/);
+  assert.deepEqual(params, ['pending', ['MediaTeam'], 'jan@x.pl']);
+  // Inna tabela — zakres ignorowany.
+  const other = buildQuery({ table: 'events', op: 'select', select: '*', __proposalScope: { teamTypes: [], email: '' } });
+  assert.doesNotMatch(other.sql, /team_type/);
+});
