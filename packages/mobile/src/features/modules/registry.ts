@@ -79,7 +79,7 @@ export const MODULE_REGISTRY: Record<string, ModuleEntry> = {
   giving: m({ key: 'giving', label: 'Dawanie', Icon: Gift, tint: '#be123c', bg: '#ffe4e6', section: 'manage', webPath: '/giving' }),
   finance: m({ key: 'finance', label: 'Finanse', Icon: Wallet, tint: '#047857', bg: '#d1fae5', section: 'manage', webPath: '/finance' }),
   care: m({ key: 'care', label: 'Opieka i CRM', Icon: HeartHandshake, tint: '#b91c1c', bg: '#fee2e2', section: 'manage', webPath: '/members' }),
-  attendance: m({ key: 'attendance', label: 'Frekwencja', Icon: UserCheck, tint: '#0f766e', bg: '#ccfbf1', section: 'manage', webPath: '/attendance' }),
+  attendance: m({ key: 'attendance', label: 'Frekwencja', Icon: UserCheck, tint: '#0f766e', bg: '#ccfbf1', section: 'manage', route: '/(app)/attendance', webPath: '/attendance' }),
   rooms: m({ key: 'rooms', label: 'Rezerwacje sal', Icon: DoorOpen, tint: '#a16207', bg: '#fef3c7', section: 'manage', webPath: '/rooms' }),
   rsvp: m({ key: 'rsvp', label: 'Obecność (RSVP)', Icon: MailCheck, tint: '#0e7490', bg: '#cffafe', section: 'manage', webPath: '/rsvp' }),
   serve: m({ key: 'serve', label: 'Służba', Icon: CalendarOff, tint: '#6d28d9', bg: '#ede9fe', section: 'manage', webPath: '/serve' }),

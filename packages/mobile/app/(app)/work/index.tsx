@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import {
+  ActionSheetIOS,
   ActivityIndicator,
+  Alert,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -13,7 +16,7 @@ import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { useAuthSession } from '../../../src/lib/auth';
-import { useMyWork, type WorkItem } from '../../../src/features/work/api';
+import { useMyWork, useSetWorkStatus, type WorkItem } from '../../../src/features/work/api';
 
 const todayIso = () => format(new Date(), 'yyyy-MM-dd');
 const fmtDue = (iso: string) => {
@@ -32,7 +35,8 @@ const BUCKETS: { key: BucketKey; label: string; tint: string }[] = [
   { key: 'nodate', label: 'Bez terminu', tint: '#78716c' },
 ];
 
-const ItemCard = ({ item }: { item: WorkItem }) => (
+// Miękka karta (bez paska-akcentu); kolor tablicy pokazuje kropka przy jej nazwie.
+const ItemCard = ({ item, onStatus }: { item: WorkItem; onStatus: (item: WorkItem) => void }) => (
   <View
     style={{
       flexDirection: 'row',
@@ -41,13 +45,10 @@ const ItemCard = ({ item }: { item: WorkItem }) => (
       padding: 14,
       marginBottom: 8,
       borderRadius: 16,
-      borderWidth: 1,
-      borderColor: '#eef0f3',
-      backgroundColor: '#ffffff',
+      backgroundColor: '#f7f6f5',
       opacity: item.done ? 0.6 : 1,
     }}
   >
-    <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: item.boardColor }} />
     <View style={{ flex: 1 }}>
       <Text
         style={{
@@ -74,22 +75,25 @@ const ItemCard = ({ item }: { item: WorkItem }) => (
         ) : null}
       </View>
     </View>
-    {item.statusLabel ? (
-      <View
+    {item.statusColumnId && item.statusLabels.length ? (
+      <Pressable
+        onPress={() => onStatus(item)}
+        accessibilityLabel={`Zmień status: ${item.name}`}
+        className="active:opacity-70"
         style={{
-          paddingHorizontal: 9,
-          paddingVertical: 4,
+          paddingHorizontal: 10,
+          paddingVertical: 6,
           borderRadius: 999,
           backgroundColor: (item.statusColor ?? '#64748b') + '22',
         }}
       >
         <Text
-          style={{ fontSize: 11, color: item.statusColor ?? '#475569', fontFamily: 'Inter_700Bold' }}
+          style={{ fontSize: 12, color: item.statusColor ?? '#475569', fontFamily: 'Inter_700Bold' }}
           numberOfLines={1}
         >
-          {item.statusLabel}
+          {item.statusLabel ?? 'Ustaw status'}
         </Text>
-      </View>
+      </Pressable>
     ) : null}
   </View>
 );
@@ -98,6 +102,29 @@ export default function MyWorkScreen() {
   const { user } = useAuthSession();
   const { data, isLoading, isError, error, refetch, isRefetching } = useMyWork(user?.email ?? null);
   const [showDone, setShowDone] = useState(false);
+  const setStatus = useSetWorkStatus(user?.email ?? null);
+
+  const changeStatus = (item: WorkItem) => {
+    const labels = item.statusLabels;
+    const apply = (id: string) =>
+      setStatus.mutate(
+        { item, labelId: id },
+        { onError: (e: any) => Alert.alert('Nie udało się zmienić statusu', e?.message ?? '') },
+      );
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { title: item.name, options: [...labels.map((l) => l.title), 'Anuluj'], cancelButtonIndex: labels.length },
+        (i) => {
+          if (i < labels.length) apply(labels[i].id);
+        },
+      );
+    } else {
+      Alert.alert(item.name, 'Zmień status', [
+        ...labels.map((l) => ({ text: l.title, onPress: () => apply(l.id) })),
+        { text: 'Anuluj', style: 'cancel' as const },
+      ]);
+    }
+  };
 
   const buckets = useMemo(() => {
     const today = todayIso();
@@ -213,7 +240,7 @@ export default function MyWorkScreen() {
                       </Text>
                     </View>
                     {items.map((it: WorkItem) => (
-                      <ItemCard key={it.id} item={it} />
+                      <ItemCard onStatus={changeStatus} key={it.id} item={it} />
                     ))}
                   </View>
                 );

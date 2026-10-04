@@ -11,12 +11,13 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LayoutGrid, Search, X } from 'lucide-react-native';
+import { LayoutGrid, Search, UserCheck, X } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { ModuleTile } from '../../../src/features/modules/ModuleTile';
 import { openModule, useModules } from '../../../src/features/modules/useModules';
 import { useAuthSession } from '../../../src/lib/auth';
 import { useUnreadNotificationsCount } from '../../../src/features/notifications/api';
+import { usePendingAccounts } from '../../../src/features/admin/approvals';
 
 const GAP = 10;
 const SIDE = 16;
@@ -43,6 +44,9 @@ export default function ModulesScreen() {
   const { user } = useAuthSession();
   const { ready, groups, personal, items, perms } = useModules();
   const unread = useUnreadNotificationsCount(user?.email ?? null);
+  const canManageUsers = perms.can('action:settings:manage_users');
+  const pending = usePendingAccounts(canManageUsers);
+  const pendingCount = (pending.data ?? []).filter((a: { kind: string }) => a.kind === 'admin').length;
   const [query, setQuery] = useState('');
 
   const tileWidth = Math.floor((width - SIDE * 2 - GAP * 2) / 3);
@@ -151,6 +155,23 @@ export default function ModulesScreen() {
                 </View>
               ))
             : null}
+
+          {ready && canManageUsers && !q ? (
+            <View>
+              <SectionTitle>Administracja</SectionTitle>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP }}>
+                <ModuleTile
+                  width={tileWidth}
+                  label="Nowe konta"
+                  Icon={UserCheck}
+                  tint="#15803d"
+                  bg="#dcfce7"
+                  badge={pendingCount}
+                  onPress={() => router.push('/(app)/approvals')}
+                />
+              </View>
+            </View>
+          ) : null}
 
           {nothingFound ? (
             <Text

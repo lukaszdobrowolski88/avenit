@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 
 // „Moja praca" — elementy ze WSZYSTKICH tablic (Boards), gdzie zalogowany jest
@@ -15,6 +15,10 @@ export interface WorkItem {
   statusLabel: string | null;
   statusColor: string | null;
   done: boolean;
+  // Do zmiany statusu z telefonu (kolumna typu status tej tablicy).
+  statusColumnId: string | null;
+  statusLabels: { id: string; title: string; color: string }[];
+  cells: Record<string, any>;
 }
 
 interface BoardRow {
@@ -87,7 +91,7 @@ export const useMyWork = (userEmail: string | null) =>
           const v = cells[dateCol.id];
           due = dateCol.type === 'timeline' ? (v?.end || v?.start || null) : (v || null);
         }
-        const statusCol = cols.find((c) => c.type === 'status' || c.type === 'priority');
+        const statusCol = cols.find((c) => c.type === 'status') ?? cols.find((c) => c.type === 'priority');
         const statusVal = statusCol ? cells[statusCol.id] : null;
         const label = statusCol
           ? (statusCol.settings?.labels ?? []).find((l) => l.id === statusVal) ?? null
@@ -104,8 +108,31 @@ export const useMyWork = (userEmail: string | null) =>
           statusLabel: label?.title ?? null,
           statusColor: label?.color ?? null,
           done: !!label && /gotow|done|zrobion|ukończ|zakończ/i.test(label.title),
+          statusColumnId: statusCol?.id ?? null,
+          statusLabels: (statusCol?.settings?.labels ?? []).map((l) => ({
+            id: String(l.id),
+            title: String(l.title ?? l.id),
+            color: String(l.color ?? '#a8a29e'),
+          })),
+          cells,
         });
       }
       return out;
     },
   });
+
+// Zmiana statusu elementu (jak edycja komórki w Boards: board_items.cells[kolumna] = id etykiety).
+// Członek ma res:board_items:update (preset), więc działa także dla zwykłych osób.
+export const useSetWorkStatus = (userEmail: string | null) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ item, labelId }: { item: WorkItem; labelId: string }) => {
+      if (!item.statusColumnId) throw new Error('Ta tablica nie ma kolumny statusu.');
+      const { error } = await (supabase.from('board_items') as any)
+        .update({ cells: { ...item.cells, [item.statusColumnId]: labelId } })
+        .eq('id', item.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['my-work', userEmail] }),
+  });
+};

@@ -140,6 +140,18 @@ export const usePermissions = () => {
     [moduleVisible, can],
   );
 
+  // Pola z kontrolą (np. members.phone) — model OPT-OUT jak resolver: zapis dozwolony,
+  // dopóki admin jawnie nie zabronił. Serwer odrzuca cały zapis z zabronionym polem.
+  const fieldWritable = useCallback(
+    (resource: string, column: string): boolean => {
+      if (fallback) return true;
+      if (!data) return false;
+      if (data.isAdmin || data.legacy) return true;
+      return resolver ? resolver.fieldWritable(resource, column) : true;
+    },
+    [data, resolver, fallback],
+  );
+
   const leaderOf = useCallback(
     (ministryKey: string): boolean =>
       !!data?.ministries.some(
@@ -162,6 +174,7 @@ export const usePermissions = () => {
     can,
     moduleVisible,
     tabVisible,
+    fieldWritable,
     leaderOf,
   };
 };

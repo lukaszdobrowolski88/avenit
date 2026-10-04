@@ -98,6 +98,12 @@ export default async function dataApiRoutes(app) {
         }
       }
 
+      // Materiały to tabele T(null) (czyta i dodaje każdy zalogowany), ale zmiana nazwy
+      // i usuwanie cudzych plików wymaga uprawnienia z roli — inaczej tylko własne.
+      if (access.ok && !(await allowMaterialsWrite(q, req, access))) {
+        throw new ApiError(403, 'Możesz zmieniać i usuwać tylko własne pliki');
+      }
+
       // Egzekwowanie pól przy zapisie: odrzuć próbę edycji kolumny bez prawa.
       if (access.resolver && (q.op === 'insert' || q.op === 'update') && q.values) {
         const cols = fieldColumns(q.table);
@@ -287,6 +293,28 @@ async function allowOwnPrayerWrite(q, req) {
   // Właścicielstwo: wiersz musi należeć do zalogowanego.
   const { rows } = await req.db.query(
     `SELECT 1 FROM prayer_requests WHERE id = $1 AND lower(user_email) = lower($2)`,
+    [idFilter.value, req.user.email],
+  );
+  return rows.length > 0;
+}
+
+// materials_files / materials_folders: update i delete dozwolone, gdy rola daje
+// res:<tabela>:update|delete (rada, koordynator), albo gdy żądanie dotyczy jednego
+// WŁASNEGO wiersza (plik: uploaded_by, folder: created_by — e-mail). Pozostałe operacje
+// i tabele bez zmian. Tryb legacy (resolver null) nie jest ograniczany.
+const MATERIALS_OWNER = { materials_files: 'uploaded_by', materials_folders: 'created_by' };
+
+async function allowMaterialsWrite(q, req, access) {
+  const ownerCol = MATERIALS_OWNER[q.table];
+  if (!ownerCol || (q.op !== 'update' && q.op !== 'delete')) return true;
+  if (!access.resolver) return true;
+  if (access.resolver.can(crudCapability(q.table, q.op))) return true;
+  if (!req.user?.email) return false;
+  const f = q.filters || [];
+  const idFilter = f.find((x) => x.type === 'eq' && x.column === 'id');
+  if (f.length !== 1 || !idFilter) return false;
+  const { rows } = await req.db.query(
+    `SELECT 1 FROM ${quoteIdent(q.table)} WHERE id = $1 AND lower(${quoteIdent(ownerCol)}) = lower($2)`,
     [idFilter.value, req.user.email],
   );
   return rows.length > 0;

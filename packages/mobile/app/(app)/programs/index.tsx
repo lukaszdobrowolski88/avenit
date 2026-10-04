@@ -58,25 +58,21 @@ const ProgramCard = ({ program }: { program: ProgramListItem }) => {
             borderColor: '#eef0f3',
           }}
         >
-          <View
-            style={{
-              width: 4,
-              alignSelf: 'stretch',
-              borderRadius: 2,
-              backgroundColor: accent,
-            }}
-          />
           <View className="flex-1">
-            <Text
-              className="text-[11px] uppercase"
-              style={{
-                color: '#78716c',
-                letterSpacing: 0.4,
-                fontFamily: 'Inter_600SemiBold',
-              }}
-            >
-              {formatDate(program.date, 'EEEE, d MMM')}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {/* Kolor typu nabożeństwa — kropka zamiast paska-akcentu. */}
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: accent }} />
+              <Text
+                className="text-[11px] uppercase"
+                style={{
+                  color: '#78716c',
+                  letterSpacing: 0.4,
+                  fontFamily: 'Inter_600SemiBold',
+                }}
+              >
+                {formatDate(program.date, 'EEEE, d MMM')}
+              </Text>
+            </View>
             <Text
               className="text-[15px] mt-0.5"
               style={{
