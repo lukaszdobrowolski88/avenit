@@ -28,8 +28,11 @@ export interface TeamEvent {
   createdBy: string | null;
 }
 
+// Wydarzenia działają też dla modułów z kreatora (klucz spoza TeamKey).
+export type EventsCfg = { key: string; eventsTable: 'events' | 'mlodziezowka_events' };
+
 // Wydarzenie jest archiwalne, gdy oznaczone albo minęło (EventsTab.jsx:590-593).
-export const useTeamEvents = (cfg: TeamConfig, scope: CampusScope) =>
+export const useTeamEvents = (cfg: EventsCfg, scope: CampusScope) =>
   useQuery({
     queryKey: ['team', cfg.key, 'events', scope.selectedCampusId],
     queryFn: async (): Promise<TeamEvent[]> => {
@@ -138,7 +141,13 @@ const DEFAULT_EVENT_TYPES: Record<TeamKey, EventTypeOption[]> = {
 };
 
 // Typy z ustawień kościoła (app_settings.module_calendar[key].types) — jak web.
-export const useEventTypes = (key: TeamKey) =>
+const GENERIC_EVENT_TYPES: EventTypeOption[] = [
+  { key: 'spotkanie', label: 'Spotkanie' },
+  { key: 'wydarzenie', label: 'Wydarzenie' },
+  { key: 'inne', label: 'Inne' },
+];
+
+export const useEventTypes = (key: string) =>
   useQuery({
     queryKey: ['team', key, 'event-types'],
     staleTime: 5 * 60_000,
@@ -154,7 +163,7 @@ export const useEventTypes = (key: TeamKey) =>
       } catch {
         /* zostaje domyślne */
       }
-      return DEFAULT_EVENT_TYPES[key];
+      return DEFAULT_EVENT_TYPES[key as TeamKey] ?? GENERIC_EVENT_TYPES;
     },
   });
 
@@ -162,7 +171,7 @@ const ymdLocal = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const hmLocal = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 
-export const useCreateTeamEvent = (cfg: TeamConfig, campusIdForInsert: number | null) => {
+export const useCreateTeamEvent = (cfg: EventsCfg, campusIdForInsert: number | null) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
@@ -205,7 +214,7 @@ export const useCreateTeamEvent = (cfg: TeamConfig, campusIdForInsert: number | 
   });
 };
 
-export const useDeleteTeamEvent = (cfg: TeamConfig) => {
+export const useDeleteTeamEvent = (cfg: EventsCfg) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
@@ -694,64 +703,71 @@ export interface TeamBoard {
   cellsById: Record<string, Record<string, unknown>>;
 }
 
-export const useTeamBoard = (sourceKind: string | undefined) =>
-  useQuery({
-    queryKey: ['team', 'board', sourceKind],
-    enabled: !!sourceKind,
-    queryFn: async (): Promise<TeamBoard> => {
-      const empty: TeamBoard = { boardId: null, statusColumnId: null, labels: [], firstGroupId: null, tasks: [], cellsById: {} };
-      const { data: boards } = await supabase.from('boards').select('id').eq('source_kind', sourceKind!).limit(1);
-      const boardId = asList(boards)[0]?.id ? String(asList(boards)[0].id) : null;
-      if (!boardId) return empty;
-      const [{ data: cols }, { data: groups }, { data: items, error }] = await Promise.all([
-        supabase.from('board_columns').select('id, name, type, settings').eq('board_id', boardId).order('display_order'),
-        supabase.from('board_groups').select('id, name, display_order').eq('board_id', boardId).order('display_order'),
-        supabase
-          .from('board_items')
-          .select('id, name, group_id, cells, parent_item_id, display_order')
-          .eq('board_id', boardId)
-          .order('display_order'),
-      ]);
-      if (error) throw error;
-      const columns = asList(cols);
-      const settingsOf = (c: any) => (typeof c?.settings === 'string' ? JSON.parse(c.settings) : c?.settings) ?? {};
-      const statusCol = columns.find((c) => c.type === 'status');
-      const peopleCol = columns.find((c) => c.type === 'people');
-      const dateCol = columns.find((c) => c.type === 'date');
-      const labels: BoardStatusLabel[] = (settingsOf(statusCol).labels ?? []).map((l: any) => ({
-        id: String(l.id),
-        title: String(l.title ?? l.id),
-        color: String(l.color ?? '#a8a29e'),
-      }));
-      const groupName = new Map<string, string>(asList(groups).map((g) => [String(g.id), String(g.name)]));
-      const cellsById: Record<string, Record<string, unknown>> = {};
-      const tasks: BoardTask[] = asList(items)
-        .filter((it) => !it.parent_item_id)
-        .map((it) => {
-          const cells = (typeof it.cells === 'string' ? JSON.parse(it.cells) : it.cells) ?? {};
-          cellsById[String(it.id)] = cells;
-          const people = peopleCol ? cells[peopleCol.id] : null;
-          return {
-            id: String(it.id),
-            name: String(it.name ?? 'Zadanie'),
-            groupName: it.group_id != null ? groupName.get(String(it.group_id)) ?? null : null,
-            statusId: statusCol && cells[statusCol.id] != null ? String(cells[statusCol.id]) : null,
-            people: Array.isArray(people) ? people.map((p: any) => String(p?.name || p?.email || '')).filter(Boolean) : [],
-            date: dateCol && cells[dateCol.id] ? String(cells[dateCol.id]).slice(0, 10) : null,
-          };
-        });
+// Wczytanie tablicy po id: kolumny (status/people/date), grupy, elementy.
+async function loadBoard(boardId: string): Promise<TeamBoard> {
+  const [{ data: cols }, { data: groups }, { data: items, error }] = await Promise.all([
+    supabase.from('board_columns').select('id, name, type, settings').eq('board_id', boardId).order('display_order'),
+    supabase.from('board_groups').select('id, name, display_order').eq('board_id', boardId).order('display_order'),
+    supabase
+      .from('board_items')
+      .select('id, name, group_id, cells, parent_item_id, display_order')
+      .eq('board_id', boardId)
+      .order('display_order'),
+  ]);
+  if (error) throw error;
+  const columns = asList(cols);
+  const settingsOf = (c: any) => (typeof c?.settings === 'string' ? JSON.parse(c.settings) : c?.settings) ?? {};
+  const statusCol = columns.find((c) => c.type === 'status');
+  const peopleCol = columns.find((c) => c.type === 'people');
+  const dateCol = columns.find((c) => c.type === 'date');
+  const labels: BoardStatusLabel[] = (settingsOf(statusCol).labels ?? []).map((l: any) => ({
+    id: String(l.id),
+    title: String(l.title ?? l.id),
+    color: String(l.color ?? '#a8a29e'),
+  }));
+  const groupName = new Map<string, string>(asList(groups).map((g) => [String(g.id), String(g.name)]));
+  const cellsById: Record<string, Record<string, unknown>> = {};
+  const tasks: BoardTask[] = asList(items)
+    .filter((it) => !it.parent_item_id)
+    .map((it) => {
+      const cells = (typeof it.cells === 'string' ? JSON.parse(it.cells) : it.cells) ?? {};
+      cellsById[String(it.id)] = cells;
+      const people = peopleCol ? cells[peopleCol.id] : null;
       return {
-        boardId,
-        statusColumnId: statusCol ? String(statusCol.id) : null,
-        labels,
-        firstGroupId: asList(groups)[0]?.id ? String(asList(groups)[0].id) : null,
-        tasks,
-        cellsById,
+        id: String(it.id),
+        name: String(it.name ?? 'Zadanie'),
+        groupName: it.group_id != null ? groupName.get(String(it.group_id)) ?? null : null,
+        statusId: statusCol && cells[statusCol.id] != null ? String(cells[statusCol.id]) : null,
+        people: Array.isArray(people) ? people.map((p: any) => String(p?.name || p?.email || '')).filter(Boolean) : [],
+        date: dateCol && cells[dateCol.id] ? String(cells[dateCol.id]).slice(0, 10) : null,
       };
+    });
+  return {
+    boardId,
+    statusColumnId: statusCol ? String(statusCol.id) : null,
+    labels,
+    firstGroupId: asList(groups)[0]?.id ? String(asList(groups)[0].id) : null,
+    tasks,
+    cellsById,
+  };
+}
+
+const EMPTY_BOARD: TeamBoard = { boardId: null, statusColumnId: null, labels: [], firstGroupId: null, tasks: [], cellsById: {} };
+
+// Tablica zespołu po source_kind (ModuleBoard na webie) albo konkretna tablica po id.
+export const useTeamBoard = (sourceKind: string | undefined, boardId?: string) =>
+  useQuery({
+    queryKey: ['team', 'board', boardId ?? sourceKind],
+    enabled: !!(boardId || sourceKind),
+    queryFn: async (): Promise<TeamBoard> => {
+      if (boardId) return loadBoard(boardId);
+      const { data: boards } = await supabase.from('boards').select('id').eq('source_kind', sourceKind!).limit(1);
+      const id = asList(boards)[0]?.id ? String(asList(boards)[0].id) : null;
+      return id ? loadBoard(id) : EMPTY_BOARD;
     },
   });
 
-export const useSetTaskStatus = (sourceKind: string | undefined) => {
+export const useSetTaskStatus = (sourceKind: string | undefined, boardId?: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -770,11 +786,11 @@ export const useSetTaskStatus = (sourceKind: string | undefined) => {
         .eq('id', itemId);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['team', 'board', sourceKind] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['team', 'board', boardId ?? sourceKind] }),
   });
 };
 
-export const useAddTask = (sourceKind: string | undefined) => {
+export const useAddTask = (sourceKind: string | undefined, boardId?: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -798,6 +814,6 @@ export const useAddTask = (sourceKind: string | undefined) => {
       });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['team', 'board', sourceKind] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['team', 'board', boardId ?? sourceKind] }),
   });
 };

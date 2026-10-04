@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { CalendarDays, Check, MapPin, Trash2 } from 'lucide-react-native';
-import type { TeamConfig } from '../config';
 import {
   useCreateTeamEvent,
   useDeleteTeamEvent,
@@ -10,13 +9,14 @@ import {
   useTeamEvents,
   useToggleGoing,
   type EventTypeOption,
+  type EventsCfg,
   type TeamEvent,
 } from '../data';
 import { NewEventModal } from '../components/NewEventModal';
 import { AddButton, Card, DateBlock, Empty, Loading, Pill, SegmentChips, dayLabel } from './ui';
 
 interface Props {
-  cfg: TeamConfig;
+  cfg: EventsCfg;
   scope: { selectedCampusId: number | null; withCampusFilter: <T>(q: T) => T };
   campusIdForInsert: number | null;
   myEmail: string | null;

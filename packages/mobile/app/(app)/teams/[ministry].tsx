@@ -20,6 +20,7 @@ import { PeopleTab, RolesTab } from '../../../src/features/teams/tabs/PeopleTab'
 import { EquipmentTab } from '../../../src/features/teams/tabs/EquipmentTab';
 import { FinanceTab } from '../../../src/features/teams/tabs/FinanceTab';
 import { TasksTab } from '../../../src/features/teams/tabs/TasksTab';
+import { KidsTodayTab } from '../../../src/features/teams/tabs/KidsTodayTab';
 import { AddButton, Empty, Loading } from '../../../src/features/teams/tabs/ui';
 import { useMyProfile } from '../../../src/features/account/api';
 
@@ -113,6 +114,8 @@ export default function TeamDetailScreen() {
 
   const renderContent = () => {
     switch (active) {
+      case 'checkin':
+        return <KidsTodayTab myEmail={myEmail} canCreateSession={perms.can('res:checkin_sessions:create')} />;
       case 'wall':
         return (
           <View>

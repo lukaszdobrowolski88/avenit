@@ -76,11 +76,11 @@ export const MODULE_REGISTRY: Record<string, ModuleEntry> = {
 
   members: m({ key: 'members', label: 'Członkowie', Icon: Users, tint: '#4338ca', bg: '#e0e7ff', section: 'manage', route: '/(app)/members', webPath: '/members' }),
   forms: m({ key: 'forms', label: 'Formularze', Icon: ClipboardList, tint: '#0369a1', bg: '#e0f2fe', section: 'manage', route: '/(app)/forms', webPath: '/forms' }),
-  giving: m({ key: 'giving', label: 'Dawanie', Icon: Gift, tint: '#be123c', bg: '#ffe4e6', section: 'manage', webPath: '/giving' }),
-  finance: m({ key: 'finance', label: 'Finanse', Icon: Wallet, tint: '#047857', bg: '#d1fae5', section: 'manage', webPath: '/finance' }),
+  giving: m({ key: 'giving', label: 'Dawanie', Icon: Gift, tint: '#be123c', bg: '#ffe4e6', section: 'manage', route: '/(app)/giving/admin', webPath: '/giving' }),
+  finance: m({ key: 'finance', label: 'Finanse', Icon: Wallet, tint: '#047857', bg: '#d1fae5', section: 'manage', route: '/(app)/finance', webPath: '/finance' }),
   care: m({ key: 'care', label: 'Opieka i CRM', Icon: HeartHandshake, tint: '#b91c1c', bg: '#fee2e2', section: 'manage', webPath: '/members' }),
   attendance: m({ key: 'attendance', label: 'Frekwencja', Icon: UserCheck, tint: '#0f766e', bg: '#ccfbf1', section: 'manage', route: '/(app)/attendance', webPath: '/attendance' }),
-  rooms: m({ key: 'rooms', label: 'Rezerwacje sal', Icon: DoorOpen, tint: '#a16207', bg: '#fef3c7', section: 'manage', webPath: '/rooms' }),
+  rooms: m({ key: 'rooms', label: 'Rezerwacje sal', Icon: DoorOpen, tint: '#a16207', bg: '#fef3c7', section: 'manage', route: '/(app)/rooms', webPath: '/rooms' }),
   rsvp: m({ key: 'rsvp', label: 'Obecność (RSVP)', Icon: MailCheck, tint: '#0e7490', bg: '#cffafe', section: 'manage', webPath: '/rsvp' }),
   serve: m({ key: 'serve', label: 'Służba', Icon: CalendarOff, tint: '#6d28d9', bg: '#ede9fe', section: 'manage', webPath: '/serve' }),
   mailing: m({ key: 'mailing', label: 'Mailing', Icon: Send, tint: '#1d4ed8', bg: '#dbeafe', section: 'manage', webPath: '/mailing' }),
@@ -96,7 +96,7 @@ export const MODULE_REGISTRY: Record<string, ModuleEntry> = {
 // Klucze, których NIE pokazujemy jako kafelka modułu (pulpit to zakładka Start).
 export const HIDDEN_MODULE_KEYS = new Set(['dashboard']);
 
-// Moduł z kreatora (spoza rejestru) — zespół/służba, otwierany na webie pod swoją ścieżką.
+// Moduł z kreatora (spoza rejestru) — natywny ekran z zakładkami (app/(app)/custom/[key]).
 export const customModuleEntry = (key: string, label: string, path: string | null): ModuleEntry => ({
   key,
   label,
@@ -104,6 +104,7 @@ export const customModuleEntry = (key: string, label: string, path: string | nul
   tint: '#475569',
   bg: '#f1f5f9',
   section: 'teams',
+  route: `/(app)/custom/${key}`,
   webPath: path || `/module/${key}`,
 });
 
