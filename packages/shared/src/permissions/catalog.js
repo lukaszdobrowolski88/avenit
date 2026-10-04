@@ -90,6 +90,13 @@ export const RESOURCE_LABELS = {
   push_campaign_segments: 'Segmenty kampanii push', push_campaign_templates: 'Szablony kampanii push',
   sms_campaign_ab_variants: 'Warianty A/B (SMS)', sms_campaign_segments: 'Segmenty kampanii SMS',
   sms_campaign_templates: 'Szablony kampanii SMS', sms_inline_responses: 'Odpowiedzi SMS',
+  // Moduły „growth suite” (migracja 006) — dorejestrowane 2026-10-04.
+  donations: 'Darowizny', giving_recurring: 'Darowizny cykliczne', giving_campaigns: 'Zbiórki',
+  giving_funds: 'Fundusze', giving_pledges: 'Deklaracje wpłat',
+  attendance_sessions: 'Sesje obecności', attendance_records: 'Wpisy obecności',
+  resources: 'Sale i zasoby', resource_bookings: 'Rezerwacje',
+  volunteer_blockouts: 'Niedostępność wolontariuszy', song_usage: 'Użycie pieśni (CCLI)',
+  automation_workflows: 'Automatyzacje', automation_steps: 'Kroki automatyzacji', automation_runs: 'Uruchomienia automatyzacji',
 };
 
 // Definicje modułów. Kolejność = kolejność w macierzy uprawnień.
@@ -348,6 +355,34 @@ export const MODULES = [
       { resource: 'app_users', column: 'role', label: 'Rola użytkownika' },
       { resource: 'app_users', column: 'is_active', label: 'Status aktywności' },
     ],
+  },
+  // ── Moduły „growth suite” (app_modules z migracji 006). Do 2026-10-04 ich tabele nie
+  // były w registry API, więc web dostawał 403 na Dawaniu, Frekwencji, Salach, Służbie
+  // i Automatyzacjach. Teraz dostęp idzie przez module:<key> + res:<tabela>:<op>.
+  {
+    key: 'giving', label: 'Dawanie',
+    resources: ['donations', 'giving_recurring', 'giving_campaigns', 'giving_funds', 'giving_pledges'],
+    tabs: [], actions: [], fields: [],
+  },
+  {
+    key: 'attendance', label: 'Frekwencja',
+    resources: ['attendance_sessions', 'attendance_records'],
+    tabs: [], actions: [], fields: [],
+  },
+  {
+    key: 'rooms', label: 'Rezerwacje sal',
+    resources: ['resources', 'resource_bookings'],
+    tabs: [], actions: [], fields: [],
+  },
+  {
+    key: 'serve', label: 'Służba',
+    resources: ['volunteer_blockouts', 'song_usage'],
+    tabs: [], actions: [], fields: [],
+  },
+  {
+    key: 'automation', label: 'Automatyzacje',
+    resources: ['automation_workflows', 'automation_steps', 'automation_runs'],
+    tabs: [], actions: [], fields: [],
   },
 ];
 

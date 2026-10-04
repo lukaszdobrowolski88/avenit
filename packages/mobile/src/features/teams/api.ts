@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 
 export type MinistryKey = 'worship' | 'media' | 'atmosfera' | 'kids' | 'mlodziezowka';
 
+// Wygląd i klucze 5 wbudowanych zespołów. Dane zakładek: features/teams/config.ts + data.ts.
 export interface MinistryMeta {
   key: MinistryKey;
   label: string;
@@ -14,7 +15,6 @@ export interface MinistryMeta {
   bg: string;
   gradFrom: string;
   gradTo: string;
-  eventsTable: string;
   teamType: string | null;
 }
 
@@ -28,7 +28,6 @@ export const MINISTRY_META: Record<MinistryKey, MinistryMeta> = {
     bg: '#fce7f3',
     gradFrom: '#ec4899',
     gradTo: '#f97316',
-    eventsTable: 'module_events',
     teamType: 'worship',
   },
   media: {
@@ -40,7 +39,6 @@ export const MINISTRY_META: Record<MinistryKey, MinistryMeta> = {
     bg: '#ffedd5',
     gradFrom: '#f97316',
     gradTo: '#facc15',
-    eventsTable: 'module_events',
     teamType: 'media',
   },
   atmosfera: {
@@ -52,7 +50,6 @@ export const MINISTRY_META: Record<MinistryKey, MinistryMeta> = {
     bg: '#ccfbf1',
     gradFrom: '#14b8a6',
     gradTo: '#06b6d4',
-    eventsTable: 'module_events',
     teamType: 'atmosfera',
   },
   kids: {
@@ -64,7 +61,6 @@ export const MINISTRY_META: Record<MinistryKey, MinistryMeta> = {
     bg: '#fef3c7',
     gradFrom: '#eab308',
     gradTo: '#f59e0b',
-    eventsTable: 'module_events',
     teamType: 'kids',
   },
   mlodziezowka: {
@@ -76,7 +72,6 @@ export const MINISTRY_META: Record<MinistryKey, MinistryMeta> = {
     bg: '#ffe4e6',
     gradFrom: '#f43f5e',
     gradTo: '#ec4899',
-    eventsTable: 'mlodziezowka_events',
     teamType: null,
   },
 };
@@ -96,6 +91,8 @@ interface CampusScope {
 
 // =====================================================================
 // Wall posts (bez campus filter — tablice są globalne per ministry)
+// `ministry` = wartość wall_posts.ministry jak na webie — dla Uwielbienia
+// 'Grupa Uwielbienia' (TEAM_CONFIG.wallMinistry), nie klucz modułu.
 // =====================================================================
 
 export interface WallAttachment {
@@ -129,7 +126,7 @@ export interface WallPost {
   updated_at: string;
 }
 
-export const useWallPosts = (ministry: MinistryKey) =>
+export const useWallPosts = (ministry: string) =>
   useQuery({
     queryKey: ['teams', 'wall', ministry],
     queryFn: async (): Promise<WallPost[]> => {
@@ -159,7 +156,7 @@ export const useWallPosts = (ministry: MinistryKey) =>
     },
   });
 
-export const useCreateWallPost = (ministry: MinistryKey) => {
+export const useCreateWallPost = (ministry: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
@@ -181,7 +178,7 @@ export const useCreateWallPost = (ministry: MinistryKey) => {
   });
 };
 
-export const useDeleteWallPost = (ministry: MinistryKey) => {
+export const useDeleteWallPost = (ministry: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
@@ -192,7 +189,7 @@ export const useDeleteWallPost = (ministry: MinistryKey) => {
   });
 };
 
-export const useTogglePostLike = (ministry: MinistryKey) => {
+export const useTogglePostLike = (ministry: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -217,7 +214,7 @@ export const useTogglePostLike = (ministry: MinistryKey) => {
   });
 };
 
-export const useTogglePostPin = (ministry: MinistryKey) => {
+export const useTogglePostPin = (ministry: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ postId, pinned }: { postId: string; pinned: boolean }) => {
@@ -230,7 +227,7 @@ export const useTogglePostPin = (ministry: MinistryKey) => {
   });
 };
 
-export const useAddPostComment = (ministry: MinistryKey) => {
+export const useAddPostComment = (ministry: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -262,168 +259,3 @@ export const useAddPostComment = (ministry: MinistryKey) => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['teams', 'wall', ministry] }),
   });
 };
-
-// =====================================================================
-// Events (z campus filter — {ministry}_events są kampus-świadome)
-// =====================================================================
-
-export interface MinistryEvent {
-  id: string;
-  title: string;
-  description: string | null;
-  event_type: string;
-  start_date: string;
-  end_date: string | null;
-  location: string | null;
-  max_participants: number | null;
-  created_by: string;
-  created_at: string;
-  campus_id?: number | null;
-}
-
-export const useMinistryEvents = (
-  ministry: MinistryKey,
-  { selectedCampusId, withCampusFilter }: CampusScope,
-) => {
-  const meta = MINISTRY_META[ministry];
-  return useQuery({
-    queryKey: ['teams', 'events', ministry, selectedCampusId],
-    queryFn: async (): Promise<MinistryEvent[]> => {
-      let base: any = supabase.from(meta.eventsTable).select('*');
-      if (meta.teamType) base = base.eq('team_type', meta.teamType); // module_events (nie mlodziezowka)
-      const { data, error } = await withCampusFilter(base)
-        .gte('start_date', new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString())
-        .order('start_date', { ascending: true })
-        .limit(50);
-      if (error) throw error;
-      return (data ?? []) as MinistryEvent[];
-    },
-  });
-};
-
-export const useCreateMinistryEvent = (
-  ministry: MinistryKey,
-  { campusIdForInsert }: { campusIdForInsert: number | null },
-) => {
-  const qc = useQueryClient();
-  const meta = MINISTRY_META[ministry];
-  return useMutation({
-    mutationFn: async (input: {
-      title: string;
-      description: string | null;
-      eventType: string;
-      startDate: string;
-      endDate: string | null;
-      location: string | null;
-      authorEmail: string;
-    }) => {
-      const { error } = await (supabase.from(meta.eventsTable) as any).insert({
-        title: input.title,
-        description: input.description,
-        event_type: input.eventType,
-        start_date: input.startDate,
-        end_date: input.endDate,
-        location: input.location,
-        created_by: input.authorEmail,
-        campus_id: campusIdForInsert,
-        ...(meta.teamType ? { team_type: meta.teamType } : {}), // module_events wymaga team_type
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['teams', 'events', ministry] }),
-  });
-};
-
-export const useDeleteMinistryEvent = (ministry: MinistryKey) => {
-  const qc = useQueryClient();
-  const meta = MINISTRY_META[ministry];
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from(meta.eventsTable).delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['teams', 'events', ministry] }),
-  });
-};
-
-// =====================================================================
-// Schedule
-// =====================================================================
-
-export interface ScheduleEntry {
-  id: string;
-  programId: number;
-  programDate: string;
-  programTitle: string | null;
-  typeName: string | null;
-  typeColor: string | null;
-  assignedEmail: string;
-  assignedName: string;
-  roleKey: string;
-  status: 'pending' | 'accepted' | 'rejected';
-}
-
-export const useTeamSchedule = (ministry: MinistryKey) => {
-  const meta = MINISTRY_META[ministry];
-  return useQuery({
-    queryKey: ['teams', 'schedule', ministry],
-    queryFn: async (): Promise<ScheduleEntry[]> => {
-      if (!meta.teamType) return [];
-      const today = new Date().toISOString().slice(0, 10);
-      const { data, error } = await supabase
-        .from('schedule_assignments')
-        .select(
-          'id, assigned_email, assigned_name, role_key, status, programs!inner(id, date, title, program_types(name, color))',
-        )
-        .eq('team_type', meta.teamType)
-        .gte('programs.date', today)
-        .order('programs(date)', { ascending: true })
-        .limit(200);
-      if (error) throw error;
-      return ((data ?? []) as any[]).flatMap((r) => {
-        const p = r.programs;
-        if (!p) return [];
-        const t = p.program_types;
-        return [
-          {
-            id: r.id,
-            programId: p.id,
-            programDate: p.date,
-            programTitle: p.title ?? null,
-            typeName: t?.name ?? null,
-            typeColor: t?.color ?? null,
-            assignedEmail: r.assigned_email,
-            assignedName: r.assigned_name ?? r.assigned_email,
-            roleKey: r.role_key,
-            status: r.status,
-          } satisfies ScheduleEntry,
-        ];
-      });
-    },
-    enabled: !!meta.teamType,
-  });
-};
-
-// ── Skład służby (roster) — przez fn ministry-roster (kontakty scoped serwerowo) ──
-export interface RosterMember {
-  user_id: string;
-  name: string;
-  role: string;
-  is_leader: boolean;
-  is_me: boolean;
-  avatar_url: string | null;
-  phone: string | null;
-  email: string | null;
-}
-
-export const useMinistryRoster = (ministry: MinistryKey) =>
-  useQuery({
-    queryKey: ['teams', 'roster', ministry],
-    queryFn: async (): Promise<RosterMember[]> => {
-      const { data, error } = await supabase.functions.invoke('ministry-roster', {
-        body: { ministry_key: ministry },
-      });
-      if (error) throw new Error(error.message || 'Nie udało się pobrać składu zespołu.');
-      return (((data as any)?.members ?? []) as RosterMember[]);
-    },
-  });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,7 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ChevronRight,
@@ -37,6 +37,7 @@ import {
   type FolderRow,
 } from '../../../src/features/materials/api';
 import { useAuthSession } from '../../../src/lib/auth';
+import { useModules } from '../../../src/features/modules/useModules';
 import { GradientIcon } from '../../../src/components/ui/GradientIcon';
 
 const ICON_BY_TYPE = {
@@ -64,15 +65,33 @@ const itemBorderStyle = {
   borderColor: '#eef0f3',
 } as const;
 
+// Moduły, które mają na webie zakładkę „Pliki” (MaterialsTab z team_type = klucz modułu).
+const FILE_SPACES = ['worship', 'media', 'atmosfera', 'kids', 'homegroups', 'teaching'];
+
 export default function MaterialsScreen() {
   const router = useRouter();
   const { user } = useAuthSession();
   const insets = useSafeAreaInsets();
+  const { team } = useLocalSearchParams<{ team?: string }>();
+  const { items: modules } = useModules();
+  // Przestrzeń plików jak na webie: undefined = wybór, null = ogólne, 'media' = pliki zespołu.
+  const [space, setSpace] = useState<string | null | undefined>(team ? String(team) : undefined);
   const [folderId, setFolderId] = useState<string | null>(null);
-  const folders = useFolders(folderId);
-  const files = useFiles(folderId);
+  const teamType = space ?? null;
+  const folders = useFolders(folderId, teamType);
+  const files = useFiles(folderId, teamType);
   const path = useFolderPath(folderId);
-  const upload = useUploadMaterial(folderId, user?.email ?? null);
+  const upload = useUploadMaterial(folderId, user?.email ?? null, teamType);
+
+  const spaces = useMemo(
+    () =>
+      modules
+        .filter((m) => FILE_SPACES.includes(m.key))
+        .map((m) => ({ key: m.key, label: m.label, Icon: m.Icon, tint: m.tint, bg: m.bg })),
+    [modules],
+  );
+  const spaceLabel =
+    space === undefined ? 'Materiały' : space === null ? 'Ogólne' : spaces.find((x) => x.key === space)?.label ?? 'Pliki';
 
   const handleUpload = async () => {
     try {
@@ -108,8 +127,11 @@ export default function MaterialsScreen() {
   };
 
   const handleBack = () => {
-    if (folderId === null) router.back();
-    else {
+    if (folderId === null) {
+      // Z przestrzeni wróć do wyboru (chyba że weszliśmy z zakładki zespołu).
+      if (space !== undefined && !team) setSpace(undefined);
+      else router.back();
+    } else {
       const parent = path.data?.[path.data.length - 2];
       setFolderId(parent?.id ?? null);
     }
@@ -147,34 +169,36 @@ export default function MaterialsScreen() {
               className="text-[12px]"
               style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}
             >
-              Pliki i dokumenty
+              {space === undefined ? 'Pliki i dokumenty' : 'Materiały'}
             </Text>
             <Text
               className="text-[24px] mt-0.5"
               style={{ color: '#0c0a09', letterSpacing: -0.6, fontFamily: 'Inter_700Bold' }}
               numberOfLines={1}
             >
-              Materiały
+              {spaceLabel}
             </Text>
           </View>
-          <Pressable onPress={handleUpload} disabled={upload.isPending} className="active:opacity-80">
-            {upload.isPending ? (
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: '#ec4899',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <ActivityIndicator color="#ffffff" />
-              </View>
-            ) : (
-              <GradientIcon Icon={Upload} size={40} iconSize={19} from="#f97316" to="#ec4899" rounded />
-            )}
-          </Pressable>
+          {space !== undefined ? (
+            <Pressable onPress={handleUpload} disabled={upload.isPending} className="active:opacity-80">
+              {upload.isPending ? (
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: '#ec4899',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <ActivityIndicator color="#ffffff" />
+                </View>
+              ) : (
+                <GradientIcon Icon={Upload} size={40} iconSize={19} from="#f97316" to="#ec4899" rounded />
+              )}
+            </Pressable>
+          ) : null}
         </View>
 
         {(path.data?.length ?? 0) > 0 && (
@@ -198,7 +222,7 @@ export default function MaterialsScreen() {
                 className="text-[12px]"
                 style={{ color: '#57534e', fontFamily: 'Inter_500Medium' }}
               >
-                Główny
+                {spaceLabel}
               </Text>
             </Pressable>
             {path.data!.map((p: FolderRow) => (
@@ -217,7 +241,52 @@ export default function MaterialsScreen() {
           </ScrollView>
         )}
 
-        {isLoading ? (
+        {space === undefined ? (
+          <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}>
+            {[
+              { key: '__shared', label: 'Udostępnione mi', sub: 'Pliki udostępnione Tobie i Twoim grupom', Icon: Share2, tint: '#0891b2', bg: '#cffafe' },
+              { key: '__general', label: 'Ogólne', sub: 'Pliki wspólne kościoła', Icon: FolderOpen, tint: '#d97706', bg: '#fef3c7' },
+              ...spaces.map((x) => ({ ...x, sub: 'Pliki zespołu' })),
+            ].map((x) => (
+              <Pressable
+                key={x.key}
+                onPress={() => {
+                  if (x.key === '__shared') router.push('/(app)/materials/shared');
+                  else {
+                    setFolderId(null);
+                    setSpace(x.key === '__general' ? null : x.key);
+                  }
+                }}
+                className="mb-2 active:opacity-80"
+                style={itemCardStyle}
+              >
+                <View className="flex-row items-center gap-3 p-3.5" style={itemBorderStyle}>
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 12,
+                      backgroundColor: x.bg,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <x.Icon size={19} color={x.tint} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text className="text-[15px]" style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
+                      {x.label}
+                    </Text>
+                    <Text className="text-[12px] mt-0.5" style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}>
+                      {x.sub}
+                    </Text>
+                  </View>
+                  <ChevronRight size={18} color="#a8a29e" />
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+        ) : isLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator color="#ec4899" />
           </View>
@@ -267,37 +336,6 @@ export default function MaterialsScreen() {
               />
             }
           >
-            {folderId === null ? (
-              <Pressable
-                onPress={() => router.push('/(app)/materials/shared')}
-                className="mb-3 active:opacity-80"
-                style={itemCardStyle}
-              >
-                <View className="flex-row items-center gap-3 p-3.5" style={itemBorderStyle}>
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 12,
-                      backgroundColor: '#cffafe',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Share2 size={19} color="#0891b2" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text className="text-[15px]" style={{ color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
-                      Udostępnione mi
-                    </Text>
-                    <Text className="text-[12px] mt-0.5" style={{ color: '#78716c', fontFamily: 'Inter_400Regular' }}>
-                      Pliki udostępnione Tobie i Twoim grupom
-                    </Text>
-                  </View>
-                  <ChevronRight size={18} color="#a8a29e" />
-                </View>
-              </Pressable>
-            ) : null}
 
             {(folders.data?.length ?? 0) > 0 && (
               <View className="mb-3">

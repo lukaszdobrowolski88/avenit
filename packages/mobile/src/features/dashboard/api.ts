@@ -1,8 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
+import { fetchAssignments, roleText, todayYmd, type AssignmentRow } from '../schedule/assignments';
 
 export interface UpcomingMinistryItem {
-  programId: number;
+  // Cel: program (programId) albo wydarzenie z grafikiem (eventId) — od migracji 055.
+  programId: number | null;
+  eventId: string | null;
   date: string;
   title: string | null;
   typeName: string | null;
@@ -86,7 +89,8 @@ export interface TaskItem {
 
 export interface PendingInvitation {
   id: string;
-  programId: number;
+  programId: number | null;
+  eventId: string | null;
   date: string;
   programTitle: string | null;
   typeName: string | null;
@@ -135,15 +139,14 @@ export const useDashboard = (
         };
       }
 
-      const myAssignments = supabase
-        .from('schedule_assignments')
-        .select(
-          'id, program_id, role_key, team_type, status, programs!inner(id, date, title, type_id, program_types(id, name, color))',
-        )
-        .eq('assigned_email', userEmail)
-        .gte('programs.date', today())
-        .order('programs(date)', { ascending: true })
-        .limit(5);
+      // Wszystkie moje przypisania (z programem/wydarzeniem dociągniętym po id) — z nich
+      // liczymy nadchodzące, zaproszenia i historię. Błąd nie psuje reszty pulpitu.
+      const myAssignmentsP: Promise<AssignmentRow[]> = fetchAssignments((q) =>
+        q.eq('assigned_email', userEmail).order('created_at', { ascending: false }),
+      ).catch((e) => {
+        console.warn('[dashboard] assignments:', e?.message);
+        return [];
+      });
 
       const upcomingBase = supabase
         .from('programs')
@@ -180,26 +183,20 @@ export const useDashboard = (
         .order('due_date', { ascending: true, nullsFirst: false })
         .limit(20);
 
-      const myPrayersP = supabase
-        .from('prayer_requests_with_counts')
-        .select(
-          'id, content, category, prayer_count, is_anonymous, user_name, user_email, created_at',
-        )
-        .eq('user_email', userEmail)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      const myHistoryP = supabase
-        .from('schedule_assignments')
-        .select(
-          'id, role_key, team_type, status, programs!inner(id, date, title, type_id, program_types(id, name, color))',
-        )
-        .eq('assigned_email', userEmail)
-        .eq('status', 'accepted')
-        .lt('programs.date', today())
-        .order('programs(date)', { ascending: false })
-        .limit(5);
+      // Moje modlitwy przez fn prayer-wall (jak Ściana modlitw): widok
+      // prayer_requests_with_counts nie ma już user_email (prywatność, migr. 062/063),
+      // więc filtr po e-mailu kończył się 42703. Autora oznacza serwer (is_author).
+      const myPrayersP = supabase.functions
+        .invoke('prayer-wall')
+        .then(({ data, error }: { data: any; error: any }) => {
+          if (error) return { data: [] as any[], error };
+          const rows = ((data?.requests ?? []) as any[])
+            .filter((r) => r.is_author && (r.status ?? 'active') === 'active')
+            .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+            .slice(0, 5)
+            .map((r) => ({ ...r, user_email: userEmail }));
+          return { data: rows, error: null };
+        });
 
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const offlineCountP = supabase
@@ -207,16 +204,6 @@ export const useDashboard = (
         .select('user_email', { count: 'exact', head: true })
         .gte('last_seen', oneDayAgo)
         .eq('status', 'offline');
-
-      const pendingInvitesP = supabase
-        .from('schedule_assignments')
-        .select(
-          'id, team_type, role_key, assigned_by_name, created_at, programs(id, date, title, program_types(name, color))',
-        )
-        .eq('assigned_email', userEmail)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(10);
 
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -229,54 +216,59 @@ export const useDashboard = (
         .limit(10);
 
       const [
-        { data: assignments, error: assignErr },
+        mine,
         { data: programs, error: progErr },
         { data: parts },
         { data: onlineRows },
         { data: taskRows, error: tasksErr },
-        { data: inviteRows, error: invitesErr },
         { data: absenceRows, error: absencesErr },
         { data: myPrayerRows, error: mpErr },
-        { data: historyRows, error: historyErr },
         { count: offlineUsersCount },
       ] = await Promise.all([
-        myAssignments,
+        myAssignmentsP,
         upcoming,
         myConversations,
         onlineListP,
         myTasksP,
-        pendingInvitesP,
         absencesP,
         myPrayersP,
-        myHistoryP,
         offlineCountP,
       ]);
       if (mpErr) console.warn('[dashboard] my prayers:', mpErr.message);
-      if (historyErr) console.warn('[dashboard] history:', historyErr.message);
       if (tasksErr) console.warn('[dashboard] tasks:', tasksErr.message);
-      if (invitesErr) console.warn('[dashboard] invites:', invitesErr.message);
       if (absencesErr) console.warn('[dashboard] absences:', absencesErr.message);
 
-      const pendingInvitations: PendingInvitation[] = ((inviteRows ?? []) as any[]).flatMap(
-        (a) => {
-          const p = a.programs;
-          if (!p) return [];
-          const t = p.program_types;
-          return [
-            {
-              id: a.id,
-              programId: p.id,
-              date: p.date,
-              programTitle: p.title,
-              typeName: t?.name ?? null,
-              typeColor: t?.color ?? null,
-              teamType: a.team_type,
-              roleKey: a.role_key,
-              assignedByName: a.assigned_by_name,
-            } satisfies PendingInvitation,
-          ];
-        },
-      );
+      const now = todayYmd();
+      const known = mine.filter((a) => a.date);
+      const byDateAsc = (a: AssignmentRow, b: AssignmentRow) =>
+        (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? ''));
+      const toItem = (a: AssignmentRow): UpcomingMinistryItem => ({
+        programId: a.kind === 'program' ? a.programId : null,
+        eventId: a.kind === 'event' ? a.eventId : null,
+        date: a.date,
+        title: a.title,
+        typeName: a.typeName,
+        typeColor: a.typeColor,
+        myRole: roleText(a) || null,
+        status: a.status,
+      });
+
+      const pendingInvitations: PendingInvitation[] = known
+        .filter((a) => a.status === 'pending' && a.date >= now)
+        .sort(byDateAsc)
+        .slice(0, 10)
+        .map((a) => ({
+          id: a.id,
+          programId: a.kind === 'program' ? a.programId : null,
+          eventId: a.kind === 'event' ? a.eventId : null,
+          date: a.date,
+          programTitle: a.title,
+          typeName: a.typeName,
+          typeColor: a.typeColor,
+          teamType: a.teamType,
+          roleKey: a.roleLabel || a.roleKey,
+          assignedByName: a.assignedByName,
+        }));
 
       const myAbsences = (absenceRows ?? []) as unknown as AbsenceItem[];
 
@@ -321,26 +313,13 @@ export const useDashboard = (
           } satisfies OnlineUser;
         });
       }
-      if (assignErr) console.warn('[dashboard] assignments:', assignErr.message);
       if (progErr) console.warn('[dashboard] programs:', progErr.message);
 
-      const upcomingMinistry: UpcomingMinistryItem[] = (assignments ?? []).flatMap((a: any) => {
-        const p = a.programs;
-        if (!p) return [];
-        const t = p.program_types;
-        const role = [a.team_type, a.role_key].filter(Boolean).join(' · ');
-        return [
-          {
-            programId: p.id,
-            date: p.date,
-            title: p.title,
-            typeName: t?.name ?? null,
-            typeColor: t?.color ?? null,
-            myRole: role || null,
-            status: a.status,
-          } satisfies UpcomingMinistryItem,
-        ];
-      });
+      const upcomingMinistry: UpcomingMinistryItem[] = known
+        .filter((a) => a.date >= now && a.status !== 'rejected')
+        .sort(byDateAsc)
+        .slice(0, 5)
+        .map(toItem);
 
       const upcomingPrograms: UpcomingProgramItem[] = (programs ?? []).map((p: any) => ({
         id: p.id,
@@ -350,45 +329,16 @@ export const useDashboard = (
         typeColor: p.type?.color ?? null,
       }));
 
-      const ministrySuggestions: UpcomingMinistryItem[] = ((inviteRows ?? []) as any[]).flatMap(
-        (a) => {
-          const p = a.programs;
-          if (!p) return [];
-          const t = p.program_types;
-          const role = [a.team_type, a.role_key].filter(Boolean).join(' · ');
-          return [
-            {
-              programId: p.id,
-              date: p.date,
-              title: p.title,
-              typeName: t?.name ?? null,
-              typeColor: t?.color ?? null,
-              myRole: role || null,
-              status: 'pending' as const,
-            } satisfies UpcomingMinistryItem,
-          ];
-        },
-      );
+      const ministrySuggestions: UpcomingMinistryItem[] = known
+        .filter((a) => a.status === 'pending' && a.date >= now)
+        .sort(byDateAsc)
+        .map(toItem);
 
-      const ministryHistory: UpcomingMinistryItem[] = ((historyRows ?? []) as any[]).flatMap(
-        (a) => {
-          const p = a.programs;
-          if (!p) return [];
-          const t = p.program_types;
-          const role = [a.team_type, a.role_key].filter(Boolean).join(' · ');
-          return [
-            {
-              programId: p.id,
-              date: p.date,
-              title: p.title,
-              typeName: t?.name ?? null,
-              typeColor: t?.color ?? null,
-              myRole: role || null,
-              status: a.status,
-            } satisfies UpcomingMinistryItem,
-          ];
-        },
-      );
+      const ministryHistory: UpcomingMinistryItem[] = known
+        .filter((a) => a.status === 'accepted' && a.date < now)
+        .sort((a, b) => byDateAsc(b, a))
+        .slice(0, 5)
+        .map(toItem);
 
       const convIds = (parts ?? []).map((p: any) => p.conversation_id);
       const lastReadByConv = new Map<string, string | null>(

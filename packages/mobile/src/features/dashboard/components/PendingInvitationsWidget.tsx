@@ -66,7 +66,11 @@ const InvitationCard = ({ inv }: { inv: PendingInvitation }) => {
             {formatDate(inv.date, 'EEEE, d MMM')}
           </Text>
           <Link
-            href={{ pathname: '/(app)/programs/[id]', params: { id: String(inv.programId) } }}
+            href={
+              inv.programId != null
+                ? { pathname: '/(app)/programs/[id]', params: { id: String(inv.programId) } }
+                : '/(app)/calendar'
+            }
             asChild
           >
             <Pressable>

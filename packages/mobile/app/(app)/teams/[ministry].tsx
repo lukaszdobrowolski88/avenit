@@ -1,203 +1,104 @@
 import { useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StatusBar,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StatusBar, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  Calendar,
-  CalendarDays,
-  ChevronLeft,
-  MessageSquare,
-  Plus,
-  Users as UsersIcon,
-} from 'lucide-react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, Home, MessageSquare } from 'lucide-react-native';
 import { GradientIcon } from '../../../src/components/ui/GradientIcon';
 import { useAuthSession } from '../../../src/lib/auth';
 import { usePermissions } from '../../../src/lib/permissions';
 import { NoModuleAccess } from '../../../src/components/ModuleGate';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
-import {
-  ALL_MINISTRIES,
-  MINISTRY_META,
-  useCreateMinistryEvent,
-  useCreateWallPost,
-  useMinistryEvents,
-  useMinistryRoster,
-  useTeamSchedule,
-  useWallPosts,
-  type MinistryKey,
-  type RosterMember,
-  type ScheduleEntry,
-} from '../../../src/features/teams/api';
+import { MINISTRY_META, useCreateWallPost, useWallPosts, type WallPost } from '../../../src/features/teams/api';
+import { TAB_META, TEAM_CONFIG, isTeamKey, tabGate, type TeamTabKey } from '../../../src/features/teams/config';
+import { TeamTabsBar } from '../../../src/features/teams/components/TeamTabsBar';
 import { WallPostCard } from '../../../src/features/teams/components/WallPostCard';
-import { EventRow } from '../../../src/features/teams/components/EventRow';
-import { ScheduleRow } from '../../../src/features/teams/components/ScheduleRow';
-import { RosterRow } from '../../../src/features/teams/components/RosterRow';
 import { NewPostModal } from '../../../src/features/teams/components/NewPostModal';
-import { NewEventModal } from '../../../src/features/teams/components/NewEventModal';
+import { EventsTab } from '../../../src/features/teams/tabs/EventsTab';
+import { GrafikTab } from '../../../src/features/teams/tabs/GrafikTab';
+import { PeopleTab, RolesTab } from '../../../src/features/teams/tabs/PeopleTab';
+import { EquipmentTab } from '../../../src/features/teams/tabs/EquipmentTab';
+import { FinanceTab } from '../../../src/features/teams/tabs/FinanceTab';
+import { TasksTab } from '../../../src/features/teams/tabs/TasksTab';
+import { AddButton, Empty, Loading } from '../../../src/features/teams/tabs/ui';
+import { useMyProfile } from '../../../src/features/account/api';
 
-type TabKey = 'wall' | 'events' | 'schedule' | 'roster';
+// Wygląd nagłówka; Grupy domowe nie są w MINISTRY_META (to moduł wspólnoty).
+const LOOK = {
+  ...Object.fromEntries(
+    Object.values(MINISTRY_META).map((m) => [m.key, { Icon: m.Icon, from: m.gradFrom, to: m.gradTo, label: m.label }]),
+  ),
+  homegroups: { Icon: Home, from: '#22c55e', to: '#14b8a6', label: 'Grupy domowe' },
+} as Record<string, { Icon: typeof Home; from: string; to: string; label: string }>;
 
-const EVENT_TYPES_PER_MINISTRY: Record<MinistryKey, { key: string; label: string }[]> = {
-  worship: [
-    { key: 'proba', label: 'Próba' },
-    { key: 'koncert', label: 'Koncert' },
-    { key: 'nabozesnstwo', label: 'Nabożeństwo' },
-    { key: 'warsztat', label: 'Warsztat' },
-    { key: 'inne', label: 'Inne' },
-  ],
-  media: [
-    { key: 'produkcja', label: 'Produkcja' },
-    { key: 'szkolenie', label: 'Szkolenie' },
-    { key: 'streaming', label: 'Streaming' },
-    { key: 'inne', label: 'Inne' },
-  ],
-  atmosfera: [
-    { key: 'spotkanie', label: 'Spotkanie' },
-    { key: 'warsztat', label: 'Warsztat' },
-    { key: 'inne', label: 'Inne' },
-  ],
-  kids: [
-    { key: 'spotkanie', label: 'Spotkanie' },
-    { key: 'warsztat', label: 'Warsztat' },
-    { key: 'wycieczka', label: 'Wycieczka' },
-    { key: 'inne', label: 'Inne' },
-  ],
-  mlodziezowka: [
-    { key: 'spotkanie', label: 'Spotkanie' },
-    { key: 'wyjazd', label: 'Wyjazd' },
-    { key: 'warsztat', label: 'Warsztat' },
-    { key: 'inne', label: 'Inne' },
-  ],
-};
-
-const Tab = ({
-  active,
-  onPress,
-  Icon,
-  label,
-}: {
-  active: boolean;
-  onPress: () => void;
-  Icon: typeof MessageSquare;
-  label: string;
-}) => (
-  <Pressable
-    onPress={onPress}
-    style={{
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      paddingVertical: 8,
-      borderRadius: 10,
-      backgroundColor: active ? '#ffffff' : 'transparent',
-      shadowColor: active ? '#0f172a' : 'transparent',
-      shadowOpacity: active ? 0.06 : 0,
-      shadowRadius: active ? 4 : 0,
-      shadowOffset: { width: 0, height: 1 },
-      elevation: active ? 2 : 0,
-    }}
-  >
-    <Icon size={14} color={active ? '#0c0a09' : '#78716c'} strokeWidth={2.2} />
-    <Text
-      style={{
-        fontSize: 12,
-        color: active ? '#0c0a09' : '#78716c',
-        fontFamily: 'Inter_600SemiBold',
-      }}
-    >
-      {label}
-    </Text>
-  </Pressable>
-);
-
-const isMinistryKey = (s: string | undefined): s is MinistryKey =>
-  ALL_MINISTRIES.some((m) => m.key === s);
+// Zakładki prowadzące do osobnych ekranów zamiast treści w miejscu.
+const NAV_TABS = new Set<TeamTabKey>(['files', 'songs']);
 
 export default function TeamDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const qc = useQueryClient();
   const { ministry } = useLocalSearchParams<{ ministry: string }>();
   const { user } = useAuthSession();
-  const { selectedCampusId, withCampusFilter, campusIdForInsert } = useCampusQuery();
-  const [tab, setTab] = useState<TabKey>('wall');
-  const [postModalOpen, setPostModalOpen] = useState(false);
-  const [eventModalOpen, setEventModalOpen] = useState(false);
-
-  // Rules of Hooks: wszystkie hooki MUSZĄ być wołane bezwarunkowo, więc guard nieznanego
-  // zespołu jest DOPIERO po nich (niżej). Dla nieznanego parametru używamy placeholdera
-  // 'worship' — ekran i tak zwróci „Nieznany zespół", więc pobrane dane są nieużywane.
-  const valid = isMinistryKey(ministry);
-  const key: MinistryKey = valid ? ministry : 'worship';
-
-  const meta = MINISTRY_META[key];
-  const wall = useWallPosts(key);
-  const events = useMinistryEvents(key, { selectedCampusId, withCampusFilter });
-  const schedule = useTeamSchedule(key);
-  const roster = useMinistryRoster(key);
-  const createPost = useCreateWallPost(key);
-  const createEvent = useCreateMinistryEvent(key, { campusIdForInsert });
-  // Uprawnienia jak na webie: moduł zespołu (module:<key>) i zakładka składu
-  // (tab:<key>:members — na webie zakładka „Członkowie” z kontaktami).
-  const perms = usePermissions();
-  const canRoster = perms.tabVisible(key, 'members');
-  const teamLabel = perms.modules.find((m) => m.key === key)?.label || meta.label;
-
-  const refetch = () => {
-    wall.refetch();
-    events.refetch();
-    schedule.refetch();
-    roster.refetch();
-  };
-  const isRefetching =
-    wall.isRefetching || events.isRefetching || schedule.isRefetching || roster.isRefetching;
-
   const myEmail = user?.email ?? null;
-  const myName =
-    (user?.user_metadata as { full_name?: string } | null)?.full_name ?? user?.email ?? null;
+  const profile = useMyProfile(myEmail);
+  const myName = profile.data?.full_name || profile.data?.name || null;
+  const { selectedCampusId, withCampusFilter, campusIdForInsert } = useCampusQuery();
+  const scope = { selectedCampusId, withCampusFilter };
+  const perms = usePermissions();
 
-  const eventTypes = EVENT_TYPES_PER_MINISTRY[key];
+  const valid = isTeamKey(ministry);
+  const cfg = TEAM_CONFIG[valid ? ministry : 'worship'];
 
-  const sortedSchedule = useMemo(() => {
-    const list = (schedule.data ?? []).slice();
-    list.sort((a: ScheduleEntry, b: ScheduleEntry) => {
-      const am = a.assignedEmail === myEmail ? 0 : 1;
-      const bm = b.assignedEmail === myEmail ? 0 : 1;
-      if (am !== bm) return am - bm;
-      return a.programDate.localeCompare(b.programDate);
-    });
-    return list;
-  }, [schedule.data, myEmail]);
+  // Zakładki jak na webie, każda za swoją bramką tab:<moduł>:<x>.
+  const tabs = useMemo(
+    () =>
+      cfg.tabs
+        .filter((t) => {
+          const gate = tabGate(cfg, t);
+          return gate ? perms.tabVisible(cfg.key, gate) : true;
+        })
+        .map((t) => ({
+          key: t,
+          label: t === 'members' && cfg.membersLabel ? cfg.membersLabel : TAB_META[t].label,
+          Icon: TAB_META[t].Icon,
+        })),
+    [cfg, perms.tabVisible],
+  );
+  const [tab, setTab] = useState<TeamTabKey | null>(null);
+  const active = (tab && tabs.some((t) => t.key === tab) ? tab : tabs.find((t) => !NAV_TABS.has(t.key))?.key) ?? 'events';
 
-  // Guard nieznanego zespołu — DOPIERO po wszystkich hookach (Rules of Hooks).
+  const wallMinistry = cfg.wallMinistry ?? cfg.key;
+  const wall = useWallPosts(wallMinistry);
+  const createPost = useCreateWallPost(wallMinistry);
+  const [postOpen, setPostOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onTab = (k: string) => {
+    const key = k as TeamTabKey;
+    if (key === 'files') {
+      router.push({ pathname: '/(app)/materials', params: { team: cfg.key } });
+      return;
+    }
+    if (key === 'songs') {
+      router.push('/(app)/songs');
+      return;
+    }
+    setTab(key);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ['team'] }),
+      qc.invalidateQueries({ queryKey: ['teams', 'wall'] }),
+    ]);
+    setRefreshing(false);
+  };
+
   if (!valid) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#ffffff',
-          paddingHorizontal: 24,
-        }}
-      >
-        <Text style={{ color: '#78716c', fontFamily: 'Inter_500Medium' }}>
-          Nieznany zespół.
-        </Text>
-      </View>
-    );
+    return <NoModuleAccess message="Nie znamy takiego zespołu." />;
   }
-
   if (!perms.ready) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
@@ -205,210 +106,51 @@ export default function TeamDetailScreen() {
       </View>
     );
   }
-  if (!perms.moduleVisible(key)) return <NoModuleAccess />;
+  if (!perms.moduleVisible(cfg.key)) return <NoModuleAccess />;
 
-  const renderHeader = () => (
-    <>
-      <View
-        style={{
-          paddingHorizontal: 16,
-          paddingTop: 0,
-          paddingBottom: 8,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 12,
-        }}
-      >
-        <GradientIcon
-          Icon={meta.Icon}
-          size={48}
-          iconSize={22}
-          from={meta.gradFrom}
-          to={meta.gradTo}
-        />
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
-            Zespół
-          </Text>
-          <Text
-            numberOfLines={1}
-            style={{
-              fontSize: 22,
-              color: '#0c0a09',
-              marginTop: 2,
-              letterSpacing: -0.5,
-              fontFamily: 'Inter_700Bold',
-            }}
-          >
-            {teamLabel}
-          </Text>
-        </View>
-      </View>
+  const look = LOOK[cfg.key];
+  const teamLabel = perms.modules.find((m) => m.key === cfg.key)?.label || look.label;
 
-      <View
-        style={{
-          flexDirection: 'row',
-          backgroundColor: '#f5f5f4',
-          marginHorizontal: 16,
-          marginTop: 8,
-          padding: 4,
-          borderRadius: 14,
-        }}
-      >
-        <Tab
-          active={tab === 'wall'}
-          onPress={() => setTab('wall')}
-          Icon={MessageSquare}
-          label="Tablica"
-        />
-        <Tab
-          active={tab === 'events'}
-          onPress={() => setTab('events')}
-          Icon={CalendarDays}
-          label="Wydarzenia"
-        />
-        {meta.teamType ? (
-          <Tab
-            active={tab === 'schedule'}
-            onPress={() => setTab('schedule')}
-            Icon={Calendar}
-            label="Grafik"
+  const renderContent = () => {
+    switch (active) {
+      case 'wall':
+        return (
+          <View>
+            <AddButton label="Nowy post" onPress={() => setPostOpen(true)} />
+            {wall.isLoading ? <Loading /> : null}
+            {!wall.isLoading && !(wall.data ?? []).length ? (
+              <Empty Icon={MessageSquare} title="Brak postów" hint="Napisz coś do zespołu — zobaczą to też na webie." />
+            ) : null}
+            {((wall.data ?? []) as WallPost[]).map((p) => (
+              <WallPostCard key={p.id} post={p} ministry={wallMinistry} myEmail={myEmail} myName={myName} />
+            ))}
+          </View>
+        );
+      case 'events':
+        return <EventsTab cfg={cfg} scope={scope} campusIdForInsert={campusIdForInsert} myEmail={myEmail} />;
+      case 'schedule':
+        return <GrafikTab teamKey={cfg.key} me={{ email: myEmail, name: myName }} />;
+      case 'tasks':
+        return <TasksTab sourceKind={cfg.boardSourceKind} myEmail={myEmail} />;
+      case 'members':
+        return (
+          <PeopleTab
+            table={cfg.memberTable}
+            rolesFor={cfg.key === 'mlodziezowka' || cfg.key === 'homegroups' || cfg.key === 'kids' ? undefined : cfg.key}
+            emptyLabel="Lista jest pusta"
           />
-        ) : null}
-        {canRoster ? (
-          <Tab
-            active={tab === 'roster'}
-            onPress={() => setTab('roster')}
-            Icon={UsersIcon}
-            label="Skład"
-          />
-        ) : null}
-      </View>
-
-      {tab === 'wall' || tab === 'events' ? (
-        <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
-          <Pressable
-            onPress={() =>
-              tab === 'wall' ? setPostModalOpen(true) : setEventModalOpen(true)
-            }
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              paddingVertical: 12,
-              borderRadius: 14,
-              borderWidth: 2,
-              borderStyle: 'dashed',
-              borderColor: '#e7e5e4',
-            }}
-          >
-            <Plus size={14} color="#57534e" strokeWidth={2.2} />
-            <Text
-              style={{ fontSize: 13, color: '#57534e', fontFamily: 'Inter_600SemiBold' }}
-            >
-              {tab === 'wall' ? 'Nowy post' : 'Nowe wydarzenie'}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
-    </>
-  );
-
-  const data: any[] =
-    tab === 'wall'
-      ? wall.data ?? []
-      : tab === 'events'
-        ? events.data ?? []
-        : tab === 'roster'
-          ? roster.data ?? []
-          : sortedSchedule;
-
-  const isLoading =
-    (tab === 'wall' && wall.isLoading) ||
-    (tab === 'events' && events.isLoading) ||
-    (tab === 'schedule' && schedule.isLoading) ||
-    (tab === 'roster' && roster.isLoading);
-
-  const renderEmpty = () => {
-    if (isLoading) {
-      return (
-        <View style={{ paddingVertical: 32, alignItems: 'center' }}>
-          <ActivityIndicator color="#ec4899" />
-        </View>
-      );
+        );
+      case 'leaders':
+        return <PeopleTab table={cfg.leaderTable} emptyLabel="Brak liderów na liście" />;
+      case 'roles':
+        return <RolesTab teamKey={cfg.key} memberTable={cfg.memberTable} />;
+      case 'finance':
+        return <FinanceTab cfg={cfg} scope={scope} myEmail={myEmail} myName={myName} />;
+      case 'equipment':
+        return <EquipmentTab teamKey={cfg.key} />;
+      default:
+        return null;
     }
-    return (
-      <View style={{ paddingVertical: 48, alignItems: 'center' }}>
-        <View
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 16,
-            backgroundColor: meta.bg,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 10,
-          }}
-        >
-          <meta.Icon size={24} color={meta.tint} />
-        </View>
-        <Text style={{ fontSize: 14, color: '#0c0a09', fontFamily: 'Inter_600SemiBold' }}>
-          {tab === 'wall'
-            ? 'Brak postów'
-            : tab === 'events'
-              ? 'Brak wydarzeń'
-              : tab === 'roster'
-                ? 'Brak osób w zespole'
-                : 'Brak przypisań do grafiku'}
-        </Text>
-        <Text
-          style={{
-            fontSize: 12,
-            color: '#78716c',
-            marginTop: 4,
-            textAlign: 'center',
-            fontFamily: 'Inter_400Regular',
-          }}
-        >
-          {tab === 'wall'
-            ? 'Bądź pierwsza/y i napisz coś do zespołu.'
-            : tab === 'events'
-              ? 'Dodaj próbę, koncert lub spotkanie.'
-              : tab === 'roster'
-                ? 'Lider może dodać osoby do tej służby.'
-                : 'Po dodaniu przypisań w programach zobaczysz je tu.'}
-        </Text>
-      </View>
-    );
-  };
-
-  const renderItem = ({ item }: { item: any }) => {
-    if (tab === 'wall') {
-      return (
-        <WallPostCard
-          post={item}
-          ministry={key}
-          myEmail={myEmail}
-          myName={myName ?? null}
-        />
-      );
-    }
-    if (tab === 'events') {
-      return (
-        <EventRow
-          event={item}
-          ministry={key}
-          myEmail={myEmail}
-          tint={meta.tint}
-          bg={meta.bg}
-        />
-      );
-    }
-    if (tab === 'roster') {
-      return <RosterRow member={item as RosterMember} tint={meta.tint} />;
-    }
-    return <ScheduleRow entry={item} highlightMine myEmail={myEmail} />;
   };
 
   return (
@@ -419,15 +161,16 @@ export default function TeamDetailScreen() {
           style={{
             paddingHorizontal: 16,
             paddingTop: insets.top + 6,
-            paddingBottom: 4,
+            paddingBottom: 10,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 8,
+            gap: 12,
           }}
         >
           <Pressable
             onPress={() => router.back()}
             hitSlop={10}
+            className="active:opacity-60"
             style={{
               width: 40,
               height: 40,
@@ -441,57 +184,43 @@ export default function TeamDetailScreen() {
           >
             <ChevronLeft size={20} color="#1c1917" strokeWidth={2.2} />
           </Pressable>
+          <GradientIcon Icon={look.Icon} size={44} iconSize={20} from={look.from} to={look.to} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 12, color: '#78716c', fontFamily: 'Inter_500Medium' }}>
+              {cfg.key === 'homegroups' ? 'Panel służby' : 'Zespół'}
+            </Text>
+            <Text
+              numberOfLines={1}
+              style={{ fontSize: 21, color: '#0c0a09', letterSpacing: -0.5, fontFamily: 'Inter_700Bold' }}
+            >
+              {teamLabel}
+            </Text>
+          </View>
         </View>
 
-        <FlatList
-          ListHeaderComponent={renderHeader()}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 120 }}
-          data={data}
-          keyExtractor={(it: any) => String(it.id)}
-          renderItem={renderItem}
-          ListEmptyComponent={renderEmpty()}
-          refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#ec4899" />
-          }
-        />
+        <TeamTabsBar tabs={tabs} active={active} onChange={onTab} />
+
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 130 }}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ec4899" />}
+        >
+          {renderContent()}
+        </ScrollView>
       </View>
 
       <NewPostModal
-        visible={postModalOpen}
-        onClose={() => setPostModalOpen(false)}
+        visible={postOpen}
+        onClose={() => setPostOpen(false)}
+        isLoading={createPost.isPending}
         onSubmit={async ({ title, content }) => {
           if (!myEmail) {
             Alert.alert('Brak sesji', 'Zaloguj się ponownie.');
             return;
           }
-          await createPost.mutateAsync({
-            title,
-            content,
-            authorEmail: myEmail,
-            authorName: myName ?? null,
-          });
-          setPostModalOpen(false);
+          await createPost.mutateAsync({ title, content, authorEmail: myEmail, authorName: myName });
+          setPostOpen(false);
         }}
-        isLoading={createPost.isPending}
-      />
-
-      <NewEventModal
-        visible={eventModalOpen}
-        onClose={() => setEventModalOpen(false)}
-        onSubmit={async (input) => {
-          if (!myEmail) {
-            Alert.alert('Brak sesji', 'Zaloguj się ponownie.');
-            return;
-          }
-          await createEvent.mutateAsync({
-            ...input,
-            authorEmail: myEmail,
-          });
-          setEventModalOpen(false);
-        }}
-        isLoading={createEvent.isPending}
-        eventTypes={eventTypes}
-        defaultType={eventTypes[0].key}
       />
     </>
   );

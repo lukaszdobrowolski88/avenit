@@ -8,13 +8,12 @@ import {
   useDeleteWallPost,
   useTogglePostLike,
   useTogglePostPin,
-  type MinistryKey,
   type WallPost,
 } from '../api';
 
 interface Props {
   post: WallPost;
-  ministry: MinistryKey;
+  ministry: string;
   myEmail: string | null;
   myName: string | null;
 }

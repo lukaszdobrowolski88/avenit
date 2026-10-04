@@ -64,6 +64,19 @@ test('preset lider: bez finansów (zapis) i bez ustawień', () => {
   assert.equal(can(g, sub, 'res:finance_transactions:update'), false);
   assert.equal(can(g, sub, 'module:settings'), false);
   assert.equal(can(g, sub, 'tab:media:finances'), false);
+  // Growth suite (2026-10-04): Frekwencja/Sale/Służba tak, Dawanie i Automatyzacje nie.
+  assert.equal(can(g, sub, 'module:attendance'), true);
+  assert.equal(can(g, sub, 'module:rooms'), true);
+  assert.equal(can(g, sub, 'module:giving'), false);
+  assert.equal(can(g, sub, 'module:automation'), false);
+});
+
+test('growth suite: koordynator ma Dawanie, członek nie', () => {
+  const g = rows(presetGrantRows());
+  assert.equal(can(g, { role: 'koordynator' }, 'module:giving'), true);
+  assert.equal(can(g, { role: 'koordynator' }, 'res:donations:read'), true);
+  assert.equal(can(g, { role: 'czlonek' }, 'module:giving'), false);
+  assert.equal(can(g, { role: 'czlonek' }, 'res:donations:read'), false);
 });
 
 test('preset czlonek: tylko minimum', () => {

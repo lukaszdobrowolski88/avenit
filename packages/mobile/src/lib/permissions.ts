@@ -1,4 +1,5 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { AppState } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 // Ten sam resolver co web i API — jedno źródło prawdy dla precedencji grantów.
 import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
@@ -70,7 +71,19 @@ export const usePermissions = () => {
     // Uprawnienia zmieniają się rzadko; cache (persystowany) chroni przed migotaniem UI.
     staleTime: 60_000,
     retry: 1,
+    // Po błędzie (brak sieci, stary backend) ponawiaj co 30 s — inaczej apka zostaje
+    // w trybie awaryjnym aż do restartu. Gdy dane są, bez odpytywania.
+    refetchInterval: (q) => (q.state.status === 'error' ? 30_000 : false),
   });
+  // Powrót apki na pierwszy plan → odśwież uprawnienia (admin mógł je zmienić na webie).
+  const { refetch } = query;
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      // Hook żyje w wielu komponentach naraz — cancelRefetch:false łączy wywołania w jedno.
+      if (state === 'active' && email) refetch({ cancelRefetch: false });
+    });
+    return () => sub.remove();
+  }, [email, refetch]);
   const data = query.data ?? null;
   // Endpoint nie odpowiedział, a nie ma nic w cache → zasady awaryjne (patrz wyżej).
   const fallback = !data && query.isError;

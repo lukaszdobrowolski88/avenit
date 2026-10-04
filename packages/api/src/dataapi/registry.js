@@ -82,6 +82,21 @@ export const REGISTRY = {
   // (otwarte dla zalogowanych; UI gejtuje tworzenie/wysyłkę). Potrzebne m.in. sekcji
   // „Zaproszenia" na stronie wydarzenia oraz modułowi Rsvp.
   rsvp_campaigns: T(null),
+  // Moduły „growth suite” (migracja 006) — wcześniej poza REGISTRY = 403 dla wszystkich.
+  donations: T('module:giving'),
+  giving_recurring: T('module:giving'),
+  giving_campaigns: T('module:giving'),
+  giving_funds: T('module:giving'),
+  giving_pledges: T('module:giving'),
+  attendance_sessions: T('module:attendance'),
+  attendance_records: T('module:attendance'),
+  resources: T('module:rooms'),
+  resource_bookings: T('module:rooms'),
+  volunteer_blockouts: T('module:serve'),
+  song_usage: T('module:serve'),
+  automation_workflows: T('module:automation'),
+  automation_steps: T('module:automation'),
+  automation_runs: T('module:automation'),
   rsvp_invitations: T(null),
   tasks: T('module:calendar'),
   user_task_comments: T(null),

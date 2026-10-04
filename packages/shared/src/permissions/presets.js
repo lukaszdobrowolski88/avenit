@@ -37,6 +37,8 @@ export const ROLE_PRESETS = {
     allow('module:*'),
     deny('module:settings'), deny('module:mail'), deny('module:mailing'),
     deny('module:sms_campaigns'), deny('module:push_campaigns'),
+    // „bez finansów” obejmuje darowizny; automatyzacje wysyłają maile/SMS jak kampanie.
+    deny('module:giving'), deny('module:automation'),
     allow('tab:*:*'), deny('tab:*:finances'),
     allow('res:*:read'), allow('res:*:create'), allow('res:*:update'),
     // bez finansów (zapis) i ustawień (zapis)

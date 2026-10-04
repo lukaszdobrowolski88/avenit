@@ -125,11 +125,13 @@ const Row = ({
   const status = 'status' in m ? m.status : null;
   const myRole = 'myRole' in m ? m.myRole : null;
   const programId = 'programId' in m ? m.programId : (m as UpcomingProgramItem).id;
+  // Służba na wydarzeniu (grafik od migracji 055) → kalendarz; na programie → program.
+  const href =
+    programId != null
+      ? ({ pathname: '/(app)/programs/[id]', params: { id: String(programId) } } as const)
+      : ('/(app)/calendar' as const);
   return (
-    <Link
-      href={{ pathname: '/(app)/programs/[id]', params: { id: String(programId) } }}
-      asChild
-    >
+    <Link href={href} asChild>
       <Pressable
         className="active:opacity-70"
         style={{
@@ -268,7 +270,7 @@ export const MinistryWidget = ({ ministry, suggestions, history }: Props) => {
       {tab === 'upcoming' ? (
         ministry.length > 0 ? (
           ministry.map((m, i) => (
-            <Row key={`${m.programId}-${i}`} m={m} isLast={i === ministry.length - 1} />
+            <Row key={`${m.programId ?? m.eventId}-${i}`} m={m} isLast={i === ministry.length - 1} />
           ))
         ) : (
           <EmptyState
@@ -285,7 +287,7 @@ export const MinistryWidget = ({ ministry, suggestions, history }: Props) => {
             <ScrollView style={{ maxHeight: 5 * 80 }} nestedScrollEnabled>
               {suggestions.map((m, i) => (
                 <Row
-                  key={`${m.programId}-${i}`}
+                  key={`${m.programId ?? m.eventId}-${i}`}
                   m={m}
                   isLast={i === suggestions.length - 1}
                 />
@@ -294,7 +296,7 @@ export const MinistryWidget = ({ ministry, suggestions, history }: Props) => {
           ) : (
             suggestions.map((m, i) => (
               <Row
-                key={`${m.programId}-${i}`}
+                key={`${m.programId ?? m.eventId}-${i}`}
                 m={m}
                 isLast={i === suggestions.length - 1}
               />
@@ -314,12 +316,12 @@ export const MinistryWidget = ({ ministry, suggestions, history }: Props) => {
           history.length > 5 ? (
             <ScrollView style={{ maxHeight: 5 * 80 }} nestedScrollEnabled>
               {history.map((m, i) => (
-                <Row key={`${m.programId}-${i}`} m={m} isLast={i === history.length - 1} />
+                <Row key={`${m.programId ?? m.eventId}-${i}`} m={m} isLast={i === history.length - 1} />
               ))}
             </ScrollView>
           ) : (
             history.map((m, i) => (
-              <Row key={`${m.programId}-${i}`} m={m} isLast={i === history.length - 1} />
+              <Row key={`${m.programId ?? m.eventId}-${i}`} m={m} isLast={i === history.length - 1} />
             ))
           )
         ) : (
