@@ -94,17 +94,12 @@ export default function FormsScreen() {
                   className={`mb-3 ${closed ? 'opacity-60' : 'active:opacity-80'}`}
                   style={{
                     borderRadius: 20,
-                    backgroundColor: '#F6F4EE',
-                    shadowColor: '#2A2312',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 14,
-                    elevation: 2,
+                    backgroundColor: '#FFFFFF',
                   }}
                 >
                   <View
                     className="overflow-hidden p-4"
-                    style={{ borderRadius: 20, borderWidth: 1, borderColor: '#E6E1D5' }}
+                    style={{ borderRadius: 20 }}
                   >
                     <View className="flex-row items-center gap-3 mb-2">
                       <View

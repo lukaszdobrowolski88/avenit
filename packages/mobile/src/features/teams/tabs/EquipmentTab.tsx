@@ -27,14 +27,14 @@ export const EquipmentTab = ({ teamKey }: { teamKey: TeamKey }) => {
   return (
     <View>
       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
-        <View style={{ flex: 1, borderRadius: 16, backgroundColor: '#EFEBE2', padding: 12 }}>
-          <Text style={{ fontSize: 11, color: '#6B6557', fontFamily: 'Manrope_600SemiBold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+        <View style={{ flex: 1, borderRadius: 16, backgroundColor: '#FFFFFF', padding: 12 }}>
+          <Text style={{ fontSize: 11, color: '#8A6606', fontFamily: 'Manrope_600SemiBold', textTransform: 'uppercase', letterSpacing: 1.2 }}>
             Sztuk
           </Text>
           <Text style={{ fontSize: 22, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginTop: 2 }}>{count}</Text>
         </View>
-        <View style={{ flex: 1, borderRadius: 16, backgroundColor: '#EFEBE2', padding: 12 }}>
-          <Text style={{ fontSize: 11, color: '#6B6557', fontFamily: 'Manrope_600SemiBold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+        <View style={{ flex: 1, borderRadius: 16, backgroundColor: '#FFFFFF', padding: 12 }}>
+          <Text style={{ fontSize: 11, color: '#8A6606', fontFamily: 'Manrope_600SemiBold', textTransform: 'uppercase', letterSpacing: 1.2 }}>
             Wartość
           </Text>
           <Text style={{ fontSize: 22, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginTop: 2 }}>{money(total)}</Text>

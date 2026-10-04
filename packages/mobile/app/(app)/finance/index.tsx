@@ -74,12 +74,12 @@ export default function FinanceScreen() {
           ) : null}
 
           {proposals.length ? (
-            <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
               Propozycje do budżetu
             </Text>
           ) : null}
           {proposals.map((p) => (
-            <View key={p.id} style={{ borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14, marginBottom: 10 }}>
+            <View key={p.id} style={{ borderRadius: 18, backgroundColor: '#FFFFFF', padding: 14, marginBottom: 10 }}>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{p.description || 'Propozycja'}</Text>
@@ -99,12 +99,12 @@ export default function FinanceScreen() {
           ))}
 
           {expenses.length ? (
-            <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginTop: 10, marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginTop: 10, marginBottom: 8 }}>
               Wydatki do akceptacji
             </Text>
           ) : null}
           {expenses.map((e) => (
-            <View key={e.id} style={{ borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14, marginBottom: 10 }}>
+            <View key={e.id} style={{ borderRadius: 18, backgroundColor: '#FFFFFF', padding: 14, marginBottom: 10 }}>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{e.contractor || e.description || 'Wydatek'}</Text>
@@ -125,7 +125,7 @@ export default function FinanceScreen() {
           <Pressable
             onPress={() => openOnWeb('/finance')}
             className="active:opacity-70"
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, padding: 14, borderRadius: 16, backgroundColor: '#EFEBE2' }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, padding: 14, borderRadius: 16, backgroundColor: '#FFFFFF' }}
           >
             <ExternalLink size={16} color="#8A6606" />
             <Text style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>Budżet, raporty i księgowość na webie</Text>

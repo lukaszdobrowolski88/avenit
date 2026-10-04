@@ -225,12 +225,10 @@ export default function ProgramDetailScreen() {
             onPress={() => router.back()}
             hitSlop={10}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#F1EEE6',
-              borderWidth: 1,
-              borderColor: '#E3DDD0',
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#FFFFFF',
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -279,9 +277,9 @@ export default function ProgramDetailScreen() {
             <Text
               style={{
                 fontSize: 11,
-                color: '#6B6557',
+                color: '#8A6606',
                 marginBottom: 8,
-                letterSpacing: 0.6,
+                letterSpacing: 1.2,
                 textTransform: 'uppercase',
                 fontFamily: 'Manrope_700Bold',
               }}
@@ -366,20 +364,13 @@ export default function ProgramDetailScreen() {
                     className="mb-4"
                     style={{
                       borderRadius: 20,
-                      backgroundColor: '#F6F4EE',
-                      shadowColor: '#2A2312',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 14,
-                      elevation: 2,
+                      backgroundColor: '#FFFFFF',
                     }}
                   >
                     <View
                       className="overflow-hidden"
                       style={{
                         borderRadius: 20,
-                        borderWidth: 1,
-                        borderColor: '#E6E1D5',
                       }}
                     >
                       <View
@@ -546,26 +537,19 @@ const NotesView = ({ items }: { items: ProgramScheduleItem[] }) => {
           className="mb-3"
           style={{
             borderRadius: 16,
-            backgroundColor: '#F6F4EE',
-            shadowColor: '#2A2312',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.04,
-            shadowRadius: 10,
-            elevation: 1,
+            backgroundColor: '#FFFFFF',
           }}
         >
           <View
             className="overflow-hidden p-4"
             style={{
               borderRadius: 16,
-              borderWidth: 1,
-              borderColor: '#E6E1D5',
             }}
           >
             <Text
               className="text-[11px] uppercase mb-1"
               style={{
-                color: '#6B6557',
+                color: '#8A6606',
                 letterSpacing: 0.4,
                 fontFamily: 'Manrope_600SemiBold',
               }}

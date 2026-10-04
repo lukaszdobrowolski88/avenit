@@ -102,14 +102,14 @@ export default function BiometricScreen() {
       <Pressable
         onPress={enableBiometric}
         style={{
-          backgroundColor: '#2A2312',
-          borderRadius: 14,
+          backgroundColor: '#FFBE0B',
+          borderRadius: 26,
           paddingVertical: 14,
           alignItems: 'center',
           marginBottom: 12,
         }}
       >
-        <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>Włącz</Text>
+        <Text style={{ color: '#2A2312', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>Włącz</Text>
       </Pressable>
       <Pressable onPress={skip} style={{ paddingVertical: 10 }}>
         <Text

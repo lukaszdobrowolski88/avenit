@@ -11,15 +11,16 @@ import { Empty, money } from '../../../src/features/teams/tabs/ui';
 
 const MONTHS = ['S', 'L', 'M', 'K', 'M', 'C', 'L', 'S', 'W', 'P', 'L', 'G'];
 
-const Kpi = ({ label, value }: { label: string; value: string }) => (
-  <View style={{ flexBasis: '47%', flexGrow: 1, borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14 }}>
-    <Text style={{ fontSize: 11, color: '#6B6557', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</Text>
-    <Text style={{ fontSize: 22, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginTop: 2, letterSpacing: -0.5 }}>{value}</Text>
+// Pierwszy wskaźnik (rok) — ciemna karta marki z kurkumową etykietą.
+const Kpi = ({ label, value, dark }: { label: string; value: string; dark?: boolean }) => (
+  <View style={{ flexBasis: '47%', flexGrow: 1, borderRadius: 20, backgroundColor: dark ? '#2A2312' : '#FFFFFF', padding: 14 }}>
+    <Text style={{ fontSize: 11, color: dark ? '#FFBE0B' : '#8A6606', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 1.2 }}>{label}</Text>
+    <Text style={{ fontSize: 22, color: dark ? '#F6F4EE' : '#2A2312', fontFamily: 'Manrope_700Bold', marginTop: 2, letterSpacing: -0.5 }}>{value}</Text>
   </View>
 );
 
 const SectionTitle = ({ children }: { children: string }) => (
-  <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginTop: 20, marginBottom: 10 }}>
+  <Text style={{ fontSize: 13, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginTop: 20, marginBottom: 10 }}>
     {children}
   </Text>
 );
@@ -58,14 +59,14 @@ export default function GivingAdminScreen() {
           {d ? (
             <>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                <Kpi label="Od stycznia" value={money(d.yearTotal)} />
+                <Kpi label="Od stycznia" value={money(d.yearTotal)} dark />
                 <Kpi label={format(new Date(), 'LLLL', { locale: pl })} value={money(d.monthTotal)} />
                 <Kpi label="Darczyńców" value={String(d.donors)} />
                 <Kpi label="Wpłat" value={String(d.count)} />
               </View>
 
               <SectionTitle>Miesiące</SectionTitle>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 5, height: 90, borderRadius: 18, backgroundColor: '#EFEBE2', padding: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 5, height: 90, borderRadius: 20, backgroundColor: '#FFFFFF', padding: 12 }}>
                 {d.months.map((v, i) => (
                   <View key={i} style={{ flex: 1, alignItems: 'center', gap: 4 }}>
                     <View
@@ -104,7 +105,7 @@ export default function GivingAdminScreen() {
                 <>
                   <SectionTitle>Zbiórki</SectionTitle>
                   {d.campaigns.map((c) => (
-                    <View key={c.id} style={{ borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14, marginBottom: 10, gap: 6 }}>
+                    <View key={c.id} style={{ borderRadius: 20, backgroundColor: '#FFFFFF', padding: 14, marginBottom: 10, gap: 6 }}>
                       <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{c.name}</Text>
                       <View style={{ height: 8, borderRadius: 4, backgroundColor: '#F6F4EE', overflow: 'hidden' }}>
                         <View style={{ width: `${c.pct}%`, height: 8, backgroundColor: '#15803d' }} />

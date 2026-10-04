@@ -91,8 +91,8 @@ export const GrafikTab = ({ teamKey, me }: { teamKey: TeamKey; me: { email: stri
                   <Text
                     style={{
                       fontSize: 11,
-                      color: '#6B6557',
-                      letterSpacing: 0.4,
+                      color: '#8A6606',
+                      letterSpacing: 1.2,
                       textTransform: 'uppercase',
                       fontFamily: 'Manrope_600SemiBold',
                     }}

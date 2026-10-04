@@ -190,7 +190,7 @@ export default function AccountScreen() {
           <Text
             className="text-[11px] uppercase mx-5 mb-2"
             style={{
-              color: '#6B6557',
+              color: '#8A6606',
               letterSpacing: 0.6,
               fontFamily: 'Manrope_700Bold',
             }}
@@ -238,7 +238,7 @@ export default function AccountScreen() {
       <View className="mb-4">
         <Text
           className="text-[11px] uppercase mx-5 mb-2"
-          style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
+          style={{ color: '#8A6606', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
         >
           {t('Język')}
         </Text>

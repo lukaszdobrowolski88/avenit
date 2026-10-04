@@ -74,7 +74,7 @@ export default function TotpScreen() {
           textAlign: 'center',
           letterSpacing: 8,
           color: '#2A2312',
-          backgroundColor: '#F1EEE6',
+          backgroundColor: '#FFFFFF',
           marginBottom: 24,
           fontFamily: 'Manrope_600SemiBold',
         }}
@@ -92,8 +92,8 @@ export default function TotpScreen() {
         onPress={handleVerify}
         disabled={loading}
         style={{
-          backgroundColor: '#2A2312',
-          borderRadius: 14,
+          backgroundColor: '#FFBE0B',
+          borderRadius: 26,
           paddingVertical: 14,
           alignItems: 'center',
           marginBottom: 12,
@@ -101,9 +101,9 @@ export default function TotpScreen() {
         }}
       >
         {loading ? (
-          <ActivityIndicator color="white" />
+          <ActivityIndicator color="#2A2312" />
         ) : (
-          <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
+          <Text style={{ color: '#2A2312', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
             Zweryfikuj
           </Text>
         )}

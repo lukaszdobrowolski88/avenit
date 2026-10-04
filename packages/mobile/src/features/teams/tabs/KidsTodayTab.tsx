@@ -158,8 +158,8 @@ export const KidsTodayTab = ({ myEmail, canCreateSession }: { myEmail: string | 
           <Text style={{ fontSize: 11, color: '#6B4F05', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>W salach</Text>
           <Text style={{ fontSize: 28, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{present}</Text>
         </View>
-        <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14 }}>
-          <Text style={{ fontSize: 11, color: '#4A463E', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>Odebrane</Text>
+        <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#FFFFFF', padding: 14 }}>
+          <Text style={{ fontSize: 11, color: '#8A6606', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 1.2 }}>Odebrane</Text>
           <Text style={{ fontSize: 28, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{checkins.length - present}</Text>
         </View>
       </View>
@@ -191,7 +191,7 @@ export const KidsTodayTab = ({ myEmail, canCreateSession }: { myEmail: string | 
       {!checkins.length ? <Empty Icon={Baby} title="Nikt jeszcze nie jest zameldowany" /> : null}
       {byRoom.map(([room, list]) => (
         <View key={room} style={{ marginBottom: 8 }}>
-          <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginVertical: 8 }}>
+          <Text style={{ fontSize: 13, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginVertical: 8 }}>
             {room} · {list.filter((c) => !c.outAt).length}
           </Text>
           {list.map((c) => (

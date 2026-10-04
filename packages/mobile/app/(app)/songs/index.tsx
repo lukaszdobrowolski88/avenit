@@ -57,7 +57,7 @@ export default function SongsScreen() {
                 paddingHorizontal: 12,
                 height: 36,
                 borderRadius: 18,
-                backgroundColor: '#F1EEE6',
+                backgroundColor: '#FFFFFF',
                 borderWidth: 1,
                 borderColor: '#E6E1D5',
               }}
@@ -82,10 +82,8 @@ export default function SongsScreen() {
             className="flex-row items-center gap-2 px-3.5"
             style={{
               height: 46,
-              borderRadius: 14,
-              backgroundColor: '#F1EEE6',
-              borderWidth: 1,
-              borderColor: '#E6E1D5',
+              borderRadius: 24,
+              backgroundColor: '#FFFFFF',
             }}
           >
             <Search size={18} color="#857F70" />

@@ -73,10 +73,8 @@ export default function MembersScreen() {
             className="flex-row items-center gap-2 px-3.5"
             style={{
               height: 46,
-              borderRadius: 14,
-              backgroundColor: '#F1EEE6',
-              borderWidth: 1,
-              borderColor: '#E6E1D5',
+              borderRadius: 24,
+              backgroundColor: '#FFFFFF',
             }}
           >
             <Search size={18} color="#857F70" />
@@ -119,9 +117,7 @@ export default function MembersScreen() {
                     paddingHorizontal: 14,
                     paddingVertical: 7,
                     borderRadius: 999,
-                    backgroundColor: active ? '#2A2312' : '#F1EEE6',
-                    borderWidth: 1,
-                    borderColor: active ? '#2A2312' : '#E6E1D5',
+                    backgroundColor: active ? '#2A2312' : '#ECE8DE',
                   }}
                 >
                   <Text
@@ -164,9 +160,7 @@ export default function MembersScreen() {
                   paddingHorizontal: 12,
                   paddingVertical: 5,
                   borderRadius: 999,
-                  backgroundColor: ministryFilter === null ? '#2A2312' : '#F1EEE6',
-                  borderWidth: 1,
-                  borderColor: ministryFilter === null ? '#2A2312' : '#E6E1D5',
+                  backgroundColor: ministryFilter === null ? '#2A2312' : '#ECE8DE',
                 }}
               >
                 <Text
@@ -191,9 +185,7 @@ export default function MembersScreen() {
                       paddingHorizontal: 12,
                       paddingVertical: 5,
                       borderRadius: 999,
-                      backgroundColor: active ? '#2A2312' : '#F1EEE6',
-                      borderWidth: 1,
-                      borderColor: active ? '#2A2312' : '#E6E1D5',
+                      backgroundColor: active ? '#2A2312' : '#ECE8DE',
                     }}
                   >
                     <Text

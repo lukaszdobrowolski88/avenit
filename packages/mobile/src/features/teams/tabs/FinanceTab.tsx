@@ -47,9 +47,9 @@ const Label = ({ children }: { children: string }) => (
   <Text
     style={{
       fontSize: 12,
-      color: '#4A463E',
+      color: '#8A6606',
       fontFamily: 'Manrope_700Bold',
-      letterSpacing: 0.4,
+      letterSpacing: 1.2,
       textTransform: 'uppercase',
       marginTop: 14,
       marginBottom: 6,
@@ -132,7 +132,7 @@ export const FinanceTab = ({
       {data ? (
         <>
           <Card>
-            <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_600SemiBold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+            <Text style={{ fontSize: 12, color: '#8A6606', fontFamily: 'Manrope_600SemiBold', textTransform: 'uppercase', letterSpacing: 1.2 }}>
               Budżet {data.year}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 4, marginBottom: 8 }}>
@@ -167,8 +167,8 @@ export const FinanceTab = ({
           <Text
             style={{
               fontSize: 13,
-              color: '#6B6557',
-              letterSpacing: 0.5,
+              color: '#8A6606',
+              letterSpacing: 1.2,
               textTransform: 'uppercase',
               fontFamily: 'Manrope_700Bold',
               marginTop: 8,

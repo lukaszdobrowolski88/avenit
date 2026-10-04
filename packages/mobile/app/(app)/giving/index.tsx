@@ -40,22 +40,17 @@ const DonationCard = ({
       className="mb-3"
       style={{
         borderRadius: 20,
-        backgroundColor: '#F6F4EE',
-        shadowColor: '#2A2312',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
+        backgroundColor: '#FFFFFF',
       }}
     >
       <View
         className="overflow-hidden p-4 flex-row items-center"
-        style={{ borderRadius: 20, borderWidth: 1, borderColor: '#E6E1D5' }}
+        style={{ borderRadius: 20 }}
       >
         <View className="flex-1">
           <Text
             className="text-[11px] uppercase mb-1"
-            style={{ color: '#6B6557', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
+            style={{ color: '#8A6606', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
           >
             {formatDate(donation.donation_date, 'd MMM yyyy')}
           </Text>
@@ -165,29 +160,22 @@ export default function GivingScreen() {
             {/* Karta podsumowania roku */}
             <View
               className="mb-4 p-5"
-              style={{
-                borderRadius: 24,
-                backgroundColor: '#F1EEE6',
-                borderWidth: 1,
-                borderColor: '#E3DDD0',
-              }}
+              // Karta-plakat marki: słód, kurkumowa etykieta, kwota dużym krojem.
+              style={{ borderRadius: 28, backgroundColor: '#2A2312' }}
             >
-              <Text
-                className="text-[12px]"
-                style={{ color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}
-              >
+              <Text style={{ fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: '#FFBE0B', fontFamily: 'Manrope_700Bold' }}>
                 Twoje dawanie w {summary.year}
               </Text>
               <Text
-                className="text-[34px] mt-1"
-                style={{ color: '#2A2312', letterSpacing: -1, fontFamily: 'Manrope_700Bold' }}
+                className="text-[38px] mt-1"
+                style={{ color: '#F6F4EE', letterSpacing: -1.4, fontFamily: 'Manrope_700Bold' }}
               >
                 {formatMoney(summary.yearTotal, summary.currency)}
               </Text>
               {summary.allTimeTotal > summary.yearTotal ? (
                 <Text
-                  className="text-[12px] mt-1"
-                  style={{ color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
+                  className="text-[13px] mt-1"
+                  style={{ color: '#CFC8B6', fontFamily: 'Manrope_500Medium' }}
                 >
                   Łącznie: {formatMoney(summary.allTimeTotal, summary.currency)}
                 </Text>
@@ -200,8 +188,8 @@ export default function GivingScreen() {
                 className="mt-2 flex-row items-center justify-center gap-1.5 active:opacity-70"
                 style={{ paddingVertical: 10 }}
               >
-                <FileText size={15} color="#2A2312" />
-                <Text className="text-[13px]" style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
+                <FileText size={15} color="#F6F4EE" />
+                <Text className="text-[13px]" style={{ color: '#F6F4EE', fontFamily: 'Manrope_700Bold' }}>
                   Zestawienie roczne (PIT)
                 </Text>
               </Pressable>
@@ -212,7 +200,7 @@ export default function GivingScreen() {
               <View className="mb-4">
                 <Text
                   className="text-[11px] uppercase mb-2 px-1"
-                  style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
+                  style={{ color: '#8A6606', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Zbiórki
                 </Text>
@@ -242,7 +230,7 @@ export default function GivingScreen() {
                       {goal > 0 ? (
                         <>
                           <View style={{ height: 7, borderRadius: 4, backgroundColor: '#ECE8DE', overflow: 'hidden', marginTop: 10 }}>
-                            <View style={{ height: '100%', width: `${pct}%`, borderRadius: 4, backgroundColor: '#2A2312' }} />
+                            <View style={{ height: '100%', width: `${pct}%`, borderRadius: 4, backgroundColor: '#FFBE0B' }} />
                           </View>
                           <View className="flex-row items-center justify-between mt-1.5">
                             <Text className="text-[12px]" style={{ color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>
@@ -320,7 +308,7 @@ export default function GivingScreen() {
               <>
                 <Text
                   className="text-[11px] uppercase mb-2 mx-1"
-                  style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
+                  style={{ color: '#8A6606', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Historia
                 </Text>

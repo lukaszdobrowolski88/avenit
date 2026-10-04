@@ -112,7 +112,7 @@ export default function LoginScreen() {
                   borderRadius: 14,
                   borderWidth: 1,
                   borderColor: '#E6E1D5',
-                  backgroundColor: '#F1EEE6',
+                  backgroundColor: '#FFFFFF',
                   paddingHorizontal: 16,
                   paddingVertical: 16,
                   opacity: loading ? 0.6 : 1,
@@ -152,30 +152,23 @@ export default function LoginScreen() {
         <View
           style={{
             borderRadius: 20,
-            backgroundColor: '#F6F4EE',
-            shadowColor: '#2A2312',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.05,
-            shadowRadius: 14,
-            elevation: 2,
+            backgroundColor: '#FFFFFF',
           }}
         >
           <View
             style={{
               borderRadius: 20,
-              borderWidth: 1,
-              borderColor: '#E6E1D5',
               padding: 20,
             }}
           >
             <Text
               style={{
                 fontSize: 12,
-                color: '#4A463E',
+                color: '#8A6606',
                 marginBottom: 6,
                 fontFamily: 'Manrope_600SemiBold',
                 textTransform: 'uppercase',
-                letterSpacing: 0.4,
+                letterSpacing: 1.2,
               }}
             >
               Email
@@ -189,7 +182,7 @@ export default function LoginScreen() {
                 paddingVertical: 12,
                 fontSize: 15,
                 color: '#2A2312',
-                backgroundColor: '#F1EEE6',
+                backgroundColor: '#FFFFFF',
                 marginBottom: 14,
                 fontFamily: 'Manrope_500Medium',
               }}
@@ -207,11 +200,11 @@ export default function LoginScreen() {
             <Text
               style={{
                 fontSize: 12,
-                color: '#4A463E',
+                color: '#8A6606',
                 marginBottom: 6,
                 fontFamily: 'Manrope_600SemiBold',
                 textTransform: 'uppercase',
-                letterSpacing: 0.4,
+                letterSpacing: 1.2,
               }}
             >
               Hasło
@@ -225,7 +218,7 @@ export default function LoginScreen() {
                 paddingVertical: 12,
                 fontSize: 15,
                 color: '#2A2312',
-                backgroundColor: '#F1EEE6',
+                backgroundColor: '#FFFFFF',
                 marginBottom: 18,
                 fontFamily: 'Manrope_500Medium',
               }}

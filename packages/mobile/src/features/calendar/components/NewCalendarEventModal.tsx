@@ -20,9 +20,9 @@ const Label = ({ children }: { children: string }) => (
   <Text
     style={{
       fontSize: 12,
-      color: '#4A463E',
+      color: '#8A6606',
       fontFamily: 'Manrope_700Bold',
-      letterSpacing: 0.4,
+      letterSpacing: 1.2,
       textTransform: 'uppercase',
       marginTop: 16,
       marginBottom: 6,

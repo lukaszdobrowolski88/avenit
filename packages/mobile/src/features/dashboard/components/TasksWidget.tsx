@@ -136,9 +136,9 @@ const Label = ({ children }: { children: string }) => (
   <Text
     style={{
       fontSize: 11,
-      color: '#6B6557',
+      color: '#8A6606',
       marginBottom: 6,
-      letterSpacing: 0.4,
+      letterSpacing: 1.2,
       textTransform: 'uppercase',
       fontFamily: 'Manrope_700Bold',
     }}
@@ -155,7 +155,7 @@ const inputStyle = {
   paddingVertical: 12,
   fontSize: 15,
   color: '#2A2312',
-  backgroundColor: '#F1EEE6',
+  backgroundColor: '#FFFFFF',
   fontFamily: 'Manrope_500Medium' as const,
 };
 
@@ -435,9 +435,7 @@ const TaskFormModal = ({
                       paddingHorizontal: 10,
                       paddingVertical: 6,
                       borderRadius: 999,
-                      backgroundColor: active ? '#2A2312' : '#F1EEE6',
-                      borderWidth: 1,
-                      borderColor: active ? '#2A2312' : '#E6E1D5',
+                      backgroundColor: active ? '#2A2312' : '#ECE8DE',
                     }}
                   >
                     <Text
@@ -536,7 +534,7 @@ const TaskFormModal = ({
                       paddingHorizontal: 10,
                       paddingVertical: 8,
                       borderRadius: 12,
-                      backgroundColor: '#F1EEE6',
+                      backgroundColor: '#FFFFFF',
                       borderWidth: 1,
                       borderColor: '#E6E1D5',
                     }}
@@ -696,7 +694,7 @@ const TaskFormModal = ({
                 paddingHorizontal: 14,
                 paddingVertical: 12,
                 borderRadius: 14,
-                backgroundColor: '#F1EEE6',
+                backgroundColor: '#FFFFFF',
                 borderWidth: 1,
                 borderColor: form.is_private ? '#F3E3B0' : '#E6E1D5',
                 marginBottom: 14,
@@ -767,7 +765,7 @@ const TaskFormModal = ({
                   paddingHorizontal: 14,
                   paddingVertical: 12,
                   borderRadius: 12,
-                  backgroundColor: '#F1EEE6',
+                  backgroundColor: '#FFFFFF',
                   borderWidth: 1,
                   borderColor: '#E6E1D5',
                 }}

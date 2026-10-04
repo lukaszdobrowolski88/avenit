@@ -83,13 +83,13 @@ export const AssignmentCard = ({ assignment }: Props) => {
                   style={{
                     width: 36,
                     height: 36,
-                    borderRadius: 10,
-                    backgroundColor: '#10b981',
+                    borderRadius: 18,
+                    backgroundColor: '#FFBE0B',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <Check color="white" size={18} />
+                  <Check color="#2A2312" size={18} strokeWidth={2.6} />
                 </Pressable>
                 <Pressable
                   onPress={() =>
@@ -104,13 +104,13 @@ export const AssignmentCard = ({ assignment }: Props) => {
                   style={{
                     width: 36,
                     height: 36,
-                    borderRadius: 10,
-                    backgroundColor: '#f43f5e',
+                    borderRadius: 18,
+                    backgroundColor: '#ECE8DE',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <X color="white" size={18} />
+                  <X color="#B42318" size={18} strokeWidth={2.4} />
                 </Pressable>
               </>
             )}

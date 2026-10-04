@@ -94,12 +94,10 @@ export default function SongDetailScreen() {
             onPress={() => router.back()}
             hitSlop={10}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#F1EEE6',
-              borderWidth: 1,
-              borderColor: '#E3DDD0',
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#FFFFFF',
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -121,10 +119,10 @@ export default function SongDetailScreen() {
             <Text
               numberOfLines={1}
               style={{
-                fontSize: 24,
+                fontSize: 27,
                 color: '#2A2312',
                 marginTop: 2,
-                letterSpacing: -0.6,
+                letterSpacing: -0.9,
                 fontFamily: 'Manrope_700Bold',
               }}
             >

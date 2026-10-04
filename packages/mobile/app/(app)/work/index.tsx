@@ -45,7 +45,7 @@ const ItemCard = ({ item, onStatus }: { item: WorkItem; onStatus: (item: WorkIte
       padding: 14,
       marginBottom: 8,
       borderRadius: 16,
-      backgroundColor: '#EFEBE2',
+      backgroundColor: '#FFFFFF',
       opacity: item.done ? 0.6 : 1,
     }}
   >
@@ -169,9 +169,7 @@ export default function MyWorkScreen() {
                 paddingHorizontal: 12,
                 paddingVertical: 8,
                 borderRadius: 999,
-                backgroundColor: showDone ? '#2A2312' : '#F1EEE6',
-                borderWidth: 1,
-                borderColor: showDone ? '#2A2312' : '#E6E1D5',
+                backgroundColor: showDone ? '#2A2312' : '#ECE8DE',
               }}
             >
               <CheckCircle2 size={14} color={showDone ? '#ffffff' : '#7A7466'} />

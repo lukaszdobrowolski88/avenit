@@ -94,7 +94,7 @@ export default function DonateScreen() {
 
         <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 120 }}>
           {/* Szybkie kwoty */}
-          <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
+          <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#8A6606', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
             Kwota
           </Text>
           <View className="flex-row flex-wrap gap-2 mb-3">
@@ -120,7 +120,7 @@ export default function DonateScreen() {
           {/* Fundusze */}
           {funds.length > 0 && (
             <>
-              <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
+              <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#8A6606', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
                 Cel
               </Text>
               <View className="flex-row flex-wrap gap-2 mb-4">
@@ -141,7 +141,7 @@ export default function DonateScreen() {
           )}
 
           {/* E-mail */}
-          <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
+          <Text className="text-[11px] uppercase mb-2 mx-1" style={{ color: '#8A6606', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}>
             E-mail (potwierdzenie)
           </Text>
           <TextInput

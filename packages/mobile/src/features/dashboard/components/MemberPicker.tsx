@@ -120,10 +120,8 @@ export const MemberPicker = ({ visible, onClose, onSelect, selectedEmail }: Prop
                 gap: 8,
                 paddingHorizontal: 14,
                 height: 42,
-                borderRadius: 14,
-                backgroundColor: '#F1EEE6',
-                borderWidth: 1,
-                borderColor: '#E6E1D5',
+                borderRadius: 24,
+                backgroundColor: '#FFFFFF',
               }}
             >
               <Search size={16} color="#857F70" />

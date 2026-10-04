@@ -270,7 +270,7 @@ export default function AvailabilityScreen() {
                   textAlignVertical: 'top',
                   fontSize: 15,
                   color: '#2A2312',
-                  backgroundColor: '#F1EEE6',
+                  backgroundColor: '#FFFFFF',
                   marginBottom: 20,
                   fontFamily: 'Manrope_400Regular',
                 }}
@@ -317,17 +317,15 @@ const chip = (active: boolean) =>
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 999,
-    backgroundColor: active ? '#2A2312' : '#F1EEE6',
-    borderWidth: 1,
-    borderColor: active ? '#2A2312' : '#E6E1D5',
+    backgroundColor: active ? '#2A2312' : '#ECE8DE',
   }) as const;
 const chipText = (active: boolean) =>
   ({ fontSize: 13, color: active ? '#ffffff' : '#2A2312', fontFamily: 'Manrope_600SemiBold' }) as const;
 const label = {
   fontSize: 12,
-  color: '#4A463E',
+  color: '#8A6606',
   marginBottom: 6,
-  letterSpacing: 0.4,
+  letterSpacing: 1.2,
   textTransform: 'uppercase' as const,
   fontFamily: 'Manrope_700Bold',
 } as const;
@@ -340,7 +338,7 @@ const dateField = {
   borderRadius: 14,
   paddingHorizontal: 14,
   paddingVertical: 14,
-  backgroundColor: '#F1EEE6',
+  backgroundColor: '#FFFFFF',
   marginBottom: 16,
 } as const;
 const dateFieldText = { fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' } as const;

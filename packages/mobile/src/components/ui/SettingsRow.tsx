@@ -131,7 +131,7 @@ export const SettingsGroup = ({
       <Text
         className="text-[11px] uppercase mx-5 mb-2"
         style={{
-          color: '#6B6557',
+          color: '#8A6606',
           letterSpacing: 0.6,
           fontFamily: 'Manrope_700Bold',
         }}
@@ -143,20 +143,13 @@ export const SettingsGroup = ({
       className="mx-4"
       style={{
         borderRadius: 20,
-        backgroundColor: '#F6F4EE',
-        shadowColor: '#2A2312',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
+        backgroundColor: '#FFFFFF',
       }}
     >
       <View
         className="overflow-hidden"
         style={{
           borderRadius: 20,
-          borderWidth: 1,
-          borderColor: '#E6E1D5',
         }}
       >
         {children}

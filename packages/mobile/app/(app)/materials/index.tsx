@@ -193,12 +193,10 @@ export default function MaterialsScreen() {
             className="active:opacity-60"
             hitSlop={10}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#F1EEE6',
-              borderWidth: 1,
-              borderColor: '#E3DDD0',
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#FFFFFF',
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -212,14 +210,13 @@ export default function MaterialsScreen() {
           </Pressable>
           <View className="flex-1">
             <Text
-              className="text-[12px]"
-              style={{ color: '#6B6557', fontFamily: 'Manrope_500Medium' }}
+              style={{ fontSize: 11, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold' }}
             >
               {space === undefined ? 'Pliki i dokumenty' : 'Materiały'}
             </Text>
             <Text
-              className="text-[24px] mt-0.5"
-              style={{ color: '#2A2312', letterSpacing: -0.6, fontFamily: 'Manrope_700Bold' }}
+              className="text-[27px] mt-0.5"
+              style={{ color: '#2A2312', letterSpacing: -0.9, fontFamily: 'Manrope_700Bold' }}
               numberOfLines={1}
             >
               {spaceLabel}

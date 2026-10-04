@@ -43,7 +43,7 @@ export const PromptModal = ({
               height: 46,
               borderRadius: 14,
               paddingHorizontal: 14,
-              backgroundColor: '#ECE8DE',
+              backgroundColor: '#FFFFFF',
               fontSize: 15,
               color: '#2A2312',
               fontFamily: 'Manrope_500Medium',

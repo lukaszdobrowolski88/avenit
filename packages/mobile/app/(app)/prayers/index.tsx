@@ -58,9 +58,7 @@ const Chip = ({
       paddingHorizontal: 14,
       paddingVertical: 7,
       borderRadius: 999,
-      backgroundColor: active ? '#2A2312' : '#F1EEE6',
-      borderWidth: 1,
-      borderColor: active ? '#2A2312' : '#E6E1D5',
+      backgroundColor: active ? '#2A2312' : '#ECE8DE',
     }}
   >
     <Text
@@ -126,17 +124,12 @@ const PrayerCard = ({
       className="mb-3"
       style={{
         borderRadius: 20,
-        backgroundColor: '#F6F4EE',
-        shadowColor: '#2A2312',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
+        backgroundColor: '#FFFFFF',
       }}
     >
       <View
         className="overflow-hidden p-4"
-        style={{ borderRadius: 20, borderWidth: 1, borderColor: '#E6E1D5' }}
+        style={{ borderRadius: 20 }}
       >
         <View className="flex-row items-center gap-2 mb-2">
           <View className="px-2 py-0.5" style={{ borderRadius: 999, backgroundColor: meta.bg }}>
@@ -409,10 +402,8 @@ export default function PrayersScreen() {
           <View
             className="flex-row items-center gap-2 px-3"
             style={{
-              borderRadius: 999,
-              backgroundColor: '#F1EEE6',
-              borderWidth: 1,
-              borderColor: '#E6E1D5',
+              borderRadius: 24,
+              backgroundColor: '#FFFFFF',
               height: 40,
             }}
           >
@@ -575,7 +566,7 @@ export default function PrayersScreen() {
                 textAlignVertical: 'top',
                 fontSize: 15,
                 color: '#2A2312',
-                backgroundColor: '#F1EEE6',
+                backgroundColor: '#FFFFFF',
                 marginBottom: 16,
                 fontFamily: 'Manrope_400Regular',
               }}

@@ -29,9 +29,9 @@ const Label = ({ children }: { children: string }) => (
   <Text
     style={{
       fontSize: 12,
-      color: '#4A463E',
+      color: '#8A6606',
       fontFamily: 'Manrope_700Bold',
-      letterSpacing: 0.4,
+      letterSpacing: 1.2,
       textTransform: 'uppercase',
       marginTop: 16,
       marginBottom: 6,
@@ -120,7 +120,7 @@ export default function AttendanceScreen() {
               key={s.id}
               onPress={() => router.push({ pathname: '/(app)/attendance/[id]', params: { id: s.id } })}
               className="active:opacity-70"
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 18, backgroundColor: '#EFEBE2', marginBottom: 10 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 18, backgroundColor: '#FFFFFF', marginBottom: 10 }}
             >
               <DateBlock ymd={s.date} tint="#2A2312" bg="#F1EEE6" />
               <View style={{ flex: 1 }}>

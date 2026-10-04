@@ -159,9 +159,9 @@ export default function EditProfileScreen() {
 const styles = {
   label: {
     fontSize: 12,
-    color: '#4A463E',
+    color: '#8A6606',
     marginBottom: 6,
-    letterSpacing: 0.4,
+    letterSpacing: 1.2,
     textTransform: 'uppercase' as const,
     fontFamily: 'Manrope_700Bold',
   } as const,
@@ -174,7 +174,7 @@ const styles = {
     minHeight: 48,
     fontSize: 15,
     color: '#2A2312',
-    backgroundColor: '#F1EEE6',
+    backgroundColor: '#FFFFFF',
     marginBottom: 16,
     fontFamily: 'Manrope_400Regular',
   } as const,

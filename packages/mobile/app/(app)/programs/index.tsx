@@ -42,20 +42,13 @@ const ProgramCard = ({ program }: { program: ProgramListItem }) => {
         className="mx-4 mb-2.5 active:opacity-80"
         style={{
           borderRadius: 16,
-          backgroundColor: '#F6F4EE',
-          shadowColor: '#2A2312',
-          shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: 0.04,
-          shadowRadius: 10,
-          elevation: 1,
+          backgroundColor: '#FFFFFF',
         }}
       >
         <View
           className="flex-row items-center gap-3 p-3.5"
           style={{
             borderRadius: 16,
-            borderWidth: 1,
-            borderColor: '#E6E1D5',
           }}
         >
           <View className="flex-1">
@@ -65,7 +58,7 @@ const ProgramCard = ({ program }: { program: ProgramListItem }) => {
               <Text
                 className="text-[11px] uppercase"
                 style={{
-                  color: '#6B6557',
+                  color: '#8A6606',
                   letterSpacing: 0.4,
                   fontFamily: 'Manrope_600SemiBold',
                 }}
@@ -115,7 +108,7 @@ const TypeSection = ({
         <Text
           className="text-[12px] uppercase flex-1"
           style={{
-            color: '#4A463E',
+            color: '#8A6606',
             letterSpacing: 0.6,
             fontFamily: 'Manrope_700Bold',
           }}

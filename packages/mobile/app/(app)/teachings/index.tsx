@@ -25,7 +25,7 @@ const SeriesChip = ({ label, active, onPress }: { label: string; active: boolean
       paddingHorizontal: 14,
       paddingVertical: 7,
       borderRadius: 999,
-      backgroundColor: active ? '#2A2312' : '#F1EEE6',
+      backgroundColor: active ? '#2A2312' : '#ECE8DE',
       borderWidth: 1,
       borderColor: active ? '#2A2312' : '#ECE8DE',
     }}
@@ -223,10 +223,8 @@ export default function TeachingsScreen() {
               <View
                 className="flex-row items-center gap-2 px-3"
                 style={{
-                  borderRadius: 999,
-                  backgroundColor: '#F1EEE6',
-                  borderWidth: 1,
-                  borderColor: '#E6E1D5',
+                  borderRadius: 24,
+                  backgroundColor: '#FFFFFF',
                   height: 40,
                 }}
               >
@@ -325,8 +323,8 @@ export default function TeachingsScreen() {
               style={{
                 width: 64,
                 height: 64,
-                borderRadius: 18,
-                backgroundColor: '#ECE8DE',
+                borderRadius: 24,
+                backgroundColor: '#FFFFFF',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 12,

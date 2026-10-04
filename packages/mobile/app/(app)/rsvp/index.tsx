@@ -84,24 +84,19 @@ const InvitationCard = ({
       className="mb-3"
       style={{
         borderRadius: 20,
-        backgroundColor: '#F6F4EE',
-        shadowColor: '#2A2312',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 14,
-        elevation: 2,
+        backgroundColor: '#FFFFFF',
       }}
     >
       <View
         className="overflow-hidden p-4"
-        style={{ borderRadius: 20, borderWidth: 1, borderColor: '#E6E1D5' }}
+        style={{ borderRadius: 20 }}
       >
         <View className="flex-row items-start gap-2">
           <View className="flex-1">
             {eventTypeLabel ? (
               <Text
                 className="text-[11px] uppercase mb-1"
-                style={{ color: '#6B6557', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
+                style={{ color: '#8A6606', letterSpacing: 0.4, fontFamily: 'Manrope_600SemiBold' }}
               >
                 {eventTypeLabel}
               </Text>
@@ -362,7 +357,7 @@ export default function RsvpScreen() {
                 ) : null}
                 <Text
                   className="text-[11px] uppercase mb-2 mx-1"
-                  style={{ color: '#6B6557', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
+                  style={{ color: '#8A6606', letterSpacing: 0.6, fontFamily: 'Manrope_700Bold' }}
                 >
                   Nadchodzące
                 </Text>

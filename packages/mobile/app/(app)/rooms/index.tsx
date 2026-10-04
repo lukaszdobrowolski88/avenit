@@ -43,7 +43,7 @@ const at = (ymd: string, hm: string) => {
 const hm = (iso: string) => format(new Date(iso), 'HH:mm');
 
 const Label = ({ children }: { children: string }) => (
-  <Text style={{ fontSize: 12, color: '#4A463E', fontFamily: 'Manrope_700Bold', letterSpacing: 0.4, textTransform: 'uppercase', marginTop: 16, marginBottom: 6 }}>
+  <Text style={{ fontSize: 12, color: '#8A6606', fontFamily: 'Manrope_700Bold', letterSpacing: 1.2, textTransform: 'uppercase', marginTop: 16, marginBottom: 6 }}>
     {children}
   </Text>
 );
@@ -136,7 +136,7 @@ export default function RoomsScreen() {
           {rooms.map((r) => {
             const own = list.filter((b) => b.resourceId === r.id);
             return (
-              <View key={r.id} style={{ borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14, marginBottom: 10, gap: 8 }}>
+              <View key={r.id} style={{ borderRadius: 18, backgroundColor: '#FFFFFF', padding: 14, marginBottom: 10, gap: 8 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: r.color ?? '#A8A59E' }} />
                   <Text style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{r.name}</Text>
@@ -192,7 +192,7 @@ export default function RoomsScreen() {
               })}
             </View>
             <Label>Tytuł</Label>
-            <TextInput value={title} onChangeText={setTitle} placeholder="np. Próba zespołu" placeholderTextColor="#857F70" style={{ height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#ECE8DE', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }} />
+            <TextInput value={title} onChangeText={setTitle} placeholder="np. Próba zespołu" placeholderTextColor="#857F70" style={{ height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#FFFFFF', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }} />
             <Label>Data</Label>
             <DateField value={date} onChange={setDate} />
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -206,7 +206,7 @@ export default function RoomsScreen() {
               </View>
             </View>
             <Label>Notatka</Label>
-            <TextInput value={note} onChangeText={setNote} placeholder="opcjonalnie" placeholderTextColor="#857F70" style={{ height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#ECE8DE', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }} />
+            <TextInput value={note} onChangeText={setNote} placeholder="opcjonalnie" placeholderTextColor="#857F70" style={{ height: 46, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#FFFFFF', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }} />
             <Pressable
               onPress={save}
               disabled={create.isPending}

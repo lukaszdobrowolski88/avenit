@@ -13,6 +13,8 @@ interface Props {
   right?: ReactNode;
 }
 
+// Nagłówek podstron w stylu marki: biały okrągły „wstecz”, musztardowa etykieta
+// (podtytuł wersalikami), duży tytuł; ikona sekcji w kurkumowym kółku jak znak „a”.
 export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: Props) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -28,12 +30,10 @@ export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: P
           className="active:opacity-60"
           hitSlop={10}
           style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: '#F1EEE6',
-            borderWidth: 1,
-            borderColor: '#E3DDD0',
+            width: 42,
+            height: 42,
+            borderRadius: 21,
+            backgroundColor: '#FFFFFF',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -42,29 +42,33 @@ export const PageHeader = ({ title, subtitle, Icon, showBack = false, right }: P
         </Pressable>
       ) : null}
       {Icon && !showBack ? (
-        <GradientIcon Icon={Icon} size={40} iconSize={20} />
+        <GradientIcon Icon={Icon} size={42} iconSize={20} rounded />
       ) : null}
       <View className="flex-1">
         {subtitle ? (
           <Text
-            className="text-[12px]"
+            numberOfLines={1}
             style={{
-              color: '#6B6557',
-              fontFamily: 'Manrope_500Medium',
-              letterSpacing: -0.1,
+              fontSize: 11,
+              color: '#8A6606',
+              fontFamily: 'Manrope_700Bold',
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
             }}
           >
             {subtitle}
           </Text>
         ) : null}
         <Text
-          className="text-[24px] mt-0.5"
           style={{
+            marginTop: 2,
+            fontSize: 27,
+            lineHeight: 32,
             color: '#2A2312',
-            letterSpacing: -0.6,
+            letterSpacing: -0.9,
             fontFamily: 'Manrope_700Bold',
           }}
-          numberOfLines={1}
+          numberOfLines={2}
         >
           {title}
         </Text>

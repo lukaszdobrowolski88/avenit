@@ -30,7 +30,7 @@ export default function ApprovalsScreen() {
   };
 
   const Row = ({ a, approveLabel }: { a: PendingAccount; approveLabel: string }) => (
-    <View style={{ borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14, marginBottom: 10, gap: 10 }}>
+    <View style={{ borderRadius: 18, backgroundColor: '#FFFFFF', padding: 14, marginBottom: 10, gap: 10 }}>
       <View>
         <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>{a.name}</Text>
         <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
@@ -77,7 +77,7 @@ export default function ApprovalsScreen() {
 
           {toApprove.length ? (
             <>
-              <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
+              <Text style={{ fontSize: 13, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
                 Czekają na zatwierdzenie
               </Text>
               {toApprove.map((a) => (
@@ -90,7 +90,7 @@ export default function ApprovalsScreen() {
             <>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, marginBottom: 8 }}>
                 <Mail size={13} color="#6B6557" />
-                <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold' }}>
+                <Text style={{ fontSize: 13, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold' }}>
                   Nie potwierdzili e-maila
                 </Text>
               </View>

@@ -137,6 +137,7 @@ export default function HomeGroupsMapScreen() {
                   coordinate={{ latitude: g.latitude as number, longitude: g.longitude as number }}
                   title={g.name}
                   description={g.location || g.address || undefined}
+                  pinColor="#2A2312"
                 >
                   {Callout ? (
                     <Callout onPress={() => openMaps(g.address || g.location || g.name)}>
@@ -174,7 +175,7 @@ export default function HomeGroupsMapScreen() {
                 gap: 10,
                 padding: 14,
                 borderRadius: 14,
-                backgroundColor: '#F1EEE6',
+                backgroundColor: '#FFFFFF',
                 borderWidth: 1,
                 borderColor: '#E3DDD0',
                 marginBottom: 14,

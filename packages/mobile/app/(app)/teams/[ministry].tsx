@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StatusBar, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,7 +39,8 @@ export default function TeamDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
-  const { ministry } = useLocalSearchParams<{ ministry: string }>();
+  // `tab` — otwarcie od razu na zakładce (np. link z powiadomienia: ?tab=schedule).
+  const { ministry, tab: tabParam } = useLocalSearchParams<{ ministry: string; tab?: string }>();
   const { user } = useAuthSession();
   const myEmail = user?.email ?? null;
   const profile = useMyProfile(myEmail);
@@ -66,7 +67,11 @@ export default function TeamDetailScreen() {
         })),
     [cfg, perms.tabVisible],
   );
-  const [tab, setTab] = useState<TeamTabKey | null>(null);
+  const [tab, setTab] = useState<TeamTabKey | null>((tabParam as TeamTabKey) ?? null);
+  // Router podmienia parametry otwartego już ekranu — nowa zakładka z linku też ma zadziałać.
+  useEffect(() => {
+    if (tabParam) setTab(tabParam as TeamTabKey);
+  }, [tabParam]);
   const active = (tab && tabs.some((t) => t.key === tab) ? tab : tabs.find((t) => !NAV_TABS.has(t.key))?.key) ?? 'events';
 
   const wallMinistry = cfg.wallMinistry ?? cfg.key;
@@ -175,12 +180,10 @@ export default function TeamDetailScreen() {
             hitSlop={10}
             className="active:opacity-60"
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#F1EEE6',
-              borderWidth: 1,
-              borderColor: '#E3DDD0',
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#FFFFFF',
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -189,7 +192,7 @@ export default function TeamDetailScreen() {
           </Pressable>
           <GradientIcon Icon={look.Icon} size={44} iconSize={20} />
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
+            <Text style={{ fontSize: 11, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold' }}>
               {cfg.key === 'homegroups' ? 'Panel służby' : 'Zespół'}
             </Text>
             <Text

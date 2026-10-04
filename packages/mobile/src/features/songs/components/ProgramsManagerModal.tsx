@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 42,
     borderRadius: 14,
-    backgroundColor: '#F1EEE6',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E6E1D5',
   },
@@ -583,12 +583,7 @@ const styles = StyleSheet.create({
   },
   programCardShadow: {
     borderRadius: 16,
-    backgroundColor: '#F6F4EE',
-    shadowColor: '#2A2312',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 1,
+    backgroundColor: '#FFFFFF',
   },
   programCardInner: {
     flexDirection: 'row',
@@ -596,8 +591,6 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E6E1D5',
   },
   programIcon: {
     width: 40,
@@ -654,7 +647,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: '#E3DDD0',
-    backgroundColor: '#F1EEE6',
+    backgroundColor: '#FFFFFF',
   },
 
   editorHeader: {
@@ -681,19 +674,12 @@ const styles = StyleSheet.create({
   },
   suggestionCardShadow: {
     borderRadius: 16,
-    backgroundColor: '#F6F4EE',
-    shadowColor: '#2A2312',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 1,
+    backgroundColor: '#FFFFFF',
     marginBottom: 8,
   },
   suggestionCardInner: {
     padding: 14,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E6E1D5',
   },
   suggestionTopRow: {
     flexDirection: 'row',
@@ -796,7 +782,7 @@ const styles = StyleSheet.create({
     minWidth: 44,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#F1EEE6',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E6E1D5',
     alignItems: 'center',
@@ -823,7 +809,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#2A2312',
     fontFamily: 'Manrope_400Regular',
-    backgroundColor: '#F1EEE6',
+    backgroundColor: '#FFFFFF',
   },
   inlineActions: {
     flexDirection: 'row',

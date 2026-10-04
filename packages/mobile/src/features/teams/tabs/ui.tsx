@@ -52,12 +52,12 @@ export const Card = ({ children, onPress }: { children: ReactNode; onPress?: () 
     <Pressable
       onPress={onPress}
       className="active:opacity-70"
-      style={{ borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14, marginBottom: 10 }}
+      style={{ borderRadius: 18, backgroundColor: '#FFFFFF', padding: 14, marginBottom: 10 }}
     >
       {children}
     </Pressable>
   ) : (
-    <View style={{ borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14, marginBottom: 10 }}>{children}</View>
+    <View style={{ borderRadius: 18, backgroundColor: '#FFFFFF', padding: 14, marginBottom: 10 }}>{children}</View>
   );
 
 export const Pill = ({ text, tint, bg }: { text: string; tint: string; bg: string }) => (

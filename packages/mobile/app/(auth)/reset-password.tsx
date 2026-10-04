@@ -11,18 +11,18 @@ const inputStyle = {
   paddingVertical: 12,
   fontSize: 15,
   color: '#2A2312',
-  backgroundColor: '#F1EEE6',
+  backgroundColor: '#FFFFFF',
   marginBottom: 14,
   fontFamily: 'Manrope_500Medium',
 } as const;
 
 const labelStyle = {
   fontSize: 12,
-  color: '#4A463E',
+  color: '#8A6606',
   marginBottom: 6,
   fontFamily: 'Manrope_600SemiBold',
   textTransform: 'uppercase' as const,
-  letterSpacing: 0.4,
+  letterSpacing: 1.2,
 };
 
 export default function ResetPasswordScreen() {
@@ -134,14 +134,14 @@ export default function ResetPasswordScreen() {
         <Pressable
           onPress={() => router.replace('/(auth)/login')}
           style={{
-            backgroundColor: '#2A2312',
-            borderRadius: 14,
+            backgroundColor: '#FFBE0B',
+            borderRadius: 26,
             paddingVertical: 14,
             paddingHorizontal: 28,
             alignItems: 'center',
           }}
         >
-          <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
+          <Text style={{ color: '#2A2312', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
             Wróć do logowania
           </Text>
         </Pressable>
@@ -206,17 +206,17 @@ export default function ResetPasswordScreen() {
         onPress={handleSubmit}
         disabled={loading}
         style={{
-          backgroundColor: '#2A2312',
-          borderRadius: 14,
+          backgroundColor: '#FFBE0B',
+          borderRadius: 26,
           paddingVertical: 14,
           alignItems: 'center',
           opacity: loading ? 0.7 : 1,
         }}
       >
         {loading ? (
-          <ActivityIndicator color="white" />
+          <ActivityIndicator color="#2A2312" />
         ) : (
-          <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
+          <Text style={{ color: '#2A2312', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
             Zapisz hasło
           </Text>
         )}

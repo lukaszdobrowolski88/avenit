@@ -120,7 +120,7 @@ const MemberRow = ({ member, isLast }: { member: HomeGroupMember; isLast: boolea
             width: 32,
             height: 32,
             borderRadius: 10,
-            backgroundColor: '#F1EEE6',
+            backgroundColor: '#FFFFFF',
             borderWidth: 1,
             borderColor: '#E6E1D5',
             alignItems: 'center',
@@ -238,12 +238,10 @@ export default function HomeGroupDetailScreen() {
             onPress={() => router.back()}
             hitSlop={10}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#F1EEE6',
-              borderWidth: 1,
-              borderColor: '#E3DDD0',
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#FFFFFF',
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -262,10 +260,10 @@ export default function HomeGroupDetailScreen() {
         >
           <View
             style={{
-              width: 80,
-              height: 80,
-              borderRadius: 22,
-              backgroundColor: '#ECE8DE',
+              width: 84,
+              height: 84,
+              borderRadius: 42,
+              backgroundColor: '#FFBE0B',
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: 12,
@@ -275,10 +273,10 @@ export default function HomeGroupDetailScreen() {
           </View>
           <Text
             style={{
-              fontSize: 22,
+              fontSize: 26,
               color: '#2A2312',
               textAlign: 'center',
-              letterSpacing: -0.5,
+              letterSpacing: -0.8,
               fontFamily: 'Manrope_700Bold',
             }}
           >
@@ -306,19 +304,12 @@ export default function HomeGroupDetailScreen() {
               marginHorizontal: 16,
               marginBottom: 12,
               borderRadius: 20,
-              backgroundColor: '#F6F4EE',
-              shadowColor: '#2A2312',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.05,
-              shadowRadius: 14,
-              elevation: 2,
+              backgroundColor: '#FFFFFF',
             }}
           >
             <View
               style={{
                 borderRadius: 20,
-                borderWidth: 1,
-                borderColor: '#E6E1D5',
                 paddingHorizontal: 16,
                 paddingVertical: 12,
               }}
@@ -326,9 +317,9 @@ export default function HomeGroupDetailScreen() {
               <Text
                 style={{
                   fontSize: 11,
-                  color: '#6B6557',
+                  color: '#8A6606',
                   marginBottom: 4,
-                  letterSpacing: 0.6,
+                  letterSpacing: 1.2,
                   textTransform: 'uppercase',
                   fontFamily: 'Manrope_700Bold',
                 }}
@@ -370,7 +361,7 @@ export default function HomeGroupDetailScreen() {
                     marginTop: 10,
                     paddingVertical: 12,
                     borderRadius: 14,
-                    backgroundColor: '#F1EEE6',
+                    backgroundColor: '#FFFFFF',
                     borderWidth: 1,
                     borderColor: '#E3DDD0',
                   }}
@@ -391,19 +382,12 @@ export default function HomeGroupDetailScreen() {
               marginHorizontal: 16,
               marginBottom: 12,
               borderRadius: 20,
-              backgroundColor: '#F6F4EE',
-              shadowColor: '#2A2312',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.05,
-              shadowRadius: 14,
-              elevation: 2,
+              backgroundColor: '#FFFFFF',
             }}
           >
             <View
               style={{
                 borderRadius: 20,
-                borderWidth: 1,
-                borderColor: '#E6E1D5',
                 paddingHorizontal: 16,
                 paddingVertical: 12,
               }}
@@ -411,9 +395,9 @@ export default function HomeGroupDetailScreen() {
               <Text
                 style={{
                   fontSize: 11,
-                  color: '#6B6557',
+                  color: '#8A6606',
                   marginBottom: 8,
-                  letterSpacing: 0.6,
+                  letterSpacing: 1.2,
                   textTransform: 'uppercase',
                   fontFamily: 'Manrope_700Bold',
                 }}
@@ -469,7 +453,7 @@ export default function HomeGroupDetailScreen() {
                       width: 36,
                       height: 36,
                       borderRadius: 12,
-                      backgroundColor: '#F1EEE6',
+                      backgroundColor: '#FFFFFF',
                       borderWidth: 1,
                       borderColor: '#E6E1D5',
                       alignItems: 'center',
@@ -490,7 +474,7 @@ export default function HomeGroupDetailScreen() {
               marginHorizontal: 16,
               marginTop: 4,
               borderRadius: 20,
-              backgroundColor: '#F1EEE6',
+              backgroundColor: '#FFFFFF',
               borderWidth: 1,
               borderColor: '#E6E1D5',
               paddingVertical: 20,
@@ -518,19 +502,12 @@ export default function HomeGroupDetailScreen() {
             style={{
               marginHorizontal: 16,
               borderRadius: 20,
-              backgroundColor: '#F6F4EE',
-              shadowColor: '#2A2312',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.05,
-              shadowRadius: 14,
-              elevation: 2,
+              backgroundColor: '#FFFFFF',
             }}
           >
             <View
               style={{
                 borderRadius: 20,
-                borderWidth: 1,
-                borderColor: '#E6E1D5',
                 overflow: 'hidden',
               }}
             >
@@ -548,8 +525,8 @@ export default function HomeGroupDetailScreen() {
                 <Text
                   style={{
                     fontSize: 11,
-                    color: '#6B6557',
-                    letterSpacing: 0.6,
+                    color: '#8A6606',
+                    letterSpacing: 1.2,
                     textTransform: 'uppercase',
                     fontFamily: 'Manrope_700Bold',
                   }}

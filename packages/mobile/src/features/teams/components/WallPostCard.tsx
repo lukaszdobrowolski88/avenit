@@ -114,12 +114,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
       style={{
         marginBottom: 12,
         borderRadius: 18,
-        backgroundColor: '#F6F4EE',
-        shadowColor: '#2A2312',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.04,
-        shadowRadius: 10,
-        elevation: 1,
+        backgroundColor: '#FFFFFF',
       }}
     >
       <View
@@ -357,7 +352,7 @@ export const WallPostCard = ({ post, ministry, myEmail, myName }: Props) => {
                     borderRadius: 14,
                     paddingHorizontal: 12,
                     paddingVertical: 8,
-                    backgroundColor: '#F1EEE6',
+                    backgroundColor: '#FFFFFF',
                     borderWidth: 1,
                     borderColor: '#E6E1D5',
                     fontSize: 13,

@@ -19,7 +19,6 @@ import {
   useMember,
   useHousehold,
   fullName,
-  initials,
   STATUS_META,
   MINISTRY_LABELS,
   useAddMemberNote,
@@ -30,6 +29,7 @@ import {
 import { EditMemberModal } from '../../../src/features/members/components/EditMemberModal';
 import { usePermissions } from '../../../src/lib/permissions';
 import { useAuthSession } from '../../../src/lib/auth';
+import { Monogram } from '../../../src/components/ui/brand';
 
 const SectionCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <View
@@ -37,30 +37,23 @@ const SectionCard = ({ title, children }: { title: string; children: React.React
       marginHorizontal: 16,
       marginBottom: 12,
       borderRadius: 20,
-      backgroundColor: '#F6F4EE',
-      shadowColor: '#2A2312',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.05,
-      shadowRadius: 14,
-      elevation: 2,
+      backgroundColor: '#FFFFFF',
     }}
   >
     <View
       style={{
         borderRadius: 20,
-        borderWidth: 1,
-        borderColor: '#E6E1D5',
         overflow: 'hidden',
       }}
     >
       <Text
         style={{
           fontSize: 11,
-          color: '#6B6557',
+          color: '#8A6606',
           paddingHorizontal: 16,
           paddingTop: 12,
           paddingBottom: 4,
-          letterSpacing: 0.6,
+          letterSpacing: 1.2,
           textTransform: 'uppercase',
           fontFamily: 'Manrope_700Bold',
         }}
@@ -116,8 +109,8 @@ const InfoRow = ({
         <Text
           style={{
             fontSize: 11,
-            color: '#6B6557',
-            letterSpacing: 0.4,
+            color: '#8A6606',
+            letterSpacing: 1.2,
             textTransform: 'uppercase',
             fontFamily: 'Manrope_600SemiBold',
           }}
@@ -210,12 +203,10 @@ export default function MemberDetailScreen() {
             onPress={() => router.back()}
             hitSlop={10}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#F1EEE6',
-              borderWidth: 1,
-              borderColor: '#E3DDD0',
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#FFFFFF',
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -253,33 +244,14 @@ export default function MemberDetailScreen() {
             paddingHorizontal: 16,
           }}
         >
-          <View
-            style={{
-              width: 96,
-              height: 96,
-              borderRadius: 48,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 12,
-              backgroundColor: meta?.bg ?? '#FFF8E1',
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 32,
-                color: meta?.tint ?? '#8A6606',
-                letterSpacing: -0.5,
-                fontFamily: 'Manrope_700Bold',
-              }}
-            >
-              {initials(member)}
-            </Text>
+          <View style={{ marginBottom: 12 }}>
+            <Monogram name={fullName(member)} size={96} />
           </View>
           <Text
             style={{
-              fontSize: 22,
+              fontSize: 26,
               color: '#2A2312',
-              letterSpacing: -0.5,
+              letterSpacing: -0.8,
               fontFamily: 'Manrope_700Bold',
             }}
           >
@@ -347,19 +319,12 @@ export default function MemberDetailScreen() {
               marginHorizontal: 16,
               marginBottom: 12,
               borderRadius: 20,
-              backgroundColor: '#F6F4EE',
-              shadowColor: '#2A2312',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.05,
-              shadowRadius: 14,
-              elevation: 2,
+              backgroundColor: '#FFFFFF',
             }}
           >
             <View
               style={{
                 borderRadius: 20,
-                borderWidth: 1,
-                borderColor: '#E6E1D5',
                 paddingHorizontal: 16,
                 paddingVertical: 14,
               }}
@@ -376,8 +341,8 @@ export default function MemberDetailScreen() {
                 <Text
                   style={{
                     fontSize: 11,
-                    color: '#6B6557',
-                    letterSpacing: 0.6,
+                    color: '#8A6606',
+                    letterSpacing: 1.2,
                     textTransform: 'uppercase',
                     fontFamily: 'Manrope_700Bold',
                   }}
@@ -429,19 +394,12 @@ export default function MemberDetailScreen() {
               marginHorizontal: 16,
               marginBottom: 12,
               borderRadius: 20,
-              backgroundColor: '#F6F4EE',
-              shadowColor: '#2A2312',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.05,
-              shadowRadius: 14,
-              elevation: 2,
+              backgroundColor: '#FFFFFF',
             }}
           >
             <View
               style={{
                 borderRadius: 20,
-                borderWidth: 1,
-                borderColor: '#E6E1D5',
                 paddingHorizontal: 16,
                 paddingVertical: 14,
               }}
@@ -449,9 +407,9 @@ export default function MemberDetailScreen() {
               <Text
                 style={{
                   fontSize: 11,
-                  color: '#6B6557',
+                  color: '#8A6606',
                   marginBottom: 6,
-                  letterSpacing: 0.6,
+                  letterSpacing: 1.2,
                   textTransform: 'uppercase',
                   fontFamily: 'Manrope_700Bold',
                 }}
@@ -473,12 +431,12 @@ export default function MemberDetailScreen() {
         ) : null}
 
         {careVisible ? (
-          <View style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 20, backgroundColor: '#EFEBE2', padding: 16, gap: 10 }}>
+          <View style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 20, backgroundColor: '#FFFFFF', padding: 16, gap: 10 }}>
             <Text
               style={{
                 fontSize: 11,
-                color: '#6B6557',
-                letterSpacing: 0.6,
+                color: '#8A6606',
+                letterSpacing: 1.2,
                 textTransform: 'uppercase',
                 fontFamily: 'Manrope_700Bold',
               }}

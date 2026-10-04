@@ -109,8 +109,8 @@ export default function AttendanceSessionScreen() {
                 </Text>
                 <Text style={{ fontSize: 28, color: '#2A2312', fontFamily: 'Manrope_700Bold', marginTop: 2 }}>{presentCount}</Text>
               </View>
-              <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#EFEBE2', padding: 14 }}>
-                <Text style={{ fontSize: 11, color: '#4A463E', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+              <View style={{ flex: 1, borderRadius: 18, backgroundColor: '#FFFFFF', padding: 14 }}>
+                <Text style={{ fontSize: 11, color: '#8A6606', fontFamily: 'Manrope_700Bold', textTransform: 'uppercase', letterSpacing: 1.2 }}>
                   Szacunkowo
                 </Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 }}>
@@ -137,7 +137,7 @@ export default function AttendanceSessionScreen() {
               </View>
             </View>
 
-            <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
               Goście
             </Text>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
@@ -150,7 +150,7 @@ export default function AttendanceSessionScreen() {
                 onSubmitEditing={() => {
                   if (guest.trim()) addGuest.mutate(guest.trim(), { onSuccess: () => setGuest('') });
                 }}
-                style={{ flex: 1, height: 44, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#ECE8DE', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
+                style={{ flex: 1, height: 44, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#FFFFFF', fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
               />
               <Pressable
                 onPress={() => {
@@ -175,10 +175,10 @@ export default function AttendanceSessionScreen() {
               ))}
             </View>
 
-            <Text style={{ fontSize: 13, color: '#6B6557', letterSpacing: 0.5, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold', marginBottom: 8 }}>
               Członkowie
             </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, paddingHorizontal: 12, borderRadius: 14, backgroundColor: '#ECE8DE', marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, height: 42, paddingHorizontal: 12, borderRadius: 24, backgroundColor: '#FFFFFF', marginBottom: 10 }}>
               <Search size={16} color="#857F70" />
               <TextInput
                 value={q}

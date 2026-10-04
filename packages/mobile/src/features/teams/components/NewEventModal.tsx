@@ -79,9 +79,9 @@ export const NewEventModal = ({
 
   const labelStyle = {
     fontSize: 11,
-    color: '#6B6557',
+    color: '#8A6606',
     marginBottom: 6,
-    letterSpacing: 0.4,
+    letterSpacing: 1.2,
     textTransform: 'uppercase' as const,
     fontFamily: 'Manrope_700Bold',
   };
@@ -93,7 +93,7 @@ export const NewEventModal = ({
     paddingVertical: 12,
     fontSize: 15,
     color: '#2A2312',
-    backgroundColor: '#F1EEE6',
+    backgroundColor: '#FFFFFF',
     marginBottom: 12,
     fontFamily: 'Manrope_400Regular' as const,
   };
@@ -165,9 +165,7 @@ export const NewEventModal = ({
                       paddingHorizontal: 12,
                       paddingVertical: 6,
                       borderRadius: 999,
-                      backgroundColor: active ? '#2A2312' : '#F1EEE6',
-                      borderWidth: 1,
-                      borderColor: active ? '#2A2312' : '#E6E1D5',
+                      backgroundColor: active ? '#2A2312' : '#ECE8DE',
                     }}
                   >
                     <Text

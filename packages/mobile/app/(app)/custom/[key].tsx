@@ -142,7 +142,7 @@ export default function CustomModuleScreen() {
           <Pressable
             onPress={() => openOnWeb(mod?.path || `/module/${moduleKey}`)}
             className="active:opacity-70"
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderRadius: 16, backgroundColor: '#EFEBE2' }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderRadius: 16, backgroundColor: '#FFFFFF' }}
           >
             <ExternalLink size={16} color="#8A6606" />
             <Text style={{ flex: 1, fontSize: 14, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>Otwórz tę część na webie</Text>

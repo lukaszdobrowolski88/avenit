@@ -4,6 +4,7 @@ import { Mail, MessageSquare, Phone, Search, Star, Users } from 'lucide-react-na
 import { useTeamPeople, useTeamRoles, type TeamPerson, type TeamRoleWithPeople } from '../data';
 import type { TeamKey } from '../config';
 import { Card, Empty, Loading } from './ui';
+import { Monogram } from '../../../components/ui/brand';
 
 const open = (url: string) =>
   Linking.openURL(url).catch(() => Alert.alert('Nie udało się otworzyć', 'Ta akcja nie jest dostępna na tym urządzeniu.'));
@@ -27,13 +28,6 @@ const Action = ({ Icon, onPress, label }: { Icon: typeof Phone; onPress: () => v
   </Pressable>
 );
 
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p.charAt(0).toUpperCase())
-    .join('');
 
 // Członkowie / Liderzy / Nauczyciele — z tabel zespołu jak na webie (worship_team itd.).
 export const PeopleTab = ({
@@ -63,8 +57,8 @@ export const PeopleTab = ({
             gap: 8,
             height: 42,
             paddingHorizontal: 12,
-            borderRadius: 14,
-            backgroundColor: '#ECE8DE',
+            borderRadius: 24,
+            backgroundColor: '#FFFFFF',
             marginBottom: 12,
           }}
         >
@@ -88,20 +82,7 @@ export const PeopleTab = ({
       {list.map((p) => (
         <Card key={p.id}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: p.isLeader ? '#FFF1C2' : '#FFF1C2',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Text style={{ fontSize: 13, color: p.isLeader ? '#8A6606' : '#8A6606', fontFamily: 'Manrope_700Bold' }}>
-                {initials(p.name) || '?'}
-              </Text>
-            </View>
+            <Monogram name={p.name || '?'} size={42} />
             <View style={{ flex: 1, gap: 2 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                 <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_600SemiBold' }}>

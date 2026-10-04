@@ -113,7 +113,7 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
           paddingVertical: 12,
           paddingHorizontal: 14,
           borderRadius: 12,
-          backgroundColor: '#F1EEE6',
+          backgroundColor: '#FFFFFF',
           borderWidth: 1,
           borderColor: '#E6E1D5',
           marginBottom: 14,
@@ -155,8 +155,8 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
         <Text
           style={{
             fontSize: 11,
-            color: '#6B6557',
-            letterSpacing: 0.4,
+            color: '#8A6606',
+            letterSpacing: 1.2,
             textTransform: 'uppercase',
             fontFamily: 'Manrope_700Bold',
           }}
@@ -223,7 +223,7 @@ export const TaskCommentsSection = ({ taskId, taskOwnerEmail, myEmail, myName }:
               borderRadius: 14,
               paddingHorizontal: 14,
               paddingVertical: 10,
-              backgroundColor: '#F1EEE6',
+              backgroundColor: '#FFFFFF',
               borderWidth: 1,
               borderColor: '#E6E1D5',
               fontSize: 13,

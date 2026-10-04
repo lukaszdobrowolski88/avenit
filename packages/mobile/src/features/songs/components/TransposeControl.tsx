@@ -29,8 +29,8 @@ export const TransposeControl = ({ value, onChange, originalKey }: Props) => {
         <Text
           style={{
             fontSize: 11,
-            color: '#6B6557',
-            letterSpacing: 0.4,
+            color: '#8A6606',
+            letterSpacing: 1.2,
             textTransform: 'uppercase',
             fontFamily: 'Manrope_700Bold',
           }}
@@ -69,9 +69,7 @@ export const TransposeControl = ({ value, onChange, originalKey }: Props) => {
                 paddingHorizontal: 12,
                 paddingVertical: 6,
                 borderRadius: 10,
-                backgroundColor: active ? '#2A2312' : '#F1EEE6',
-                borderWidth: 1,
-                borderColor: active ? '#2A2312' : '#E6E1D5',
+                backgroundColor: active ? '#2A2312' : '#ECE8DE',
               }}
             >
               <Text

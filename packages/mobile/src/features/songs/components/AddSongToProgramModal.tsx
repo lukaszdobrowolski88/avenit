@@ -169,7 +169,7 @@ export const AddSongToProgramModal = ({ visible, onClose, song, myEmail }: Props
             {addMutation.isPending ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={styles.saveBtnText}>Dodaj</Text>
+              <Text style={[styles.saveBtnText, !selectedProgramId && { color: '#857F70' }]}>Dodaj</Text>
             )}
           </Pressable>
         </View>
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 42,
     borderRadius: 14,
-    backgroundColor: '#F1EEE6',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E6E1D5',
   },
@@ -339,12 +339,7 @@ const styles = StyleSheet.create({
   },
   programCardShadow: {
     borderRadius: 16,
-    backgroundColor: '#F6F4EE',
-    shadowColor: '#2A2312',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 1,
+    backgroundColor: '#FFFFFF',
   },
   programCardInner: {
     flexDirection: 'row',
@@ -352,8 +347,6 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E6E1D5',
   },
   programCardInnerSelected: {
     borderColor: '#FFBE0B',
@@ -436,7 +429,7 @@ const styles = StyleSheet.create({
     minWidth: 48,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: '#F1EEE6',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E6E1D5',
     alignItems: 'center',
@@ -463,6 +456,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#2A2312',
     fontFamily: 'Manrope_400Regular',
-    backgroundColor: '#F1EEE6',
+    backgroundColor: '#FFFFFF',
   },
 });

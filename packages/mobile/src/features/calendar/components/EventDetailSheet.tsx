@@ -378,7 +378,7 @@ export const EventDetailSheet = ({ event, onClose }: Props) => {
                           style={[
                             styles.guestChip,
                             {
-                              backgroundColor: guests === n ? '#2A2312' : '#F1EEE6',
+                              backgroundColor: guests === n ? '#2A2312' : '#ECE8DE',
                               borderColor: guests === n ? '#2A2312' : '#E6E1D5',
                             },
                           ]}
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
     padding: 14,
     borderRadius: 16,
-    backgroundColor: '#F1EEE6',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E6E1D5',
   },

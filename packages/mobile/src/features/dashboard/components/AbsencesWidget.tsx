@@ -143,9 +143,9 @@ const ReportModal = ({
           <Text
             style={{
               fontSize: 11,
-              color: '#6B6557',
+              color: '#8A6606',
               marginBottom: 8,
-              letterSpacing: 0.4,
+              letterSpacing: 1.2,
               textTransform: 'uppercase',
               fontFamily: 'Manrope_700Bold',
             }}
@@ -196,8 +196,8 @@ const ReportModal = ({
                       <Text
                         style={{
                           fontSize: 11,
-                          color: '#6B6557',
-                          letterSpacing: 0.4,
+                          color: '#8A6606',
+                          letterSpacing: 1.2,
                           textTransform: 'uppercase',
                           fontFamily: 'Manrope_600SemiBold',
                         }}
@@ -226,9 +226,9 @@ const ReportModal = ({
           <Text
             style={{
               fontSize: 11,
-              color: '#6B6557',
+              color: '#8A6606',
               marginBottom: 8,
-              letterSpacing: 0.4,
+              letterSpacing: 1.2,
               textTransform: 'uppercase',
               fontFamily: 'Manrope_700Bold',
             }}
@@ -250,7 +250,7 @@ const ReportModal = ({
               paddingVertical: 12,
               fontSize: 14,
               color: '#2A2312',
-              backgroundColor: '#F1EEE6',
+              backgroundColor: '#FFFFFF',
               minHeight: 60,
               textAlignVertical: 'top',
               fontFamily: 'Manrope_400Regular',

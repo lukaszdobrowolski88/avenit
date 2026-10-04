@@ -82,9 +82,9 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
           <Text
             style={{
               fontSize: 11,
-              color: '#6B6557',
+              color: '#8A6606',
               marginBottom: 6,
-              letterSpacing: 0.4,
+              letterSpacing: 1.2,
               textTransform: 'uppercase',
               fontFamily: 'Manrope_700Bold',
             }}
@@ -104,7 +104,7 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
               paddingVertical: 12,
               fontSize: 15,
               color: '#2A2312',
-              backgroundColor: '#F1EEE6',
+              backgroundColor: '#FFFFFF',
               marginBottom: 14,
               fontFamily: 'Manrope_500Medium',
             }}
@@ -113,9 +113,9 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
           <Text
             style={{
               fontSize: 11,
-              color: '#6B6557',
+              color: '#8A6606',
               marginBottom: 6,
-              letterSpacing: 0.4,
+              letterSpacing: 1.2,
               textTransform: 'uppercase',
               fontFamily: 'Manrope_700Bold',
             }}
@@ -136,7 +136,7 @@ export const NewPostModal = ({ visible, onClose, onSubmit, isLoading }: Props) =
               paddingVertical: 12,
               fontSize: 14,
               color: '#2A2312',
-              backgroundColor: '#F1EEE6',
+              backgroundColor: '#FFFFFF',
               minHeight: 120,
               textAlignVertical: 'top',
               fontFamily: 'Manrope_400Regular',

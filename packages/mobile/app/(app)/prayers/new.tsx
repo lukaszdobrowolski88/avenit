@@ -28,9 +28,9 @@ const CATEGORIES: PrayerCategory[] = ['zdrowie', 'rodzina', 'finanse', 'duchowe'
 
 const labelStyle = {
   fontSize: 12,
-  color: '#4A463E',
+  color: '#8A6606',
   marginBottom: 6,
-  letterSpacing: 0.4,
+  letterSpacing: 1.2,
   textTransform: 'uppercase' as const,
   fontFamily: 'Manrope_700Bold',
 };
@@ -43,7 +43,7 @@ const inputStyle = {
   paddingVertical: 12,
   fontSize: 15,
   color: '#2A2312',
-  backgroundColor: '#F1EEE6',
+  backgroundColor: '#FFFFFF',
   marginBottom: 16,
   fontFamily: 'Manrope_400Regular',
 } as const;
@@ -119,7 +119,7 @@ export default function NewPrayerScreen() {
         <View
           style={{
             paddingHorizontal: 20,
-            paddingTop: insets.top + 6,
+            paddingTop: insets.top + 10,
             paddingBottom: 8,
             flexDirection: 'row',
             alignItems: 'center',
@@ -130,12 +130,10 @@ export default function NewPrayerScreen() {
             onPress={() => router.back()}
             hitSlop={10}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: '#F1EEE6',
-              borderWidth: 1,
-              borderColor: '#E3DDD0',
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: '#FFFFFF',
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -143,15 +141,15 @@ export default function NewPrayerScreen() {
             <ChevronLeft size={20} color="#2A2312" strokeWidth={2.2} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>
+            <Text style={{ fontSize: 11, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold' }}>
               {isEditing ? 'Edycja intencji' : 'Nowa intencja'}
             </Text>
             <Text
               style={{
-                fontSize: 24,
+                fontSize: 27,
                 color: '#2A2312',
                 marginTop: 2,
-                letterSpacing: -0.6,
+                letterSpacing: -0.9,
                 fontFamily: 'Manrope_700Bold',
               }}
             >
@@ -240,9 +238,7 @@ export default function NewPrayerScreen() {
                     gap: 7,
                     paddingVertical: 12,
                     borderRadius: 14,
-                    backgroundColor: active ? '#2A2312' : '#F1EEE6',
-                    borderWidth: 1,
-                    borderColor: active ? '#2A2312' : '#E6E1D5',
+                    backgroundColor: active ? '#2A2312' : '#ECE8DE',
                   }}
                 >
                   <Icon size={15} color={active ? '#ffffff' : '#7A7466'} />
@@ -268,7 +264,7 @@ export default function NewPrayerScreen() {
               borderRadius: 14,
               paddingHorizontal: 14,
               paddingVertical: 12,
-              backgroundColor: '#F1EEE6',
+              backgroundColor: '#FFFFFF',
               borderWidth: 1,
               borderColor: '#E6E1D5',
               marginBottom: 24,

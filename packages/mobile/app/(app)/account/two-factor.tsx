@@ -422,7 +422,7 @@ const styles = {
     letterSpacing: 8,
     textAlign: 'center',
     color: '#2A2312',
-    backgroundColor: '#F1EEE6',
+    backgroundColor: '#FFFFFF',
     fontFamily: 'Manrope_700Bold',
   } as const,
   statusCard: {

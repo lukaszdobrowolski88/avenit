@@ -116,7 +116,7 @@ export default function GivingStatementScreen() {
                       paddingHorizontal: 16,
                       paddingVertical: 8,
                       borderRadius: 999,
-                      backgroundColor: active ? '#2A2312' : '#F1EEE6',
+                      backgroundColor: active ? '#2A2312' : '#ECE8DE',
                       borderWidth: 1,
                       borderColor: active ? '#2A2312' : '#ECE8DE',
                     }}
@@ -134,7 +134,7 @@ export default function GivingStatementScreen() {
               style={{
                 borderRadius: 20,
                 padding: 18,
-                backgroundColor: '#F1EEE6',
+                backgroundColor: '#FFFFFF',
                 borderWidth: 1,
                 borderColor: '#E3DDD0',
                 marginBottom: 16,

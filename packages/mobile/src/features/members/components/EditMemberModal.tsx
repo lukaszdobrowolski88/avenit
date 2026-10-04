@@ -28,7 +28,7 @@ const inputStyle = {
 
 const Label = ({ children, locked }: { children: string; locked?: boolean }) => (
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 16, marginBottom: 6 }}>
-    <Text style={{ fontSize: 12, color: '#4A463E', fontFamily: 'Manrope_700Bold', letterSpacing: 0.4, textTransform: 'uppercase' }}>
+    <Text style={{ fontSize: 12, color: '#8A6606', fontFamily: 'Manrope_700Bold', letterSpacing: 1.2, textTransform: 'uppercase' }}>
       {children}
     </Text>
     {locked ? <Lock size={11} color="#857F70" /> : null}

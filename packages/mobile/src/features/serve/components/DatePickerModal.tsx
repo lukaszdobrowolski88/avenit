@@ -129,7 +129,7 @@ const navBtn = {
   width: 34,
   height: 34,
   borderRadius: 17,
-  backgroundColor: '#F1EEE6',
+  backgroundColor: '#FFFFFF',
   borderWidth: 1,
   borderColor: '#E6E1D5',
   alignItems: 'center' as const,
