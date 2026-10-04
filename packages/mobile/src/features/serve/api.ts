@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 
-// „Moja niedostępność" (Serve) — przez fn my-blockouts (member_id ustala serwer).
+// „Moje nieobecności” (jedyna funkcja nieobecności w apce) — przez fn my-blockouts
+// (volunteer_blockouts; member_id ustala serwer, lider widzi w Służba → Dostępność).
 export interface Blockout {
   id: string;
   start_date: string; // YYYY-MM-DD

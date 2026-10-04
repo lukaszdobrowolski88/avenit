@@ -147,7 +147,7 @@ export default function DashboardScreen() {
           rsvp={rsvp.data ?? []}
         />
 
-        <AbsencesWidget items={data?.myAbsences ?? []} upcomingPrograms={data?.upcomingPrograms ?? []} />
+        <AbsencesWidget />
 
         <OnlineUsersWidget users={data?.onlineUsers ?? []} offlineCount={data?.offlineUsersCount ?? 0} />
       </ScrollView>

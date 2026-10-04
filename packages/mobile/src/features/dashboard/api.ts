@@ -44,7 +44,6 @@ export interface DashboardStats {
   offlineUsersCount: number;
   onlineUsers: OnlineUser[];
   pendingInvitations: PendingInvitation[];
-  myAbsences: AbsenceItem[];
 }
 
 export interface OnlineUser {
@@ -100,13 +99,6 @@ export interface PendingInvitation {
   assignedByName: string | null;
 }
 
-export interface AbsenceItem {
-  id: string;
-  absence_date: string;
-  program_id: number | null;
-  note: string | null;
-  status: 'pending' | 'approved' | 'rejected';
-}
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -135,7 +127,6 @@ export const useDashboard = (
           offlineUsersCount: 0,
           onlineUsers: [],
           pendingInvitations: [],
-          myAbsences: [],
         };
       }
 
@@ -205,23 +196,12 @@ export const useDashboard = (
         .gte('last_seen', oneDayAgo)
         .eq('status', 'offline');
 
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const absencesP = supabase
-        .from('user_absences')
-        .select('id, absence_date, program_id, note, status')
-        .eq('user_email', userEmail)
-        .gte('absence_date', sevenDaysAgo.toISOString().slice(0, 10))
-        .order('absence_date', { ascending: true })
-        .limit(10);
-
       const [
         mine,
         { data: programs, error: progErr },
         { data: parts },
         { data: onlineRows },
         { data: taskRows, error: tasksErr },
-        { data: absenceRows, error: absencesErr },
         { data: myPrayerRows, error: mpErr },
         { count: offlineUsersCount },
       ] = await Promise.all([
@@ -230,13 +210,11 @@ export const useDashboard = (
         myConversations,
         onlineListP,
         myTasksP,
-        absencesP,
         myPrayersP,
         offlineCountP,
       ]);
       if (mpErr) console.warn('[dashboard] my prayers:', mpErr.message);
       if (tasksErr) console.warn('[dashboard] tasks:', tasksErr.message);
-      if (absencesErr) console.warn('[dashboard] absences:', absencesErr.message);
 
       const now = todayYmd();
       const known = mine.filter((a) => a.date);
@@ -270,7 +248,6 @@ export const useDashboard = (
           assignedByName: a.assignedByName,
         }));
 
-      const myAbsences = (absenceRows ?? []) as unknown as AbsenceItem[];
 
       const onlineEmails = ((onlineRows ?? []) as any[]).map((r) => r.user_email);
       let onlineUsers: OnlineUser[] = [];
@@ -415,7 +392,6 @@ export const useDashboard = (
         offlineUsersCount: offlineUsersCount ?? 0,
         onlineUsers,
         pendingInvitations,
-        myAbsences,
       };
     },
     enabled: !!userEmail,

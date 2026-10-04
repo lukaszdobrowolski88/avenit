@@ -231,7 +231,7 @@ export default function ModulesScreen() {
                             </View>
                           ) : null}
                         </View>
-                        <Text numberOfLines={1} style={{ fontSize: 12, color: B.ink3, fontFamily: 'Manrope_500Medium' }}>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: 12, color: B.ink3, fontFamily: 'Manrope_500Medium' }}>
                           {p.short}
                         </Text>
                       </Pressable>

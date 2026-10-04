@@ -40,7 +40,7 @@ export const ForYouStrip = () => {
             >
               <Icon size={24} color={D.ink} strokeWidth={1.8} />
             </View>
-            <Text numberOfLines={1} style={{ fontSize: 12, color: D.ink2, fontFamily: F.medium }}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: 12, color: D.ink2, fontFamily: F.medium }}>
               {short}
             </Text>
           </Pressable>

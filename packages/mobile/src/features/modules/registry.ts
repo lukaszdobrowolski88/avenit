@@ -7,6 +7,7 @@ import {
   BookOpen,
   Bot,
   Briefcase,
+  ClipboardCheck,
   Calendar,
   CalendarOff,
   ClipboardList,
@@ -118,15 +119,15 @@ export interface PersonalEntry {
   route: string;
   // Krótka etykieta pod kaflem na pulpicie (sekcja „Dla Ciebie” daje kontekst „moje”).
   short: string;
-  // Pokazuj tylko, gdy moduł widoczny (np. Moja praca wymaga Projektów).
+  // Pokazuj tylko, gdy moduł widoczny (np. Moje zadania wymagają Projektów).
   requiresModule?: string;
 }
 
 export const PERSONAL_ENTRIES: PersonalEntry[] = [
-  { key: 'my-work', label: 'Moja praca', short: 'Praca', Icon: Briefcase, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/work', requiresModule: 'boards' },
+  { key: 'my-work', label: 'Moje zadania', short: 'Zadania', Icon: ClipboardCheck, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/work', requiresModule: 'boards' },
   { key: 'my-rsvp', label: 'Moje zaproszenia', short: 'Zaproszenia', Icon: MailCheck, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/rsvp' },
-  { key: 'my-availability', label: 'Moja dostępność', short: 'Dostępność', Icon: CalendarOff, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/serve/availability' },
-  { key: 'my-giving', label: 'Moje dawanie', short: 'Dawanie', Icon: Gift, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/giving' },
+  { key: 'my-availability', label: 'Moje nieobecności', short: 'Nieobecności', Icon: CalendarOff, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/serve/availability' },
+  { key: 'my-giving', label: 'Moja hojność', short: 'Hojność', Icon: Gift, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/giving' },
   { key: 'setlist', label: 'Planowane pieśni', short: 'Pieśni', Icon: Music, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/setlist' },
   { key: 'materials', label: 'Materiały', short: 'Materiały', Icon: FolderOpen, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/materials' },
   { key: 'shared', label: 'Udostępnione mi', short: 'Udostępnione', Icon: Share2, tint: '#2A2312', bg: '#ECE8DE', route: '/(app)/materials/shared' },
