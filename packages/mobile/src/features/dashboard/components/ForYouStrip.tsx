@@ -1,15 +1,18 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useModules } from '../../modules/useModules';
+import { applyItems, type ItemsConfig } from '../layout';
 import { SectionHeading } from './WidgetCard';
 import { D, F } from '../theme';
 
 // „Dla Ciebie" — osobiste skróty: białe kwadraty z czarną ikoną, krótki podpis pod spodem.
 // Powiadomienia mają dzwonek w nagłówku, więc tu ich nie ma.
-export const ForYouStrip = () => {
+export const ForYouStrip = ({ config }: { config: ItemsConfig }) => {
   const router = useRouter();
   const { personal, ready } = useModules();
-  const entries = personal.filter((p) => p.key !== 'notifications');
+  const available = personal.filter((p) => p.key !== 'notifications');
+  // Kolejność i widoczność z ustawień pulpitu (nowe skróty dochodzą na końcu).
+  const entries = applyItems(available, config, available);
   if (!ready || entries.length === 0) return null;
 
   return (
