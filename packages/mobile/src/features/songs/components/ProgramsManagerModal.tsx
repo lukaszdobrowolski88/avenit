@@ -34,12 +34,14 @@ import {
   useProgramSongs,
   useProgramSuggestionCounts,
   useReorderSuggestions,
-  useSongsList,
   useUpcomingPrograms,
   useUpdateSuggestion,
   type ProgramSuggestionRow,
   type UpcomingProgram,
 } from '../api';
+import { useSongLibrary, type SongListItem } from '../library';
+
+const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l');
 
 interface Props {
   visible: boolean;
@@ -265,7 +267,7 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
     ]);
   };
 
-  const handleAddSong = (song: Song) => {
+  const handleAddSong = (song: Pick<Song, 'id' | 'key'>) => {
     addMut.mutate(
       {
         programId: program.id,
@@ -458,20 +460,21 @@ const ProgramSongsEditor = ({ program, myEmail, onBack, onClose }: EditorProps) 
 
 interface PickerProps {
   assignedIds: Set<number>;
-  onPick: (song: Song) => void;
+  onPick: (song: SongListItem) => void;
   onCancel: () => void;
   disabled?: boolean;
 }
 
 const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerProps) => {
   const [query, setQuery] = useState('');
-  const { data: songs, isLoading } = useSongsList('');
+  // Cała baza (nie 200 pierwszych) + szukanie po tytule, autorze i tagach bez polskich znaków.
+  const { data: songs, isLoading } = useSongLibrary();
 
   const filtered = useMemo(() => {
-    const list = (songs ?? []).filter((s: Song) => !assignedIds.has(s.id));
-    const q = query.trim().toLowerCase();
+    const list = (songs ?? []).filter((s: SongListItem) => !assignedIds.has(s.id));
+    const q = fold(query.trim());
     if (!q) return list.slice(0, 50);
-    return list.filter((s: Song) => s.title.toLowerCase().includes(q)).slice(0, 50);
+    return list.filter((s: SongListItem) => fold([s.title, s.author ?? '', ...s.tags].join(' ')).includes(q)).slice(0, 50);
   }, [songs, query, assignedIds]);
 
   return (
@@ -493,7 +496,7 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
         <Search size={16} color="#857F70" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Szukaj po tytule…"
+          placeholder="Szukaj po tytule lub autorze…"
           placeholderTextColor="#857F70"
           value={query}
           onChangeText={setQuery}
@@ -517,7 +520,7 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
         </Text>
       ) : (
         <View style={{ marginTop: 8, gap: 6 }}>
-          {filtered.map((s: Song) => (
+          {filtered.map((s: SongListItem) => (
             <Pressable
               key={s.id}
               disabled={disabled}
@@ -528,9 +531,16 @@ const SongPickerInline = ({ assignedIds, onPick, onCancel, disabled }: PickerPro
               <View style={styles.pickerIcon}>
                 <Music size={14} color="#8A6606" strokeWidth={2.2} />
               </View>
-              <Text numberOfLines={1} style={styles.pickerTitle}>
-                {s.title}
-              </Text>
+              <View style={{ flex: 1 }}>
+                <Text numberOfLines={1} style={styles.pickerTitle}>
+                  {s.title}
+                </Text>
+                {s.author ? (
+                  <Text numberOfLines={1} style={{ fontSize: 12, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>
+                    {s.author}
+                  </Text>
+                ) : null}
+              </View>
               {s.key ? <Text style={styles.pickerKey}>{s.key}</Text> : null}
             </Pressable>
           ))}
