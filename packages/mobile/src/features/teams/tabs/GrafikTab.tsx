@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, Share, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Check, ChevronRight, ClipboardList, Clock, Plus, Send, UserX, X } from 'lucide-react-native';
+import { Check, ChevronRight, ClipboardList, Clock, Plus, Send, Share2, UserX, X } from 'lucide-react-native';
 import { B } from '../../../components/ui/brand';
 import {
   csvNames,
@@ -73,13 +73,33 @@ const Tally = ({ sa }: { sa: GrafikAssignment[] }) => {
   );
 };
 
+// Grafik jako tekst do wysłania (WhatsApp, SMS, mail) — mobilny odpowiednik eksportu CSV z weba.
+const grafikText = (teamLabel: string, events: GrafikEvent[], roles: GrafikRoleDef[]) =>
+  [
+    `Grafik — ${teamLabel}`,
+    ...events.map((ev) => {
+      const lines = [`\n${dayLabel(ev.date)}${ev.time ? `, ${ev.time}` : ''} — ${ev.title}`];
+      for (const r of roles) {
+        const names = csvNames(ev.team[r.key]);
+        if (names.length) lines.push(`${r.label}: ${names.join(', ')}`);
+      }
+      const absent = csvNames(ev.team.absencja);
+      if (absent.length) lines.push(`Nieobecni: ${absent.join(', ')}`);
+      if (ev.team.notatki) lines.push(`Notatka: ${ev.team.notatki}`);
+      if (lines.length === 1) lines.push('(bez obsady)');
+      return lines.join('\n');
+    }),
+  ].join('\n');
+
 export const GrafikTab = ({
   teamKey,
+  teamLabel,
   me,
   canEdit,
   canSend,
 }: {
   teamKey: string;
+  teamLabel: string;
   me: { email: string | null; name: string | null };
   canEdit: boolean;
   canSend: boolean;
@@ -145,15 +165,30 @@ export const GrafikTab = ({
 
   return (
     <View>
-      <SegmentChips
-        options={[
-          { key: 'upcoming', label: 'Nadchodzące' },
-          { key: 'mine', label: 'Moje' },
-          { key: 'past', label: 'Minione' },
-        ]}
-        value={range}
-        onChange={setRange}
-      />
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+        <View style={{ flex: 1 }}>
+          <SegmentChips
+            options={[
+              { key: 'upcoming', label: 'Nadchodzące' },
+              { key: 'mine', label: 'Moje' },
+              { key: 'past', label: 'Minione' },
+            ]}
+            value={range}
+            onChange={setRange}
+          />
+        </View>
+        {list.length ? (
+          <Pressable
+            onPress={() => Share.share({ message: grafikText(teamLabel, list.slice(0, 12), roles) }).catch(() => {})}
+            accessibilityLabel="Udostępnij grafik"
+            hitSlop={6}
+            className="active:opacity-70"
+            style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: B.card }}
+          >
+            <Share2 size={15} color={B.ink} />
+          </Pressable>
+        ) : null}
+      </View>
       {grafik.isLoading ? <Loading /> : null}
       {grafik.isError ? <Empty Icon={ClipboardList} title="Nie udało się wczytać grafiku" hint="Pociągnij w dół, żeby spróbować ponownie." /> : null}
       {!grafik.isLoading && !grafik.isError && list.length === 0 ? (

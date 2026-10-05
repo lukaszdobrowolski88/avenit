@@ -2,11 +2,12 @@ import { Alert, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ArrowUpRight, CalendarOff, ChevronRight, ClipboardList, MessageSquare, Package, Users, UserRound } from 'lucide-react-native';
+import { ArrowUpRight, CalendarOff, ChevronRight, ClipboardList, MessageSquare, Package, Smile, Users, UserRound } from 'lucide-react-native';
 import { B, InfoBlock, SectionLabel } from '../../../components/ui/brand';
 import { csvNames, splitGrafik, useAnswerAssignment, useGrafik, type GrafikEvent, type GrafikRoleDef } from '../grafik';
 import { useRoster, type RosterPerson } from '../roster';
 import { useTeamEquipment, type EquipmentItem } from '../data';
+import { useKidsData } from '../kids';
 import type { WallPost } from '../api';
 import type { TeamTabKey } from '../config';
 import { dayLabel, parseYmd } from './ui';
@@ -42,6 +43,7 @@ export const OverviewTab = ({
   me,
   canEditGrafik,
   latestPost,
+  scope,
   onTab,
 }: {
   team: string;
@@ -50,6 +52,7 @@ export const OverviewTab = ({
   me: { email: string | null; name: string | null };
   canEditGrafik: boolean;
   latestPost: WallPost | null;
+  scope: { selectedCampusId: number | null; withCampusFilter: <T>(q: T) => T };
   onTab: (t: TeamTabKey) => void;
 }) => {
   const router = useRouter();
@@ -57,6 +60,7 @@ export const OverviewTab = ({
   const grafik = useGrafik(team);
   const roster = useRoster(team, has('members') || has('roles') ? table : undefined);
   const equipment = useTeamEquipment(team, has('equipment'));
+  const kids = useKidsData(scope, has('students'));
   const answer = useAnswerAssignment(team);
 
   const roles: GrafikRoleDef[] = grafik.data?.roles ?? [];
@@ -190,11 +194,14 @@ export const OverviewTab = ({
       ) : null}
 
       {/* Skróty */}
-      {has('members') || has('roles') || has('equipment') ? (
+      {has('members') || has('roles') || has('equipment') || has('students') ? (
         <>
           <SectionLabel>Zespół</SectionLabel>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            {has('members') ? <Stat Icon={UserRound} value={roster.data ? String(people) : '–'} label={plural(people, 'osoba', 'osoby', 'osób')} onPress={() => onTab('members')} /> : null}
+            {has('members') ? <Stat Icon={UserRound} value={roster.data ? String(people) : '–'} label={team === 'kids' ? plural(people, 'nauczyciel', 'nauczycieli', 'nauczycieli') : plural(people, 'osoba', 'osoby', 'osób')} onPress={() => onTab('members')} /> : null}
+            {has('students') ? (
+              <Stat Icon={Smile} value={kids.data ? String(kids.data.students.length) : '–'} label="dzieci" onPress={() => onTab('students')} />
+            ) : null}
             {has('roles') ? <Stat Icon={Users} value={roster.data ? String(roleCount) : '–'} label={plural(roleCount, 'służba', 'służby', 'służb')} onPress={() => onTab('roles')} /> : null}
             {has('equipment') ? <Stat Icon={Package} value={equipment.data ? String(pieces) : '–'} label="sprzęt" onPress={() => onTab('equipment')} /> : null}
           </View>

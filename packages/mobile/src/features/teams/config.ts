@@ -3,7 +3,10 @@ import {
   Baby,
   Briefcase,
   CalendarDays,
+  Home,
   LayoutGrid,
+  Shapes,
+  Smile,
   ClipboardList,
   FolderOpen,
   MessageSquare,
@@ -35,6 +38,9 @@ export type TeamTabKey =
   | 'leaders'
   | 'members'
   | 'roles'
+  | 'groups'
+  | 'students'
+  | 'households'
   | 'finance'
   | 'equipment'
   | 'files';
@@ -79,7 +85,7 @@ export const TEAM_CONFIG: Record<TeamKey, TeamConfig> = {
   },
   kids: {
     key: 'kids',
-    tabs: ['overview', 'checkin', 'events', 'schedule', 'members', 'equipment', 'finance', 'files'],
+    tabs: ['overview', 'checkin', 'events', 'schedule', 'groups', 'members', 'students', 'households', 'equipment', 'finance', 'files'],
     financeName: 'małe Avenit',
     memberTable: 'kids_teachers',
     eventsTable: 'events',
@@ -120,6 +126,9 @@ export const TAB_META: Record<TeamTabKey, { label: string; Icon: LucideIcon }> =
   leaders: { label: 'Liderzy', Icon: Star },
   members: { label: 'Członkowie', Icon: User },
   roles: { label: 'Służby', Icon: Users },
+  groups: { label: 'Grupy', Icon: Shapes },
+  students: { label: 'Uczniowie', Icon: Smile },
+  households: { label: 'Rodziny', Icon: Home },
   finance: { label: 'Finanse', Icon: Wallet },
   equipment: { label: 'Wyposażenie', Icon: Package },
   files: { label: 'Pliki', Icon: FolderOpen },

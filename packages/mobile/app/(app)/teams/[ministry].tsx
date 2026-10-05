@@ -25,6 +25,7 @@ import { EquipmentTab } from '../../../src/features/teams/tabs/EquipmentTab';
 import { FinanceTab } from '../../../src/features/teams/tabs/FinanceTab';
 import { TasksTab } from '../../../src/features/teams/tabs/TasksTab';
 import { KidsTodayTab } from '../../../src/features/teams/tabs/KidsTodayTab';
+import { HouseholdsTab, KidsGroupsTab, KidsStudentsTab } from '../../../src/features/teams/tabs/KidsTabs';
 import { AddButton, Empty, Loading } from '../../../src/features/teams/tabs/ui';
 import { useMyProfile } from '../../../src/features/account/api';
 import { goBack } from '../../../src/lib/navigation';
@@ -74,6 +75,8 @@ export default function TeamDetailScreen() {
     () =>
       cfg.tabs
         .filter((t) => {
+          // Rodziny to zasób modułu Członkowie — bez niego zakładka byłaby pusta (403).
+          if (t === 'households' && !perms.can('res:households:read')) return false;
           const gate = tabGate(cfg, t);
           return gate ? perms.tabVisible(cfg.key, gate) : true;
         })
@@ -82,7 +85,7 @@ export default function TeamDetailScreen() {
           label: t === 'members' && cfg.membersLabel ? cfg.membersLabel : TAB_META[t].label,
           Icon: TAB_META[t].Icon,
         })),
-    [cfg, perms.tabVisible],
+    [cfg, perms.tabVisible, perms.can],
   );
   const [tab, setTab] = useState<TeamTabKey | null>((tabParam as TeamTabKey) ?? null);
   // Router podmienia parametry otwartego już ekranu — nowa zakładka z linku też ma zadziałać.
@@ -148,7 +151,10 @@ export default function TeamDetailScreen() {
   const activePeople = roster.data?.people.filter((p: RosterPerson) => p.active).length ?? 0;
   const roleCount = roster.data?.roles.length ?? 0;
   const summary = roster.data
-    ? [`${activePeople} ${plural(activePeople, 'osoba', 'osoby', 'osób')}`, cfg.tabs.includes('roles') && roleCount ? `${roleCount} ${plural(roleCount, 'służba', 'służby', 'służb')}` : null]
+    ? [
+        cfg.key === 'kids'
+          ? `${activePeople} ${plural(activePeople, 'nauczyciel', 'nauczycieli', 'nauczycieli')}`
+          : `${activePeople} ${plural(activePeople, 'osoba', 'osoby', 'osób')}`, cfg.tabs.includes('roles') && roleCount ? `${roleCount} ${plural(roleCount, 'służba', 'służby', 'służb')}` : null]
         .filter(Boolean)
         .join(' · ')
     : null;
@@ -166,6 +172,7 @@ export default function TeamDetailScreen() {
             me={me}
             canEditGrafik={canEditGrafik}
             latestPost={hasWall ? posts.find((p) => !p.pinned) ?? posts[0] ?? null : null}
+            scope={scope}
             onTab={onTab}
           />
         );
@@ -187,7 +194,7 @@ export default function TeamDetailScreen() {
       case 'events':
         return <EventsTab cfg={cfg} scope={scope} campusIdForInsert={campusIdForInsert} myEmail={myEmail} />;
       case 'schedule':
-        return <GrafikTab teamKey={cfg.key} me={me} canEdit={canEditGrafik} canSend={canSendInvites} />;
+        return <GrafikTab teamKey={cfg.key} teamLabel={teamLabel} me={me} canEdit={canEditGrafik} canSend={canSendInvites} />;
       case 'tasks':
         return <TasksTab sourceKind={cfg.boardSourceKind} myEmail={myEmail} />;
       case 'members':
@@ -207,6 +214,36 @@ export default function TeamDetailScreen() {
         return <PeopleTab table={cfg.leaderTable} emptyLabel="Brak liderów na liście" />;
       case 'roles':
         return <RolesTab team={cfg.key} table={table} canEdit={canPeopleEdit} canDelete={canPeopleDelete} />;
+      case 'groups':
+        return (
+          <KidsGroupsTab
+            scope={scope}
+            campusIdForInsert={campusIdForInsert}
+            canCreate={perms.can('res:kids_groups:create')}
+            canEdit={perms.can('res:kids_groups:update')}
+            canDelete={perms.can('res:kids_groups:delete')}
+          />
+        );
+      case 'students':
+        return (
+          <KidsStudentsTab
+            scope={scope}
+            campusIdForInsert={campusIdForInsert}
+            canReadHouseholds={perms.can('res:households:read')}
+            canCreate={perms.can('res:kids_students:create')}
+            canEdit={perms.can('res:kids_students:update')}
+            canDelete={perms.can('res:kids_students:delete')}
+          />
+        );
+      case 'households':
+        return (
+          <HouseholdsTab
+            scope={scope}
+            canCreate={perms.can('res:households:create')}
+            canEdit={perms.can('res:households:update')}
+            canDelete={perms.can('res:households:delete')}
+          />
+        );
       case 'finance':
         return <FinanceTab cfg={cfg} scope={scope} myEmail={myEmail} myName={myName} />;
       case 'equipment':
