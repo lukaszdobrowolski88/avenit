@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { CalendarDays, Check, MapPin, Trash2 } from 'lucide-react-native';
 import {
   useCreateTeamEvent,
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export const EventsTab = ({ cfg, scope, campusIdForInsert, myEmail }: Props) => {
+  const router = useRouter();
   const [range, setRange] = useState<'upcoming' | 'archive'>('upcoming');
   const [modalOpen, setModalOpen] = useState(false);
   const events = useTeamEvents(cfg, scope);
@@ -77,7 +79,11 @@ export const EventsTab = ({ cfg, scope, campusIdForInsert, myEmail }: Props) => 
         const g = going.data?.[ev.id];
         const mineGoing = !!g?.mine;
         return (
-          <Card key={ev.id}>
+          <Card
+            key={ev.id}
+            // Wspólne wydarzenia mają pełny ekran (plan, służby, materiały, edycja).
+            onPress={cfg.eventsTable === 'events' ? () => router.push({ pathname: '/(app)/events/[id]', params: { id: ev.id } }) : undefined}
+          >
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <DateBlock ymd={ev.date} />
               <View style={{ flex: 1, gap: 3 }}>

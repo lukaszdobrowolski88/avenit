@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ActionSheetIOS, Alert, Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { Briefcase, Calendar, Plus, Users } from 'lucide-react-native';
 import { useAddTask, useSetTaskStatus, useTeamBoard, type BoardStatusLabel, type BoardTask, type TeamBoard } from '../data';
-import { Card, Empty, Loading } from './ui';
+import { Card, Empty, Loading, dayLabel } from './ui';
 
 // Zadania zespołu = tablica Projektów (boards.source_kind) jak ModuleBoard na webie.
 export const TasksTab = ({
@@ -144,7 +144,7 @@ export const TasksTab = ({
                   {t.date ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <Calendar size={11} color="#857F70" />
-                      <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>{t.date}</Text>
+                      <Text style={{ fontSize: 12, color: '#6B6557', fontFamily: 'Manrope_500Medium' }}>{dayLabel(t.date)}</Text>
                     </View>
                   ) : null}
                   {t.people.length ? (

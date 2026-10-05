@@ -3,6 +3,7 @@ import {
   Baby,
   Briefcase,
   CalendarDays,
+  LayoutGrid,
   ClipboardList,
   FolderOpen,
   MessageSquare,
@@ -24,6 +25,7 @@ import {
 export type TeamKey = 'worship' | 'media' | 'atmosfera' | 'kids' | 'mlodziezowka' | 'homegroups';
 
 export type TeamTabKey =
+  | 'overview'
   | 'checkin'
   | 'wall'
   | 'events'
@@ -39,7 +41,7 @@ export type TeamTabKey =
 
 export interface TeamConfig {
   key: TeamKey;
-  tabs: TeamTabKey[]; // kolejność jak na webie
+  tabs: TeamTabKey[]; // kolejność jak na webie (+ „Przegląd” na początku i Finanse bliżej końca)
   financeName: string;
   wallMinistry?: string;
   memberTable?: string;
@@ -54,7 +56,7 @@ export interface TeamConfig {
 export const TEAM_CONFIG: Record<TeamKey, TeamConfig> = {
   worship: {
     key: 'worship',
-    tabs: ['wall', 'events', 'schedule', 'songs', 'members', 'finance', 'roles', 'equipment', 'files'],
+    tabs: ['overview', 'wall', 'events', 'schedule', 'songs', 'members', 'roles', 'equipment', 'finance', 'files'],
     financeName: 'Grupa Uwielbienia',
     wallMinistry: 'Grupa Uwielbienia',
     memberTable: 'worship_team',
@@ -62,7 +64,7 @@ export const TEAM_CONFIG: Record<TeamKey, TeamConfig> = {
   },
   media: {
     key: 'media',
-    tabs: ['events', 'schedule', 'tasks', 'members', 'finance', 'roles', 'equipment', 'files'],
+    tabs: ['overview', 'events', 'schedule', 'tasks', 'members', 'roles', 'equipment', 'finance', 'files'],
     financeName: 'MediaTeam',
     memberTable: 'media_team',
     boardSourceKind: 'media_tasks',
@@ -70,14 +72,14 @@ export const TEAM_CONFIG: Record<TeamKey, TeamConfig> = {
   },
   atmosfera: {
     key: 'atmosfera',
-    tabs: ['events', 'schedule', 'members', 'finance', 'roles', 'equipment', 'files'],
+    tabs: ['overview', 'events', 'schedule', 'members', 'roles', 'equipment', 'finance', 'files'],
     financeName: 'AtmosferaTeam',
     memberTable: 'atmosfera_members',
     eventsTable: 'events',
   },
   kids: {
     key: 'kids',
-    tabs: ['checkin', 'events', 'schedule', 'members', 'finance', 'equipment', 'files'],
+    tabs: ['overview', 'checkin', 'events', 'schedule', 'members', 'equipment', 'finance', 'files'],
     financeName: 'małe Avenit',
     memberTable: 'kids_teachers',
     eventsTable: 'events',
@@ -108,6 +110,7 @@ export const isTeamKey = (s: string | undefined): s is TeamKey =>
   !!s && Object.prototype.hasOwnProperty.call(TEAM_CONFIG, s);
 
 export const TAB_META: Record<TeamTabKey, { label: string; Icon: LucideIcon }> = {
+  overview: { label: 'Przegląd', Icon: LayoutGrid },
   checkin: { label: 'Dziś', Icon: Baby },
   wall: { label: 'Tablica', Icon: MessageSquare },
   events: { label: 'Wydarzenia', Icon: CalendarDays },

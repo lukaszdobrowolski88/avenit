@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase, tenantWebBase } from '../../lib/supabase';
-import { fetchAssignments, todayYmd } from '../schedule/assignments';
+import { todayYmd } from '../schedule/assignments';
 import type { TeamConfig, TeamKey } from './config';
 
 // Dane zakładek zespołu — kontrakt 1:1 z webem (src/modules/shared/*Tab.jsx).
@@ -271,149 +271,6 @@ export const useToggleGoing = (myEmail: string | null) => {
   });
 };
 
-// ─── Grafik (ScheduleTab.jsx) ──────────────────────────────────────────────────
-
-export interface GrafikPerson {
-  name: string;
-  status: 'pending' | 'accepted' | 'rejected' | null;
-  isMe: boolean;
-}
-export interface GrafikRole {
-  key: string;
-  label: string;
-  people: GrafikPerson[];
-}
-export interface GrafikRow {
-  id: string;
-  kind: 'event' | 'program';
-  date: string;
-  time: string | null;
-  title: string;
-  roles: GrafikRole[];
-  absent: string[];
-  notes: string | null;
-  involvesMe: boolean;
-}
-
-const csv = (v: unknown): string[] =>
-  String(v ?? '')
-    .split(',')
-    .map((x) => x.trim())
-    .filter(Boolean);
-
-export const useTeamGrafik = (key: TeamKey, me: { email: string | null; name: string | null }) =>
-  useQuery({
-    queryKey: ['team', key, 'grafik', me.email],
-    queryFn: async (): Promise<GrafikRow[]> => {
-      const today = todayYmd();
-      const [rulesRes, eventsRes, rolesRes] = await Promise.all([
-        supabase.from('app_settings').select('value').eq('key', 'event_type_teams').maybeSingle(),
-        supabase
-          .from('events')
-          .select('id, title, date, time, event_type, module_key, assignments, team_types')
-          .gte('date', today)
-          .order('date', { ascending: true })
-          .limit(200),
-        supabase
-          .from('team_roles')
-          .select('id, name, field_key, display_order')
-          .eq('team_type', key)
-          .eq('is_active', true)
-          .order('display_order', { ascending: true }),
-      ]);
-      let rules: any[] = [];
-      try {
-        const raw = (rulesRes as any).data?.value;
-        rules = (typeof raw === 'string' ? JSON.parse(raw) : raw) ?? [];
-      } catch {
-        rules = [];
-      }
-      const roleLabel = new Map<string, string>(asList(rolesRes.data).map((r) => [String(r.field_key), String(r.name)]));
-      const roleOrder = asList(rolesRes.data).map((r) => String(r.field_key));
-
-      // Czy wydarzenie należy do tej służby — reguła 1:1 z ScheduleTab.jsx includesThisTeam.
-      const includes = (ev: any) => {
-        const asg = ev.assignments?.[key];
-        if (asg && Object.entries(asg).some(([k, v]) => k !== 'notatki' && k !== 'absencja' && csv(v).length)) return true;
-        if (ev.team_types != null) return csv(ev.team_types).includes(key);
-        const rule = rules.find((r) => (r?.module_key || '') === (ev.module_key || '') && r?.event_type === ev.event_type);
-        if (rule && Array.isArray(rule.teams) && rule.teams.length) return rule.teams.includes(key);
-        return (ev.module_key || '') === key;
-      };
-      const events = asList(eventsRes.data).filter(includes);
-
-      // Statusy z schedule_assignments (event_id + rola + osoba).
-      const statusOf = new Map<string, GrafikPerson['status']>();
-      const myNames = new Set<string>();
-      if (events.length) {
-        const { data: sa } = await supabase
-          .from('schedule_assignments')
-          .select('event_id, role_key, assigned_name, assigned_email, status')
-          .in('event_id', events.map((e) => e.id))
-          .eq('team_type', key);
-        for (const a of asList(sa)) {
-          statusOf.set(`${a.event_id}|${a.role_key}|${a.assigned_name}`, a.status ?? null);
-          if (me.email && a.assigned_email === me.email && a.assigned_name) myNames.add(String(a.assigned_name));
-        }
-      }
-      if (me.name) myNames.add(me.name);
-
-      const rows: GrafikRow[] = events.map((ev) => {
-        const asg = (ev.assignments?.[key] ?? {}) as Record<string, string>;
-        const keys = [...roleOrder, ...Object.keys(asg).filter((k) => !roleOrder.includes(k) && k !== 'notatki' && k !== 'absencja')];
-        const roles: GrafikRole[] = keys
-          .map((rk) => ({
-            key: rk,
-            label: roleLabel.get(rk) ?? rk,
-            people: csv(asg[rk]).map((name) => ({
-              name,
-              status: statusOf.get(`${ev.id}|${rk}|${name}`) ?? null,
-              isMe: myNames.has(name),
-            })),
-          }))
-          .filter((r) => r.people.length > 0);
-        return {
-          id: String(ev.id),
-          kind: 'event' as const,
-          date: String(ev.date).slice(0, 10),
-          time: ev.time ? String(ev.time).slice(0, 5) : null,
-          title: ev.title ?? 'Wydarzenie',
-          roles,
-          absent: csv(asg.absencja),
-          notes: asg.notatki ? String(asg.notatki) : null,
-          involvesMe: roles.some((r) => r.people.some((p) => p.isMe)),
-        };
-      });
-
-      // Starsze przypisania do programów (sprzed migracji 055), jeśli są nadchodzące.
-      try {
-        const legacy = await fetchAssignments((q) => q.eq('team_type', key).not('program_id', 'is', null));
-        const byProgram = new Map<string, GrafikRow>();
-        for (const a of legacy) {
-          if (a.kind !== 'program' || !a.date || a.date < today) continue;
-          const id = `p${a.programId}`;
-          const row =
-            byProgram.get(id) ??
-            ({ id, kind: 'program', date: a.date, time: null, title: a.title ?? 'Program', roles: [], absent: [], notes: null, involvesMe: false } as GrafikRow);
-          let role = row.roles.find((r) => r.key === a.roleKey);
-          if (!role) {
-            role = { key: a.roleKey, label: a.roleLabel || roleLabel.get(a.roleKey) || a.roleKey, people: [] };
-            row.roles.push(role);
-          }
-          const isMe = !!me.email && a.assignedEmail === me.email;
-          role.people.push({ name: a.assignedName ?? a.assignedEmail ?? '—', status: a.status, isMe });
-          if (isMe) row.involvesMe = true;
-          byProgram.set(id, row);
-        }
-        rows.push(...byProgram.values());
-      } catch {
-        /* stare przypisania opcjonalne */
-      }
-
-      return rows.sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')));
-    },
-  });
-
 // ─── Członkowie / liderzy / służby ─────────────────────────────────────────────
 
 export interface TeamPerson {
@@ -476,42 +333,6 @@ export const useTeamPeople = (table: string | undefined, withRolesFor?: string) 
     },
   });
 
-export interface TeamRoleWithPeople {
-  id: string;
-  name: string;
-  description: string | null;
-  people: string[];
-}
-
-export const useTeamRoles = (key: TeamKey, memberTable: string | undefined) =>
-  useQuery({
-    queryKey: ['team', key, 'roles'],
-    enabled: !!memberTable,
-    queryFn: async (): Promise<TeamRoleWithPeople[]> => {
-      const [{ data: roles, error }, { data: tmr }, { data: members }] = await Promise.all([
-        supabase
-          .from('team_roles')
-          .select('id, name, description, display_order')
-          .eq('team_type', key)
-          .eq('is_active', true)
-          .order('display_order', { ascending: true }),
-        supabase.from('team_member_roles').select('member_id, role_id').eq('member_table', memberTable!),
-        supabase.from(memberTable!).select('id, full_name'),
-      ]);
-      if (error) throw error;
-      const nameOf = new Map<string, string>(asList(members).map((m) => [String(m.id), String(m.full_name)]));
-      return asList(roles).map((r) => ({
-        id: String(r.id),
-        name: String(r.name),
-        description: r.description ?? null,
-        people: asList(tmr)
-          .filter((x) => String(x.role_id) === String(r.id))
-          .map((x) => nameOf.get(String(x.member_id)))
-          .filter(Boolean) as string[],
-      }));
-    },
-  });
-
 // ─── Wyposażenie (EquipmentTab.jsx) ────────────────────────────────────────────
 
 export interface EquipmentItem {
@@ -524,11 +345,14 @@ export interface EquipmentItem {
   condition: string | null;
   responsible: string | null;
   location: string | null;
+  purchaseDate: string | null;
+  notes: string | null;
 }
 
-export const useTeamEquipment = (key: TeamKey) =>
+export const useTeamEquipment = (key: string, enabled = true) =>
   useQuery({
     queryKey: ['team', key, 'equipment'],
+    enabled,
     queryFn: async (): Promise<EquipmentItem[]> => {
       const { data, error } = await supabase
         .from('equipment')
@@ -546,6 +370,8 @@ export const useTeamEquipment = (key: TeamKey) =>
         condition: e.condition ?? null,
         responsible: e.responsible_person ?? null,
         location: e.location ?? null,
+        purchaseDate: e.purchase_date ? String(e.purchase_date).slice(0, 10) : null,
+        notes: e.notes ?? null,
       }));
     },
   });
@@ -727,8 +553,9 @@ async function loadBoard(boardId: string): Promise<TeamBoard> {
   }));
   const groupName = new Map<string, string>(asList(groups).map((g) => [String(g.id), String(g.name)]));
   const cellsById: Record<string, Record<string, unknown>> = {};
+  // Puste wiersze (dodane na webie i nienazwane) pomijamy — na liście wyglądały jak błąd.
   const tasks: BoardTask[] = asList(items)
-    .filter((it) => !it.parent_item_id)
+    .filter((it) => !it.parent_item_id && String(it.name ?? '').trim())
     .map((it) => {
       const cells = (typeof it.cells === 'string' ? JSON.parse(it.cells) : it.cells) ?? {};
       cellsById[String(it.id)] = cells;

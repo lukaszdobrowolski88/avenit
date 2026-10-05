@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Alert, Linking, Pressable, Text, TextInput, View } from 'react-native';
 import { Mail, MessageSquare, Phone, Search, Star, Users } from 'lucide-react-native';
-import { useTeamPeople, useTeamRoles, type TeamPerson, type TeamRoleWithPeople } from '../data';
+import { useTeamPeople, type TeamPerson } from '../data';
 import type { TeamKey } from '../config';
 import { Card, Empty, Loading } from './ui';
 import { Monogram } from '../../../components/ui/brand';
@@ -101,39 +101,6 @@ export const PeopleTab = ({
               {p.phone ? <Action Icon={MessageSquare} label={`SMS: ${p.name}`} onPress={() => open(`sms:${p.phone}`)} /> : null}
               {p.email ? <Action Icon={Mail} label={`E-mail: ${p.name}`} onPress={() => open(`mailto:${p.email}`)} /> : null}
             </View>
-          </View>
-        </Card>
-      ))}
-    </View>
-  );
-};
-
-// Służby (team_roles + team_member_roles) — kto pełni którą funkcję.
-export const RolesTab = ({ teamKey, memberTable }: { teamKey: TeamKey; memberTable: string | undefined }) => {
-  const roles = useTeamRoles(teamKey, memberTable);
-  if (roles.isLoading) return <Loading />;
-  const list: TeamRoleWithPeople[] = roles.data ?? [];
-  if (!list.length) {
-    return <Empty Icon={Users} title="Brak zdefiniowanych służb" hint="Lider dodaje służby (np. wokal, nagłośnienie) na webie." />;
-  }
-  return (
-    <View>
-      {list.map((r) => (
-        <Card key={r.id}>
-          <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{r.name}</Text>
-          {r.description ? (
-            <Text style={{ fontSize: 12, color: '#6B6557', marginTop: 2, fontFamily: 'Manrope_400Regular' }}>{r.description}</Text>
-          ) : null}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-            {r.people.length ? (
-              r.people.map((n) => (
-                <View key={n} style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, backgroundColor: '#F6F4EE' }}>
-                  <Text style={{ fontSize: 12, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}>{n}</Text>
-                </View>
-              ))
-            ) : (
-              <Text style={{ fontSize: 12, color: '#857F70', fontFamily: 'Manrope_500Medium' }}>Nikt nie jest przypisany</Text>
-            )}
           </View>
         </Card>
       ))}
