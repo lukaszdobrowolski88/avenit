@@ -73,10 +73,12 @@ test('powiadomienie dla kogoś innego — wolno wstawić, ale nie upsertem', () 
   assert.throws(() => enforceOwnedWrite({ table: 'notifications', op: 'upsert', values: { user_email: 'jan@example.com' } }, ANNA), (e) => e.status === 403);
 });
 
-test('ical_subscriptions po user_id', () => {
+test('ical_subscriptions po e-mailu, totp_auth_logs po user_id', () => {
   const b = buildQuery(q({ table: 'ical_subscriptions', op: 'select', select: '*' }));
-  assert.match(b.sql, /t\."user_id"::text = \$1/);
-  assert.deepEqual(b.params, [ANNA.id]);
+  assert.match(b.sql, /lower\(t\."user_email"\) = \$1/);
+  const t = buildQuery(q({ table: 'totp_auth_logs', op: 'select', select: '*' }));
+  assert.match(t.sql, /t\."user_id"::text = \$1/);
+  assert.deepEqual(t.params, [ANNA.id]);
 });
 
 test('komentarze do zadań: widoczne przez zadanie, autor wstawiany automatycznie', () => {

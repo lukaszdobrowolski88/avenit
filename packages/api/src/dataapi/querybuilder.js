@@ -243,8 +243,7 @@ function hashCode(s) {
 // dla osób z pasującym kampusem (albo bez kampusu = wszystkie). NIE zawiera app_users ani
 // ministry_memberships (tam campus_id ma inne znaczenie). Rozszerzalne.
 export const CAMPUS_SCOPED_TABLES = new Set([
-  'members', 'programs', 'events', 'module_events',
-  'worship_events', 'media_events', 'atmosfera_events', 'kids_events', 'homegroups_events', 'mlodziezowka_events',
+  'members', 'programs', 'events', 'mlodziezowka_events',
   'home_groups', 'kids_groups', 'kids_students', 'kids_parent_notifications',
   'budget_items', 'checkin_sessions', 'resources', 'resource_bookings',
   'rsvp_campaigns', 'rsvp_invitations', 'sms_campaigns', 'push_campaigns',

@@ -15,6 +15,14 @@ import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } 
 //   kontakt z rodzicem), choć gospodarstwa należą do modułu Członkowie.
 const EMBED_CROSS_MODULE_ALLOW = new Set(['checkins>households']);
 
+// Stare tabele wydarzeń modułów usunięte migracją 077 (wszystko jest w `events`). Starsze
+// wersje aplikacji mobilnej mogą jeszcze o nie pytać — odczyt zwraca pustą listę zamiast
+// błędu (ekran kalendarza się nie wywraca), zapis: 410 z prośbą o aktualizację.
+const RETIRED_TABLES = new Set([
+  'worship_events', 'media_events', 'atmosfera_events', 'kids_events',
+  'homegroups_events', 'ministry_events', 'module_events',
+]);
+
 // Propozycje budżetu: team_type, pod którym zakładka Finanse zespołu (shared/FinanceTab,
 // prop `ministry`) zapisuje i czyta propozycje. Stałe etykiety, często inne niż nazwa w menu.
 // Moduły własne (FinanceWidget) zapisują nazwę albo klucz modułu.
@@ -36,6 +44,10 @@ export default async function dataApiRoutes(app) {
   app.post('/api/db', { preHandler: [app.requireUser, app.block2FAPending] }, async (req, reply) => {
     const q = req.body || {};
     try {
+      if (RETIRED_TABLES.has(q.table)) {
+        if (q.op === 'select') return reply.send({ data: q.single ? null : [], count: q.count ? 0 : null });
+        throw new ApiError(410, 'Ta funkcja została przeniesiona — zaktualizuj aplikację.');
+      }
       const { rows: userRows } = await req.db.query(
         `SELECT is_super_admin, campus_id, role, member_id FROM app_users WHERE id = $1`, [req.user.id]
       );

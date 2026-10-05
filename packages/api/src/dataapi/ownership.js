@@ -26,7 +26,7 @@ export const OWNED_TABLES = {
   push_subscriptions: { owner: 'user_email', takeover: true },
   push_tokens: { owner: 'user_email', takeover: true },
   notifications: { owner: 'user_email', openInsert: true },
-  ical_subscriptions: { owner: 'user_id', byId: true },
+  ical_subscriptions: { owner: 'user_email' }, // web zapisuje user_email (migracja 077)
   totp_auth_logs: { owner: 'user_id', byId: true },
 };
 
