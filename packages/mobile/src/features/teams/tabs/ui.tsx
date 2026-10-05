@@ -183,7 +183,7 @@ export const SegmentChips = <T extends string>({
   value: T;
   onChange: (v: T) => void;
 }) => (
-  <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
+  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
     {options.map((o) => {
       const on = o.key === value;
       return (

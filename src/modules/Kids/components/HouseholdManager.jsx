@@ -207,7 +207,14 @@ export default function HouseholdManager() {
         .update({ household_id: null })
         .eq('household_id', householdId);
 
-      // Then delete household (contacts will be deleted by CASCADE)
+      // parent_contacts nie ma klucza obcego (brak CASCADE) — usuń opiekunów jawnie,
+      // inaczej zostają osierocone wiersze.
+      await supabase
+        .from('parent_contacts')
+        .delete()
+        .eq('household_id', householdId);
+
+      // Then delete household
       const { error } = await supabase
         .from('households')
         .delete()

@@ -18,6 +18,7 @@ import { useAddTeamExpense, useTeamFinance, type TeamFinance } from '../data';
 import { pickImageForTask, takePhotoForTask, type PickedAsset } from '../../dashboard/task-attachments';
 import { AddButton, Card, Empty, Loading, money } from './ui';
 import { DateField } from '../../../components/ui/DateField';
+import { ProposalsSection } from '../components/ProposalsSection';
 
 const todayYmd = () => {
   const d = new Date();
@@ -201,6 +202,8 @@ export const FinanceTab = ({
           ))}
         </>
       ) : null}
+
+      <ProposalsSection financeName={cfg.financeName} myEmail={myEmail} />
 
       <Modal visible={open} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setOpen(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
