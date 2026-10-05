@@ -108,29 +108,26 @@ export function useDashboardData(userEmail) {
     try {
       const today = new Date().toISOString().split('T')[0];
 
-      // Pobierz programy i nieobecności równolegle
-      const [programsResponse, absencesResponse] = await Promise.all([
+      // Pobierz programy i moje nieobecności (volunteer_blockouts przez my-blockouts) równolegle
+      const [programsResponse, blockoutsResponse] = await Promise.all([
         withCampusFilter(supabase
           .from('programs')
           .select('*'))
           .gte('date', today)
           .order('date', { ascending: true })
           .limit(20),
-        supabase
-          .from('user_absences')
-          .select('program_id')
-          .eq('user_email', userEmail)
-          .gte('absence_date', today)
+        supabase.functions.invoke('my-blockouts', { body: { action: 'list' } }).catch(() => ({ data: null })),
       ]);
 
       const programs = programsResponse.data || [];
-      const absences = absencesResponse.data || [];
+      const blockouts = blockoutsResponse?.data?.blockouts || [];
 
-      // Utwórz zbiór ID programów, na które użytkownik ma nieobecność
-      const absentProgramIds = new Set(absences.map(a => a.program_id));
-
-      // Filtruj programy - pomiń te z nieobecnością
-      const availablePrograms = programs.filter(p => !absentProgramIds.has(p.id));
+      // Pomiń programy, których data wypada w mojej nieobecności (od–do).
+      const inBlockout = (date) => {
+        const d = String(date || '').slice(0, 10);
+        return blockouts.some(b => b.start_date <= d && d <= b.end_date);
+      };
+      const availablePrograms = programs.filter(p => !inBlockout(p.date));
 
       return filterAndMapPrograms(availablePrograms, userName || userEmail);
     } catch (error) {
@@ -351,17 +348,10 @@ export function useDashboardData(userEmail) {
     if (!userEmail) return [];
 
     try {
-      const { data: absences } = await supabase
-        .from('user_absences')
-        .select(`
-          *,
-          programs:program_id (date)
-        `)
-        .eq('user_email', userEmail)
-        .order('absence_date', { ascending: false })
-        .limit(10);
-
-      return absences || [];
+      // Jedna funkcja nieobecności (jak w aplikacji): volunteer_blockouts przez my-blockouts.
+      const { data, error } = await supabase.functions.invoke('my-blockouts', { body: { action: 'list' } });
+      if (error) throw error;
+      return data || { memberResolved: false, blockouts: [] };
     } catch (error) {
       console.error('Error fetching absences:', error);
       return [];

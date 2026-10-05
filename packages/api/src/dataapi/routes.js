@@ -7,6 +7,7 @@ import { makeResolver } from '@avenit/shared/src/permissions/resolve.js';
 import { emitChange } from '../realtime/hub.js';
 import { notifyOnWrite } from '../realtime/push-hooks.js';
 import { platformDisabledModules } from '../lib/platform-modules.js';
+import { assertTaskCommentTarget, enforceOwnedWrite, isOwnedTable, ownerScope } from './ownership.js';
 
 // Złączenia między modułami dozwolone bez dostępu do modułu tabeli dociąganej —
 // świadome wyjątki operacyjne. Klucz: '<tabela nadrzędna>><tabela dociągana>'.
@@ -164,6 +165,13 @@ export default async function dataApiRoutes(app) {
       // obecność w REGISTRY, więc np. dostęp do checkins dawał przez złączenie dane z modułu
       // Członkowie. Celowo bez CRUD per zasób — złączenia w obrębie modułu (programs →
       // program_types) działają jak dotąd. Admin i tryb legacy (grants null) bez zmian.
+      // Tabel osobistych nie wolno dociągać złączeniem — ominęłoby to zawężenie do właściciela.
+      if (q.select) {
+        for (const [, child] of embeddedTablePairs(q.table, q.select)) {
+          if (isOwnedTable(child)) throw new ApiError(403, `Brak dostępu do danych '${child}' w złączeniu`);
+        }
+      }
+
       if (q.select && resolver) {
         const pairs = embeddedTablePairs(q.table, q.select);
         for (const [parent, child] of pairs) {
@@ -218,6 +226,13 @@ export default async function dataApiRoutes(app) {
         if (!access.resolver.can(cap)) {
           throw new ApiError(403, `Brak uprawnienia ${cap}`);
         }
+      }
+
+      // Tabele osobiste: wiersze tylko właściciela (patrz ownership.js) — dla każdego, także admina.
+      if (isOwnedTable(q.table)) {
+        q.__ownerScope = ownerScope(q.table, req.user);
+        enforceOwnedWrite(q, req.user);
+        await assertTaskCommentTarget(q, req);
       }
 
       // Wyczyść cache uprawnień przy zmianach ról/grantów.
@@ -431,6 +446,10 @@ function countWhere(q, params) {
   if (q.__proposalScope && q.table === 'budget_proposals') {
     const pc = proposalScopeClause(q.__proposalScope, 't', params);
     where = where ? `${where} AND ${pc}` : ` WHERE ${pc}`;
+  }
+  if (q.__ownerScope?.select) {
+    const oc = q.__ownerScope.select('t', (v) => { params.push(v); return params.length; });
+    where = where ? `${where} AND ${oc}` : ` WHERE ${oc}`;
   }
   return where;
 }
