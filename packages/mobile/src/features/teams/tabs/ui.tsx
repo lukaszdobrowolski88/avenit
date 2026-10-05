@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { Plus, Search } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import type { LucideIcon } from 'lucide-react-native';
@@ -111,24 +112,67 @@ export const Loading = () => (
   </View>
 );
 
+// Główna akcja zakładki — miękka pigułka w kolorze marki zamiast ciężkiego czarnego paska.
 export const AddButton = ({ label, onPress }: { label: string; onPress: () => void }) => (
   <Pressable
     onPress={onPress}
-    className="active:opacity-70"
+    className="active:opacity-80"
     style={{
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: 8,
-      height: 46,
-      borderRadius: 14,
-      backgroundColor: '#2A2312',
+      height: 48,
+      borderRadius: 999,
+      backgroundColor: '#FFBE0B',
       marginBottom: 14,
     }}
   >
-    <Text style={{ fontSize: 14, color: '#ffffff', fontFamily: 'Manrope_600SemiBold' }}>+ {label}</Text>
+    <Plus size={18} color="#2A2312" strokeWidth={2.6} />
+    <Text style={{ fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{label}</Text>
   </Pressable>
 );
+
+// Pasek nad listą: wyszukiwarka + okrągły „+” (gdy wolno dodawać).
+export const SearchBar = ({
+  value,
+  onChange,
+  placeholder,
+  onAdd,
+  addLabel,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  onAdd?: () => void;
+  addLabel?: string;
+}) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, height: 46, paddingHorizontal: 14, borderRadius: 23, backgroundColor: '#FFFFFF' }}>
+      <Search size={16} color="#857F70" />
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor="#857F70"
+        autoCorrect={false}
+        style={{ flex: 1, fontSize: 15, color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
+      />
+    </View>
+    {onAdd ? (
+      <Pressable
+        onPress={onAdd}
+        accessibilityLabel={addLabel ?? 'Dodaj'}
+        className="active:opacity-80"
+        style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: '#FFBE0B', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <Plus size={20} color="#2A2312" strokeWidth={2.6} />
+      </Pressable>
+    ) : null}
+  </View>
+);
+
+export const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l');
 
 export const SegmentChips = <T extends string>({
   options,

@@ -4,19 +4,23 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft, Home, MessageSquare } from 'lucide-react-native';
-import { GradientIcon } from '../../../src/components/ui/GradientIcon';
+import { B, IconWell } from '../../../src/components/ui/brand';
 import { useAuthSession } from '../../../src/lib/auth';
 import { usePermissions } from '../../../src/lib/permissions';
 import { NoModuleAccess } from '../../../src/components/ModuleGate';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import { MINISTRY_META, useCreateWallPost, useWallPosts, type WallPost } from '../../../src/features/teams/api';
 import { TAB_META, TEAM_CONFIG, isTeamKey, tabGate, type TeamTabKey } from '../../../src/features/teams/config';
+import { useRoster, type RosterPerson } from '../../../src/features/teams/roster';
 import { TeamTabsBar } from '../../../src/features/teams/components/TeamTabsBar';
 import { WallPostCard } from '../../../src/features/teams/components/WallPostCard';
 import { NewPostModal } from '../../../src/features/teams/components/NewPostModal';
+import { OverviewTab } from '../../../src/features/teams/tabs/OverviewTab';
 import { EventsTab } from '../../../src/features/teams/tabs/EventsTab';
 import { GrafikTab } from '../../../src/features/teams/tabs/GrafikTab';
-import { PeopleTab, RolesTab } from '../../../src/features/teams/tabs/PeopleTab';
+import { PeopleTab } from '../../../src/features/teams/tabs/PeopleTab';
+import { RosterTab } from '../../../src/features/teams/tabs/RosterTab';
+import { RolesTab } from '../../../src/features/teams/tabs/RolesTab';
 import { EquipmentTab } from '../../../src/features/teams/tabs/EquipmentTab';
 import { FinanceTab } from '../../../src/features/teams/tabs/FinanceTab';
 import { TasksTab } from '../../../src/features/teams/tabs/TasksTab';
@@ -25,16 +29,26 @@ import { AddButton, Empty, Loading } from '../../../src/features/teams/tabs/ui';
 import { useMyProfile } from '../../../src/features/account/api';
 import { goBack } from '../../../src/lib/navigation';
 
-// Wygląd nagłówka; Grupy domowe nie są w MINISTRY_META (to moduł wspólnoty).
+const F = { medium: 'Manrope_500Medium', semibold: 'Manrope_600SemiBold', bold: 'Manrope_700Bold' } as const;
+
+// Ikona i nazwa zapasowa; Grupy domowe nie są w MINISTRY_META (to moduł wspólnoty).
 const LOOK = {
-  ...Object.fromEntries(
-    Object.values(MINISTRY_META).map((m) => [m.key, { Icon: m.Icon, from: m.gradFrom, to: m.gradTo, label: m.label }]),
-  ),
-  homegroups: { Icon: Home, from: '#22c55e', to: '#6B6557', label: 'Grupy domowe' },
-} as Record<string, { Icon: typeof Home; from: string; to: string; label: string }>;
+  ...Object.fromEntries(Object.values(MINISTRY_META).map((m) => [m.key, { Icon: m.Icon, label: m.label }])),
+  homegroups: { Icon: Home, label: 'Grupy domowe' },
+} as Record<string, { Icon: typeof Home; label: string }>;
 
 // Zakładki prowadzące do osobnych ekranów zamiast treści w miejscu.
 const NAV_TABS = new Set<TeamTabKey>(['files', 'songs']);
+
+// Zespoły ze składem w tabeli zespołu i służbami (team_roles) — reszta ma prostą listę osób.
+const ROSTER_TEAMS = new Set(['worship', 'media', 'atmosfera', 'kids']);
+
+const plural = (n: number, one: string, few: string, many: string) => {
+  if (n === 1) return one;
+  const d = n % 10;
+  const t = n % 100;
+  return d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many;
+};
 
 export default function TeamDetailScreen() {
   const router = useRouter();
@@ -46,12 +60,14 @@ export default function TeamDetailScreen() {
   const myEmail = user?.email ?? null;
   const profile = useMyProfile(myEmail);
   const myName = profile.data?.full_name || profile.data?.name || null;
+  const me = useMemo(() => ({ email: myEmail, name: myName }), [myEmail, myName]);
   const { selectedCampusId, withCampusFilter, campusIdForInsert } = useCampusQuery();
   const scope = { selectedCampusId, withCampusFilter };
   const perms = usePermissions();
 
   const valid = isTeamKey(ministry);
   const cfg = TEAM_CONFIG[valid ? ministry : 'worship'];
+  const rosterTeam = ROSTER_TEAMS.has(cfg.key);
 
   // Zakładki jak na webie, każda za swoją bramką tab:<moduł>:<x>.
   const tabs = useMemo(
@@ -76,10 +92,25 @@ export default function TeamDetailScreen() {
   const active = (tab && tabs.some((t) => t.key === tab) ? tab : tabs.find((t) => !NAV_TABS.has(t.key))?.key) ?? 'events';
 
   const wallMinistry = cfg.wallMinistry ?? cfg.key;
+  const hasWall = cfg.tabs.includes('wall');
   const wall = useWallPosts(wallMinistry);
   const createPost = useCreateWallPost(wallMinistry);
   const [postOpen, setPostOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const roster = useRoster(cfg.key, rosterTeam ? cfg.memberTable : undefined);
+
+  // Uprawnienia do edycji (serwer i tak je egzekwuje — tu tylko chowamy przyciski).
+  const table = cfg.memberTable ?? '';
+  const canPeopleCreate = perms.can(`res:${table}:create`);
+  const canPeopleEdit = perms.can(`res:${table}:update`);
+  const canPeopleDelete = perms.can(`res:${table}:delete`);
+  const canEditGrafik = perms.can('res:events:update') && perms.can('res:schedule_assignments:create');
+  const canSendInvites = perms.can('action:programs:send_assignment');
+  const myRole = perms.ministries.find((m) => m.ministry_key === cfg.key && m.role === 'leader')
+    ? 'Lider'
+    : perms.ministries.some((m) => m.ministry_key === cfg.key)
+      ? 'Członek zespołu'
+      : null;
 
   const onTab = (k: string) => {
     const key = k as TeamTabKey;
@@ -96,10 +127,7 @@ export default function TeamDetailScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([
-      qc.invalidateQueries({ queryKey: ['team'] }),
-      qc.invalidateQueries({ queryKey: ['teams', 'wall'] }),
-    ]);
+    await Promise.all([qc.invalidateQueries({ queryKey: ['team'] }), qc.invalidateQueries({ queryKey: ['teams', 'wall'] })]);
     setRefreshing(false);
   };
 
@@ -108,8 +136,8 @@ export default function TeamDetailScreen() {
   }
   if (!perms.ready) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F6F4EE' }}>
-        <ActivityIndicator color="#2A2312" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: B.paper }}>
+        <ActivityIndicator color={B.ink} />
       </View>
     );
   }
@@ -117,9 +145,30 @@ export default function TeamDetailScreen() {
 
   const look = LOOK[cfg.key];
   const teamLabel = perms.modules.find((m) => m.key === cfg.key)?.label || look.label;
+  const activePeople = roster.data?.people.filter((p: RosterPerson) => p.active).length ?? 0;
+  const roleCount = roster.data?.roles.length ?? 0;
+  const summary = roster.data
+    ? [`${activePeople} ${plural(activePeople, 'osoba', 'osoby', 'osób')}`, cfg.tabs.includes('roles') && roleCount ? `${roleCount} ${plural(roleCount, 'służba', 'służby', 'służb')}` : null]
+        .filter(Boolean)
+        .join(' · ')
+    : null;
+  const posts: WallPost[] = wall.data ?? [];
+  const peopleNames = ((roster.data?.people ?? []) as RosterPerson[]).filter((p) => p.active).map((p) => p.name);
 
   const renderContent = () => {
     switch (active) {
+      case 'overview':
+        return (
+          <OverviewTab
+            team={cfg.key}
+            table={cfg.memberTable}
+            tabs={tabs.map((t) => t.key)}
+            me={me}
+            canEditGrafik={canEditGrafik}
+            latestPost={hasWall ? posts.find((p) => !p.pinned) ?? posts[0] ?? null : null}
+            onTab={onTab}
+          />
+        );
       case 'checkin':
         return <KidsTodayTab myEmail={myEmail} canCreateSession={perms.can('res:checkin_sessions:create')} />;
       case 'wall':
@@ -127,10 +176,10 @@ export default function TeamDetailScreen() {
           <View>
             <AddButton label="Nowy post" onPress={() => setPostOpen(true)} />
             {wall.isLoading ? <Loading /> : null}
-            {!wall.isLoading && !(wall.data ?? []).length ? (
+            {!wall.isLoading && !posts.length ? (
               <Empty Icon={MessageSquare} title="Brak postów" hint="Napisz coś do zespołu — zobaczą to też na webie." />
             ) : null}
-            {((wall.data ?? []) as WallPost[]).map((p) => (
+            {posts.map((p) => (
               <WallPostCard key={p.id} post={p} ministry={wallMinistry} myEmail={myEmail} myName={myName} />
             ))}
           </View>
@@ -138,25 +187,39 @@ export default function TeamDetailScreen() {
       case 'events':
         return <EventsTab cfg={cfg} scope={scope} campusIdForInsert={campusIdForInsert} myEmail={myEmail} />;
       case 'schedule':
-        return <GrafikTab teamKey={cfg.key} me={{ email: myEmail, name: myName }} />;
+        return <GrafikTab teamKey={cfg.key} me={me} canEdit={canEditGrafik} canSend={canSendInvites} />;
       case 'tasks':
         return <TasksTab sourceKind={cfg.boardSourceKind} myEmail={myEmail} />;
       case 'members':
-        return (
-          <PeopleTab
+        return rosterTeam && cfg.memberTable ? (
+          <RosterTab
+            team={cfg.key}
             table={cfg.memberTable}
-            rolesFor={cfg.key === 'mlodziezowka' || cfg.key === 'homegroups' || cfg.key === 'kids' ? undefined : cfg.key}
-            emptyLabel="Lista jest pusta"
+            canCreate={canPeopleCreate}
+            canEdit={canPeopleEdit}
+            canDelete={canPeopleDelete}
+            withFunction={cfg.key === 'kids'}
           />
+        ) : (
+          <PeopleTab table={cfg.memberTable} emptyLabel="Lista jest pusta" />
         );
       case 'leaders':
         return <PeopleTab table={cfg.leaderTable} emptyLabel="Brak liderów na liście" />;
       case 'roles':
-        return <RolesTab teamKey={cfg.key} memberTable={cfg.memberTable} />;
+        return <RolesTab team={cfg.key} table={table} canEdit={canPeopleEdit} canDelete={canPeopleDelete} />;
       case 'finance':
         return <FinanceTab cfg={cfg} scope={scope} myEmail={myEmail} myName={myName} />;
       case 'equipment':
-        return <EquipmentTab teamKey={cfg.key} />;
+        return (
+          <EquipmentTab
+            teamKey={cfg.key}
+            people={peopleNames}
+            myEmail={myEmail}
+            canCreate={perms.can('res:equipment:create')}
+            canEdit={perms.can('res:equipment:update')}
+            canDelete={perms.can('res:equipment:delete')}
+          />
+        );
       default:
         return null;
     }
@@ -165,43 +228,29 @@ export default function TeamDetailScreen() {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-      <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingTop: insets.top + 6,
-            paddingBottom: 10,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
+      <View style={{ flex: 1, backgroundColor: B.paper }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: insets.top + 6, paddingBottom: 12 }}>
           <Pressable
             onPress={() => goBack(router)}
             hitSlop={10}
+            accessibilityLabel="Wróć"
             className="active:opacity-60"
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: 21,
-              backgroundColor: '#FFFFFF',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: B.card, alignItems: 'center', justifyContent: 'center' }}
           >
-            <ChevronLeft size={20} color="#2A2312" strokeWidth={2.2} />
+            <ChevronLeft size={20} color={B.ink} strokeWidth={2.2} />
           </Pressable>
-          <GradientIcon Icon={look.Icon} size={44} iconSize={20} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 11, color: '#8A6606', letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'Manrope_700Bold' }}>
-              {cfg.key === 'homegroups' ? 'Panel służby' : 'Zespół'}
-            </Text>
-            <Text
-              numberOfLines={1}
-              style={{ fontSize: 21, color: '#2A2312', letterSpacing: -0.5, fontFamily: 'Manrope_700Bold' }}
-            >
-              {teamLabel}
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 14, marginTop: 16, paddingHorizontal: 4 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 11, color: B.gold, letterSpacing: 1.4, textTransform: 'uppercase', fontFamily: F.bold }}>
+                {cfg.key === 'homegroups' ? 'Panel służby' : 'Zespół'}
+                {myRole ? ` · ${myRole}` : ''}
+              </Text>
+              <Text numberOfLines={2} style={{ marginTop: 4, fontSize: 30, lineHeight: 34, color: B.ink, letterSpacing: -0.9, fontFamily: F.bold }}>
+                {teamLabel}
+              </Text>
+              {summary ? <Text style={{ marginTop: 4, fontSize: 14, color: B.ink3, fontFamily: F.medium }}>{summary}</Text> : null}
+            </View>
+            <IconWell Icon={look.Icon} tone="kurkuma" size={52} />
           </View>
         </View>
 
@@ -210,7 +259,7 @@ export default function TeamDetailScreen() {
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 130 }}
           keyboardShouldPersistTaps="handled"
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2A2312" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={B.ink} />}
         >
           {renderContent()}
         </ScrollView>

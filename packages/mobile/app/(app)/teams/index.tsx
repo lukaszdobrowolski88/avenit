@@ -29,7 +29,7 @@ export default function TeamsListScreen() {
         key={t.key}
         leading={<IconWell Icon={t.Icon} size={46} tone={role === 'leader' ? 'slod' : role === 'member' ? 'kurkuma' : 'paper'} />}
         title={t.label}
-        subtitle={native ? `Tablica · Wydarzenia${native.teamType ? ' · Grafik' : ''}` : 'Otwiera się na stronie kościoła'}
+        subtitle={native ? (native.teamType ? 'Grafik, skład, służby, sprzęt' : 'Wydarzenia, zadania, skład') : 'Otwiera się na stronie kościoła'}
         meta={
           role ? (
             <Text style={{ fontSize: 11, marginTop: 4, letterSpacing: 1, textTransform: 'uppercase', color: B.gold, fontFamily: 'Manrope_700Bold' }}>
@@ -48,7 +48,7 @@ export default function TeamsListScreen() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
-        <PageHeader title="Zespoły" subtitle="Tablice, wydarzenia, grafiki" Icon={Users} showBack />
+        <PageHeader title="Zespoły" subtitle="Grafiki, skład i sprzęt służb" Icon={Users} showBack />
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}>
           {!ready ? (
             <View style={{ paddingVertical: 40 }}>
