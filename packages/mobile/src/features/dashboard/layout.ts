@@ -54,6 +54,8 @@ export interface ItemsConfig {
   // Własny wybór i kolejność. null = automatycznie (jak domyślnie).
   order: string[] | null;
   hidden: string[];
+  // „Dla Ciebie”: moduły dodane jako skróty (klucze `mod:<moduł>`; domyślnie żadne).
+  added?: string[];
 }
 
 export interface DashboardLayout {
@@ -73,6 +75,7 @@ export const DEFAULT_LAYOUT: DashboardLayout = {
 const asItems = (raw: any): ItemsConfig => ({
   order: Array.isArray(raw?.order) ? raw.order.map(String) : null,
   hidden: Array.isArray(raw?.hidden) ? raw.hidden.map(String) : [],
+  added: Array.isArray(raw?.added) ? raw.added.map(String) : [],
 });
 
 // Zapisany układ + nowe sekcje (dodane w kolejnych wersjach apki) wstawione tam, gdzie są
@@ -140,13 +143,4 @@ export const useSaveDashboardLayout = (email: string | null) => {
       qc.setQueryData(['dashboard-layout', email], layout);
     },
   });
-};
-
-// Elementy listy wg konfiguracji: własna kolejność (nowe elementy na końcu) bez ukrytych.
-export const applyItems = <T extends { key: string }>(all: T[], cfg: ItemsConfig, auto: T[]): T[] => {
-  if (!cfg.order) return auto.filter((x) => !cfg.hidden.includes(x.key));
-  const byKey = new Map(all.map((x) => [x.key, x]));
-  const ordered = cfg.order.map((k) => byKey.get(k)).filter(Boolean) as T[];
-  const rest = all.filter((x) => !cfg.order!.includes(x.key));
-  return [...ordered, ...rest].filter((x) => !cfg.hidden.includes(x.key));
 };

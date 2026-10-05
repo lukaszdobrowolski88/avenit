@@ -77,7 +77,7 @@ export const MODULE_REGISTRY: Record<string, ModuleEntry> = {
 
   members: m({ key: 'members', label: 'Członkowie', Icon: Users, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', route: '/(app)/members', webPath: '/members' }),
   forms: m({ key: 'forms', label: 'Formularze', Icon: ClipboardList, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', route: '/(app)/forms', webPath: '/forms' }),
-  giving: m({ key: 'giving', label: 'Dawanie', Icon: Gift, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', route: '/(app)/giving/admin', webPath: '/giving' }),
+  giving: m({ key: 'giving', label: 'Hojność', Icon: Gift, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', route: '/(app)/giving/admin', webPath: '/giving' }),
   finance: m({ key: 'finance', label: 'Finanse', Icon: Wallet, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', route: '/(app)/finance', webPath: '/finance' }),
   care: m({ key: 'care', label: 'Opieka i CRM', Icon: HeartHandshake, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', webPath: '/members' }),
   attendance: m({ key: 'attendance', label: 'Frekwencja', Icon: UserCheck, tint: '#2A2312', bg: '#ECE8DE', section: 'manage', route: '/(app)/attendance', webPath: '/attendance' }),

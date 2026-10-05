@@ -6,7 +6,7 @@ import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { B } from '../../../src/components/ui/brand';
 import { SortableList } from '../../../src/components/ui/SortableList';
 import { useAuthSession } from '../../../src/lib/auth';
-import { useModules } from '../../../src/features/modules/useModules';
+import { isShortcutVisible, useShortcutCatalog, visibleShortcuts, type Shortcut } from '../../../src/features/dashboard/shortcuts';
 import { useDashboardModules } from '../../../src/features/dashboard/components/QuickAccess';
 import {
   DEFAULT_LAYOUT,
@@ -54,25 +54,29 @@ export default function DashboardItemsScreen() {
   const email = user?.email ?? null;
   const layout: DashboardLayout = useDashboardLayout(email).data ?? DEFAULT_LAYOUT;
   const save = useSaveDashboardLayout(email);
-  const { personal } = useModules();
+  const { catalog } = useShortcutCatalog();
   const { candidates, auto } = useDashboardModules();
   const [scrollEnabled, setScrollEnabled] = useState(true);
 
   const persist = (next: DashboardLayout) =>
     save.mutate(next, { onError: (e: any) => Alert.alert('Nie udało się zapisać', e?.message ?? 'Spróbuj ponownie.') });
 
-  // ── Dla Ciebie: wszystkie skróty w kolejności z ustawień (nowe na końcu) ──
-  const forYouAll: Row[] = personal
-    .filter((p) => p.key !== 'notifications')
-    .map((p) => ({ key: p.key, label: p.label, Icon: p.Icon }));
+  // ── Dla Ciebie: widoczne skróty (kolejność) + reszta katalogu do dodania ──
   const fy = layout.forYou;
-  const forYouRows: Row[] = fy.order
-    ? [
-        ...(fy.order.map((k) => forYouAll.find((r) => r.key === k)).filter(Boolean) as Row[]),
-        ...forYouAll.filter((r) => !fy.order!.includes(r.key)),
-      ]
-    : forYouAll;
-  const saveForYou = (rows: Row[], hidden: string[]) => persist({ ...layout, forYou: { order: rows.map((r) => r.key), hidden } });
+  const onDesk: Shortcut[] = visibleShortcuts(catalog, fy);
+  const offDesk: Shortcut[] = catalog.filter((x) => !isShortcutVisible(x, fy));
+  // Zapis z listy widocznych: kolejność, ukryte osobiste, dodane moduły.
+  const saveForYou = (visible: Shortcut[]) => {
+    const keys = new Set(visible.map((x) => x.key));
+    persist({
+      ...layout,
+      forYou: {
+        order: visible.map((x) => x.key),
+        hidden: catalog.filter((x) => x.kind === 'personal' && !keys.has(x.key)).map((x) => x.key),
+        added: visible.filter((x) => x.kind === 'module').map((x) => x.key),
+      },
+    });
+  };
 
   // ── Twoje moduły: automatycznie albo własny wybór ──
   const md = layout.modules;
@@ -106,25 +110,46 @@ export default function DashboardItemsScreen() {
           {!isModules ? (
             <>
               <Text style={{ marginHorizontal: 4, marginBottom: 14, fontSize: 14, lineHeight: 20, color: B.ink3, fontFamily: F.medium }}>
-                Wybierz skróty na pulpicie i przeciągnij, by ustawić kolejność.
+                Przeciągnij skróty, by ustawić kolejność. Niżej dodasz kolejne — także dowolny moduł.
+              </Text>
+              <Text style={{ marginBottom: 10, marginLeft: 4, fontSize: 12, letterSpacing: 1.3, textTransform: 'uppercase', color: B.gold, fontFamily: F.bold }}>
+                {`Na pulpicie · ${onDesk.length}`}
               </Text>
               <View style={{ backgroundColor: B.card, borderRadius: 22, overflow: 'hidden' }}>
-                <SortableList
-                  items={forYouRows}
-                  rowHeight={ROW}
-                  keyOf={(r) => r.key}
-                  setScrollEnabled={setScrollEnabled}
-                  rowStyle={(_r, i) => ({ borderTopWidth: i ? 1 : 0, borderTopColor: B.line, backgroundColor: B.card })}
-                  onReorder={(from, to) => saveForYou(move(forYouRows, from, to), fy.hidden)}
-                  renderRow={(r) => (
-                    <ItemRow
-                      row={r}
-                      on={!fy.hidden.includes(r.key)}
-                      onToggle={(v) => saveForYou(forYouRows, v ? fy.hidden.filter((k) => k !== r.key) : [...fy.hidden, r.key])}
-                    />
-                  )}
-                />
+                {onDesk.length ? (
+                  <SortableList
+                    items={onDesk}
+                    rowHeight={ROW}
+                    keyOf={(r) => r.key}
+                    setScrollEnabled={setScrollEnabled}
+                    rowStyle={(_r, i) => ({ borderTopWidth: i ? 1 : 0, borderTopColor: B.line, backgroundColor: B.card })}
+                    onReorder={(from, to) => saveForYou(move(onDesk, from, to))}
+                    renderRow={(r) => <ItemRow row={r} on onToggle={() => saveForYou(onDesk.filter((x) => x.key !== r.key))} />}
+                  />
+                ) : (
+                  <Text style={{ padding: 16, fontSize: 14, color: B.ink3, fontFamily: F.medium }}>
+                    Brak skrótów — sekcja „Dla Ciebie” się nie pokaże.
+                  </Text>
+                )}
               </View>
+
+              {offDesk.length ? (
+                <>
+                  <Text style={{ marginTop: 22, marginBottom: 10, marginLeft: 4, fontSize: 12, letterSpacing: 1.3, textTransform: 'uppercase', color: B.gold, fontFamily: F.bold }}>
+                    Dodaj skrót
+                  </Text>
+                  <View style={{ backgroundColor: B.card, borderRadius: 22, overflow: 'hidden' }}>
+                    {offDesk.map((r, i) => (
+                      <View key={r.key} style={{ height: ROW, flexDirection: 'row', alignItems: 'center', borderTopWidth: i ? 1 : 0, borderTopColor: B.line }}>
+                        <ItemRow row={r} on={false} onToggle={() => saveForYou([...onDesk, r])} />
+                        {r.kind === 'module' ? (
+                          <Text style={{ marginRight: 16, fontSize: 11, color: B.ink4, fontFamily: F.semibold }}>moduł</Text>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : null}
             </>
           ) : (
             <>
