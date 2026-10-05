@@ -154,7 +154,7 @@ export default function MyWorkScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
         <PageHeader
-          title="Moja praca"
+          title="Moje zadania"
           subtitle={total > 0 ? `${openCount} otwartych z ${total}` : 'Zadania przypisane do Ciebie'}
           showBack
           right={

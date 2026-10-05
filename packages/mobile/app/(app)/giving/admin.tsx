@@ -49,7 +49,7 @@ export default function GivingAdminScreen() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View style={{ flex: 1, backgroundColor: '#F6F4EE' }}>
-        <PageHeader title="Dawanie" subtitle={`Pulpit ${d?.year ?? new Date().getFullYear()}`} Icon={Gift} showBack />
+        <PageHeader title="Hojność" subtitle={`Pulpit ${d?.year ?? new Date().getFullYear()}`} Icon={Gift} showBack />
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 130 }}
           refreshControl={<RefreshControl refreshing={ov.isRefetching} onRefresh={() => ov.refetch()} tintColor="#2A2312" />}

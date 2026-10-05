@@ -3,6 +3,7 @@ import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ArrowUpRight } from 'lucide-react-native';
 import { openModule, useModules, type ModuleItem } from '../../modules/useModules';
+import type { ItemsConfig } from '../layout';
 import { SectionHeading } from './WidgetCard';
 import { D, F } from '../theme';
 import { goToTab } from '../../../lib/navigation';
@@ -15,6 +16,28 @@ const PRIORITY = [
 ];
 const SKIP = new Set(['calendar', 'komunikator']);
 const MAX = 6; // 3 rzędy po 2 — reszta pod „Wszystkie”
+
+// Moduły, które da się postawić na pulpicie (natywne, bez Kalendarza i Czatu z paska).
+export const useDashboardModules = () => {
+  const { items, perms, ready } = useModules();
+  const candidates = useMemo(() => items.filter((it) => !it.isWeb && !SKIP.has(it.key)), [items]);
+  // Dobór automatyczny: najpierw służby, do których należę, potem PRIORITY, potem reszta.
+  const auto = useMemo(() => {
+    const byKey = new Map<string, ModuleItem>(candidates.map((it) => [it.key, it]));
+    const order = [...perms.ministries.map((m) => m.ministry_key), ...PRIORITY, ...candidates.map((it) => it.key)];
+    const out: ModuleItem[] = [];
+    const seen = new Set<string>();
+    for (const key of order) {
+      if (out.length >= MAX) break;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const it = byKey.get(key);
+      if (it) out.push(it);
+    }
+    return out;
+  }, [candidates, perms.ministries]);
+  return { candidates, auto, items, perms, ready };
+};
 
 const ModuleCard = ({
   item,
@@ -76,10 +99,10 @@ const ModuleCard = ({
   );
 };
 
-export const QuickAccess = () => {
+export const QuickAccess = ({ config }: { config: ItemsConfig }) => {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const { items, perms, ready } = useModules();
+  const { candidates, auto, items, perms, ready } = useDashboardModules();
   const tile = Math.floor((width - 32 - 10) / 2);
 
   const roleByKey = useMemo(() => {
@@ -90,20 +113,12 @@ export const QuickAccess = () => {
     return map;
   }, [perms.ministries]);
 
+  // Własny wybór (kolejność z ustawień) albo dobór automatyczny.
   const picks = useMemo(() => {
-    const byKey = new Map<string, ModuleItem>(items.map((it) => [it.key, it]));
-    const order = [...perms.ministries.map((m) => m.ministry_key), ...PRIORITY, ...items.map((it) => it.key)];
-    const out: ModuleItem[] = [];
-    const seen = new Set<string>();
-    for (const key of order) {
-      if (out.length >= MAX) break;
-      if (seen.has(key) || SKIP.has(key)) continue;
-      seen.add(key);
-      const it = byKey.get(key);
-      if (it && !it.isWeb) out.push(it);
-    }
-    return out;
-  }, [items, perms.ministries]);
+    if (!config.order) return auto;
+    const byKey = new Map<string, ModuleItem>(candidates.map((it) => [it.key, it]));
+    return config.order.map((k) => byKey.get(k)).filter(Boolean) as ModuleItem[];
+  }, [config.order, candidates, auto]);
 
   if (!ready || picks.length === 0) return null;
 

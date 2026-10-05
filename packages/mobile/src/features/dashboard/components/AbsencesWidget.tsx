@@ -1,486 +1,78 @@
 import { useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CalendarX, Check, Clock, Plus, Trash2, X } from 'lucide-react-native';
-import { formatDate } from '../../../lib/domain';
-import { WidgetCard } from './WidgetCard';
-import { supabase } from '../../../lib/supabase';
-import { useAuthSession } from '../../../lib/auth';
-import type { AbsenceItem, UpcomingProgramItem } from '../api';
+import { Pressable, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { CalendarOff, Plus } from 'lucide-react-native';
+import { EmptyRow, WidgetCard } from './WidgetCard';
+import { D, F } from '../theme';
+import { useMyBlockouts, type Blockout } from '../../serve/api';
+import { daysLabel, rangeLabel, todayIso } from '../../serve/format';
+import { AbsenceSheet } from '../../serve/components/AbsenceSheet';
 
-const STATUS_META: Record<
-  AbsenceItem['status'],
-  { label: string; tint: string; bg: string; Icon: typeof Check }
-> = {
-  pending: { label: 'Oczekuje', tint: '#8A6606', bg: '#FFF1C2', Icon: Clock },
-  approved: { label: 'Zatwierdzona', tint: '#047857', bg: '#d1fae5', Icon: Check },
-  rejected: { label: 'Odrzucona', tint: '#be123c', bg: '#ffe4e6', Icon: X },
-};
+// „Moje nieobecności” na pulpicie — skrót do JEDNEJ funkcji nieobecności (ekran
+// /serve/availability, dane volunteer_blockouts). Dawny osobny model user_absences
+// (nieobecność „na program”) został zastąpiony.
+export const AbsencesWidget = () => {
+  const router = useRouter();
+  const { data } = useMyBlockouts();
+  const [adding, setAdding] = useState(false);
 
-interface Props {
-  items: AbsenceItem[];
-  upcomingPrograms?: UpcomingProgramItem[];
-}
-
-const useReportAbsence = (
-  userEmail: string | null | undefined,
-  userName: string | null | undefined,
-) => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: {
-      programId: number | null;
-      absenceDate: string;
-      note: string;
-    }) => {
-      if (!userEmail) throw new Error('Brak email');
-      // Zgłoszenie własnej nieobecności to deklaracja samego zainteresowanego —
-      // w Avenit nie ma osobnego kroku zatwierdzania, więc zapisujemy od razu jako
-      // 'approved' (inaczej status 'pending' wisiałby w nieskończoność) i z user_name.
-      const { error } = await (supabase.from('user_absences') as any).insert({
-        user_email: userEmail,
-        user_name: userName ?? null,
-        program_id: input.programId,
-        absence_date: input.absenceDate,
-        note: input.note || null,
-        status: 'approved',
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['dashboard'] }),
-  });
-};
-
-const useDeleteAbsence = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: number | string) => {
-      const { error } = await (supabase.from('user_absences') as any).delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['dashboard'] }),
-  });
-};
-
-const ReportModal = ({
-  visible,
-  onClose,
-  programs,
-  onSubmit,
-  isLoading,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  programs: UpcomingProgramItem[];
-  onSubmit: (input: { programId: number | null; absenceDate: string; note: string }) => void;
-  isLoading: boolean;
-}) => {
-  const [selected, setSelected] = useState<UpcomingProgramItem | null>(null);
-  const [note, setNote] = useState('');
-
-  const handleSubmit = () => {
-    if (!selected) {
-      Alert.alert(
-        'Wybierz nabożeństwo',
-        'Zaznacz nabożeństwo, na które zgłaszasz nieobecność.',
-      );
-      return;
-    }
-    onSubmit({ programId: selected.id, absenceDate: selected.date, note });
-    setSelected(null);
-    setNote('');
-  };
-
-  return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}
-      >
-        <View
-          style={{
-            backgroundColor: '#F6F4EE',
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            padding: 20,
-            paddingBottom: 32,
-            maxHeight: '80%',
-          }}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 16,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 18,
-                color: '#2A2312',
-                letterSpacing: -0.4,
-                fontFamily: 'Manrope_700Bold',
-              }}
-            >
-              Zgłoś nieobecność
-            </Text>
-            <Pressable onPress={onClose} hitSlop={10}>
-              <X size={20} color="#6B6557" />
-            </Pressable>
-          </View>
-
-          <Text
-            style={{
-              fontSize: 11,
-              color: '#8A6606',
-              marginBottom: 8,
-              letterSpacing: 1.2,
-              textTransform: 'uppercase',
-              fontFamily: 'Manrope_700Bold',
-            }}
-          >
-            Wybierz nabożeństwo
-          </Text>
-          <ScrollView style={{ maxHeight: 240, marginBottom: 12 }}>
-            {programs.length === 0 ? (
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: '#6B6557',
-                  paddingHorizontal: 8,
-                  paddingVertical: 12,
-                  fontFamily: 'Manrope_500Medium',
-                }}
-              >
-                Brak nadchodzących nabożeństw.
-              </Text>
-            ) : (
-              programs.map((p) => {
-                const isSelected = selected?.id === p.id;
-                return (
-                  <Pressable
-                    key={p.id}
-                    onPress={() => setSelected(p)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'stretch',
-                      gap: 12,
-                      paddingHorizontal: 12,
-                      paddingVertical: 12,
-                      borderRadius: 14,
-                      marginBottom: 8,
-                      borderWidth: 1,
-                      borderColor: isSelected ? '#FFBE0B' : '#E6E1D5',
-                      backgroundColor: isSelected ? '#FFF8E1' : '#F6F4EE',
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 4,
-                        borderRadius: 2,
-                        backgroundColor: p.typeColor || '#2A2312',
-                      }}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          color: '#8A6606',
-                          letterSpacing: 1.2,
-                          textTransform: 'uppercase',
-                          fontFamily: 'Manrope_600SemiBold',
-                        }}
-                      >
-                        {formatDate(p.date, 'EEEE, d MMM')}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          color: '#2A2312',
-                          marginTop: 2,
-                          letterSpacing: -0.2,
-                          fontFamily: 'Manrope_600SemiBold',
-                        }}
-                      >
-                        {p.title || p.typeName || 'Nabożeństwo'}
-                      </Text>
-                    </View>
-                    {isSelected ? <Check size={18} color="#8A6606" /> : null}
-                  </Pressable>
-                );
-              })
-            )}
-          </ScrollView>
-
-          <Text
-            style={{
-              fontSize: 11,
-              color: '#8A6606',
-              marginBottom: 8,
-              letterSpacing: 1.2,
-              textTransform: 'uppercase',
-              fontFamily: 'Manrope_700Bold',
-            }}
-          >
-            Powód (opcjonalnie)
-          </Text>
-          <TextInput
-            value={note}
-            onChangeText={setNote}
-            placeholder="np. wyjazd, choroba..."
-            placeholderTextColor="#857F70"
-            multiline
-            numberOfLines={2}
-            style={{
-              borderWidth: 1,
-              borderColor: '#E6E1D5',
-              borderRadius: 14,
-              paddingHorizontal: 14,
-              paddingVertical: 12,
-              fontSize: 14,
-              color: '#2A2312',
-              backgroundColor: '#FFFFFF',
-              minHeight: 60,
-              textAlignVertical: 'top',
-              fontFamily: 'Manrope_400Regular',
-            }}
-          />
-
-          <Pressable
-            onPress={handleSubmit}
-            disabled={!selected || isLoading}
-            style={{
-              marginTop: 16,
-              borderRadius: 14,
-              paddingVertical: 14,
-              alignItems: 'center',
-              backgroundColor: !selected || isLoading ? '#E3DDD0' : '#2A2312',
-            }}
-          >
-            <Text style={{ color: '#ffffff', fontSize: 15, fontFamily: 'Manrope_700Bold' }}>
-              {isLoading ? 'Zapisywanie...' : 'Zgłoś nieobecność'}
-            </Text>
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-};
-
-export const AbsencesWidget = ({ items, upcomingPrograms = [] }: Props) => {
-  const { user } = useAuthSession();
-  const [modalOpen, setModalOpen] = useState(false);
-  const displayName =
-    user?.full_name ?? (user?.name as string | undefined) ?? user?.email ?? null;
-  const reportAbsence = useReportAbsence(user?.email, displayName);
-  const deleteAbsence = useDeleteAbsence();
-
-  const handleDelete = (a: AbsenceItem) => {
-    Alert.alert(
-      'Usunąć nieobecność?',
-      `Nieobecność na ${a.absence_date} zostanie usunięta.`,
-      [
-        { text: 'Anuluj', style: 'cancel' },
-        {
-          text: 'Usuń',
-          style: 'destructive',
-          onPress: () =>
-            deleteAbsence.mutate(a.id, {
-              onError: (err: any) =>
-                Alert.alert('Błąd', err?.message ?? 'Nie udało się usunąć'),
-            }),
-        },
-      ],
+  if (!data) return null;
+  // Konto bez profilu członka nie może zgłaszać (serwer wiąże nieobecność z członkiem) —
+  // mówimy o tym wprost zamiast chować widżet.
+  if (!data.memberResolved) {
+    return (
+      <WidgetCard title="Moje nieobecności">
+        <EmptyRow text="Konto nie jest powiązane z profilem członka — poproś lidera o połączenie, by zgłaszać nieobecności." />
+      </WidgetCard>
     );
-  };
-
-  const reportedDates = new Set(items.map((a) => a.absence_date));
-  const availablePrograms = upcomingPrograms.filter((p) => !reportedDates.has(p.date));
-
-  const handleSubmit = (input: {
-    programId: number | null;
-    absenceDate: string;
-    note: string;
-  }) => {
-    reportAbsence.mutate(input, {
-      onSuccess: () => setModalOpen(false),
-      onError: (err: any) =>
-        Alert.alert('Błąd', err?.message ?? 'Nie udało się zgłosić nieobecności'),
-    });
-  };
+  }
+  const today = todayIso();
+  const upcoming = (data.blockouts ?? [])
+    .filter((b: Blockout) => b.end_date >= today)
+    .sort((a: Blockout, b: Blockout) => a.start_date.localeCompare(b.start_date));
 
   return (
     <>
-      <WidgetCard title="Moje nieobecności" count={items.length}>
-        <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
-          <Pressable
-            onPress={() => setModalOpen(true)}
-            className="active:opacity-70"
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              paddingVertical: 12,
-              borderRadius: 14,
-              borderWidth: 2,
-              borderStyle: 'dashed',
-              borderColor: '#E3DDD0',
-            }}
-          >
-            <Plus size={14} color="#6B6557" />
-            <Text style={{ fontSize: 13, color: '#4A463E', fontFamily: 'Manrope_600SemiBold' }}>
-              Zgłoś nieobecność
-            </Text>
-          </Pressable>
-        </View>
-
-        {items.length === 0 ? (
-          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16 }}>
-            {availablePrograms.length > 0 ? (
+      <WidgetCard
+        title="Moje nieobecności"
+        count={upcoming.length}
+        actionLabel={upcoming.length ? 'Wszystkie' : undefined}
+        onAction={upcoming.length ? () => router.push('/(app)/serve/availability') : undefined}
+      >
+        {upcoming.length === 0 ? (
+          <EmptyRow text="Brak zgłoszonych nieobecności." actionLabel="Zgłoś" onAction={() => setAdding(true)} />
+        ) : (
+          <View>
+            {upcoming.slice(0, 3).map((b: Blockout, i: number) => (
               <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  paddingHorizontal: 12,
-                  paddingVertical: 12,
-                  borderRadius: 14,
-                  backgroundColor: '#F1EEE6',
-                }}
+                key={b.id}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13, borderTopWidth: i ? 1 : 0, borderTopColor: D.hair }}
               >
-                <View
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
-                    backgroundColor: '#FFF1C2',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <CalendarX size={16} color="#8A6606" />
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: D.accentSoft, alignItems: 'center', justifyContent: 'center' }}>
+                  <CalendarOff size={16} color={D.gold} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      fontSize: 13,
-                      color: '#2A2312',
-                      letterSpacing: -0.2,
-                      fontFamily: 'Manrope_600SemiBold',
-                    }}
-                  >
-                    {availablePrograms[0].title ||
-                      availablePrograms[0].typeName ||
-                      'Nabożeństwo'}
-                    , {formatDate(availablePrograms[0].date, 'd MMMM yyyy')}
+                  <Text numberOfLines={1} style={{ fontSize: 15, color: D.ink, fontFamily: F.semibold }}>
+                    {rangeLabel(b)}
+                  </Text>
+                  <Text numberOfLines={1} style={{ marginTop: 1, fontSize: 13, color: D.ink2, fontFamily: F.medium }}>
+                    {[daysLabel(b), b.reason].filter(Boolean).join(' · ')}
                   </Text>
                 </View>
               </View>
-            ) : null}
-          </View>
-        ) : (
-          <View style={{ paddingTop: 8 }}>
-            {items.slice(0, 5).map((a, idx, arr) => {
-              const meta = STATUS_META[a.status];
-              return (
-                <View
-                  key={a.id}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 12,
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    borderBottomWidth: idx < arr.length - 1 ? 1 : 0,
-                    borderBottomColor: '#ECE8DE',
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 10,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: meta.bg,
-                    }}
-                  >
-                    <meta.Icon size={16} color={meta.tint} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        color: '#2A2312',
-                        letterSpacing: -0.2,
-                        fontFamily: 'Manrope_600SemiBold',
-                      }}
-                    >
-                      {formatDate(a.absence_date, 'EEEE, d MMM')}
-                    </Text>
-                    {a.note ? (
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          fontSize: 12,
-                          color: '#6B6557',
-                          marginTop: 2,
-                          fontFamily: 'Manrope_400Regular',
-                        }}
-                      >
-                        {a.note}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <View
-                    style={{
-                      paddingHorizontal: 8,
-                      paddingVertical: 2,
-                      borderRadius: 999,
-                      backgroundColor: meta.bg,
-                    }}
-                  >
-                    <Text
-                      style={{ fontSize: 10, color: meta.tint, fontFamily: 'Manrope_700Bold' }}
-                    >
-                      {meta.label}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() => handleDelete(a)}
-                    hitSlop={8}
-                    disabled={deleteAbsence.isPending}
-                    className="active:opacity-50"
-                    style={{ padding: 6 }}
-                  >
-                    <Trash2 size={15} color="#857F70" />
-                  </Pressable>
-                </View>
-              );
-            })}
+            ))}
+            <Pressable
+              onPress={() => setAdding(true)}
+              className="active:opacity-70"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 13, borderTopWidth: 1, borderTopColor: D.hair }}
+            >
+              <Plus size={16} color={D.ink} />
+              <Text style={{ fontSize: 14, color: D.ink, fontFamily: F.semibold }}>Zgłoś nieobecność</Text>
+            </Pressable>
           </View>
         )}
       </WidgetCard>
-      <ReportModal
-        visible={modalOpen}
-        onClose={() => setModalOpen(false)}
-        programs={availablePrograms}
-        onSubmit={handleSubmit}
-        isLoading={reportAbsence.isPending}
-      />
+      <AbsenceSheet visible={adding} onClose={() => setAdding(false)} />
     </>
   );
 };

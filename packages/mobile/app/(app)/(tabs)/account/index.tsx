@@ -8,6 +8,7 @@ import {
   Check,
   Fingerprint,
   KeyRound,
+  LayoutDashboard,
   LayoutGrid,
   LogOut,
   Moon,
@@ -213,6 +214,18 @@ export default function AccountScreen() {
           </Text>
         </View>
       ) : null}
+
+      <SettingsGroup title={t("Pulpit")}>
+        <SettingsRow
+          variant="nav"
+          Icon={LayoutDashboard}
+          iconTint="#2A2312"
+          iconBg="#ECE8DE"
+          title={t("Dostosuj pulpit")}
+          description={t("Sekcje, ich kolejność, skróty i moduły")}
+          onPress={() => router.push('/(app)/account/dashboard')}
+        />
+      </SettingsGroup>
 
       <SettingsGroup title={t("Wygląd")}>
         <SettingsRow

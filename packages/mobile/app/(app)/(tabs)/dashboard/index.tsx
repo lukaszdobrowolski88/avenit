@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StatusBar, View } from 'react-native';
 import { useAuthSession } from '../../../../src/lib/auth';
 import { usePermissions } from '../../../../src/lib/permissions';
@@ -27,6 +28,7 @@ import { PendingAccountsCard } from '../../../../src/features/dashboard/componen
 import { AbsencesWidget } from '../../../../src/features/dashboard/components/AbsencesWidget';
 import { useCampusQuery } from '../../../../src/hooks/useCampusQuery';
 import { D } from '../../../../src/features/dashboard/theme';
+import { DEFAULT_LAYOUT, useDashboardLayout, type DashboardLayout, type SectionId } from '../../../../src/features/dashboard/layout';
 
 // Tło strony pulpitu — białe karty odcinają się od niego bez ramek i cieni.
 const PAGE_BG = D.page;
@@ -55,6 +57,8 @@ export default function DashboardScreen() {
   const giving = useGivingSummary(perms.ready && perms.moduleVisible('giving'));
   const attendance = useAttendanceRecent(perms.ready && perms.moduleVisible('attendance'));
   const rsvp = useRsvpSummary(perms.ready && perms.moduleVisible('rsvp'));
+  // Układ pulpitu użytkownika (Konto → Pulpit); do wczytania — domyślny.
+  const layout: DashboardLayout = useDashboardLayout(user?.email ?? null).data ?? DEFAULT_LAYOUT;
 
   const refreshAll = () => {
     refetch();
@@ -86,6 +90,29 @@ export default function DashboardScreen() {
     ? ministry.find((m) => m.eventId === nextEvent.id && m.status !== 'rejected')?.myRole ?? null
     : null;
 
+  // Sekcje pulpitu — kolejność i widoczność z układu użytkownika; uprawnienia jak dotąd
+  // (sekcja bez dostępu albo bez danych sama się nie pokazuje).
+  const sections: Record<SectionId, ReactNode> = {
+    invitations: <PendingInvitationsWidget invitations={data?.pendingInvitations ?? []} />,
+    pendingAccounts: <PendingAccountsCard />,
+    nextUp: nextEvent ? <NextUpCard event={nextEvent} myRole={nextRole} /> : null,
+    forYou: <ForYouStrip config={layout.forYou} />,
+    modules: <QuickAccess config={layout.modules} />,
+    events: <UpcomingEventsWidget events={upcoming.slice(1)} />,
+    ministry: (
+      <MinistryWidget ministry={ministry} suggestions={data?.ministrySuggestions ?? []} history={data?.ministryHistory ?? []} />
+    ),
+    tasks: <TasksWidget items={data?.myTasks ?? []} />,
+    messages: perms.moduleVisible('komunikator') ? (
+      <MessagesWidget conversations={data?.unreadConversations ?? []} totalUnread={data?.totalUnreadMessages ?? 0} />
+    ) : null,
+    prayers: perms.moduleVisible('prayer') ? <MyPrayersWidget items={data?.myPrayers ?? []} /> : null,
+    birthdays: <BirthdaysWidget items={birthdays.data ?? []} />,
+    overview: <LeaderOverviewWidget giving={giving.data} attendance={attendance.data ?? []} rsvp={rsvp.data ?? []} />,
+    absences: <AbsencesWidget />,
+    online: <OnlineUsersWidget users={data?.onlineUsers ?? []} offlineCount={data?.offlineUsersCount ?? 0} />,
+  };
+
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
@@ -110,46 +137,9 @@ export default function DashboardScreen() {
           unreadMessages={data?.totalUnreadMessages ?? 0}
         />
 
-        <PendingInvitationsWidget invitations={data?.pendingInvitations ?? []} />
-
-        <PendingAccountsCard />
-
-        {nextEvent ? <NextUpCard event={nextEvent} myRole={nextRole} /> : null}
-
-        <ForYouStrip />
-
-        <QuickAccess />
-
-        <UpcomingEventsWidget events={upcoming.slice(1)} />
-
-        <MinistryWidget
-          ministry={ministry}
-          suggestions={data?.ministrySuggestions ?? []}
-          history={data?.ministryHistory ?? []}
-        />
-
-        <TasksWidget items={data?.myTasks ?? []} />
-
-        {perms.moduleVisible('komunikator') ? (
-          <MessagesWidget
-            conversations={data?.unreadConversations ?? []}
-            totalUnread={data?.totalUnreadMessages ?? 0}
-          />
-        ) : null}
-
-        {perms.moduleVisible('prayer') ? <MyPrayersWidget items={data?.myPrayers ?? []} /> : null}
-
-        <BirthdaysWidget items={birthdays.data ?? []} />
-
-        <LeaderOverviewWidget
-          giving={giving.data}
-          attendance={attendance.data ?? []}
-          rsvp={rsvp.data ?? []}
-        />
-
-        <AbsencesWidget items={data?.myAbsences ?? []} upcomingPrograms={data?.upcomingPrograms ?? []} />
-
-        <OnlineUsersWidget users={data?.onlineUsers ?? []} offlineCount={data?.offlineUsersCount ?? 0} />
+        {layout.sections.filter((sec) => sec.visible).map((sec) => (
+          <View key={sec.id}>{sections[sec.id]}</View>
+        ))}
       </ScrollView>
     </>
   );

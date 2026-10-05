@@ -46,7 +46,9 @@ import { tenantWebBase } from '../../../src/lib/supabase';
 import { usePermissions } from '../../../src/lib/permissions';
 import { useCampusQuery } from '../../../src/hooks/useCampusQuery';
 import { useMyProfile } from '../../../src/features/account/api';
-import { useUpdateAssignmentStatus } from '../../../src/features/programs/api';
+import { useLinkProgram, useUpdateAssignmentStatus } from '../../../src/features/programs/api';
+import { ProgramFormModal } from '../../../src/features/programs/components/ProgramFormModal';
+import { ProgramPickerSheet } from '../../../src/features/programs/components/LinkPickers';
 import { formatTime } from '../../../src/lib/domain';
 import {
   useCancelEvent,
@@ -195,7 +197,30 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
   const { campusIdForInsert } = useCampusQuery();
   const ev = d.event;
   const canEdit = perms.can('res:events:update');
+  const canCreateProgram = perms.can('res:programs:create');
   const [editing, setEditing] = useState(false);
+  // Program wydarzenia: wybór istniejącego / nowy (podpięty od razu).
+  const [pickingProgram, setPickingProgram] = useState(false);
+  const [creatingProgram, setCreatingProgram] = useState(false);
+  const link = useLinkProgram();
+  const setProgram = (programId: number | null) =>
+    link.mutate(
+      { eventId: ev.eventId, programId },
+      {
+        onSuccess: () => setPickingProgram(false),
+        onError: (e: any) => Alert.alert('Nie udało się zmienić programu', e?.message ?? 'Spróbuj ponownie.'),
+      },
+    );
+  const programMenu = () =>
+    Alert.alert('Program wydarzenia', undefined, [
+      { text: 'Wybierz inny program', onPress: () => setPickingProgram(true) },
+      {
+        text: 'Odepnij program',
+        style: 'destructive',
+        onPress: () => setProgram(null),
+      },
+      { text: 'Anuluj', style: 'cancel' },
+    ]);
 
   const now = new Date();
   const over = isOver(ev, now);
@@ -212,7 +237,8 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
   const mine = email ? list.find((r) => (r.user_email || '').toLowerCase() === email.toLowerCase()) ?? null : null;
 
   const showAttendance = (d.sections.participants || d.registrationRequired) && (!over || list.length > 0);
-  const showProgram = d.sections.program && !!d.program;
+  // Program: podgląd planu; z prawem edycji wydarzenia także gdy go brak (utwórz / wybierz).
+  const showProgram = d.sections.program && (!!d.program || canEdit);
   const showServices = d.sections.services && d.hasServiceConfig;
   const files = [...d.attachments, ...d.materials];
   const showFiles = files.length > 0;
@@ -409,10 +435,43 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
           {showProgram ? (
             <View onLayout={mark('program')}>
               <SectionLabel>Program</SectionLabel>
-              <ProgramCard
-                program={d.program!}
-                onOpen={() => router.push({ pathname: '/(app)/programs/[id]', params: { id: String(d.program!.id) } })}
-              />
+              {d.program ? (
+                <>
+                  <ProgramCard
+                    program={d.program}
+                    onOpen={() => router.push({ pathname: '/(app)/programs/[id]', params: { id: String(d.program!.id) } })}
+                  />
+                  {canEdit ? (
+                    <Pressable onPress={programMenu} className="active:opacity-70" style={{ alignSelf: 'flex-start', marginTop: 8, marginLeft: 4, paddingVertical: 4 }}>
+                      <Text style={{ fontSize: 13, color: B.gold, fontFamily: F.bold }}>Zmień lub odepnij program</Text>
+                    </Pressable>
+                  ) : null}
+                </>
+              ) : (
+                <Card>
+                  <Text style={{ fontSize: 15, color: B.ink, fontFamily: F.bold }}>Brak programu</Text>
+                  <Text style={{ marginTop: 2, fontSize: 13, color: B.ink3, fontFamily: F.medium }}>
+                    Podepnij plan nabożeństwa — pieśni, kolejność, czasy.
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
+                    {canCreateProgram ? (
+                      <Pressable onPress={() => setCreatingProgram(true)} disabled={link.isPending} className="active:opacity-80" style={[btn.base, btn.kurkuma, { flex: 1, paddingHorizontal: 10 }]}>
+                        <Plus size={16} color={B.ink} strokeWidth={2.5} />
+                        <Text style={btn.text}>Utwórz</Text>
+                      </Pressable>
+                    ) : null}
+                    <Pressable
+                      onPress={() => setPickingProgram(true)}
+                      disabled={link.isPending}
+                      className="active:opacity-80"
+                      style={[btn.base, { flex: 1, paddingHorizontal: 10, backgroundColor: B.paper2 }]}
+                    >
+                      {link.isPending ? <ActivityIndicator size="small" color={B.ink} /> : <FileText size={16} color={B.ink} />}
+                      <Text style={btn.text}>Wybierz istniejący</Text>
+                    </Pressable>
+                  </View>
+                </Card>
+              )}
             </View>
           ) : null}
 
@@ -445,6 +504,29 @@ const EventBody = ({ d, calendarLabel, email, myName, refreshing, onRefresh }: B
         </View>
       </ScrollView>
 
+      {canEdit ? (
+        <ProgramPickerSheet
+          visible={pickingProgram}
+          date={format(ev.startsAt, 'yyyy-MM-dd')}
+          canCreate={canCreateProgram}
+          onClose={() => setPickingProgram(false)}
+          onPick={(programId) => setProgram(programId)}
+          onCreate={() => {
+            setPickingProgram(false);
+            setTimeout(() => setCreatingProgram(true), 350);
+          }}
+        />
+      ) : null}
+      {canEdit && canCreateProgram ? (
+        <ProgramFormModal
+          visible={creatingProgram}
+          initial={{ title: ev.title, date: format(ev.startsAt, 'yyyy-MM-dd'), typeId: null, eventId: ev.eventId, eventTitle: ev.title }}
+          userEmail={email}
+          campusIdForInsert={ev.campusId ?? campusIdForInsert}
+          onClose={() => setCreatingProgram(false)}
+          onCreated={(id) => router.push({ pathname: '/(app)/programs/[id]', params: { id: String(id) } })}
+        />
+      ) : null}
       {canEdit ? (
         <NewCalendarEventModal
           visible={editing}

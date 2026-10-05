@@ -1,9 +1,13 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { supabase } from '../../lib/supabase';
+import { supabase, tenantWebBase } from '../../lib/supabase';
 import type { TaskAttachment } from './api';
 
-const BUCKET = 'task_attachments';
+// Serwer Avenit przyjmuje pliki tylko do znanych bucketów (storage/routes.js — BUCKETS);
+// dawny bucket „task_attachments” z Supabase nie istnieje, więc wysyłka kończyła się 404.
+// Załączniki zadań trafiają do public-assets z prefiksem task_attachments/ (jak inne pliki weba).
+const BUCKET = 'public-assets';
+const PREFIX = 'task_attachments';
 
 export interface PickedAsset {
   uri: string;
@@ -96,19 +100,20 @@ export const uploadTaskAttachment = async (
 ): Promise<TaskAttachment> => {
   const ext = guessExt(asset.uri, asset.mimeType.split('/')[1] ?? 'bin');
   const safeStem = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const storagePath = `${taskId ?? '_new'}/${safeStem}.${ext}`;
+  const storagePath = `${PREFIX}/${taskId ?? '_new'}/${safeStem}.${ext}`;
 
-  const response = await fetch(asset.uri);
-  const arrayBuffer = await response.arrayBuffer();
-
+  // FormData w React Native wysyła plik tylko jako {uri, name, type} — ArrayBuffer przepadał.
+  const file = { uri: asset.uri, name: asset.fileName, type: asset.mimeType };
   const { error: uploadErr } = await supabase.storage
     .from(BUCKET)
-    .upload(storagePath, arrayBuffer, { contentType: asset.mimeType, upsert: false });
+    .upload(storagePath, file as never, { contentType: asset.mimeType, upsert: false });
   if (uploadErr) throw uploadErr;
 
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
+  // Pliki serwuje host kościoła (nie api.*), jak na webie.
+  const base = tenantWebBase();
+  const url = base ? `${base}/storage/${BUCKET}/${storagePath}` : supabase.storage.from(BUCKET).getPublicUrl(storagePath).data.publicUrl;
   return {
-    url: data.publicUrl,
+    url,
     name: asset.fileName,
     type: asset.mimeType,
     size: asset.size,
@@ -116,8 +121,7 @@ export const uploadTaskAttachment = async (
 };
 
 export const deleteTaskAttachment = async (url: string): Promise<void> => {
-  const m = url.match(/\/task_attachments\/(.+)$/);
+  const m = url.match(/\/storage\/public-assets\/(task_attachments\/.+)$/);
   if (!m) return;
-  const path = m[1];
-  await supabase.storage.from(BUCKET).remove([path]);
+  await supabase.storage.from(BUCKET).remove([m[1]]);
 };
