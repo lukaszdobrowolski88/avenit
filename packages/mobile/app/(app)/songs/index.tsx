@@ -10,30 +10,47 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Link } from 'expo-router';
-import { FolderOpen, Music, Search, X } from 'lucide-react-native';
+import { Link, useRouter } from 'expo-router';
+import { FolderOpen, Music, Plus, Search, Tags, X } from 'lucide-react-native';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { B, InfoBlock } from '../../../src/components/ui/brand';
-import { useSongsList, useSongTags } from '../../../src/features/songs/api';
-import type { Song } from '../../../src/lib/domain';
+import { useSongLibrary, type SongListItem } from '../../../src/features/songs/library';
 import { ProgramsManagerModal } from '../../../src/features/songs/components/ProgramsManagerModal';
+import { SongFormModal } from '../../../src/features/songs/components/SongFormModal';
+import { TagsSheet } from '../../../src/features/songs/components/TagsSheet';
 import { useAuthSession } from '../../../src/lib/auth';
+import { usePermissions } from '../../../src/lib/permissions';
 
 export default function SongsScreen() {
+  const router = useRouter();
   const { user } = useAuthSession();
+  const perms = usePermissions();
+  const canCreate = perms.can('res:songs:create');
+  const canEdit = perms.can('res:songs:update');
   const [search, setSearch] = useState('');
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [programsVisible, setProgramsVisible] = useState(false);
-  const { data: allSongs, isLoading, isError, error, refetch, isRefetching } = useSongsList('');
-  const tags = useSongTags(allSongs);
+  const [creating, setCreating] = useState(false);
+  const [managingTags, setManagingTags] = useState(false);
+  const { data, isLoading, isError, error, refetch, isRefetching } = useSongLibrary();
+  const allSongs = (data ?? []) as SongListItem[];
 
+  // Tagi wg liczby pieśni (jak dotąd).
+  const tags = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const s of allSongs) for (const t of s.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+    return Array.from(counts.entries())
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'pl'));
+  }, [allSongs]);
+
+  // Szukanie po tytule, autorze i tagach (bez polskich znaków też: „blogoslaw”).
+  const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l');
   const filtered = useMemo(() => {
-    const list = allSongs ?? [];
-    return list.filter((s: Song) => {
-      const matchesSearch =
-        !search.trim() || s.title.toLowerCase().includes(search.trim().toLowerCase());
-      const matchesTag =
-        !activeTag || (Array.isArray(s.tags) && s.tags.includes(activeTag));
+    const q = fold(search.trim());
+    return allSongs.filter((s) => {
+      const matchesSearch = !q || fold(`${s.title} ${s.author ?? ''} ${s.tags.join(' ')}`).includes(q);
+      const matchesTag = !activeTag || s.tags.includes(activeTag);
       return matchesSearch && matchesTag;
     });
   }, [allSongs, search, activeTag]);
@@ -48,6 +65,17 @@ export default function SongsScreen() {
           Icon={Music}
           showBack
           right={
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+            {canEdit ? (
+              <Pressable
+                onPress={() => setManagingTags(true)}
+                hitSlop={8}
+                accessibilityLabel="Tagi"
+                style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E6E1D5' }}
+              >
+                <Tags size={15} color="#8A6606" />
+              </Pressable>
+            ) : null}
             <Pressable
               onPress={() => setProgramsVisible(true)}
               hitSlop={8}
@@ -75,6 +103,7 @@ export default function SongsScreen() {
                 Programy
               </Text>
             </Pressable>
+            </View>
           }
         />
 
@@ -91,7 +120,7 @@ export default function SongsScreen() {
             <TextInput
               className="flex-1 text-base"
               style={{ color: '#2A2312', fontFamily: 'Manrope_500Medium' }}
-              placeholder="Szukaj pieśni…"
+              placeholder="Tytuł, autor albo tag…"
               placeholderTextColor="#857F70"
               value={search}
               onChangeText={setSearch}
@@ -119,7 +148,7 @@ export default function SongsScreen() {
             >
               <Chip
                 active={activeTag === null}
-                label={`Wszystkie · ${allSongs?.length ?? 0}`}
+                label={`Wszystkie · ${allSongs.length}`}
                 onPress={() => setActiveTag(null)}
               />
               {tags.map(({ tag, count }) => (
@@ -187,7 +216,9 @@ export default function SongsScreen() {
                 >
                   {search || activeTag
                     ? 'Spróbuj zmienić filtr lub wyszukiwanie.'
-                    : 'Pieśni dodajesz w aplikacji webowej.'}
+                    : canCreate
+                      ? 'Dodaj pierwszą pieśń przyciskiem +.'
+                      : 'Baza pieśni jest pusta.'}
                 </Text>
               </View>
             }
@@ -217,9 +248,9 @@ export default function SongsScreen() {
                       <Text numberOfLines={1} style={{ fontSize: 16, color: B.ink, letterSpacing: -0.3, fontFamily: 'Manrope_600SemiBold' }}>
                         {item.title}
                       </Text>
-                      {Array.isArray(item.tags) && item.tags.length > 0 ? (
+                      {item.author || item.tags.length > 0 ? (
                         <Text numberOfLines={1} style={{ fontSize: 13, color: B.ink3, marginTop: 2, fontFamily: 'Manrope_500Medium' }}>
-                          {item.tags.slice(0, 3).join(' · ')}
+                          {[item.author, ...item.tags.slice(0, item.author ? 2 : 3)].filter(Boolean).join(' · ')}
                         </Text>
                       ) : null}
                     </View>
@@ -231,6 +262,43 @@ export default function SongsScreen() {
         )}
       </View>
 
+      {canCreate ? (
+        <Pressable
+          onPress={() => setCreating(true)}
+          accessibilityLabel="Nowa pieśń"
+          className="active:opacity-80"
+          style={{
+            position: 'absolute',
+            right: 18,
+            bottom: 108,
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: '#2A2312',
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: '#2A2312',
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.25,
+            shadowRadius: 12,
+            elevation: 6,
+          }}
+        >
+          <Plus size={24} color="#ffffff" strokeWidth={2.4} />
+        </Pressable>
+      ) : null}
+      {canCreate ? (
+        <SongFormModal
+          visible={creating}
+          song={null}
+          allTags={tags.map((t) => t.tag)}
+          onClose={() => setCreating(false)}
+          onSaved={(id) => router.push({ pathname: '/(app)/songs/[id]', params: { id: String(id) } })}
+        />
+      ) : null}
+      {canEdit ? (
+        <TagsSheet visible={managingTags} songs={allSongs} canDelete={canEdit} onClose={() => setManagingTags(false)} />
+      ) : null}
       <ProgramsManagerModal
         visible={programsVisible}
         onClose={() => setProgramsVisible(false)}

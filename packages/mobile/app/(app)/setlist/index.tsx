@@ -1,18 +1,23 @@
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StatusBar,
   Text,
   View,
 } from 'react-native';
-import { Music, Music2 } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { ChevronRight, Music, Music2 } from 'lucide-react-native';
 import { formatDate } from '../../../src/lib/domain';
 import { PageHeader } from '../../../src/components/ui/PageHeader';
 import { usePlannedSongs, type PlannedProgram, type PlannedSong } from '../../../src/features/setlist/api';
+import { usePermissions } from '../../../src/lib/permissions';
 
 export default function SetlistScreen() {
   const { data, isLoading, isError, error, refetch, isRefetching } = usePlannedSongs();
+  // Kto ma bazę pieśni, przechodzi z planu do tekstu/akordów/materiałów.
+  const canOpenSong = usePermissions().can('res:songs:read');
   const programs = (data ?? []).filter((p: PlannedProgram) => p.songs.length > 0);
 
   return (
@@ -82,8 +87,11 @@ export default function SetlistScreen() {
                   </Text>
                 </View>
                 {p.songs.map((s: PlannedSong, i: number) => (
-                  <View
+                  <Pressable
                     key={`${p.id}-${i}`}
+                    disabled={!canOpenSong || s.songId == null}
+                    onPress={() => router.push({ pathname: '/(app)/songs/[id]', params: { id: String(s.songId) } })}
+                    className="active:opacity-70"
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
@@ -112,7 +120,8 @@ export default function SetlistScreen() {
                         <Text style={{ fontSize: 12, color: '#2A2312', fontFamily: 'Manrope_700Bold' }}>{s.key}</Text>
                       </View>
                     ) : null}
-                  </View>
+                    {canOpenSong && s.songId != null ? <ChevronRight size={16} color="#B8B2A3" /> : null}
+                  </Pressable>
                 ))}
               </View>
             ))}

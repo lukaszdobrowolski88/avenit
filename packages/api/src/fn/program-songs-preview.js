@@ -52,6 +52,7 @@ export default async function handler(req, reply) {
       if (!byProgram.has(pid)) byProgram.set(pid, []);
       const sn = songById.get(String(s.song_id));
       byProgram.get(pid).push({
+        songId: s.song_id ?? null,
         title: sn?.title ?? 'Pieśń',
         key: s.song_key ?? sn?.key ?? null,
         note: s.note ?? null,

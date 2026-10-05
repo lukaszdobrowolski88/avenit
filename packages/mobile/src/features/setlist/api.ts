@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 // „Planowane pieśni" (read-only) — przez fn program-songs-preview (member-scoped;
 // członek służby nie ma grantu res:program_song_suggestions:read).
 export interface PlannedSong {
+  songId?: number | null; // starsze API nie zwraca
   title: string;
   key: string | null;
   note: string | null;
